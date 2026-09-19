@@ -77,6 +77,10 @@
   .modal-actions .btn-primary{background:var(--pea-purple);color:#fff;border-color:var(--pea-purple);}
   button:disabled{opacity:.6;cursor:not-allowed !important;}
 
+  .tile-stat{margin-top:auto;padding-top:9px;border-top:1px dashed var(--line);font-size:.72rem;color:var(--muted);line-height:1.6;}
+  .tile-stat b{color:var(--pea-purple);}
+  .tile-fresh{position:absolute;top:12px;left:12px;font-size:.62rem;font-weight:700;background:#efeaf7;
+    color:var(--pea-purple);padding:2px 7px;border-radius:9px;}
   footer{padding:16px 20px calc(16px + env(safe-area-inset-bottom));text-align:center;font-size:.72rem;color:var(--muted);}
 </style>
 </head>
@@ -92,28 +96,28 @@
     <p id="welcomeNote">รวมระบบงานทั้งหมดของแผนกปฏิบัติการระบบไฟฟ้าไว้ในที่เดียว — <b>เข้าสู่ระบบครั้งเดียว ใช้ได้กับทุกแอปในนี้ทันที</b> (จำไว้ในเครื่องนี้ ไม่ต้องล็อกอินซ้ำ)</p>
 
     <div class="app-grid">
-      <a class="app-tile" href="sld-ala/index.html">
+      <a class="app-tile" href="sld-ala/index.html" data-app="sld">
         <span class="status-badge live">พร้อมใช้งาน</span>
         <div class="icon">🗺</div>
         <div class="name">Single Line Diagram</div>
         <div class="desc">ผังซิงเกิ้ลไลน์ไดอะแกรม สถานีไฟฟ้าอ่าวลึก ตรวจสอบ/แก้ไขข้อมูลอุปกรณ์ ยืนยันลำดับการเชื่อมต่อ</div>
       </a>
 
-      <a class="app-tile" href="sld-ala/transformer-survey/index.html">
+      <a class="app-tile" href="sld-ala/transformer-survey/index.html" data-app="tx-survey">
         <span class="status-badge live">พร้อมใช้งาน</span>
         <div class="icon">🔌</div>
         <div class="name">สำรวจหม้อแปลง</div>
         <div class="desc">ตรวจสอบตำแหน่งหม้อแปลงจริงเทียบกับฐานข้อมูล ใช้ฐานข้อมูลเดียวกับ Single Line Diagram</div>
       </a>
 
-      <a class="app-tile disabled" href="#">
+      <a class="app-tile disabled" href="#" data-app="construction">
         <span class="status-badge soon">กำลังพัฒนา</span>
         <div class="icon">🏗</div>
         <div class="name">สำรวจงานก่อสร้าง</div>
         <div class="desc">ปักเสา พาดสาย ประมาณราคางานก่อสร้างระบบจำหน่าย</div>
       </a>
 
-      <a class="app-tile" href="sld-ala/patrol-index.html">
+      <a class="app-tile" href="sld-ala/patrol-index.html" data-app="patrol">
         <span class="status-badge live">พร้อมใช้งาน</span>
         <div class="icon">🚶</div>
         <div class="name">Patrol ระบบจำหน่าย</div>
@@ -247,7 +251,72 @@ function showUserPicker(){
   });
 }
 
-loadMemberList();
+loadMemberList().then(loadAppStats);
+
+/* ===== ตัวนับการใช้งาน — เรียงการ์ดตามการเข้าใช้ล่าสุด และบอกว่าใครเข้าล่าสุด ===== */
+async function callApi(payload){
+  const res = await fetch(GAS_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({ changedBy: CURRENT_USER.name, changedByPassword: CURRENT_USER.password }, payload))
+  });
+  return res.json();
+}
+async function loadAppStats(){
+  if(!CURRENT_USER.name || !CURRENT_USER.role) return;
+  let stats = {};
+  try{
+    const r = await callApi({ action:'appStats' });
+    if(r && r.ok) stats = r.stats || {};
+  }catch(e){ return; }
+
+  const grid = document.querySelector('.app-grid');
+  const tiles = Array.from(grid.querySelectorAll('.app-tile'));
+  const newest = Math.max.apply(null, [0].concat(tiles.map(t=> (stats[t.dataset.app] || {}).lastTs || 0)));
+
+  tiles.forEach(t=>{
+    const st = stats[t.dataset.app];
+    const old = t.querySelector('.tile-stat');
+    if(old) old.remove();
+    const fresh = t.querySelector('.tile-fresh');
+    if(fresh) fresh.remove();
+    if(!st) return;
+    const div = document.createElement('div');
+    div.className = 'tile-stat';
+    div.innerHTML = `เปิดใช้ <b>${st.count.toLocaleString()}</b> ครั้ง` +
+      (st.today ? ` · วันนี้ <b>${st.today}</b>` : '') +
+      (st.lastUser ? `<br>ล่าสุด ${st.lastUser} · ${st.lastAt}` : '');
+    t.appendChild(div);
+    if(st.lastTs && st.lastTs === newest){
+      const f = document.createElement('span');
+      f.className = 'tile-fresh';
+      f.textContent = 'ใช้ล่าสุด';
+      t.appendChild(f);
+    }
+  });
+
+  // เรียงใหม่ — ใช้ล่าสุดขึ้นก่อน · ที่ยังไม่เคยใช้ต่อท้าย · ที่กำลังพัฒนาอยู่ท้ายสุดเสมอ
+  tiles.sort((a, b)=>{
+    const da = a.classList.contains('disabled') ? 1 : 0;
+    const db = b.classList.contains('disabled') ? 1 : 0;
+    if(da !== db) return da - db;
+    const ta = (stats[a.dataset.app] || {}).lastTs || 0;
+    const tb = (stats[b.dataset.app] || {}).lastTs || 0;
+    return tb - ta;
+  }).forEach(t=> grid.appendChild(t));
+}
+
+/* บันทึกการเข้าใช้ก่อนเปิดโปรแกรม แล้วค่อยพาไป */
+document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
+  tile.addEventListener('click', e=>{
+    if(tile.classList.contains('disabled')) return;
+    const app = tile.dataset.app, href = tile.getAttribute('href');
+    if(!CURRENT_USER.name || !CURRENT_USER.role) return;   // ยังไม่ล็อกอิน ปล่อยให้ไปตามปกติ
+    e.preventDefault();
+    const go = ()=>{ location.href = href; };
+    const t = setTimeout(go, 1200);            // ถ้าเครือข่ายช้า ไม่ต้องรอ
+    callApi({ action:'appOpen', app:app }).then(()=>{ clearTimeout(t); go(); }).catch(()=>{ clearTimeout(t); go(); });
+  });
+});
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
 }
