@@ -158,7 +158,7 @@
   </main>
 
   <footer>กฟส.อ่าวลึก · กฟต.2 · ระบบภายในหน่วยงาน<br>
-    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.09.19-03</span></span>
+    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.09.20-01</span></span>
   </footer>
 </div>
 
@@ -311,7 +311,11 @@ async function loadAppStats(){
   if(!CURRENT_USER.name || !CURRENT_USER.role){ showGrid(); return; }
   let stats = {};
   try{
-    const r = await callApi({ action:'appStats' });
+    // จำกัดเวลารอไว้ 8 วินาที ถ้าเกินนั้นถือว่าดึงไม่ได้ แล้วแสดงการ์ดตามลำดับเดิม
+    const r = await Promise.race([
+      callApi({ action:'appStats' }),
+      new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), 8000))
+    ]);
     if(r && r.ok) stats = r.stats || {};
   }catch(e){ showGrid(); return; }
 
@@ -325,13 +329,15 @@ async function loadAppStats(){
     if(old) old.remove();
     const fresh = t.querySelector('.tile-fresh');
     if(fresh) fresh.remove();
-    if(!st) return;
     const div = document.createElement('div');
     div.className = 'tile-stat';
-    div.innerHTML = `เปิดใช้ <b>${st.count.toLocaleString()}</b> ครั้ง` +
-      (st.today ? ` · วันนี้ <b>${st.today}</b>` : '') +
-      (st.lastUser ? `<br>ล่าสุด ${st.lastUser} · ${st.lastAt}` : '');
+    div.innerHTML = st
+      ? `เปิดใช้ <b>${st.count.toLocaleString()}</b> ครั้ง` +
+        (st.today ? ` · วันนี้ <b>${st.today}</b>` : '') +
+        (st.lastUser ? `<br>ล่าสุด ${st.lastUser} · ${st.lastAt}` : '')
+      : (t.classList.contains('disabled') ? 'ยังไม่เปิดให้ใช้งาน' : 'ยังไม่มีสถิติการใช้งาน');
     t.appendChild(div);
+    if(!st) return;
     if(st.lastTs && st.lastTs === newest){
       const f = document.createElement('span');
       f.className = 'tile-fresh';
@@ -352,8 +358,8 @@ async function loadAppStats(){
 
   showGrid();
 }
-// กันค้าง — ถ้าเครือข่ายช้าเกิน 4 วินาที แสดงการ์ดไปก่อน
-setTimeout(showGrid, 4000);
+// กันค้างขั้นสุดท้าย — เครือข่ายมีปัญหาจริงๆ ค่อยแสดงการ์ดโดยไม่เรียง (ปกติไม่ถึงตรงนี้)
+setTimeout(showGrid, 10000);
 
 /* บันทึกการเข้าใช้ก่อนเปิดโปรแกรม แล้วค่อยพาไป */
 document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
