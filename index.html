@@ -77,10 +77,22 @@
   .modal-actions .btn-primary{background:var(--pea-purple);color:#fff;border-color:var(--pea-purple);}
   button:disabled{opacity:.6;cursor:not-allowed !important;}
 
+  .app-grid.loading-grid .app-tile{opacity:.35;pointer-events:none;}
+  #gridLoader{display:flex;flex-direction:column;align-items:center;gap:12px;padding:34px 16px;color:var(--muted);font-size:.86rem;}
+  #gridLoader .spin{width:38px;height:38px;border-radius:50%;border:4px solid var(--line);
+    border-top-color:var(--pea-purple);animation:spin .85s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;width:100%;}
+  .skel-tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 18px;
+    box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .sk{height:12px;border-radius:6px;background:linear-gradient(90deg,#eeece8 25%,#f7f6f4 37%,#eeece8 63%);
+    background-size:400% 100%;animation:shimmer 1.3s ease infinite;}
+  @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
   .tile-stat{margin-top:auto;padding-top:9px;border-top:1px dashed var(--line);font-size:.72rem;color:var(--muted);line-height:1.6;}
   .tile-stat b{color:var(--pea-purple);}
   .tile-fresh{position:absolute;top:12px;left:12px;font-size:.62rem;font-weight:700;background:#efeaf7;
     color:var(--pea-purple);padding:2px 7px;border-radius:9px;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
   footer{padding:16px 20px calc(16px + env(safe-area-inset-bottom));text-align:center;font-size:.72rem;color:var(--muted);}
 </style>
 </head>
@@ -95,7 +107,26 @@
   <main>
     <p id="welcomeNote">รวมระบบงานทั้งหมดของแผนกปฏิบัติการระบบไฟฟ้าไว้ในที่เดียว — <b>เข้าสู่ระบบครั้งเดียว ใช้ได้กับทุกแอปในนี้ทันที</b> (จำไว้ในเครื่องนี้ ไม่ต้องล็อกอินซ้ำ)</p>
 
-    <div class="app-grid">
+    <div id="gridLoader">
+      <div class="spin"></div>
+      <div>กำลังโหลดข้อมูลการใช้งาน แล้วจัดเรียงโปรแกรม ...</div>
+      <div class="skel-grid">
+        <div class="skel-tile"><div class="sk" style="width:38px;height:38px;border-radius:9px;"></div>
+          <div class="sk" style="width:65%;margin-top:14px;"></div>
+          <div class="sk" style="width:90%;margin-top:9px;height:10px;"></div>
+          <div class="sk" style="width:50%;margin-top:9px;height:10px;"></div></div>
+        <div class="skel-tile"><div class="sk" style="width:38px;height:38px;border-radius:9px;"></div>
+          <div class="sk" style="width:55%;margin-top:14px;"></div>
+          <div class="sk" style="width:85%;margin-top:9px;height:10px;"></div>
+          <div class="sk" style="width:60%;margin-top:9px;height:10px;"></div></div>
+        <div class="skel-tile"><div class="sk" style="width:38px;height:38px;border-radius:9px;"></div>
+          <div class="sk" style="width:70%;margin-top:14px;"></div>
+          <div class="sk" style="width:80%;margin-top:9px;height:10px;"></div>
+          <div class="sk" style="width:45%;margin-top:9px;height:10px;"></div></div>
+      </div>
+    </div>
+
+    <div class="app-grid" style="display:none;">
       <a class="app-tile" href="sld-ala/index.html" data-app="sld">
         <span class="status-badge live">พร้อมใช้งาน</span>
         <div class="icon">🗺</div>
@@ -126,7 +157,9 @@
     </div>
   </main>
 
-  <footer>กฟส.อ่าวลึก · กฟต.2 · ระบบภายในหน่วยงาน</footer>
+  <footer>กฟส.อ่าวลึก · กฟต.2 · ระบบภายในหน่วยงาน<br>
+    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.09.19-03</span></span>
+  </footer>
 </div>
 
 <div id="userPickOverlay">
@@ -261,13 +294,26 @@ async function callApi(payload){
   });
   return res.json();
 }
+const bootAt = Date.now();
+function showGrid(){
+  const wait = Math.max(0, 600 - (Date.now() - bootAt));   // ให้เห็นกราฟิกอย่างน้อยครึ่งวินาที
+  if(wait){ setTimeout(showGridNow, wait); return; }
+  showGridNow();
+}
+function showGridNow(){
+  const ld = document.getElementById('gridLoader');
+  const grid = document.querySelector('.app-grid');
+  if(ld) ld.style.display = 'none';
+  if(grid){ grid.style.display = ''; grid.style.animation = 'fadeIn .35s ease'; }
+}
 async function loadAppStats(){
-  if(!CURRENT_USER.name || !CURRENT_USER.role) return;
+  // ยังไม่ล็อกอิน — แสดงการ์ดตามลำดับเดิมทันที ไม่ต้องรอ
+  if(!CURRENT_USER.name || !CURRENT_USER.role){ showGrid(); return; }
   let stats = {};
   try{
     const r = await callApi({ action:'appStats' });
     if(r && r.ok) stats = r.stats || {};
-  }catch(e){ return; }
+  }catch(e){ showGrid(); return; }
 
   const grid = document.querySelector('.app-grid');
   const tiles = Array.from(grid.querySelectorAll('.app-tile'));
@@ -303,7 +349,11 @@ async function loadAppStats(){
     const tb = (stats[b.dataset.app] || {}).lastTs || 0;
     return tb - ta;
   }).forEach(t=> grid.appendChild(t));
+
+  showGrid();
 }
+// กันค้าง — ถ้าเครือข่ายช้าเกิน 4 วินาที แสดงการ์ดไปก่อน
+setTimeout(showGrid, 4000);
 
 /* บันทึกการเข้าใช้ก่อนเปิดโปรแกรม แล้วค่อยพาไป */
 document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
@@ -317,8 +367,33 @@ document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
     callApi({ action:'appOpen', app:app }).then(()=>{ clearTimeout(t); go(); }).catch(()=>{ clearTimeout(t); go(); });
   });
 });
+/* Service Worker เก็บหน้าเว็บไว้ในเครื่อง ถ้าไม่สั่งตรวจเวอร์ชันจะเห็นของเก่าตลอด
+   จึงสั่งตรวจทุกครั้งที่เปิด และเมื่อมีตัวใหม่พร้อมใช้ให้โหลดหน้าซ้ำอัตโนมัติ 1 ครั้ง */
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  window.addEventListener('load', async ()=>{
+    try{
+      const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache:'none' });
+      reg.update();
+      setInterval(()=> reg.update(), 60000);
+      reg.addEventListener('updatefound', ()=>{
+        const sw = reg.installing;
+        if(!sw) return;
+        sw.addEventListener('statechange', ()=>{
+          if(sw.state === 'installed' && navigator.serviceWorker.controller){
+            if(sessionStorage.getItem('swReloaded')) return;   // กันโหลดวน
+            sessionStorage.setItem('swReloaded', '1');
+            sw.postMessage({ type:'SKIP_WAITING' });
+            location.reload();
+          }
+        });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+        if(sessionStorage.getItem('swReloaded')) return;
+        sessionStorage.setItem('swReloaded', '1');
+        location.reload();
+      });
+    }catch(e){}
+  });
 }
 </script>
 </body>
