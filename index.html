@@ -2,7 +2,9 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- ไม่ใส่ viewport-fit=cover เหมือนงานพาโทรล เพื่อให้ขอบบน-ล่างชนจอ ไม่มีแถบคั่น
+     (ถ้าใส่ cover ค่า env(safe-area-inset-bottom) จะกลายเป็น 34px แล้วดันท้ายหน้าลอยขึ้นจากขอบ) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ศูนย์รวมงาน - กฟส.อ่าวลึก</title>
 
 <link rel="manifest" href="manifest.json">
@@ -154,14 +156,6 @@
         <div class="name">Patrol ระบบจำหน่าย</div>
         <div class="desc">งานป้องกันไฟดับ — บันทึกจุดเสี่ยงพร้อมรูปถ่าย ผูกกับเสา ช่วงสาย หรืออุปกรณ์ ใช้งานได้แม้ไม่มีสัญญาณ</div>
       </a>
-
-  <a class="app-tile" href="tree-ala/index.html" data-app="tree">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">🌳</div>
-    <div class="name">งานตัดต้นไม้</div>
-    <div class="desc">แผนงานตัดต้นไม้รายปีและเฉพาะคราว ติดตามรอบตรวจรับ ใบสั่ง ZPM4 งวดเงิน และดูช่วงสายบนแผนที่</div>
-  </a>
-      
     </div>
   </main>
 
