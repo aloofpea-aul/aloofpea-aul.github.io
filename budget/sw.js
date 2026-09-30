@@ -1,8 +1,8 @@
 // Service Worker — ระบบตัดงบทำการ กฟส.อ่าวลึก
 // ไฟล์หน้าเว็บ: ใช้ของใหม่จากเน็ตก่อน (ได้เวอร์ชันล่าสุดเสมอ) ถ้าไม่มีเน็ตค่อยใช้ที่เก็บไว้
 // ข้อมูลงบ (POST ไป Apps Script) ไม่เก็บแคชเด็ดขาด
-const CACHE_NAME = 'budget-v3.2.0';
-const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'budget-v3.3.0';
+const CORE = ['./', './index.html', './guide.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();

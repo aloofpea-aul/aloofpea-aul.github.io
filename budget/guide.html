@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>คู่มือใช้งาน - ระบบตัดงบทำการ</title>
+<meta name="theme-color" content="#7A3E94">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --pea:#7A3E94; --pea2:#c2185b; --soft:#f5ecf9; --bg:#f6f2f9; --ink:#1f2937; --muted:#6b7280; --line:#eadff0; --green:#16a34a; --amber:#b45309; --red:#b91c1c; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font-family: 'Sarabun', system-ui, sans-serif; background: var(--bg); color: var(--ink); font-size: 17px; line-height: 1.65; }
+  header { background: linear-gradient(135deg, var(--pea), var(--pea2)); color: #fff; padding: calc(16px + env(safe-area-inset-top)) 16px 20px; }
+  header .in { max-width: 900px; margin: 0 auto; }
+  header .top { display: flex; align-items: center; gap: 12px; }
+  header img { width: 50px; height: 50px; border-radius: 14px; }
+  header h1 { margin: 0; font-size: 22px; line-height: 1.25; }
+  header p { margin: 2px 0 0; font-size: 14px; opacity: .9; }
+  .open { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; background: #fff; color: var(--pea); font-weight: 700; text-decoration: none; padding: 11px 20px; border-radius: 999px; font-size: 16px; }
+  nav.jump { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  nav.jump::-webkit-scrollbar { display: none; }
+  nav.jump .in { max-width: 900px; margin: 0 auto; padding: 9px 12px; display: flex; gap: 8px; }
+  nav.jump a { flex: none; text-decoration: none; color: var(--pea); background: var(--soft); font-size: 14px; font-weight: 600; padding: 6px 13px; border-radius: 999px; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px 14px calc(40px + env(safe-area-inset-bottom)); }
+  .quick { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 18px; }
+  .quick h2 { margin: 0 0 10px; font-size: 18px; color: var(--pea); }
+  .quick ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .quick li { display: flex; gap: 12px; align-items: center; font-size: 16px; }
+  .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--pea); color: #fff; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 16px; margin-bottom: 18px; scroll-margin-top: 60px; }
+  section > h2 { margin: 0 0 4px; font-size: 20px; color: var(--pea); display: flex; align-items: center; gap: 10px; }
+  section > p.lead { margin: 0 0 10px; color: var(--muted); font-size: 15px; }
+  .step { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 14px 0; border-top: 1px dashed var(--line); }
+  .step:first-of-type { border-top: 0; }
+  .step h3 { margin: 0 0 4px; font-size: 18px; display: flex; gap: 10px; align-items: center; }
+  .step p, .step ul { margin: 4px 0; }
+  .step ul { padding-left: 20px; }
+  .shot { text-align: center; }
+  .shot img { width: 100%; max-width: 300px; border-radius: 22px; border: 6px solid #1f1f1f; box-shadow: 0 8px 22px rgba(90,40,110,.18); }
+  .shot.wide img { max-width: 100%; border-radius: 14px; border-width: 5px; }
+  .shot small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  @media (min-width: 760px) { .step { grid-template-columns: 1fr 300px; align-items: start; } .step.full { grid-template-columns: 1fr; } }
+  .tip { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 12px; padding: 10px 12px; font-size: 15px; margin-top: 8px; }
+  .warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 12px; padding: 10px 12px; font-size: 15px; margin-top: 8px; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+  .flow .b { background: var(--soft); color: var(--pea); border-radius: 12px; padding: 8px 12px; font-weight: 700; font-size: 15px; text-align: center; }
+  .flow .b small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px; }
+  .flow .arr { color: var(--muted); font-size: 20px; }
+  .flow .b.ok { background: #dcfce7; color: #15803d; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 8px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); color: var(--pea); }
+  .chip { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 13.5px; font-weight: 700; }
+  .c-w { background: #fff4e0; color: #b45309; } .c-a { background: #e0f2fe; color: #0369a1; } .c-r { background: #fee2e2; color: #b91c1c; } .c-ok { background: #dcfce7; color: #15803d; }
+  details { border-top: 1px dashed var(--line); padding: 10px 0; }
+  details:first-of-type { border-top: 0; }
+  summary { font-weight: 700; cursor: pointer; font-size: 16.5px; }
+  details p { margin: 6px 0 0; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 10px 0 30px; }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <div class="top"><img src="icon-192.png" alt=""><div><h1>คู่มือใช้งาน ระบบตัดงบทำการ</h1><p>กฟส.อ่าวลึก · ใช้ได้ทั้งมือถือ ไอแพด และคอมพิวเตอร์ · v3.3</p></div></div>
+  <a class="open" href="index.html">เปิดระบบตัดงบทำการ →</a>
+</div></header>
+
+<nav class="jump"><div class="in">
+  <a href="#start">เริ่มใช้งาน</a><a href="#flow">ขั้นตอนอนุมัติ</a><a href="#submit">เสนอเรื่อง</a><a href="#approve">ตรวจ/อนุมัติ</a>
+  <a href="#reject">ถูกตีกลับ</a><a href="#history">อนุมัติแล้ว/สรุป</a><a href="#devices">ไอแพด/คอม</a><a href="#faq">คำถามพบบ่อย</a>
+</div></nav>
+
+<main>
+  <div class="quick">
+    <h2>สรุปสั้นที่สุด</h2>
+    <ol>
+      <li><span class="num">1</span><span>เข้าระบบด้วย <b>Username / Password เดิม</b> ของระบบตัดงบ (เครื่องจะจำไว้ 30 วัน)</span></li>
+      <li><span class="num">2</span><span>ผู้เสนอ: เมนู <b>เสนอเรื่อง</b> → เลือกแผนก → เลือกรายการงบ → ใส่ยอดเงินและรายละเอียด → <b>ส่งเรื่องตัดงบ</b></span></li>
+      <li><span class="num">3</span><span>ผู้บันทึก (หผ.) และผู้อนุมัติ: เมนู <b>รอตรวจ</b> → แตะรายการ → <b>ตรวจสอบผ่าน / อนุมัติ</b> แล้วใส่รหัสผ่านยืนยัน</span></li>
+      <li><span class="num">4</span><span>ถูกตีกลับ: แตะรายการ → <b>แก้ไขแล้วส่งใหม่</b></span></li>
+    </ol>
+  </div>
+
+  <section id="start">
+    <h2><span>🔑</span>เริ่มใช้งาน</h2>
+    <p class="lead">เปิดจากปุ่ม “ระบบตัดงบทำการ” ในหน้าศูนย์รวมงาน กฟส.อ่าวลึก หรือเปิดลิงก์ aloofpea-aul.github.io/budget</p>
+    <div class="step">
+      <div>
+        <h3><span class="num">1</span>เข้าสู่ระบบ</h3>
+        <p>ใช้ Username และ Password เดียวกับที่ใช้ยืนยันอนุมัติในระบบเดิม (ส่วนใหญ่ Username คือรหัสพนักงาน)</p>
+        <p>เข้าครั้งเดียว เครื่องจะจำไว้ 30 วัน ไม่ต้องกรอกทุกครั้ง</p>
+        <p>ยังไม่มีบัญชี กด <b>สมัครสมาชิก</b> แล้วรอผู้ดูแลระบบอนุมัติ</p>
+        <div class="tip">📱 <b>เพิ่มไว้ที่หน้าจอโฮม</b> ให้เปิดเหมือนแอป<br>
+          iPhone / iPad (Safari): กดปุ่มแชร์ ⬆️ → <b>เพิ่มไปยังหน้าจอโฮม</b><br>
+          Android (Chrome): กด ⋮ มุมขวาบน → <b>ติดตั้งแอป</b> หรือ <b>เพิ่มลงในหน้าจอหลัก</b></div>
+      </div>
+      <div class="shot"><img src="guide/m01-login.jpg" alt="หน้าเข้าระบบ" loading="lazy"></div>
+    </div>
+    <div class="step">
+      <div>
+        <h3><span class="num">2</span>หน้าหลักบนมือถือ</h3>
+        <ul>
+          <li>ด้านบน: รูป ชื่อ และตำแหน่งของคุณ (แตะเพื่อเปลี่ยนรหัสผ่าน / ออกจากระบบ) ปุ่ม <b>⟳</b> ใช้โหลดข้อมูลล่าสุด</li>
+          <li>ด้านล่าง: เมนู <b>เสนอเรื่อง · รอตรวจ · สรุปงบ · อนุมัติแล้ว · เพิ่มเติม</b></li>
+          <li>ตัวเลขสีแดงบนเมนู “รอตรวจ” คือจำนวนรายการที่ยังค้าง</li>
+        </ul>
+        <div class="tip">รูปและตำแหน่งดึงจากฐานข้อมูลพนักงานเดียวกับระบบ Safety Talk ถ้ารูปไม่ขึ้นหรือตำแหน่งไม่ถูก แจ้งผู้ดูแลให้แก้ในไฟล์นั้น</div>
+      </div>
+      <div class="shot"><img src="guide/m02-pending.jpg" alt="หน้ารอตรวจสอบ" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section id="flow">
+    <h2><span>🔁</span>ขั้นตอนอนุมัติ</h2>
+    <p class="lead">ทุกรายการผ่าน 2 ขั้น ระบบส่งแจ้งเตือนทาง LINE ทุกขั้น</p>
+    <div class="flow">
+      <div class="b">ผู้เสนอ<small>ส่งเรื่อง</small></div><span class="arr">→</span>
+      <div class="b">ผู้บันทึก (หผ.)<small><span class="chip c-w">รอผู้บันทึกตรวจสอบ</span></small></div><span class="arr">→</span>
+      <div class="b">ผู้อนุมัติ<small><span class="chip c-a">รออนุมัติ</span></small></div><span class="arr">→</span>
+      <div class="b ok">ตัดงบแล้ว<small><span class="chip c-ok">อนุมัติแล้ว</span></small></div>
+    </div>
+    <table>
+      <tr><th>ขั้น</th><th>ใครทำได้</th><th>ทำอะไรได้</th></tr>
+      <tr><td><span class="chip c-w">รอผู้บันทึกตรวจสอบ</span></td><td>ผู้บันทึก (หผ./รักษาการแทน) <b>ของแผนกนั้น</b>, ผู้ดูแลระบบ, ผู้ช่วยดูแลระบบ</td><td>ตรวจสอบผ่าน · ตีกลับ · ลบ</td></tr>
+      <tr><td><span class="chip c-a">รออนุมัติ</span></td><td>ผู้ดูแลระบบ, ผู้ช่วยดูแลระบบ</td><td>อนุมัติ · ตีกลับ · ลบ (ลบได้เฉพาะผู้ดูแลระบบ)</td></tr>
+      <tr><td><span class="chip c-r">ตีกลับ</span></td><td>ผู้เสนอ</td><td>แก้ไขแล้วส่งใหม่ (กลับไปเริ่มที่ผู้บันทึก)</td></tr>
+    </table>
+    <div class="tip">รายการที่ถึงคิวคุณจะมีป้าย <b style="background:#7A3E94;color:#fff;border-radius:6px;padding:0 6px">ถึงคิวคุณ</b> และกดตัวกรอง “ถึงคิวฉัน” เพื่อดูเฉพาะงานของตัวเองได้</div>
+  </section>
+
+  <section id="submit">
+    <h2><span>✏️</span>เสนอเรื่องตัดงบ</h2>
+    <p class="lead">เมนู “เสนอเรื่อง” ด้านล่าง</p>
+    <div class="step">
+      <div>
+        <h3><span class="num">1</span>เลือก กฟฟ. และแผนก</h3>
+        <p>ระบบเลือกแผนกของคุณไว้ให้แล้ว เปลี่ยนได้โดยแตะปุ่มแผนกอื่น</p>
+        <h3 style="margin-top:12px"><span class="num">2</span>เลือกรายการงบ</h3>
+        <p>แตะช่อง <b>รายการงบ</b> แล้วพิมพ์รหัสหรือชื่อบัญชีเพื่อค้นหา ในรายการจะเห็น “คงเหลือสะสม” ของแต่ละบัญชีทันที</p>
+      </div>
+      <div class="shot"><img src="guide/m06-account.jpg" alt="ค้นหารายการงบ" loading="lazy"></div>
+    </div>
+    <div class="step">
+      <div>
+        <h3><span class="num">3</span>ใส่จำนวนเงิน</h3>
+        <p>การ์ดรายการงบแสดง <b>งบต่อปี · ใช้ไปแล้ว · คงเหลือสะสม</b> และแถบสีการใช้งบ</p>
+        <p>พิมพ์ยอดเงินแล้วระบบจะบอก <b>คงเหลือสะสมหลังตัด</b> ทันที ถ้าเป็นสีแดงแปลว่างบจะติดลบ (ยังบันทึกได้ แต่ควรตรวจสอบก่อน)</p>
+        <div class="tip">“คงเหลือสะสม” = งบต่อปี ÷ 12 × เดือนปัจจุบัน − ยอดที่อนุมัติแล้วในปีนี้</div>
+      </div>
+      <div class="shot"><img src="guide/m07-form-filled.jpg" alt="ฟอร์มเสนอเรื่อง" loading="lazy"></div>
+    </div>
+    <div class="step">
+      <div>
+        <h3><span class="num">4</span>รายละเอียดและผู้เสนอ</h3>
+        <p>พิมพ์รายละเอียด เช่น เลขใบสั่ง งวดงาน · ช่องผู้เสนอใส่ชื่อคุณไว้ให้ ถ้าบันทึกแทนคนอื่น แตะเพื่อเลือกชื่อ (มีรูปให้ดู)</p>
+        <h3 style="margin-top:12px"><span class="num">5</span>กด “ส่งเรื่องตัดงบ”</h3>
+        <p>ตรวจข้อมูลในหน้ายืนยัน แล้วกด <b>ยืนยันส่ง</b> รายการจะไปอยู่ในเมนู “รอตรวจ” และแจ้ง LINE ผู้บันทึกของแผนก</p>
+        <div class="warn">กดส่งรายการเดิมซ้ำภายใน 90 วินาที ระบบจะไม่บันทึกซ้ำ (กันกดสองครั้ง)</div>
+      </div>
+      <div class="shot"><img src="guide/m09-requester.jpg" alt="เลือกผู้เสนอ" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section id="approve">
+    <h2><span>✅</span>ตรวจสอบ / อนุมัติ / ตีกลับ / ลบ</h2>
+    <p class="lead">เมนู “รอตรวจ” → แตะการ์ดรายการ</p>
+    <div class="step">
+      <div>
+        <h3><span class="num">1</span>ดูรายละเอียด</h3>
+        <ul>
+          <li>ผู้เสนอพร้อมรูปและตำแหน่ง ยอดเงิน รายการงบ งบคงเหลือ</li>
+          <li><b>ลำดับการดำเนินการ</b> ใครทำอะไร เมื่อไร พร้อมรูป (ถ้าเคยถูกตีกลับจะเห็นเหตุผลสีแดง)</li>
+          <li>ปุ่มด้านล่าง: <b>ตรวจสอบผ่าน / อนุมัติ</b> (เขียว) · <b>ตีกลับ</b> (ส้ม) · <b>ลบ</b> (แดง)</li>
+        </ul>
+      </div>
+      <div class="shot"><img src="guide/m03-detail.jpg" alt="รายละเอียดรายการ" loading="lazy"></div>
+    </div>
+    <div class="step">
+      <div>
+        <h3><span class="num">2</span>ใส่รหัสผ่านยืนยัน</h3>
+        <p>ทุกครั้งที่ตรวจผ่าน/อนุมัติ/ตีกลับ/ลบ ต้องใส่ Password อีกครั้ง (Username ใส่ไว้ให้แล้ว) เพื่อยืนยันว่าเป็นคุณจริง</p>
+        <p>ถ้า <b>ตีกลับ</b> ต้องพิมพ์เหตุผล ผู้เสนอจะเห็นเหตุผลนี้ตอนแก้ไข</p>
+        <div class="warn">ถ้าขึ้นว่า “สถานะรายการเปลี่ยนไปแล้ว” แปลว่ามีคนดำเนินการรายการนี้ไปก่อนแล้ว กดปุ่ม ⟳ ด้านบนเพื่อโหลดใหม่</div>
+      </div>
+      <div class="shot"><img src="guide/m04-confirm.jpg" alt="ยืนยันรหัสผ่าน" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section id="reject">
+    <h2><span>↩️</span>เมื่อรายการถูกตีกลับ</h2>
+    <div class="step full">
+      <div>
+        <ol style="padding-left:20px;margin:0">
+          <li>เมนู “รอตรวจ” → กดตัวกรอง <span class="chip c-r">ตีกลับ</span> → แตะรายการ แล้วอ่านเหตุผลในลำดับการดำเนินการ</li>
+          <li>กด <b>แก้ไขแล้วส่งใหม่</b> ระบบเปิดฟอร์มพร้อมข้อมูลเดิมและแสดงเหตุผลที่ถูกตีกลับไว้ด้านบน</li>
+          <li>แก้ยอดเงิน รายละเอียด หรือเปลี่ยนรายการงบได้ แล้วกด <b>บันทึกการแก้ไขและส่งใหม่</b></li>
+          <li>รายการจะกลับไปที่ <span class="chip c-w">รอผู้บันทึกตรวจสอบ</span> อีกครั้ง</li>
+        </ol>
+        <p style="margin-top:8px">ถ้าไม่ต้องการรายการนี้แล้ว ให้ผู้บันทึกของแผนกหรือผู้ดูแลระบบกด <b>ลบ</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="history">
+    <h2><span>📊</span>ดูรายการอนุมัติแล้ว และสรุปงบ</h2>
+    <div class="step">
+      <div>
+        <h3>อนุมัติแล้ว</h3>
+        <p>รายการที่ตัดงบแล้วทั้งหมด เรียงล่าสุดก่อน พร้อมวันและเวลาจริงที่บันทึก พิมพ์ในช่องค้นหาได้ทั้งรายละเอียด ชื่อผู้เสนอ แผนก หรือรหัสบัญชี แตะรายการเพื่อดูลำดับการดำเนินการ</p>
+        <h3 style="margin-top:12px">สรุปงบ</h3>
+        <p>ภาพรวมงบทั้งหมด ใช้ไปแล้ว คงเหลือ เปอร์เซ็นต์การใช้ กราฟรายแผนก ตารางรายบัญชี และคะแนนสุขภาพงบ กรองตามช่วงเวลาหรือแผนกได้</p>
+        <p>เมนู <b>เพิ่มเติม</b> มีหน้าวิเคราะห์ (อันดับบัญชีที่ใช้มากสุด, AI วิเคราะห์) และหน้าผู้ดูแลระบบ</p>
+      </div>
+      <div class="shot"><img src="guide/m10-history.jpg" alt="อนุมัติแล้ว" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section id="devices">
+    <h2><span>💻</span>บนไอแพดและคอมพิวเตอร์</h2>
+    <div class="step full">
+      <div>
+        <p><b>ไอแพด / แท็บเล็ตแนวนอน:</b> เมนูอยู่ด้านซ้าย รายการอยู่กลาง รายละเอียดและปุ่มอนุมัติอยู่ขวา แตะรายการไหนก็เห็นรายละเอียดทันที ส่วนแนวตั้งจะเป็นการ์ด 2 คอลัมน์</p>
+        <div class="shot wide"><img src="guide/t01-ipad.jpg" alt="ไอแพด" loading="lazy"><small>ไอแพดแนวนอน</small></div>
+        <p style="margin-top:14px"><b>คอมพิวเตอร์:</b> ใช้หน้าตารางแบบเดิม (มีรูปผู้เสนอและเวลาจริง) ปุ่ม “ยืนยัน” ในตารางใช้ตรวจ/อนุมัติเหมือนเดิม</p>
+        <div class="shot wide"><img src="guide/d01-desktop.jpg" alt="คอมพิวเตอร์" loading="lazy"><small>คอมพิวเตอร์</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2><span>❓</span>คำถามพบบ่อย</h2>
+    <details><summary>ลืมรหัสผ่าน / เข้าระบบไม่ได้</summary><p>แจ้งผู้ดูแลระบบให้ตั้งรหัสใหม่ ถ้ากรอกผิดติดกัน 5 ครั้ง ระบบจะพักบัญชีไว้ 10 นาที</p></details>
+    <details><summary>อยากเปลี่ยนรหัสผ่าน</summary><p>แตะชื่อของคุณด้านบน (มือถือ) หรือป้ายชื่อมุมซ้ายบน (คอมพิวเตอร์) → <b>เปลี่ยนรหัสผ่าน</b> รหัสใหม่อย่างน้อย 6 ตัวอักษร</p></details>
+    <details><summary>ใช้เครื่องส่วนกลาง / เครื่องคนอื่น</summary><p>ใช้เสร็จแล้วให้แตะชื่อตัวเอง → <b>ออกจากระบบ</b> ทุกครั้ง</p></details>
+    <details><summary>ข้อมูลไม่อัปเดต / ไม่เห็นรายการที่เพิ่งส่ง</summary><p>กดปุ่ม ⟳ มุมขวาบน ระบบจะโหลดใหม่ และถ้าพักแอปไว้เกิน 2 นาทีแล้วเปิดกลับมา ระบบจะโหลดให้เอง</p></details>
+    <details><summary>“งบติดลบ” คืออะไร บันทึกได้ไหม</summary><p>แปลว่ายอดที่ตัดครั้งนี้มากกว่างบสะสมถึงเดือนนี้ ระบบยังให้บันทึกได้ แต่จะติดป้ายสีแดงและแจ้งผู้ดูแลทาง LINE ถ้าติดลบเกิน 50,000 บาท</p></details>
+    <details><summary>ขึ้นปีใหม่แล้วงบเป็นอย่างไร</summary><p>ยอด “ใช้ไปแล้ว” นับเฉพาะรายการที่อนุมัติในปีปัจจุบัน ขึ้นปีใหม่จะเริ่มนับใหม่ ผู้ดูแลระบบต้องอัปเดตงบต่อปีในชีต “งบทำการตั้งต้น”</p></details>
+    <details><summary>รูปหรือตำแหน่งของฉันไม่ถูกต้อง</summary><p>ระบบดึงรูปและตำแหน่งจากชีต Employees ในไฟล์ “กิจกรรม safety talk” โดยจับคู่ด้วยชื่อ-สกุล แจ้งผู้ดูแลให้แก้ในไฟล์นั้น ระบบจะอัปเดตเองภายในครึ่งวัน (หรือกด ⟳)</p></details>
+  </section>
+
+  <footer>ระบบตัดงบทำการ กฟส.อ่าวลึก · คู่มือ v3.3</footer>
+</main>
+</body>
+</html>

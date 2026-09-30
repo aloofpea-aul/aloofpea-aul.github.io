@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบตัดงบทำการ v3.2.0</title>
+  <title>ระบบตัดงบทำการ v3.3</title>
   <meta name="theme-color" content="#7A3E94">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -1141,6 +1141,170 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
       .card.p-4 { padding: 16px !important; }
       .table-responsive { -webkit-overflow-scrolling: touch; }
     }
+
+    /* ===================== v3.3: หน้าจอมือถือ / ไอแพด ===================== */
+    #mApp { display: none; }
+    body.m-mode { background: #f6f2f9; }
+    body.m-mode #mApp { display: block; }
+    body.m-mode .header-pea, body.m-mode #myTab, body.m-mode #scrollTopBtn { display: none !important; }
+    body.m-mode #oldMain { display: none; }
+    body.m-mode.m-old #oldMain { display: block; margin-top: 0 !important; padding-top: 8px; padding-bottom: 96px; }
+    body.m-mode.m-old #oldMain .tab-content { padding-top: 0 !important; }
+    body.m-mode .m-screen { display: none; }
+    body.m-mode .m-screen.on { display: block; }
+    body.m-mode.m-old .m-screen { display: none !important; }
+
+    .m-top { position: sticky; top: 0; z-index: 50; background: linear-gradient(135deg, #7A3E94, #c2185b); color: #fff;
+      padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; box-shadow: 0 4px 14px rgba(90, 30, 110, .25); }
+    .m-me { display: flex; align-items: center; gap: 10px; }
+    .m-me .t { flex: 1; min-width: 0; line-height: 1.25; cursor: pointer; }
+    .m-me .t b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-me .t small { font-size: 12px; opacity: .9; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-ibtn { width: 40px; height: 40px; border-radius: 12px; border: 0; background: rgba(255,255,255,.18); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 18px; flex: none; }
+    .m-ibtn.spin i { animation: mspin 1s linear infinite; }
+    @keyframes mspin { to { transform: rotate(360deg); } }
+    .m-title { font-size: 19px; font-weight: 700; margin-top: 8px; }
+
+    .pav { border-radius: 50%; object-fit: cover; flex: none; background: #f1e6f6; color: #7A3E94; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+    .m-chips { display: flex; gap: 6px; padding: 12px 12px 8px; overflow-x: auto; scrollbar-width: none; }
+    .m-chips::-webkit-scrollbar { display: none; }
+    .m-chip { padding: 7px 13px; border-radius: 999px; background: #fff; border: 1px solid #e3d6ea; font-size: 13px; white-space: nowrap;
+      color: #555; flex: none; }
+    .m-chip.on { background: #7A3E94; color: #fff; border-color: #7A3E94; }
+    .m-chip i { font-style: normal; background: rgba(0,0,0,.1); border-radius: 999px; padding: 0 7px; margin-left: 4px; font-size: 11.5px; }
+
+    .m-list { padding: 0 12px 110px; }
+    .m-card { background: #fff; border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(90,40,110,.08);
+      border-left: 4px solid #f59e0b; cursor: pointer; transition: transform .1s; }
+    .m-card:active { transform: scale(.985); }
+    .m-card.s-a { border-left-color: #0ea5e9; } .m-card.s-r { border-left-color: #ef4444; } .m-card.s-ok { border-left-color: #22c55e; }
+    .m-card.sel { outline: 2.5px solid #7A3E94; }
+    .m-c1 { display: flex; gap: 10px; align-items: center; }
+    .m-c1 .nm { flex: 1; min-width: 0; line-height: 1.25; }
+    .m-c1 .nm b { font-size: 14px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-c1 .nm small { font-size: 11.5px; color: #777; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-amt { font-weight: 800; font-size: 16px; color: #7A3E94; text-align: right; white-space: nowrap; }
+    .m-amt small { display: block; font-size: 10.5px; color: #999; font-weight: 400; }
+    .m-det { font-size: 13.5px; color: #333; margin: 8px 0 6px; line-height: 1.45; word-break: break-word; }
+    .m-acc { font-size: 11.5px; color: #7A3E94; background: #f5ecf9; border-radius: 8px; padding: 2px 8px; display: inline-block; margin-bottom: 6px;
+      max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-c3 { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 11.5px; color: #888; flex-wrap: wrap; }
+    .m-st { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .m-st.w { background: #fff4e0; color: #b45309; } .m-st.a { background: #e0f2fe; color: #0369a1; }
+    .m-st.r { background: #fee2e2; color: #b91c1c; } .m-st.ok { background: #dcfce7; color: #15803d; } .m-st.x { background: #eee; color: #666; }
+    .m-neg { background: #fee2e2; color: #b91c1c; border-radius: 6px; padding: 1px 6px; font-size: 10.5px; margin-left: 4px; white-space: nowrap; }
+    .m-turn { background: #7A3E94; color: #fff; border-radius: 6px; padding: 1px 7px; font-size: 10.5px; margin-left: 4px; white-space: nowrap; }
+    .m-empty { text-align: center; color: #999; padding: 50px 20px; font-size: 14px; }
+    .m-empty i { font-size: 40px; display: block; margin-bottom: 8px; color: #cbb6d6; }
+    .m-more { display: block; width: 100%; border: 1.5px dashed #cbb6d6; background: #fff; border-radius: 14px; padding: 12px; color: #7A3E94; font-weight: 600; }
+    .m-search { margin: 12px 12px 4px; position: relative; }
+    .m-search input { width: 100%; border: 1.5px solid #e3d6ea; border-radius: 14px; padding: 11px 12px 11px 38px; font-size: 16px; background: #fff; }
+    .m-search i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #999; }
+
+    .m-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; background: #fff; border-top: 1px solid #eee;
+      padding: 6px 4px calc(env(safe-area-inset-bottom) + 6px); box-shadow: 0 -4px 14px rgba(0,0,0,.05); }
+    .m-nav button { flex: 1; border: 0; background: none; font-size: 11px; color: #888; position: relative; padding: 4px 0; min-height: 48px; }
+    .m-nav button i { font-size: 21px; display: block; line-height: 1.25; }
+    .m-nav button.on { color: #7A3E94; font-weight: 700; }
+    .m-bd { position: absolute; top: 0; left: 55%; background: #ef4444; color: #fff; border-radius: 999px; font-size: 10px; padding: 0 5px;
+      font-weight: 700; line-height: 16px; min-width: 16px; }
+    .m-nav .rail-only { display: none; }
+
+    /* ฟอร์ม */
+    .m-form { padding: 12px 12px 170px; max-width: 640px; }
+    .m-lab { font-size: 13px; color: #666; margin: 14px 2px 6px; font-weight: 600; }
+    .m-seg { display: flex; gap: 6px; flex-wrap: wrap; }
+    .m-seg button { padding: 9px 14px; border-radius: 12px; background: #fff; border: 1.5px solid #e3d6ea; font-size: 14px; min-height: 44px; color: #333; }
+    .m-seg button.on { border-color: #7A3E94; background: #f5ecf9; color: #7A3E94; font-weight: 700; }
+    .m-pick { width: 100%; text-align: left; background: #fff; border: 1.5px dashed #cbb6d6; border-radius: 16px; padding: 14px; font-size: 14.5px; color: #7A3E94; min-height: 52px; }
+    .m-pick.has { border: 1.5px solid #7A3E94; border-style: solid; color: #222; }
+    .m-pick b { font-size: 14.5px; }
+    .m-pick small { color: #777; }
+    .m-bar { height: 8px; background: #eee; border-radius: 9px; margin: 10px 0 6px; overflow: hidden; }
+    .m-bar i { display: block; height: 100%; background: linear-gradient(90deg, #22c55e, #f59e0b); }
+    .m-bar i.over { background: #ef4444; }
+    .m-nums { display: flex; justify-content: space-between; gap: 6px; font-size: 11.5px; color: #666; }
+    .m-nums b { display: block; font-size: 14px; color: #222; }
+    .m-in { width: 100%; background: #fff; border: 1.5px solid #e3d6ea; border-radius: 14px; padding: 12px; font-size: 16px; color: #222; }
+    .m-in:focus { outline: none; border-color: #7A3E94; box-shadow: 0 0 0 3px rgba(122,62,148,.15); }
+    .m-in.big { font-size: 26px; font-weight: 800; color: #7A3E94; text-align: right; }
+    .m-after { margin-top: 6px; font-size: 13px; border-radius: 10px; padding: 8px 10px; background: #ecfdf5; color: #047857; }
+    .m-after.neg { background: #fef2f2; color: #b91c1c; }
+    .m-who { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 14px; padding: 8px 12px; border: 1.5px solid #e3d6ea;
+      font-size: 14px; width: 100%; text-align: left; min-height: 52px; }
+    .m-who small { color: #888; display: block; font-size: 11.5px; }
+    .m-sticky { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 66px); z-index: 55; padding: 10px 12px; background: linear-gradient(transparent, #f6f2f9 30%); }
+    .m-btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 14px; text-align: center; font-weight: 700; font-size: 16px;
+      color: #fff; background: linear-gradient(135deg, #7A3E94, #c2185b); box-shadow: 0 6px 16px rgba(122,62,148,.3); }
+    .m-btn:disabled { opacity: .6; }
+    .m-edit-banner { background: #fff7ed; border: 1.5px solid #fdba74; color: #9a3412; border-radius: 14px; padding: 10px 12px; font-size: 13px; margin-bottom: 4px; }
+
+    /* รายละเอียด (sheet บนมือถือ / pane บนไอแพด) */
+    .m-dim { position: fixed; inset: 0; background: rgba(20,0,30,.45); z-index: 1040; display: none; }
+    .m-dim.on { display: block; }
+    .m-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1045; background: #fff; border-radius: 24px 24px 0 0;
+      max-height: 90vh; overflow-y: auto; padding: 8px 16px calc(env(safe-area-inset-bottom) + 18px); transform: translateY(105%); transition: transform .22s ease; }
+    .m-sheet.on { transform: none; }
+    .m-grab { width: 42px; height: 5px; background: #ddd; border-radius: 9px; margin: 4px auto 12px; }
+    .m-sheet .m-x { position: absolute; right: 12px; top: 10px; border: 0; background: #f3eef6; width: 34px; height: 34px; border-radius: 50%; color: #666; }
+    .m-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .m-kv div { background: #f7f3fa; border-radius: 12px; padding: 8px 10px; font-size: 11.5px; color: #777; }
+    .m-kv b { display: block; font-size: 14.5px; color: #222; word-break: break-word; }
+    .m-h { font-size: 13px; font-weight: 700; color: #5b2a73; margin-top: 6px; }
+    .m-tl { border-left: 2px solid #e3d6ea; margin: 10px 0 14px 17px; padding-left: 16px; }
+    .m-tl .it { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 11px -34px; font-size: 12.5px; color: #555; line-height: 1.4; }
+    .m-tl .it b { color: #222; }
+    .m-tl .it .why { display: block; color: #b91c1c; background: #fef2f2; border-radius: 8px; padding: 3px 8px; margin-top: 3px; }
+    .m-acts { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+    .m-acts.two { grid-template-columns: 2fr 1fr; }
+    .m-acts button { border-radius: 12px; padding: 13px 6px; font-weight: 700; font-size: 14.5px; border: 1.5px solid transparent; min-height: 48px; }
+    .m-acts .g { background: #16a34a; color: #fff; } .m-acts .p { background: #7A3E94; color: #fff; }
+    .m-acts .o { background: #fff7ed; color: #c2410c; border-color: #fdba74; } .m-acts .x { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+    .m-hint { text-align: center; font-size: 11.5px; color: #999; margin-top: 8px; }
+
+    /* รายการให้เลือก (บัญชี / ผู้เสนอ) */
+    .m-opt { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #f1eaf5; background: #fff;
+      padding: 12px 4px; font-size: 14px; }
+    .m-opt.on { background: #f5ecf9; }
+    .m-opt .r { margin-left: auto; text-align: right; font-size: 12px; color: #666; white-space: nowrap; }
+    .m-opt .r b { display: block; font-size: 13.5px; }
+    .m-opt .l { min-width: 0; flex: 1; }
+    .m-opt .l small { display: block; color: #888; font-size: 11.5px; }
+
+    .m-pane { display: none; }
+
+    /* แท็บเล็ตแนวตั้ง: การ์ด 2 คอลัมน์ */
+    @media (min-width: 700px) {
+      body.m-mode .m-list.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      body.m-mode .m-list.grid .m-card { margin-bottom: 0; }
+      body.m-mode .m-list.grid .m-more, body.m-mode .m-list.grid .m-empty { grid-column: 1 / -1; }
+      .m-sheet { left: 50%; right: auto; width: 640px; margin-left: -320px; }
+    }
+    /* ไอแพดแนวนอน / จอกว้าง: เมนูด้านข้าง + รายการซ้าย รายละเอียดขวา */
+    @media (min-width: 900px) {
+      body.m-mode { padding-left: 88px; }
+      .m-nav { top: 0; right: auto; width: 88px; flex-direction: column; justify-content: flex-start; gap: 6px; border-top: 0;
+        border-right: 1px solid #eee; padding-top: calc(env(safe-area-inset-top) + 16px); }
+      .m-nav button { flex: none; min-height: 64px; }
+      .m-nav .rail-only { display: block; }
+      .m-nav .more-btn { display: none; }
+      .m-bd { left: 58%; }
+      .m-sticky { bottom: 0; left: 88px; }
+      .m-split { display: flex; align-items: flex-start; }
+      .m-split > .m-side { width: 420px; flex: none; }
+      body.m-mode .m-split .m-list.grid { display: block; }
+      body.m-mode .m-split .m-list.grid .m-card { margin-bottom: 10px; }
+      .m-pane { display: block; flex: 1; position: sticky; top: 90px; margin: 12px 12px 0 0; background: #fff; border-radius: 18px;
+        padding: 20px 22px; min-height: 300px; max-height: calc(100vh - 110px); overflow-y: auto; box-shadow: 0 2px 10px rgba(90,40,110,.08); }
+      .m-pane .m-kv { grid-template-columns: repeat(4, 1fr); }
+      .m-pane .m-acts { max-width: 520px; }
+      .m-split .m-sheet-host .m-sheet, .m-split .m-sheet-host .m-dim { display: none; }
+      body.m-mode.m-old #oldMain { padding-bottom: 30px; }
+    }
+
   </style>
 </head><body>
 
@@ -1162,9 +1326,63 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
       ยังไม่มีบัญชี? <a href="#" onclick="showRegisterModal(); return false;" class="fw-semibold" style="color:#d81b60">สมัครสมาชิก</a>
     </div>
     <div class="text-center mt-2"><small class="text-muted" style="font-size:.72rem">เข้าระบบครั้งเดียว เครื่องนี้จะจำไว้ 30 วัน</small></div>
+    <div class="text-center mt-2"><a href="guide.html" target="_blank" class="small fw-semibold" style="color:#7A3E94"><i class="bi bi-book"></i> คู่มือการใช้งาน</a></div>
   </div>
 </div>
 <div id="netStatus"></div>
+
+<!-- ===================== v3.3: หน้าจอมือถือ / ไอแพด ===================== -->
+<div id="mApp">
+  <div class="m-top">
+    <div class="m-me">
+      <span id="mMeAv"></span>
+      <div class="t" onclick="showUserMenu()"><b id="mMeName"></b><small id="mMePos"></small></div>
+      <button class="m-ibtn" id="mRefresh" onclick="mRefresh()" title="โหลดข้อมูลใหม่"><i class="bi bi-arrow-clockwise"></i></button>
+    </div>
+    <div class="m-title" id="mTitle">รอตรวจสอบ</div>
+  </div>
+
+  <!-- รอตรวจสอบ -->
+  <div class="m-screen" id="mPending">
+    <div class="m-split">
+      <div class="m-side">
+        <div class="m-chips" id="mChips"></div>
+        <div class="m-list grid" id="mPendList"></div>
+      </div>
+      <div class="m-pane" id="mPendPane"></div>
+    </div>
+  </div>
+
+  <!-- เสนอเรื่อง -->
+  <div class="m-screen" id="mForm">
+    <div class="m-form" id="mFormBody"></div>
+    <div class="m-sticky"><button class="m-btn" id="mSubmitBtn" onclick="mSubmit()"><i class="bi bi-send-fill"></i> ส่งเรื่องตัดงบ</button></div>
+  </div>
+
+  <!-- อนุมัติแล้ว -->
+  <div class="m-screen" id="mHistory">
+    <div class="m-split">
+      <div class="m-side">
+        <div class="m-search"><i class="bi bi-search"></i><input id="mHistQ" type="search" placeholder="ค้นหา รายการ / ผู้เสนอ / แผนก / รหัสบัญชี" oninput="mHistSearch()"></div>
+        <div class="m-list grid" id="mHistList"></div>
+      </div>
+      <div class="m-pane" id="mHistPane"></div>
+    </div>
+  </div>
+
+  <nav class="m-nav" id="mNav">
+    <button data-go="form" onclick="mGo('form')"><i class="bi bi-pencil-square"></i>เสนอเรื่อง</button>
+    <button data-go="pending" onclick="mGo('pending')"><i class="bi bi-hourglass-split"></i>รอตรวจ<span class="m-bd" id="mBdPend" style="display:none"></span></button>
+    <button data-go="summary" onclick="mGo('summary')"><i class="bi bi-pie-chart-fill"></i>สรุปงบ</button>
+    <button data-go="history" onclick="mGo('history')"><i class="bi bi-check2-circle"></i>อนุมัติแล้ว</button>
+    <button data-go="analyze" class="rail-only" onclick="mGo('analyze')"><i class="bi bi-graph-up-arrow"></i>วิเคราะห์</button>
+    <button data-go="admin" class="rail-only" onclick="mGo('admin')"><i class="bi bi-person-fill-gear"></i>Admin<span class="m-bd" id="mBdAdmin" style="display:none"></span></button>
+    <button class="rail-only" onclick="window.open('guide.html','_blank')"><i class="bi bi-book"></i>คู่มือ</button>
+    <button class="more-btn" data-go="more" onclick="mMoreMenu()"><i class="bi bi-list"></i>เพิ่มเติม</button>
+  </nav>
+</div>
+<div class="m-dim" id="mDim" onclick="mCloseSheet()"></div>
+<div class="m-sheet" id="mSheet"></div>
 
 <!-- Loading Overlay -->
 <div class="loading-overlay" id="loading" style="visibility:hidden;">
@@ -1185,7 +1403,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     <div class="av" id="userAv">?</div><div class="nm"><span id="userNm"></span><small id="userRole"></small></div></div></div>
   <h4 class="m-0">
     <i class="bi bi-wallet2"></i> ระบบตัดงบทำการ
-    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.2.0</small>
+    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.3</small>
   </h4>
   <button class="btn btn-register btn-sm rounded-pill px-4 shadow" id="headerRegisterBtn" style="display:none" onclick="showRegisterModal()">
     <i class="bi bi-person-plus-fill"></i> สมัครสมาชิก
@@ -1193,7 +1411,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
 </div>
 
 <!-- Main Container -->
-<div class="container mt-4 mb-5">
+<div class="container mt-4 mb-5" id="oldMain">
   <!-- Navigation Tabs -->
   <ul class="nav nav-tabs" id="myTab">
     <li class="nav-item">
@@ -3028,7 +3246,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 </small></td>
           <td>${item.detail}</td>
           <td class="fw-bold ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
-          <td>${item.requester}</td>
+          <td>${personCell(item.requester)}</td>
           <td>${statusBadge}</td>
           <td>${actionButton}</td>
         </tr>
@@ -4910,7 +5128,7 @@ function startApp() {
       if (d && d.me) { me = Object.assign({}, me || {}, d.me); lsSet(USER_KEY, JSON.stringify(me)); renderUserChip(); }
       applyBoot(d); saveBootCache(d);
       toggleLoading(false);
-      if (!cached) showToast('โหลดข้อมูลสำเร็จ', 'success');
+      if (!cached && !document.body.classList.contains('m-mode')) showToast('โหลดข้อมูลสำเร็จ', 'success');
     })
     .withFailureHandler(e => { toggleLoading(false); if (!cached) onFailure(e); else showToast('อัปเดตข้อมูลไม่สำเร็จ: ' + e.message, 'warning'); })
     .getBootData();
@@ -4997,6 +5215,7 @@ function showUserMenu() {
     title: escHtml(me.name || me.username),
     html: `<div class="text-muted mb-3">${escHtml(me.role || '')}${me.dept ? ' · ' + escHtml(me.dept) : ''}<br><small>Username: ${escHtml(me.username)}</small></div>
       <div class="d-grid gap-2">
+        <button class="btn btn-outline-primary rounded-pill" onclick="window.open('guide.html','_blank')"><i class="bi bi-book"></i> คู่มือการใช้งาน</button>
         <button class="btn btn-outline-secondary rounded-pill" onclick="Swal.close(); changeMyPassword();"><i class="bi bi-key"></i> เปลี่ยนรหัสผ่าน</button>
         <button class="btn btn-outline-danger rounded-pill" onclick="doUserLogout()"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</button>
       </div>`,
@@ -5049,7 +5268,7 @@ function renderApprovedHistory() {
       <td><small>${escHtml(item.branch)} / ${escHtml(item.dept)}</small></td>
       <td>${escHtml(item.detail)}</td>
       <td class="fw-bold ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
-      <td>${escHtml(item.requester)}</td>
+      <td>${personCell(item.requester)}</td>
       <td><button class="btn btn-sm btn-outline-primary rounded-pill" onclick="event.stopPropagation(); showDetailModal(${i}, 'approved')">
         <i class="bi bi-clock-history"></i> ไทม์ไลน์</button></td></tr>`);
   }
@@ -5068,6 +5287,551 @@ loadApprovedHistory = function () {
     .withSuccessHandler(items => { approvedDataCache = items || []; renderApprovedHistory(); toggleLoading(false); })
     .withFailureHandler(onFailure)
     .getApprovedHistoryItems();
+};
+
+// ==================== v3.3: รายชื่อ + ตำแหน่ง + รูป (จากฐานข้อมูล safety talk) ====================
+const PEOPLE_KEY = 'budget_people_v1';
+let peopleMap = {}, peopleVer = 0;
+try { const c = JSON.parse(lsGet(PEOPLE_KEY) || 'null'); if (c && c.list) c.list.forEach(p => { peopleMap[normName(p.name)] = p; }); } catch (e) {}
+
+function normName(s) {
+  return String(s || '').replace(/ /g, ' ').replace(/^\s*(นางสาว|น\.ส\.|นาย|นาง|ว่าที่\s*ร\.ต\.)\s*/, '').replace(/\s+/g, ' ').trim();
+}
+function person(name) { return peopleMap[normName(name)] || { name: normName(name) }; }
+function personPos(p) { return p.position || p.role || ''; }
+function initials(name) {
+  const n = normName(name).split(' ');
+  const first = w => (String(w || '').match(/[^เแโใไ\s]/) || [''])[0];
+  return (first(n[0]) + first(n[1])) || '?';
+}
+function avatar(name, px) {
+  const p = person(name), st = `width:${px}px;height:${px}px;font-size:${Math.round(px / 2.7)}px`;
+  const ini = escHtml(initials(name));
+  if (p.photo) return `<img src="${escHtml(p.photo)}" alt="" class="pav" style="${st}" loading="lazy" onerror="this.outerHTML='<span class=&quot;pav&quot; style=&quot;${st}&quot;>${ini}</span>'">`;
+  return `<span class="pav" style="${st}">${ini}</span>`;
+}
+function shrinkPhoto(src) {
+  return new Promise(resolve => {
+    if (!src || src.indexOf('data:image') !== 0) return resolve(src || '');
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const S = 112, c = document.createElement('canvas'); c.width = S; c.height = S;
+        const k = Math.max(S / img.width, S / img.height), w = img.width * k, h = img.height * k;
+        c.getContext('2d').drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.8));
+      } catch (e) { resolve(src); }
+    };
+    img.onerror = () => resolve('');
+    img.src = src;
+  });
+}
+function loadPeople(force) {
+  let ts = 0;
+  try { ts = (JSON.parse(lsGet(PEOPLE_KEY) || 'null') || {}).ts || 0; } catch (e) {}
+  if (!force && Date.now() - ts < 12 * 3600 * 1000) return;
+  google.script.run.withSuccessHandler(async res => {
+    const list = (res && res.people) || [];
+    if (!list.length) return;
+    for (const p of list) p.photo = await shrinkPhoto(p.photo);
+    peopleMap = {}; list.forEach(p => { peopleMap[normName(p.name)] = p; }); peopleVer++;
+    Object.keys(_tlCache).forEach(k => delete _tlCache[k]);
+    lsSet(PEOPLE_KEY, JSON.stringify({ ts: Date.now(), list: list }));
+    renderUserChip(); mRenderAll();
+    if (!isM()) { renderPendingList(pendingDataCache || []); if (approvedDataCache && approvedDataCache.length) renderApprovedHistory(); }
+  }).withFailureHandler(() => {}).getPeople();
+}
+
+// ป้ายผู้ใช้มุมซ้ายบน (คอมพิวเตอร์) + หัวหน้าจอมือถือ: ใช้รูปและตำแหน่งจริง
+renderUserChip = function () {
+  const chip = document.getElementById('userChip');
+  if (!me) { if (chip) chip.style.display = 'none'; return; }
+  const p = person(me.name);
+  const pos = [personPos(p) || me.role, me.dept].filter(Boolean).join(' · ');
+  if (chip) {
+    chip.style.display = 'flex';
+    document.getElementById('userAv').outerHTML = `<span id="userAv">${avatar(me.name, 32)}</span>`;
+    document.getElementById('userNm').textContent = me.name || me.username;
+    document.getElementById('userRole').textContent = pos;
+  }
+  const a = document.getElementById('mMeAv');
+  if (a) {
+    a.innerHTML = avatar(me.name, 40);
+    document.getElementById('mMeName').textContent = me.name || me.username;
+    document.getElementById('mMePos').textContent = pos;
+  }
+};
+
+// ตารางบนคอมพิวเตอร์: ใส่รูปหน้าชื่อผู้เสนอ
+function personCell(name) {
+  return `<span class="d-inline-flex align-items-center gap-2">${avatar(name, 30)}<span>${escHtml(name)}</span></span>`;
+}
+
+// ==================== v3.3: โหมดมือถือ / ไอแพด ====================
+const M = { screen: 'pending', filter: 'all', sel: null, histSel: null, histShown: 60, histQ: '', histLoaded: false, lastLoad: 0,
+            f: { branch: '', dept: '', code: '', amount: '', detail: '', requester: '', editRow: null, editReason: '' } };
+const MQ_MOBILE = window.matchMedia('(max-width: 1024px), ((pointer: coarse) and (max-width: 1400px))');
+const MQ_SPLIT = window.matchMedia('(min-width: 900px)');
+const isM = () => document.body.classList.contains('m-mode');
+const isSplit = () => MQ_SPLIT.matches;
+
+function mApplyMode() {
+  const on = MQ_MOBILE.matches;
+  document.body.classList.toggle('m-mode', on);
+  if (on) { mGo(M.screen, true); mRenderAll(); }
+  else document.body.classList.remove('m-old');
+}
+if (MQ_MOBILE.addEventListener) MQ_MOBILE.addEventListener('change', mApplyMode); else MQ_MOBILE.addListener(mApplyMode);
+if (MQ_SPLIT.addEventListener) MQ_SPLIT.addEventListener('change', () => { mCloseSheet(); mRenderAll(); });
+
+const M_TITLES = { pending: 'รอตรวจสอบ', form: 'เสนอเรื่องตัดงบ', history: 'อนุมัติแล้ว', summary: 'สรุปงบประมาณ', analyze: 'วิเคราะห์การใช้งบ', admin: 'ผู้ดูแลระบบ' };
+const OLD_TAB = { summary: 'summary-tab', analyze: 'analyze-tab', admin: 'admin-tab' };
+
+function mGo(screen, silent) {
+  M.screen = screen;
+  document.getElementById('mTitle').textContent = M_TITLES[screen] || '';
+  document.querySelectorAll('#mNav button').forEach(b => b.classList.toggle('on', b.dataset.go === screen));
+  if (OLD_TAB[screen]) {
+    document.body.classList.add('m-old');
+    const t = document.getElementById(OLD_TAB[screen]);
+    if (t && !t.classList.contains('active')) t.click(); else if (!silent && screen === 'summary') loadSummaryTab();
+  } else {
+    document.body.classList.remove('m-old');
+    document.querySelectorAll('.m-screen').forEach(s => s.classList.remove('on'));
+    const id = { pending: 'mPending', form: 'mForm', history: 'mHistory' }[screen];
+    document.getElementById(id).classList.add('on');
+    if (screen === 'history' && !M.histLoaded) mLoadHistory();
+    if (screen === 'form') mRenderForm();
+  }
+  mCloseSheet();
+  if (!silent) window.scrollTo(0, 0);
+}
+
+function mRenderAll() {
+  if (!document.getElementById('mApp') || !isM()) return;   // คอมพิวเตอร์ใช้หน้าตารางเดิม ไม่ต้องวาดหน้ามือถือ
+  mRenderPending();
+  if (M.histLoaded) mRenderHistory();
+  if (M.screen === 'form') mRenderForm();
+  const ab = document.getElementById('adminPendingBadge'), mb = document.getElementById('mBdAdmin');
+  if (ab && mb) { mb.textContent = ab.innerText; mb.style.display = ab.style.display === 'none' ? 'none' : 'inline-block'; }
+}
+
+function mRefresh() {
+  const b = document.getElementById('mRefresh'); b.classList.add('spin');
+  loadPendingList(true);
+  if (M.histLoaded) mLoadHistory();
+  loadPeople(true);
+  if (M.screen === 'summary') loadSummaryTab();
+  setTimeout(() => b.classList.remove('spin'), 1500);
+}
+// กลับมาเปิดแอปหลังพักไว้ > 2 นาที โหลดรายการใหม่ให้เอง
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && apiToken && Date.now() - M.lastLoad > 120000) loadPendingList(true);
+});
+
+// ---------- สถานะ / สิทธิ์ ----------
+function stInfo(status) {
+  const s = String(status || '');
+  if (s.indexOf('ตีกลับ') !== -1) return { cls: 'r', card: 's-r', label: s, key: 'r' };
+  if (s === 'รอผู้บันทึกตรวจสอบ' || s.indexOf('รอผู้บันทึก') !== -1) return { cls: 'w', card: '', label: 'รอผู้บันทึกตรวจสอบ', key: 'w' };
+  if (s.indexOf('รออนุมัติ') !== -1) return { cls: 'a', card: 's-a', label: 'รออนุมัติ', key: 'a' };
+  if (s.indexOf('อนุมัติ') !== -1) return { cls: 'ok', card: 's-ok', label: 'อนุมัติแล้ว', key: 'ok' };
+  return { cls: 'x', card: '', label: s, key: 'x' };
+}
+function myTurn(item) {
+  if (!me) return false;
+  const k = stInfo(item.status).key, role = me.role || '';
+  if (k === 'w') return role === 'ผู้ดูแลระบบ' || role === 'ผู้ช่วยดูแลระบบ' || (role.indexOf('ผู้บันทึก') !== -1 && normalize(me.dept) === normalize(item.dept));
+  if (k === 'a') return role === 'ผู้ดูแลระบบ' || role === 'ผู้ช่วยดูแลระบบ';
+  if (k === 'r') return normName(item.requester) === normName(me.name);
+  return false;
+}
+function accName(item) {
+  const b = allBudgetInfo.find(x => normalize(x.code) === normalize(item.accountCode) && normalize(x.dept) === normalize(item.dept));
+  return b ? b.name : '';
+}
+// "30/09/2026 13:47" -> "30 ก.ย. 69 · 13.47 น."
+const TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+function shortDate(s) {
+  const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!m) return escHtml(s || '-');
+  let y = +m[3]; if (y < 2400) y += 543;
+  return `${+m[1]} ${TH_M[+m[2] - 1]} ${String(y).slice(-2)}` + (m[4] ? ` · ${m[4].padStart(2, '0')}.${m[5]} น.` : '');
+}
+
+// ---------- การ์ด ----------
+function mCard(item, src, i, selected) {
+  const st = stInfo(item.status), p = person(item.requester), an = accName(item);
+  const sub = [personPos(p), item.dept].filter(Boolean).join(' · ');
+  return `<div class="m-card ${st.card} ${selected ? 'sel' : ''}" onclick="mOpen('${src}', ${i})">
+    <div class="m-c1">${avatar(item.requester, 42)}<div class="nm"><b>${escHtml(item.requester || '-')}</b><small>${escHtml(sub)}</small></div>
+      <div class="m-amt">${fNum(item.amount)}<small>บาท</small></div></div>
+    <div class="m-det">${escHtml(item.detail)}</div>
+    <div class="m-acc">${escHtml(item.accountCode)}${an ? ' · ' + escHtml(an) : ''}</div>
+    <div class="m-c3"><span><i class="bi bi-clock"></i> ${shortDate(item.date)}</span>
+      <span><span class="m-st ${st.cls}">${escHtml(st.label)}</span>${item.isNegative ? '<span class="m-neg">งบติดลบ</span>' : ''}${src === 'p' && myTurn(item) ? '<span class="m-turn">ถึงคิวคุณ</span>' : ''}</span></div>
+  </div>`;
+}
+
+function mPendingSorted() {
+  // ล่าสุดขึ้นก่อน
+  return (pendingDataCache || []).map((it, i) => ({ it, i })).sort((a, b) => b.it.rowIndex - a.it.rowIndex);
+}
+function mRenderPending() {
+  const all = mPendingSorted();
+  const cnt = { all: all.length, mine: 0, w: 0, a: 0, r: 0 };
+  all.forEach(x => { const k = stInfo(x.it.status).key; if (cnt[k] !== undefined) cnt[k]++; if (myTurn(x.it)) cnt.mine++; });
+  const chips = [['all', 'ทั้งหมด'], ['mine', 'ถึงคิวฉัน'], ['w', 'รอผู้บันทึก'], ['a', 'รออนุมัติ'], ['r', 'ตีกลับ']];
+  document.getElementById('mChips').innerHTML = chips.filter(c => c[0] === 'all' || c[0] === M.filter || cnt[c[0]])
+    .map(c => `<button class="m-chip ${M.filter === c[0] ? 'on' : ''}" onclick="M.filter='${c[0]}'; mRenderPending()">${c[1]}<i>${cnt[c[0]]}</i></button>`).join('');
+  const list = all.filter(x => M.filter === 'all' || (M.filter === 'mine' ? myTurn(x.it) : stInfo(x.it.status).key === M.filter));
+  document.getElementById('mPendList').innerHTML = list.length
+    ? list.map(x => mCard(x.it, 'p', x.i, isSplit() && M.sel === x.it.rowIndex)).join('')
+    : `<div class="m-empty"><i class="bi bi-inbox"></i>ไม่มีรายการ${M.filter === 'all' ? 'รอตรวจสอบ' : 'ในกลุ่มนี้'}</div>`;
+  const bd = document.getElementById('mBdPend');
+  bd.textContent = all.length; bd.style.display = all.length ? 'inline-block' : 'none';
+  // ไอแพด: แสดงรายละเอียดรายการแรกไว้เลย
+  if (isSplit()) {
+    const cur = list.find(x => x.it.rowIndex === M.sel) || list[0];
+    if (cur) { if (M.sel !== cur.it.rowIndex) { M.sel = cur.it.rowIndex; mRenderPending(); return; } mShowDetail(cur.it, 'p', document.getElementById('mPendPane'), true); }
+    else document.getElementById('mPendPane').innerHTML = '<div class="m-empty"><i class="bi bi-check2-all"></i>ไม่มีรายการรอดำเนินการ</div>';
+  }
+}
+
+// ---------- อนุมัติแล้ว ----------
+function mLoadHistory() {
+  const el = document.getElementById('mHistList');
+  if (!approvedDataCache || !approvedDataCache.length) el.innerHTML = '<div class="m-empty"><div class="spinner-border text-secondary"></div><br>กำลังโหลด...</div>';
+  google.script.run.withSuccessHandler(items => { approvedDataCache = items || []; M.histLoaded = true; mRenderHistory(); })
+    .withFailureHandler(e => { el.innerHTML = `<div class="m-empty">โหลดไม่สำเร็จ: ${escHtml(e.message)}</div>`; })
+    .getApprovedHistoryItems();
+}
+function mHistSearch() { M.histQ = document.getElementById('mHistQ').value.trim().toLowerCase(); M.histShown = 60; mRenderHistory(); }
+function mRenderHistory() {
+  const q = M.histQ;
+  const list = (approvedDataCache || []).map((it, i) => ({ it, i })).filter(x => !q ||
+    [x.it.detail, x.it.requester, x.it.dept, x.it.accountCode, accName(x.it)].join(' ').toLowerCase().indexOf(q) !== -1);
+  const n = Math.min(M.histShown, list.length);
+  document.getElementById('mHistList').innerHTML = !list.length ? '<div class="m-empty"><i class="bi bi-search"></i>ไม่พบรายการ</div>'
+    : list.slice(0, n).map(x => mCard(x.it, 'h', x.i, isSplit() && M.histSel === x.it.rowIndex)).join('') +
+      (n < list.length ? `<button class="m-more" onclick="M.histShown += 60; mRenderHistory()">แสดงเพิ่ม (${n} จาก ${list.length} รายการ)</button>` : '');
+  if (isSplit()) {
+    const cur = list.find(x => x.it.rowIndex === M.histSel) || list[0];
+    if (cur) { if (M.histSel !== cur.it.rowIndex) { M.histSel = cur.it.rowIndex; mRenderHistory(); return; } mShowDetail(cur.it, 'h', document.getElementById('mHistPane'), true); }
+    else document.getElementById('mHistPane').innerHTML = '';
+  }
+}
+
+// ---------- รายละเอียด ----------
+function mOpen(src, i) {
+  const item = (src === 'p' ? pendingDataCache : approvedDataCache)[i];
+  if (!item) return;
+  if (isSplit()) {
+    if (src === 'p') { M.sel = item.rowIndex; mRenderPending(); } else { M.histSel = item.rowIndex; mRenderHistory(); }
+    return;
+  }
+  const sh = document.getElementById('mSheet');
+  mShowDetail(item, src, sh, false);
+  document.getElementById('mDim').classList.add('on');
+  requestAnimationFrame(() => sh.classList.add('on'));
+}
+function mCloseSheet() {
+  const sh = document.getElementById('mSheet'); if (!sh) return;
+  sh.classList.remove('on'); document.getElementById('mDim').classList.remove('on');
+}
+
+const _tlCache = {};
+function mShowDetail(item, src, host, inPane) {
+  const sig = item.rowIndex + '|' + item.status + '|' + peopleVer;
+  if (host.dataset.sig === sig && host.innerHTML) return;
+  host.dataset.sig = sig; host.dataset.row = item.rowIndex;
+  const st = stInfo(item.status), p = person(item.requester), an = accName(item);
+  const sub = [personPos(p), p.department || item.dept].filter(Boolean).join(' · ');
+  let acts = '';
+  const role = st.key === 'w' ? 'ผู้บันทึก(หผ./รักษาการแทน)' : 'ผู้อนุมัติ';
+  if (src === 'p') {
+    if (st.key === 'w' || st.key === 'a') {
+      acts = `<div class="m-acts"><button class="g" onclick="mAct(${item.rowIndex}, '${role}', 'approve')"><i class="bi bi-check-lg"></i> ${st.key === 'w' ? 'ตรวจสอบผ่าน' : 'อนุมัติ'}</button>
+        <button class="o" onclick="mAct(${item.rowIndex}, '${role}', 'reject')">ตีกลับ</button><button class="x" onclick="mAct(${item.rowIndex}, '${role}', 'delete')">ลบ</button></div>
+        <div class="m-hint">กดแล้วใส่รหัสผ่านเพื่อยืนยันอีกครั้ง · ${st.key === 'w' ? 'ผู้บันทึกของแผนก / ผู้ดูแลระบบ' : 'ผู้ดูแลระบบ / ผู้ช่วยดูแลระบบ'}</div>`;
+    } else if (st.key === 'r') {
+      acts = `<div class="m-acts two"><button class="p" onclick="mEditRejected(${item.rowIndex})"><i class="bi bi-pencil-square"></i> แก้ไขแล้วส่งใหม่</button>
+        <button class="x" onclick="mAct(${item.rowIndex}, 'ผู้บันทึก(หผ./รักษาการแทน)', 'delete')">ลบ</button></div>`;
+    }
+  }
+  host.innerHTML = (inPane ? '' : '<div class="m-grab"></div><button class="m-x" onclick="mCloseSheet()"><i class="bi bi-x-lg"></i></button>') + `
+    <div class="m-c1">${avatar(item.requester, inPane ? 60 : 52)}<div class="nm"><b style="font-size:${inPane ? 19 : 16}px">${escHtml(item.requester || '-')}</b><small>${escHtml(sub)}</small></div>
+      <span class="m-st ${st.cls}">${escHtml(st.label)}</span></div>
+    <div class="m-det" style="font-size:${inPane ? 16 : 14.5}px;margin-top:12px">${escHtml(item.detail)}</div>
+    <div class="m-kv">
+      <div>ยอดตัดครั้งนี้<b style="color:#7A3E94">${fNum(item.amount)}</b></div>
+      <div>รายการงบ<b style="font-size:13px">${escHtml(item.accountCode)}${an ? ' ' + escHtml(an) : ''}</b></div>
+      <div>คงเหลือต่อปี<b>${fNum(item.remYear)}</b></div>
+      <div>คงเหลือสะสมหลังตัด<b style="color:${item.remMonth < 0 ? '#b91c1c' : '#15803d'}">${fNum(item.remMonth)}</b></div>
+    </div>
+    <div class="m-c3" style="margin-bottom:10px"><span><i class="bi bi-building"></i> ${escHtml(item.branch)} / ${escHtml(item.dept)}</span><span><i class="bi bi-clock"></i> ${shortDate(item.date)}</span></div>
+    <div class="m-h">ลำดับการดำเนินการ</div>
+    <div class="m-tl" id="mTl_${host.id}">${_tlCache[item.rowIndex + '|' + item.status] || '<div class="it" style="margin-left:0">กำลังโหลด...</div>'}</div>
+    ${acts}`;
+  const key = item.rowIndex + '|' + item.status;
+  if (_tlCache[key]) return;
+  google.script.run.withSuccessHandler(log => {
+    _tlCache[key] = mTimelineHtml(log, item);
+    const el = document.getElementById('mTl_' + host.id);
+    if (el && host.dataset.row === String(item.rowIndex)) el.innerHTML = _tlCache[key];
+  }).withFailureHandler(e => {
+    const el = document.getElementById('mTl_' + host.id);
+    if (el) el.innerHTML = `<div class="it" style="margin-left:0;color:#b91c1c">โหลดไม่สำเร็จ: ${escHtml(e.message)}</div>`;
+  }).getTimelineLog(item.rowIndex);
+}
+
+// "✓ ตรวจสอบผ่านโดย: ชื่อ (วันพุธ ที่ 30 กันยายน 2569 14.05 น.) [เหตุผล: ...]"
+function mTimelineHtml(log, item) {
+  const lines = String(log || '').split('\n').map(s => s.trim()).filter(Boolean)
+    .filter(s => s !== 'ยังไม่มีข้อมูล Timeline' && s.indexOf('rowIndex') === -1);
+  const out = lines.map(line => {
+    const m = line.match(/^(.*?)โดย(ผู้บันทึก|ผู้อนุมัติ)?:?\s*(.+?)\s*\((.+?)\)(.*)$/);
+    let act = line, who = '', when = '', rest = '';
+    if (m) {
+      act = m[1].replace(/^[^฀-๿]+/, '').trim() + (m[2] ? ' (' + m[2] + ')' : '');
+      who = m[3].trim(); when = m[4]; rest = m[5] || '';
+    }
+    const tm = String(when).match(/ที่\s+(\d+)\s+(\S+)\s+(\d{4})\s+(\d{1,2})\.(\d{2})/);
+    if (tm) {
+      const full = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'].indexOf(tm[2]);
+      when = `${tm[1]} ${full > -1 ? TH_M[full] : tm[2]} ${tm[3].slice(-2)} ${tm[4]}.${tm[5]} น.`;
+    }
+    const why = (rest.match(/\[เหตุผล:\s*([^\]]+)\]/) || [])[1];
+    const neg = /งบติดลบ/.test(rest) ? ' <span class="m-neg">งบติดลบ</span>' : '';
+    const p = person(who);
+    return `<div class="it">${who ? avatar(who, 32) : '<span class="pav" style="width:32px;height:32px">•</span>'}
+      <span><b>${escHtml(act || 'ดำเนินการ')}</b> ${escHtml(who)}${p.position ? ' <small style="color:#999">(' + escHtml(p.position) + ')</small>' : ''}${when ? ' · ' + escHtml(when) : ''}${neg}
+      ${why ? `<span class="why">เหตุผล: ${escHtml(why)}</span>` : ''}</span></div>`;
+  });
+  const k = stInfo(item.status).key;
+  if (k === 'w') out.push('<div class="it"><span class="pav" style="width:32px;height:32px">⏳</span><span>รอผู้บันทึก (หผ.) ของแผนก ' + escHtml(item.dept) + ' ตรวจสอบ</span></div>');
+  if (k === 'a') out.push('<div class="it"><span class="pav" style="width:32px;height:32px">⏳</span><span>รอผู้อนุมัติ</span></div>');
+  if (k === 'r') out.push('<div class="it"><span class="pav" style="width:32px;height:32px">✏️</span><span>รอผู้เสนอแก้ไขแล้วส่งใหม่</span></div>');
+  return out.join('') || '<div class="it" style="margin-left:0">ยังไม่มีข้อมูล</div>';
+}
+
+// ---------- อนุมัติ / ตีกลับ / ลบ ----------
+function mAct(rowIndex, role, fn) {
+  const label = { approve: role.indexOf('ผู้บันทึก') !== -1 ? 'ตรวจสอบผ่าน' : 'อนุมัติ', reject: 'ตีกลับ', delete: 'ลบรายการ' }[fn];
+  const color = { approve: '#16a34a', reject: '#ea580c', delete: '#dc2626' }[fn];
+  mCloseSheet();
+  Swal.fire({
+    title: label,
+    html: `<div class="text-start">
+      <label class="small fw-semibold mb-1">Username</label>
+      <input id="aU" class="swal2-input w-100 m-0 mb-2" autocomplete="username" autocapitalize="off" value="${escHtml(me ? me.username : '')}">
+      <label class="small fw-semibold mb-1">Password (ยืนยันตัวตน)</label>
+      <input id="aP" type="password" class="swal2-input w-100 m-0 mb-2" autocomplete="current-password">
+      ${fn === 'reject' ? '<label class="small fw-semibold mb-1">เหตุผลที่ตีกลับ <span class="text-danger">*</span></label><textarea id="aR" class="swal2-textarea w-100 m-0" rows="2" placeholder="เช่น ยอดเงินไม่ตรงใบสั่ง"></textarea>' : ''}
+      ${fn === 'delete' ? '<div class="small text-danger mt-1">รายการจะถูกยกเลิก และแจ้งเตือนทาง LINE</div>' : ''}</div>`,
+    showCancelButton: true, confirmButtonText: label, cancelButtonText: 'ยกเลิก', confirmButtonColor: color, focusConfirm: false,
+    didOpen: () => setTimeout(() => document.getElementById(me ? 'aP' : 'aU').focus(), 80),
+    preConfirm: () => {
+      const u = document.getElementById('aU').value.trim(), p = document.getElementById('aP').value;
+      const r = fn === 'reject' ? document.getElementById('aR').value.trim() : '';
+      if (!u || !p) { Swal.showValidationMessage('กรุณากรอก Username และ Password'); return false; }
+      if (fn === 'reject' && !r) { Swal.showValidationMessage('กรุณาระบุเหตุผลที่ตีกลับ'); return false; }
+      Swal.showLoading();
+      return apiCall('approveTransaction', [rowIndex, u, p, role, fn, r]).then(res => {
+        if (!res || res.status !== 'success') { Swal.hideLoading(); Swal.showValidationMessage((res && res.message) || 'ไม่สำเร็จ'); return false; }
+        return res;
+      }).catch(e => { Swal.hideLoading(); Swal.showValidationMessage(e.message); return false; });
+    }
+  }).then(r => {
+    if (!r.isConfirmed) return;
+    showToast(label + 'เรียบร้อยแล้ว', 'success');
+    Object.keys(_tlCache).forEach(k => { if (k.indexOf(rowIndex + '|') === 0) delete _tlCache[k]; });
+    if (fn !== 'approve' || role === 'ผู้อนุมัติ') M.sel = null;
+    loadPendingList(true);
+    if (M.histLoaded) mLoadHistory();
+  });
+}
+
+// ---------- เสนอเรื่อง ----------
+function mBranches() { return [...new Set(allBudgetInfo.map(i => normalize(i.branch)))].sort(); }
+function mDepts(branch) { return [...new Set(allBudgetInfo.filter(i => normalize(i.branch) === branch).map(i => normalize(i.dept)))].sort(); }
+function mAccounts() { return allBudgetInfo.filter(i => normalize(i.branch) === M.f.branch && normalize(i.dept) === M.f.dept); }
+function mRequesters(dept) {
+  const ok = u => normalize(u.status) === 'อนุมัติ' && u.name && u.name.trim();
+  const seen = {}, out = [];
+  const add = u => { const k = normName(u.name); if (!seen[k]) { seen[k] = 1; out.push({ name: u.name.trim(), dept: u.dept }); } };
+  allUsersList.filter(u => ok(u) && normalize(u.dept) === dept).forEach(add);
+  allUsersList.filter(u => ok(u) && normalize(u.dept) === (dept === 'ประจำ กฟฟ.' ? 'ผบง.' : 'ประจำ กฟฟ.')).forEach(add);
+  return out;
+}
+function mFormDefaults() {
+  const f = M.f, brs = mBranches();
+  if (!f.branch || brs.indexOf(f.branch) === -1) {
+    const mine = me && allBudgetInfo.find(i => normalize(i.dept) === normalize(me.dept));
+    f.branch = mine ? normalize(mine.branch) : (brs.indexOf('กฟส.อล.') !== -1 ? 'กฟส.อล.' : brs[0] || '');
+  }
+  const ds = mDepts(f.branch);
+  if (!f.dept || ds.indexOf(f.dept) === -1) f.dept = me && ds.indexOf(normalize(me.dept)) !== -1 ? normalize(me.dept) : (ds.length === 1 ? ds[0] : '');
+  if (f.code && !mAccounts().some(a => normalize(a.code) === f.code)) f.code = '';
+  const rq = mRequesters(f.dept);
+  if (!f.requester || !rq.some(r => normName(r.name) === normName(f.requester))) {
+    const mineR = me && rq.find(r => normName(r.name) === normName(me.name));
+    f.requester = mineR ? mineR.name : (f.editRow ? f.requester : '');
+  }
+}
+function mCalc() {
+  const f = M.f, acc = mAccounts().find(a => normalize(a.code) === f.code);
+  if (!acc) return null;
+  const info = localBudgetInfo(acc.code, acc.branch, acc.dept, acc.yearlyBudget);
+  const amt = parseFloat(String(f.amount).replace(/,/g, '')) || 0;
+  return { acc, info, amt, net: info.remainingAccumulated - amt };
+}
+function mRenderForm() {
+  if (!allBudgetInfo.length) { document.getElementById('mFormBody').innerHTML = '<div class="m-empty"><div class="spinner-border text-secondary"></div><br>กำลังโหลดรายการงบ...</div>'; return; }
+  mFormDefaults();
+  const f = M.f, brs = mBranches(), c = mCalc();
+  const seg = (arr, cur, fnName) => `<div class="m-seg">${arr.map(v => `<button type="button" class="${v === cur ? 'on' : ''}" onclick="${fnName}('${escHtml(v)}')">${escHtml(v)}</button>`).join('')}</div>`;
+  let accHtml;
+  if (c) {
+    const pct = c.acc.yearlyBudget > 0 ? Math.min(100, c.info.used / c.acc.yearlyBudget * 100) : 0;
+    accHtml = `<button type="button" class="m-pick has" onclick="mPickAccount()"><b>${escHtml(c.acc.code)} · ${escHtml(c.acc.name)}</b><br><small>${escHtml(c.acc.branch)} · ${escHtml(c.acc.dept)} · แตะเพื่อเปลี่ยน</small>
+      <div class="m-bar"><i class="${pct >= 100 ? 'over' : ''}" style="width:${pct}%"></i></div>
+      <div class="m-nums"><div>งบต่อปี<b>${fNum(c.acc.yearlyBudget)}</b></div><div>ใช้ไปแล้ว<b>${fNum(c.info.used)}</b></div>
+      <div style="text-align:right">คงเหลือสะสม<b style="color:${c.info.remainingAccumulated < 0 ? '#b91c1c' : '#15803d'}">${fNum(c.info.remainingAccumulated)}</b></div></div></button>`;
+  } else {
+    accHtml = `<button type="button" class="m-pick" onclick="mPickAccount()" ${f.dept ? '' : 'disabled'}><i class="bi bi-search"></i> ${f.dept ? 'แตะเพื่อค้นหารหัส / ชื่อบัญชี' : 'เลือกแผนกก่อน'}</button>`;
+  }
+  const rp = f.requester ? person(f.requester) : null;
+  document.getElementById('mFormBody').innerHTML = `
+    ${f.editRow ? `<div class="m-edit-banner"><b><i class="bi bi-pencil-square"></i> กำลังแก้ไขรายการที่ถูกตีกลับ</b>${f.editReason ? '<br>เหตุผล: ' + escHtml(f.editReason) : ''}
+      <br><a href="#" onclick="mCancelEdit(); return false;">ยกเลิกการแก้ไข</a></div>` : ''}
+    ${brs.length > 1 ? `<div class="m-lab">กฟฟ.</div>${seg(brs, f.branch, 'mSetBranch')}` : ''}
+    <div class="m-lab">แผนก</div>${seg(mDepts(f.branch), f.dept, 'mSetDept')}
+    <div class="m-lab">รายการงบ</div>${accHtml}
+    <div class="m-lab">จำนวนเงิน (บาท)</div>
+    <input class="m-in big" id="mAmt" inputmode="decimal" placeholder="0.00" value="${escHtml(f.amount)}" oninput="M.f.amount=this.value; mUpdateAfter()">
+    <div id="mAfter"></div>
+    <div class="m-lab">รายละเอียดการตัดงบ</div>
+    <textarea class="m-in" id="mDetail" rows="3" maxlength="500" placeholder="เช่น ค่าแรงคนงาน ตัดจากใบสั่ง ... งวด ..." oninput="M.f.detail=this.value">${escHtml(f.detail)}</textarea>
+    <div class="m-lab">ผู้เสนอ</div>
+    <button type="button" class="m-who" onclick="mPickRequester()" ${f.dept ? '' : 'disabled'}>${rp ? avatar(f.requester, 38) : '<span class="pav" style="width:38px;height:38px"><i class="bi bi-person"></i></span>'}
+      <div>${rp ? escHtml(f.requester) : 'เลือกผู้เสนอ'}<small>${rp ? escHtml(personPos(rp)) + ' · ' : ''}แตะเพื่อเปลี่ยน</small></div></button>`;
+  mUpdateAfter();
+  document.getElementById('mSubmitBtn').innerHTML = f.editRow ? '<i class="bi bi-arrow-repeat"></i> บันทึกการแก้ไขและส่งใหม่' : '<i class="bi bi-send-fill"></i> ส่งเรื่องตัดงบ';
+}
+function mUpdateAfter() {
+  const el = document.getElementById('mAfter'); if (!el) return;
+  const c = mCalc();
+  if (!c || !c.amt) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="m-after ${c.net < 0 ? 'neg' : ''}">${c.net < 0
+    ? `<i class="bi bi-exclamation-triangle-fill"></i> งบสะสมจะติดลบ ${fNum(Math.abs(c.net))} บาท (บันทึกได้ แต่ควรตรวจสอบ)`
+    : `คงเหลือสะสมหลังตัด ${fNum(c.net)} บาท <i class="bi bi-check-lg"></i>`}</div>`;
+}
+function mSetBranch(b) { M.f.branch = b; M.f.dept = ''; M.f.code = ''; mRenderForm(); }
+function mSetDept(d) { if (M.f.dept !== d) { M.f.dept = d; M.f.code = ''; } mRenderForm(); }
+
+function mOpenPicker(html) {
+  const sh = document.getElementById('mSheet');
+  sh.dataset.row = ''; sh.dataset.sig = ''; sh.innerHTML = '<div class="m-grab"></div><button class="m-x" onclick="mCloseSheet()"><i class="bi bi-x-lg"></i></button>' + html;
+  document.getElementById('mDim').classList.add('on');
+  requestAnimationFrame(() => sh.classList.add('on'));
+}
+function mPickAccount() {
+  if (!M.f.dept) return;
+  mOpenPicker(`<div class="m-h" style="font-size:16px;margin-bottom:8px">เลือกรายการงบ · ${escHtml(M.f.dept)}</div>
+    <div class="m-search" style="margin:0 0 6px"><i class="bi bi-search"></i><input id="mAccQ" type="search" placeholder="พิมพ์รหัสหรือชื่อบัญชี" oninput="mRenderAccList()"></div>
+    <div id="mAccList"></div>`);
+  mRenderAccList();
+  if (!('ontouchstart' in window)) setTimeout(() => { const q = document.getElementById('mAccQ'); if (q) q.focus(); }, 250);
+}
+function mRenderAccList() {
+  const q = (document.getElementById('mAccQ').value || '').trim().toLowerCase();
+  const list = mAccounts().filter(a => !q || (a.code + ' ' + a.name).toLowerCase().indexOf(q) !== -1);
+  document.getElementById('mAccList').innerHTML = list.length ? list.map(a => {
+    const inf = localBudgetInfo(a.code, a.branch, a.dept, a.yearlyBudget);
+    return `<button class="m-opt ${normalize(a.code) === M.f.code ? 'on' : ''}" onclick="M.f.code='${escHtml(normalize(a.code))}'; mCloseSheet(); mRenderForm()">
+      <div class="l"><b>${escHtml(a.code)}</b> ${escHtml(a.name)}<small>งบต่อปี ${fNum(a.yearlyBudget)}</small></div>
+      <div class="r">คงเหลือสะสม<b style="color:${inf.remainingAccumulated < 0 ? '#b91c1c' : '#15803d'}">${fNum(inf.remainingAccumulated)}</b></div></button>`;
+  }).join('') : '<div class="m-empty">ไม่พบรายการงบ</div>';
+}
+function mPickRequester() {
+  if (!M.f.dept) return;
+  const rq = mRequesters(M.f.dept);
+  mOpenPicker(`<div class="m-h" style="font-size:16px;margin-bottom:8px">เลือกผู้เสนอ</div>` + (rq.length ? rq.map(r => {
+    const p = person(r.name);
+    return `<button class="m-opt ${normName(r.name) === normName(M.f.requester) ? 'on' : ''}" data-n="${escHtml(r.name)}" onclick="M.f.requester=this.dataset.n; mCloseSheet(); mRenderForm()">
+      ${avatar(r.name, 42)}<div class="l"><b>${escHtml(r.name)}</b><small>${escHtml([personPos(p), r.dept].filter(Boolean).join(' · '))}</small></div></button>`;
+  }).join('') : '<div class="m-empty">ยังไม่มีผู้ใช้ในแผนกนี้</div>'));
+}
+function mResetForm() { Object.assign(M.f, { code: '', amount: '', detail: '', editRow: null, editReason: '' }); }
+function mCancelEdit() { mResetForm(); mRenderForm(); }
+
+function mEditRejected(rowIndex) {
+  const item = pendingDataCache.find(x => x.rowIndex === rowIndex);
+  if (!item) return;
+  const why = ((_tlCache[item.rowIndex + '|' + item.status] || '').match(/เหตุผล: ([^<]+)<\/span>(?![\s\S]*เหตุผล:)/) || [])[1] || '';
+  Object.assign(M.f, { branch: normalize(item.branch), dept: normalize(item.dept), code: normalize(item.accountCode), amount: String(item.amount),
+    detail: item.detail, requester: item.requester, editRow: rowIndex, editReason: why });
+  mGo('form');
+}
+
+function mSubmit() {
+  const f = M.f, c = mCalc();
+  if (!f.dept) return Swal.fire({ icon: 'warning', title: 'กรุณาเลือกแผนก', confirmButtonColor: '#7A3E94' });
+  if (!c) return Swal.fire({ icon: 'warning', title: 'กรุณาเลือกรายการงบ', confirmButtonColor: '#7A3E94' });
+  if (!(c.amt > 0)) return Swal.fire({ icon: 'warning', title: 'กรุณาใส่จำนวนเงิน', confirmButtonColor: '#7A3E94' }).then(() => document.getElementById('mAmt').focus());
+  if (!String(f.detail).trim()) return Swal.fire({ icon: 'warning', title: 'กรุณากรอกรายละเอียด', confirmButtonColor: '#7A3E94' }).then(() => document.getElementById('mDetail').focus());
+  if (!f.requester) return Swal.fire({ icon: 'warning', title: 'กรุณาเลือกผู้เสนอ', confirmButtonColor: '#7A3E94' });
+  Swal.fire({
+    title: f.editRow ? 'ยืนยันส่งรายการที่แก้ไข?' : 'ยืนยันส่งเรื่องตัดงบ?',
+    html: `<div class="text-start small"><b>${escHtml(c.acc.code)} ${escHtml(c.acc.name)}</b><br>${escHtml(f.detail)}<br>
+      ยอด <b style="color:#7A3E94">${fNum(c.amt)}</b> บาท · ผู้เสนอ ${escHtml(f.requester)}
+      ${c.net < 0 ? `<div class="mt-2 p-2 rounded" style="background:#fef2f2;color:#b91c1c"><i class="bi bi-exclamation-triangle-fill"></i> งบสะสมจะติดลบ ${fNum(Math.abs(c.net))} บาท</div>` : ''}</div>`,
+    icon: c.net < 0 ? 'warning' : 'question', showCancelButton: true, confirmButtonText: 'ยืนยันส่ง', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: c.net < 0 ? '#dc2626' : '#7A3E94', showLoaderOnConfirm: true,
+    preConfirm: () => apiCall('submitRequest', [{
+      isUpdate: !!f.editRow, rowIndex: f.editRow || '', branch: c.acc.branch, dept: c.acc.dept, accountCode: c.acc.code,
+      expenseDetail: String(f.detail).trim(), amount: c.amt, requester: f.requester, yearlyBudget: c.acc.yearlyBudget,
+      remainingYear: c.info.remainingYear - c.amt, accumulatedMonthBudget: c.info.remainingAccumulated, remainingMonthNet: c.net
+    }]).then(res => {
+      if (!res || res.status !== 'success') { Swal.showValidationMessage((res && res.message) || 'บันทึกไม่สำเร็จ'); return false; }
+      return res;
+    }).catch(e => { Swal.showValidationMessage(e.message); return false; })
+  }).then(r => {
+    if (!r.isConfirmed) return;
+    Swal.fire({ icon: r.value.isNegative ? 'warning' : 'success', title: f.editRow ? 'ส่งรายการที่แก้ไขแล้ว' : 'ส่งเรื่องเรียบร้อย',
+      text: r.value.message, timer: 2200, showConfirmButton: false });
+    mResetForm();
+    M.filter = 'all';
+    loadPendingList(true);
+    mGo('pending');
+  });
+}
+
+// ---------- เมนูเพิ่มเติม (มือถือ) ----------
+function mMoreMenu() {
+  const it = (ic, t, fn) => `<button class="m-opt" onclick="mCloseSheet(); ${fn}"><i class="bi ${ic}" style="font-size:20px;color:#7A3E94;width:28px"></i><div class="l"><b>${t}</b></div></button>`;
+  mOpenPicker(`<div class="m-h" style="font-size:16px;margin-bottom:6px">เพิ่มเติม</div>
+    ${it('bi-graph-up-arrow', 'วิเคราะห์การใช้งบ / AI', "mGo('analyze')")}
+    ${it('bi-person-fill-gear', 'ผู้ดูแลระบบ (Admin)', "mGo('admin')")}
+    ${it('bi-book', 'คู่มือการใช้งาน', "window.open('guide.html','_blank')")}
+    ${it('bi-key', 'เปลี่ยนรหัสผ่าน', 'changeMyPassword()')}
+    ${it('bi-box-arrow-right', 'ออกจากระบบ', 'doUserLogout()')}
+    <div class="m-hint">ระบบตัดงบทำการ v3.3 · กฟส.อ่าวลึก</div>`);
+}
+
+// ---------- ผูกกับของเดิม ----------
+const _origApplyBoot = applyBoot;
+applyBoot = function (d) {
+  _origApplyBoot(d);
+  M.lastLoad = Date.now();
+  mRenderAll();
+};
+const _origStartApp = startApp;
+startApp = function () {
+  _origStartApp();
+  mApplyMode();
+  loadPeople(false);
 };
 
 </script>
