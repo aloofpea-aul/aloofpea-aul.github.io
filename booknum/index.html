@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ระบบออกเลขหนังสือ - กฟส.อ่าวลึก</title>
+  <meta name="theme-color" content="#4b2e83">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ออกเลขหนังสือ">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="stylesheet" href="app.css">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; overflow-x: hidden; }
+    .pea-purple { background-color: #4b2e83; }
+    .tab-active { border-bottom: 4px solid #8e44ad; color: #8e44ad; font-weight: bold; background-color: #fdfaff; }
+    .loader { border-top-color: #8e44ad; animation: spinner 1s linear infinite; }
+    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    
+    .table-container { max-height: calc(100vh - 300px); overflow-y: auto; overflow-x: hidden; width: 100%; }
+    table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+    .cell-wrap { white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.4; }
+    
+    th { font-size: 10px !important; padding: 8px 4px !important; background-color: #f9fafb; text-transform: uppercase; color: #4b5563; border-bottom: 2px solid #edf2f7; }
+    td { font-size: 11px !important; padding: 8px 4px !important; vertical-align: top; color: #374151; }
+    
+    .col-date { width: 75px; }
+    .col-num { width: 100px; }
+    .col-manage { width: 70px; }
+    .col-file { width: 72px; }
+    .avatar { border-radius: 9999px; object-fit: cover; flex: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+    
+    .modal-backdrop { 
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background-color: rgba(0,0,0,0.6); 
+      z-index: 100; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 1rem; 
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.active { display: flex; }
+    .scale-in-center { animation: scale-in-center 0.3s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
+    @keyframes scale-in-center { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+    
+    .btn-action { transition: all 0.2s; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 10px; border: 1px solid transparent; }
+    .btn-action:hover { transform: translateY(-1px); filter: brightness(0.95); }
+
+    /* ===== V4.0: มือถือ / แท็บเล็ต ===== */
+    html { -webkit-text-size-adjust: 100%; }
+    * { -webkit-tap-highlight-color: transparent; }
+    .safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
+    #tabBar { position: sticky; top: var(--hdr, 60px); z-index: 30; }
+    .rcard { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 13px; text-align: left; width: 100%; transition: background .15s; }
+    .rcard:active { background: #f6f2fc; }
+    .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+    #fab { position: fixed; right: 16px; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 45; }
+    .kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed #e5e7eb; font-size: 14px; }
+    .kv > span:first-child { color: #6b7280; flex: none; max-width: 42%; }
+    .kv > span:last-child { text-align: right; word-break: break-word; }
+    .sheet-grip { display: none; }
+    @media (max-width: 767px) {
+      input, select, textarea { font-size: 16px !important; }          /* iPhone ไม่ซูมเอง */
+      .modal-backdrop { align-items: flex-end; padding: 0; }
+      .modal-backdrop > div { width: 100% !important; max-width: none !important; max-height: 92vh !important; max-height: 92dvh !important; border-radius: 22px 22px 0 0 !important; padding-bottom: env(safe-area-inset-bottom); animation: sheet-up .25s ease-out both !important; }
+      .sheet-grip { display: block; width: 40px; height: 5px; border-radius: 3px; background: #d1d5db; margin: 8px auto 0; }
+      .form-actions { position: sticky; bottom: 0; background: #fff; padding-bottom: 6px; margin-bottom: -4px; box-shadow: 0 -8px 12px -8px rgba(0,0,0,.08); }
+      .form-actions button { padding-top: 14px !important; padding-bottom: 14px !important; font-size: 15px !important; }
+      main { padding-bottom: 96px !important; }
+    }
+    @keyframes sheet-up { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <nav id="topBar" class="pea-purple text-white shadow-lg px-3 pb-2.5 safe-top sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto flex items-center gap-2">
+      <a href="../index.html" class="text-xl px-1 leading-none" title="กลับหน้าศูนย์รวมงาน">🏢</a>
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="hidden sm:block bg-white px-2 py-1.5 rounded-lg text-purple-800 font-bold text-base shadow-sm">PEA</div>
+        <div class="min-w-0">
+          <h1 class="text-[15px] font-bold leading-tight truncate">ระบบออกเลขหนังสือ</h1>
+          <p class="text-[10px] opacity-80 truncate">กฟส.อ่าวลึก</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 ml-auto">
+        <button id="userChip" onclick="openUserPicker()" class="hidden items-center bg-white text-gray-800 hover:bg-purple-50 p-0.5 md:pl-1 md:pr-4 md:py-1 rounded-full text-left shadow-sm" title="ผู้ใช้งาน / เปลี่ยนผู้ใช้">
+          <span id="userAvatar"></span>
+          <span class="ml-2 leading-tight hidden md:block"><span id="userName" class="block text-[12px] font-bold">-</span><span id="userDept" class="block text-[10px] text-gray-500"></span></span>
+        </button>
+        <button onclick="openSettings()" class="hover:bg-purple-700 w-10 h-10 rounded-full transition-all" title="ตั้งค่าระบบ (ผู้ดูแล)"><i class="fas fa-cog text-lg"></i></button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto p-2 md:p-4 w-full flex-1 flex flex-col">
+    <!-- แท็บเมนู -->
+    <div id="tabBar" class="bg-white rounded-t-2xl shadow-sm flex overflow-x-auto no-scrollbar border-b border-gray-100">
+      <button onclick="setCategory('หนังสือทั่วไป')" id="tab-gen" class="flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all tab-active text-sm"><span class="md:hidden">ทั่วไป</span><span class="hidden md:inline">หนังสือทั่วไป</span></button>
+      <button onclick="setCategory('หนังสือสัญญาจ้าง')" id="tab-con" class="flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all text-gray-500 border-l text-sm"><span class="md:hidden">สัญญา</span><span class="hidden md:inline">หนังสือสัญญาจ้าง</span></button>
+      <button onclick="setCategory('คำสั่ง (พ.)')" id="tab-ord" class="flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all text-gray-500 border-l text-sm"><span class="md:hidden">คำสั่ง</span><span class="hidden md:inline">คำสั่ง (พ.)</span></button>
+      <button onclick="setCategory('ใบสำคัญจ่าย')" id="tab-pay" class="flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all text-gray-500 border-l text-sm"><span class="md:hidden">ใบสำคัญ</span><span class="hidden md:inline">ใบสำคัญจ่าย</span></button>
+    </div>
+
+    <!-- ส่วนรายการ -->
+    <div class="bg-white rounded-b-2xl shadow-xl p-3 md:p-4 flex-1 flex flex-col">
+      <div class="flex flex-col md:flex-row justify-between items-center mb-2 gap-2">
+        <h2 class="hidden md:flex text-base font-bold text-gray-700 items-center"><i class="fas fa-list-ul mr-2 text-purple-600"></i> รายการล่าสุด (<span id="currentCatLabel">หนังสือทั่วไป</span>)</h2>
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <div class="relative flex-1 md:w-72">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fas fa-search text-sm"></i></span>
+            <input type="search" id="searchInput" oninput="onSearchInput()" placeholder="ค้นหา (รวมรายการเก่า)..." class="w-full pl-9 pr-3 py-2.5 md:py-1.5 border rounded-xl text-sm md:text-xs outline-none focus:ring-2 focus:ring-purple-300 bg-gray-50">
+          </div>
+          <button onclick="openForm()" class="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-xl font-bold shadow-md active:scale-95 transition-all text-sm items-center whitespace-nowrap">
+            <i class="fas fa-plus mr-1.5"></i> ออกเลขใหม่
+          </button>
+        </div>
+      </div>
+
+      <div id="tableStatus" class="text-[10px] text-gray-400 mb-1 md:text-right min-h-[14px]"></div>
+      <div id="noDataMsg" class="p-8 text-center text-gray-400 hidden italic">ยังไม่มีรายการข้อมูล</div>
+
+      <!-- คอม / แท็บเล็ตแนวนอน: ตาราง -->
+      <div id="tableView" class="table-container border rounded-xl shadow-inner bg-gray-50 hidden lg:block">
+        <table class="w-full text-left">
+          <thead class="bg-gray-100 sticky top-0 z-10" id="tableHead"></thead>
+          <tbody id="dataTableBody" class="bg-white divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <!-- มือถือ / แท็บเล็ตแนวตั้ง: การ์ด -->
+      <div id="cardList" class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-2.5"></div>
+    </div>
+    <footer class="mt-3 text-center text-gray-400 text-[10px] pb-1"><p>Version 4.0 | © Aloofpea · <a href="https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec" class="underline" target="_blank" rel="noopener">เวอร์ชันสำรอง (Apps Script)</a></p></footer>
+  </main>
+
+  <!-- ปุ่มออกเลขใหม่ (มือถือ) -->
+  <button id="fab" onclick="openForm()" class="md:hidden bg-green-600 active:bg-green-700 text-white pl-5 pr-6 py-3.5 rounded-full font-bold shadow-xl text-[15px] items-center hidden"><i class="fas fa-plus mr-2"></i>ออกเลขใหม่</button>
+
+  <!-- รายละเอียดรายการ (แตะการ์ด) -->
+  <div id="detailModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl scale-in-center flex flex-col overflow-hidden">
+      <div class="sheet-grip"></div>
+      <div class="px-5 pt-4 pb-2 flex items-start gap-3">
+        <div class="flex-1 min-w-0"><div id="detailCat" class="text-[11px] text-gray-500"></div><div id="detailNum" class="text-xl font-bold text-purple-800 break-all"></div></div>
+        <button onclick="closeDetail()" class="text-gray-400 hover:text-red-500 w-9 h-9"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      <div id="detailBody" class="px-5 overflow-y-auto flex-1"></div>
+      <div id="detailActions" class="p-4 grid grid-cols-2 gap-2 border-t"></div>
+    </div>
+  </div>
+
+  <!-- ฟอร์มกรอกข้อมูล -->
+  <div id="formModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] shadow-2xl scale-in-center flex flex-col overflow-hidden">
+      <div class="sheet-grip"></div>
+      <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+        <h2 id="modalTitle" class="text-lg font-bold text-gray-800 flex items-center"><i class="fas fa-file-signature mr-3 text-purple-600"></i> ข้อมูลหนังสือ</h2>
+        <button onclick="closeForm()" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      
+      <form id="bookForm" class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto">
+        <input type="hidden" name="rowIndex" id="rowIndexInput">
+        <div class="md:col-span-2 flex justify-between items-center bg-purple-50 p-3 rounded-xl border border-purple-100 mb-1">
+          <div><span class="text-gray-500 text-[9px] block uppercase font-bold tracking-wider">โหมดการทำงาน</span><span id="nextIdPreview" class="text-base font-bold text-purple-800">-</span></div>
+          <div class="text-right w-2/3"><label class="text-gray-500 text-[9px] block uppercase font-bold mb-1">เลขที่หนังสือ</label><input type="text" name="bookNum" id="bookNumField" required class="w-full p-2 border rounded-lg font-bold text-orange-600 text-right shadow-inner outline-none"></div>
+        </div>
+        <div><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">แผนก *</label><select name="department" id="deptSelect" required onchange="filterRecordersByDept()" class="w-full p-2 bg-gray-50 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-purple-400"></select></div>
+        <div><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">วันที่ *</label><input type="date" name="date" required id="dateInput" class="w-full p-2 bg-gray-50 border rounded-lg text-xs"></div>
+        
+        <!-- หัวเรื่อง & รายละเอียดงานทั่วไป -->
+        <div class="md:col-span-2" id="generalSubjectField">
+          <label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">หัวเรื่องหนังสือ *</label>
+          <select name="subject" id="subjectSelect" class="w-full p-2 bg-gray-50 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-purple-400"></select>
+        </div>
+        <div class="md:col-span-2 hidden" id="freeSubjectField">
+          <label id="freeSubjectLabel" class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">รายละเอียด *</label>
+          <textarea name="subjectText" id="subjectText" rows="2" placeholder="พิมพ์รายละเอียด..." class="w-full p-2 bg-gray-50 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-purple-400"></textarea>
+        </div>
+        <div class="md:col-span-2 hidden" id="generalDetailField"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">รายละเอียดงาน *</label><input type="text" name="detail" id="detailInput" placeholder="ระบุรายละเอียดงาน..." class="w-full p-2 bg-gray-50 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-purple-400"></div>
+
+        <!-- เฉพาะใบสำคัญจ่าย -->
+        <div id="paymentDocNumField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">เลขที่เอกสาร</label><input type="number" name="paymentDocNum" class="w-full p-2 bg-gray-50 border rounded-lg text-xs" placeholder="ถ้าไม่มีให้ปล่อยว่าง"></div>
+        <div id="paymentAmountField" class="hidden"><label class="block text-right text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">จำนวนเงิน (บาท) *</label><input type="number" step="0.01" name="paymentAmount" class="w-full p-2 bg-gray-50 border rounded-lg text-xs text-right font-bold text-green-700"></div>
+        <div class="md:col-span-2 hidden" id="paymentPayeeField">
+          <label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">ผู้รับเงิน (เลือกหรือพิมพ์เองได้) *</label>
+          <input type="text" name="payee" id="payeeInput" list="payeeList" class="w-full p-2 bg-gray-50 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-purple-400" placeholder="ระบุชื่อผู้รับเงิน...">
+          <datalist id="payeeList"></datalist>
+        </div>
+        <div class="md:col-span-2 hidden" id="paymentItemField"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">รายการ *</label><input type="text" name="paymentItem" class="w-full p-2 bg-gray-50 border rounded-lg text-xs"></div>
+        <div class="md:col-span-2 hidden" id="paymentNoteField"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">หมายเหตุ</label><input type="text" name="paymentNote" class="w-full p-2 bg-gray-50 border rounded-lg text-xs"></div>
+
+        <!-- ฟิลด์สัญญา/คำสั่ง/หนังสือทั่วไป -->
+        <div id="contractorField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">ชื่อผู้รับจ้าง *</label><input type="text" name="contractor" class="w-full p-2 border rounded-lg text-xs"></div>
+        <div id="procurementField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">ประเภทงาน</label><select name="procurement" class="w-full p-2 border rounded-lg text-xs"><option value="ทั่วไป">ทั่วไป</option><option value="จัดซื้อ">จัดซื้อ</option><option value="จัดจ้าง">จัดจ้าง</option></select></div>
+        <div id="startDateField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">วันที่เริ่มสัญญา *</label><input type="date" name="startDate" class="w-full p-2 border rounded-lg text-xs"></div>
+        <div id="orderDateField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">สั่ง ณ วันที่ *</label><input type="date" name="orderDate" class="w-full p-2 border rounded-lg text-xs"></div>
+        <div id="endDateField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">วันสิ้นสุดสัญญา *</label><input type="date" name="endDate" class="w-full p-2 border rounded-lg text-xs"></div>
+        <div id="amountField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">วงเงิน (บาท) *</label><input type="number" step="0.01" name="amount" class="w-full p-2 border rounded-lg text-xs text-right font-bold"></div>
+        <div id="medianPriceField" class="hidden"><label class="block text-right text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">ราคากลาง (บาท)</label><input type="number" step="0.01" name="medianPrice" id="medianPriceInput" class="w-full p-2 bg-gray-50 border rounded-lg text-xs text-right font-bold text-blue-700"></div>
+        <div id="retentionField" class="hidden"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide">เงินประกัน (บาท)</label><input type="number" step="0.01" name="retention" class="w-full p-2 border rounded-lg text-xs text-right"></div>
+
+        <!-- ไฟล์แนบ (V3.39) -->
+        <div class="md:col-span-2 hidden" id="attachContractField"></div>
+        <div class="md:col-span-2 hidden" id="attachRetentionField"></div>
+        <div class="md:col-span-2 hidden" id="attachOrderField"></div>
+
+        <div class="md:col-span-2 border-t pt-2"><label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-tight">ผู้บันทึก *</label><select name="recorder" id="recorderSelect" required class="w-full p-2 bg-gray-50 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-purple-400"></select></div>
+        <div class="md:col-span-2 pt-3 flex space-x-3 form-actions"><button type="submit" class="flex-1 bg-purple-600 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all text-sm active:scale-95">บันทึกข้อมูล</button><button type="button" onclick="closeForm()" class="bg-gray-100 text-gray-500 px-5 py-2.5 rounded-xl font-bold text-sm">ยกเลิก</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Popup แจ้งเตือนเงิน -->
+  <div id="notifModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl scale-in-center p-6 text-center">
+      <h3 class="font-bold text-lg mb-1 text-gray-800">แจ้งรับเงิน</h3>
+      <p id="notifTimeLabel" class="text-[10px] text-gray-400 mb-5 italic">ยังไม่ได้ส่งแจ้งเตือน</p>
+      <div class="flex flex-col space-y-2 mb-6 text-left">
+        <label class="p-4 border-2 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all flex items-center group">
+          <input type="radio" name="payType" value="รับเงินสด" checked class="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500">
+          <span class="ml-3 font-bold text-gray-700 group-hover:text-purple-700">รับเงินสด</span>
+        </label>
+        <label class="p-4 border-2 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all flex items-center group">
+          <input type="radio" name="payType" value="โอนเงิน" class="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500">
+          <span class="ml-3 font-bold text-gray-700 group-hover:text-purple-700">โอนเงิน</span>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button id="confirmNotifBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-all">ยืนยันการส่ง</button>
+        <button onclick="closeNotif()" class="bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold text-sm">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup จัดเก็บใบสำคัญ -->
+  <div id="storeModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl scale-in-center p-6">
+      <h3 class="font-bold text-lg mb-4 text-gray-800 flex items-center"><i class="fas fa-archive mr-2 text-blue-600"></i>จัดเก็บใบสำคัญ</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="text-[10px] font-bold text-gray-500 uppercase">เลขที่คุม</label>
+          <div id="storeWarning" class="text-[9px] text-red-500 font-bold mb-1 hidden">กรุณากดสร้างเลขใหม่ก่อนบันทึก!</div>
+          <div class="flex space-x-1 mt-1">
+            <button onclick="createControlNum()" class="bg-purple-100 text-purple-700 px-3 py-1 rounded-xl text-[10px] font-bold hover:bg-purple-200 border border-purple-200">สร้างเลข</button>
+            <input type="text" id="controlNumInput" placeholder="ยังไม่ระบุเลขคุม" class="flex-1 p-2 border rounded-lg text-xs font-bold bg-gray-50 text-center outline-none focus:ring-1 focus:ring-blue-400">
+            <button onclick="copyToClipboard('controlNumInput')" class="p-2 text-gray-400 hover:text-blue-600 transition-colors"><i class="fas fa-copy"></i></button>
+          </div>
+        </div>
+        <div><label class="text-[10px] font-bold text-gray-500 uppercase">วันที่จ่ายจริง</label><input type="date" id="paymentDateInput" class="w-full p-2 border rounded-lg text-xs mt-1 outline-none focus:ring-1 focus:ring-blue-400"></div>
+      </div>
+      <div class="mt-8 flex space-x-2">
+        <button id="confirmStoreBtn" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-bold shadow hover:bg-blue-700 transition-all text-sm active:scale-95">บันทึกจัดเก็บ</button>
+        <button onclick="closeStore()" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold text-sm">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ตั้งค่าระบบ -->
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl scale-in-center overflow-hidden">
+      <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+        <h2 class="text-xl font-bold text-gray-800 flex items-center"><i class="fas fa-tools mr-3 text-purple-600"></i>ตั้งค่าระบบ</h2>
+        <button onclick="closeSettings()" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-4 flex-1 text-[11px]">
+        <div><label class="font-bold uppercase text-gray-600">รายชื่อแผนก</label><textarea id="setDept" class="w-full p-2 border rounded-xl h-20 mt-1 outline-none focus:ring-1 focus:ring-purple-500"></textarea></div>
+        <div><label class="font-bold uppercase text-gray-600">รายชื่อผู้บันทึก</label><textarea id="setRec" class="w-full p-2 border rounded-xl h-20 mt-1 outline-none focus:ring-1 focus:ring-purple-500"></textarea></div>
+        <div><label class="font-bold uppercase text-gray-600">หัวเรื่องที่ใช้บ่อย</label><textarea id="setSub" class="w-full p-2 border rounded-xl h-20 mt-1 outline-none focus:ring-1 focus:ring-purple-500"></textarea></div>
+        <div><label class="font-bold text-blue-700 uppercase">ผู้รับเงิน และ Token (ชื่อ:Token)</label><textarea id="setPayee" class="w-full p-2 border border-blue-200 rounded-xl h-32 mt-1 outline-none focus:ring-1 focus:ring-blue-500"></textarea></div>
+        <div><label class="font-bold text-orange-800 uppercase">เลขเริ่มต้น (หมวด:เลขที่)</label><textarea id="setNum" class="w-full p-2 border border-orange-200 rounded-xl h-20 mt-1 outline-none focus:ring-1 focus:ring-orange-500"></textarea></div>
+      </div>
+      <div class="p-5 border-t bg-gray-50"><button onclick="saveSettingsAction()" class="w-full bg-green-600 text-white py-3 rounded-2xl font-bold shadow-md hover:bg-green-700 transition-all text-sm">บันทึกข้อมูลการตั้งค่า</button></div>
+    </div>
+  </div>
+
+  <div id="loading" class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center z-[200] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl text-center shadow-xl"><div class="loader rounded-full border-4 border-t-4 border-gray-200 h-10 w-10 mb-2 mx-auto"></div><p class="text-[11px] font-bold text-gray-600" id="loadingText">ประมวลผล...</p></div></div>
+  <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[200] p-4 backdrop-blur-sm"><div class="bg-white p-7 rounded-3xl text-center shadow-2xl max-w-sm w-full"><div class="text-green-500 text-4xl mb-3"><i class="fas fa-check-circle"></i></div><h2 class="text-lg font-bold text-gray-800 mb-1">สำเร็จ</h2><p id="successMsg" class="text-gray-600 mb-6 font-medium text-xs whitespace-pre-line">-</p><button onclick="closeSuccess()" class="w-full bg-gray-800 hover:bg-black text-white py-3 rounded-xl font-bold text-sm">ตกลง</button></div></div>
+
+  <!-- หน้าเข้าระบบ (V3.38) -->
+  <div id="loginView" class="fixed inset-0 z-[300] bg-gray-100 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="pea-purple text-white p-5 flex items-center space-x-3">
+        <div class="bg-white p-2 rounded-lg text-purple-700 font-bold text-lg">PEA</div>
+        <div><h1 class="text-base font-bold leading-none">ระบบออกเลขหนังสือ</h1><p class="text-[10px] opacity-80">การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก</p></div>
+      </div>
+      <div id="loginStep1" class="p-6">
+        <h2 class="font-bold text-gray-800 mb-1">เข้าใช้งานครั้งแรกในเครื่องนี้</h2>
+        <p id="loginNote" class="text-[11px] text-gray-500 mb-4">กรอกรหัสสำนักงานครั้งเดียว ระบบจะจำเครื่องนี้ไว้ 90 วัน</p>
+        <label class="block text-gray-700 font-semibold mb-1 text-[11px]">รหัสสำนักงาน</label>
+        <input type="password" id="officeCodeInput" autocomplete="off" class="w-full p-3 border rounded-xl text-center text-lg tracking-widest outline-none focus:ring-2 focus:ring-purple-400" placeholder="••••••">
+        <p id="loginErr" class="text-[11px] text-red-500 font-bold mt-2 hidden"></p>
+        <button id="loginBtn" onclick="doLogin()" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow active:scale-95 transition-all text-sm">เข้าใช้งาน</button>
+        <p class="text-[10px] text-gray-400 mt-4 text-center">ไม่ทราบรหัส สอบถามผู้ดูแลระบบของสำนักงาน</p>
+      </div>
+      <div id="loginStep2" class="p-6 hidden">
+        <h2 class="font-bold text-gray-800 mb-1">เลือกชื่อของคุณ</h2>
+        <p class="text-[11px] text-gray-500 mb-4">ระบบจะเติมชื่อผู้บันทึกและแผนกให้อัตโนมัติตอนออกเลข</p>
+        <input type="text" id="userSearch" oninput="renderUserGrid()" placeholder="พิมพ์ค้นหาชื่อ..." class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-400 mb-2">
+        <input type="hidden" id="userSelect">
+        <div id="userGrid" class="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
+        <p id="userErr" class="text-[11px] text-red-500 font-bold mt-2 hidden">เลือกชื่อก่อน</p>
+        <button onclick="chooseUser()" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow active:scale-95 transition-all text-sm">เริ่มใช้งาน</button>
+        <div class="flex justify-between mt-4 text-[11px]">
+          <button id="userCancelBtn" onclick="closeUserPicker()" class="text-gray-500 hover:text-gray-800 hidden">ยกเลิก</button>
+          <button onclick="logout()" class="text-red-500 hover:text-red-700 ml-auto">ออกจากระบบเครื่องนี้</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- รายการไฟล์แนบ -->
+  <div id="filesModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl scale-in-center p-6">
+      <h3 id="filesTitle" class="font-bold text-lg mb-3 text-gray-800 flex items-center"><i class="fas fa-paperclip mr-2 text-purple-600"></i>ไฟล์แนบ</h3>
+      <div id="filesList" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
+      <button onclick="document.getElementById('filesModal').classList.remove('active')" class="w-full mt-5 bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold text-sm">ปิด</button>
+    </div>
+  </div>
+
+  <!-- รหัสผู้ดูแล (ก่อนเข้าหน้าตั้งค่า) -->
+  <div id="adminModal" class="modal-backdrop">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl scale-in-center p-6">
+      <h3 class="font-bold text-lg mb-1 text-gray-800 flex items-center"><i class="fas fa-lock mr-2 text-purple-600"></i>สำหรับผู้ดูแลระบบ</h3>
+      <p class="text-[11px] text-gray-500 mb-4">กรอกรหัสผู้ดูแลเพื่อแก้ไขการตั้งค่า</p>
+      <input type="password" id="adminCodeInput" autocomplete="off" class="w-full p-3 border rounded-xl text-center text-lg tracking-widest outline-none focus:ring-2 focus:ring-purple-400" placeholder="••••••">
+      <p id="adminErr" class="text-[11px] text-red-500 font-bold mt-2 hidden"></p>
+      <div class="mt-5 flex space-x-2">
+        <button id="adminBtn" onclick="doAdminLogin()" class="flex-1 bg-purple-600 text-white py-3 rounded-2xl font-bold text-sm active:scale-95">ยืนยัน</button>
+        <button onclick="closeAdmin()" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-bold text-sm">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[210] p-4 backdrop-blur-sm"><div class="bg-white p-7 rounded-3xl text-center shadow-2xl max-w-sm w-full"><div class="text-red-500 text-4xl mb-3"><i class="fas fa-exclamation-circle"></i></div><h2 class="text-lg font-bold text-gray-800 mb-1">เกิดข้อผิดพลาด</h2><p id="errorMsg" class="text-gray-600 mb-6 font-medium text-xs whitespace-pre-line">-</p><button onclick="closeError()" class="w-full bg-gray-800 hover:bg-black text-white py-3 rounded-xl font-bold text-sm">ตกลง</button></div></div>
+
+  <script>
+    // ================= V3.37: เร็วขึ้น / ไม่ค้าง =================
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec';
+    let appSettings = { departments: [], recorders: [], subjects: [], startNums: {}, payees: [] };
+    let currentCategory = "หนังสือทั่วไป";
+    let activeRowData = null;
+
+    const dataCache = {};        // ข้อมูลตารางแยกตามแท็บ (จำไว้ ไม่ต้องโหลดใหม่ทุกครั้ง)
+    const loadSeq = {};          // กันผลลัพธ์เก่ามาทับผลลัพธ์ใหม่
+    let viewRows = [];           // แถวที่แสดงอยู่ (ปุ่มแก้ไขอ้างด้วยลำดับ ไม่ฝังข้อมูลในปุ่ม)
+    let serverSearch = null;     // ผลค้นหาจาก server { cat, term, res }
+    let searchTimer = null, searchSeq = 0;
+    const SETTINGS_LS_KEY = 'booknum_settings_v1';
+    const TOKEN_KEY = 'booknum_token_v1', USER_KEY = 'booknum_user_v1';
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+    let token = lsGet(TOKEN_KEY), adminToken = null, currentUser = lsGet(USER_KEY);
+
+    // ---------- V3.39: รายชื่อ + รูป ----------
+    const PEOPLE_KEY = 'booknum_people_v1';
+    let peopleMap = {};
+    try { const c = JSON.parse(lsGet(PEOPLE_KEY) || 'null'); if (c && c.list) c.list.forEach(p => peopleMap[p.recorder] = p); } catch (e) {}
+
+    function initials(name) {
+      const n = String(name || '').replace(/^\s*(นางสาว|น\.ส\.|นาย|นาง)\s*/, '').trim().split(/\s+/);
+      const first = w => (String(w || '').match(/[^เแโใไ\s]/) || [''])[0];
+      return (first(n[0]) + first(n[1])) || '?';
+    }
+    function avatarHtml(rec, px) {
+      const p = peopleMap[rec] || {};
+      const size = `width:${px}px;height:${px}px`;
+      if (p.photo) return `<img src="${esc(p.photo)}" alt="" class="avatar" style="${size}" onerror="this.outerHTML='<span class=&quot;avatar bg-purple-100 text-purple-700&quot; style=&quot;${size};font-size:${Math.round(px / 2.6)}px&quot;>${esc(initials(rec))}</span>'">`;
+      return `<span class="avatar bg-purple-100 text-purple-700" style="${size};font-size:${Math.round(px / 2.6)}px">${esc(initials(rec))}</span>`;
+    }
+    function shrinkPhoto(src) {
+      return new Promise(resolve => {
+        if (!src || src.indexOf('data:image') !== 0) return resolve(src || '');
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const S = 112, c = document.createElement('canvas'); c.width = S; c.height = S;
+            const k = Math.max(S / img.width, S / img.height), w = img.width * k, h = img.height * k;
+            c.getContext('2d').drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+            resolve(c.toDataURL('image/jpeg', 0.8));
+          } catch (e) { resolve(src); }
+        };
+        img.onerror = () => resolve('');
+        img.src = src;
+      });
+    }
+    function loadPeople() {
+      return api('getPeople').then(async res => {
+        const list = (res && res.people) || [];
+        for (const p of list) p.photo = await shrinkPhoto(p.photo);
+        peopleMap = {}; list.forEach(p => peopleMap[p.recorder] = p);
+        lsSet(PEOPLE_KEY, JSON.stringify({ ts: Date.now(), list: list }));
+        refreshUserChip();
+        if (!document.getElementById('loginStep2').classList.contains('hidden')) renderUserGrid();
+      }).catch(() => {});
+    }
+    function refreshUserChip() {
+      const p = peopleMap[currentUser] || {};
+      document.getElementById('userName').innerText = currentUser || 'เลือกชื่อ';
+      document.getElementById('userDept').innerText = [p.position, p.dept].filter(Boolean).join(' · ');
+      document.getElementById('userAvatar').innerHTML = currentUser ? avatarHtml(currentUser, 38) : '';
+      if (typeof syncHeaderHeight === 'function') syncHeaderHeight();
+    }
+    function renderUserGrid() {
+      const q = (document.getElementById('userSearch').value || '').trim().toLowerCase();
+      const sel = document.getElementById('userSelect').value;
+      const list = (appSettings.recorders || []).filter(r => !q || (r + ' ' + ((peopleMap[r] || {}).dept || '')).toLowerCase().includes(q));
+      document.getElementById('userGrid').innerHTML = list.length ? list.map(r => {
+        const p = peopleMap[r] || {}, on = r === sel;
+        return `<button type="button" data-rec="${esc(r)}" onclick="pickUser(this.dataset.rec)" class="flex items-center gap-3 p-2 rounded-xl border text-left transition-all ${on ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-300' : 'border-gray-200 hover:bg-gray-50'}">
+          ${avatarHtml(r, 44)}
+          <span class="leading-tight"><span class="block text-[12px] font-bold text-gray-800">${esc(r)}</span><span class="block text-[10px] text-gray-500">${esc([p.position, p.dept].filter(Boolean).join(' · '))}</span></span>
+        </button>`;
+      }).join('') : '<p class="text-center text-xs text-gray-400 py-4">ไม่พบชื่อ</p>';
+    }
+    function pickUser(rec) { document.getElementById('userSelect').value = rec; document.getElementById('userErr').classList.add('hidden'); renderUserGrid(); }
+
+    // ---------- V3.39: ไฟล์แนบ ----------
+    const ATTACH = {
+      contractFiles:  { box: 'attachContractField',  label: 'ไฟล์สัญญา',        icon: 'fa-file-contract', col: 'ไฟล์สัญญา' },
+      retentionFiles: { box: 'attachRetentionField', label: 'ไฟล์เงินประกัน',   icon: 'fa-shield-alt',    col: 'ไฟล์เงินประกัน' },
+      orderFiles:     { box: 'attachOrderField',     label: 'เอกสารแนบ (ไม่จำกัดจำนวน)', icon: 'fa-paperclip', col: 'เอกสารแนบ' }
+    };
+    const FILE_COLS = ['ไฟล์สัญญา', 'ไฟล์เงินประกัน', 'เอกสารแนบ'];
+    const MAX_MB = 25;
+    let attachState = { contractFiles: [], retentionFiles: [], orderFiles: [] };
+    let uploadChain = Promise.resolve();
+
+    function parseFiles(cell) {
+      return String(cell || '').split(/\n+/).map(l => l.trim()).filter(Boolean).map(l => {
+        const i = l.lastIndexOf(' | ');
+        if (i > -1) return { name: l.slice(0, i), url: l.slice(i + 3).trim(), status: 'done' };
+        const m = l.match(/https?:\/\/\S+/);
+        return m ? { name: l.replace(m[0], '').trim() || 'ไฟล์', url: m[0], status: 'done' } : { name: l, url: '', status: 'done' };
+      });
+    }
+    function fileIcon(name) {
+      const n = String(name).toLowerCase();
+      if (/\.pdf$/.test(n)) return 'fa-file-pdf text-red-500';
+      if (/\.(jpe?g|png|gif|webp|heic)$/.test(n)) return 'fa-file-image text-blue-500';
+      if (/\.(xlsx?|csv)$/.test(n)) return 'fa-file-excel text-green-600';
+      if (/\.(docx?)$/.test(n)) return 'fa-file-word text-blue-700';
+      return 'fa-file text-gray-500';
+    }
+    function renderAttach(key) {
+      const cfg = ATTACH[key], list = attachState[key];
+      const rows = list.map((f, i) => {
+        let right = '';
+        if (f.status === 'uploading') right = '<span class="text-[10px] text-gray-500 whitespace-nowrap"><i class="fas fa-circle-notch fa-spin mr-1"></i>กำลังอัปโหลด</span>';
+        else if (f.status === 'error') right = `<span class="text-[10px] text-red-500 whitespace-nowrap" title="${esc(f.err || '')}">อัปโหลดไม่สำเร็จ</span><button type="button" onclick="retryUpload('${key}',${i})" class="text-[10px] font-bold text-purple-700 underline ml-1">ลองใหม่</button>`;
+        const nameEl = f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="truncate text-purple-700 hover:underline">${esc(f.name)}</a>` : `<span class="truncate">${esc(f.name)}</span>`;
+        return `<div class="flex items-center gap-2 border rounded-lg px-2 py-1.5 bg-white text-xs"><i class="fas ${fileIcon(f.name)}"></i><span class="flex-1 min-w-0 flex">${nameEl}</span>${right}<button type="button" onclick="removeFile('${key}',${i})" class="text-gray-400 hover:text-red-500 px-1" title="เอาออก"><i class="fas fa-times"></i></button></div>`;
+      }).join('');
+      document.getElementById(cfg.box).innerHTML = `
+        <label class="block text-gray-700 font-semibold mb-1 text-[11px] uppercase tracking-wide"><i class="fas ${cfg.icon} mr-1 text-purple-600"></i>${cfg.label}</label>
+        <div class="space-y-1.5">${rows}</div>
+        <label class="mt-1.5 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-2.5 text-xs text-gray-500 cursor-pointer hover:border-purple-400 hover:text-purple-700">
+          <i class="fas fa-plus"></i> แตะเพื่อแนบไฟล์ / ถ่ายรูป (เลือกหลายไฟล์ได้)
+          <input type="file" multiple class="hidden" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" onchange="addFiles('${key}', this)">
+        </label>`;
+    }
+    function renderAllAttach() { Object.keys(ATTACH).forEach(renderAttach); }
+
+    function addFiles(key, input) {
+      [...input.files].forEach(file => {
+        const item = { name: file.name, status: 'uploading', file: file };
+        attachState[key].push(item);
+        if (file.size > MAX_MB * 1024 * 1024) { item.status = 'error'; item.err = 'ไฟล์ใหญ่เกิน ' + MAX_MB + ' MB'; return; }
+        queueUpload(key, item);
+      });
+      input.value = '';
+      renderAttach(key);
+    }
+    function retryUpload(key, i) {
+      const item = attachState[key][i];
+      if (!item || !item.file) return;
+      if (item.file.size > MAX_MB * 1024 * 1024) return;
+      item.status = 'uploading'; renderAttach(key); queueUpload(key, item);
+    }
+    function removeFile(key, i) { attachState[key].splice(i, 1); renderAttach(key); }
+
+    function readAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).split(',')[1] || '');
+        r.onerror = () => reject(new Error('อ่านไฟล์ไม่ได้'));
+        r.readAsDataURL(file);
+      });
+    }
+    // รูปจากกล้องมือถือใหญ่มาก -> ย่อเหลือด้านยาว 2000px ก่อนส่ง
+    function prepareFile(file) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1024 * 1024) return readAsBase64(file).then(b => ({ base64: b, mimeType: file.type, name: file.name }));
+      return new Promise(resolve => {
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onload = () => {
+          const k = Math.min(1, 2000 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          resolve({ base64: c.toDataURL('image/jpeg', 0.85).split(',')[1], mimeType: 'image/jpeg', name: file.name.replace(/\.(png|webp|jpeg)$/i, '.jpg') });
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(readAsBase64(file).then(b => ({ base64: b, mimeType: file.type, name: file.name }))); };
+        img.src = url;
+      });
+    }
+    function queueUpload(key, item) {
+      const cat = currentCategory;
+      uploadChain = uploadChain.then(() => prepareFile(item.file)
+        .then(p => api('uploadFile', { category: cat, name: p.name, mimeType: p.mimeType, base64: p.base64 }))
+        .then(r => { item.status = 'done'; item.url = r.url; item.name = r.name; delete item.file; })
+        .catch(e => { item.status = 'error'; item.err = errText(e); })
+        .then(() => renderAttach(key)));
+    }
+    function attachPayload(key) { return attachState[key].filter(f => f.status === 'done').map(f => ({ name: f.name, url: f.url })); }
+    function attachBusy(keys) {
+      const all = keys.reduce((a, k) => a.concat(attachState[k]), []);
+      if (all.some(f => f.status === 'uploading')) return 'รอให้อัปโหลดไฟล์เสร็จก่อน แล้วค่อยกดบันทึก';
+      if (all.some(f => f.status === 'error')) return 'มีไฟล์ที่อัปโหลดไม่สำเร็จ กด "ลองใหม่" หรือเอาไฟล์นั้นออกก่อนบันทึก';
+      return '';
+    }
+    function openFiles(i, col) {
+      const row = viewRows[i]; if (!row) return;
+      const list = parseFiles(row[col]);
+      document.getElementById('filesTitle').innerHTML = `<i class="fas fa-paperclip mr-2 text-purple-600"></i>${esc(col)} · ${esc(row['เลขที่'] || '')}`;
+      document.getElementById('filesList').innerHTML = list.map(f => f.url
+        ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="flex items-center gap-3 border rounded-xl p-3 hover:bg-purple-50 text-sm"><i class="fas ${fileIcon(f.name)} text-lg"></i><span class="flex-1 break-all">${esc(f.name)}</span><i class="fas fa-external-link-alt text-gray-400"></i></a>`
+        : `<div class="flex items-center gap-3 border rounded-xl p-3 text-sm text-gray-500"><i class="fas fa-file text-lg"></i><span class="flex-1 break-all">${esc(f.name)}</span></div>`).join('');
+      document.getElementById('filesModal').classList.add('active');
+    }
+
+    // ---------- เรียก server แบบมีทางออกเสมอ (สำเร็จ / ผิดพลาด / หมดเวลา 60 วิ) ----------
+    // V4.0: เรียก Apps Script ผ่าน fetch (POST text/plain ไม่ต้องขอ CORS preflight)
+    function run(fn) {
+      const args = Array.prototype.slice.call(arguments, 1);
+      const ms = (fn === 'uploadFile' || fn === 'saveData') ? 180000 : 60000;
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const t = setTimeout(() => ctrl && ctrl.abort(), ms);
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fn: fn, args: args }),
+        redirect: 'follow',
+        signal: ctrl ? ctrl.signal : undefined
+      }).then(res => res.text()).then(txt => {
+        clearTimeout(t);
+        let j;
+        try { j = JSON.parse(txt); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (อาจกำลังอัปเดตระบบ ลองใหม่อีกครั้ง)'); }
+        if (!j.ok) throw new Error(j.error || 'ไม่ทราบสาเหตุ');
+        return j.data;
+      }).catch(e => {
+        clearTimeout(t);
+        if (e && e.name === 'AbortError') throw new Error('TIMEOUT');
+        if (e && e.name === 'TypeError') throw new Error('เชื่อมต่อเครือข่ายไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+        throw e;
+      });
+    }
+    function errText(e) {
+      if (e && e.message === 'TIMEOUT') return 'เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง';
+      return (e && e.message) ? e.message : String(e);
+    }
+    // เรียก server พร้อม token / ถ้ารหัสหมดอายุ -> กลับหน้าเข้าระบบ
+    function api(fn) {
+      const args = Array.prototype.slice.call(arguments, 1);
+      return run.apply(null, [fn, token].concat(args)).catch(e => {
+        const m = errText(e);
+        if (m.indexOf('AUTH_REQUIRED') !== -1 || m.indexOf('SETUP_REQUIRED') !== -1) {
+          logout(m.indexOf('SETUP_REQUIRED') !== -1 ? 'setup' : 'expired');
+          throw new Error('กรุณากรอกรหัสสำนักงานอีกครั้ง');
+        }
+        if (m.indexOf('ADMIN_REQUIRED') !== -1) { adminToken = null; throw new Error('หมดเวลาสิทธิ์ผู้ดูแล กรุณากรอกรหัสผู้ดูแลอีกครั้ง'); }
+        throw e;
+      });
+    }
+
+    function esc(v) {
+      return String(v === null || v === undefined ? '' : v)
+        .replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ---------- เริ่มต้น ----------
+    window.onload = function() {
+      document.getElementById('officeCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+      document.getElementById('adminCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+      if (!token) showLogin(); else startApp();
+    };
+
+    // ---------- เข้าระบบ ----------
+    function showLogin(reason) {
+      document.getElementById('loginView').classList.remove('hidden');
+      document.getElementById('loginStep1').classList.remove('hidden');
+      document.getElementById('loginStep2').classList.add('hidden');
+      const note = document.getElementById('loginNote'), err = document.getElementById('loginErr');
+      err.classList.add('hidden');
+      if (reason === 'expired') note.innerText = 'รหัสสำนักงานหมดอายุหรือมีการเปลี่ยนรหัส กรุณากรอกใหม่';
+      else if (reason === 'setup') { err.innerText = 'ระบบยังไม่ได้ตั้งรหัส ให้ผู้ดูแลเปิดชีต แล้วใช้เมนู "ระบบออกเลข" ตั้งรหัสก่อน'; err.classList.remove('hidden'); }
+      else note.innerText = 'กรอกรหัสสำนักงานครั้งเดียว ระบบจะจำเครื่องนี้ไว้ 90 วัน';
+      setTimeout(() => document.getElementById('officeCodeInput').focus(), 50);
+    }
+
+    function doLogin() {
+      const input = document.getElementById('officeCodeInput'), err = document.getElementById('loginErr'), btn = document.getElementById('loginBtn');
+      const code = input.value.trim();
+      if (!code) { err.innerText = 'กรอกรหัสสำนักงานก่อน'; err.classList.remove('hidden'); return; }
+      err.classList.add('hidden'); btn.disabled = true; btn.innerText = 'กำลังตรวจสอบ...';
+      run('login', code).then(res => {
+        btn.disabled = false; btn.innerText = 'เข้าใช้งาน';
+        if (!res || !res.ok) {
+          err.innerText = res && res.reason === 'SETUP_REQUIRED' ? 'ระบบยังไม่ได้ตั้งรหัส ให้ผู้ดูแลเปิดชีต แล้วใช้เมนู "ระบบออกเลข" ตั้งรหัสก่อน' : res && res.reason === 'LOCKED' ? 'มีการกรอกรหัสผิดหลายครั้ง ระบบพักการเข้าระบบชั่วคราว ลองใหม่ใน 10 นาที' : 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
+          err.classList.remove('hidden'); input.select(); return;
+        }
+        token = res.token; lsSet(TOKEN_KEY, token); input.value = '';
+        if (res.settings) { appSettings = res.settings; updateDropdowns(); lsSet(SETTINGS_LS_KEY, JSON.stringify(res.settings)); }
+        showUserStep(false);
+        loadPeople();
+      }).catch(e => {
+        btn.disabled = false; btn.innerText = 'เข้าใช้งาน';
+        err.innerText = 'เชื่อมต่อไม่สำเร็จ: ' + errText(e); err.classList.remove('hidden');
+      });
+    }
+
+    function showUserStep(cancellable) {
+      const sel = document.getElementById('userSelect');
+      sel.value = (currentUser && (appSettings.recorders || []).includes(currentUser)) ? currentUser : '';
+      document.getElementById('userSearch').value = '';
+      renderUserGrid();
+      document.getElementById('userErr').classList.add('hidden');
+      document.getElementById('userCancelBtn').classList.toggle('hidden', !cancellable);
+      document.getElementById('loginView').classList.remove('hidden');
+      document.getElementById('loginStep1').classList.add('hidden');
+      document.getElementById('loginStep2').classList.remove('hidden');
+    }
+
+    function chooseUser() {
+      const v = document.getElementById('userSelect').value;
+      if (!v) { document.getElementById('userErr').classList.remove('hidden'); return; }
+      currentUser = v; lsSet(USER_KEY, v);
+      document.getElementById('loginView').classList.add('hidden');
+      startApp();
+    }
+
+    function openUserPicker() { showUserStep(true); }
+    function closeUserPicker() { document.getElementById('loginView').classList.add('hidden'); }
+
+    let appStarted = false;
+    function startApp() {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('userChip').classList.remove('hidden');
+      document.getElementById('userChip').classList.add('flex');
+      document.getElementById('fab').classList.remove('hidden'); document.getElementById('fab').classList.add('flex');
+      refreshUserChip();
+      if (!currentUser) { loadSettings().then(() => { showUserStep(false); loadPeople(); }); return; }
+      if (appStarted) return;
+      appStarted = true;
+      loadSettings(); setCategory(currentCategory); loadPeople();
+    }
+
+    function logout(reason) {
+      token = null; adminToken = null; lsDel(TOKEN_KEY);
+      appStarted = false;
+      Object.keys(dataCache).forEach(k => delete dataCache[k]);
+      document.getElementById('userChip').classList.add('hidden');
+      document.getElementById('userChip').classList.remove('flex');
+      document.getElementById('fab').classList.add('hidden'); document.getElementById('fab').classList.remove('flex');
+      ['detailModal', 'filesModal', 'formModal', 'settingsModal', 'notifModal', 'storeModal', 'adminModal'].forEach(id => document.getElementById(id).classList.remove('active'));
+      toggleLoading(false);
+      showLogin(reason);
+    }
+
+    // แผนกตามชื่อผู้บันทึก (กลับด้านของ filterRecordersByDept)
+    function deptForUser(name) {
+      const deps = appSettings.departments || [];
+      const tag = name.includes('บง.') ? '(บง.)' : name.includes('บค.') ? '(บค.)' : name.includes('ปร.') ? '(ปร.)' : '(ก.)';
+      return deps.find(d => d.includes(tag)) || '';
+    }
+
+    function loadSettings() {
+      // แสดงตั้งค่าที่จำไว้ในเครื่องก่อน (เปิดฟอร์มได้ทันที) แล้วค่อยอัปเดตจาก server
+      try {
+        const saved = localStorage.getItem(SETTINGS_LS_KEY);
+        if (saved) { appSettings = JSON.parse(saved); updateDropdowns(); }
+      } catch (e) {}
+      return api('getSettings').then(s => {
+        if (!s) return;
+        appSettings = s; updateDropdowns();
+        try { localStorage.setItem(SETTINGS_LS_KEY, JSON.stringify(s)); } catch (e) {}
+      }).catch(e => {
+        if (!(appSettings.departments || []).length) showError('โหลดข้อมูลตั้งค่า (แผนก/ผู้บันทึก) ไม่สำเร็จ: ' + errText(e) + '\nกดปุ่ม "ออกเลขใหม่" อีกครั้งเพื่อลองใหม่');
+      });
+    }
+
+    function calculateRemaining(endDateStr) {
+      if (!endDateStr || endDateStr === "เป็นต้นไป") return "-";
+      const end = new Date(endDateStr); const today = new Date();
+      today.setHours(0,0,0,0); end.setHours(0,0,0,0);
+      const diffDays = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+      if (isNaN(diffDays)) return "-";
+      if (diffDays < 0) return `<span class="text-red-600 font-bold bg-red-50 px-1 rounded border border-red-100 text-[10px]">หมดอายุ</span>`;
+      return `<span class="${diffDays <= 30 ? 'text-orange-600' : 'text-green-600'} font-bold bg-gray-50 px-1 rounded border text-[10px]">${diffDays} วัน</span>`;
+    }
+
+    function updateDropdowns() {
+      if (!appSettings) return;
+      document.getElementById('deptSelect').innerHTML = '<option value="">-- เลือกแผนก --</option>' + (appSettings.departments || []).map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+      document.getElementById('payeeList').innerHTML = (appSettings.payees || []).map(p => `<option value="${esc(p.name)}">`).join('');
+      document.getElementById('subjectSelect').innerHTML = '<option value="">-- เลือกหัวเรื่อง --</option>' + (appSettings.subjects || []).map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+    }
+
+    function filterRecordersByDept() {
+      const dept = document.getElementById('deptSelect').value; const recSelect = document.getElementById('recorderSelect');
+      if (!dept) { recSelect.innerHTML = '<option value="">-- เลือกแผนกก่อน --</option>'; return; }
+      let filtered = (appSettings.recorders || []).filter(r => {
+        if (dept.includes('(บง.)')) return r.includes('บง.');
+        if (dept.includes('(บค.)')) return r.includes('บค.');
+        if (dept.includes('(ปร.)')) return r.includes('ปร.');
+        if (dept.includes('(ก.)')) return !r.includes('ปร.') && !r.includes('บง.') && !r.includes('บค.');
+        return true;
+      });
+      recSelect.innerHTML = '<option value="">-- เลือกผู้บันทึก --</option>' + filtered.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+      if (filtered.length === 1) recSelect.value = filtered[0];
+    }
+
+    // ---------- สลับแท็บ: แสดงข้อมูลที่จำไว้ทันที แล้วอัปเดตเบื้องหลัง ----------
+    function setCategory(cat) {
+      currentCategory = cat; document.getElementById('currentCatLabel').innerText = cat;
+      const tabs = { 'หนังสือทั่วไป': 'tab-gen', 'หนังสือสัญญาจ้าง': 'tab-con', 'คำสั่ง (พ.)': 'tab-ord', 'ใบสำคัญจ่าย': 'tab-pay' };
+      Object.keys(tabs).forEach(k => {
+        const el = document.getElementById(tabs[k]);
+        if (el) el.className = k === cat ? "flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all tab-active text-sm" : "flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all text-gray-500 border-l text-sm";
+      });
+      serverSearch = null;
+      if (dataCache[cat]) renderTable(); else showTableMessage('<i class="fas fa-circle-notch fa-spin mr-2"></i>กำลังโหลดข้อมูล...');
+      loadCategory(cat);
+    }
+
+    function loadCategory(cat) {
+      const seq = loadSeq[cat] = (loadSeq[cat] || 0) + 1;
+      if (dataCache[cat] && cat === currentCategory) setStatus('<i class="fas fa-circle-notch fa-spin mr-1"></i>กำลังอัปเดต...');
+      api('getRecentData', cat).then(data => {
+        if (seq !== loadSeq[cat]) return;
+        if (!data || data.error) throw new Error(data && data.error ? data.error : 'ไม่มีข้อมูลตอบกลับ');
+        dataCache[cat] = data;
+        if (cat !== currentCategory) return;
+        renderTable();
+        maybeServerSearch();
+      }).catch(e => {
+        if (seq !== loadSeq[cat] || cat !== currentCategory) return;
+        if (dataCache[cat]) {
+          setStatus(`<span class="text-red-500">อัปเดตไม่สำเร็จ (${esc(errText(e))})</span> <button onclick="loadCategory(currentCategory)" class="underline text-purple-700 font-bold">ลองใหม่</button>`);
+        } else {
+          showTableMessage(`<div class="text-red-500 not-italic mb-2">โหลดข้อมูลไม่สำเร็จ: ${esc(errText(e))}</div><button onclick="setCategory(currentCategory)" class="bg-purple-600 text-white px-4 py-1.5 rounded-xl text-xs font-bold not-italic">ลองใหม่</button>`);
+        }
+      });
+    }
+
+    function setStatus(html) { document.getElementById('tableStatus').innerHTML = html || ''; }
+    function showTableMessage(html) {
+      document.getElementById('tableHead').innerHTML = '';
+      document.getElementById('dataTableBody').innerHTML = '';
+      document.getElementById('cardList').innerHTML = '';
+      const m = document.getElementById('noDataMsg'); m.innerHTML = html; m.classList.remove('hidden');
+      setStatus('');
+    }
+
+    // ---------- ค้นหา: กรองในเครื่องทันที + ค้นรายการเก่าที่ server (รอพิมพ์เสร็จ 0.5 วิ) ----------
+    function getTerm() { return document.getElementById('searchInput').value.trim().toLowerCase(); }
+
+    function onSearchInput() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { renderTable(); maybeServerSearch(); }, 250);
+    }
+
+    function maybeServerSearch() {
+      const term = getTerm(), cat = currentCategory, d = dataCache[cat];
+      if (!term || term.length < 2 || !d || !d.hasMore) { serverSearch = null; return; }
+      if (serverSearch && serverSearch.cat === cat && serverSearch.term === term) return;
+      const seq = ++searchSeq;
+      setTimeout(() => {
+        if (seq !== searchSeq) return;
+        setStatus('<i class="fas fa-circle-notch fa-spin mr-1"></i>กำลังค้นหาในรายการเก่าทั้งหมด...');
+        api('searchData', cat, term).then(res => {
+          if (seq !== searchSeq || cat !== currentCategory || getTerm() !== term) return;
+          if (!res || res.error) throw new Error(res && res.error ? res.error : 'ไม่มีข้อมูลตอบกลับ');
+          serverSearch = { cat: cat, term: term, res: res };
+          renderTable();
+        }).catch(e => {
+          if (seq !== searchSeq) return;
+          setStatus(`<span class="text-red-500">ค้นหารายการเก่าไม่สำเร็จ (${esc(errText(e))})</span> — แสดงเฉพาะรายการล่าสุด`);
+        });
+      }, 250);
+    }
+
+    // ---------- วาดตาราง (สร้าง HTML ครั้งเดียว) ----------
+    function renderTable() {
+      const d = dataCache[currentCategory];
+      if (!d) return;
+      const term = getTerm();
+      const isCon = currentCategory === "หนังสือสัญญาจ้าง", isPay = currentCategory === "ใบสำคัญจ่าย";
+      const hidden = ["เวลาบันทึก", "ID data", "Line Token", "สถานะการแจ้งเตือน", "เลขที่คุม", "วันที่จ่าย", "เวลาส่งแจ้งเตือน"];
+      const displayHeaders = (d.headers || []).filter(h => !hidden.includes(h));
+      if (isCon) displayHeaders.splice(displayHeaders.indexOf("วันสิ้นสุดสัญญา") + 1, 0, "เวลาที่เหลือ");
+      if (isPay) { displayHeaders.push("แจ้งเตือน"); displayHeaders.push("จัดเก็บ"); }
+
+      // เลือกแหล่งข้อมูล
+      let rows, status = '';
+      const useServer = term && serverSearch && serverSearch.cat === currentCategory && serverSearch.term === term;
+      if (useServer) {
+        rows = serverSearch.res.rows || [];
+        status = `พบ ${rows.length.toLocaleString()} รายการ จากทั้งหมด ${Number(serverSearch.res.total || 0).toLocaleString()} รายการ` + (serverSearch.res.capped ? ' (แสดง 200 รายการล่าสุดที่ตรง พิมพ์ให้เจาะจงขึ้น)' : '');
+      } else {
+        rows = d.rows || [];
+        if (term) {
+          rows = rows.filter(row => Object.keys(row).some(k => k !== 'rowIndex' && k !== 'Line Token' && String(row[k]).toLowerCase().includes(term)));
+          status = `พบ ${rows.length.toLocaleString()} รายการ ในรายการล่าสุด`;
+        } else if (d.hasMore) {
+          status = `แสดง ${rows.length.toLocaleString()} รายการล่าสุด จากทั้งหมด ${Number(d.total).toLocaleString()} รายการ — พิมพ์ค้นหาเพื่อหารายการเก่า`;
+        } else {
+          status = `ทั้งหมด ${rows.length.toLocaleString()} รายการ`;
+        }
+      }
+      viewRows = rows;
+      setStatus(status);
+
+      let th = '<tr>';
+      displayHeaders.forEach(h => {
+        let cls = "px-2 py-2 border-b bg-gray-50 text-gray-600 font-bold";
+        if (h === "วันที่" || h === "วันเดือนปี") cls += ' col-date';
+        if (h === "เลขที่") cls += ' col-num';
+        if (FILE_COLS.includes(h)) cls += ' col-file text-center';
+        let label = h;
+        if (isCon && h === "รายละเอียดงานจ้าง") label = "รายละเอียดสัญญา";
+        if (currentCategory === "คำสั่ง (พ.)" && h === "หัวเรื่อง") label = "รายละเอียดหนังสือ";
+        th += `<th class="${cls}">${esc(label)}</th>`;
+      });
+      th += '<th class="px-2 py-2 border-b bg-gray-50 text-gray-600 font-bold text-center col-manage">จัดการ</th></tr>';
+      document.getElementById('tableHead').innerHTML = th;
+
+      const msg = document.getElementById('noDataMsg');
+      if (rows.length === 0) {
+        document.getElementById('dataTableBody').innerHTML = '';
+        document.getElementById('cardList').innerHTML = '';
+        msg.innerHTML = term ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีรายการข้อมูล';
+        msg.classList.remove('hidden');
+        return;
+      }
+      msg.classList.add('hidden');
+
+      const parts = [];
+      rows.forEach((row, i) => {
+        let tr = '<tr class="hover:bg-gray-50 border-b border-gray-100 transition-colors text-[11px]">';
+        displayHeaders.forEach(h => {
+          const val = row[h];
+          let cls = "px-2 py-2 text-gray-600 cell-wrap", inner;
+          if (h === "เวลาที่เหลือ") inner = calculateRemaining(row["วันสิ้นสุดสัญญา"]);
+          else if (h === "แจ้งเตือน") {
+            const st = row["สถานะการแจ้งเตือน"];
+            inner = `<button onclick="openNotif(${i})" class="btn-action w-full py-1.5 ${st ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white shadow-sm'}">${st ? 'ส่งแล้ว' : 'แจ้งรับเงิน'}</button>`;
+          } else if (h === "จัดเก็บ") {
+            const has = row["เลขที่คุม"];
+            inner = `<button onclick="openStore(${i})" class="btn-action w-full py-1.5 ${has ? 'bg-blue-600 text-white' : 'bg-gray-400 text-white'}">${has ? 'เก็บแล้ว' : 'ลงข้อมูล'}</button>`;
+          } else if (FILE_COLS.includes(h)) {
+            cls += " text-center";
+            const n = parseFiles(val).length;
+            inner = n ? `<button onclick="openFiles(${i}, '${h}')" class="btn-action px-2 py-1 bg-blue-50 text-blue-700 border-blue-100"><i class="fas fa-paperclip mr-1"></i>${n}</button>` : '<span class="text-gray-300">–</span>';
+          } else if (h === "เลขที่") {
+            cls += " font-bold text-purple-700";
+            inner = esc((isPay && val !== '' && !isNaN(val)) ? String(val).padStart(6, '0') : (val || '-'));
+          } else inner = esc(val || '-');
+          tr += `<td class="${cls}">${inner}</td>`;
+        });
+        tr += `<td class="px-2 py-2 text-center"><button onclick="editRow(${i})" class="bg-purple-100 text-purple-700 w-full py-1.5 rounded-lg text-[10px] font-bold border border-purple-200 hover:bg-purple-200 transition-all">แก้ไข</button></td></tr>`;
+        parts.push(tr);
+      });
+      document.getElementById('dataTableBody').innerHTML = parts.join('');
+      document.getElementById('cardList').innerHTML = rows.map((row, i) => cardHtml(row, i)).join('');
+    }
+
+    // ---------- V4.0: การ์ด (มือถือ/แท็บเล็ต) + หน้ารายละเอียด ----------
+    const TH_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    function thDate(v) {
+      const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return v ? String(v) : '';
+      const y = Number(m[1]) + (Number(m[1]) < 2400 ? 543 : 0);
+      return Number(m[3]) + ' ' + TH_MONTHS[Number(m[2]) - 1] + ' ' + String(y).slice(-2);
+    }
+    function money(v) { const n = Number(String(v).replace(/,/g, '')); return (v === '' || v === null || v === undefined || isNaN(n)) ? '' : n.toLocaleString('th-TH', { maximumFractionDigits: 2 }) + ' ฿'; }
+    function shortPerson(v) { return String(v || '').replace(/\s+(ห|ผ|พ|หผ|พช|พบ|ชผ)[^\s]*\.[^\s]*$/, '').trim(); }
+    function dispNum(row) {
+      const v = row['เลขที่'];
+      return (currentCategory === 'ใบสำคัญจ่าย' && v !== '' && !isNaN(v)) ? String(v).padStart(6, '0') : (v || '-');
+    }
+    function fileChips(row, i) {
+      return FILE_COLS.filter(c => row[c] !== undefined && parseFiles(row[c]).length).map(c =>
+        `<span class="chip bg-blue-50 text-blue-700"><i class="fas fa-paperclip"></i>${parseFiles(row[c]).length}${c === 'ไฟล์เงินประกัน' ? ' ประกัน' : ''}</span>`).join('');
+    }
+    function cardHtml(row, i) {
+      const cat = currentCategory;
+      let title = '', sub = '', meta = [], chips = '';
+      const date = thDate(row['วันที่'] || row['วันเดือนปี']);
+      if (cat === 'หนังสือสัญญาจ้าง') {
+        title = row['รายละเอียดงานจ้าง']; meta = [date, row['ชื่อผู้รับจ้าง'], money(row['วงเงิน'])];
+        const rem = calculateRemaining(row['วันสิ้นสุดสัญญา']); if (rem !== '-') chips += rem;
+      } else if (cat === 'คำสั่ง (พ.)') {
+        title = row['หัวเรื่อง'];
+        const range = [thDate(row['วันที่เริ่มต้น']), thDate(row['ถึงวันที่'])].filter(Boolean).join(' – ');
+        meta = [date, range ? 'มีผล ' + range : ''];
+      } else if (cat === 'ใบสำคัญจ่าย') {
+        title = row['รายการ']; meta = [date, row['ผู้รับเงิน'], money(row['จำนวนเงิน'])];
+        chips += row['สถานะการแจ้งเตือน'] ? '<span class="chip bg-emerald-50 text-emerald-700"><i class="fas fa-bell"></i>แจ้งแล้ว</span>' : '<span class="chip bg-amber-50 text-amber-700"><i class="fas fa-bell"></i>ยังไม่แจ้ง</span>';
+        chips += row['เลขที่คุม'] ? `<span class="chip bg-blue-50 text-blue-700"><i class="fas fa-archive"></i>${esc(row['เลขที่คุม'])}</span>` : '';
+      } else {
+        title = row['หัวเรื่อง']; sub = row['รายละเอียดงาน']; meta = [date, row['จัดซื้อจัดจ้าง'] && row['จัดซื้อจัดจ้าง'] !== 'ทั่วไป' ? row['จัดซื้อจัดจ้าง'] : '', money(row['วงเงิน'])];
+      }
+      meta.push(shortPerson(row['ผู้บันทึก']));
+      chips += fileChips(row, i);
+      return `<button type="button" class="rcard" onclick="openDetail(${i})">
+        <div class="flex items-start justify-between gap-2"><span class="text-[15px] font-bold text-purple-800 break-all">${esc(dispNum(row))}</span><span class="flex flex-wrap gap-1 justify-end">${chips}</span></div>
+        <div class="text-[13.5px] text-gray-800 mt-0.5 clamp2">${esc(title || '-')}</div>
+        ${sub ? `<div class="text-[12px] text-gray-500 clamp2">${esc(sub)}</div>` : ''}
+        <div class="text-[11.5px] text-gray-500 mt-1">${meta.filter(Boolean).map(esc).join(' · ')}</div>
+      </button>`;
+    }
+    function openDetail(i) {
+      const row = viewRows[i]; if (!row) return;
+      const cat = currentCategory, isPay = cat === 'ใบสำคัญจ่าย', isCon = cat === 'หนังสือสัญญาจ้าง';
+      const hide = ['เวลาบันทึก', 'ID data', 'Line Token', 'เลขที่', 'สถานะการแจ้งเตือน', 'เวลาส่งแจ้งเตือน'].concat(FILE_COLS);
+      const label = h => (isCon && h === 'รายละเอียดงานจ้าง') ? 'รายละเอียดสัญญา' : (cat === 'คำสั่ง (พ.)' && h === 'หัวเรื่อง') ? 'รายละเอียดหนังสือ' : h;
+      const fmt = (h, v) => /วันที่|วันเดือนปี|ถึงวันที่|วันเริ่ม|วันสิ้นสุด/.test(h) ? thDate(v) : /วงเงิน|ราคากลาง|จำนวนเงิน|เงินประกัน/.test(h) ? money(v) : v;
+      document.getElementById('detailCat').innerText = cat;
+      document.getElementById('detailNum').innerText = dispNum(row);
+      let body = (dataCache[cat].headers || []).filter(h => !hide.includes(h) && row[h] !== '' && row[h] !== undefined && row[h] !== null)
+        .map(h => `<div class="kv"><span>${esc(label(h))}</span><span>${esc(fmt(h, row[h]))}</span></div>`).join('');
+      if (isCon) { const rem = calculateRemaining(row['วันสิ้นสุดสัญญา']); if (rem !== '-') body += `<div class="kv"><span>เวลาที่เหลือ</span><span>${rem}</span></div>`; }
+      FILE_COLS.filter(c => row[c] !== undefined).forEach(c => {
+        const list = parseFiles(row[c]);
+        body += `<div class="py-2"><div class="text-[13px] text-gray-500 mb-1">${esc(c)}</div>` + (list.length ? list.map(f => f.url
+          ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="flex items-center gap-2 border rounded-xl p-2.5 mb-1.5 text-sm text-purple-800"><i class="fas ${fileIcon(f.name)}"></i><span class="flex-1 break-all">${esc(f.name)}</span><i class="fas fa-external-link-alt text-gray-400 text-xs"></i></a>`
+          : `<div class="flex items-center gap-2 border rounded-xl p-2.5 mb-1.5 text-sm text-gray-500"><i class="fas fa-file"></i><span class="flex-1 break-all">${esc(f.name)}</span></div>`).join('') : '<div class="text-sm text-gray-300">ยังไม่มีไฟล์</div>') + '</div>';
+      });
+      document.getElementById('detailBody').innerHTML = body || '<p class="text-gray-400 text-sm py-4">ไม่มีข้อมูล</p>';
+      let acts = `<button onclick="closeDetail(); editRow(${i})" class="${isPay ? '' : 'col-span-2 '}bg-purple-600 text-white font-bold py-3 rounded-xl"><i class="fas fa-pen mr-1.5"></i>แก้ไข</button>`;
+      if (isPay) acts += `<button onclick="closeDetail(); openStore(${i})" class="bg-blue-600 text-white font-bold py-3 rounded-xl"><i class="fas fa-archive mr-1.5"></i>${row['เลขที่คุม'] ? 'จัดเก็บแล้ว' : 'จัดเก็บ'}</button>
+        <button onclick="closeDetail(); openNotif(${i})" class="col-span-2 ${row['สถานะการแจ้งเตือน'] ? 'bg-emerald-500' : 'bg-amber-500'} text-white font-bold py-3 rounded-xl"><i class="fas fa-bell mr-1.5"></i>${row['สถานะการแจ้งเตือน'] ? 'แจ้งรับเงินแล้ว' : 'แจ้งรับเงิน'}</button>`;
+      document.getElementById('detailActions').innerHTML = acts;
+      document.getElementById('detailModal').classList.add('active');
+    }
+    function closeDetail() { document.getElementById('detailModal').classList.remove('active'); }
+
+    // ความสูงแถบหัว -> ให้แถบแท็บติดใต้แถบหัวพอดี
+    function syncHeaderHeight() { const h = document.getElementById('topBar'); if (h) document.documentElement.style.setProperty('--hdr', h.offsetHeight + 'px'); }
+    window.addEventListener('resize', syncHeaderHeight);
+    document.addEventListener('DOMContentLoaded', syncHeaderHeight);
+
+    // ปิดหน้าต่างเมื่อแตะพื้นหลังมืด (ยกเว้นฟอร์มกรอกข้อมูล กันข้อมูลหาย)
+    document.addEventListener('click', e => {
+      const t = e.target;
+      if (t.classList && t.classList.contains('modal-backdrop') && ['detailModal', 'filesModal'].includes(t.id)) t.classList.remove('active');
+    });
+
+    // ติดตั้งเป็นแอป (PWA)
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+    // หลังบันทึก: อัปเดตตารางเบื้องหลัง (ไม่บังหน้าจอ)
+    function afterWrite() { serverSearch = null; loadCategory(currentCategory); }
+
+    // ---------- ฟอร์ม ----------
+    function openForm(isEdit = false) {
+      if (!(appSettings.departments || []).length) loadSettings();
+      const isCon = currentCategory === "หนังสือสัญญาจ้าง", isOrd = currentCategory === "คำสั่ง (พ.)", isPay = currentCategory === "ใบสำคัญจ่าย", isGen = currentCategory === "หนังสือทั่วไป";
+      const form = document.getElementById('bookForm'); form.reset();
+      document.getElementById('rowIndexInput').value = ""; document.getElementById('dateInput').valueAsDate = new Date();
+      document.getElementById('modalTitle').innerText = isPay ? "ใบสำคัญจ่าย" : (isCon ? "สัญญาจ้าง" : (isOrd ? "คำสั่ง (พ.)" : "หนังสือส่งออก"));
+
+      const fields = ['freeSubjectField', 'attachContractField', 'attachRetentionField', 'attachOrderField', 'generalSubjectField', 'generalDetailField', 'medianPriceField', 'paymentDocNumField', 'paymentAmountField', 'paymentPayeeField', 'paymentItemField', 'paymentNoteField', 'contractorField', 'procurementField', 'startDateField', 'orderDateField', 'endDateField', 'amountField', 'retentionField'];
+      fields.forEach(f => document.getElementById(f).classList.add('hidden'));
+
+      document.getElementById('detailInput').required = false;
+      document.getElementById('subjectSelect').required = false;
+      document.getElementById('subjectText').required = false;
+      attachState = { contractFiles: [], retentionFiles: [], orderFiles: [] };
+
+      if (isPay) {
+        ['paymentDocNumField', 'paymentAmountField', 'paymentPayeeField', 'paymentItemField', 'paymentNoteField'].forEach(f => document.getElementById(f).classList.remove('hidden'));
+        form.department.value = "ต.2กฟส.อล.(บง.)"; filterRecordersByDept();
+      } else if (isCon || isOrd) {
+        document.getElementById('freeSubjectField').classList.remove('hidden');
+        document.getElementById('subjectText').required = true;
+        document.getElementById('freeSubjectLabel').innerText = isCon ? 'รายละเอียดสัญญา *' : 'รายละเอียดหนังสือ *';
+        document.getElementById('subjectText').placeholder = isCon ? 'พิมพ์รายละเอียดสัญญา เช่น จ้างเหมา... สาย... ช่วง...' : 'พิมพ์รายละเอียดคำสั่ง เช่น แต่งตั้งคณะกรรมการ...';
+        (isCon ? ['attachContractField', 'attachRetentionField'] : ['attachOrderField']).forEach(f => document.getElementById(f).classList.remove('hidden'));
+        renderAllAttach();
+      }
+      if (!isPay) {
+        if (!isCon && !isOrd) {
+          document.getElementById('generalSubjectField').classList.remove('hidden');
+          document.getElementById('subjectSelect').required = true;
+        }
+        if (isCon) ['contractorField', 'procurementField', 'startDateField', 'endDateField', 'amountField', 'retentionField'].forEach(f => document.getElementById(f).classList.remove('hidden'));
+        if (isOrd) ['startDateField', 'endDateField', 'orderDateField'].forEach(f => document.getElementById(f).classList.remove('hidden'));
+        if (isGen) {
+          ['generalDetailField', 'procurementField', 'amountField', 'medianPriceField'].forEach(f => document.getElementById(f).classList.remove('hidden'));
+          document.getElementById('detailInput').required = true;
+        }
+      }
+
+      if (!isEdit && currentUser) {
+        if (!isPay) { const d = deptForUser(currentUser); if (d) form.department.value = d; }
+        filterRecordersByDept();
+        if ([...document.getElementById('recorderSelect').options].some(o => o.value === currentUser)) form.recorder.value = currentUser;
+      }
+
+      if (!isEdit) {
+        document.getElementById('nextIdPreview').innerText = "ออกเลขใหม่";
+        refreshNextNumber();
+      } else {
+        document.getElementById('nextIdPreview').innerText = "โหมดแก้ไข";
+      }
+      document.getElementById('formModal').classList.add('active');
+    }
+
+    function editRow(i) {
+      const row = viewRows[i]; if (!row) return;
+      openForm(true); const form = document.getElementById('bookForm');
+      form.rowIndex.value = row.rowIndex; form.department.value = row["แผนก"] || ""; filterRecordersByDept();
+      form.date.value = row["วันที่"] || row["วันเดือนปี"] || ""; form.recorder.value = row["ผู้บันทึก"] || "";
+
+      let bookNum = row["เลขที่"] || "";
+      if (currentCategory === "ใบสำคัญจ่าย" && bookNum !== "" && !isNaN(bookNum)) bookNum = String(bookNum).padStart(6, '0');
+      document.getElementById('bookNumField').value = bookNum;
+
+      const targetSubj = row["หัวเรื่อง"] || row["รายละเอียดงานจ้าง"] || "";
+      const subjSelect = document.getElementById('subjectSelect');
+      if (targetSubj && ![...subjSelect.options].some(o => o.value === targetSubj)) {
+        const opt = document.createElement('option'); opt.value = targetSubj; opt.innerText = targetSubj; subjSelect.appendChild(opt);
+      }
+
+      if (currentCategory === "ใบสำคัญจ่าย") {
+        form.paymentDocNum.value = row["เลขที่เอกสาร"] || "";
+        form.paymentItem.value = row["รายการ"] || "";
+        form.paymentAmount.value = row["จำนวนเงิน"] || "";
+        form.payee.value = row["ผู้รับเงิน"] || "";
+        form.paymentNote.value = row["หมายเหตุ"] || "";
+      } else if (currentCategory === "หนังสือสัญญาจ้าง") {
+        form.subjectText.value = row["รายละเอียดงานจ้าง"] || ""; form.contractor.value = row["ชื่อผู้รับจ้าง"] || "";
+        attachState.contractFiles = parseFiles(row["ไฟล์สัญญา"]); attachState.retentionFiles = parseFiles(row["ไฟล์เงินประกัน"]); renderAllAttach();
+        form.procurement.value = row["ประเภทงาน"] || "ทั่วไป"; form.startDate.value = row["วันเริ่มต้นสัญญา"] || "";
+        form.endDate.value = row["วันสิ้นสุดสัญญา"] || ""; form.amount.value = row["วงเงิน"] || "";
+        form.retention.value = row["เงินประกัน"] || "";
+      } else if (currentCategory === "คำสั่ง (พ.)") {
+        form.subjectText.value = row["หัวเรื่อง"] || ""; form.startDate.value = row["วันที่เริ่มต้น"] || "";
+        attachState.orderFiles = parseFiles(row["เอกสารแนบ"]); renderAllAttach();
+        form.endDate.value = row["ถึงวันที่"] || ""; form.orderDate.value = row["สั่ง ณ วันที่"] || "";
+      } else {
+        form.subject.value = targetSubj;
+        form.detail.value = row["รายละเอียดงาน"] || "";
+        form.procurement.value = row["จัดซื้อจัดจ้าง"] || "ทั่วไป";
+        form.amount.value = row["วงเงิน"] || "";
+        form.medianPrice.value = row["ราคากลาง"] || "";
+      }
+    }
+
+    function closeForm() { document.getElementById('formModal').classList.remove('active'); }
+
+    // เลขถัดไปตามปีของวันที่ในฟอร์ม
+    let nextNumSeq = 0;
+    function refreshNextNumber() {
+      const f = document.getElementById('bookNumField');
+      const seq = ++nextNumSeq;
+      f.value = 'กำลังคำนวณ...';
+      api('getNextInfo', currentCategory, document.getElementById('dateInput').value)
+        .then(d => { if (seq === nextNumSeq) f.value = d.nextBookNum; })
+        .catch(() => { if (seq === nextNumSeq) f.value = 'อัตโนมัติ'; }); // ระบบจะออกเลขให้ตอนบันทึก
+    }
+    document.getElementById('dateInput').addEventListener('change', function() {
+      if (!document.getElementById('rowIndexInput').value) refreshNextNumber();
+    });
+
+    document.getElementById('bookForm').onsubmit = function(e) {
+      e.preventDefault(); const form = this;
+      const isConF = currentCategory === "หนังสือสัญญาจ้าง", isOrdF = currentCategory === "คำสั่ง (พ.)";
+      const busy = attachBusy(isConF ? ['contractFiles', 'retentionFiles'] : isOrdF ? ['orderFiles'] : []);
+      if (busy) { showError(busy); return; }
+      const formData = {
+        category: currentCategory, rowIndex: form.rowIndex.value, bookNum: form.bookNum.value,
+        department: form.department.value, date: form.date.value, recorder: form.recorder.value,
+        subject: form.subject ? form.subject.value : "",
+        detail: form.detail ? form.detail.value : "",
+        medianPrice: form.medianPrice ? form.medianPrice.value : "",
+        paymentDocNum: form.paymentDocNum ? form.paymentDocNum.value : "",
+        paymentItem: form.paymentItem ? form.paymentItem.value : "", paymentAmount: form.paymentAmount ? form.paymentAmount.value : "",
+        payee: form.payee ? form.payee.value : "", paymentNote: form.paymentNote ? form.paymentNote.value : "",
+        contractor: form.contractor ? form.contractor.value : "", procurement: form.procurement ? form.procurement.value : "ทั่วไป",
+        startDate: form.startDate ? form.startDate.value : "", endDate: form.endDate ? form.endDate.value : "",
+        orderDate: form.orderDate ? form.orderDate.value : "", amount: form.amount ? form.amount.value : "",
+        retention: form.retention ? form.retention.value : ""
+      };
+      if (isConF || isOrdF) formData.subject = form.subjectText.value.trim();
+      if (isConF) { formData.contractFiles = attachPayload('contractFiles'); formData.retentionFiles = attachPayload('retentionFiles'); }
+      if (isOrdF) formData.orderFiles = attachPayload('orderFiles');
+      toggleLoading(true, "กำลังบันทึกข้อมูล...");
+      api('saveData', formData).then(res => {
+        toggleLoading(false);
+        if (!res || res.status !== 'success') {
+          showError('บันทึกไม่สำเร็จ: ' + ((res && res.message) || 'ไม่ทราบสาเหตุ') + '\nข้อมูลในฟอร์มยังอยู่ กดบันทึกอีกครั้งได้');
+          return;
+        }
+        closeForm();
+        let msg = 'บันทึกเรียบร้อย';
+        if (res.bookNum) msg += ' เลขที่ ' + res.bookNum;
+        if (res.changed) msg += '\n(เลข ' + res.requestedNum + ' มีผู้ใช้ไปก่อนแล้ว ระบบให้เลขถัดไปแทน)';
+        showSuccess(msg);
+        afterWrite();
+      }).catch(err => {
+        toggleLoading(false);
+        showError('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ: ' + errText(err) + '\nกรุณาดูในตารางก่อนว่ารายการเข้าไปแล้วหรือยัง ก่อนกดบันทึกซ้ำ');
+        afterWrite();
+      });
+    };
+
+    // ---------- ตั้งค่าระบบ ----------
+    function openSettings() {
+      if (!token) return;
+      if (!adminToken) {
+        document.getElementById('adminCodeInput').value = '';
+        document.getElementById('adminErr').classList.add('hidden');
+        document.getElementById('adminModal').classList.add('active');
+        setTimeout(() => document.getElementById('adminCodeInput').focus(), 50);
+        return;
+      }
+      showSettingsModal();
+    }
+    function closeAdmin() { document.getElementById('adminModal').classList.remove('active'); }
+    function doAdminLogin() {
+      const code = document.getElementById('adminCodeInput').value.trim(), err = document.getElementById('adminErr'), btn = document.getElementById('adminBtn');
+      if (!code) { err.innerText = 'กรอกรหัสผู้ดูแลก่อน'; err.classList.remove('hidden'); return; }
+      btn.disabled = true; btn.innerText = 'กำลังตรวจสอบ...';
+      api('adminLogin', code).then(res => {
+        btn.disabled = false; btn.innerText = 'ยืนยัน';
+        if (!res || !res.ok) { err.innerText = 'รหัสผู้ดูแลไม่ถูกต้อง'; err.classList.remove('hidden'); return; }
+        adminToken = res.adminToken; closeAdmin(); showSettingsModal();
+      }).catch(e => { btn.disabled = false; btn.innerText = 'ยืนยัน'; err.innerText = errText(e); err.classList.remove('hidden'); });
+    }
+    function showSettingsModal() {
+      if (!appSettings) return;
+      document.getElementById('setDept').value = (appSettings.departments || []).join('\n');
+      document.getElementById('setRec').value = (appSettings.recorders || []).join('\n');
+      document.getElementById('setSub').value = (appSettings.subjects || []).join('\n');
+      document.getElementById('setPayee').value = (appSettings.payees || []).map(p => `${p.name}:${p.token}`).join('\n');
+      document.getElementById('setNum').value = Object.entries(appSettings.startNums || {}).map(([k,v]) => `${k}:${v}`).join('\n');
+      document.getElementById('settingsModal').classList.add('active');
+    }
+    function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+    function saveSettingsAction() {
+      const s = {
+        departments: document.getElementById('setDept').value.split('\n').map(x => x.trim()).filter(String),
+        recorders: document.getElementById('setRec').value.split('\n').map(x => x.trim()).filter(String),
+        subjects: document.getElementById('setSub').value.split('\n').map(x => x.trim()).filter(String),
+        payees: document.getElementById('setPayee').value.split('\n').filter(l => l.trim()).map(l => { const p = l.split(':'); return { name: p[0].trim(), token: p[1] ? p[1].trim() : "" }; }),
+        startNums: {}
+      };
+      document.getElementById('setNum').value.split('\n').filter(String).forEach(l => { const [k,v] = l.split(':'); if (k && v) s.startNums[k.trim()] = parseInt(v.trim()); });
+      toggleLoading(true, "อัปเดตตั้งค่า...");
+      api('saveSettings', adminToken, s).then(res => {
+        toggleLoading(false);
+        if (res && res.status === 'error') { showError('บันทึกตั้งค่าไม่สำเร็จ: ' + res.message); return; }
+        appSettings = s; updateDropdowns(); closeSettings();
+        try { localStorage.setItem(SETTINGS_LS_KEY, JSON.stringify(s)); } catch (e) {}
+        showSuccess('บันทึกการตั้งค่าเรียบร้อย');
+      }).catch(e => { toggleLoading(false); showError('บันทึกตั้งค่าไม่สำเร็จ: ' + errText(e)); });
+    }
+
+    // ---------- แจ้งรับเงิน ----------
+    function openNotif(i) {
+      const row = viewRows[i]; if (!row) return; activeRowData = row;
+      document.getElementById('notifTimeLabel').innerText = row["เวลาส่งแจ้งเตือน"] ? "ส่งล่าสุด: " + row["เวลาส่งแจ้งเตือน"] : "ยังไม่ได้แจ้งเตือน";
+      document.getElementById('notifModal').classList.add('active');
+    }
+    function closeNotif() { document.getElementById('notifModal').classList.remove('active'); }
+    document.getElementById('confirmNotifBtn').onclick = function() {
+      const type = document.querySelector('input[name="payType"]:checked').value;
+      const formData = { category: currentCategory, rowIndex: activeRowData.rowIndex, notificationStatus: "ส่งแล้ว (" + type + ")", notificationTime: new Date().toLocaleString('th-TH') };
+      toggleLoading(true, "ส่งข้อมูล...");
+      api('saveData', formData).then(res => {
+        toggleLoading(false);
+        if (!res || res.status !== 'success') { showError('บันทึกไม่สำเร็จ: ' + ((res && res.message) || 'ไม่ทราบสาเหตุ')); return; }
+        closeNotif(); afterWrite();
+      }).catch(e => { toggleLoading(false); showError('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ: ' + errText(e)); afterWrite(); });
+    };
+
+    // ---------- จัดเก็บใบสำคัญ ----------
+    function openStore(i) {
+      const row = viewRows[i]; if (!row) return; activeRowData = row;
+      document.getElementById('controlNumInput').value = row["เลขที่คุม"] || "";
+      document.getElementById('paymentDateInput').value = row["วันที่จ่าย"] || new Date().toISOString().split('T')[0];
+      document.getElementById('storeWarning').classList.add('hidden');
+      document.getElementById('storeModal').classList.add('active');
+    }
+    function closeStore() { document.getElementById('storeModal').classList.remove('active'); }
+    function createControlNum() {
+      const el = document.getElementById('controlNumInput');
+      el.value = 'กำลังสร้าง...';
+      api('getNextControlNumber').then(num => { el.value = num; document.getElementById('storeWarning').classList.add('hidden'); })
+        .catch(e => { el.value = ''; showError('สร้างเลขที่คุมไม่สำเร็จ: ' + errText(e)); });
+    }
+    document.getElementById('confirmStoreBtn').onclick = function() {
+      const cNum = document.getElementById('controlNumInput').value; const pDate = document.getElementById('paymentDateInput').value;
+      if (!cNum || cNum === 'กำลังสร้าง...') { document.getElementById('storeWarning').classList.remove('hidden'); return; }
+      const formData = { category: currentCategory, rowIndex: activeRowData.rowIndex, controlNum: cNum, paymentDate: pDate };
+      toggleLoading(true, "จัดเก็บ...");
+      api('saveData', formData).then(res => {
+        toggleLoading(false);
+        if (!res || res.status !== 'success') { showError('บันทึกไม่สำเร็จ: ' + ((res && res.message) || 'ไม่ทราบสาเหตุ')); return; }
+        closeStore(); afterWrite();
+      }).catch(e => { toggleLoading(false); showError('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ: ' + errText(e)); afterWrite(); });
+    };
+
+    // ---------- ทั่วไป ----------
+    function copyToClipboard(id) { const el = document.getElementById(id); el.select(); document.execCommand('copy'); }
+    function toggleLoading(s, t) { const el = document.getElementById('loading'); if (t) document.getElementById('loadingText').innerText = t; s ? el.classList.remove('hidden') : el.classList.add('hidden'); }
+    function showSuccess(m) { document.getElementById('successMsg').innerText = m; document.getElementById('successModal').classList.remove('hidden'); }
+    function closeSuccess() { document.getElementById('successModal').classList.add('hidden'); }
+    function showError(m) { document.getElementById('errorMsg').innerText = m; document.getElementById('errorModal').classList.remove('hidden'); }
+    function closeError() { document.getElementById('errorModal').classList.add('hidden'); }
+  </script>
+</body>
+</html>
