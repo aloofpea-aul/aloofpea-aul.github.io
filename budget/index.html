@@ -1,0 +1,5076 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบตัดงบทำการ v3.2.0</title>
+  <meta name="theme-color" content="#7A3E94">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ตัดงบทำการ">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+
+      /* สีพื้นหลัง dropdown รายการงบ */
+optgroup { font-weight: 700; }
+
+select#accountCode option[data-dept="ผบง."]        { background-color: #e3f2fd; color: #0d47a1; }
+select#accountCode option[data-dept="ผปร."]        { background-color: #e8f5e9; color: #1b5e20; }
+select#accountCode option[data-dept="ผบค."]        { background-color: #fff8e1; color: #e65100; }
+select#accountCode option[data-dept="ประจำ กฟฟ."] { background-color: #f3e5f5; color: #4a148c; }
+
+    :root { 
+      --pea-purple: #7A3E94; 
+      --pea-pink: #d81b60; 
+      --pea-light: #fce4ec;
+      --success-green: #2e7d32;
+      --warning-orange: #f57c00;
+      --danger-red: #c62828;
+    }
+    
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Sarabun', sans-serif; 
+      background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column;
+      padding: 0;
+      margin: 0;
+    }
+    
+    /* Header Styles */
+    .header-pea { 
+      background: linear-gradient(135deg, var(--pea-purple) 0%, #BA68C8 100%); 
+      color: white; 
+      padding: 20px 30px; 
+      border-radius: 0 0 25px 25px; 
+      box-shadow: 0 6px 20px rgba(122, 62, 148, 0.4);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    
+    .header-pea h4 {
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+      margin: 0;
+    }
+    
+    .header-pea .btn-register {
+      background: white;
+      color: var(--pea-purple);
+      border: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .header-pea .btn-register:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+      background: #f3e5f5;
+    }
+    
+    /* Card Styles */
+    .card { 
+      border-radius: 20px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+      border: none; 
+      margin-bottom: 25px; 
+      background: white;
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    
+    /* Navigation Tabs */
+    .nav-tabs { 
+      border: none; 
+      margin-bottom: 20px;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .nav-tabs .nav-link { 
+      color: #880e4f; 
+      border: none; 
+      font-weight: 600; 
+      transition: all 0.3s ease; 
+      position: relative;
+      padding: 12px 20px;
+      border-radius: 12px;
+      margin: 0 5px;
+    }
+    
+    .nav-tabs .nav-link:hover {
+      background: rgba(216, 27, 96, 0.1);
+      color: var(--pea-pink);
+    }
+    
+    .nav-tabs .nav-link.active { 
+      color: white; 
+      background: linear-gradient(135deg, var(--pea-pink), #ec407a);
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(216, 27, 96, 0.3);
+    }
+    
+    /* Loading Overlay */
+    .loading-overlay { 
+      position: fixed; 
+      top: 70px; 
+      right: 20px; 
+      width: auto; 
+      height: auto; 
+      background: transparent; 
+      z-index: 9999;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      visibility: visible; 
+      backdrop-filter: blur(8px);
+    }
+    
+    .heart-loader { 
+      display: inline-block; 
+      position: relative; 
+      width: 80px; 
+      height: 80px; 
+      transform: rotate(45deg); 
+      transform-origin: 40px 40px;
+    }
+    
+    .heart-loader div { 
+      top: 32px; 
+      left: 32px; 
+      position: absolute; 
+      width: 32px; 
+      height: 32px; 
+      background: #ec407a; 
+      animation: heart-beat 1.2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+    
+    .heart-loader div:after, .heart-loader div:before { 
+      content: " "; 
+      position: absolute; 
+      display: block; 
+      width: 32px; 
+      height: 32px; 
+      background: #ec407a;
+    }
+    
+    .heart-loader div:before { 
+      left: -24px; 
+      border-radius: 50% 0 0 50%;
+    }
+    
+    .heart-loader div:after { 
+      top: -24px; 
+      border-radius: 50% 50% 0 0;
+    }
+    
+    @keyframes heart-beat { 
+      0% { transform: scale(0.95); } 
+      5% { transform: scale(1.1); } 
+      39% { transform: scale(0.85); } 
+      45% { transform: scale(1); } 
+      60% { transform: scale(0.95); } 
+      100% { transform: scale(0.9); }
+    }
+    
+    .loading-text {
+      color: var(--pea-pink);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 20px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* Footer */
+    .footer { 
+      margin-top: auto; 
+      padding: 25px; 
+      text-align: center; 
+      color: #880e4f; 
+      font-size: 0.9rem; 
+      opacity: 0.8;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+    }
+    
+    /* Timeline Styles */
+    .timeline-container { 
+      max-height: 400px; 
+      overflow-y: auto; 
+      border-radius: 15px; 
+      padding: 20px; 
+      background: linear-gradient(to bottom, #fafafa, #ffffff); 
+      border: 2px solid #f0f0f0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--pea-pink) #f0f0f0;
+    }
+    
+    .timeline-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .timeline-container::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 10px;
+    }
+    
+    .timeline-container::-webkit-scrollbar-thumb {
+      background: var(--pea-pink);
+      border-radius: 10px;
+    }
+    
+    .timeline-item { 
+      border-left: 3px solid #e0e0e0; 
+      padding-left: 20px; 
+      position: relative; 
+      margin-bottom: 15px; 
+      font-size: 0.9rem; 
+      line-height: 1.6;
+      transition: all 0.3s ease;
+    }
+    
+    .timeline-item:hover {
+      border-left-color: var(--pea-pink);
+    }
+    
+    .timeline-item::before { 
+      content: ''; 
+      width: 12px; 
+      height: 12px; 
+      background: var(--pea-pink); 
+      border-radius: 50%; 
+      position: absolute; 
+      left: -7.5px; 
+      top: 5px; 
+      border: 3px solid white; 
+      box-shadow: 0 0 0 2px var(--pea-pink);
+      transition: all 0.3s ease;
+    }
+    
+    .timeline-item:hover::before {
+      transform: scale(1.3);
+    }
+    
+    /* Table Styles */
+    .table-responsive {
+      border-radius: 15px;
+      overflow: hidden;
+    }
+    
+    .account-row { 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+    }
+    
+    .account-row:hover { 
+      background: linear-gradient(to right, #fff3e0, #ffe0b2) !important;
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .sticky-header th { 
+      position: sticky; 
+      top: 0; 
+      background: linear-gradient(135deg, #f5f5f5, #eeeeee) !important; 
+      z-index: 10; 
+      border-bottom: 3px solid var(--pea-pink) !important;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.8rem !important;
+      letter-spacing: 0.5px;
+      white-space: nowrap !important;
+      padding: 12px 8px !important;
+    }
+    
+    /* Button Styles */
+    .btn {
+      border-radius: 25px;
+      padding: 10px 25px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .btn-xs { 
+      padding: 4px 12px; 
+      font-size: 0.8rem;
+      border-radius: 15px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pea-purple), #9c27b0);
+      border: none;
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #4caf50, #66bb6a);
+      border: none;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #f44336, #e57373);
+      border: none;
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, #ff9800, #ffb74d);
+      border: none;
+      color: white;
+    }
+    
+    .btn-info {
+      background: linear-gradient(135deg, #00bcd4, #4dd0e1);
+      border: none;
+      color: white;
+    }
+    
+    /* Badge Styles */
+    .badge {
+      padding: 6px 15px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    
+    .badge-system { 
+      background: linear-gradient(135deg, #fbc02d, #fdd835);
+      color: #000; 
+      font-weight: 700; 
+      border: 2px solid #f9a825; 
+      box-shadow: 0 3px 8px rgba(251, 192, 45, 0.3);
+    }
+    
+    .badge-pending {
+      background: linear-gradient(135deg, #ff9800, #ffb74d);
+      color: white;
+      animation: pulse-badge 2s infinite;
+    }
+    
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    /* Admin Row Highlight */
+    .row-system-admin { 
+      background: linear-gradient(to right, #fffde7, #fff9c4) !important; 
+      border-left: 5px solid #fbc02d !important; 
+      font-weight: 600;
+    }
+    
+    .row-pending-approval {
+      background: linear-gradient(to right, #fff3e0, #ffe0b2) !important;
+      border-left: 5px solid #ff9800 !important;
+    }
+    
+    /* Form Controls */
+    .form-control, .form-select {
+      border-radius: 12px;
+      border: 2px solid #e0e0e0;
+      padding: 10px 15px;
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--pea-pink);
+      box-shadow: 0 0 0 3px rgba(216, 27, 96, 0.1);
+    }
+    
+    /* Modal Styles */
+    .modal-content {
+      border-radius: 25px;
+      border: none;
+      overflow: hidden;
+    }
+    
+    .modal-header {
+      border-bottom: none;
+      padding: 25px 30px;
+    }
+    
+    .modal-body {
+      padding: 30px;
+    }
+    
+    .modal-footer {
+      border-top: none;
+      padding: 20px 30px;
+    }
+    
+    /* ENHANCED SWAL STYLING */
+    .swal2-popup {
+      border-radius: 25px !important;
+      padding: 30px !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
+    }
+
+    .swal2-title {
+      font-family: 'Sarabun', sans-serif !important;
+      font-size: 1.8rem !important;
+      font-weight: 700 !important;
+      color: #7A3E94 !important;
+      margin-bottom: 20px !important;
+    }
+
+    .swal2-html-container {
+      font-family: 'Sarabun', sans-serif !important;
+      font-size: 1.05rem !important;
+      color: #555 !important;
+      line-height: 1.6 !important;
+    }
+
+    .swal2-input, .swal2-textarea, .swal2-select {
+      font-family: 'Sarabun', sans-serif !important;
+      border: 2px solid #e0e0e0 !important;
+      border-radius: 12px !important;
+      padding: 12px 18px !important;
+      font-size: 1rem !important;
+      transition: all 0.3s ease !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      margin: 8px 0 !important;
+    }
+
+    .swal2-input:focus, .swal2-textarea:focus, .swal2-select:focus {
+      border-color: #d81b60 !important;
+      box-shadow: 0 0 0 4px rgba(216, 27, 96, 0.1) !important;
+      outline: none !important;
+    }
+
+    .swal2-confirm {
+      background: linear-gradient(135deg, #7A3E94, #9c27b0) !important;
+      border-radius: 25px !important;
+      padding: 12px 35px !important;
+      font-size: 1.05rem !important;
+      font-weight: 600 !important;
+      box-shadow: 0 6px 20px rgba(122, 62, 148, 0.3) !important;
+      transition: all 0.3s ease !important;
+      border: none !important;
+    }
+
+    .swal2-confirm:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 25px rgba(122, 62, 148, 0.4) !important;
+    }
+
+    .swal2-cancel {
+      background: #9e9e9e !important;
+      color: white !important;
+      border-radius: 25px !important;
+      padding: 12px 35px !important;
+      font-size: 1.05rem !important;
+      font-weight: 600 !important;
+      transition: all 0.3s ease !important;
+      border: none !important;
+    }
+
+    .swal2-cancel:hover {
+      background: #757575 !important;
+      transform: translateY(-2px) !important;
+    }
+
+    .swal2-icon {
+      border-width: 4px !important;
+      width: 80px !important;
+      height: 80px !important;
+      margin: 20px auto !important;
+    }
+
+    .swal2-validation-message {
+      background: #ffebee !important;
+      color: #c62828 !important;
+      border: 2px solid #ef5350 !important;
+      border-radius: 15px !important;
+      font-weight: 600 !important;
+      padding: 12px 20px !important;
+    }
+
+    .swal2-popup.swal2-compact {
+      max-width: 550px !important;
+      padding: 25px !important;
+    }
+
+    .swal2-popup.swal2-compact .swal2-title {
+      font-size: 1.5rem !important;
+      margin-bottom: 15px !important;
+    }
+
+    .swal2-popup.swal2-compact .swal2-html-container {
+      font-size: 0.95rem !important;
+    }
+
+    .swal2-popup.swal2-compact .swal2-input,
+    .swal2-popup.swal2-compact .swal2-select,
+    .swal2-popup.swal2-compact .swal2-textarea {
+      padding: 10px 15px !important;
+      font-size: 0.95rem !important;
+      margin: 6px 0 !important;
+    }
+
+    .swal2-toast {
+      border-radius: 20px !important;
+      padding: 15px 25px !important;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+
+    .swal2-toast .swal2-title {
+      font-size: 1rem !important;
+      color: #333 !important;
+      margin: 0 !important;
+    }
+
+    .swal2-html-container label.form-label {
+      display: block;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    .swal2-html-container label.form-label:first-child {
+      margin-top: 0;
+    }
+    
+    /* v3.1.1 Negative Budget Styles */
+    .negative-budget-warning {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2) !important;
+      border: 2px solid #f44336 !important;
+      animation: pulse-warning 2s infinite;
+    }
+
+    @keyframes pulse-warning {
+      0%, 100% { 
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4);
+      }
+      50% { 
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+    }
+
+    .negative-budget-text {
+      color: #d32f2f !important;
+      font-weight: 700 !important;
+      text-shadow: 0 1px 2px rgba(211, 47, 47, 0.2);
+    }
+
+    .negative-icon {
+      display: inline-block;
+      animation: shake 0.5s infinite;
+      font-size: 1.1em;
+    }
+
+    @keyframes shake {
+      0%, 100% { 
+        transform: translateX(0) rotate(0deg); 
+      }
+      25% { 
+        transform: translateX(-3px) rotate(-5deg); 
+      }
+      50% { 
+        transform: translateX(3px) rotate(5deg); 
+      }
+      75% { 
+        transform: translateX(-3px) rotate(-5deg); 
+      }
+    }
+
+    .badge-negative {
+      background: linear-gradient(135deg, #f44336, #e57373);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+      animation: pulse-badge-negative 2s infinite;
+    }
+
+    @keyframes pulse-badge-negative {
+      0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.85;
+        transform: scale(1.05);
+      }
+    }
+
+    .row-negative-budget {
+      background: linear-gradient(to right, #ffebee, #ffcdd2) !important;
+      border-left: 4px solid #f44336 !important;
+      position: relative;
+    }
+
+    .alert-negative-budget {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2);
+      border: 2px solid #f44336;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin: 15px 0;
+      box-shadow: 0 4px 15px rgba(244, 67, 54, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .alert-negative-budget::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    /* v3.1.2 Scroll to Top Button */
+    #scrollTopBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 999;
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7A3E94, #9c27b0);
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(122, 62, 148, 0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    #scrollTopBtn.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #scrollTopBtn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(122, 62, 148, 0.6);
+      background: linear-gradient(135deg, #9c27b0, #BA68C8);
+    }
+
+    #scrollTopBtn:active {
+      transform: translateY(-2px);
+    }
+    
+    /* v3.1.2 Enhanced Summary Styles */
+    .date-filter-section {
+      background: linear-gradient(135deg, #f5f5f5, #ffffff);
+      border-radius: 20px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border: 2px solid #e0e0e0;
+    }
+
+    .date-filter-section .form-label {
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .date-filter-section .form-control,
+    .date-filter-section .form-select {
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 10px 15px;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+
+    .date-filter-section .form-control:focus,
+    .date-filter-section .form-select:focus {
+      border-color: #7A3E94;
+      box-shadow: 0 0 0 3px rgba(122, 62, 148, 0.1);
+    }
+
+    .btn-clear-filter {
+      background: linear-gradient(135deg, #757575, #9e9e9e);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-clear-filter:hover {
+      background: linear-gradient(135deg, #616161, #757575);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .btn-clear-filter i {
+      margin-right: 5px;
+    }
+
+    .chart-container {
+      position: relative;
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      margin-bottom: 25px;
+      border: 2px solid #f0f0f0;
+    }
+
+    .chart-container canvas {
+      max-height: 400px !important;
+    }
+
+    .analysis-card {
+      background: linear-gradient(135deg, #ffffff, #fafafa);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border: 2px solid #f0f0f0;
+      transition: all 0.3s ease;
+      height: 100%;
+    }
+
+    .analysis-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      border-color: #7A3E94;
+    }
+
+    .analysis-card h6 {
+      color: #7A3E94;
+      font-weight: 700;
+      margin-bottom: 15px;
+      font-size: 1rem;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 10px;
+    }
+
+    .period-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .period-tab {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      padding: 10px 25px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      color: #555;
+      white-space: nowrap;
+    }
+
+    .period-tab:hover {
+      border-color: #7A3E94;
+      color: #7A3E94;
+      transform: translateY(-2px);
+    }
+
+    .period-tab.active {
+      background: linear-gradient(135deg, #7A3E94, #9c27b0);
+      color: white;
+      border-color: #7A3E94;
+      box-shadow: 0 4px 12px rgba(122, 62, 148, 0.3);
+    }
+
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border-left: 4px solid #7A3E94;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    .stat-card .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #7A3E94;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.85rem;
+      color: #777;
+      font-weight: 600;
+    }
+
+    .breakdown-table {
+      font-size: 0.9rem;
+      margin-top: 15px;
+    }
+
+    .breakdown-table th {
+      background: linear-gradient(135deg, #f5f5f5, #eeeeee);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      padding: 12px 8px;
+      border-bottom: 3px solid #7A3E94;
+      white-space: nowrap;
+    }
+
+    .breakdown-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .breakdown-table tbody tr:hover {
+      background: linear-gradient(to right, #fafafa, #f5f5f5);
+    }
+
+    /* ① Health Score Ring */
+.health-ring-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.health-ring svg { transform: rotate(-90deg); }
+.health-ring-track { fill: none; stroke: #f0f0f0; stroke-width: 12; }
+.health-ring-fill  { fill: none; stroke-width: 12; stroke-linecap: round;
+  transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1),stroke 0.5s ease; }
+.health-score-num {
+  font-size: 2.8rem; font-weight: 700; line-height:1;
+  transition: color 0.5s ease;
+}
+.health-grade-pill {
+  display: inline-block; padding: 5px 18px; border-radius: 20px;
+  font-weight: 700; font-size: 0.9rem; color: white; margin-top: 6px;
+}
+.health-issue-item { 
+  display:flex; align-items:center; gap:8px; padding: 6px 0;
+  border-bottom: 1px solid #f5f5f5; font-size: 0.88rem;
+}
+
+/* ③ Anomaly Banner */
+.anomaly-card {
+  background: linear-gradient(135deg,#fff3e0,#ffe0b2);
+  border-left: 5px solid #f57c00;
+  border-radius: 12px; padding: 14px 18px;
+  margin-bottom: 10px;
+  animation: pulse-warning 3s infinite;
+}
+.anomaly-card.critical {
+  background: linear-gradient(135deg,#ffebee,#ffcdd2);
+  border-left-color: #f44336;
+}
+
+/* ② AI Chat */
+.chat-bubble-user {
+  background: linear-gradient(135deg,#7A3E94,#9c27b0);
+  color: white; border-radius: 18px 18px 4px 18px;
+  padding: 10px 16px; max-width: 75%; font-size: 0.92rem;
+  align-self: flex-end; word-break: break-word;
+}
+.chat-bubble-ai {
+  background: #f5f5f5; color: #333;
+  border-radius: 18px 18px 18px 4px;
+  padding: 10px 16px; max-width: 80%; font-size: 0.92rem;
+  align-self: flex-start; word-break: break-word; line-height: 1.6;
+}
+.chat-messages {
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 360px; overflow-y: auto;
+  padding: 15px; scrollbar-width: thin; scrollbar-color: #BA68C8 #f0f0f0;
+}
+.chat-messages::-webkit-scrollbar { width: 6px; }
+.chat-messages::-webkit-scrollbar-thumb { background: #BA68C8; border-radius: 10px; }
+.chat-typing {
+  display: flex; gap: 5px; padding: 10px 16px; align-items: center;
+}
+.chat-typing span {
+  width: 8px; height: 8px; background: #BA68C8; border-radius: 50%;
+  animation: chatBounce 1.2s infinite;
+}
+.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes chatBounce {
+  0%,60%,100% { transform: translateY(0); }
+  30% { transform: translateY(-8px); }
+}
+.chat-quick-btn {
+  background: white; border: 2px solid #e0e0e0;
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+  transition: all 0.2s ease; color: #555;
+}
+.chat-quick-btn:hover {
+  border-color: #7A3E94; color: #7A3E94;
+  transform: translateY(-1px);
+}
+    
+    /* Ranking */
+.rank-medal { 
+  width: 32px; height: 32px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem;
+}
+.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA000); color: white; }
+.rank-2 { background: linear-gradient(135deg, #C0C0C0, #9E9E9E); color: white; }
+.rank-3 { background: linear-gradient(135deg, #CD7F32, #A1572A); color: white; }
+.rank-other { background: #f0f0f0; color: #555; }
+
+/* AI Analysis */
+.ai-section-header {
+  background: linear-gradient(135deg, #7A3E94, #d81b60);
+  color: white; border-radius: 15px 15px 0 0;
+  padding: 15px 20px;
+}
+.ai-card {
+  border-radius: 12px; padding: 15px 20px;
+  margin-bottom: 12px; border-left: 4px solid;
+}
+.ai-card-overview  { background:#f3e5f5; border-color:#7A3E94; }
+.ai-card-risk      { background:#ffebee; border-color:#f44336; }
+.ai-card-insight   { background:#e3f2fd; border-color:#2196f3; }
+.ai-card-recommend { background:#e8f5e9; border-color:#4caf50; }
+.ai-card-forecast  { background:#fff8e1; border-color:#ff9800; }
+.ai-typing { 
+  display: inline-block;
+  animation: typing 1.5s infinite;
+}
+@keyframes typing {
+  0%,100% { opacity:1; } 50% { opacity:0.3; }
+}
+    /* Utility Classes */
+    .text-success { color: var(--success-green) !important; }
+    .text-danger { color: var(--danger-red) !important; }
+    .text-warning { color: var(--warning-orange) !important; }
+    .text-primary { color: var(--pea-purple) !important; }
+    .text-pink { color: var(--pea-pink) !important; }
+    
+    .bg-success-subtle { background-color: #e8f5e9 !important; }
+    .bg-danger-subtle { background-color: #ffebee !important; }
+    .bg-warning-subtle { background-color: #fff3e0 !important; }
+    .bg-info-subtle { background-color: #e3f2fd !important; }
+    
+    .status-pending-recorder {
+      background: linear-gradient(135deg, #ff9800, #ffb74d);
+      color: white;
+    }
+
+    .status-pending-approver {
+      background: linear-gradient(135deg, #2196f3, #64b5f6);
+      color: white;
+    }
+
+    .status-approved {
+      background: linear-gradient(135deg, #4caf50, #66bb6a);
+      color: white;
+    }
+
+    .status-rejected {
+      background: linear-gradient(135deg, #f44336, #e57373);
+      color: white;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-pea {
+        padding: 15px;
+      }
+      
+      .header-pea h4 {
+        font-size: 1.1rem;
+      }
+      
+      .nav-tabs .nav-link {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+      }
+      
+      .card {
+        margin-bottom: 15px;
+      }
+      
+      .btn {
+        padding: 8px 18px;
+        font-size: 0.9rem;
+      }
+      
+      .modal-body {
+        padding: 20px;
+      }
+      
+      #scrollTopBtn {
+        bottom: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+      }
+      
+      .period-tabs {
+        justify-content: center;
+      }
+      
+      .period-tab {
+        padding: 8px 15px;
+        font-size: 0.85rem;
+      }
+      
+      .stats-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Animation Classes */
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(-20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ===== v3.2.0: หน้าเข้าระบบ / ผู้ใช้ / มือถือ ===== */
+    #loginView { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: linear-gradient(135deg, #7A3E94 0%, #d81b60 100%); overflow-y: auto; }
+    #loginView.hidden { display: none; }
+    .login-card { background: #fff; border-radius: 22px; width: 100%; max-width: 380px; padding: 28px 22px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+    .login-card .logo { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 2rem; color: #fff; background: linear-gradient(135deg, #7A3E94, #d81b60); }
+    .login-card .form-control { font-size: 16px; padding: 12px 14px; border-radius: 12px; }
+    .login-card .btn-login { background: linear-gradient(135deg, #7A3E94, #d81b60); color: #fff; border: 0; border-radius: 12px;
+      padding: 12px; font-weight: 700; width: 100%; }
+    .login-card .btn-login:disabled { opacity: .7; }
+    #loginErr { color: #c62828; font-size: .88rem; min-height: 1.2em; }
+    #registerModal { z-index: 3100; }
+    .user-chip { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+      color: #fff; border-radius: 999px; padding: 4px 12px 4px 4px; cursor: pointer; max-width: 220px; min-height: 40px; }
+    .user-chip .av { width: 32px; height: 32px; border-radius: 50%; background: #fff; color: #7A3E94; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex: 0 0 32px; }
+    .user-chip .nm { font-size: .82rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+    .user-chip .nm small { display: block; opacity: .85; font-size: .72rem; }
+    #userChipWrap { width: 220px; }
+    #netStatus { position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: 2000; background: #333; color: #fff;
+      font-size: .82rem; padding: 6px 14px; border-radius: 999px; display: none; }
+    @media (max-width: 768px) {
+      .form-control, .form-select, textarea, .swal2-input, .swal2-select, .swal2-textarea { font-size: 16px !important; }
+      .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .nav-tabs::-webkit-scrollbar { display: none; }
+      .nav-tabs .nav-item { flex: 0 0 auto; }
+      .nav-tabs .nav-link { white-space: nowrap; min-height: 44px; }
+      .nav-tabs .nav-item.ms-auto { margin-left: 0 !important; }
+      #userChipWrap { width: auto; }
+      .user-chip { padding: 3px; max-width: none; }
+      .user-chip .nm { display: none; }
+      .header-pea { gap: 8px; }
+      .header-pea h4 small { display: none !important; }
+      .container { padding-left: 10px; padding-right: 10px; }
+      .card.p-4 { padding: 16px !important; }
+      .table-responsive { -webkit-overflow-scrolling: touch; }
+    }
+  </style>
+</head><body>
+
+<!-- v3.2.0: หน้าเข้าระบบ (ใช้ Username/Password เดิมของระบบ) -->
+<div id="loginView" class="hidden">
+  <div class="login-card">
+    <div class="logo"><i class="bi bi-wallet2"></i></div>
+    <h5 class="text-center fw-bold mb-0" style="color:#7A3E94">ระบบตัดงบทำการ</h5>
+    <p class="text-center text-muted small mb-3">กฟส.อ่าวลึก · เข้าสู่ระบบด้วยบัญชีเดิม</p>
+    <form onsubmit="doUserLogin(event)" autocomplete="on">
+      <label class="form-label small fw-semibold mb-1" for="liUser"><i class="bi bi-person-circle"></i> Username</label>
+      <input id="liUser" class="form-control mb-2" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+      <label class="form-label small fw-semibold mb-1" for="liPass"><i class="bi bi-lock-fill"></i> Password</label>
+      <input id="liPass" type="password" class="form-control mb-2" autocomplete="current-password" required>
+      <div id="loginErr" class="mb-2"></div>
+      <button type="submit" id="liBtn" class="btn-login"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
+    </form>
+    <div class="text-center mt-3 small">
+      ยังไม่มีบัญชี? <a href="#" onclick="showRegisterModal(); return false;" class="fw-semibold" style="color:#d81b60">สมัครสมาชิก</a>
+    </div>
+    <div class="text-center mt-2"><small class="text-muted" style="font-size:.72rem">เข้าระบบครั้งเดียว เครื่องนี้จะจำไว้ 30 วัน</small></div>
+  </div>
+</div>
+<div id="netStatus"></div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading" style="visibility:hidden;">
+  <div style="background:white; border-radius:20px; padding:12px 20px; 
+              box-shadow:0 4px 20px rgba(0,0,0,0.15);
+              display:flex; align-items:center; gap:10px;">
+    <div class="spinner-border spinner-border-sm" 
+         style="color:#d81b60; width:20px; height:20px;"></div>
+    <span style="color:#d81b60; font-weight:600; font-size:0.9rem;">
+      กำลังโหลด...
+    </span>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header-pea d-flex justify-content-between align-items-center">
+  <div id="userChipWrap"><div class="user-chip" id="userChip" onclick="showUserMenu()" style="display:none;">
+    <div class="av" id="userAv">?</div><div class="nm"><span id="userNm"></span><small id="userRole"></small></div></div></div>
+  <h4 class="m-0">
+    <i class="bi bi-wallet2"></i> ระบบตัดงบทำการ
+    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.2.0</small>
+  </h4>
+  <button class="btn btn-register btn-sm rounded-pill px-4 shadow" id="headerRegisterBtn" style="display:none" onclick="showRegisterModal()">
+    <i class="bi bi-person-plus-fill"></i> สมัครสมาชิก
+  </button>
+</div>
+
+<!-- Main Container -->
+<div class="container mt-4 mb-5">
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-tabs" id="myTab">
+    <li class="nav-item">
+      <button class="nav-link active" id="form-tab" data-bs-toggle="tab" data-bs-target="#form-pane" onclick="resetEditMode()">
+        <i class="bi bi-file-earmark-plus"></i> เสนอเรื่อง
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-pane" onclick="loadPendingList()">
+        <i class="bi bi-clock-history"></i> รอตรวจสอบ
+        <span id="pendingCountBadge" class="badge rounded-pill bg-danger ms-1" style="display:none;">0</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-pane" onclick="loadSummaryTab()">
+        <i class="bi bi-pie-chart-fill"></i> สรุปงบประมาณ
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" onclick="loadApprovedHistory()">
+        <i class="bi bi-check-circle-fill"></i> อนุมัติแล้ว
+      </button>
+    </li>
+    <li class="nav-item">
+  <button class="nav-link" id="analyze-tab" data-bs-toggle="tab" data-bs-target="#analyze-pane" onclick="loadAnalyzeTab()">
+    <i class="bi bi-graph-up-arrow"></i> วิเคราะห์
+  </button>
+</li>
+    <li class="nav-item ms-auto">
+      <button class="nav-link text-secondary" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-pane" onclick="checkAdminSession()">
+        <i class="bi bi-person-fill-gear"></i> Admin
+        <span id="adminPendingBadge" class="badge rounded-pill bg-danger ms-1" style="display:none;">0</span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content pt-4 fade-in">
+    
+    <!-- Tab 1: เสนอเรื่อง -->
+    <div class="tab-pane fade show active" id="form-pane">
+      <div class="card p-4 shadow">
+        <h5 class="mb-4 text-purple fw-bold">
+          <i class="bi bi-pencil-square"></i> แบบฟอร์มเสนอเรื่องตัดงบประมาณ
+        </h5>
+        <form id="budgetForm" onsubmit="submitForm(event)">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"><i class="bi bi-building"></i> กฟฟ.</label>
+              <select class="form-select" id="branch" required onchange="updateDept()">
+                <option value="">เลือก กฟฟ.</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"><i class="bi bi-diagram-3"></i> แผนก (งาน)</label>
+              <select class="form-select" id="dept" required onchange="onDeptChange()">
+                <option value="">เลือกแผนก</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label fw-semibold"><i class="bi bi-card-list"></i> รหัสบัญชี / รายการงบ</label>
+              <select class="form-select border-primary" id="accountCode" required onchange="selectAccount()">
+                <option value="">เลือกรายการงบประมาณ</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted small">งบต่อปี (บาท)</label>
+              <input type="text" class="form-control bg-light" id="yearlyBudget" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-primary fw-bold small">งบต่อเดือน (บาท)</label>
+              <input type="text" class="form-control bg-light text-primary fw-bold" id="monthlyBudget" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted small">งบคงเหลือ(ปี)</label>
+              <input type="text" class="form-control bg-light" id="remainingYear" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted small">งบสะสมถึงปัจจุบัน</label>
+              <input type="text" class="form-control bg-light" id="accumulatedMonthBudget" readonly>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-semibold"><i class="bi bi-chat-text"></i> รายการหักค่าใช้จ่าย</label>
+              <input class="form-control" id="expenseDetail" placeholder="ระบุรายละเอียดค่าใช้จ่าย..." required maxlength="500">
+              <small class="text-muted">สูงสุด 500 ตัวอักษร</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold text-danger"><i class="bi bi-cash-stack"></i> ยอดตัดจ่าย (บาท)</label>
+              <input type="number" class="form-control border-danger fw-bold" id="amount" required min="0.01" step="0.01" max="100000000" oninput="calcNet()">
+            </div>
+            <div class="col-md-12">
+              <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <span class="fs-6">💰 คงเหลือสุทธิ (เดือนนี้):</span>
+                <span id="netRemaining" class="fw-bold fs-5 text-success">-</span>
+              </div>
+              <div id="netRemainingAlert" style="display: none;"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"><i class="bi bi-person-check"></i> ผู้เสนอเรื่อง</label>
+              <select class="form-select" id="requester" required>
+                <option value="">กรุณาเลือกแผนกก่อน</option>
+              </select>
+            </div>
+            <div class="col-12 text-center mt-4">
+              <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-5 shadow-lg">
+                <i class="bi bi-send-fill"></i> บันทึกข้อมูล
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tab 2: รอตรวจสอบ -->
+    <div class="tab-pane fade" id="list-pane">
+      <div class="card p-3 shadow">
+        <h5 class="mb-3 text-purple fw-bold">
+          <i class="bi bi-list-check"></i> รายการรอตรวจสอบ/อนุมัติ
+        </h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small">
+            <thead class="table-light sticky-header">
+              <tr>
+                <th><i class="bi bi-calendar3"></i> วันที่</th>
+                <th><i class="bi bi-geo-alt"></i> กฟฟ./แผนก</th>
+                <th><i class="bi bi-card-text"></i> รหัสบัญชี : รายการงบ</th>
+                <th><i class="bi bi-file-text"></i> รายการหัก</th>
+                <th><i class="bi bi-currency-dollar"></i> จำนวนเงิน</th>
+                <th><i class="bi bi-person"></i> ผู้เสนอ</th>
+                <th><i class="bi bi-flag"></i> สถานะ</th>
+                <th><i class="bi bi-gear"></i> จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="pendingTableBody">
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox fs-1"></i>
+                  <p class="mt-2">ไม่มีรายการรอตรวจสอบ</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- Tab 3: สรุปงบประมาณ (ENHANCED VERSION v3.1.2) -->
+    <div class="tab-pane fade" id="summary-pane">
+      
+      <!-- Date Filter Section -->
+      <div class="date-filter-section">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">
+              <i class="bi bi-calendar-range"></i> ช่วงเวลา
+            </label>
+            <select class="form-select" id="summaryPeriodType" onchange="updateDateInputs()">
+              <option value="all">ทั้งหมด</option>
+              <option value="daily">รายวัน</option>
+              <option value="monthly">รายเดือน</option>
+              <option value="yearly">รายปี</option>
+              <option value="custom">กำหนดเอง</option>
+            </select>
+          </div>
+          
+          <div class="col-md-3" id="dateFromGroup" style="display: none;">
+            <label class="form-label">
+              <i class="bi bi-calendar-check"></i> จากวันที่
+            </label>
+            <input type="date" class="form-control" id="summaryDateFrom">
+          </div>
+          
+          <div class="col-md-3" id="dateToGroup" style="display: none;">
+            <label class="form-label">
+              <i class="bi bi-calendar-check-fill"></i> ถึงวันที่
+            </label>
+            <input type="date" class="form-control" id="summaryDateTo">
+          </div>
+          
+          <div class="col-md-3">
+            <label class="form-label">
+              <i class="bi bi-funnel"></i> กรองแผนก
+            </label>
+            <select class="form-select" id="summaryDeptFilter">
+              <option value="">ทุกแผนก</option>
+              <option value="ผบง.">ผบง.</option>
+              <option value="ผปร.">ผปร.</option>
+              <option value="ผบค.">ผบค.</option>
+              <option value="ประจำ กฟฟ.">ประจำ กฟฟ.</option>
+            </select>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">
+              <i class="bi bi-search"></i> ค้นหา
+            </label>
+            <input type="text" class="form-control" id="summarySearchInput" placeholder="ค้นหารหัสบัญชี, ชื่อบัญชี...">
+          </div>
+          
+          <div class="col-md-3">
+            <button class="btn btn-primary w-100" onclick="applySummaryFilter()">
+              <i class="bi bi-search"></i> ค้นหา
+            </button>
+          </div>
+          
+          <div class="col-md-3">
+            <button class="btn btn-clear-filter w-100" onclick="clearSummaryFilter()">
+              <i class="bi bi-x-circle"></i> ล้างค่า
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Period Tabs -->
+      <div class="period-tabs">
+        <div class="period-tab active" data-period="overview" onclick="switchAnalysisPeriod('overview')">
+          <i class="bi bi-graph-up"></i> ภาพรวม
+        </div>
+        <div class="period-tab" data-period="daily" onclick="switchAnalysisPeriod('daily')">
+          <i class="bi bi-calendar-day"></i> รายวัน
+        </div>
+        <div class="period-tab" data-period="monthly" onclick="switchAnalysisPeriod('monthly')">
+          <i class="bi bi-calendar-month"></i> รายเดือน
+        </div>
+        <div class="period-tab" data-period="yearly" onclick="switchAnalysisPeriod('yearly')">
+          <i class="bi bi-calendar-year"></i> รายปี
+        </div>
+      </div>
+
+      <!-- Stats Summary Cards -->
+      <div class="stats-summary" id="statsSummaryCards">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+          <div class="stat-value" id="statTotalBudget">0.00</div>
+          <div class="stat-label">งบประมาณทั้งหมด</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="bi bi-credit-card"></i></div>
+          <div class="stat-value" id="statTotalUsed">0.00</div>
+          <div class="stat-label">ใช้ไปแล้ว</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
+          <div class="stat-value" id="statTotalRemaining">0.00</div>
+          <div class="stat-label">คงเหลือ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="bi bi-percent"></i></div>
+          <div class="stat-value" id="statUsagePercent">0%</div>
+          <div class="stat-label">เปอร์เซ็นต์การใช้</div>
+        </div>
+      </div>
+
+      <!-- Chart Section -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-8">
+          <div class="chart-container">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-bar-chart-fill"></i> กราฟแสดงการใช้งบประมาณ
+            </h6>
+            <canvas id="budgetUsageChart"></canvas>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="chart-container">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-pie-chart-fill"></i> สัดส่วนงบแต่ละแผนก
+            </h6>
+            <canvas id="deptPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Period Content -->
+      <div id="analysisContent">
+        
+        <!-- Overview Tab Content -->
+        <div id="overviewContent" class="analysis-section">
+          <div class="card p-3 shadow">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-table"></i> สรุปรายแผนก
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>แผนก</th>
+                    <th>งบทั้งหมด</th>
+                    <th>ใช้ไป</th>
+                    <th>คงเหลือ</th>
+                    <th>%</th>
+                  </tr>
+                </thead>
+                <tbody id="summaryDeptTableBody">
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card p-3 shadow mt-4">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-list-check"></i> รายละเอียดงบประมาณแต่ละบัญชี
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover table-bordered align-middle small">
+                <thead class="table-light sticky-header">
+                  <tr>
+                    <th>รหัส</th>
+                    <th>ชื่อบัญชี</th>
+                    <th>แผนก</th>
+                    <th>งบปี</th>
+                    <th>ใช้ไป</th>
+                    <th>คงเหลือ</th>
+                    <th>%</th>
+                  </tr>
+                </thead>
+                <tbody id="accSummaryBody">
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Analysis Content -->
+        <div id="dailyContent" class="analysis-section" style="display: none;">
+          <div class="card p-3 shadow">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-calendar-day"></i> วิเคราะห์รายวัน
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover breakdown-table">
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>จำนวนรายการ</th>
+                    <th>ยอดรวม</th>
+                    <th>แผนก</th>
+                  </tr>
+                </thead>
+                <tbody id="dailyAnalysisBody">
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Analysis Content -->
+        <div id="monthlyContent" class="analysis-section" style="display: none;">
+          <div class="card p-3 shadow">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-calendar-month"></i> วิเคราะห์รายเดือน
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover breakdown-table">
+                <thead>
+                  <tr>
+                    <th>เดือน/ปี</th>
+                    <th>จำนวนรายการ</th>
+                    <th>ยอดรวม</th>
+                    <th>เฉลี่ยต่อวัน</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlyAnalysisBody">
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yearly Analysis Content -->
+        <div id="yearlyContent" class="analysis-section" style="display: none;">
+          <div class="card p-3 shadow">
+            <h6 class="fw-bold text-purple mb-3">
+              <i class="bi bi-calendar-year"></i> วิเคราะห์รายปี
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover breakdown-table">
+                <thead>
+                  <tr>
+                    <th>ปี</th>
+                    <th>จำนวนรายการ</th>
+                    <th>ยอดรวม</th>
+                    <th>เฉลี่ยต่อเดือน</th>
+                  </tr>
+                </thead>
+                <tbody id="yearlyAnalysisBody">
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">กำลังโหลด...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- Tab วิเคราะห์ -->
+<!-- Tab วิเคราะห์ -->
+<div class="tab-pane fade" id="analyze-pane">
+
+  <!-- ③ Anomaly Alert Banner (client-side, แสดงทันที) -->
+  <div id="anomalyBanner" class="mb-3" style="display:none;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+      <strong class="text-warning">⚡ พบรายการใช้งบผิดปกติ</strong>
+      <span class="badge bg-danger ms-1" id="anomalyCount">0</span>
+    </div>
+    <div id="anomalyCards"></div>
+  </div>
+
+  <!-- ① Budget Health Score -->
+  <div class="card shadow mb-4" id="healthScoreSection">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="fw-bold mb-1" style="color:#7A3E94;">
+            <i class="bi bi-heart-pulse-fill"></i> Budget Health Score
+          </h6>
+          <small class="text-muted">คะแนนสุขภาพงบประมาณ (คำนวณอัตโนมัติ)</small>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                onclick="refreshHealthScore()">
+          <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+      </div>
+      <div class="row align-items-center g-3" id="healthScoreContent">
+        <div class="col-12 text-center text-muted py-3">
+          <small>จะแสดงคะแนนเมื่อโหลดข้อมูลงบ</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Analysis -->
+  <div class="card shadow mb-4" id="aiAnalysisSection">
+    <div class="ai-section-header d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-stars"></i> AI Budget Analysis
+        </h6>
+        <small style="opacity:0.8;">วิเคราะห์งบประมาณอัจฉริยะด้วย Claude AI</small>
+      </div>
+      <button class="btn btn-light btn-sm rounded-pill px-4 fw-bold"
+              onclick="runAIAnalysis()" id="aiAnalysisBtn">
+        <i class="bi bi-cpu-fill"></i> วิเคราะห์
+      </button>
+    </div>
+    <div class="card-body p-4" id="aiAnalysisResult">
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-robot fs-1" style="color:#BA68C8;"></i>
+        <p class="mt-3 fw-semibold">กดปุ่ม "วิเคราะห์" เพื่อให้ AI วิเคราะห์งบประมาณ</p>
+        <small class="text-muted">💡 หากยังไม่มีข้อมูล ให้เปิดเมนู "สรุปงบประมาณ" ก่อน 1 ครั้ง</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② AI Chat -->
+  <div class="card shadow mb-4" id="aiChatSection">
+    <div class="card-header d-flex justify-content-between align-items-center py-3 px-4"
+         style="background:linear-gradient(135deg,#f3e5f5,#fce4ec);border-radius:20px 20px 0 0;border:none;">
+      <div>
+        <h6 class="fw-bold mb-0" style="color:#7A3E94;">
+          <i class="bi bi-chat-dots-fill"></i> AI Chat — ถามเกี่ยวกับงบประมาณ
+        </h6>
+        <small class="text-muted">AI รู้ข้อมูลงบปัจจุบันของคุณทั้งหมด</small>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+              onclick="clearAIChat()">
+        <i class="bi bi-trash3"></i> ล้างแชท
+      </button>
+    </div>
+
+    <!-- Quick question pills -->
+    <div class="px-4 py-2 d-flex gap-2 flex-wrap"
+         style="border-bottom:1px solid #f0f0f0;background:#fafafa;">
+      <span class="chat-quick-btn" onclick="sendChatQuick('แผนกไหนใช้งบเกินแผน?')">
+        💸 แผนกเกินแผน?
+      </span>
+      <span class="chat-quick-btn" onclick="sendChatQuick('บัญชีไหนมีความเสี่ยงงบหมดก่อนสิ้นปี?')">
+        ⚠️ ความเสี่ยงงบหมด?
+      </span>
+      <span class="chat-quick-btn" onclick="sendChatQuick('เดือนหน้าควรระวังอะไร?')">
+        📅 เดือนหน้าควรระวัง?
+      </span>
+      <span class="chat-quick-btn" onclick="sendChatQuick('สรุปสถานะงบทั้งหมดให้ฉันฟังสั้นๆ')">
+        📊 สรุปสั้นๆ
+      </span>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-bubble-ai">
+        👋 สวัสดีครับ! ผมคือ AI ผู้ช่วยวิเคราะห์งบประมาณ
+        ถามอะไรก็ได้เกี่ยวกับงบประมาณของคุณ เช่น "แผนกไหนใช้งบมากสุด?" หรือ "บัญชีไหนควรระวัง?"
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="p-3" style="border-top:1px solid #f0f0f0;">
+      <div class="d-flex gap-2">
+        <input type="text" class="form-control rounded-pill" id="chatInput"
+               placeholder="พิมพ์คำถามเกี่ยวกับงบประมาณ..."
+               maxlength="300"
+               onkeypress="if(event.key==='Enter') sendChatMessage()">
+        <button class="btn btn-primary rounded-pill px-4 fw-bold"
+                id="chatSendBtn" onclick="sendChatMessage()">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+      <div class="text-end mt-1">
+        <small class="text-muted" id="chatInputCount">0/300</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ranking -->
+  <div class="card shadow" id="rankingSection">
+    <div class="card-body p-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold text-purple mb-0">
+          <i class="bi bi-trophy-fill text-warning"></i>
+          Ranking การใช้งบประมาณ
+        </h6>
+        <span class="badge bg-secondary" id="rankingTotal"></span>
+      </div>
+      <div id="rankingDeptFilter" class="d-flex flex-wrap gap-2 mb-3"></div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover breakdown-table">
+          <thead>
+            <tr>
+              <th style="width:50px">อันดับ</th>
+              <th>รหัส / ชื่อบัญชี</th>
+              <th style="cursor:pointer;user-select:none;" onclick="toggleDeptFilter()" id="rankingDeptHeader">
+                แผนก <i class="bi bi-funnel" id="iconDeptFilter"></i>
+              </th>
+              <th>งบปี</th>
+              <th>งบ/เดือน</th>
+              <th style="cursor:pointer;user-select:none;" onclick="setRankingSort('used')" id="rankingSortUsed">
+                ใช้ไปแล้ว <i class="bi bi-arrow-down-up" id="iconSortUsed"></i>
+              </th>
+              <th style="cursor:pointer;user-select:none;" onclick="setRankingSort('percent')" id="rankingSortPct">
+                %การใช้ <i class="bi bi-arrow-down-up" id="iconSortPct"></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="rankingTableBody">
+            <tr><td colspan="7" class="text-center text-muted py-3">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <span class="text-muted small" id="rankingPageInfo"></span>
+        <div id="rankingPagination" class="d-flex gap-2"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+    <!-- Tab 4: อนุมัติแล้ว -->
+    <div class="tab-pane fade" id="history-pane">
+      <div class="card p-3 shadow border-success">
+        <h5 class="mb-3 text-success fw-bold">
+          <i class="bi bi-check-circle-fill"></i> ประวัติรายการที่อนุมัติแล้ว
+        </h5>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle small">
+            <thead class="table-light sticky-header">
+              <tr>
+                <th><i class="bi bi-calendar-check"></i> วันเวลาที่อนุมัติ</th>
+                <th><i class="bi bi-geo-alt"></i> กฟฟ./แผนก</th>
+                <th><i class="bi bi-file-text"></i> รายการหัก</th>
+                <th><i class="bi bi-cash"></i> จำนวนเงิน</th>
+                <th><i class="bi bi-person"></i> ผู้เสนอ</th>
+                <th><i class="bi bi-clock-history"></i> ไทม์ไลน์</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox fs-1"></i>
+                  <p class="mt-2">ยังไม่มีรายการที่อนุมัติ</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Admin -->
+    <div class="tab-pane fade" id="admin-pane">
+      <!-- Admin Login Section -->
+      <div id="adminAuthSection" class="card p-5 text-center shadow mx-auto slide-in" style="max-width: 500px;">
+        <div class="mb-4">
+          <i class="bi bi-shield-lock-fill text-danger" style="font-size: 4rem;"></i>
+        </div>
+        <h4 class="text-danger mb-4 fw-bold">Admin Login</h4>
+        <p class="text-muted mb-4">กรุณาเข้าสู่ระบบเพื่อจัดการข้อมูล</p>
+        <input type="text" class="form-control mb-3" id="loginUser" placeholder="Username">
+        <input type="password" class="form-control mb-3" id="loginPass" placeholder="Password" onkeypress="if(event.key==='Enter') doAdminLogin()">
+        <button class="btn btn-danger w-100 py-3 rounded-pill shadow-lg" onclick="doAdminLogin()">
+          <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบจัดการ
+        </button>
+      </div>
+
+      <!-- Admin Controls Section -->
+      <div id="adminControls" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="text-purple fw-bold mb-0">
+            <i class="bi bi-gear-fill"></i> จัดการข้อมูลระบบ
+          </h4>
+          <button class="btn btn-outline-secondary btn-sm rounded-pill px-4" onclick="doAdminLogout()">
+            <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+          </button>
+        </div>
+        
+        <ul class="nav nav-pills mb-4">
+          <li class="nav-item">
+            <button class="nav-link active rounded-pill me-2 px-4" data-bs-toggle="pill" data-bs-target="#adminUsers">
+              <i class="bi bi-people-fill"></i> จัดการสมาชิก
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link rounded-pill px-4 me-2" data-bs-toggle="pill" data-bs-target="#adminBudget">
+              <i class="bi bi-cash-stack"></i> จัดการงบประมาณ
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#adminLine">
+              <i class="bi bi-line"></i> ตั้งค่า LINE
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content">
+          <!-- Admin Users -->
+          <div class="tab-pane fade show active" id="adminUsers">
+            <div class="card p-3 shadow">
+              <h6 class="mb-3 fw-bold">
+                <i class="bi bi-person-lines-fill"></i> รายชื่อสมาชิกทั้งหมด
+              </h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle small">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ชื่อ-สกุล</th>
+                      <th>ตำแหน่ง</th>
+                      <th>แผนก</th>
+                      <th>Username</th>
+                      <th>สถานะ</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="allUsersBody">
+                    <tr>
+                      <td colspan="6" class="text-center text-muted">กำลังโหลด...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Budget -->
+          <div class="tab-pane fade" id="adminBudget">
+            <div class="card p-3 shadow">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <input type="text" class="form-control form-control-sm w-50" id="adminBudgetSearch" oninput="filterAdminBudget()" placeholder="🔍 ค้นหารหัส หรือ ชื่อบัญชี...">
+                <button class="btn btn-sm btn-primary rounded-pill px-4 shadow" onclick="showAddBudgetModal()">
+                  <i class="bi bi-plus-circle-fill"></i> เพิ่มรายการงบใหม่
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle small">
+                  <thead class="table-light">
+                    <tr>
+                      <th>กฟฟ.</th>
+                      <th>แผนก</th>
+                      <th>รหัส</th>
+                      <th>ชื่อบัญชี</th>
+                      <th>งบปี</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminBudgetBody">
+                    <tr>
+                      <td colspan="6" class="text-center text-muted">กำลังโหลด...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin LINE -->
+          <div class="tab-pane fade" id="adminLine">
+  <div class="card p-4 shadow mb-4">
+    <h6 class="mb-3 fw-bold text-success">
+      <i class="bi bi-line"></i> ตั้งค่า LINE Push Messaging API
+    </h6>
+    <div class="alert alert-info">
+      <strong>📱 วิธีการตั้งค่า:</strong>
+      <ol class="mb-0 mt-2">
+        <li>เข้า <a href="https://developers.line.biz/" target="_blank">LINE Developers Console</a></li>
+        <li>สร้าง Channel ประเภท Messaging API</li>
+        <li>คัดลอก Channel Access Token มาใส่ด้านล่าง</li>
+        <li>ระบุ User ID หรือ Group ID ที่ต้องการส่ง</li>
+      </ol>
+    </div>
+    <button class="btn btn-success rounded-pill px-4 mb-3" onclick="showLineConfigModal()">
+      <i class="bi bi-gear-fill"></i> ตั้งค่า LINE Token & Target
+    </button>
+    <button class="btn btn-outline-primary rounded-pill px-4 mb-3" onclick="testLinePush()">
+      <i class="bi bi-send-check"></i> ทดสอบการแจ้งเตือน
+    </button>
+  </div>
+
+  <div class="card p-4 shadow">
+    <h6 class="mb-3 fw-bold text-purple">
+      <i class="bi bi-key-fill"></i> ตั้งค่า Claude AI API Key
+    </h6>
+    <div class="alert alert-warning">
+      <strong>🔑 หมายเหตุ:</strong> API Key จะถูกเก็บใน Script Properties ไม่แสดงในโค้ด
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Anthropic API Key</label>
+      <div class="input-group">
+        <input type="password" class="form-control" id="anthropicKeyInput" 
+               placeholder="sk-ant-xxxxxxxxxxxxxxxx">
+        <button class="btn btn-outline-secondary" type="button" 
+                onclick="toggleApiKeyVisibility()">
+          <i class="bi bi-eye" id="apiKeyEyeIcon"></i>
+        </button>
+      </div>
+      <small class="text-muted">ขึ้นต้นด้วย sk-ant-</small>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4" onclick="saveApiKey()">
+      <i class="bi bi-save-fill"></i> บันทึก API Key
+    </button>
+    <button class="btn btn-outline-secondary rounded-pill px-4 ms-2" onclick="testAIConnection()">
+      <i class="bi bi-cpu-fill"></i> ทดสอบการเชื่อมต่อ AI
+    </button>
+  </div>
+</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="fw-semibold">
+    <i class="bi bi-lightning-charge-fill"></i> 
+    ระบบตัดงบทำการ เวอร์ชัน 3.1.2
+  </div>
+  <div class="small mt-1">
+    Budget Management System | Enhanced Analytics & Auto-refresh
+  </div>
+</footer><!-- Modal: รายละเอียด -->
+<div class="modal fade" id="detailModal" tabindex="-1" data-bs-backdrop="true" data-bs-keyboard="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #ec407a, #d81b60);">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-info-circle-fill"></i> รายละเอียดข้อมูล
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <table class="table table-bordered mb-0 small">
+              <tr><th class="bg-light" style="width:45%;">วันเวลาล่าสุด</th><td id="mDate">-</td></tr>
+              <tr><th class="bg-light">กฟฟ./แผนก</th><td id="mLocation">-</td></tr>
+              <tr><th class="bg-light">รหัสบัญชี</th><td id="mCode" class="fw-bold">-</td></tr>
+              <tr><th class="bg-light text-primary">รายการหัก</th><td id="mDetail" class="fw-bold text-primary">-</td></tr>
+              <tr><th class="bg-light">ยอดหักเงิน</th><td id="mAmount" class="fw-bold text-danger">-</td></tr>
+              <tr class="table-info"><th class="bg-info-subtle">งบคงเหลือ (ปี)</th><td id="mRemYear" class="fw-bold">-</td></tr>
+              <tr class="table-info"><th class="bg-info-subtle">งบคงเหลือ (เดือน)</th><td id="mRemMonth" class="fw-bold">-</td></tr>
+              <tr><th class="bg-light text-danger">สถานะปัจจุบัน</th><td id="mStatus" class="fw-bold text-danger">-</td></tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-light border-0 h-100 shadow-sm">
+              <div class="card-body">
+                <h6 class="text-secondary border-bottom pb-2 mb-3 fw-bold">
+                  <i class="bi bi-clock-history"></i> ประวัติการดำเนินการ (Timeline Log)
+                </h6>
+                <div class="timeline-container" id="mTimeline">
+                  <p class="text-muted text-center">ไม่มีข้อมูล</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="mActionArea" class="text-center mt-4 p-3 bg-white rounded border border-2" style="display:none; border-color: var(--pea-pink) !important;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> ปิด
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: แก้ไขข้อมูล -->
+<div class="modal fade" id="editModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-pencil-square"></i> หน้าต่างแก้ไขข้อมูลรายการตัดงบ
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <form id="editBudgetForm">
+          <input type="hidden" id="editRowIdx">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">กฟฟ.</label>
+              <select class="form-select" id="e_branch" required onchange="updateDept_e()">
+                <option value="">เลือก กฟฟ.</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">แผนก (งาน)</label>
+              <select class="form-select" id="e_dept" required onchange="onDeptChange_e()">
+                <option value="">เลือกแผนก</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label fw-bold">รหัสบัญชี / รายการงบ</label>
+              <select class="form-select border-primary" id="e_accountCode" required onchange="selectAccount_e()">
+                <option value="">เลือกรายการงบประมาณ</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted small">งบต่อปี</label>
+              <input type="text" class="form-control bg-white" id="e_yearlyBudget" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-primary fw-bold small">งบต่อเดือน</label>
+              <input type="text" class="form-control bg-white text-primary fw-bold" id="e_monthlyBudget" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted small">งบคงเหลือ(ปี)</label>
+              <input type="text" class="form-control bg-white" id="e_remainingYear" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted small">งบสะสมถึงปัจจุบัน</label>
+              <input type="text" class="form-control bg-white" id="e_accumulatedMonthBudget" readonly>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-bold">รายการหักค่าใช้จ่าย</label>
+              <input class="form-control border-warning" id="e_expenseDetail" required maxlength="500">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold text-danger">ยอดตัดจ่ายที่แก้ไข (บาท)</label>
+              <input type="number" class="form-control border-danger fw-bold" id="e_amount" required min="0.01" step="0.01" max="100000000" oninput="calcNet_e()">
+            </div>
+            <div class="col-md-12">
+              <div class="alert alert-warning">
+                <strong>คงเหลือสุทธิ (หลังแก้ไข):</strong>
+                <span id="e_netRemaining" class="fw-bold fs-5 text-success">-</span> บาท
+              </div>
+              <div id="e_netRemainingAlert" style="display: none;"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">ผู้เสนอเรื่อง</label>
+              <select class="form-select" id="e_requester" required>
+                <option value="">เลือกผู้เสนอ</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer bg-white">
+        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> ยกเลิก
+        </button>
+        <button type="button" class="btn btn-warning rounded-pill px-5 fw-bold shadow" onclick="submitEditForm()">
+          <i class="bi bi-save-fill"></i> บันทึกการแก้ไขข้อมูล
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: สมัครสมาชิก -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-person-plus-fill"></i> สมัครสมาชิกใหม่
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form onsubmit="doRegister(event)">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">ชื่อ-สกุล</label>
+            <input type="text" class="form-control" id="regName" required maxlength="200">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">ตำแหน่ง</label>
+            <select class="form-select" id="regRole" required>
+              <option value="">เลือกตำแหน่ง</option>
+              <option value="ผู้เสนอ">ผู้เสนอ</option>
+              <option value="ผู้บันทึก(หผ./รักษาการแทน)">ผู้บันทึก(หผ./รักษาการแทน)</option>
+              <option value="ผู้อนุมัติ">ผู้อนุมัติ</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">แผนก (งาน)</label>
+            <select class="form-select" id="regDept" required>
+              <option value="">เลือกแผนก</option>
+              <option value="ผบง.">ผบง.</option>
+              <option value="ผปร.">ผปร.</option>
+              <option value="ผบค.">ผบค.</option>
+              <option value="ประจำ กฟฟ.">ประจำ กฟฟ.</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            <input type="text" class="form-control" id="regUser" required maxlength="50">
+            <small class="text-muted">ห้ามใช้ username ซ้ำกับผู้อื่น</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Password</label>
+            <input type="password" class="form-control" id="regPass" required minlength="6">
+            <small class="text-muted">อย่างน้อย 6 ตัวอักษร</small>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 shadow">
+            <i class="bi bi-send-fill"></i> ส่งสมัคร
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- v3.1.2: Scroll to Top Button -->
+<button id="scrollTopBtn" onclick="scrollToTop()" title="กลับขึ้นด้านบน">
+  <i class="bi bi-arrow-up"></i>
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ==================== v3.2.0: เชื่อมต่อ Apps Script ผ่าน fetch ====================
+// หน้าเว็บนี้อยู่บน GitHub Pages จึงไม่มี google.script.run ของจริง
+// เราสร้าง google.script.run จำลองขึ้นมา ให้โค้ดเดิมทั้งหมดทำงานได้เหมือนเดิม แต่ส่งคำขอด้วย fetch แทน
+const API_URL = 'https://script.google.com/macros/s/AKfycbygECo4LkNmO4KLt2CXCrX25vwXE0armUUsdajOWF1CL3djNXaELZX8gwb8zU1GFdsWwQ/exec';
+const TOKEN_KEY = 'budget_token_v1', USER_KEY = 'budget_user_v1', BOOT_KEY = 'budget_boot_v1';
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function escHtml(v) {
+  return String(v === null || v === undefined ? '' : v)
+    .replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+let apiToken = lsGet(TOKEN_KEY);
+let me = null;
+try { me = JSON.parse(lsGet(USER_KEY) || 'null'); } catch (e) { me = null; }
+
+// คำขอที่ใช้เวลานาน (บันทึก/อนุมัติ/AI) รอได้นานกว่า
+const SLOW_FNS = { submitRequest: 1, approveTransaction: 1, getAIBudgetAnalysis: 1, getAIChatResponse: 1, testAIConnectionFromAdmin: 1 };
+let inflight = 0;
+
+function apiCall(fn, args) {
+  const ms = SLOW_FNS[fn] ? 120000 : 60000;
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => ctrl && ctrl.abort(), ms);
+  inflight++; setNetStatus();
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // text/plain = ไม่ต้องขอ CORS preflight
+    body: JSON.stringify({ fn: fn, args: args || [], token: apiToken }),
+    redirect: 'follow',
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(res => res.text()).then(txt => {
+    let j;
+    try { j = JSON.parse(txt); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (อาจกำลังอัปเดตระบบ) ลองใหม่อีกครั้ง'); }
+    if (j && j.ok === undefined && j.status === 'ok') throw new Error('ระบบหลังบ้าน (Apps Script) ยังไม่ได้อัปเดตเป็นเวอร์ชัน 3.2.0 กรุณาแจ้งผู้ดูแลระบบ');
+    if (!j.ok) throw new Error(j.error || 'ไม่ทราบสาเหตุ');
+    return j.data;
+  }).catch(e => {
+    if (e && e.name === 'AbortError') throw new Error('เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง');
+    if (e && e.name === 'TypeError') throw new Error('เชื่อมต่อเครือข่ายไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+    throw e;
+  }).finally(() => { clearTimeout(timer); inflight--; setNetStatus(); });
+}
+
+function setNetStatus() {
+  const el = document.getElementById('netStatus');
+  if (!el) return;
+  if (!navigator.onLine) { el.textContent = '⚠️ ไม่มีอินเทอร์เน็ต'; el.style.display = 'block'; return; }
+  el.style.display = 'none';
+}
+window.addEventListener('online', setNetStatus);
+window.addEventListener('offline', setNetStatus);
+
+// google.script.run จำลอง: รองรับ withSuccessHandler / withFailureHandler / withUserObject
+function makeRunChain() {
+  let onOk = null, onFail = null, userObj;
+  const chain = new Proxy({}, {
+    get(_, prop) {
+      if (prop === 'withSuccessHandler') return f => { onOk = f; return chain; };
+      if (prop === 'withFailureHandler') return f => { onFail = f; return chain; };
+      if (prop === 'withUserObject') return o => { userObj = o; return chain; };
+      return (...args) => {
+        apiCall(String(prop), args).then(
+          data => { if (onOk) onOk(data, userObj); },
+          err => {
+            if (String(err && err.message).indexOf('AUTH_REQUIRED') !== -1) { sessionExpired(); return; }
+            if (onFail) onFail(err, userObj); else console.error(err);
+          }
+        ).catch(e => console.error(e));
+      };
+    }
+  });
+  return chain;
+}
+window.google = { script: { run: new Proxy({}, { get: (_, prop) => makeRunChain()[prop] }) } };
+
+// ==================== เข้าระบบ / ออกจากระบบ ====================
+function showLoginView(msg) {
+  const v = document.getElementById('loginView');
+  v.classList.remove('hidden');
+  document.getElementById('loginErr').textContent = msg || '';
+  const u = document.getElementById('liUser');
+  if (me && me.username && !u.value) u.value = me.username;
+  setTimeout(() => (u.value ? document.getElementById('liPass') : u).focus(), 60);
+}
+
+function sessionExpired() {
+  apiToken = null; lsDel(TOKEN_KEY);
+  try { Swal.close(); } catch (e) {}
+  try { toggleLoading(false); } catch (e) {}
+  showLoginView('หมดเวลาการเข้าระบบ หรือบัญชีถูกเปลี่ยนแปลง กรุณาเข้าสู่ระบบอีกครั้ง');
+}
+
+function doUserLogin(e) {
+  e.preventDefault();
+  const u = document.getElementById('liUser').value.trim();
+  const p = document.getElementById('liPass').value;
+  const btn = document.getElementById('liBtn'), err = document.getElementById('loginErr');
+  if (!u || !p) { err.textContent = 'กรุณากรอก Username และ Password'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังตรวจสอบ...';
+  err.textContent = '';
+  apiCall('apiLogin', [u, p]).then(res => {
+    if (!res || res.status !== 'success') { err.textContent = (res && res.message) || 'เข้าสู่ระบบไม่สำเร็จ'; return; }
+    const changedUser = !me || me.username !== res.user.username;
+    apiToken = res.token; me = res.user;
+    lsSet(TOKEN_KEY, apiToken); lsSet(USER_KEY, JSON.stringify(me));
+    if (changedUser) lsDel(BOOT_KEY);
+    document.getElementById('liPass').value = '';
+    document.getElementById('loginView').classList.add('hidden');
+    startApp();
+  }).catch(e2 => { err.textContent = e2.message; })
+    .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ'; });
+}
+
+function doUserLogout() {
+  apiToken = null; me = null;
+  lsDel(TOKEN_KEY); lsDel(USER_KEY); lsDel(BOOT_KEY);
+  location.reload();
+}
+
+// ==================== PWA ====================
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+
+</script>
+<script>// ==================== GLOBAL VARIABLES ====================
+  let pendingDataCache = [];
+  let approvedDataCache = [];
+  let allBudgetInfo = [];
+  let allUsersList = [];
+  let currentSelection = {};
+  let currentSelection_e = {};
+  let currentSummaryData = null;
+  let isAdminLoggedIn = false;
+  let adminSession = null;
+  
+  // v3.1.2: Enhanced Summary Variables
+  let currentAnalysisPeriod = 'overview';
+  let summaryFilterConfig = {
+    periodType: 'all',
+    dateFrom: null,
+    dateTo: null,
+    dept: '',
+    searchQuery: ''
+  };
+  let budgetChart = null;
+  let pieChart = null;
+  
+  const isGAS = (typeof google !== 'undefined' && google.script && google.script.run);
+
+  // ==================== UTILITY FUNCTIONS ====================
+  function fNum(v) { 
+    return Number(v || 0).toLocaleString('th-TH', {
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2
+    }); 
+  }
+  
+  function normalize(s) { 
+    return s ? String(s).replace(/\u00A0/g, ' ').trim() : ''; 
+  }
+  
+  function toggleLoading(show) { 
+    const loader = document.getElementById('loading'); 
+    if (loader) loader.style.visibility = show ? 'visible' : 'hidden'; 
+  }
+  
+  function onFailure(e) { 
+    toggleLoading(false); 
+    console.error('Error:', e);
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: e.message || 'ไม่สามารถดำเนินการได้',
+      confirmButtonColor: '#d81b60'
+    });
+  }
+  
+  function getNumColor(val) { 
+    return val < 0 ? 'text-danger' : 'text-success'; 
+  }
+  
+  function showToast(message, icon = 'success') {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+      }
+    });
+    
+    const iconColors = {
+      success: '#4caf50',
+      error: '#f44336',
+      warning: '#ff9800',
+      info: '#2196f3'
+    };
+    
+    Toast.fire({
+      icon,
+      title: message,
+      background: '#fff',
+      iconColor: iconColors[icon] || iconColors.success
+    });
+  }
+
+  // ==================== DATE FORMATTING ====================
+  function getThaiDateDisplay(dateStr) {
+    if (!dateStr) return "-";
+    
+    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
+                    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    const days = ["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"];
+    
+    try {
+      let d;
+      
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split(' ');
+        const dateParts = parts[0].split('/');
+        let yearVal = parseInt(dateParts[2]);
+        const yearAD = yearVal > 2400 ? yearVal - 543 : yearVal;
+        const timeParts = parts[1] ? parts[1].split(':') : ['0', '0'];
+        d = new Date(yearAD, parseInt(dateParts[1]) - 1, parseInt(dateParts[0]), 
+                     parseInt(timeParts[0] || 0), 
+                     parseInt(timeParts[1] || 0));
+      } else if (dateStr.includes('ที่')) {
+        return dateStr;
+      } else { 
+        d = new Date(dateStr); 
+      }
+      
+      if (isNaN(d.getTime())) return dateStr;
+      
+      const dayName = days[d.getDay()];
+      const day = d.getDate();
+      const month = months[d.getMonth()];
+      const year = d.getFullYear() + 543;
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      
+      return `${dayName} ที่ ${day} ${month} ${year} ${hours}.${minutes} น.`;
+      
+    } catch (e) { 
+      console.error('Date parsing error:', e);
+      return dateStr; 
+    }
+  }
+
+  // ==================== v3.1.2: SCROLL TO TOP ====================
+  let scrollTopBtn = null;
+
+  window.addEventListener('load', function() {
+    scrollTopBtn = document.getElementById('scrollTopBtn');
+    
+    window.addEventListener('scroll', function() {
+      if (scrollTopBtn) {
+        if (window.pageYOffset > 300) {
+          scrollTopBtn.classList.add('show');
+        } else {
+          scrollTopBtn.classList.remove('show');
+        }
+      }
+    });
+  });
+
+  function scrollToTop() {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+
+  // ==================== INITIALIZATION ====================
+  window.onload = () => {
+    if (!apiToken) { showLoginView(); return; }
+    startApp();
+  };
+
+  // ==================== BADGE UPDATES ====================
+  function updateMemberBadge(users) {
+    const pendingCount = users.filter(u => 
+      normalize(u.status) === 'รออนุมัติ' && u.name.trim() !== ""
+    ).length;
+    
+    const badge = document.getElementById('adminPendingBadge');
+    if (badge) { 
+      badge.innerText = pendingCount; 
+      badge.style.display = pendingCount > 0 ? 'inline-block' : 'none'; 
+    }
+  }
+
+  // ==================== DROPDOWN INITIALIZATION ====================
+  function initDropdowns() {
+    const branch = document.getElementById('branch');
+    const eBranch = document.getElementById('e_branch');
+    
+    const branches = [...new Set(allBudgetInfo.map(i => normalize(i.branch)))].sort();
+    const html = '<option value="" selected disabled>เลือก กฟฟ.</option>' + 
+                 branches.map(x => `<option value="${x}">${x}</option>`).join('');
+    
+    if (branch) branch.innerHTML = html;
+    if (eBranch) eBranch.innerHTML = html;
+  }
+
+  function updateDept() { 
+    const branchVal = normalize(document.getElementById('branch').value);
+    const deptSelect = document.getElementById('dept'); 
+    deptSelect.innerHTML = '<option value="" selected disabled>เลือกแผนก</option>'; 
+    
+    const depts = [...new Set(allBudgetInfo
+      .filter(i => normalize(i.branch) === branchVal)
+      .map(i => normalize(i.dept)))].sort();
+    
+    depts.forEach(d => {
+      deptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  function updateDept_e() { 
+    const branchVal = normalize(document.getElementById('e_branch').value);
+    const deptSelect = document.getElementById('e_dept'); 
+    deptSelect.innerHTML = '<option value="" selected disabled>เลือกแผนก</option>'; 
+    
+    const depts = [...new Set(allBudgetInfo
+      .filter(i => normalize(i.branch) === branchVal)
+      .map(i => normalize(i.dept)))].sort();
+    
+    depts.forEach(d => {
+      deptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  function onDeptChange() { 
+    const deptVal = normalize(document.getElementById('dept').value);
+    const branchVal = normalize(document.getElementById('branch').value);
+    const accountSelect = document.getElementById('accountCode');
+    const requesterSelect = document.getElementById('requester'); 
+    
+    accountSelect.innerHTML = '<option value="" selected disabled>เลือกรายการงบประมาณ</option>';
+    
+    // บัญชีของแผนกที่เลือก
+    const deptAccounts = allBudgetInfo.filter(i => 
+      normalize(i.branch) === branchVal && normalize(i.dept) === deptVal
+    );
+    if (deptAccounts.length > 0) {
+      accountSelect.innerHTML += `<optgroup label="🔵 ${deptVal}">`;
+      deptAccounts.forEach(i => {
+        accountSelect.innerHTML += `<option value="${i.code}" data-yearly="${i.yearlyBudget}" data-dept="${i.dept}">${i.code} : ${i.name}</option>`;
+      });
+      accountSelect.innerHTML += `</optgroup>`;
+    }
+    
+    
+    // ผู้เสนอของแผนกที่เลือก
+    requesterSelect.innerHTML = '<option value="">เลือกผู้เสนอ</option>';
+    allUsersList
+      .filter(u => normalize(u.dept) === deptVal && normalize(u.status) === 'อนุมัติ')
+      .forEach(u => {
+        requesterSelect.innerHTML += `<option value="${u.name}">${u.name} [${deptVal}]</option>`;
+      });
+    
+    // ถ้าเลือก ประจำ กฟฟ. → แสดง ผบง. ด้วย
+    if (deptVal === 'ประจำ กฟฟ.') {
+      allUsersList
+        .filter(u => normalize(u.dept) === 'ผบง.' && normalize(u.status) === 'อนุมัติ')
+        .forEach(u => {
+          requesterSelect.innerHTML += `<option value="${u.name}">${u.name} [ผบง.]</option>`;
+        });
+    } else {
+      // แผนกอื่น → แสดง ประจำ กฟฟ. ด้วย
+      allUsersList
+        .filter(u => normalize(u.dept) === 'ประจำ กฟฟ.' && normalize(u.status) === 'อนุมัติ')
+        .forEach(u => {
+          requesterSelect.innerHTML += `<option value="${u.name}">${u.name} [ประจำ กฟฟ.]</option>`;
+        });
+    }
+  }
+
+  function onDeptChange_e() { 
+    const deptVal = normalize(document.getElementById('e_dept').value);
+    const branchVal = normalize(document.getElementById('e_branch').value);
+    const accountSelect = document.getElementById('e_accountCode');
+    const requesterSelect = document.getElementById('e_requester'); 
+    
+    accountSelect.innerHTML = '<option value="" selected disabled>เลือกรายการงบประมาณ</option>'; 
+    
+    allBudgetInfo
+      .filter(i => normalize(i.branch) === branchVal && normalize(i.dept) === deptVal)
+      .forEach(i => {
+        accountSelect.innerHTML += `<option value="${i.code}" data-yearly="${i.yearlyBudget}">${i.code} : ${i.name}</option>`;
+      });
+    
+    requesterSelect.innerHTML = '<option value="">เลือกผู้เสนอ</option>'; 
+    allUsersList
+      .filter(u => normalize(u.dept) === deptVal && normalize(u.status) === 'อนุมัติ')
+      .forEach(u => {
+        requesterSelect.innerHTML += `<option value="${u.name}">${u.name}</option>`;
+      });
+  }
+
+  // ==================== ACCOUNT SELECTION ====================
+  function selectAccount() { 
+    const accountSelect = document.getElementById('accountCode');
+    const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+    
+    if (!selectedOption || accountSelect.selectedIndex === 0) return; 
+    
+    const yearlyBudget = parseFloat(selectedOption.getAttribute('data-yearly')) || 0;
+    const selectedDept = selectedOption.getAttribute('data-dept') || 
+                         document.getElementById('dept').value;
+    toggleLoading(true); 
+    
+    google.script.run
+      .withSuccessHandler(res => { 
+        document.getElementById('yearlyBudget').value = fNum(yearlyBudget); 
+        document.getElementById('remainingYear').value = fNum(res.remainingYear); 
+        document.getElementById('accumulatedMonthBudget').value = fNum(res.remainingAccumulated); 
+        document.getElementById('monthlyBudget').value = fNum(res.budgetPerMonth); 
+        currentSelection = { ...res, yearly: yearlyBudget }; 
+        calcNet(); 
+        toggleLoading(false); 
+      })
+      .withFailureHandler(onFailure)
+      .getBudgetInfo(
+        accountSelect.value, 
+        document.getElementById('branch').value, 
+        selectedDept,
+        yearlyBudget
+      );
+  }
+
+  function selectAccount_e() { 
+    const accountSelect = document.getElementById('e_accountCode');
+    const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+    
+    if (!selectedOption || accountSelect.selectedIndex === 0) return; 
+    
+    const yearlyBudget = parseFloat(selectedOption.getAttribute('data-yearly')) || 0;
+    toggleLoading(true); 
+    
+    google.script.run
+      .withSuccessHandler(res => { 
+        document.getElementById('e_yearlyBudget').value = fNum(yearlyBudget); 
+        document.getElementById('e_remainingYear').value = fNum(res.remainingYear); 
+        document.getElementById('e_accumulatedMonthBudget').value = fNum(res.remainingAccumulated); 
+        document.getElementById('e_monthlyBudget').value = fNum(res.budgetPerMonth); 
+        currentSelection_e = { ...res, yearly: yearlyBudget }; 
+        calcNet_e(); 
+        toggleLoading(false); 
+      })
+      .withFailureHandler(onFailure)
+      .getBudgetInfo(
+        accountSelect.value, 
+        document.getElementById('e_branch').value, 
+        document.getElementById('e_dept').value, 
+        yearlyBudget
+      );
+  }
+
+  // ==================== NET CALCULATION (v3.1.1 - รองรับงบติดลบ) ====================
+  function calcNet() { 
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const netRemaining = (currentSelection.remainingAccumulated || 0) - amount; 
+    const displayElement = document.getElementById('netRemaining');
+    
+    if (netRemaining < 0) {
+      displayElement.innerHTML = `
+        <span class="negative-icon">⚠️</span>
+        <span class="negative-budget-text">${fNum(netRemaining)} บาท</span>
+        <span class="negative-icon">⚠️</span>
+      `;
+      displayElement.className = 'fw-bold fs-5 text-danger';
+      
+      const netAlert = document.getElementById('netRemainingAlert');
+      if (netAlert) {
+        netAlert.innerHTML = `
+          <div class="alert-negative-budget">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-triangle-fill fs-4 text-danger"></i>
+              <div>
+                <strong class="text-danger">คำเตือน: งบประมาณไม่เพียงพอ!</strong>
+                <p class="mb-0 small">การบันทึกจะทำให้งบติดลบ <strong>${fNum(Math.abs(netRemaining))} บาท</strong></p>
+                <p class="mb-0 small text-muted">ระบบจะอนุญาตให้บันทึกได้ แต่ควรตรวจสอบงบประมาณ</p>
+              </div>
+            </div>
+          </div>
+        `;
+        netAlert.style.display = 'block';
+      }
+    } else {
+      displayElement.innerText = fNum(netRemaining) + ' บาท';
+      displayElement.className = `fw-bold fs-5 ${getNumColor(netRemaining)}`;
+      
+      const netAlert = document.getElementById('netRemainingAlert');
+      if (netAlert) {
+        netAlert.style.display = 'none';
+      }
+    }
+  }
+
+  function calcNet_e() { 
+    const amount = parseFloat(document.getElementById('e_amount').value) || 0;
+    const netRemaining = (currentSelection_e.remainingAccumulated || 0) - amount; 
+    const displayElement = document.getElementById('e_netRemaining');
+    
+    if (netRemaining < 0) {
+      displayElement.innerHTML = `
+        <span class="negative-icon">⚠️</span>
+        <span class="negative-budget-text">${fNum(netRemaining)} บาท</span>
+        <span class="negative-icon">⚠️</span>
+      `;
+      displayElement.className = 'fw-bold fs-5 text-danger';
+      
+      const eNetAlert = document.getElementById('e_netRemainingAlert');
+      if (eNetAlert) {
+        eNetAlert.innerHTML = `
+          <div class="alert-negative-budget">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-triangle-fill fs-4 text-danger"></i>
+              <div>
+                <strong class="text-danger">คำเตือน: งบประมาณไม่เพียงพอ!</strong>
+                <p class="mb-0 small">การบันทึกจะทำให้งบติดลบ <strong>${fNum(Math.abs(netRemaining))} บาท</strong></p>
+              </div>
+            </div>
+          </div>
+        `;
+        eNetAlert.style.display = 'block';
+      }
+    } else {
+      displayElement.innerText = fNum(netRemaining) + ' บาท';
+      displayElement.className = `fw-bold fs-5 ${getNumColor(netRemaining)}`;
+      
+      const eNetAlert = document.getElementById('e_netRemainingAlert');
+      if (eNetAlert) {
+        eNetAlert.style.display = 'none';
+      }
+    }
+  }// ==================== FORM SUBMISSION (v3.1.1 - รองรับงบติดลบ) ====================
+  function submitForm(e) {
+    e.preventDefault();
+    
+    if (!isGAS) return;
+    
+    const netRemaining = parseFloat(document.getElementById('netRemaining').innerText.replace(/[^0-9.-]/g, ''));
+    
+    if (netRemaining < 0) {
+      Swal.fire({
+        title: '⚠️ งบประมาณไม่เพียงพอ!',
+        html: `
+          <div class="text-start px-3">
+            <div class="alert-negative-budget mb-3">
+              <p class="mb-2"><strong>สถานะงบประมาณ:</strong></p>
+              <ul class="mb-2">
+                <li>งบคงเหลือปัจจุบัน: <strong>${document.getElementById('accumulatedMonthBudget').value} บาท</strong></li>
+                <li>จำนวนที่จะตัด: <strong class="text-danger">${document.getElementById('amount').value} บาท</strong></li>
+                <li>คงเหลือหลังตัด: <strong class="text-danger">${fNum(netRemaining)} บาท (ติดลบ)</strong></li>
+              </ul>
+            </div>
+            <p class="mb-2 fw-semibold text-danger">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              การบันทึกจะทำให้งบประมาณติดลบ ${fNum(Math.abs(netRemaining))} บาท
+            </p>
+            <p class="mb-0 small text-muted">
+              ระบบอนุญาตให้บันทึกได้ แต่ควรตรวจสอบและวางแผนงบประมาณ
+            </p>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f44336',
+        cancelButtonColor: '#9e9e9e',
+        confirmButtonText: '<i class="bi bi-check-lg"></i> ยืนยันบันทึก (ติดลบ)',
+        cancelButtonText: '<i class="bi bi-x-lg"></i> ยกเลิก',
+        width: '600px'
+      }).then(result => {
+        if (result.isConfirmed) {
+          proceedSubmit();
+        }
+      });
+    } else {
+      Swal.fire({ 
+        title: 'ยืนยันบันทึกข้อมูล?', 
+        html: '<p class="mb-1">กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนบันทึก</p>',
+        icon: 'question', 
+        showCancelButton: true,
+        confirmButtonColor: '#7A3E94',
+        cancelButtonColor: '#9e9e9e',
+        confirmButtonText: '<i class="bi bi-check-lg"></i> ยืนยัน',
+        cancelButtonText: '<i class="bi bi-x-lg"></i> ยกเลิก'
+      }).then(result => {
+        if (result.isConfirmed) {
+          proceedSubmit();
+        }
+      });
+    }
+  }
+
+  function proceedSubmit() {
+    Swal.fire({
+      title: 'กำลังบันทึกข้อมูล...',
+      html: '<div class="progress mt-3" style="height: 25px; border-radius: 15px;"><div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%; font-size: 0.9rem; font-weight: 600;">กำลังประมวลผล...</div></div>',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    const formData = { 
+      isUpdate: false,
+      branch: document.getElementById('branch').value, 
+      dept: document.getElementById('dept').value, 
+      accountCode: document.getElementById('accountCode').value, 
+      expenseDetail: document.getElementById('expenseDetail').value, 
+      amount: parseFloat(document.getElementById('amount').value) || 0, 
+      requester: document.getElementById('requester').value, 
+      yearlyBudget: currentSelection.yearly, 
+      remainingYear: (currentSelection.remainingYear || 0) - (parseFloat(document.getElementById('amount').value) || 0), 
+      accumulatedMonthBudget: currentSelection.remainingAccumulated, 
+      remainingMonthNet: parseFloat(document.getElementById('netRemaining').innerText.replace(/[^0-9.-]/g, ''))
+    };
+    
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.status === 'success') {
+          const iconType = res.isNegative ? 'warning' : 'success';
+          const titleText = res.isNegative ? 'บันทึกสำเร็จ (งบติดลบ)' : 'สำเร็จ!';
+          
+          Swal.fire({
+            icon: iconType,
+            title: titleText,
+            html: `<p class="mb-0">${res.message}</p>`,
+            confirmButtonColor: res.isNegative ? '#f44336' : '#4caf50',
+            timer: 3000,
+            timerProgressBar: true
+          });
+          document.getElementById('budgetForm').reset();
+          document.getElementById('netRemaining').innerText = '-';
+          const netAlert = document.getElementById('netRemainingAlert');
+          if (netAlert) netAlert.style.display = 'none';
+          loadPendingList();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถบันทึกได้',
+            text: res.message,
+            confirmButtonColor: '#f44336'
+          });
+        }
+      })
+      .withFailureHandler(err => {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: err.message,
+          confirmButtonColor: '#f44336'
+        });
+      })
+      .submitRequest(formData);
+  }
+
+  // ==================== EDIT FUNCTIONS ====================
+  function editRejectedItem(idx) {
+    const item = pendingDataCache[idx];
+    if (!item) return;
+    
+    toggleLoading(true);
+    
+    document.getElementById('editRowIdx').value = item.rowIndex;
+    document.getElementById('e_branch').value = item.branch;
+    updateDept_e();
+    
+    setTimeout(() => {
+      document.getElementById('e_dept').value = item.dept;
+      onDeptChange_e();
+      
+      setTimeout(() => {
+        document.getElementById('e_accountCode').value = item.accountCode;
+        selectAccount_e();
+        
+        setTimeout(() => {
+          document.getElementById('e_expenseDetail').value = item.detail;
+          document.getElementById('e_amount').value = item.amount;
+          document.getElementById('e_requester').value = item.requester;
+          toggleLoading(false);
+          new bootstrap.Modal(document.getElementById('editModal')).show();
+        }, 300);
+      }, 300);
+    }, 300);
+  }
+
+  function submitEditForm() {
+    const form = document.getElementById('editBudgetForm');
+    
+    if (!form.checkValidity()) { 
+      form.reportValidity(); 
+      return; 
+    }
+    
+    const netRemaining = parseFloat(document.getElementById('e_netRemaining').innerText.replace(/[^0-9.-]/g, ''));
+    
+    const confirmMessage = netRemaining < 0 
+      ? `งบประมาณจะติดลบ ${fNum(Math.abs(netRemaining))} บาท\nข้อมูลจะถูกส่งกลับไปตรวจสอบใหม่`
+      : 'ข้อมูลจะถูกส่งกลับไปตรวจสอบใหม่';
+    
+    Swal.fire({ 
+      title: 'ยืนยันบันทึกการแก้ไข?', 
+      html: `<p class="mb-1">${confirmMessage}</p>`,
+      icon: netRemaining < 0 ? 'warning' : 'question',
+      showCancelButton: true,
+      confirmButtonColor: netRemaining < 0 ? '#f44336' : '#ff9800',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: netRemaining < 0 ? 'ยืนยันแก้ไข (งบติดลบ)' : 'ยืนยันแก้ไข',
+      cancelButtonText: 'ยกเลิก'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      
+      Swal.fire({
+        title: 'กำลังบันทึก...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+      
+      const formData = { 
+        isUpdate: true,
+        rowIndex: document.getElementById('editRowIdx').value,
+        branch: document.getElementById('e_branch').value, 
+        dept: document.getElementById('e_dept').value, 
+        accountCode: document.getElementById('e_accountCode').value, 
+        expenseDetail: document.getElementById('e_expenseDetail').value, 
+        amount: parseFloat(document.getElementById('e_amount').value) || 0, 
+        requester: document.getElementById('e_requester').value, 
+        yearlyBudget: currentSelection_e.yearly, 
+        remainingYear: (currentSelection_e.remainingYear || 0) - (parseFloat(document.getElementById('e_amount').value) || 0), 
+        accumulatedMonthBudget: currentSelection_e.remainingAccumulated, 
+        remainingMonthNet: netRemaining
+      };
+      
+      google.script.run
+        .withSuccessHandler(res => { 
+          bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+          
+          if (res.status === 'success') {
+            const iconType = res.isNegative ? 'warning' : 'success';
+            Swal.fire({
+              icon: iconType,
+              title: res.isNegative ? 'แก้ไขสำเร็จ (งบติดลบ)' : 'สำเร็จ!',
+              text: res.message,
+              confirmButtonColor: res.isNegative ? '#f44336' : '#7A3E94'
+            });
+            loadPendingList(); 
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'ไม่สามารถแก้ไขได้',
+              text: res.message,
+              confirmButtonColor: '#d81b60'
+            });
+          }
+        })
+        .withFailureHandler(onFailure)
+        .submitRequest(formData);
+    });
+  }
+
+  function resetEditMode() {
+    document.getElementById('budgetForm').reset();
+    document.getElementById('netRemaining').innerText = "-";
+    const netAlert = document.getElementById('netRemainingAlert');
+    if (netAlert) netAlert.style.display = 'none';
+  }
+
+  // ==================== PENDING LIST (v3.1.1 - Badge งบติดลบ) ====================
+  function loadPendingList(silent = false) { 
+    if (!isGAS) return;
+    
+    if (!silent) toggleLoading(true);
+    
+    google.script.run
+      .withSuccessHandler(items => { 
+        pendingDataCache = items; 
+        renderPendingList(items); 
+        toggleLoading(false); 
+      })
+      .withFailureHandler(onFailure)
+      .getPendingItems();
+  }
+
+  function renderPendingList(items) { 
+    const badge = document.getElementById('pendingCountBadge');
+    if (badge) { 
+      badge.innerText = items.length; 
+      badge.style.display = items.length ? 'inline-block' : 'none'; 
+    }
+    
+    const tbody = document.getElementById('pendingTableBody');
+    if (!tbody) return;
+    
+    if (items.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-3 fw-semibold">ไม่มีรายการรอตรวจสอบ</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+    
+    tbody.innerHTML = ''; 
+    
+    items.forEach((item, i) => { 
+      let actionButton = '';
+      let statusBadge = '';
+      let statusClass = '';
+      
+      const negativeBadge = item.isNegative 
+        ? '<span class="badge badge-negative ms-1"><i class="bi bi-exclamation-triangle-fill"></i> งบติดลบ</span>' 
+        : '';
+      
+      const rowNegativeClass = item.isNegative ? 'row-negative-budget' : '';
+      
+      if (item.status.includes('ตีกลับ')) {
+        actionButton = `<button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm" onclick="event.stopPropagation(); editRejectedItem(${i})">
+          <i class="bi bi-pencil-square"></i> แก้ไข
+        </button>`;
+        statusBadge = `<span class="badge status-rejected">${item.status}</span>${negativeBadge}`;
+      } else if (item.status.includes('รอผู้บันทึก')) {
+        actionButton = `<button class="btn btn-sm btn-info text-white rounded-pill px-3 shadow-sm" onclick="event.stopPropagation(); authAction(${item.rowIndex}, 'ผู้บันทึก(หผ./รักษาการแทน)')">
+          <i class="bi bi-check-square"></i> ยืนยัน
+        </button>`;
+        statusBadge = `<span class="badge status-pending-recorder">${item.status}</span>${negativeBadge}`;
+        statusClass = 'table-warning';
+      } else if (item.status.includes('รออนุมัติ')) {
+        actionButton = `<button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" onclick="event.stopPropagation(); authAction(${item.rowIndex}, 'ผู้อนุมัติ')">
+          <i class="bi bi-check-circle"></i> ยืนยัน
+        </button>`;
+        statusBadge = `<span class="badge status-pending-approver">${item.status}</span>${negativeBadge}`;
+        statusClass = 'table-info';
+      } else {
+        actionButton = `<button class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm" onclick="event.stopPropagation(); showDetailModal(${i}, 'pending')">
+          <i class="bi bi-eye"></i> ดู
+        </button>`;
+        statusBadge = `<span class="badge bg-secondary">${item.status}</span>${negativeBadge}`;
+      }
+      
+      tbody.innerHTML += `
+        <tr class="account-row ${statusClass} ${rowNegativeClass}" onclick="showDetailModal(${i}, 'pending')">
+          <td>${getThaiDateDisplay(item.date)}</td>
+          <td><small>${item.branch} / ${item.dept}</small></td>
+          <td class="fw-bold"><small>
+  ${item.accountCode} : ${
+    (allBudgetInfo.find(b => 
+      normalize(b.code) === normalize(item.accountCode) && 
+      normalize(b.dept) === normalize(item.dept)
+    ) || {}).name || item.accountCode
+  }
+</small></td>
+          <td>${item.detail}</td>
+          <td class="fw-bold ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
+          <td>${item.requester}</td>
+          <td>${statusBadge}</td>
+          <td>${actionButton}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // ==================== APPROVED HISTORY ====================
+  function loadApprovedHistory() {
+    if (!isGAS) return;
+    
+    toggleLoading(true); 
+    
+    google.script.run
+      .withSuccessHandler(items => { 
+        approvedDataCache = items;
+        const tbody = document.getElementById('historyTableBody');
+        
+        if (items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1"></i>
+                <p class="mt-3 fw-semibold">ยังไม่มีรายการที่อนุมัติ</p>
+              </td>
+            </tr>
+          `;
+        } else {
+          tbody.innerHTML = '';
+          items.forEach((item, i) => {
+            const negativeBadge = item.isNegative 
+              ? '<span class="badge badge-negative ms-1"><i class="bi bi-exclamation-triangle-fill"></i> งบติดลบ</span>' 
+              : '';
+            
+            tbody.innerHTML += `
+              <tr class="account-row ${item.isNegative ? 'row-negative-budget' : ''}" onclick="showDetailModal(${i}, 'approved')">
+                <td>${getThaiDateDisplay(item.date)}${negativeBadge}</td>
+                <td><small>${item.branch} / ${item.dept}</small></td>
+                <td>${item.detail}</td>
+                <td class="fw-bold ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
+                <td>${item.requester}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="event.stopPropagation(); showDetailModal(${i}, 'approved')">
+                    <i class="bi bi-clock-history"></i> ไทม์ไลน์
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+        
+        toggleLoading(false); 
+      })
+      .withFailureHandler(onFailure)
+      .getApprovedHistoryItems();
+  }
+
+  // ==================== v3.1.2: DETAIL MODAL (Timeline Fix) ====================
+  function showDetailModal(idx, type) { 
+    const item = (type === 'pending' ? pendingDataCache : approvedDataCache)[idx];
+    if (!item) {
+      console.error('Item not found:', idx, type);
+      return;
+    }
+    
+    if (!item.rowIndex) {
+      console.error('Invalid rowIndex for item:', item);
+      Swal.fire({
+        icon: 'error',
+        title: 'ข้อผิดพลาด',
+        text: 'ไม่พบ rowIndex ของรายการนี้',
+        confirmButtonColor: '#d81b60'
+      });
+      return;
+    }
+    
+    document.getElementById('mDate').innerText = getThaiDateDisplay(item.date); 
+    document.getElementById('mLocation').innerText = `${item.branch} / ${item.dept}`; 
+    const budgetItem = allBudgetInfo.find(b => 
+  normalize(b.code) === normalize(item.accountCode) && 
+  normalize(b.dept) === normalize(item.dept)
+);
+const accountName = budgetItem ? budgetItem.name : item.accountCode;
+document.getElementById('mCode').innerText = `${item.accountCode} : ${accountName}`;
+    document.getElementById('mDetail').innerText = item.detail || "-"; 
+    document.getElementById('mAmount').innerText = fNum(item.amount) + ' บาท'; 
+    document.getElementById('mRemYear').innerText = fNum(item.remYear || 0) + ' บาท'; 
+    document.getElementById('mRemMonth').innerText = fNum(item.remMonth || 0) + ' บาท';
+    document.getElementById('mStatus').innerText = item.status;
+    
+    const timelineContainer = document.getElementById('mTimeline');
+    
+    timelineContainer.innerHTML = `
+      <div class="text-center text-muted py-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 mb-0 small">กำลังโหลด Timeline...</p>
+      </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+    modal.show();
+    
+    if (isGAS) {
+      console.log('Fetching timeline for rowIndex:', item.rowIndex);
+      
+      google.script.run
+        .withSuccessHandler(timelineLog => {
+          console.log('Timeline received:', timelineLog);
+          timelineContainer.innerHTML = '';
+          
+          if (timelineLog && timelineLog.trim() !== '') {
+            timelineLog.split("\n").forEach(log => {
+              if (log.trim() !== '') {
+                timelineContainer.innerHTML += `<div class="timeline-item slide-in">${log}</div>`;
+              }
+            });
+          } else {
+            timelineContainer.innerHTML = '<p class="text-muted text-center small">ไม่มีข้อมูล Timeline</p>';
+          }
+        })
+        .withFailureHandler((err) => {
+          console.error('Timeline fetch error:', err);
+          timelineContainer.innerHTML = `<p class="text-danger text-center small">โหลดไม่สำเร็จ: ${err.message}</p>`;
+        })
+        .getTimelineLog(item.rowIndex);
+    }
+    
+    const actionArea = document.getElementById('mActionArea');
+    actionArea.style.display = 'none'; 
+    actionArea.innerHTML = '';
+  }
+
+  // ==================== v3.1.2: APPROVAL WITH AUTO-REFRESH ====================
+  async function authAction(rowIndex, role) { 
+    const { value: formData } = await Swal.fire({ 
+      title: `🔐 ยืนยันตัวตน`,
+      html: `
+        <div class="text-start px-2">
+          <div class="alert alert-info border-0 mb-3 py-2" style="border-radius: 12px; background: linear-gradient(135deg, #e3f2fd, #bbdefb);">
+            <small><i class="bi bi-info-circle-fill"></i> <strong>ตำแหน่ง:</strong> ${role}</small>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label small mb-1">
+              <i class="bi bi-person-circle"></i> Username
+            </label>
+            <input id="sUser" class="swal2-input w-100 m-0 py-2" placeholder="กรอก Username" autocomplete="username" value="${me ? escHtml(me.username) : ''}">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label small mb-1">
+              <i class="bi bi-lock-fill"></i> Password
+            </label>
+            <input id="sPass" type="password" class="swal2-input w-100 m-0 py-2" placeholder="กรอก Password" autocomplete="current-password">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label small mb-1">
+              <i class="bi bi-gear-fill"></i> การดำเนินการ
+            </label>
+            <select id="sAct" class="swal2-select w-100 m-0 py-2">
+              <option value="approve">✓ อนุมัติผ่าน</option>
+              <option value="reject">✗ ตีกลับ</option>
+              <option value="delete">🗑️ ลบรายการ</option>
+            </select>
+          </div>
+          
+          <div class="mb-2">
+            <label class="form-label small mb-1">
+              <i class="bi bi-chat-left-text-fill"></i> เหตุผล <span class="text-danger small">(บังคับถ้าตีกลับ)</span>
+            </label>
+            <textarea id="sReason" class="swal2-textarea w-100 m-0 py-2" placeholder="ระบุเหตุผลในการตีกลับ..." rows="2"></textarea>
+          </div>
+        </div>
+      `,
+      customClass: {
+        popup: 'swal2-compact'
+      },
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonColor: '#7A3E94',
+      cancelButtonColor: '#9e9e9e',
+      confirmButtonText: '<i class="bi bi-check-lg"></i> ยืนยันดำเนินการ',
+      cancelButtonText: '<i class="bi bi-x-lg"></i> ยกเลิก',
+      width: '500px',
+      padding: '20px',
+      backdrop: `rgba(0,0,0,0.4)`,
+      preConfirm: () => {
+        const username = document.getElementById('sUser').value;
+        const password = document.getElementById('sPass').value;
+        const action = document.getElementById('sAct').value;
+        const reason = document.getElementById('sReason').value;
+        
+        if (!username || !password) {
+          Swal.showValidationMessage('⚠️ กรุณากรอก Username และ Password');
+          return false;
+        }
+        
+        if (action === 'reject' && !reason.trim()) {
+          Swal.showValidationMessage('⚠️ กรุณาระบุเหตุผลในการตีกลับ');
+          return false;
+        }
+        
+        return [username, password, action, reason];
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    });
+    
+    if (formData && formData[0] && formData[1]) { 
+      Swal.fire({
+        title: 'กำลังดำเนินการ...',
+        html: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      
+      google.script.run
+        .withSuccessHandler(res => { 
+          if (res.status === 'success') {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ!',
+              text: res.message,
+              confirmButtonColor: '#4caf50',
+              timer: 800,
+              timerProgressBar: true
+            }).then(() => {
+        // ลบออกจาก cache ทันที ไม่ต้องรอ GAS
+        pendingDataCache = pendingDataCache.filter(
+          item => item.rowIndex !== rowIndex
+        );
+        renderPendingList(pendingDataCache);
+        
+        // refresh จริงใน background
+        loadPendingList(true);
+if (document.getElementById('history-pane').classList.contains('show')) {
+  loadApprovedHistory();
+}
+if (document.getElementById('summary-pane').classList.contains('show')) {
+  loadSummaryTab();
+}
+if (document.getElementById('analyze-pane').classList.contains('show')) {
+  loadAnalyzeTab();
+}
+});
+            
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'ไม่สามารถดำเนินการได้',
+              text: res.message,
+              confirmButtonColor: '#f44336'
+            });
+          }
+        })
+        .withFailureHandler(err => {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: err.message,
+            confirmButtonColor: '#f44336'
+          });
+        })
+        .approveTransaction(rowIndex, formData[0], formData[1], role, formData[2], formData[3]); 
+    } 
+  }// ==================== v3.1.2: ENHANCED SUMMARY TAB ====================
+  
+  function updateDateInputs() {
+    const periodType = document.getElementById('summaryPeriodType').value;
+    const fromGroup = document.getElementById('dateFromGroup');
+    const toGroup = document.getElementById('dateToGroup');
+    
+    if (periodType === 'custom') {
+      fromGroup.style.display = 'block';
+      toGroup.style.display = 'block';
+      
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      document.getElementById('summaryDateFrom').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('summaryDateTo').value = lastDay.toISOString().split('T')[0];
+    } else if (periodType === 'daily') {
+      fromGroup.style.display = 'block';
+      toGroup.style.display = 'none';
+      
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('summaryDateFrom').value = today;
+    } else if (periodType === 'monthly') {
+      fromGroup.style.display = 'block';
+      toGroup.style.display = 'none';
+      
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      document.getElementById('summaryDateFrom').value = firstDay.toISOString().split('T')[0];
+    } else if (periodType === 'yearly') {
+      fromGroup.style.display = 'block';
+      toGroup.style.display = 'none';
+      
+      const year = new Date().getFullYear();
+      document.getElementById('summaryDateFrom').value = `${year}-01-01`;
+    } else {
+      fromGroup.style.display = 'none';
+      toGroup.style.display = 'none';
+    }
+  }
+
+  function applySummaryFilter() {
+    summaryFilterConfig = {
+      periodType: document.getElementById('summaryPeriodType').value,
+      dateFrom: document.getElementById('summaryDateFrom').value,
+      dateTo: document.getElementById('summaryDateTo').value,
+      dept: document.getElementById('summaryDeptFilter').value,
+      searchQuery: document.getElementById('summarySearchInput').value.toLowerCase()
+    };
+    
+    loadSummaryTab();
+  }
+
+  function clearSummaryFilter() {
+    document.getElementById('summaryPeriodType').value = 'all';
+    document.getElementById('summaryDateFrom').value = '';
+    document.getElementById('summaryDateTo').value = '';
+    document.getElementById('summaryDeptFilter').value = '';
+    document.getElementById('summarySearchInput').value = '';
+    
+    document.getElementById('dateFromGroup').style.display = 'none';
+    document.getElementById('dateToGroup').style.display = 'none';
+    
+    summaryFilterConfig = {
+      periodType: 'all',
+      dateFrom: null,
+      dateTo: null,
+      dept: '',
+      searchQuery: ''
+    };
+    
+    loadSummaryTab();
+  }
+
+  function switchAnalysisPeriod(period) {
+    currentAnalysisPeriod = period;
+    
+    document.querySelectorAll('.period-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    document.querySelector(`.period-tab[data-period="${period}"]`).classList.add('active');
+    
+    document.querySelectorAll('.analysis-section').forEach(section => {
+      section.style.display = 'none';
+    });
+    
+    const contentMap = {
+      'overview': 'overviewContent',
+      'daily': 'dailyContent',
+      'monthly': 'monthlyContent',
+      'yearly': 'yearlyContent'
+    };
+    
+    const contentId = contentMap[period];
+    if (contentId) {
+      document.getElementById(contentId).style.display = 'block';
+    }
+    
+    loadAnalysisPeriodData(period);
+  }
+
+  function loadSummaryTab() { 
+    if (!isGAS) return;
+    
+    toggleLoading(true);
+    
+    google.script.run
+      .withSuccessHandler(data => { 
+        currentSummaryData = data; 
+        renderEnhancedSummary(data); 
+        toggleLoading(false);
+      })
+      .withFailureHandler(onFailure)
+      .getEnhancedDashboardData(summaryFilterConfig);
+  }
+
+  function renderEnhancedSummary(data) {
+    if (!data) return;
+    
+    let totalBudget = 0;
+    let totalUsed = 0;
+    
+    Object.keys(data.deptSummary || {}).forEach(dept => {
+      const deptBudget = allBudgetInfo
+        .filter(b => normalize(b.dept) === dept)
+        .reduce((sum, b) => sum + b.yearlyBudget, 0);
+      totalBudget += deptBudget;
+      totalUsed += (data.deptSummary[dept] || 0);
+    });
+    
+    const totalRemaining = totalBudget - totalUsed;
+    const usagePercent = totalBudget > 0 ? ((totalUsed / totalBudget) * 100).toFixed(1) : 0;
+    
+    document.getElementById('statTotalBudget').innerText = fNum(totalBudget);
+    document.getElementById('statTotalUsed').innerText = fNum(totalUsed);
+    document.getElementById('statTotalRemaining').innerText = fNum(totalRemaining);
+    document.getElementById('statUsagePercent').innerText = usagePercent + '%';
+    
+    renderDeptSummaryTable(data);
+    renderAccountSummaryTable(data);
+    renderBudgetCharts(data);
+    renderRanking(data);
+    loadAnalysisPeriodData(currentAnalysisPeriod);
+  }
+
+  function renderDeptSummaryTable(data) {
+    const tbody = document.getElementById('summaryDeptTableBody');
+    tbody.innerHTML = '';
+    
+    const departments = [...new Set(allBudgetInfo.map(b => normalize(b.dept)))].sort();
+    
+    departments.forEach(dept => {
+      const usedAmount = data.deptSummary[dept] || 0;
+      const totalBudget = allBudgetInfo
+        .filter(b => normalize(b.dept) === dept)
+        .reduce((sum, b) => sum + b.yearlyBudget, 0);
+      const remaining = totalBudget - usedAmount;
+      const percent = totalBudget > 0 ? ((usedAmount / totalBudget) * 100).toFixed(1) : 0;
+      
+      tbody.innerHTML += `
+        <tr>
+          <td class="fw-semibold">${dept}</td>
+          <td>${fNum(totalBudget)}</td>
+          <td class="text-primary">${fNum(usedAmount)}</td>
+          <td class="fw-bold ${getNumColor(remaining)}">${fNum(remaining)}</td>
+          <td>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar ${percent > 90 ? 'bg-danger' : percent > 75 ? 'bg-warning' : 'bg-success'}" 
+                   role="progressbar" style="width: ${percent}%">${percent}%</div>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  function renderAccountSummaryTable(data) {
+    const tbody = document.getElementById('accSummaryBody');
+    tbody.innerHTML = '';
+    
+    allBudgetInfo.forEach(item => {
+      const key = normalize(item.dept) + '|' + item.code;
+      const usedAmount = data.accountSummary[key] || 0;
+      const remaining = item.yearlyBudget - usedAmount;
+      const percent = item.yearlyBudget > 0 ? ((usedAmount / item.yearlyBudget) * 100).toFixed(1) : 0;
+      
+      if (summaryFilterConfig.dept && normalize(item.dept) !== summaryFilterConfig.dept) return;
+      if (summaryFilterConfig.searchQuery && 
+          !item.code.toLowerCase().includes(summaryFilterConfig.searchQuery) && 
+          !item.name.toLowerCase().includes(summaryFilterConfig.searchQuery)) return;
+      
+      tbody.innerHTML += `
+        <tr class="account-row" onclick="showAccountTransactions('${item.code}', '${item.branch}', '${item.dept}')">
+          <td class="fw-bold">${item.code}</td>
+          <td>${item.name}</td>
+          <td>${item.dept}</td>
+          <td>${fNum(item.yearlyBudget)}</td>
+          <td class="text-primary">${fNum(usedAmount)}</td>
+          <td class="fw-bold ${getNumColor(remaining)}">${fNum(remaining)}</td>
+          <td><span class="badge ${percent > 90 ? 'bg-danger' : percent > 75 ? 'bg-warning' : 'bg-success'}">${percent}%</span></td>
+        </tr>
+      `;
+    });
+    
+    if (tbody.innerHTML === '') {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">ไม่พบข้อมูล</td></tr>';
+    }
+  }
+
+  function renderBudgetCharts(data) {
+    if (budgetChart) budgetChart.destroy();
+    if (pieChart) pieChart.destroy();
+    
+    const departments = [...new Set(allBudgetInfo.map(b => normalize(b.dept)))].sort();
+    const deptLabels = [];
+    const deptBudgets = [];
+    const deptUsed = [];
+    
+    departments.forEach(dept => {
+      const totalBudget = allBudgetInfo
+        .filter(b => normalize(b.dept) === dept)
+        .reduce((sum, b) => sum + b.yearlyBudget, 0);
+      const usedAmount = data.deptSummary[dept] || 0;
+      
+      deptLabels.push(dept);
+      deptBudgets.push(totalBudget);
+      deptUsed.push(usedAmount);
+    });
+    
+    const ctxBar = document.getElementById('budgetUsageChart');
+    budgetChart = new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets: [
+          {
+            label: 'งบประมาณ',
+            data: deptBudgets,
+            backgroundColor: 'rgba(122, 62, 148, 0.6)',
+            borderColor: 'rgba(122, 62, 148, 1)',
+            borderWidth: 2
+          },
+          {
+            label: 'ใช้ไปแล้ว',
+            data: deptUsed,
+            backgroundColor: 'rgba(216, 27, 96, 0.6)',
+            borderColor: 'rgba(216, 27, 96, 1)',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return fNum(value);
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    const ctxPie = document.getElementById('deptPieChart');
+    pieChart = new Chart(ctxPie, {
+      type: 'pie',
+      data: {
+        labels: deptLabels,
+        datasets: [{
+          data: deptUsed,
+          backgroundColor: [
+            'rgba(122, 62, 148, 0.8)',
+            'rgba(216, 27, 96, 0.8)',
+            'rgba(76, 175, 80, 0.8)',
+            'rgba(255, 152, 0, 0.8)'
+          ],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.label + ': ' + fNum(context.parsed) + ' บาท';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function loadAnalysisPeriodData(period) {
+    if (!isGAS || period === 'overview') return;
+    
+    const tbody = document.getElementById(period + 'AnalysisBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div> กำลังโหลด...</td></tr>';
+    
+    google.script.run
+      .withSuccessHandler(analysisData => {
+        renderPeriodAnalysis(period, analysisData);
+      })
+      .withFailureHandler(() => {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+      })
+      .getAnalysisByPeriod(period, summaryFilterConfig);
+  }
+
+  function renderPeriodAnalysis(period, data) {
+    const tbody = document.getElementById(period + 'AnalysisBody');
+    if (!tbody || !data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">ไม่มีข้อมูลในช่วงเวลานี้</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    data.forEach(item => {
+      if (period === 'daily') {
+        tbody.innerHTML += `
+          <tr>
+            <td>${getThaiDateDisplay(item.date)}</td>
+            <td class="text-center">${item.count}</td>
+            <td class="fw-bold text-primary">${fNum(item.total)}</td>
+            <td>${item.dept || 'ทุกแผนก'}</td>
+          </tr>
+        `;
+      } else if (period === 'monthly') {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.monthYear}</td>
+            <td class="text-center">${item.count}</td>
+            <td class="fw-bold text-primary">${fNum(item.total)}</td>
+            <td class="fw-bold">${fNum(item.avgPerDay)}</td>
+          </tr>
+        `;
+      } else if (period === 'yearly') {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.year}</td>
+            <td class="text-center">${item.count}</td>
+            <td class="fw-bold text-primary">${fNum(item.total)}</td>
+            <td class="fw-bold">${fNum(item.avgPerMonth)}</td>
+          </tr>
+        `;
+      }
+    });
+  }
+
+  function showAccountTransactions(code, branch, dept) {
+    toggleLoading(true);
+    
+    google.script.run
+      .withSuccessHandler(items => { 
+        toggleLoading(false);
+        
+        let htmlContent = `
+          <div class="table-responsive mt-3">
+            <table class="table table-sm table-bordered table-hover small">
+              <thead class="table-light">
+                <tr>
+                  <th>วันเวลา</th>
+                  <th>รายละเอียด</th>
+                  <th class="text-end">จำนวนเงิน</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        if (items.length === 0) {
+          htmlContent += `
+            <tr>
+              <td colspan="3" class="text-center text-muted py-3">ยังไม่มีรายการที่อนุมัติ</td>
+            </tr>
+          `;
+        } else {
+          items.forEach(item => {
+            htmlContent += `
+              <tr>
+                <td>${getThaiDateDisplay(item.date)}</td>
+                <td>${item.detail}</td>
+                <td class="text-end fw-bold">${fNum(item.amount)}</td>
+              </tr>
+            `;
+          });
+        }
+        
+        htmlContent += `</tbody></table></div>`;
+        
+        Swal.fire({ 
+          title: `ประวัติการใช้งบ: ${code}`,
+          html: htmlContent,
+          width: '900px',
+          confirmButtonColor: '#7A3E94'
+        });
+      })
+      .withFailureHandler(onFailure)
+      .getAccountTransactions(code, branch, dept);
+  }
+
+  // ==================== ADMIN FUNCTIONS (Simplified) ====================
+  function doAdminLogin() { 
+    const username = document.getElementById('loginUser').value;
+    const password = document.getElementById('loginPass').value;
+    
+    if (!username || !password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูล',
+        text: 'โปรดระบุ Username และ Password',
+        confirmButtonColor: '#d81b60'
+      });
+      return;
+    }
+    
+    toggleLoading(true);
+    
+    google.script.run
+      .withSuccessHandler(res => { 
+        toggleLoading(false);
+        
+        if (res.status === 'success') { 
+          isAdminLoggedIn = true;
+          adminSession = res.session;
+          document.getElementById('adminAuthSection').style.display = 'none';
+          document.getElementById('adminControls').style.display = 'block';
+          refreshAdminData();
+          showToast('เข้าสู่ระบบสำเร็จ', 'success');
+        } else { 
+          Swal.fire({ 
+            icon: 'error',
+            title: 'ไม่ได้รับอนุญาต',
+            text: res.message,
+            confirmButtonColor: '#d81b60'
+          });
+        }
+      })
+      .withFailureHandler(onFailure)
+      .loginAdmin(username, password); 
+  }
+
+  function doAdminLogout() { 
+    isAdminLoggedIn = false;
+    adminSession = null;
+    document.getElementById('adminControls').style.display = 'none';
+    document.getElementById('adminAuthSection').style.display = 'block';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    showToast('ออกจากระบบแล้ว', 'info');
+  }
+
+  function checkAdminSession() { 
+    if (isAdminLoggedIn) {
+      refreshAdminData();
+    }
+  }
+
+  function refreshAdminData() { 
+    toggleLoading(true);
+    
+    google.script.run
+      .withSuccessHandler(data => { 
+        toggleLoading(false);
+        allUsersList = data.allUsers || [];
+        allBudgetInfo = data.budgetData || [];
+        updateMemberBadge(data.allUsers);
+        
+        const usersBody = document.getElementById('allUsersBody');
+        usersBody.innerHTML = '';
+        
+        data.allUsers.forEach(user => { 
+          if (user.name.trim() === "") return;
+          
+          let role = normalize(user.role).includes('ผู้บันทึก') 
+            ? 'ผู้บันทึก(หผ./รักษาการแทน)' 
+            : normalize(user.role);
+          
+          let rowClass = user.isSystem ? 'row-system-admin' : '';
+          if (user.status === 'รออนุมัติ') {
+            rowClass = 'row-pending-approval';
+          }
+          
+          let systemIcon = user.isSystem ? '<i class="bi bi-shield-lock-fill"></i> ' : '';
+          
+          let actionButtons = '';
+          
+          // ✅ ใหม่
+if (user.status === 'รออนุมัติ') {
+  actionButtons = `
+    <button class="btn btn-xs btn-success rounded-pill me-1"
+      onclick="doApproveUser(${user.rowIndex})">
+      <i class="bi bi-check-lg"></i> อนุมัติ
+    </button>
+    <button class="btn btn-xs btn-danger rounded-pill"
+      onclick="doDeleteUser(${user.rowIndex}, '${user.name}')">
+      <i class="bi bi-x-lg"></i> ปฏิเสธ
+    </button>
+  `;
+} else if (user.isSystem) {
+  actionButtons = '<span class="badge badge-system shadow-sm">SYSTEM</span>';
+} else {
+  actionButtons = `
+    <button class="btn btn-xs btn-danger rounded-pill"
+      onclick="doDeleteUser(${user.rowIndex}, '${user.name}')">
+      <i class="bi bi-trash"></i> ลบ
+    </button>
+  `;
+}
+                 
+          let statusBadge = user.status === 'รออนุมัติ' 
+            ? '<span class="badge badge-pending">รออนุมัติ</span>' 
+            : '<span class="badge bg-success">อนุมัติแล้ว</span>';
+          
+          usersBody.innerHTML += `
+            <tr class="${rowClass}">
+              <td>${systemIcon}${user.name}</td>
+              <td><small>${role}</small></td>
+              <td>${user.dept}</td>
+              <td><code>${user.username}</code></td>
+              <td>${statusBadge}</td>
+              <td>${actionButtons}</td>
+            </tr>
+          `;
+        });
+        
+        const budgetBody = document.getElementById('adminBudgetBody');
+        budgetBody.innerHTML = '';
+        
+        data.budgetData.forEach(budget => { 
+          budgetBody.innerHTML += `
+            <tr>
+              <td>${budget.branch}</td>
+              <td>${budget.dept}</td>
+              <td class="fw-bold">${budget.code}</td>
+              <td>${budget.name}</td>
+              <td>${fNum(budget.yearlyBudget)}</td>
+              <td>
+<button class="btn btn-xs btn-danger rounded-pill"
+  onclick="doDeleteBudget(${budget.rowIndex})">
+  <i class="bi bi-trash"></i> ลบ
+</button>  
+              </td>
+            </tr>
+          `;
+        });
+      })
+      .withFailureHandler(onFailure)
+      .getInitialData(); 
+  }
+
+  function filterAdminBudget() { 
+    const query = document.getElementById('adminBudgetSearch').value.toLowerCase();
+    document.querySelectorAll('#adminBudgetBody tr').forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
+    });
+  }
+
+  function showAddBudgetModal() {
+  Swal.fire({
+    title: 'เพิ่มรายการงบประมาณใหม่',
+    html: `
+      <div class="text-start">
+        <label class="form-label fw-semibold">กฟฟ.</label>
+        <input id="nb_branch" class="swal2-input w-100 m-0 mb-2" placeholder="ชื่อ กฟฟ.">
+        <label class="form-label fw-semibold">แผนก</label>
+        <select id="nb_dept" class="swal2-select w-100 m-0 mb-2">
+          <option value="">เลือกแผนก</option>
+          <option value="ผบง.">ผบง.</option>
+          <option value="ผปร.">ผปร.</option>
+          <option value="ผบค.">ผบค.</option>
+          <option value="ประจำ กฟฟ.">ประจำ กฟฟ.</option>
+        </select>
+        <label class="form-label fw-semibold">รหัสบัญชี</label>
+        <input id="nb_code" class="swal2-input w-100 m-0 mb-2" placeholder="เช่น 5101">
+        <label class="form-label fw-semibold">ชื่อบัญชี/รายการ</label>
+        <input id="nb_name" class="swal2-input w-100 m-0 mb-2" placeholder="ชื่อรายการงบประมาณ">
+        <label class="form-label fw-semibold">งบประมาณต่อปี (บาท)</label>
+        <input id="nb_budget" type="number" class="swal2-input w-100 m-0" placeholder="0.00">
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#7A3E94',
+    cancelButtonColor: '#9e9e9e',
+    confirmButtonText: '<i class="bi bi-plus-circle"></i> เพิ่มรายการ',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const branch = document.getElementById('nb_branch').value;
+      const dept = document.getElementById('nb_dept').value;
+      const code = document.getElementById('nb_code').value;
+      const name = document.getElementById('nb_name').value;
+      const budget = document.getElementById('nb_budget').value;
+      if (!branch || !dept || !code || !name || !budget) {
+        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+        return false;
+      }
+      return { branch, dept, code, name, budget };
+    }
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    const { branch, dept, code, name, budget } = result.value;
+    const adminUser = document.getElementById('loginUser').value;
+    const adminPass = document.getElementById('loginPass').value;
+    toggleLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        if (res.status === 'success') {
+          showToast(res.message, 'success');
+          refreshAdminData();
+        } else {
+          Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+        }
+      })
+      .withFailureHandler(onFailure)
+      .addBudgetItem(branch, dept, code, name, parseFloat(budget), adminUser, adminPass);
+  });
+}
+
+  function showLineConfigModal() {
+  Swal.fire({
+    title: 'ตั้งค่า LINE Push Messaging',
+    html: `
+      <div class="text-start">
+        <label class="form-label fw-semibold">Channel Access Token</label>
+        <input id="lc_token" class="swal2-input w-100 m-0 mb-2" 
+               placeholder="Channel Access Token จาก LINE Developers">
+        <label class="form-label fw-semibold">Admin Target (User ID / Group ID)</label>
+        <input id="lc_admin" class="swal2-input w-100 m-0 mb-2" 
+               placeholder="Uxxxxxxxx หรือ Cxxxxxxxx">
+        <label class="form-label fw-semibold">Approver Target (User ID / Group ID)</label>
+        <input id="lc_approver" class="swal2-input w-100 m-0" 
+               placeholder="Uxxxxxxxx หรือ Cxxxxxxxx">
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#4caf50',
+    cancelButtonColor: '#9e9e9e',
+    confirmButtonText: '<i class="bi bi-save"></i> บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const token = document.getElementById('lc_token').value;
+      if (!token) {
+        Swal.showValidationMessage('กรุณากรอก Channel Access Token');
+        return false;
+      }
+      return {
+        token,
+        adminTarget: document.getElementById('lc_admin').value,
+        approverTarget: document.getElementById('lc_approver').value
+      };
+    }
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    const adminUser = document.getElementById('loginUser').value;
+    const adminPass = document.getElementById('loginPass').value;
+    toggleLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        if (res.status === 'success') showToast(res.message, 'success');
+        else Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+      })
+      .withFailureHandler(onFailure)
+      .saveLineConfig(
+        result.value.token,
+        result.value.adminTarget,
+        result.value.approverTarget,
+        adminUser, adminPass
+      );
+  });
+}
+
+function testLinePush() {
+  Swal.fire({
+    title: 'ทดสอบ LINE Push',
+    html: `
+      <div class="text-start">
+        <label class="form-label fw-semibold">Channel Access Token</label>
+        <input id="test_token" class="swal2-input w-100 m-0 mb-2" placeholder="Token">
+        <label class="form-label fw-semibold">Target ID (User/Group)</label>
+        <input id="test_target" class="swal2-input w-100 m-0" placeholder="Uxxxxxxxx">
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#4caf50',
+    confirmButtonText: '<i class="bi bi-send"></i> ทดสอบ',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const token = document.getElementById('test_token').value;
+      const target = document.getElementById('test_target').value;
+      if (!token || !target) {
+        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบ');
+        return false;
+      }
+      return { token, target };
+    }
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    toggleLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        if (res.status === 'success') showToast('ส่งสำเร็จ! ตรวจสอบ LINE ของคุณ', 'success');
+        else Swal.fire({ icon: 'error', title: 'ส่งไม่สำเร็จ', text: res.message });
+      })
+      .withFailureHandler(onFailure)
+      .testLinePushFromAdmin(result.value.target, result.value.token);
+  });
+}
+
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('anthropicKeyInput');
+  const icon = document.getElementById('apiKeyEyeIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+
+function saveApiKey() {
+  const key = document.getElementById('anthropicKeyInput').value;
+  if (!key) {
+    Swal.fire({ icon: 'warning', title: 'กรุณากรอก API Key', confirmButtonColor: '#7A3E94' });
+    return;
+  }
+  const adminUser = document.getElementById('loginUser').value;
+  const adminPass = document.getElementById('loginPass').value;
+  toggleLoading(true);
+  google.script.run
+    .withSuccessHandler(res => {
+      toggleLoading(false);
+      if (res.status === 'success') {
+        showToast(res.message, 'success');
+        document.getElementById('anthropicKeyInput').value = '';
+      } else {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+      }
+    })
+    .withFailureHandler(onFailure)
+    .saveApiKey(key, adminUser, adminPass);
+}
+
+function testAIConnection() {
+  const adminUser = document.getElementById('loginUser').value;
+  const adminPass = document.getElementById('loginPass').value;
+  toggleLoading(true);
+  google.script.run
+    .withSuccessHandler(res => {
+      toggleLoading(false);
+      if (res.status === 'success') showToast(res.message, 'success');
+      else Swal.fire({ icon: 'error', title: 'เชื่อมต่อไม่ได้', text: res.message });
+    })
+    .withFailureHandler(onFailure)
+    .testAIConnectionFromAdmin(adminUser, adminPass);
+}
+ 
+ function renderTimeline(container, log) {
+  if (!log || log.trim() === '') {
+    container.innerHTML = '<p class="text-muted text-center">ยังไม่มีข้อมูล Timeline</p>';
+    return;
+  }
+  const lines = log.split('\n').filter(l => l.trim());
+  container.innerHTML = lines.map(line => {
+    let icon = '📋';
+    if (line.includes('เสนอเรื่อง'))   icon = '📝';
+    if (line.includes('ตรวจสอบผ่าน')) icon = '✅';
+    if (line.includes('อนุมัติ'))       icon = '🎉';
+    if (line.includes('ตีกลับ'))        icon = '❌';
+    if (line.includes('ลบ') || line.includes('ยกเลิก')) icon = '🗑️';
+    if (line.includes('แก้ไข'))         icon = '✏️';
+    return `
+      <div class="d-flex gap-2 mb-2 align-items-start">
+        <span style="font-size:1.1rem;">${icon}</span>
+        <small class="text-muted" style="line-height:1.5;">${line}</small>
+      </div>`;
+  }).join('<hr class="my-1">');
+}
+
+// ==================== RANKING ====================
+let rankingAllData    = [];
+let rankingFiltered   = [];
+let rankingPage       = 1;
+const RANKING_PER_PAGE = 10;
+let rankingSortKey    = 'used';
+let rankingSortAsc    = false;
+let rankingDeptActive = '';      // '' = ทั้งหมด
+let rankingDeptPanelOpen = false;
+
+function setRankingSort(key) {
+  if (rankingSortKey === key) {
+    rankingSortAsc = !rankingSortAsc;
+  } else {
+    rankingSortKey = key;
+    rankingSortAsc = false;
+  }
+  document.getElementById('iconSortUsed').className =
+    'bi ' + (rankingSortKey==='used'    ? (rankingSortAsc?'bi-arrow-up':'bi-arrow-down') : 'bi-arrow-down-up');
+  document.getElementById('iconSortPct').className =
+    'bi ' + (rankingSortKey==='percent' ? (rankingSortAsc?'bi-arrow-up':'bi-arrow-down') : 'bi-arrow-down-up');
+  document.getElementById('rankingSortUsed').style.color = rankingSortKey==='used'    ? '#7A3E94' : '';
+  document.getElementById('rankingSortPct').style.color  = rankingSortKey==='percent' ? '#7A3E94' : '';
+  rankingPage = 1;
+  applyRankingFilter();
+}
+
+function toggleDeptFilter() {
+  rankingDeptPanelOpen = !rankingDeptPanelOpen;
+  const panel = document.getElementById('rankingDeptFilter');
+  const icon  = document.getElementById('iconDeptFilter');
+  if (!rankingDeptPanelOpen) {
+    panel.innerHTML = '';
+    icon.className = 'bi bi-funnel';
+    return;
+  }
+  icon.className = 'bi bi-funnel-fill text-purple';
+  const depts = ['ทั้งหมด', ...new Set(rankingAllData.map(r => r.dept))].sort();
+  panel.innerHTML = depts.map(d => {
+    const active = (d === 'ทั้งหมด' && rankingDeptActive === '') || d === rankingDeptActive;
+    return `<button class="btn btn-sm rounded-pill px-3 ${active ? 'btn-primary' : 'btn-outline-secondary'}"
+      onclick="setRankingDept('${d}')">${d}</button>`;
+  }).join('');
+}
+
+function setRankingDept(dept) {
+  rankingDeptActive = dept === 'ทั้งหมด' ? '' : dept;
+  rankingPage = 1;
+  // re-render pills
+  const depts = ['ทั้งหมด', ...new Set(rankingAllData.map(r => r.dept))].sort();
+  document.getElementById('rankingDeptFilter').innerHTML = depts.map(d => {
+    const active = (d === 'ทั้งหมด' && rankingDeptActive === '') || d === rankingDeptActive;
+    return `<button class="btn btn-sm rounded-pill px-3 ${active ? 'btn-primary' : 'btn-outline-secondary'}"
+      onclick="setRankingDept('${d}')">${d}</button>`;
+  }).join('');
+  applyRankingFilter();
+}
+
+function applyRankingFilter() {
+  rankingFiltered = rankingDeptActive
+    ? rankingAllData.filter(r => r.dept === rankingDeptActive)
+    : [...rankingAllData];
+  rankingFiltered.sort((a,b) => rankingSortAsc
+    ? a[rankingSortKey] - b[rankingSortKey]
+    : b[rankingSortKey] - a[rankingSortKey]);
+  renderRankingPage();
+}
+
+function renderRanking(dashboardData) {
+  rankingAllData     = [];
+  rankingDeptActive  = '';
+  rankingSortKey     = 'used';
+  rankingSortAsc     = false;
+  rankingDeptPanelOpen = false;
+  document.getElementById('rankingDeptFilter').innerHTML = '';
+  document.getElementById('iconDeptFilter').className = 'bi bi-funnel';
+  document.getElementById('iconSortUsed').className   = 'bi bi-arrow-down';
+  document.getElementById('iconSortPct').className    = 'bi bi-arrow-down-up';
+  document.getElementById('rankingSortUsed').style.color = '#7A3E94';
+  document.getElementById('rankingSortPct').style.color  = '';
+
+  allBudgetInfo.forEach(item => {
+    const key     = normalize(item.dept) + '|' + item.code;
+    const used    = dashboardData.accountSummary[key] || 0;
+    if (used <= 0) return;
+    const percent = item.yearlyBudget > 0 ? (used / item.yearlyBudget * 100) : 0;
+    rankingAllData.push({
+      code: item.code, name: item.name, dept: item.dept,
+      yearlyBudget: item.yearlyBudget,
+      monthlyBudget: item.yearlyBudget / 12,
+      used, percent
+    });
+  });
+  rankingPage = 1;
+  applyRankingFilter();
+}
+
+function renderRankingPage() {
+  const total      = rankingFiltered.length;
+  const totalPages = Math.ceil(total / RANKING_PER_PAGE);
+  const start      = (rankingPage - 1) * RANKING_PER_PAGE;
+  const pageData   = rankingFiltered.slice(start, start + RANKING_PER_PAGE);
+  const medals     = ['🥇','🥈','🥉'];
+  const tbody      = document.getElementById('rankingTableBody');
+  tbody.innerHTML  = '';
+
+  if (total === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">ไม่มีข้อมูล</td></tr>';
+    document.getElementById('rankingTotal').innerText   = 'ทั้งหมด 0 รายการ';
+    document.getElementById('rankingPageInfo').innerText = '';
+    document.getElementById('rankingPagination').innerHTML = '';
+    return;
+  }
+
+  pageData.forEach((item, i) => {
+    const rank      = start + i + 1;
+    const medalHtml = rank <= 3
+      ? `<span class="rank-medal rank-${rank}">${medals[rank-1]}</span>`
+      : `<span class="rank-medal rank-other">${rank}</span>`;
+    const pct      = item.percent.toFixed(1);
+    const barColor = pct > 90 ? 'bg-danger' : pct > 75 ? 'bg-warning' : 'bg-success';
+    // งบเดือน: เปลี่ยนสีถ้าใช้เกินงบเดือน
+    const monthlyUsedRatio = item.monthlyBudget > 0 ? item.used / item.monthlyBudget : 0;
+    const monthlyClass = monthlyUsedRatio > 1 ? 'text-danger fw-bold' : 'text-muted';
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="text-center">${medalHtml}</td>
+        <td>
+          <div class="fw-bold small">${item.code}</div>
+          <div class="text-muted" style="font-size:0.8rem;">${item.name}</div>
+        </td>
+        <td><span class="badge bg-secondary">${item.dept}</span></td>
+        <td class="small text-muted">${fNum(item.yearlyBudget)}</td>
+        <td class="small ${monthlyClass}">${fNum(item.monthlyBudget)}</td>
+        <td class="fw-bold text-primary">${fNum(item.used)}</td>
+        <td style="min-width:120px;">
+          <div class="d-flex align-items-center gap-2">
+            <div class="progress flex-grow-1" style="height:8px;">
+              <div class="progress-bar ${barColor}" style="width:${Math.min(pct,100)}%"></div>
+            </div>
+            <small class="fw-bold ${pct>90?'text-danger':pct>75?'text-warning':'text-success'}">${pct}%</small>
+          </div>
+        </td>
+      </tr>`;
+  });
+
+  document.getElementById('rankingTotal').innerText    = `ทั้งหมด ${total} รายการ${rankingDeptActive?' ('+rankingDeptActive+')':''}`;
+  document.getElementById('rankingPageInfo').innerText =
+    `แสดง ${start+1}–${Math.min(start+RANKING_PER_PAGE, total)} จาก ${total} รายการ`;
+
+  const paginDiv = document.getElementById('rankingPagination');
+  paginDiv.innerHTML = '';
+  if (totalPages <= 1) return;
+  const prevBtn = `<button class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+    onclick="changeRankingPage(${rankingPage-1})" ${rankingPage===1?'disabled':''}>
+    <i class="bi bi-chevron-left"></i></button>`;
+  const nextBtn = `<button class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+    onclick="changeRankingPage(${rankingPage+1})" ${rankingPage===totalPages?'disabled':''}>
+    <i class="bi bi-chevron-right"></i></button>`;
+  let pageButtons = '';
+  for (let p = 1; p <= totalPages; p++) {
+    pageButtons += `<button class="btn btn-sm rounded-pill px-3 ${p===rankingPage?'btn-primary':'btn-outline-primary'}"
+      onclick="changeRankingPage(${p})">${p}</button>`;
+  }
+  paginDiv.innerHTML = prevBtn + pageButtons + nextBtn;
+}
+
+function changeRankingPage(page) {
+  const totalPages = Math.ceil(rankingFiltered.length / RANKING_PER_PAGE);
+  if (page < 1 || page > totalPages) return;
+  rankingPage = page;
+  renderRankingPage();
+}
+
+function loadAnalyzeTab() {
+  if (currentSummaryData) { renderRanking(currentSummaryData); return; }
+  if (!isGAS) return;
+  document.getElementById('rankingTableBody').innerHTML =
+    '<tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> กำลังโหลด...</td></tr>';
+  google.script.run
+    .withSuccessHandler(data => { currentSummaryData = data; renderRanking(data); })
+    .withFailureHandler(err => {
+      document.getElementById('rankingTableBody').innerHTML =
+        '<tr><td colspan="7" class="text-center text-danger py-3">โหลดไม่สำเร็จ: ' + err.message + '</td></tr>';
+    })
+    .getEnhancedDashboardData(summaryFilterConfig);
+}
+
+// ==================== AI ANALYSIS ====================
+function prepareAIData(dashboardData) {
+  const depts = {};
+  const accounts = [];
+  let totalBudget = 0, totalUsed = 0;
+  
+  allBudgetInfo.forEach(item => {
+    const key = normalize(item.dept) + '|' + item.code;
+    const used = dashboardData.accountSummary[key] || 0;
+    totalBudget += item.yearlyBudget;
+    totalUsed += used;
+    
+    if (!depts[item.dept]) depts[item.dept] = { budget:0, used:0 };
+    depts[item.dept].budget += item.yearlyBudget;
+    depts[item.dept].used += used;
+    
+    if (used > 0) accounts.push({
+      code: item.code, name: item.name, dept: item.dept,
+      budget: item.yearlyBudget, used,
+      percent: item.yearlyBudget > 0 ? +(used/item.yearlyBudget*100).toFixed(1) : 0,
+      isNegative: used > item.yearlyBudget
+    });
+  });
+  
+  accounts.sort((a,b) => b.used - a.used);
+  
+  const deptArr = Object.keys(depts).map(d => ({
+    name: d, ...depts[d],
+    percent: depts[d].budget > 0 ? +(depts[d].used/depts[d].budget*100).toFixed(1) : 0
+  }));
+  
+  return {
+    totalBudget, totalUsed,
+    totalRemaining: totalBudget - totalUsed,
+    usagePercent: totalBudget > 0 ? +(totalUsed/totalBudget*100).toFixed(1) : 0,
+    departments: deptArr,
+    top5Accounts: accounts.slice(0,5),
+    negativeAccounts: accounts.filter(a => a.isNegative),
+    highRiskAccounts: accounts.filter(a => a.percent > 80 && !a.isNegative)
+  };
+}
+
+function runAIAnalysis() {
+  if (!isGAS) return;
+  if (!currentSummaryData) {
+    Swal.fire({ icon:'warning', title:'ยังไม่มีข้อมูล', text:'กรุณาโหลดข้อมูลสรุปงบก่อน', confirmButtonColor:'#7A3E94' });
+    return;
+  }
+  
+  const btn = document.getElementById('aiAnalysisBtn');
+  const result = document.getElementById('aiAnalysisResult');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-typing">🤖 กำลังวิเคราะห์...</span>';
+  result.innerHTML = `
+    <div class="text-center py-5">
+      <div class="spinner-border text-purple mb-3" style="width:3rem;height:3rem;color:#7A3E94!important"></div>
+      <p class="fw-semibold text-muted">AI กำลังวิเคราะห์งบประมาณ กรุณารอสักครู่...</p>
+    </div>`;
+  
+  const aiData = prepareAIData(currentSummaryData);
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-cpu-fill"></i> วิเคราะห์ใหม่';
+      
+      if (res.status !== 'success') {
+        result.innerHTML = `<div class="alert alert-danger">${res.message}</div>`;
+        return;
+      }
+      
+      const d = res.data;
+      
+      const riskList = (d.risks||[]).map(r => 
+        `<li class="mb-1"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>${r}</li>`
+      ).join('');
+      
+      const insightList = (d.insights||[]).map(i => 
+        `<li class="mb-1"><i class="bi bi-lightbulb-fill text-primary me-2"></i>${i}</li>`
+      ).join('');
+      
+      const recList = (d.recommendations||[]).map(r => 
+        `<li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>${r}</li>`
+      ).join('');
+      
+      result.innerHTML = `
+        <div class="ai-card ai-card-overview">
+          <h6 class="fw-bold mb-2"><i class="bi bi-graph-up-arrow me-2"></i>ภาพรวม</h6>
+          <p class="mb-0">${d.overview||'-'}</p>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="ai-card ai-card-risk h-100">
+              <h6 class="fw-bold mb-2"><i class="bi bi-shield-exclamation me-2"></i>ความเสี่ยง</h6>
+              <ul class="mb-0 ps-0 list-unstyled">${riskList||'<li class="text-muted">ไม่พบความเสี่ยง</li>'}</ul>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="ai-card ai-card-insight h-100">
+              <h6 class="fw-bold mb-2"><i class="bi bi-eye me-2"></i>ข้อสังเกต</h6>
+              <ul class="mb-0 ps-0 list-unstyled">${insightList||'<li class="text-muted">-</li>'}</ul>
+            </div>
+          </div>
+        </div>
+        <div class="ai-card ai-card-recommend mt-3">
+          <h6 class="fw-bold mb-2"><i class="bi bi-clipboard-check me-2"></i>คำแนะนำ</h6>
+          <ul class="mb-0 ps-0 list-unstyled">${recList||'<li class="text-muted">-</li>'}</ul>
+        </div>
+        <div class="ai-card ai-card-forecast mt-3">
+          <h6 class="fw-bold mb-2"><i class="bi bi-graph-up me-2"></i>การคาดการณ์</h6>
+          <p class="mb-0">${d.forecast||'-'}</p>
+        </div>
+        <div class="text-end mt-2">
+          <small class="text-muted"><i class="bi bi-robot me-1"></i>วิเคราะห์โดย Claude AI • ${new Date().toLocaleString('th-TH')}</small>
+        </div>
+      `;
+    })
+    .withFailureHandler(err => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-cpu-fill"></i> วิเคราะห์ใหม่';
+      result.innerHTML = `<div class="alert alert-danger">เกิดข้อผิดพลาด: ${err.message}</div>`;
+    })
+    .getAIBudgetAnalysis(aiData);
+}
+  // ==================== REGISTER FUNCTION ====================
+  function doApproveUser(rowIndex) {
+  Swal.fire({
+    title: 'ยืนยันอนุมัติสมาชิก?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#4caf50',
+    cancelButtonColor: '#9e9e9e',
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    const adminUser = document.getElementById('loginUser').value;
+    const adminPass = document.getElementById('loginPass').value;
+    toggleLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        if (res.status === 'success') {
+          showToast(res.message, 'success');
+          refreshAdminData();
+        } else {
+          Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+        }
+      })
+      .withFailureHandler(onFailure)
+      .adminApproveUser(rowIndex, adminUser, adminPass);
+  });
+}
+
+function doDeleteUser(rowIndex, name) {
+  Swal.fire({
+    title: `ลบ "${name}"?`,
+    text: 'ไม่สามารถกู้คืนได้',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f44336',
+    cancelButtonColor: '#9e9e9e',
+    confirmButtonText: 'ลบเลย',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    const adminUser = document.getElementById('loginUser').value;
+    const adminPass = document.getElementById('loginPass').value;
+    toggleLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        if (res.status === 'success') {
+          showToast(res.message, 'success');
+          refreshAdminData();
+        } else {
+          Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+        }
+      })
+      .withFailureHandler(onFailure)
+      .adminDeleteUser(rowIndex, adminUser, adminPass);
+  });
+}
+function doDeleteBudget(rowIndex) {
+  Swal.fire({
+    title: 'ลบรายการงบนี้?',
+    text: 'ไม่สามารถกู้คืนได้',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f44336',
+    cancelButtonColor: '#9e9e9e',
+    confirmButtonText: 'ลบเลย',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    const adminUser = document.getElementById('loginUser').value;
+    const adminPass = document.getElementById('loginPass').value;
+    toggleLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        if (res.status === 'success') {
+          showToast(res.message, 'success');
+          refreshAdminData();
+        } else {
+          Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+        }
+      })
+      .withFailureHandler(onFailure)
+      .deleteBudgetItem(rowIndex, adminUser, adminPass);
+  });
+}
+  function showRegisterModal() {
+    new bootstrap.Modal(document.getElementById('registerModal')).show();
+  }
+
+  function doRegister(e) {
+    e.preventDefault();
+    
+    const formData = {
+      name: document.getElementById('regName').value,
+      role: document.getElementById('regRole').value,
+      dept: document.getElementById('regDept').value,
+      username: document.getElementById('regUser').value,
+      password: document.getElementById('regPass').value
+    };
+    
+    if (!formData.name || !formData.role || !formData.dept || !formData.username || !formData.password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูลให้ครบ',
+        confirmButtonColor: '#d81b60'
+      });
+      return;
+    }
+    
+    toggleLoading(true);
+    
+    google.script.run
+      .withSuccessHandler(res => {
+        toggleLoading(false);
+        
+        if (res.status === 'success') {
+          bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ!',
+            html: `<p>${res.message}</p><small class="text-muted">Admin จะตรวจสอบและอนุมัติภายใน 1-2 วันทำการ</small>`,
+            confirmButtonColor: '#7A3E94'
+          });
+          e.target.reset();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถสมัครได้',
+            text: res.message,
+            confirmButtonColor: '#d81b60'
+          });
+        }
+      })
+      .withFailureHandler(onFailure)
+      .registerUser(formData.name, formData.role, formData.dept, formData.username, formData.password);
+  }
+
+// ==================== ① BUDGET HEALTH SCORE ====================
+function calculateHealthScore(dashboardData) {
+  if (!allBudgetInfo.length || !dashboardData) return null;
+  let score = 100;
+  let totalBudget = 0, totalUsed = 0;
+  let overCount = 0, nearCount = 0, safeCount = 0;
+  const issues = [], positives = [];
+
+  allBudgetInfo.forEach(item => {
+    const key = normalize(item.dept) + '|' + item.code;
+    const used = dashboardData.accountSummary[key] || 0;
+    const pct = item.yearlyBudget > 0 ? used / item.yearlyBudget * 100 : 0;
+    totalBudget += item.yearlyBudget;
+    totalUsed += used;
+    if (pct > 100)     overCount++;
+    else if (pct > 80) nearCount++;
+    else if (pct <= 60 && used > 0) safeCount++;
+  });
+
+  const overallPct = totalBudget > 0 ? totalUsed / totalBudget * 100 : 0;
+
+  if (overCount > 0)   { score -= overCount * 12; issues.push(`มี ${overCount} บัญชีงบเกิน 100%`); }
+  if (nearCount > 0)   { score -= nearCount * 5;  issues.push(`มี ${nearCount} บัญชีใกล้หมด (>80%)`); }
+  if (overallPct > 90) { score -= 15; issues.push('ภาพรวมใช้งบเกิน 90%'); }
+  else if (overallPct > 75) { score -= 8; issues.push('ภาพรวมใช้งบเกิน 75%'); }
+
+  if (safeCount > allBudgetInfo.filter(i => i.yearlyBudget > 0).length * 0.5)
+    positives.push('บัญชีส่วนใหญ่ยังมีงบเพียงพอ');
+  if (overallPct < 50 && overallPct > 0)
+    positives.push('ภาพรวมการใช้งบอยู่ในเกณฑ์ดี');
+  if (overCount === 0) positives.push('ไม่มีบัญชีงบเกิน 100%');
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  let grade, color, bgColor, emoji;
+  if (score >= 80) { grade='ดีเยี่ยม'; color='#4caf50'; bgColor='#e8f5e9'; emoji='🟢'; }
+  else if (score >= 60) { grade='พอใช้ได้'; color='#ff9800'; bgColor='#fff3e0'; emoji='🟡'; }
+  else { grade='ต้องปรับปรุง'; color='#f44336'; bgColor='#ffebee'; emoji='🔴'; }
+
+  return { score, grade, color, bgColor, emoji, overCount, nearCount, safeCount,
+           overallPct: overallPct.toFixed(1), issues, positives };
+}
+
+function renderHealthScore(hs) {
+  const el = document.getElementById('healthScoreContent');
+  if (!hs) { el.innerHTML = '<div class="col-12 text-center text-muted py-3"><small>ยังไม่มีข้อมูล</small></div>'; return; }
+
+  const circumference = 2 * Math.PI * 54; // r=54
+  const offset = circumference - (hs.score / 100) * circumference;
+
+  const issueHtml = hs.issues.map(i =>
+    `<div class="health-issue-item"><i class="bi bi-x-circle-fill text-danger"></i><span>${i}</span></div>`
+  ).join('');
+  const plusHtml = hs.positives.map(p =>
+    `<div class="health-issue-item"><i class="bi bi-check-circle-fill text-success"></i><span>${p}</span></div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="col-md-4 text-center">
+      <div class="health-ring-wrap">
+        <svg width="140" height="140" viewBox="0 0 120 120" class="health-ring">
+          <circle class="health-ring-track" cx="60" cy="60" r="54"/>
+          <circle class="health-ring-fill" cx="60" cy="60" r="54"
+            stroke="${hs.color}"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}"
+            id="healthRingFill"/>
+        </svg>
+        <div style="margin-top:-110px; margin-bottom:80px;">
+          <div class="health-score-num" style="color:${hs.color}" id="healthScoreNum">0</div>
+          <div class="small text-muted">/ 100</div>
+        </div>
+        <div class="health-grade-pill" style="background:${hs.color};">
+          ${hs.emoji} ${hs.grade}
+        </div>
+        <div class="text-muted small mt-2">ใช้รวม ${hs.overallPct}% ของงบทั้งหมด</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-3 rounded-3 h-100" style="background:${hs.bgColor};">
+        <div class="fw-bold mb-2" style="color:${hs.color};">
+          <i class="bi bi-bar-chart-fill me-1"></i>สถิติรายบัญชี
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small">🔴 เกิน 100%</span>
+          <strong class="text-danger">${hs.overCount} รายการ</strong>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small">🟡 ใกล้หมด (80-100%)</span>
+          <strong class="text-warning">${hs.nearCount} รายการ</strong>
+        </div>
+        <div class="d-flex justify-content-between py-2">
+          <span class="small">🟢 ปกติ (≤60%)</span>
+          <strong class="text-success">${hs.safeCount} รายการ</strong>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-3 rounded-3 h-100" style="background:#fafafa;border:2px solid #f0f0f0;">
+        <div class="fw-bold mb-2 text-danger">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>ปัญหาที่พบ
+        </div>
+        ${issueHtml || '<div class="text-muted small">ไม่พบปัญหา ✅</div>'}
+        <div class="fw-bold mb-2 mt-3 text-success">
+          <i class="bi bi-stars me-1"></i>จุดดี
+        </div>
+        ${plusHtml || '<div class="text-muted small">-</div>'}
+      </div>
+    </div>
+  `;
+
+  // Animate counter
+  let current = 0;
+  const target = hs.score;
+  const step = Math.ceil(target / 50);
+  const numEl = document.getElementById('healthScoreNum');
+  const timer = setInterval(() => {
+    current = Math.min(current + step, target);
+    if (numEl) numEl.textContent = current;
+    if (current >= target) clearInterval(timer);
+  }, 20);
+}
+
+function refreshHealthScore() {
+  if (currentSummaryData) {
+    renderHealthScore(calculateHealthScore(currentSummaryData));
+  } else {
+    showToast('กรุณาโหลดข้อมูลสรุปงบก่อน', 'warning');
+  }
+}
+
+// ==================== ③ ANOMALY ALERT BANNER ====================
+function detectAndShowAnomalies(dashboardData) {
+  const monthsElapsed = new Date().getMonth() + 1;
+  const anomalies = [];
+
+  allBudgetInfo.forEach(item => {
+    const key = normalize(item.dept) + '|' + item.code;
+    const used = dashboardData.accountSummary[key] || 0;
+    if (used <= 0 || item.yearlyBudget <= 0) return;
+
+    const monthlyBudget = item.yearlyBudget / 12;
+    const monthlyRate   = used / monthsElapsed;
+    const expectedByNow = monthlyBudget * monthsElapsed;
+
+    if (monthlyRate > monthlyBudget * 3 || used > expectedByNow * 1.5) {
+      anomalies.push({
+        code: item.code, name: item.name, dept: item.dept,
+        used, monthlyBudget, monthlyRate,
+        ratio: monthlyRate / monthlyBudget,
+        overPct: ((used / expectedByNow - 1) * 100).toFixed(0),
+        isCritical: monthlyRate > monthlyBudget * 5 || used > item.yearlyBudget
+      });
+    }
+  });
+
+  anomalies.sort((a, b) => b.ratio - a.ratio);
+
+  const banner = document.getElementById('anomalyBanner');
+  const cards  = document.getElementById('anomalyCards');
+  const count  = document.getElementById('anomalyCount');
+
+  if (anomalies.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  count.textContent = anomalies.length;
+  cards.innerHTML = anomalies.slice(0, 5).map(a => `
+    <div class="anomaly-card ${a.isCritical ? 'critical' : ''}">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <strong>${a.isCritical ? '🚨' : '⚠️'} ${a.code} — ${a.name}</strong>
+          <span class="badge bg-secondary ms-2">${a.dept}</span>
+        </div>
+        <span class="badge ${a.isCritical ? 'bg-danger' : 'bg-warning text-dark'} rounded-pill">
+          ใช้เร็ว ${a.ratio.toFixed(1)}x
+        </span>
+      </div>
+      <div class="small mt-1 text-muted">
+        ใช้ไป <strong class="text-danger">${fNum(a.used)} บาท</strong>
+        ใน ${new Date().getMonth() + 1} เดือน
+        (เฉลี่ย ${fNum(a.monthlyRate)} บาท/เดือน vs งบ ${fNum(a.monthlyBudget)} บาท/เดือน)
+        • เกินเป้า <strong>${a.overPct}%</strong>
+      </div>
+    </div>
+  `).join('');
+
+  if (anomalies.length > 5) {
+    cards.innerHTML += `<div class="text-muted small mt-1 text-center">... และอีก ${anomalies.length - 5} รายการ</div>`;
+  }
+
+  banner.style.display = 'block';
+}
+
+// ==================== ② AI CHAT ====================
+let chatHistory = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('chatInput');
+  if (inp) {
+    inp.addEventListener('input', () => {
+      document.getElementById('chatInputCount').textContent =
+        inp.value.length + '/300';
+    });
+  }
+});
+
+function appendChatBubble(text, role) {
+  const msgs = document.getElementById('chatMessages');
+  const div  = document.createElement('div');
+  div.className = role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai';
+  div.innerHTML  = text.replace(/\n/g, '<br>');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function showChatTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const div  = document.createElement('div');
+  div.className = 'chat-bubble-ai chat-typing';
+  div.id = 'chatTypingIndicator';
+  div.innerHTML  = '<span></span><span></span><span></span>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeChatTyping() {
+  const el = document.getElementById('chatTypingIndicator');
+  if (el) el.remove();
+}
+
+function sendChatQuick(question) {
+  document.getElementById('chatInput').value = question;
+  sendChatMessage();
+}
+
+function clearAIChat() {
+  chatHistory = [];
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = `
+    <div class="chat-bubble-ai">
+      👋 สวัสดีครับ! ผมคือ AI ผู้ช่วยวิเคราะห์งบประมาณ<br>
+      ถามอะไรก็ได้เกี่ยวกับงบประมาณของคุณ เช่น "แผนกไหนใช้งบมากสุด?" หรือ "บัญชีไหนควรระวัง?"
+    </div>`;
+}
+
+function sendChatMessage() {
+  if (!isGAS) return;
+  const input = document.getElementById('chatInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+
+  if (!currentSummaryData) {
+    appendChatBubble('⚠️ ยังไม่มีข้อมูลงบประมาณ กรุณาเปิดเมนู "สรุปงบประมาณ" ก่อน 1 ครั้งนะครับ', 'ai');
+    return;
+  }
+
+  input.value = '';
+  document.getElementById('chatInputCount').textContent = '0/300';
+
+  appendChatBubble(msg, 'user');
+  chatHistory.push({ role: 'user', content: msg });
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  input.disabled = true;
+  showChatTyping();
+
+  const aiData = prepareAIData(currentSummaryData);
+  const contextPrompt = `ข้อมูลงบประมาณปัจจุบัน:
+- งบรวมทั้งหมด: ${fNum(aiData.totalBudget)} บาท
+- ใช้ไปแล้ว: ${fNum(aiData.totalUsed)} บาท (${aiData.usagePercent}%)
+- คงเหลือ: ${fNum(aiData.totalRemaining)} บาท
+- แผนก: ${aiData.departments.map(d => `${d.name} ใช้ ${d.percent}%`).join(', ')}
+- Top 5 บัญชีที่ใช้มากสุด: ${aiData.top5Accounts.map(a => `${a.code}(${a.dept}) ${a.percent}%`).join(', ')}
+- บัญชีที่งบเกิน: ${aiData.negativeAccounts.length} รายการ
+- บัญชีเสี่ยง: ${aiData.highRiskAccounts.length} รายการ`;
+
+  google.script.run
+    .withSuccessHandler(res => {
+      removeChatTyping();
+      btn.disabled  = false;
+      input.disabled = false;
+      input.focus();
+
+      const reply = (res.status === 'success' && res.reply) ? res.reply : 'ขออภัย ไม่สามารถตอบได้ในขณะนี้';
+      appendChatBubble(reply, 'ai');
+      chatHistory.push({ role: 'assistant', content: reply });
+      if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+    })
+    .withFailureHandler(err => {
+      removeChatTyping();
+      btn.disabled   = false;
+      input.disabled = false;
+      appendChatBubble('❌ เกิดข้อผิดพลาด: ' + err.message, 'ai');
+    })
+    .getAIChatResponse(msg, contextPrompt, chatHistory.slice(-10));
+}
+
+// Hook: เรียก health score + anomaly เมื่อข้อมูลพร้อม
+const _origRenderEnhancedSummary = renderEnhancedSummary;
+renderEnhancedSummary = function(data) {
+  _origRenderEnhancedSummary(data);
+  renderHealthScore(calculateHealthScore(data));
+  detectAndShowAnomalies(data);
+};
+
+const _origLoadAnalyzeTab = loadAnalyzeTab;
+loadAnalyzeTab = function() {
+  _origLoadAnalyzeTab();
+  if (currentSummaryData) {
+    renderHealthScore(calculateHealthScore(currentSummaryData));
+    detectAndShowAnomalies(currentSummaryData);
+  }
+}; 
+
+
+// ==================== v3.2.0: เริ่มระบบ / โหลดข้อมูลครั้งเดียว ====================
+let budgetUsage = {};          // ยอดอนุมัติแล้วของปีนี้ แยกตาม กฟฟ.|แผนก|รหัสบัญชี (จาก server)
+
+function usageKey(branch, dept, code) { return normalize(branch) + '|' + normalize(dept) + '|' + normalize(code); }
+
+function applyBoot(d) {
+  if (!d) return;
+  allBudgetInfo = d.budgetData || [];
+  allUsersList = d.allUsers || [];
+  budgetUsage = {};
+  Object.keys(d.usage || {}).forEach(k => {
+    const p = k.split('|');
+    budgetUsage[usageKey(p[0], p[1], p.slice(2).join('|'))] = d.usage[k];
+  });
+  updateMemberBadge(allUsersList);
+  // ถ้าผู้ใช้กำลังกรอกฟอร์มอยู่ ไม่รีเซ็ตช่องเลือก
+  const branchSel = document.getElementById('branch');
+  if (!branchSel || !branchSel.value) initDropdowns();
+  pendingDataCache = d.pending || [];
+  renderPendingList(pendingDataCache);
+}
+
+function saveBootCache(d) {
+  try { lsSet(BOOT_KEY, JSON.stringify({ t: Date.now(), d: d })); } catch (e) {}
+}
+
+function startApp() {
+  document.getElementById('loginView').classList.add('hidden');
+  renderUserChip();
+  let cached = null;
+  try { cached = JSON.parse(lsGet(BOOT_KEY) || 'null'); } catch (e) {}
+  if (cached && cached.d) applyBoot(cached.d);   // แสดงข้อมูลที่จำไว้ทันที แล้วค่อยอัปเดต
+  else toggleLoading(true);
+  google.script.run
+    .withSuccessHandler(d => {
+      if (d && d.me) { me = Object.assign({}, me || {}, d.me); lsSet(USER_KEY, JSON.stringify(me)); renderUserChip(); }
+      applyBoot(d); saveBootCache(d);
+      toggleLoading(false);
+      if (!cached) showToast('โหลดข้อมูลสำเร็จ', 'success');
+    })
+    .withFailureHandler(e => { toggleLoading(false); if (!cached) onFailure(e); else showToast('อัปเดตข้อมูลไม่สำเร็จ: ' + e.message, 'warning'); })
+    .getBootData();
+}
+
+// โหลดรายการรอตรวจสอบ = โหลดข้อมูลชุดเดียวกับตอนเปิด (ได้ยอดงบล่าสุดมาด้วย)
+loadPendingList = function (silent) {
+  if (!silent) toggleLoading(true);
+  google.script.run
+    .withSuccessHandler(d => { applyBoot(d); saveBootCache(d); toggleLoading(false); })
+    .withFailureHandler(onFailure)
+    .getBootData();
+};
+
+// ==================== คำนวณงบในเครื่อง (ไม่ต้องรอ server) ====================
+// สูตรเดียวกับ server: งบสะสม = งบต่อปี/12 × เดือนปัจจุบัน − ยอดที่อนุมัติแล้วปีนี้
+// (ตอนกดบันทึก server จะคำนวณซ้ำจากข้อมูลล่าสุดอีกครั้ง)
+function localBudgetInfo(code, branch, dept, yearly) {
+  const used = budgetUsage[usageKey(branch, dept, code)] || 0;
+  const y = Number(yearly) || 0, perMonth = y / 12, month = new Date().getMonth() + 1;
+  const remAcc = perMonth * month - used;
+  return { remainingYear: y - used, remainingAccumulated: remAcc, budgetPerMonth: perMonth, used: used, isNegative: remAcc < 0 };
+}
+
+selectAccount = function () {
+  const accountSelect = document.getElementById('accountCode');
+  const opt = accountSelect.options[accountSelect.selectedIndex];
+  if (!opt || !accountSelect.value) return;
+  const yearlyBudget = parseFloat(opt.getAttribute('data-yearly')) || 0;
+  const dept = opt.getAttribute('data-dept') || document.getElementById('dept').value;
+  const res = localBudgetInfo(accountSelect.value, document.getElementById('branch').value, dept, yearlyBudget);
+  document.getElementById('yearlyBudget').value = fNum(yearlyBudget);
+  document.getElementById('remainingYear').value = fNum(res.remainingYear);
+  document.getElementById('accumulatedMonthBudget').value = fNum(res.remainingAccumulated);
+  document.getElementById('monthlyBudget').value = fNum(res.budgetPerMonth);
+  currentSelection = { ...res, yearly: yearlyBudget };
+  calcNet();
+};
+
+selectAccount_e = function () {
+  const accountSelect = document.getElementById('e_accountCode');
+  const opt = accountSelect.options[accountSelect.selectedIndex];
+  if (!opt || !accountSelect.value) return;
+  const yearlyBudget = parseFloat(opt.getAttribute('data-yearly')) || 0;
+  const res = localBudgetInfo(accountSelect.value, document.getElementById('e_branch').value, document.getElementById('e_dept').value, yearlyBudget);
+  document.getElementById('e_yearlyBudget').value = fNum(yearlyBudget);
+  document.getElementById('e_remainingYear').value = fNum(res.remainingYear);
+  document.getElementById('e_accumulatedMonthBudget').value = fNum(res.remainingAccumulated);
+  document.getElementById('e_monthlyBudget').value = fNum(res.budgetPerMonth);
+  currentSelection_e = { ...res, yearly: yearlyBudget };
+  calcNet_e();
+};
+
+// เลือกแผนกแล้ว ใส่ชื่อผู้เสนอเป็นคนที่เข้าระบบให้อัตโนมัติ (เปลี่ยนได้)
+const _origOnDeptChange = onDeptChange;
+onDeptChange = function () {
+  _origOnDeptChange();
+  const sel = document.getElementById('requester');
+  if (me && sel && Array.prototype.some.call(sel.options, o => o.value === me.name)) sel.value = me.name;
+};
+
+// แท็บ Admin: ใส่ Username ของคนที่เข้าระบบไว้ให้
+const _origCheckAdminSession = checkAdminSession;
+checkAdminSession = function () {
+  const u = document.getElementById('loginUser');
+  if (u && !u.value && me) u.value = me.username;
+  _origCheckAdminSession();
+};
+
+// ==================== ผู้ใช้ ====================
+function renderUserChip() {
+  const chip = document.getElementById('userChip');
+  if (!chip) return;
+  if (!me) { chip.style.display = 'none'; return; }
+  chip.style.display = 'flex';
+  document.getElementById('userAv').textContent = (me.name || me.username || '?').trim().charAt(0);
+  document.getElementById('userNm').textContent = me.name || me.username;
+  document.getElementById('userRole').textContent = (me.role || '') + (me.dept ? ' · ' + me.dept : '');
+}
+
+function showUserMenu() {
+  if (!me) return;
+  Swal.fire({
+    title: escHtml(me.name || me.username),
+    html: `<div class="text-muted mb-3">${escHtml(me.role || '')}${me.dept ? ' · ' + escHtml(me.dept) : ''}<br><small>Username: ${escHtml(me.username)}</small></div>
+      <div class="d-grid gap-2">
+        <button class="btn btn-outline-secondary rounded-pill" onclick="Swal.close(); changeMyPassword();"><i class="bi bi-key"></i> เปลี่ยนรหัสผ่าน</button>
+        <button class="btn btn-outline-danger rounded-pill" onclick="doUserLogout()"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</button>
+      </div>`,
+    showConfirmButton: false, showCloseButton: true, width: 360
+  });
+}
+
+function changeMyPassword() {
+  Swal.fire({
+    title: 'เปลี่ยนรหัสผ่าน',
+    html: `<input id="cpOld" type="password" class="swal2-input w-100 m-0 mb-2" placeholder="รหัสผ่านเดิม" autocomplete="current-password">
+           <input id="cpNew" type="password" class="swal2-input w-100 m-0 mb-2" placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)" autocomplete="new-password">
+           <input id="cpNew2" type="password" class="swal2-input w-100 m-0" placeholder="ยืนยันรหัสผ่านใหม่" autocomplete="new-password">`,
+    showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#7A3E94',
+    showLoaderOnConfirm: true,
+    preConfirm: () => {
+      const o = document.getElementById('cpOld').value, n = document.getElementById('cpNew').value, n2 = document.getElementById('cpNew2').value;
+      if (!o || !n) { Swal.showValidationMessage('กรุณากรอกให้ครบ'); return false; }
+      if (n.length < 6) { Swal.showValidationMessage('รหัสผ่านใหม่อย่างน้อย 6 ตัวอักษร'); return false; }
+      if (n !== n2) { Swal.showValidationMessage('ยืนยันรหัสผ่านใหม่ไม่ตรงกัน'); return false; }
+      return apiCall('changePassword', [me.username, o, n]).then(res => {
+        if (!res || res.status !== 'success') { Swal.showValidationMessage((res && res.message) || 'เปลี่ยนไม่สำเร็จ'); return false; }
+        return res;
+      }).catch(e => { Swal.showValidationMessage(e.message); return false; });
+    }
+  }).then(r => { if (r.isConfirmed) showToast('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success'); });
+}
+
+// ==================== v3.2.0: แท็บ "อนุมัติแล้ว" เร็วขึ้น ====================
+// เดิมต่อข้อความตารางทีละแถว (innerHTML +=) กับรายการ 1,500+ แถว ทำให้หน้าค้างหลายวินาที/นาที
+// เปลี่ยนเป็นสร้างข้อความทั้งหมดก่อนแล้วใส่ครั้งเดียว + แสดงทีละ 200 แถว (กดดูเพิ่มได้)
+const HISTORY_PAGE = 200;
+let historyShown = HISTORY_PAGE;
+
+function renderApprovedHistory() {
+  const tbody = document.getElementById('historyTableBody');
+  const items = approvedDataCache || [];
+  if (items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i>
+      <p class="mt-3 fw-semibold">ยังไม่มีรายการที่อนุมัติ</p></td></tr>`;
+    return;
+  }
+  const n = Math.min(historyShown, items.length);
+  const html = [];
+  for (let i = 0; i < n; i++) {
+    const item = items[i];
+    const neg = item.isNegative ? '<span class="badge badge-negative ms-1"><i class="bi bi-exclamation-triangle-fill"></i> งบติดลบ</span>' : '';
+    html.push(`<tr class="account-row ${item.isNegative ? 'row-negative-budget' : ''}" onclick="showDetailModal(${i}, 'approved')">
+      <td>${getThaiDateDisplay(item.date)}${neg}</td>
+      <td><small>${escHtml(item.branch)} / ${escHtml(item.dept)}</small></td>
+      <td>${escHtml(item.detail)}</td>
+      <td class="fw-bold ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
+      <td>${escHtml(item.requester)}</td>
+      <td><button class="btn btn-sm btn-outline-primary rounded-pill" onclick="event.stopPropagation(); showDetailModal(${i}, 'approved')">
+        <i class="bi bi-clock-history"></i> ไทม์ไลน์</button></td></tr>`);
+  }
+  if (n < items.length) {
+    html.push(`<tr><td colspan="6" class="text-center py-3">
+      <button class="btn btn-outline-secondary rounded-pill px-4" onclick="historyShown += ${HISTORY_PAGE}; renderApprovedHistory();">
+      แสดงเพิ่ม (${n} จาก ${items.length} รายการ)</button></td></tr>`);
+  }
+  tbody.innerHTML = html.join('');
+}
+
+loadApprovedHistory = function () {
+  historyShown = HISTORY_PAGE;
+  if (approvedDataCache && approvedDataCache.length) renderApprovedHistory(); else toggleLoading(true);
+  google.script.run
+    .withSuccessHandler(items => { approvedDataCache = items || []; renderApprovedHistory(); toggleLoading(false); })
+    .withFailureHandler(onFailure)
+    .getApprovedHistoryItems();
+};
+
+</script>
+
+</body>
+</html>
