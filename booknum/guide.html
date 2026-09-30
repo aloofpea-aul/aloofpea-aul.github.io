@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>คู่มือเริ่มใช้งาน - ระบบออกเลขหนังสือ</title>
+<meta name="theme-color" content="#4b2e83">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --pea:#4b2e83; --pea2:#6b46c1; --soft:#f3effa; --bg:#f6f5f2; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --green:#16a34a; --amber:#b45309; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font-family: 'Sarabun', system-ui, sans-serif; background: var(--bg); color: var(--ink); font-size: 17px; line-height: 1.65; }
+  header { background: var(--pea); color: #fff; padding: calc(14px + env(safe-area-inset-top)) 16px 18px; }
+  header .in { max-width: 860px; margin: 0 auto; }
+  header .top { display: flex; align-items: center; gap: 10px; }
+  header img { width: 46px; height: 46px; border-radius: 12px; }
+  header h1 { margin: 0; font-size: 21px; line-height: 1.25; }
+  header p { margin: 2px 0 0; font-size: 14px; opacity: .85; }
+  .open { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; background: #fff; color: var(--pea); font-weight: 700; text-decoration: none; padding: 11px 20px; border-radius: 999px; font-size: 16px; }
+  nav.jump { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  nav.jump::-webkit-scrollbar { display: none; }
+  nav.jump .in { max-width: 860px; margin: 0 auto; padding: 9px 12px; display: flex; gap: 8px; }
+  nav.jump a { flex: none; text-decoration: none; color: var(--pea); background: var(--soft); font-size: 14px; font-weight: 600; padding: 6px 13px; border-radius: 999px; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px 14px calc(40px + env(safe-area-inset-bottom)); }
+  .quick { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 18px; }
+  .quick h2 { margin: 0 0 10px; font-size: 18px; color: var(--pea); }
+  .quick ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .quick li { display: flex; gap: 12px; align-items: center; font-size: 16px; }
+  .quick li b { color: var(--pea); }
+  .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--pea); color: #fff; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 16px; margin-bottom: 18px; scroll-margin-top: 60px; }
+  section > h2 { margin: 0 0 4px; font-size: 20px; color: var(--pea); display: flex; align-items: center; gap: 10px; }
+  section > h2 .ic { font-size: 24px; }
+  section > p.lead { margin: 0 0 12px; color: var(--muted); font-size: 15px; }
+  .step { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 14px 0; border-top: 1px dashed var(--line); }
+  .step:first-of-type { border-top: 0; }
+  .step .txt h3 { margin: 0 0 4px; font-size: 18px; display: flex; gap: 10px; align-items: center; }
+  .step .txt p { margin: 4px 0; }
+  .shot { justify-self: center; width: 100%; max-width: 270px; border-radius: 26px; border: 7px solid #1f1f1f; overflow: hidden; background: #000; box-shadow: 0 10px 24px rgba(0,0,0,.12); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .tip { background: #ecfdf5; border: 1px solid #bbf7d0; color: #065f46; border-radius: 12px; padding: 10px 12px; font-size: 15px; margin-top: 8px; }
+  .warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 10px 12px; font-size: 15px; margin-top: 8px; }
+  .k { display: inline-block; background: var(--soft); color: var(--pea); font-weight: 700; border-radius: 8px; padding: 0 8px; }
+  .g { display: inline-block; background: var(--green); color: #fff; font-weight: 700; border-radius: 999px; padding: 0 10px; }
+  .os { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .os .box { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .os h3 { margin: 0 0 8px; font-size: 17px; }
+  .os ol { margin: 0; padding-left: 22px; }
+  .os li { margin: 4px 0; }
+  details { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 8px 0; }
+  details summary { font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details summary::after { content: '+'; color: var(--pea); font-size: 20px; line-height: 1; }
+  details[open] summary::after { content: '–'; }
+  details p { margin: 8px 0 0; color: #374151; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; }
+  @media (min-width: 720px) {
+    .step { grid-template-columns: 1fr 250px; align-items: center; gap: 26px; }
+    .step.flip { grid-template-columns: 250px 1fr; }
+    .step.flip .shot { order: -1; }
+    .os { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="in">
+    <div class="top">
+      <img src="icon-192.png" alt="">
+      <div><h1>คู่มือเริ่มใช้งาน<br>ระบบออกเลขหนังสือ</h1><p>กฟส.อ่าวลึก · ใช้ได้ทั้งมือถือ ไอแพด และคอมพิวเตอร์</p></div>
+    </div>
+    <a class="open" href="index.html">เปิดระบบออกเลขหนังสือ →</a>
+  </div>
+</header>
+
+<nav class="jump"><div class="in">
+  <a href="#login">เข้าระบบ</a><a href="#new">ออกเลขใหม่</a><a href="#files">แนบไฟล์</a><a href="#view">ดู / แก้ไข</a><a href="#search">ค้นหา</a><a href="#home">ติดตั้งเป็นแอป</a><a href="#user">เปลี่ยนผู้ใช้</a><a href="#faq">ถามบ่อย</a>
+</div></nav>
+
+<main>
+
+  <div class="quick">
+    <h2>สรุปสั้นที่สุด</h2>
+    <ol>
+      <li><span class="num">1</span><span>กรอก <b>รหัสสำนักงาน</b> (ครั้งแรกครั้งเดียว)</span></li>
+      <li><span class="num">2</span><span>แตะ <b>ชื่อของคุณ</b> → เริ่มใช้งาน</span></li>
+      <li><span class="num">3</span><span>กดปุ่มเขียว <span class="g">+ ออกเลขใหม่</span> → กรอก → <b>บันทึก</b> ได้เลขทันที</span></li>
+    </ol>
+  </div>
+
+  <!-- ========== 1. เข้าระบบ ========== -->
+  <section id="login">
+    <h2><span class="ic">🔑</span>เข้าระบบครั้งแรก</h2>
+    <p class="lead">ทำครั้งเดียวต่อเครื่อง ระบบจำไว้ 90 วัน เปิดครั้งต่อไปใช้ได้ทันที</p>
+
+    <div class="step">
+      <div class="txt">
+        <h3><span class="num">1</span>กรอกรหัสสำนักงาน</h3>
+        <p>พิมพ์รหัสสำนักงาน แล้วกด <span class="k">เข้าใช้งาน</span></p>
+        <div class="tip">ไม่ทราบรหัส ขอได้จากผู้ดูแลระบบของสำนักงาน</div>
+      </div>
+      <div class="shot"><img src="guide/01_code.jpg" alt="หน้ากรอกรหัสสำนักงาน" loading="lazy"></div>
+    </div>
+
+    <div class="step flip">
+      <div class="txt">
+        <h3><span class="num">2</span>แตะชื่อของคุณ</h3>
+        <p>เลือกชื่อ (พิมพ์ค้นหาได้) แล้วกด <span class="k">เริ่มใช้งาน</span></p>
+        <p>จากนี้ระบบจะ <b>ใส่ชื่อผู้บันทึกและแผนกให้เอง</b> ทุกครั้งที่ออกเลข</p>
+      </div>
+      <div class="shot"><img src="guide/02_name.jpg" alt="หน้าเลือกชื่อผู้ใช้" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ========== 2. ออกเลขใหม่ ========== -->
+  <section id="new">
+    <h2><span class="ic">📝</span>ออกเลขหนังสือใหม่</h2>
+    <p class="lead">เลือกหมวดที่แถบด้านบน: ทั่วไป · สัญญา · คำสั่ง · ใบสำคัญ</p>
+
+    <div class="step">
+      <div class="txt">
+        <h3><span class="num">3</span>กดปุ่มเขียว</h3>
+        <p>แตะ <span class="g">+ ออกเลขใหม่</span> มุมขวาล่าง (บนคอมพิวเตอร์ ปุ่มอยู่ข้างช่องค้นหา)</p>
+      </div>
+      <div class="shot"><img src="guide/03_list.jpg" alt="หน้ารายการพร้อมปุ่มออกเลขใหม่" loading="lazy"></div>
+    </div>
+
+    <div class="step flip">
+      <div class="txt">
+        <h3><span class="num">4</span>กรอกข้อมูล แล้วกดบันทึก</h3>
+        <p>เลขที่หนังสือขึ้นให้อัตโนมัติด้านบน กรอกช่องที่มีเครื่องหมาย <b>*</b> ให้ครบ แล้วกด <span class="k">บันทึกข้อมูล</span></p>
+        <div class="tip">ถ้าเปลี่ยน <b>วันที่</b> ไปปีหน้า เลขจะเริ่ม 001 ของปีนั้นให้เอง</div>
+      </div>
+      <div class="shot"><img src="guide/04_form.jpg" alt="ฟอร์มออกเลขใหม่" loading="lazy"></div>
+    </div>
+
+    <div class="step">
+      <div class="txt">
+        <h3><span class="num">5</span>ได้เลขหนังสือทันที</h3>
+        <p>จดเลขที่แสดงไปใช้ได้เลย รายการจะขึ้นเป็นรายการแรกในหน้ารายการ</p>
+        <div class="tip">หลายคนออกเลขพร้อมกันได้ <b>เลขไม่ซ้ำแน่นอน</b> ถ้าเลขที่เห็นมีคนใช้ไปก่อน ระบบจะให้เลขถัดไปและแจ้งบนหน้าจอ</div>
+      </div>
+      <div class="shot"><img src="guide/05_success.jpg" alt="บันทึกสำเร็จ ได้เลขหนังสือ" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ========== 3. แนบไฟล์ ========== -->
+  <section id="files">
+    <h2><span class="ic">📎</span>แนบไฟล์ (สัญญาจ้าง / คำสั่ง)</h2>
+    <p class="lead">หมวดสัญญา: ไฟล์สัญญา + ไฟล์เงินประกัน · หมวดคำสั่ง: เอกสารแนบไม่จำกัดจำนวน</p>
+    <div class="step flip">
+      <div class="txt">
+        <p>แตะกรอบ <span class="k">+ แตะเพื่อแนบไฟล์ / ถ่ายรูป</span> เลือกไฟล์ในเครื่อง หรือถ่ายรูปเอกสารด้วยกล้องได้เลย (เลือกหลายไฟล์พร้อมกันได้)</p>
+        <p>รอให้ชื่อไฟล์ขึ้นเป็น <b style="color:var(--pea2)">ตัวสีม่วง</b> (อัปโหลดเสร็จ) แล้วค่อยกดบันทึก</p>
+        <p>พิมพ์ <b>รายละเอียดสัญญา</b> / <b>รายละเอียดหนังสือ</b> เองได้ตามจริง</p>
+        <div class="warn">ไฟล์ละไม่เกิน 25 MB · รูปจากกล้องมือถือระบบย่อให้อัตโนมัติ<br>ถ้าขึ้น "อัปโหลดไม่สำเร็จ" กด <b>ลองใหม่</b></div>
+      </div>
+      <div class="shot"><img src="guide/07_attach.jpg" alt="แนบไฟล์สัญญา" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ========== 4. ดู / แก้ไข ========== -->
+  <section id="view">
+    <h2><span class="ic">👆</span>ดูรายละเอียด / แก้ไข / เปิดไฟล์</h2>
+    <p class="lead">แตะที่การ์ดรายการใดก็ได้</p>
+    <div class="step">
+      <div class="txt">
+        <p>หน้ารายละเอียดจะเลื่อนขึ้นจากด้านล่าง แสดงข้อมูลครบทุกช่อง</p>
+        <p>กด <span class="k">แก้ไข</span> เพื่อแก้ข้อมูล หรือแตะชื่อไฟล์เพื่อเปิดดูไฟล์แนบ</p>
+        <p>ใบสำคัญจ่ายมีปุ่ม <span class="k">จัดเก็บ</span> และ <span class="k">แจ้งรับเงิน</span> อยู่ในหน้านี้ด้วย</p>
+        <div class="tip">สัญญาจ้างแสดง <b>จำนวนวันที่เหลือ</b> ของสัญญาบนการ์ด (สีส้ม = เหลือไม่ถึง 30 วัน)</div>
+      </div>
+      <div class="shot"><img src="guide/06_detail.jpg" alt="หน้ารายละเอียดรายการ" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ========== 5. ค้นหา ========== -->
+  <section id="search">
+    <h2><span class="ic">🔍</span>ค้นหา</h2>
+    <p class="lead">พิมพ์คำในช่องค้นหา เช่น เลขที่ ชื่อผู้รับจ้าง ชื่องาน หรือชื่อหมู่บ้าน</p>
+    <div class="step flip">
+      <div class="txt">
+        <p>หน้ารายการแสดง 200 รายการล่าสุด แต่การค้นหาจะ <b>ค้นรายการเก่าทั้งหมดให้เอง</b> (พิมพ์ 2 ตัวอักษรขึ้นไป)</p>
+        <p>ลบคำค้นหา เพื่อกลับไปหน้ารายการล่าสุด</p>
+      </div>
+      <div class="shot"><img src="guide/09_search.jpg" alt="ค้นหารายการ" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ========== 6. ติดตั้งเป็นแอป ========== -->
+  <section id="home">
+    <h2><span class="ic">📲</span>ติดตั้งไว้ที่หน้าจอโฮม (เปิดเหมือนแอป)</h2>
+    <p class="lead">ทำครั้งเดียว ต่อไปแตะไอคอนเปิดได้ทันที เต็มจอ ไม่ต้องหาลิงก์</p>
+    <div class="os">
+      <div class="box">
+        <h3>🍎 iPhone / iPad</h3>
+        <ol>
+          <li>เปิดระบบด้วย <b>Safari</b></li>
+          <li>แตะปุ่มแชร์ <b>⬆︎</b> (ด้านล่างหรือมุมขวาบน)</li>
+          <li>เลือก <b>เพิ่มไปยังหน้าจอโฮม</b> → <b>เพิ่ม</b></li>
+        </ol>
+      </div>
+      <div class="box">
+        <h3>🤖 Android</h3>
+        <ol>
+          <li>เปิดระบบด้วย <b>Chrome</b></li>
+          <li>แตะเมนู <b>⋮</b> มุมขวาบน</li>
+          <li>เลือก <b>ติดตั้งแอป</b> หรือ <b>เพิ่มลงในหน้าจอหลัก</b></li>
+        </ol>
+      </div>
+    </div>
+    <div class="tip">ไอคอนจะเป็นรูปเอกสารสีม่วง เขียนว่า "เลข"</div>
+  </section>
+
+  <!-- ========== 7. ผู้ใช้ ========== -->
+  <section id="user">
+    <h2><span class="ic">👤</span>เปลี่ยนผู้ใช้ / ออกจากระบบ</h2>
+    <p class="lead">ใช้เมื่อเครื่องเดียวกันใช้หลายคน</p>
+    <div class="step">
+      <div class="txt">
+        <p>แตะ <b>รูป / ชื่อของคุณ</b> ที่มุมขวาบน → เลือกชื่อใหม่ → <span class="k">เริ่มใช้งาน</span></p>
+        <p>ถ้าจะให้เครื่องนี้ต้องกรอกรหัสใหม่ กด <b style="color:#dc2626">ออกจากระบบเครื่องนี้</b></p>
+        <div class="tip">ปุ่มฟันเฟือง ⚙ (ตั้งค่าระบบ) สำหรับผู้ดูแลเท่านั้น ต้องใช้รหัสผู้ดูแล</div>
+      </div>
+      <div class="shot"><img src="guide/10_user.jpg" alt="เปลี่ยนผู้ใช้" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section id="faq">
+    <h2><span class="ic">💬</span>ถามบ่อย</h2>
+    <details><summary>ทำไมระบบให้กรอกรหัสอีกแล้ว?</summary><p>ครบ 90 วัน, ผู้ดูแลเปลี่ยนรหัสสำนักงาน, หรือใช้เครื่อง/เบราว์เซอร์ใหม่ (เปิดจาก LINE กับเปิดจาก Chrome นับเป็นคนละเบราว์เซอร์) กรอกรหัสใหม่ครั้งเดียวก็ใช้ต่อได้</p></details>
+    <details><summary>ชื่อของฉันไม่อยู่ในรายชื่อ</summary><p>แจ้งผู้ดูแลระบบให้เพิ่มชื่อในหน้าตั้งค่า (รายชื่อผู้บันทึก)</p></details>
+    <details><summary>กดบันทึกแล้วขึ้นว่าเชื่อมต่อไม่สำเร็จ</summary><p>ตรวจอินเทอร์เน็ต แล้วดูในรายการก่อนว่ารายการเข้าไปแล้วหรือยัง ถ้ายังไม่มีค่อยกดบันทึกอีกครั้ง (ข้อมูลในฟอร์มยังอยู่)</p></details>
+    <details><summary>ออกเลขผิด แก้ได้ไหม?</summary><p>แตะรายการ → <b>แก้ไข</b> แก้ได้ทุกช่อง รวมถึงเพิ่ม/เอาไฟล์แนบออก</p></details>
+    <details><summary>ขึ้นปีใหม่ เลขเริ่มใหม่ไหม?</summary><p>เริ่ม 001 ใหม่อัตโนมัติทุกหมวด ตามปีของ "วันที่" ในหนังสือ</p></details>
+    <details><summary>ใครเปิดไฟล์แนบได้บ้าง?</summary><p>ผู้ที่มีลิงก์ไฟล์ ซึ่งลิงก์แสดงเฉพาะในระบบที่ต้องใส่รหัสสำนักงาน ไม่ควรส่งต่อลิงก์ไฟล์ให้คนนอก</p></details>
+    <details><summary>ระบบใช้ไม่ได้ ติดต่อใคร?</summary><p>แจ้งผู้ดูแลระบบของสำนักงาน ระหว่างนี้ใช้ "เวอร์ชันสำรอง (Apps Script)" ที่ลิงก์ท้ายหน้าระบบได้ ข้อมูลเป็นชุดเดียวกัน</p></details>
+  </section>
+
+  <p style="text-align:center;margin:26px 0 8px"><a class="open" style="background:var(--pea);color:#fff" href="index.html">เปิดระบบออกเลขหนังสือ →</a></p>
+  <footer>ระบบออกเลขหนังสือ V4.0 · กฟส.อ่าวลึก</footer>
+</main>
+</body>
+</html>

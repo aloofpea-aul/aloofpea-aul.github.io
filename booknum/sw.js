@@ -1,7 +1,7 @@
 // Service Worker — ระบบออกเลขหนังสือ กฟส.อ่าวลึก
 // ไฟล์หน้าเว็บ: ใช้ของใหม่จากเน็ตก่อน (ได้เวอร์ชันล่าสุดเสมอ) ถ้าไม่มีเน็ตค่อยใช้ที่เก็บไว้
 // ข้อมูลเลขหนังสือ (POST ไป Apps Script) ไม่เก็บแคชเด็ดขาด
-const CACHE_NAME = 'booknum-v4.0';
+const CACHE_NAME = 'booknum-v4.0.1';
 const CORE = ['./', './index.html', './app.css', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
