@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>ระบบตัดงบทำการ v3.4</title>
+  <title>ระบบตัดงบทำการ v3.5</title>
   <meta name="theme-color" content="#7A3E94">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1116,6 +1116,9 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
       padding: 12px; font-weight: 700; width: 100%; }
     .login-card .btn-login:disabled { opacity: .7; }
     #loginErr { color: #c62828; font-size: .88rem; min-height: 1.2em; }
+    .li-new { margin-top: 12px; background: #f5ecf9; border-radius: 12px; padding: 10px 12px; font-size: .85rem; color: #5b2a73; line-height: 1.5; }
+    .li-hello { background: #f5ecf9; color: #5b2a73; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-weight: 700; }
+    .li-hello small { font-weight: 400; color: #6b4b7a; }
     #registerModal { z-index: 3100; }
     .user-chip { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
       color: #fff; border-radius: 999px; padding: 4px 12px 4px 4px; cursor: pointer; max-width: 220px; min-height: 40px; }
@@ -1344,18 +1347,34 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     <div class="logo"><i class="bi bi-wallet2"></i></div>
     <h5 class="text-center fw-bold mb-0" style="color:#7A3E94">ระบบตัดงบทำการ</h5>
     <p class="text-center text-muted small mb-3">กฟส.อ่าวลึก · เข้าสู่ระบบด้วยบัญชีเดิม</p>
+    <div id="liStepLogin">
     <form onsubmit="doUserLogin(event)" autocomplete="on">
       <label class="form-label small fw-semibold mb-1" for="liUser"><i class="bi bi-person-circle"></i> Username</label>
       <input id="liUser" class="form-control mb-2" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required>
       <label class="form-label small fw-semibold mb-1" for="liPass"><i class="bi bi-lock-fill"></i> Password</label>
-      <input id="liPass" type="password" class="form-control mb-2" autocomplete="current-password" required>
+      <input id="liPass" type="password" class="form-control mb-2" autocomplete="current-password" placeholder="ใช้ระบบใหม่ครั้งแรก เว้นว่างได้">
       <div id="loginErr" class="mb-2"></div>
       <button type="submit" id="liBtn" class="btn-login"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
     </form>
+    <div class="li-new"><b><i class="bi bi-stars"></i> ใช้ระบบใหม่ครั้งแรก?</b><br>กรอกแค่ <b>Username</b> (ชื่อผู้ใช้เดิม) แล้วกดเข้าสู่ระบบ ระบบจะให้ตั้งรหัสผ่านใหม่</div>
+    </div>
+    <div id="liStepSetup" style="display:none">
+      <form onsubmit="doSetupPassword(event)" autocomplete="on">
+        <div class="li-hello">สวัสดี คุณ<span id="suName"></span> 👋<br><small>ระบบตัดงบปรับปรุงใหม่ กรุณาตั้งรหัสผ่านใหม่ (ไม่ต้องใช้รหัสเก่า)</small></div>
+        <input id="suUser" autocomplete="username" style="display:none" readonly>
+        <label class="form-label small fw-semibold mb-1" for="suPass"><i class="bi bi-lock-fill"></i> รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)</label>
+        <input id="suPass" type="password" class="form-control mb-2" autocomplete="new-password" required minlength="6">
+        <label class="form-label small fw-semibold mb-1" for="suPass2"><i class="bi bi-lock"></i> ยืนยันรหัสผ่านใหม่</label>
+        <input id="suPass2" type="password" class="form-control mb-2" autocomplete="new-password" required minlength="6">
+        <div id="suErr" class="mb-2" style="color:#c62828;font-size:.88rem;min-height:1.2em"></div>
+        <button type="submit" id="suBtn" class="btn-login"><i class="bi bi-check2-circle"></i> ตั้งรหัสและเข้าใช้งาน</button>
+      </form>
+      <div class="text-center mt-2"><a href="#" onclick="showLoginStep('login'); return false;" class="small" style="color:#7A3E94">← กลับ / ไม่ใช่ฉัน</a></div>
+    </div>
     <div class="text-center mt-3 small">
       ยังไม่มีบัญชี? <a href="#" onclick="showRegisterModal(); return false;" class="fw-semibold" style="color:#d81b60">สมัครสมาชิก</a>
     </div>
-    <div class="text-center mt-2"><small class="text-muted" style="font-size:.72rem">เข้าระบบครั้งเดียว เครื่องนี้จะจำไว้ 30 วัน</small></div>
+    <div class="text-center mt-2"><small class="text-muted" style="font-size:.72rem">เข้าระบบครั้งเดียว เครื่องนี้จะจำไว้ถึงสิ้นไตรมาส (1 ม.ค. / 1 เม.ย. / 1 ก.ค. / 1 ต.ค.)</small></div>
     <div class="text-center mt-2"><a href="guide.html" target="_blank" class="small fw-semibold" style="color:#7A3E94"><i class="bi bi-book"></i> คู่มือการใช้งาน</a></div>
   </div>
 </div>
@@ -1433,7 +1452,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     <div class="av" id="userAv">?</div><div class="nm"><span id="userNm"></span><small id="userRole"></small></div></div></div>
   <h4 class="m-0">
     <i class="bi bi-wallet2"></i> ระบบตัดงบทำการ
-    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.4</small>
+    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.5</small>
   </h4>
   <button class="btn btn-register btn-sm rounded-pill px-4 shadow" id="headerRegisterBtn" style="display:none" onclick="showRegisterModal()">
     <i class="bi bi-person-plus-fill"></i> สมัครสมาชิก
@@ -2208,7 +2227,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
 <footer class="footer">
   <div class="fw-semibold">
     <i class="bi bi-lightning-charge-fill"></i> 
-    ระบบตัดงบทำการ เวอร์ชัน 3.4
+    ระบบตัดงบทำการ เวอร์ชัน 3.5
   </div>
   <div class="small mt-1">
     Budget Management System | Enhanced Analytics & Auto-refresh
@@ -2446,6 +2465,7 @@ function apiCall(fn, args) {
     if (!j.ok) throw new Error(j.error || 'ไม่ทราบสาเหตุ');
     return j.data;
   }).catch(e => {
+    if (window.__unloading) return new Promise(() => {});   // กำลังโหลดหน้าใหม่/ออกจากระบบ ไม่ต้องแจ้งข้อผิดพลาด
     if (e && e.name === 'AbortError') throw new Error('เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง');
     if (e && e.name === 'TypeError') throw new Error('เชื่อมต่อเครือข่ายไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
     throw e;
@@ -2458,6 +2478,8 @@ function setNetStatus() {
   if (!navigator.onLine) { el.textContent = '⚠️ ไม่มีอินเทอร์เน็ต'; el.style.display = 'block'; return; }
   el.style.display = 'none';
 }
+window.addEventListener('pagehide', () => { window.__unloading = true; });
+window.addEventListener('beforeunload', () => { window.__unloading = true; });
 window.addEventListener('online', setNetStatus);
 window.addEventListener('offline', setNetStatus);
 
@@ -2488,6 +2510,7 @@ window.google = { script: { run: new Proxy({}, { get: (_, prop) => makeRunChain(
 function showLoginView(msg) {
   const v = document.getElementById('loginView');
   v.classList.remove('hidden');
+  showLoginStep('login');
   document.getElementById('loginErr').textContent = msg || '';
   const u = document.getElementById('liUser');
   if (me && me.username && !u.value) u.value = me.username;
@@ -2506,20 +2529,61 @@ function doUserLogin(e) {
   const u = document.getElementById('liUser').value.trim();
   const p = document.getElementById('liPass').value;
   const btn = document.getElementById('liBtn'), err = document.getElementById('loginErr');
-  if (!u || !p) { err.textContent = 'กรุณากรอก Username และ Password'; return; }
+  if (!u) { err.textContent = 'กรุณากรอก Username'; return; }
   btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังตรวจสอบ...';
   err.textContent = '';
   apiCall('apiLogin', [u, p]).then(res => {
+    if (res && res.status === 'setup') { showSetupStep(u, res.name); return; }
     if (!res || res.status !== 'success') { err.textContent = (res && res.message) || 'เข้าสู่ระบบไม่สำเร็จ'; return; }
-    const changedUser = !me || me.username !== res.user.username;
-    apiToken = res.token; me = res.user;
-    lsSet(TOKEN_KEY, apiToken); lsSet(USER_KEY, JSON.stringify(me));
-    if (changedUser) lsDel(BOOT_KEY);
-    document.getElementById('liPass').value = '';
-    document.getElementById('loginView').classList.add('hidden');
-    startApp();
+    finishLogin(res);
   }).catch(e2 => { err.textContent = e2.message; })
     .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ'; });
+}
+
+function finishLogin(res) {
+  const changedUser = !me || me.username !== res.user.username;
+  apiToken = res.token; me = res.user;
+  if (res.expires) me.expires = res.expires;
+  lsSet(TOKEN_KEY, apiToken); lsSet(USER_KEY, JSON.stringify(me));
+  if (changedUser) lsDel(BOOT_KEY);
+  document.getElementById('liPass').value = '';
+  showLoginStep('login');
+  document.getElementById('loginView').classList.add('hidden');
+  startApp();
+}
+
+// v3.5: เข้าระบบใหม่ครั้งแรก — ตั้งรหัสผ่านใหม่ (ไม่ต้องใช้รหัสเก่า)
+function showLoginStep(step) {
+  document.getElementById('liStepLogin').style.display = step === 'login' ? '' : 'none';
+  document.getElementById('liStepSetup').style.display = step === 'setup' ? '' : 'none';
+}
+function showSetupStep(username, name) {
+  showLoginStep('setup');
+  document.getElementById('suUser').value = username;
+  document.getElementById('suName').textContent = name || username;
+  document.getElementById('suErr').textContent = '';
+  ['suPass', 'suPass2'].forEach(id => { document.getElementById(id).value = ''; });
+  setTimeout(() => document.getElementById('suPass').focus(), 60);
+}
+function doSetupPassword(e) {
+  e.preventDefault();
+  const u = document.getElementById('suUser').value, p1 = document.getElementById('suPass').value, p2 = document.getElementById('suPass2').value;
+  const err = document.getElementById('suErr'), btn = document.getElementById('suBtn');
+  if (p1.length < 6) { err.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'; return; }
+  if (p1 !== p2) { err.textContent = 'ยืนยันรหัสผ่านไม่ตรงกัน'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...'; err.textContent = '';
+  apiCall('apiSetupPassword', [u, p1]).then(res => {
+    if (!res || res.status !== 'success') { err.textContent = (res && res.message) || 'ตั้งรหัสไม่สำเร็จ'; return; }
+    finishLogin(res);
+    setTimeout(() => Swal.fire({ icon: 'success', title: 'ตั้งรหัสผ่านเรียบร้อย', html: 'ครั้งต่อไปใช้ Username นี้กับรหัสผ่านใหม่<br><small class="text-muted">เครื่องนี้จะจำการเข้าระบบไว้ถึง ' + quarterEndText(res.expires) + '</small>', confirmButtonColor: '#7A3E94' }), 300);
+  }).catch(e2 => { err.textContent = e2.message; })
+    .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle"></i> ตั้งรหัสและเข้าใช้งาน'; });
+}
+function quarterEndText(ts) {
+  if (!ts) return 'สิ้นไตรมาสนี้';
+  const d = new Date(Number(ts));
+  const m = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  return d.getDate() + ' ' + m[d.getMonth()] + ' ' + (d.getFullYear() + 543);
 }
 
 function doUserLogout() {
@@ -4070,7 +4134,7 @@ if (user.status === 'รออนุมัติ') {
   actionButtons = `
     <button class="btn btn-xs btn-outline-primary rounded-pill me-1"
       onclick="maResetPw(${user.rowIndex}, '${user.name}')">
-      <i class="bi bi-key"></i> รีเซ็ตรหัส
+      <i class="bi bi-key"></i> ให้ตั้งรหัสใหม่
     </button>
     <button class="btn btn-xs btn-danger rounded-pill"
       onclick="doDeleteUser(${user.rowIndex}, '${user.name}')">
@@ -5247,7 +5311,7 @@ function showUserMenu() {
   if (!me) return;
   Swal.fire({
     title: escHtml(me.name || me.username),
-    html: `<div class="text-muted mb-3">${escHtml(me.role || '')}${me.dept ? ' · ' + escHtml(me.dept) : ''}<br><small>Username: ${escHtml(me.username)}</small></div>
+    html: `<div class="text-muted mb-3">${escHtml(me.role || '')}${me.dept ? ' · ' + escHtml(me.dept) : ''}<br><small>Username: ${escHtml(me.username)}</small><br><small>เครื่องนี้จำการเข้าระบบถึง ${quarterEndText(me.expires)}</small></div>
       <div class="d-grid gap-2">
         <button class="btn btn-outline-primary rounded-pill" onclick="window.open('guide.html','_blank')"><i class="bi bi-book"></i> คู่มือการใช้งาน</button>
         <button class="btn btn-outline-secondary rounded-pill" onclick="Swal.close(); changeMyPassword();"><i class="bi bi-key"></i> เปลี่ยนรหัสผ่าน</button>
@@ -5873,7 +5937,7 @@ function mMoreMenu() {
     ${it('bi-book', 'คู่มือการใช้งาน', "window.open('guide.html','_blank')")}
     ${it('bi-key', 'เปลี่ยนรหัสผ่าน', 'changeMyPassword()')}
     ${it('bi-box-arrow-right', 'ออกจากระบบ', 'doUserLogout()')}
-    <div class="m-hint">ระบบตัดงบทำการ v3.4 · กฟส.อ่าวลึก</div>`);
+    <div class="m-hint">ระบบตัดงบทำการ v3.5 · กฟส.อ่าวลึก</div>`);
 }
 
 // ---------- ผูกกับของเดิม ----------
@@ -5920,10 +5984,11 @@ function maRenderUsers() {
   const all = (allUsersList || []).filter(u => u.name && u.name.trim());
   const pend = all.filter(u => normalize(u.status) === 'รออนุมัติ');
   const depts = [...new Set(all.map(u => normalize(u.dept)))].sort();
-  const chips = [['all', 'ทั้งหมด', all.length], ['pending', 'รออนุมัติ', pend.length]].concat(depts.map(d => [d, d, all.filter(u => normalize(u.dept) === d).length]));
+  const noSetup = all.filter(u => normalize(u.status) === 'อนุมัติ' && !u.activated);
+  const chips = [['all', 'ทั้งหมด', all.length], ['pending', 'รออนุมัติ', pend.length], ['nosetup', 'ยังไม่ตั้งรหัส', noSetup.length]].concat(depts.map(d => [d, d, all.filter(u => normalize(u.dept) === d).length]));
   document.getElementById('maChips').innerHTML = chips.filter(c => c[2] || c[0] === 'all')
     .map(c => `<button class="m-chip ${MA.f === c[0] ? 'on' : ''}" data-f="${escHtml(c[0])}" onclick="MA.f=this.dataset.f; maRenderUsers()">${escHtml(c[1])}<i>${c[2]}</i></button>`).join('');
-  const list = all.filter(u => (MA.f === 'all' || (MA.f === 'pending' ? normalize(u.status) === 'รออนุมัติ' : normalize(u.dept) === MA.f)) &&
+  const list = all.filter(u => (MA.f === 'all' || (MA.f === 'pending' ? normalize(u.status) === 'รออนุมัติ' : MA.f === 'nosetup' ? (normalize(u.status) === 'อนุมัติ' && !u.activated) : normalize(u.dept) === MA.f)) &&
       (!MA.q || [u.name, u.username, u.dept, u.role].join(' ').toLowerCase().indexOf(MA.q) !== -1))
     .sort((a, b) => (normalize(a.status) === 'รออนุมัติ' ? 0 : 1) - (normalize(b.status) === 'รออนุมัติ' ? 0 : 1));
   el.innerHTML = list.length ? list.map(u => {
@@ -5933,10 +5998,10 @@ function maRenderUsers() {
       <div class="m-c1">${avatar(u.name, 46)}<div class="nm"><b>${escHtml(u.name)}</b><small>${escHtml(p.position || p.department || '-')}</small></div>
         <span class="m-st ${pend ? 'w' : 'ok'}">${pend ? 'รออนุมัติ' : 'ใช้งาน'}</span></div>
       <div class="ma-tags"><span><i class="bi bi-shield-check"></i> ${escHtml(maRoleShort(u.role))}</span><span><i class="bi bi-diagram-3"></i> ${escHtml(u.dept)}</span>
-        <span><i class="bi bi-person-badge"></i> ${escHtml(u.username)}</span></div>
+        <span><i class="bi bi-person-badge"></i> ${escHtml(u.username)}</span>${!pend && !u.activated ? '<span style="background:#fff4e0;color:#b45309"><i class="bi bi-hourglass"></i> ยังไม่ตั้งรหัสใหม่</span>' : ''}</div>
       <div class="ma-acts">${pend
         ? `<button class="g" onclick="doApproveUser(${u.rowIndex})"><i class="bi bi-check-lg"></i> อนุมัติ</button><button class="x" onclick="doDeleteUser(${u.rowIndex}, '${nm}')"><i class="bi bi-x-lg"></i> ปฏิเสธ</button>`
-        : `<button class="n" onclick="maResetPw(${u.rowIndex}, '${nm}')"><i class="bi bi-key"></i> รีเซ็ตรหัส</button><button class="x" onclick="doDeleteUser(${u.rowIndex}, '${nm}')"><i class="bi bi-trash"></i> ลบ</button>`}</div>
+        : `<button class="n" onclick="maResetPw(${u.rowIndex}, '${nm}')"><i class="bi bi-key"></i> ให้ตั้งรหัสใหม่</button><button class="x" onclick="doDeleteUser(${u.rowIndex}, '${nm}')"><i class="bi bi-trash"></i> ลบ</button>`}</div>
     </div>`;
   }).join('') : '<div class="m-empty"><i class="bi bi-people"></i>ไม่พบสมาชิก</div>';
 }
@@ -5956,21 +6021,21 @@ function maRenderBudget() {
     </div>`;
   }).join('') : '<div class="m-empty"><i class="bi bi-search"></i>ไม่พบรายการงบ</div>';
 }
+// v3.5: ลืมรหัส / สงสัยว่ามีคนตั้งรหัสแทน → ให้เจ้าของบัญชีตั้งรหัสใหม่เองในการเข้าครั้งถัดไป
 function maResetPw(rowIndex, name) {
   Swal.fire({
-    title: 'รีเซ็ตรหัสผ่าน', html: `<div class="small text-muted mb-2">${escHtml(name)}</div>
-      <input id="rpN" type="text" class="swal2-input w-100 m-0" placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)" autocomplete="off">`,
-    showCancelButton: true, confirmButtonText: 'ตั้งรหัสใหม่', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#7A3E94', showLoaderOnConfirm: true,
+    title: 'ให้ตั้งรหัสใหม่?', icon: 'question',
+    html: `<b>${escHtml(name)}</b><br><small class="text-muted">รหัสเดิมจะใช้ไม่ได้ทันที และเครื่องที่เข้าระบบไว้จะถูกออกจากระบบ<br>
+      เจ้าของบัญชีกรอกแค่ Username ที่หน้าเข้าระบบ แล้วตั้งรหัสใหม่เอง</small>`,
+    showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#7A3E94', showLoaderOnConfirm: true,
     preConfirm: () => {
-      const n = document.getElementById('rpN').value.trim();
-      if (n.length < 6) { Swal.showValidationMessage('รหัสผ่านใหม่อย่างน้อย 6 ตัวอักษร'); return false; }
       const au = document.getElementById('loginUser').value, ap = document.getElementById('loginPass').value;
-      return apiCall('resetUserPassword', [rowIndex, n, au, ap]).then(res => {
+      return apiCall('adminRequireNewPassword', [rowIndex, au, ap]).then(res => {
         if (!res || res.status !== 'success') { Swal.showValidationMessage((res && res.message) || 'ไม่สำเร็จ'); return false; }
-        return n;
+        return res;
       }).catch(e => { Swal.showValidationMessage(e.message); return false; });
     }
-  }).then(r => { if (r.isConfirmed) Swal.fire({ icon: 'success', title: 'ตั้งรหัสใหม่แล้ว', html: `แจ้งรหัส <b>${escHtml(r.value)}</b> ให้ ${escHtml(name)}<br><small class="text-muted">แนะนำให้เปลี่ยนรหัสเองหลังเข้าระบบ</small>`, confirmButtonColor: '#7A3E94' }); });
+  }).then(r => { if (r.isConfirmed) { showToast(r.value.message, 'success'); refreshAdminData(); } });
 }
 const _origStartApp2 = startApp;
 startApp = function () { _origStartApp2(); maInit(); };
