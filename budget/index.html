@@ -2,10 +2,11 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบตัดงบทำการ v3.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ระบบตัดงบทำการ v3.4</title>
   <meta name="theme-color" content="#7A3E94">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ตัดงบทำการ">
   <link rel="manifest" href="manifest.json">
@@ -1154,7 +1155,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     body.m-mode .m-screen.on { display: block; }
     body.m-mode.m-old .m-screen { display: none !important; }
 
-    .m-top { position: sticky; top: 0; z-index: 50; background: linear-gradient(135deg, #7A3E94, #c2185b); color: #fff;
+    .m-top { position: sticky; top: 0; z-index: 50; background: #7A3E94; color: #fff;   /* v3.4: สีเดียวกับแถบสถานะมือถือ */
       padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; box-shadow: 0 4px 14px rgba(90, 30, 110, .25); }
     .m-me { display: flex; align-items: center; gap: 10px; }
     .m-me .t { flex: 1; min-width: 0; line-height: 1.25; cursor: pointer; }
@@ -1304,6 +1305,35 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
       .m-split .m-sheet-host .m-sheet, .m-split .m-sheet-host .m-dim { display: none; }
       body.m-mode.m-old #oldMain { padding-bottom: 30px; }
     }
+    /* v3.4: หน้าผู้ดูแลบนมือถือ */
+    .ma-wrap { display: none; }
+    body.m-mode #adminUsers .table-responsive, body.m-mode #adminBudget .table-responsive { display: none; }
+    body.m-mode .ma-wrap { display: block; }
+    body.m-mode #adminControls .nav-pills { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; margin-bottom: 12px !important; }
+    body.m-mode #adminControls .nav-pills::-webkit-scrollbar { display: none; }
+    body.m-mode #adminControls .nav-pills .nav-link { white-space: nowrap; margin: 0 !important; padding: 8px 14px !important; }
+    body.m-mode #adminControls > .d-flex h4 { font-size: 1.05rem; }
+    body.m-mode #adminUsers > .card, body.m-mode #adminBudget > .card { padding: 12px !important; background: transparent; box-shadow: none !important; border: 0; }
+    body.m-mode #adminBudget .d-flex { flex-direction: column; gap: 8px; align-items: stretch !important; }
+    body.m-mode #adminBudget #adminBudgetSearch { width: 100% !important; font-size: 16px; padding: 10px 12px; border-radius: 12px; }
+    body.m-mode #adminAuthSection { padding: 24px 18px !important; }
+    .ma-card { background: #fff; border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(90,40,110,.08); }
+    .ma-card.pend { border-left: 4px solid #f59e0b; }
+    .ma-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px; }
+    .ma-tags span { background: #f5ecf9; color: #5b2a73; border-radius: 8px; padding: 3px 8px; font-size: 12px; }
+    .ma-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .ma-acts button { border-radius: 12px; padding: 10px 6px; font-weight: 700; font-size: 14px; border: 1.5px solid transparent; min-height: 44px; }
+    .ma-acts .g { background: #16a34a; color: #fff; } .ma-acts .n { background: #f5ecf9; color: #7A3E94; border-color: #e3d6ea; }
+    .ma-acts .x { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+    .ma-del { border: 0; background: #fef2f2; color: #b91c1c; width: 40px; height: 40px; border-radius: 12px; flex: none; }
+    @media (min-width: 700px) { body.m-mode #maUsers, body.m-mode #maBudget { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } body.m-mode .ma-card { margin: 0; } body.m-mode #maUsers .m-empty, body.m-mode #maBudget .m-empty { grid-column: 1 / -1; } }
+    /* v3.4: แก้ toast แจ้งเตือนเล็ก ๆ ที่ไอคอนใหญ่ผิดขนาด (กฎ .swal2-icon เดิมบังคับ 80px) */
+    .swal2-popup.swal2-toast { padding: 10px 16px !important; width: auto !important; max-width: min(92vw, 380px); border-radius: 14px !important; }
+    .swal2-popup.swal2-toast .swal2-icon { width: 28px !important; height: 28px !important; min-width: 28px; margin: 0 10px 0 0 !important; border-width: 2px !important; zoom: 1; }
+    .swal2-popup.swal2-toast .swal2-icon .swal2-icon-content { font-size: 18px !important; }
+    .swal2-popup.swal2-toast .swal2-title { font-size: 14.5px !important; margin: 0 !important; padding: 0 !important; }
+    body.m-mode .swal2-container.swal2-top-end { top: calc(env(safe-area-inset-top) + 8px) !important; right: 8px !important; left: 8px !important; justify-content: center; }
+    body.m-mode .footer { display: none; }
 
   </style>
 </head><body>
@@ -1403,7 +1433,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     <div class="av" id="userAv">?</div><div class="nm"><span id="userNm"></span><small id="userRole"></small></div></div></div>
   <h4 class="m-0">
     <i class="bi bi-wallet2"></i> ระบบตัดงบทำการ
-    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.3</small>
+    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.4</small>
   </h4>
   <button class="btn btn-register btn-sm rounded-pill px-4 shadow" id="headerRegisterBtn" style="display:none" onclick="showRegisterModal()">
     <i class="bi bi-person-plus-fill"></i> สมัครสมาชิก
@@ -2178,7 +2208,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
 <footer class="footer">
   <div class="fw-semibold">
     <i class="bi bi-lightning-charge-fill"></i> 
-    ระบบตัดงบทำการ เวอร์ชัน 3.1.2
+    ระบบตัดงบทำการ เวอร์ชัน 3.4
   </div>
   <div class="small mt-1">
     Budget Management System | Enhanced Analytics & Auto-refresh
@@ -4038,6 +4068,10 @@ if (user.status === 'รออนุมัติ') {
   actionButtons = '<span class="badge badge-system shadow-sm">SYSTEM</span>';
 } else {
   actionButtons = `
+    <button class="btn btn-xs btn-outline-primary rounded-pill me-1"
+      onclick="maResetPw(${user.rowIndex}, '${user.name}')">
+      <i class="bi bi-key"></i> รีเซ็ตรหัส
+    </button>
     <button class="btn btn-xs btn-danger rounded-pill"
       onclick="doDeleteUser(${user.rowIndex}, '${user.name}')">
       <i class="bi bi-trash"></i> ลบ
@@ -5438,11 +5472,22 @@ function stInfo(status) {
   if (s.indexOf('อนุมัติ') !== -1) return { cls: 'ok', card: 's-ok', label: 'อนุมัติแล้ว', key: 'ok' };
   return { cls: 'x', card: '', label: s, key: 'x' };
 }
+// v3.4: สิทธิ์ตามแผนก (ตรงกับฝั่ง server)
+const APPROVER_DEPT = 'ผบง.';
+function myPerms() {
+  if (!me) return [];
+  const rows = (allUsersList || []).filter(u => String(u.username) === String(me.username) && normalize(u.status) === 'อนุมัติ')
+    .map(u => ({ role: normalize(u.role), dept: normalize(u.dept) }));
+  return rows.length ? rows : [{ role: me.role || '', dept: normalize(me.dept) }];
+}
+const isAdminMe = () => myPerms().some(p => p.role === 'ผู้ดูแลระบบ');
+const canCheck = dept => isAdminMe() || myPerms().some(p => (p.role.indexOf('ผู้บันทึก') !== -1 || p.role === 'ผู้ช่วยดูแลระบบ') && p.dept === normalize(dept));
+const canApprove = () => isAdminMe() || myPerms().some(p => (p.role === 'ผู้ช่วยดูแลระบบ' || p.role.indexOf('ผู้บันทึก') !== -1 || p.role === 'ผู้อนุมัติ') && p.dept === APPROVER_DEPT);
 function myTurn(item) {
   if (!me) return false;
-  const k = stInfo(item.status).key, role = me.role || '';
-  if (k === 'w') return role === 'ผู้ดูแลระบบ' || role === 'ผู้ช่วยดูแลระบบ' || (role.indexOf('ผู้บันทึก') !== -1 && normalize(me.dept) === normalize(item.dept));
-  if (k === 'a') return role === 'ผู้ดูแลระบบ' || role === 'ผู้ช่วยดูแลระบบ';
+  const k = stInfo(item.status).key;
+  if (k === 'w') return canCheck(item.dept);
+  if (k === 'a') return canApprove();
   if (k === 'r') return normName(item.requester) === normName(me.name);
   return false;
 }
@@ -5551,12 +5596,23 @@ function mShowDetail(item, src, host, inPane) {
   const role = st.key === 'w' ? 'ผู้บันทึก(หผ./รักษาการแทน)' : 'ผู้อนุมัติ';
   if (src === 'p') {
     if (st.key === 'w' || st.key === 'a') {
-      acts = `<div class="m-acts"><button class="g" onclick="mAct(${item.rowIndex}, '${role}', 'approve')"><i class="bi bi-check-lg"></i> ${st.key === 'w' ? 'ตรวจสอบผ่าน' : 'อนุมัติ'}</button>
-        <button class="o" onclick="mAct(${item.rowIndex}, '${role}', 'reject')">ตีกลับ</button><button class="x" onclick="mAct(${item.rowIndex}, '${role}', 'delete')">ลบ</button></div>
-        <div class="m-hint">กดแล้วใส่รหัสผ่านเพื่อยืนยันอีกครั้ง · ${st.key === 'w' ? 'ผู้บันทึกของแผนก / ผู้ดูแลระบบ' : 'ผู้ดูแลระบบ / ผู้ช่วยดูแลระบบ'}</div>`;
+      const can = st.key === 'w' ? canCheck(item.dept) : canApprove(), canDel = canCheck(item.dept);
+      const who = st.key === 'w' ? 'หัวหน้า/ผู้ช่วยหัวหน้าแผนก ' + escHtml(item.dept) + ' หรือผู้ดูแลระบบ' : 'หผ.บง. / ชผ.บง. หรือผู้ดูแลระบบ';
+      if (can || canDel) {
+        const btns = [];
+        if (can) btns.push(`<button class="g" onclick="mAct(${item.rowIndex}, '${role}', 'approve')"><i class="bi bi-check-lg"></i> ${st.key === 'w' ? 'ตรวจสอบผ่าน' : 'อนุมัติ'}</button>`,
+                           `<button class="o" onclick="mAct(${item.rowIndex}, '${role}', 'reject')">ตีกลับ</button>`);
+        if (canDel) btns.push(`<button class="x" onclick="mAct(${item.rowIndex}, '${role}', 'delete')">ลบ</button>`);
+        const cols = can && canDel ? '' : (can ? ' style="grid-template-columns:2fr 1fr"' : ' style="grid-template-columns:1fr"');
+        acts = `<div class="m-acts"${cols}>${btns.join('')}</div><div class="m-hint">กดแล้วใส่รหัสผ่านยืนยันอีกครั้ง</div>`;
+      } else {
+        acts = `<div class="m-hint" style="font-size:13px;background:#f7f3fa;border-radius:12px;padding:10px"><i class="bi bi-hourglass-split"></i> รอ ${who} ดำเนินการ</div>`;
+      }
     } else if (st.key === 'r') {
-      acts = `<div class="m-acts two"><button class="p" onclick="mEditRejected(${item.rowIndex})"><i class="bi bi-pencil-square"></i> แก้ไขแล้วส่งใหม่</button>
-        <button class="x" onclick="mAct(${item.rowIndex}, 'ผู้บันทึก(หผ./รักษาการแทน)', 'delete')">ลบ</button></div>`;
+      acts = canCheck(item.dept)
+        ? `<div class="m-acts two"><button class="p" onclick="mEditRejected(${item.rowIndex})"><i class="bi bi-pencil-square"></i> แก้ไขแล้วส่งใหม่</button>
+           <button class="x" onclick="mAct(${item.rowIndex}, 'ผู้บันทึก(หผ./รักษาการแทน)', 'delete')">ลบ</button></div>`
+        : `<div class="m-acts two" style="grid-template-columns:1fr"><button class="p" onclick="mEditRejected(${item.rowIndex})"><i class="bi bi-pencil-square"></i> แก้ไขแล้วส่งใหม่</button></div>`;
     }
   }
   host.innerHTML = (inPane ? '' : '<div class="m-grab"></div><button class="m-x" onclick="mCloseSheet()"><i class="bi bi-x-lg"></i></button>') + `
@@ -5817,7 +5873,7 @@ function mMoreMenu() {
     ${it('bi-book', 'คู่มือการใช้งาน', "window.open('guide.html','_blank')")}
     ${it('bi-key', 'เปลี่ยนรหัสผ่าน', 'changeMyPassword()')}
     ${it('bi-box-arrow-right', 'ออกจากระบบ', 'doUserLogout()')}
-    <div class="m-hint">ระบบตัดงบทำการ v3.3 · กฟส.อ่าวลึก</div>`);
+    <div class="m-hint">ระบบตัดงบทำการ v3.4 · กฟส.อ่าวลึก</div>`);
 }
 
 // ---------- ผูกกับของเดิม ----------
@@ -5833,6 +5889,91 @@ startApp = function () {
   mApplyMode();
   loadPeople(false);
 };
+
+// ==================== v3.4: หน้าผู้ดูแลบนมือถือ (การ์ดแทนตาราง) ====================
+const MA = { q: '', f: 'all', bq: '' };
+function maInit() {
+  const u = document.querySelector('#adminUsers .table-responsive');
+  if (u && !document.getElementById('maUsers')) {
+    u.insertAdjacentHTML('afterend', `<div class="ma-wrap"><div class="m-search" style="margin:0 0 8px"><i class="bi bi-search"></i>
+      <input id="maQ" type="search" placeholder="ค้นหาชื่อ / Username / แผนก" oninput="MA.q=this.value.trim().toLowerCase(); maRenderUsers()"></div>
+      <div class="m-chips" id="maChips" style="padding:0 0 8px"></div><div id="maUsers"></div></div>`);
+  }
+  const b = document.querySelector('#adminBudget .table-responsive');
+  if (b && !document.getElementById('maBudget')) {
+    b.insertAdjacentHTML('afterend', '<div class="ma-wrap"><div id="maBudget"></div></div>');
+    const q = document.getElementById('adminBudgetSearch');
+    if (q) q.addEventListener('input', () => { MA.bq = q.value.trim().toLowerCase(); maRenderBudget(); });
+  }
+  const body = document.getElementById('allUsersBody');
+  if (body && !body._maObs) {
+    body._maObs = new MutationObserver(() => { maRenderUsers(); maRenderBudget(); });
+    body._maObs.observe(body, { childList: true });
+  }
+}
+function maRoleShort(r) {
+  r = normalize(r);
+  return r.indexOf('ผู้บันทึก') !== -1 ? 'ผู้ตรวจสอบ (หผ./ชผ.)' : r;
+}
+function maRenderUsers() {
+  const el = document.getElementById('maUsers'); if (!el) return;
+  const all = (allUsersList || []).filter(u => u.name && u.name.trim());
+  const pend = all.filter(u => normalize(u.status) === 'รออนุมัติ');
+  const depts = [...new Set(all.map(u => normalize(u.dept)))].sort();
+  const chips = [['all', 'ทั้งหมด', all.length], ['pending', 'รออนุมัติ', pend.length]].concat(depts.map(d => [d, d, all.filter(u => normalize(u.dept) === d).length]));
+  document.getElementById('maChips').innerHTML = chips.filter(c => c[2] || c[0] === 'all')
+    .map(c => `<button class="m-chip ${MA.f === c[0] ? 'on' : ''}" data-f="${escHtml(c[0])}" onclick="MA.f=this.dataset.f; maRenderUsers()">${escHtml(c[1])}<i>${c[2]}</i></button>`).join('');
+  const list = all.filter(u => (MA.f === 'all' || (MA.f === 'pending' ? normalize(u.status) === 'รออนุมัติ' : normalize(u.dept) === MA.f)) &&
+      (!MA.q || [u.name, u.username, u.dept, u.role].join(' ').toLowerCase().indexOf(MA.q) !== -1))
+    .sort((a, b) => (normalize(a.status) === 'รออนุมัติ' ? 0 : 1) - (normalize(b.status) === 'รออนุมัติ' ? 0 : 1));
+  el.innerHTML = list.length ? list.map(u => {
+    const p = person(u.name), pend = normalize(u.status) === 'รออนุมัติ';
+    const nm = escHtml(u.name).replace(/'/g, '&#39;');
+    return `<div class="ma-card ${pend ? 'pend' : ''}">
+      <div class="m-c1">${avatar(u.name, 46)}<div class="nm"><b>${escHtml(u.name)}</b><small>${escHtml(p.position || p.department || '-')}</small></div>
+        <span class="m-st ${pend ? 'w' : 'ok'}">${pend ? 'รออนุมัติ' : 'ใช้งาน'}</span></div>
+      <div class="ma-tags"><span><i class="bi bi-shield-check"></i> ${escHtml(maRoleShort(u.role))}</span><span><i class="bi bi-diagram-3"></i> ${escHtml(u.dept)}</span>
+        <span><i class="bi bi-person-badge"></i> ${escHtml(u.username)}</span></div>
+      <div class="ma-acts">${pend
+        ? `<button class="g" onclick="doApproveUser(${u.rowIndex})"><i class="bi bi-check-lg"></i> อนุมัติ</button><button class="x" onclick="doDeleteUser(${u.rowIndex}, '${nm}')"><i class="bi bi-x-lg"></i> ปฏิเสธ</button>`
+        : `<button class="n" onclick="maResetPw(${u.rowIndex}, '${nm}')"><i class="bi bi-key"></i> รีเซ็ตรหัส</button><button class="x" onclick="doDeleteUser(${u.rowIndex}, '${nm}')"><i class="bi bi-trash"></i> ลบ</button>`}</div>
+    </div>`;
+  }).join('') : '<div class="m-empty"><i class="bi bi-people"></i>ไม่พบสมาชิก</div>';
+}
+function maRenderBudget() {
+  const el = document.getElementById('maBudget'); if (!el) return;
+  const q = MA.bq;
+  const list = (allBudgetInfo || []).filter(b => !q || [b.code, b.name, b.dept, b.branch].join(' ').toLowerCase().indexOf(q) !== -1);
+  el.innerHTML = list.length ? list.map(b => {
+    const inf = localBudgetInfo(b.code, b.branch, b.dept, b.yearlyBudget);
+    const pct = b.yearlyBudget > 0 ? Math.min(100, inf.used / b.yearlyBudget * 100) : 0;
+    return `<div class="ma-card">
+      <div class="m-c1"><div class="nm"><b>${escHtml(b.code)} · ${escHtml(b.name)}</b><small>${escHtml(b.branch)} · ${escHtml(b.dept)}</small></div>
+        <button class="ma-del" title="ลบรายการงบ" onclick="doDeleteBudget(${b.rowIndex})"><i class="bi bi-trash"></i></button></div>
+      <div class="m-bar"><i class="${pct >= 100 ? 'over' : ''}" style="width:${pct}%"></i></div>
+      <div class="m-nums"><div>งบต่อปี<b>${fNum(b.yearlyBudget)}</b></div><div>ใช้ไปแล้ว<b>${fNum(inf.used)}</b></div>
+        <div style="text-align:right">คงเหลือทั้งปี<b style="color:${inf.remainingYear < 0 ? '#b91c1c' : '#15803d'}">${fNum(inf.remainingYear)}</b></div></div>
+    </div>`;
+  }).join('') : '<div class="m-empty"><i class="bi bi-search"></i>ไม่พบรายการงบ</div>';
+}
+function maResetPw(rowIndex, name) {
+  Swal.fire({
+    title: 'รีเซ็ตรหัสผ่าน', html: `<div class="small text-muted mb-2">${escHtml(name)}</div>
+      <input id="rpN" type="text" class="swal2-input w-100 m-0" placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)" autocomplete="off">`,
+    showCancelButton: true, confirmButtonText: 'ตั้งรหัสใหม่', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#7A3E94', showLoaderOnConfirm: true,
+    preConfirm: () => {
+      const n = document.getElementById('rpN').value.trim();
+      if (n.length < 6) { Swal.showValidationMessage('รหัสผ่านใหม่อย่างน้อย 6 ตัวอักษร'); return false; }
+      const au = document.getElementById('loginUser').value, ap = document.getElementById('loginPass').value;
+      return apiCall('resetUserPassword', [rowIndex, n, au, ap]).then(res => {
+        if (!res || res.status !== 'success') { Swal.showValidationMessage((res && res.message) || 'ไม่สำเร็จ'); return false; }
+        return n;
+      }).catch(e => { Swal.showValidationMessage(e.message); return false; });
+    }
+  }).then(r => { if (r.isConfirmed) Swal.fire({ icon: 'success', title: 'ตั้งรหัสใหม่แล้ว', html: `แจ้งรหัส <b>${escHtml(r.value)}</b> ให้ ${escHtml(name)}<br><small class="text-muted">แนะนำให้เปลี่ยนรหัสเองหลังเข้าระบบ</small>`, confirmButtonColor: '#7A3E94' }); });
+}
+const _origStartApp2 = startApp;
+startApp = function () { _origStartApp2(); maInit(); };
 
 </script>
 
