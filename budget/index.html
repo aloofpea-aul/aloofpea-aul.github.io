@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>ระบบตัดงบทำการ v3.5</title>
+  <title>ระบบตัดงบทำการ v3.6</title>
   <meta name="theme-color" content="#7A3E94">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1338,6 +1338,23 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     body.m-mode .swal2-container.swal2-top-end { top: calc(env(safe-area-inset-top) + 8px) !important; right: 8px !important; left: 8px !important; justify-content: center; }
     body.m-mode .footer { display: none; }
 
+    /* v3.6: สลับโหมด / คำขอถึงผู้ดูแล */
+    .m-modesw { display: flex; gap: 4px; background: rgba(255,255,255,.16); border-radius: 12px; padding: 3px; margin-top: 10px; }
+    .m-modesw button { flex: 1; border: 0; background: transparent; color: #fff; border-radius: 9px; padding: 8px 6px; font-size: 13px; font-weight: 600; min-height: 38px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-modesw button.on { background: #fff; color: #7A3E94; }
+    .m-modesw button.on.adm { background: #f59e0b; color: #fff; }
+    .m-modeban { background: #fff4e0; color: #9a3412; border-bottom: 1px solid #fdba74; font-size: 12.5px; padding: 8px 14px; font-weight: 600; }
+    .m-req { background: #fff7ed; border: 1.5px solid #fdba74; color: #7c2d12; border-radius: 12px; padding: 10px 12px; font-size: 13px; margin: 4px 0 10px; line-height: 1.5; }
+    .m-acts .b { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
+    .d-modewrap { margin-bottom: 12px; }
+    .d-modewrap .m-modesw { background: #7A3E94; max-width: 480px; margin: 0 0 8px; }
+    .d-modewrap .m-modeban { border: 1px solid #fdba74; border-radius: 12px; }
+    .d-reqbar { background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; color: #7c2d12; }
+    .d-reqit { display: block; width: 100%; text-align: left; border: 0; border-top: 1px dashed #fdba74; background: transparent; padding: 8px 4px; margin-top: 6px; font-size: 13.5px; color: #333; }
+    .d-reqit:hover { background: #ffedd5; }
+    .d-reqit span { background: #c2410c; color: #fff; border-radius: 6px; padding: 1px 7px; font-size: 12px; margin-right: 6px; }
+    body.m-mode .d-modewrap { display: none; }
+
   </style>
 </head><body>
 
@@ -1388,8 +1405,10 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
       <div class="t" onclick="showUserMenu()"><b id="mMeName"></b><small id="mMePos"></small></div>
       <button class="m-ibtn" id="mRefresh" onclick="mRefresh()" title="โหลดข้อมูลใหม่"><i class="bi bi-arrow-clockwise"></i></button>
     </div>
+    <div id="mModeSw"></div>
     <div class="m-title" id="mTitle">รอตรวจสอบ</div>
   </div>
+  <div id="mModeBanner" class="m-modeban" style="display:none"></div>
 
   <!-- รอตรวจสอบ -->
   <div class="m-screen" id="mPending">
@@ -1452,7 +1471,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     <div class="av" id="userAv">?</div><div class="nm"><span id="userNm"></span><small id="userRole"></small></div></div></div>
   <h4 class="m-0">
     <i class="bi bi-wallet2"></i> ระบบตัดงบทำการ
-    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.5</small>
+    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.6</small>
   </h4>
   <button class="btn btn-register btn-sm rounded-pill px-4 shadow" id="headerRegisterBtn" style="display:none" onclick="showRegisterModal()">
     <i class="bi bi-person-plus-fill"></i> สมัครสมาชิก
@@ -2227,7 +2246,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
 <footer class="footer">
   <div class="fw-semibold">
     <i class="bi bi-lightning-charge-fill"></i> 
-    ระบบตัดงบทำการ เวอร์ชัน 3.5
+    ระบบตัดงบทำการ เวอร์ชัน 3.6
   </div>
   <div class="small mt-1">
     Budget Management System | Enhanced Analytics & Auto-refresh
@@ -5466,7 +5485,7 @@ function personCell(name) {
 }
 
 // ==================== v3.3: โหมดมือถือ / ไอแพด ====================
-const M = { screen: 'pending', filter: 'all', sel: null, histSel: null, histShown: 60, histQ: '', histLoaded: false, lastLoad: 0,
+const M = { mode: 'dept', requests: [], screen: 'pending', filter: 'all', sel: null, histSel: null, histShown: 60, histQ: '', histLoaded: false, lastLoad: 0,
             f: { branch: '', dept: '', code: '', amount: '', detail: '', requester: '', editRow: null, editReason: '' } };
 const MQ_MOBILE = window.matchMedia('(max-width: 1024px), ((pointer: coarse) and (max-width: 1400px))');
 const MQ_SPLIT = window.matchMedia('(min-width: 900px)');
@@ -5538,11 +5557,16 @@ function stInfo(status) {
 }
 // v3.4: สิทธิ์ตามแผนก (ตรงกับฝั่ง server)
 const APPROVER_DEPT = 'ผบง.';
-function myPerms() {
+function realPerms() {
   if (!me) return [];
   const rows = (allUsersList || []).filter(u => String(u.username) === String(me.username) && normalize(u.status) === 'อนุมัติ')
     .map(u => ({ role: normalize(u.role), dept: normalize(u.dept) }));
   return rows.length ? rows : [{ role: me.role || '', dept: normalize(me.dept) }];
+}
+// v3.6 โหมดหัวหน้าแผนก (ค่าเริ่มต้นทุกครั้งที่เปิดแอป): สิทธิ์ผู้ดูแลระบบนับเป็นหัวหน้าแผนกของแผนกตัวเอง
+const hasAdminRole = () => realPerms().some(p => p.role === 'ผู้ดูแลระบบ');
+function myPerms() {
+  return realPerms().map(p => (M.mode !== 'admin' && p.role === 'ผู้ดูแลระบบ') ? { role: 'ผู้บันทึก(หผ./รักษาการแทน)', dept: p.dept } : p);
 }
 const isAdminMe = () => myPerms().some(p => p.role === 'ผู้ดูแลระบบ');
 const canCheck = dept => isAdminMe() || myPerms().some(p => (p.role.indexOf('ผู้บันทึก') !== -1 || p.role === 'ผู้ช่วยดูแลระบบ') && p.dept === normalize(dept));
@@ -5578,7 +5602,7 @@ function mCard(item, src, i, selected) {
     <div class="m-det">${escHtml(item.detail)}</div>
     <div class="m-acc">${escHtml(item.accountCode)}${an ? ' · ' + escHtml(an) : ''}</div>
     <div class="m-c3"><span><i class="bi bi-clock"></i> ${shortDate(item.date)}</span>
-      <span><span class="m-st ${st.cls}">${escHtml(st.label)}</span>${item.isNegative ? '<span class="m-neg">งบติดลบ</span>' : ''}${src === 'p' && myTurn(item) ? '<span class="m-turn">ถึงคิวคุณ</span>' : ''}</span></div>
+      <span><span class="m-st ${st.cls}">${escHtml(st.label)}</span>${item.isNegative ? '<span class="m-neg">งบติดลบ</span>' : ''}${src === 'p' && myTurn(item) ? '<span class="m-turn">ถึงคิวคุณ</span>' : ''}${item.request ? '<span class="m-neg" style="background:#fff7ed;color:#c2410c">📨 มีคำขอ</span>' : ''}</span></div>
   </div>`;
 }
 
@@ -5591,8 +5615,16 @@ function mRenderPending() {
   const cnt = { all: all.length, mine: 0, w: 0, a: 0, r: 0 };
   all.forEach(x => { const k = stInfo(x.it.status).key; if (cnt[k] !== undefined) cnt[k]++; if (myTurn(x.it)) cnt.mine++; });
   const chips = [['all', 'ทั้งหมด'], ['mine', 'ถึงคิวฉัน'], ['w', 'รอผู้บันทึก'], ['a', 'รออนุมัติ'], ['r', 'ตีกลับ']];
+  if (isAdminMe()) { chips.push(['req', '📨 คำขอจากบัญชี']); cnt.req = (M.requests || []).length; }
   document.getElementById('mChips').innerHTML = chips.filter(c => c[0] === 'all' || c[0] === M.filter || cnt[c[0]])
     .map(c => `<button class="m-chip ${M.filter === c[0] ? 'on' : ''}" onclick="M.filter='${c[0]}'; mRenderPending()">${c[1]}<i>${cnt[c[0]]}</i></button>`).join('');
+  if (M.filter === 'req') {
+    document.getElementById('mPendList').innerHTML = (M.requests || []).length ? M.requests.map((it, i) => mCard(it, 'q', i, false)).join('')
+      : '<div class="m-empty"><i class="bi bi-inbox"></i>ไม่มีคำขอค้าง</div>';
+    if (isSplit()) document.getElementById('mPendPane').innerHTML = '<div class="m-empty"><i class="bi bi-envelope-paper"></i>แตะคำขอเพื่อดูรายละเอียด</div>';
+    const bd0 = document.getElementById('mBdPend'); bd0.textContent = all.length; bd0.style.display = all.length ? 'inline-block' : 'none';
+    return;
+  }
   const list = all.filter(x => M.filter === 'all' || (M.filter === 'mine' ? myTurn(x.it) : stInfo(x.it.status).key === M.filter));
   document.getElementById('mPendList').innerHTML = list.length
     ? list.map(x => mCard(x.it, 'p', x.i, isSplit() && M.sel === x.it.rowIndex)).join('')
@@ -5633,12 +5665,16 @@ function mRenderHistory() {
 
 // ---------- รายละเอียด ----------
 function mOpen(src, i) {
-  const item = (src === 'p' ? pendingDataCache : approvedDataCache)[i];
+  const item = (src === 'p' ? pendingDataCache : src === 'q' ? M.requests : approvedDataCache)[i];
   if (!item) return;
-  if (isSplit()) {
+  if (src === 'q') { mShowSheet(item, 'h'); return; }
+  if (isM() && isSplit()) {
     if (src === 'p') { M.sel = item.rowIndex; mRenderPending(); } else { M.histSel = item.rowIndex; mRenderHistory(); }
     return;
   }
+  mShowSheet(item, src);
+}
+function mShowSheet(item, src) {
   const sh = document.getElementById('mSheet');
   mShowDetail(item, src, sh, false);
   document.getElementById('mDim').classList.add('on');
@@ -5651,7 +5687,7 @@ function mCloseSheet() {
 
 const _tlCache = {};
 function mShowDetail(item, src, host, inPane) {
-  const sig = item.rowIndex + '|' + item.status + '|' + peopleVer;
+  const sig = item.rowIndex + '|' + item.status + '|' + peopleVer + '|' + M.mode + '|' + JSON.stringify(item.request || '');
   if (host.dataset.sig === sig && host.innerHTML) return;
   host.dataset.sig = sig; host.dataset.row = item.rowIndex;
   const st = stInfo(item.status), p = person(item.requester), an = accName(item);
@@ -5668,7 +5704,7 @@ function mShowDetail(item, src, host, inPane) {
                            `<button class="o" onclick="mAct(${item.rowIndex}, '${role}', 'reject')">ตีกลับ</button>`);
         if (canDel) btns.push(`<button class="x" onclick="mAct(${item.rowIndex}, '${role}', 'delete')">ลบ</button>`);
         const cols = can && canDel ? '' : (can ? ' style="grid-template-columns:2fr 1fr"' : ' style="grid-template-columns:1fr"');
-        acts = `<div class="m-acts"${cols}>${btns.join('')}</div><div class="m-hint">กดแล้วใส่รหัสผ่านยืนยันอีกครั้ง</div>`;
+        acts = `<div class="m-acts"${cols}>${btns.join('')}</div><div class="m-hint">กดแล้วยืนยันอีกครั้ง · ดำเนินการในชื่อ ${escHtml(me ? me.name : '')}${M.mode === 'admin' ? ' (โหมดผู้ดูแลระบบ)' : ''}</div>`;
       } else {
         acts = `<div class="m-hint" style="font-size:13px;background:#f7f3fa;border-radius:12px;padding:10px"><i class="bi bi-hourglass-split"></i> รอ ${who} ดำเนินการ</div>`;
       }
@@ -5678,6 +5714,8 @@ function mShowDetail(item, src, host, inPane) {
            <button class="x" onclick="mAct(${item.rowIndex}, 'ผู้บันทึก(หผ./รักษาการแทน)', 'delete')">ลบ</button></div>`
         : `<div class="m-acts two" style="grid-template-columns:1fr"><button class="p" onclick="mEditRejected(${item.rowIndex})"><i class="bi bi-pencil-square"></i> แก้ไขแล้วส่งใหม่</button></div>`;
     }
+  } else if (st.key === 'ok') {
+    acts = mApprovedActs(item);
   }
   host.innerHTML = (inPane ? '' : '<div class="m-grab"></div><button class="m-x" onclick="mCloseSheet()"><i class="bi bi-x-lg"></i></button>') + `
     <div class="m-c1">${avatar(item.requester, inPane ? 60 : 52)}<div class="nm"><b style="font-size:${inPane ? 19 : 16}px">${escHtml(item.requester || '-')}</b><small>${escHtml(sub)}</small></div>
@@ -5710,7 +5748,7 @@ function mTimelineHtml(log, item) {
   const lines = String(log || '').split('\n').map(s => s.trim()).filter(Boolean)
     .filter(s => s !== 'ยังไม่มีข้อมูล Timeline' && s.indexOf('rowIndex') === -1);
   const out = lines.map(line => {
-    const m = line.match(/^(.*?)โดย(ผู้บันทึก|ผู้อนุมัติ)?:?\s*(.+?)\s*\((.+?)\)(.*)$/);
+    const m = line.match(/^(.*?)โดย(ผู้บันทึก|ผู้อนุมัติ|ผู้ดูแลระบบ)?:?\s*(.+?)\s*\((.+?)\)(.*)$/);
     let act = line, who = '', when = '', rest = '';
     if (m) {
       act = m[1].replace(/^[^฀-๿]+/, '').trim() + (m[2] ? ' (' + m[2] + ')' : '');
@@ -5737,27 +5775,27 @@ function mTimelineHtml(log, item) {
 
 // ---------- อนุมัติ / ตีกลับ / ลบ ----------
 function mAct(rowIndex, role, fn) {
-  const label = { approve: role.indexOf('ผู้บันทึก') !== -1 ? 'ตรวจสอบผ่าน' : 'อนุมัติ', reject: 'ตีกลับ', delete: 'ลบรายการ' }[fn];
-  const color = { approve: '#16a34a', reject: '#ea580c', delete: '#dc2626' }[fn];
+  // v3.6: ไม่ต้องใส่รหัสซ้ำ — ใช้บัญชีที่เข้าระบบอยู่ (server ตรวจสิทธิ์ตามโหมดอีกครั้ง)
+  const label = { approve: role.indexOf('ผู้บันทึก') !== -1 ? 'ตรวจสอบผ่าน' : 'อนุมัติ', reject: 'ตีกลับ', delete: 'ลบรายการ', return: 'ส่งกลับให้แก้ไข' }[fn];
+  const color = { approve: '#16a34a', reject: '#ea580c', delete: '#dc2626', return: '#1d4ed8' }[fn];
+  const icon = { approve: 'success', reject: 'warning', delete: 'warning', return: 'question' }[fn];
+  const it = (pendingDataCache || []).concat(approvedDataCache || [], M.requests || []).find(x => x.rowIndex === rowIndex) || {};
+  const needReason = fn === 'reject' || fn === 'return';
   mCloseSheet();
   Swal.fire({
-    title: label,
-    html: `<div class="text-start">
-      <label class="small fw-semibold mb-1">Username</label>
-      <input id="aU" class="swal2-input w-100 m-0 mb-2" autocomplete="username" autocapitalize="off" value="${escHtml(me ? me.username : '')}">
-      <label class="small fw-semibold mb-1">Password (ยืนยันตัวตน)</label>
-      <input id="aP" type="password" class="swal2-input w-100 m-0 mb-2" autocomplete="current-password">
-      ${fn === 'reject' ? '<label class="small fw-semibold mb-1">เหตุผลที่ตีกลับ <span class="text-danger">*</span></label><textarea id="aR" class="swal2-textarea w-100 m-0" rows="2" placeholder="เช่น ยอดเงินไม่ตรงใบสั่ง"></textarea>' : ''}
-      ${fn === 'delete' ? '<div class="small text-danger mt-1">รายการจะถูกยกเลิก และแจ้งเตือนทาง LINE</div>' : ''}</div>`,
-    showCancelButton: true, confirmButtonText: label, cancelButtonText: 'ยกเลิก', confirmButtonColor: color, focusConfirm: false,
-    didOpen: () => setTimeout(() => document.getElementById(me ? 'aP' : 'aU').focus(), 80),
+    title: label + '?', icon: icon,
+    html: `<div class="small">${escHtml(it.detail || '')}<br><b style="color:#7A3E94">${it.amount !== undefined ? fNum(it.amount) + ' บาท' : ''}</b>${it.requester ? ' · ' + escHtml(it.requester) : ''}</div>
+      ${needReason ? `<textarea id="aR" class="swal2-textarea w-100 m-0 mt-2" rows="2" placeholder="เหตุผล (จำเป็น) เช่น ยอดเงินไม่ตรงใบสั่ง"></textarea>` : ''}
+      ${fn === 'delete' && stInfo(it.status).key === 'ok' ? '<div class="small text-danger mt-2">รายการที่อนุมัติแล้วจะถูกยกเลิก และคืนงบ</div>' : ''}
+      ${fn === 'return' ? '<div class="small text-muted mt-2">รายการจะกลับเป็น “ตีกลับ” (คืนงบชั่วคราว) ผู้เสนอแก้ไขแล้วส่งตรวจ-อนุมัติใหม่</div>' : ''}
+      <div class="small text-muted mt-2">ดำเนินการในชื่อ <b>${escHtml(me ? me.name : '')}</b>${M.mode === 'admin' ? ' · <span style="color:#b45309">โหมดผู้ดูแลระบบ</span>' : ''}</div>`,
+    showCancelButton: true, confirmButtonText: label, cancelButtonText: 'ยกเลิก', confirmButtonColor: color, focusConfirm: !needReason, reverseButtons: true,
+    didOpen: () => { if (needReason) setTimeout(() => document.getElementById('aR').focus(), 80); },
     preConfirm: () => {
-      const u = document.getElementById('aU').value.trim(), p = document.getElementById('aP').value;
-      const r = fn === 'reject' ? document.getElementById('aR').value.trim() : '';
-      if (!u || !p) { Swal.showValidationMessage('กรุณากรอก Username และ Password'); return false; }
-      if (fn === 'reject' && !r) { Swal.showValidationMessage('กรุณาระบุเหตุผลที่ตีกลับ'); return false; }
+      const r = needReason ? document.getElementById('aR').value.trim() : '';
+      if (needReason && !r) { Swal.showValidationMessage('กรุณาระบุเหตุผล'); return false; }
       Swal.showLoading();
-      return apiCall('approveTransaction', [rowIndex, u, p, role, fn, r]).then(res => {
+      return apiCall('approveByToken', [rowIndex, role, fn, r, M.mode]).then(res => {
         if (!res || res.status !== 'success') { Swal.hideLoading(); Swal.showValidationMessage((res && res.message) || 'ไม่สำเร็จ'); return false; }
         return res;
       }).catch(e => { Swal.hideLoading(); Swal.showValidationMessage(e.message); return false; });
@@ -5765,11 +5803,84 @@ function mAct(rowIndex, role, fn) {
   }).then(r => {
     if (!r.isConfirmed) return;
     showToast(label + 'เรียบร้อยแล้ว', 'success');
-    Object.keys(_tlCache).forEach(k => { if (k.indexOf(rowIndex + '|') === 0) delete _tlCache[k]; });
+    mAfterChange(rowIndex);
     if (fn !== 'approve' || role === 'ผู้อนุมัติ') M.sel = null;
-    loadPendingList(true);
-    if (M.histLoaded) mLoadHistory();
   });
+}
+function mAfterChange(rowIndex) {
+  Object.keys(_tlCache).forEach(k => { if (k.indexOf(rowIndex + '|') === 0) delete _tlCache[k]; });
+  loadPendingList(true);
+  if (M.histLoaded || (approvedDataCache && approvedDataCache.length)) {
+    google.script.run.withSuccessHandler(items => { approvedDataCache = items || []; M.histLoaded = true; if (isM()) mRenderHistory(); else renderApprovedHistory(); })
+      .withFailureHandler(() => {}).getApprovedHistoryItems();
+  }
+}
+
+// ---------- v3.6: รายการที่อนุมัติแล้ว (ผู้ดูแล: ส่งกลับแก้ไข/ลบ · หผ.บง./ชผ.บง.: ส่งคำขอ) ----------
+function mReqText(r) {
+  return `<div class="m-req">📨 <b>${r.kind === 'return' ? 'คำขอส่งกลับแก้ไข' : 'คำขอลบ (คืนงบ)'}</b> จาก ${escHtml(r.by)} · ${escHtml(String(r.at || '').replace(/^วัน\S+ ที่ /, ''))}<br>เหตุผล: ${escHtml(r.reason)}</div>`;
+}
+function mApprovedActs(item) {
+  const r = item.request;
+  if (isAdminMe()) {
+    return (r ? mReqText(r) : '') + `<div class="m-acts" style="grid-template-columns:1fr 1fr">
+      <button class="b" onclick="mAct(${item.rowIndex}, '', 'return')"><i class="bi bi-arrow-counterclockwise"></i> ส่งกลับให้แก้ไข</button>
+      <button class="x" onclick="mAct(${item.rowIndex}, '', 'delete')"><i class="bi bi-trash"></i> ลบ (คืนงบ)</button></div>` +
+      (r ? `<div class="m-hint"><a href="#" onclick="mRejectReq(${item.rowIndex}); return false;" style="color:#666">ปฏิเสธคำขอ</a></div>` : '') +
+      '<div class="m-hint">เฉพาะผู้ดูแลระบบ (โหมดผู้ดูแลระบบ)</div>';
+  }
+  if (hasAdminRole()) {
+    return (r ? mReqText(r) : '') + '<div class="m-hint" style="font-size:13px;background:#fff4e0;border-radius:12px;padding:10px;color:#9a3412">สลับเป็น <b>โหมดผู้ดูแลระบบ</b> ด้านบน เพื่อส่งกลับแก้ไขหรือลบรายการที่อนุมัติแล้ว</div>';
+  }
+  if (canApprove()) {
+    if (r) return mReqText(r) + '<div class="m-hint">ส่งคำขอแล้ว รอผู้ดูแลระบบดำเนินการ</div>';
+    return `<div class="m-h">ขอให้ผู้ดูแลระบบดำเนินการ</div>
+      <div class="m-seg" style="margin-top:6px" id="mRqKind"><button type="button" class="on" data-k="return" onclick="mRqPick(this)">↩️ ขอส่งกลับแก้ไข</button><button type="button" data-k="delete" onclick="mRqPick(this)">🗑 ขอลบ (คืนงบ)</button></div>
+      <textarea class="m-in" id="mRqWhy" rows="2" maxlength="500" placeholder="เหตุผล เช่น ยอดเงินผิด ต้องเป็น 8,910 บาท" style="margin-top:8px"></textarea>
+      <button class="m-btn" style="margin-top:10px;background:#fff7ed;color:#c2410c;border:1.5px solid #fdba74;box-shadow:none" onclick="mSendReq(${item.rowIndex})">📨 ส่งคำขอถึงผู้ดูแลระบบ</button>
+      <div class="m-hint">แจ้ง LINE ผู้ดูแลทันที · ยังนับเป็นงบที่ใช้ จนกว่าผู้ดูแลจะดำเนินการ</div>`;
+  }
+  return r ? mReqText(r) : '';
+}
+function mRqPick(btn) { btn.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn)); }
+function mSendReq(rowIndex) {
+  const k = (document.querySelector('#mRqKind button.on') || {}).dataset;
+  const why = (document.getElementById('mRqWhy') || {}).value || '';
+  if (!why.trim()) { Swal.fire({ icon: 'warning', title: 'กรุณาระบุเหตุผล', confirmButtonColor: '#7A3E94' }); return; }
+  const kind = k ? k.k : 'return';
+  apiCall('requestApprovedChange', [rowIndex, kind, why.trim()]).then(res => {
+    if (!res || res.status !== 'success') { Swal.fire({ icon: 'error', title: 'ส่งคำขอไม่สำเร็จ', text: (res && res.message) || '', confirmButtonColor: '#7A3E94' }); return; }
+    mCloseSheet(); showToast(res.message, 'success'); mAfterChange(rowIndex);
+  }).catch(e => Swal.fire({ icon: 'error', title: 'ส่งคำขอไม่สำเร็จ', text: e.message, confirmButtonColor: '#7A3E94' }));
+}
+function mRejectReq(rowIndex) {
+  mCloseSheet();
+  Swal.fire({ title: 'ปฏิเสธคำขอ?', html: '<textarea id="rqN" class="swal2-textarea w-100 m-0" rows="2" placeholder="หมายเหตุ (ไม่บังคับ)"></textarea><div class="small text-muted mt-2">รายการยังอนุมัติตามเดิม</div>',
+    showCancelButton: true, confirmButtonText: 'ปฏิเสธคำขอ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#6b7280', showLoaderOnConfirm: true,
+    preConfirm: () => apiCall('rejectApprovedRequest', [rowIndex, document.getElementById('rqN').value, M.mode]).then(res => {
+      if (!res || res.status !== 'success') { Swal.showValidationMessage((res && res.message) || 'ไม่สำเร็จ'); return false; } return res;
+    }).catch(e => { Swal.showValidationMessage(e.message); return false; })
+  }).then(r => { if (r.isConfirmed) { showToast(r.value.message, 'success'); mAfterChange(rowIndex); } });
+}
+
+// ---------- v3.6: สลับโหมด ----------
+function mSetMode(mode) {
+  if (mode === M.mode) return;
+  M.mode = mode === 'admin' && hasAdminRole() ? 'admin' : 'dept';
+  M.sel = null; M.histSel = null;
+  if (M.filter === 'req' && M.mode !== 'admin') M.filter = 'all';
+  renderModeSwitch(); mRenderAll();
+  if (!isM()) { renderPendingList(pendingDataCache || []); }
+  showToast(M.mode === 'admin' ? 'โหมดผู้ดูแลระบบ' : 'โหมดหัวหน้าแผนก', M.mode === 'admin' ? 'warning' : 'info');
+}
+function renderModeSwitch() {
+  const show = hasAdminRole();
+  const dept = (realPerms().find(p => p.role === 'ผู้ดูแลระบบ') || {}).dept || (me && me.dept) || '';
+  const html = show ? `<div class="m-modesw"><button class="${M.mode !== 'admin' ? 'on' : ''}" onclick="mSetMode('dept')"><i class="bi bi-person"></i> หัวหน้าแผนก ${escHtml(dept)}</button>
+    <button class="${M.mode === 'admin' ? 'on adm' : ''}" onclick="mSetMode('admin')"><i class="bi bi-shield-check"></i> ผู้ดูแลระบบ</button></div>` : '';
+  ['mModeSw', 'dModeSw'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+  const ban = M.mode === 'admin' ? '<i class="bi bi-exclamation-triangle-fill"></i> โหมดผู้ดูแลระบบ: กดแทนทุกแผนกได้ · ปิดแอปแล้วจะกลับเป็นโหมดหัวหน้าแผนก' : '';
+  ['mModeBanner', 'dModeBanner'].forEach(id => { const el = document.getElementById(id); if (el) { el.innerHTML = ban; el.style.display = ban ? 'block' : 'none'; } });
 }
 
 // ---------- เสนอเรื่อง ----------
@@ -5937,13 +6048,16 @@ function mMoreMenu() {
     ${it('bi-book', 'คู่มือการใช้งาน', "window.open('guide.html','_blank')")}
     ${it('bi-key', 'เปลี่ยนรหัสผ่าน', 'changeMyPassword()')}
     ${it('bi-box-arrow-right', 'ออกจากระบบ', 'doUserLogout()')}
-    <div class="m-hint">ระบบตัดงบทำการ v3.5 · กฟส.อ่าวลึก</div>`);
+    <div class="m-hint">ระบบตัดงบทำการ v3.6 · กฟส.อ่าวลึก</div>`);
 }
 
 // ---------- ผูกกับของเดิม ----------
 const _origApplyBoot = applyBoot;
 applyBoot = function (d) {
+  M.requests = (d && d.requests) || [];
   _origApplyBoot(d);
+  renderModeSwitch();
+  renderDeskReqBar();
   M.lastLoad = Date.now();
   mRenderAll();
 };
@@ -6039,6 +6153,38 @@ function maResetPw(rowIndex, name) {
 }
 const _origStartApp2 = startApp;
 startApp = function () { _origStartApp2(); maInit(); };
+
+// ==================== v3.6: คอมพิวเตอร์ — ใช้หน้ารายละเอียด/ปุ่มเดียวกับมือถือ (ไม่ต้องใส่รหัสซ้ำ) ====================
+function ensureDeskBars() {
+  const main = document.getElementById('oldMain');
+  if (main && !document.getElementById('dModeWrap')) {
+    main.insertAdjacentHTML('afterbegin', '<div id="dModeWrap" class="d-modewrap"><div id="dModeSw"></div><div id="dModeBanner" class="m-modeban" style="display:none"></div></div>');
+  }
+  const tb = document.getElementById('pendingTableBody');
+  const tbl = tb && tb.closest('.table-responsive, table');
+  if (tbl && !document.getElementById('dReqBar')) tbl.insertAdjacentHTML('beforebegin', '<div id="dReqBar" style="display:none"></div>');
+}
+function renderDeskReqBar() {
+  ensureDeskBars();
+  const el = document.getElementById('dReqBar'); if (!el) return;
+  const list = isAdminMe() ? (M.requests || []) : [];
+  if (!list.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = `<div class="d-reqbar"><b>📨 คำขอจากแผนกบัญชี (${list.length})</b> — รายการที่อนุมัติแล้ว ขอให้ผู้ดูแลระบบส่งกลับแก้ไขหรือลบ` +
+    list.map((it, i) => `<button class="d-reqit" onclick="mOpen('q', ${i})"><span>${it.request && it.request.kind === 'delete' ? '🗑 ขอลบ' : '↩️ ขอส่งกลับ'}</span>
+      ${escHtml(it.detail || '').slice(0, 70)} · <b>${fNum(it.amount)}</b> · ${escHtml(it.dept || '')} <small>(${escHtml((it.request || {}).by || '')})</small></button>`).join('') + '</div>';
+}
+const _origRenderModeSwitch = renderModeSwitch;
+renderModeSwitch = function () { ensureDeskBars(); _origRenderModeSwitch(); renderDeskReqBar(); };
+showDetailModal = function (idx, type) {
+  const item = (type === 'pending' ? pendingDataCache : approvedDataCache)[idx];
+  if (item) mShowSheet(item, type === 'pending' ? 'p' : 'h');
+};
+authAction = function (rowIndex) {
+  const item = (pendingDataCache || []).find(x => x.rowIndex === rowIndex);
+  if (item) mShowSheet(item, 'p');
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape') mCloseSheet(); });
 
 </script>
 
