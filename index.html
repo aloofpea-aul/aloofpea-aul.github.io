@@ -195,7 +195,7 @@
   </main>
 
   <footer>กฟส.อ่าวลึก · กฟต.2 · ระบบภายในหน่วยงาน<br>
-    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.09.20-01</span></span>
+    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.10.11-01</span></span>
   </footer>
 </div>
 
@@ -262,6 +262,7 @@ function updateUserBadge(){
     badge.textContent = '👤 ยังไม่ได้เข้าสู่ระบบ';
     badge.classList.add('unauth');
   }
+  if(window.hubOnLogin) try{ hubOnLogin(); }catch(e){}   // สิทธิ์รายโปรแกรม + ปุ่มผู้ดูแล (hub-admin.js)
 }
 document.getElementById('userBadge').addEventListener('click', showUserPicker);
 
@@ -346,14 +347,14 @@ function showGridNow(){
 async function loadAppStats(){
   // ยังไม่ล็อกอิน — แสดงการ์ดตามลำดับเดิมทันที ไม่ต้องรอ
   if(!CURRENT_USER.name || !CURRENT_USER.role){ showGrid(); return; }
-  let stats = {};
+  let stats = {}, appList = null;
   try{
     // จำกัดเวลารอไว้ 8 วินาที ถ้าเกินนั้นถือว่าดึงไม่ได้ แล้วแสดงการ์ดตามลำดับเดิม
     const r = await Promise.race([
       callApi({ action:'appStats' }),
       new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), 8000))
     ]);
-    if(r && r.ok) stats = r.stats || {};
+    if(r && r.ok){ stats = r.stats || {}; appList = r.appList || null; }
   }catch(e){ showGrid(); return; }
 
   const grid = document.querySelector('.app-grid');
@@ -393,6 +394,7 @@ async function loadAppStats(){
     return tb - ta;
   }).forEach(t=> grid.appendChild(t));
 
+  if(window.hubAfterStats) try{ hubAfterStats(stats, appList); }catch(e){}   // แถบที่มาการเข้าใช้ + สิทธิ์ (hub-admin.js)
   showGrid();
 }
 // กันค้างขั้นสุดท้าย — เครือข่ายมีปัญหาจริงๆ ค่อยแสดงการ์ดโดยไม่เรียง (ปกติไม่ถึงตรงนี้)
@@ -440,5 +442,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<script src="hub-admin.js"></script>
 </body>
 </html>
