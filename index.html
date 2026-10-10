@@ -149,7 +149,7 @@
         <div class="desc">ปักเสา พาดสาย ประมาณราคางานก่อสร้างระบบจำหน่าย</div>
       </a>
 
-      <a class="app-tile" href="sld-ala/patrol-index.html" data-app="patrol">
+      <a class="app-tile" href="sld-ala/patrol-index.html" data-app="patrol" data-track="self">
         <span class="status-badge live">พร้อมใช้งาน</span>
         <div class="icon">🚶</div>
         <div class="name">Patrol ระบบจำหน่าย</div>
@@ -184,7 +184,7 @@
     <div class="desc">แดชบอร์ดวิเคราะห์ความเชื่อถือได้ของระบบจำหน่าย SAIFI/SAIDI อันดับอุปกรณ์วิกฤต และแผนที่จุดเกิดเหตุ</div>
   </a>
 
-  <a class="app-tile" href="pea-drawings/index.html" data-app="drawings">
+  <a class="app-tile" href="pea-drawings/index.html?from=hub" data-app="drawings" data-track="self">
     <span class="status-badge live">พร้อมใช้งาน</span>
     <div class="icon">📐</div>
     <div class="name">คลังแบบมาตรฐาน กฟภ.</div>
@@ -404,6 +404,7 @@ document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
     if(tile.classList.contains('disabled')) return;
     const app = tile.dataset.app, href = tile.getAttribute('href');
     if(!CURRENT_USER.name || !CURRENT_USER.role) return;   // ยังไม่ล็อกอิน ปล่อยให้ไปตามปกติ
+    if(tile.dataset.track === 'self') return;              // โปรแกรมนี้นับเองตอนเปิด (pea-hub.js) ไม่ต้องนับซ้ำที่นี่
     e.preventDefault();
     const go = ()=>{ location.href = href; };
     const t = setTimeout(go, 1200);            // ถ้าเครือข่ายช้า ไม่ต้องรอ
