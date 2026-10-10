@@ -44,14 +44,23 @@
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   var SRC = fromHub ? 'portal' : (standalone ? 'app' : 'direct');
 
+  /* ชื่อผู้ใช้สำหรับการนับ — ถ้ายังไม่ได้ล็อกอินศูนย์รวมงาน ใช้ชื่อที่โปรแกรมนั้นจำไว้เอง
+     (data-user-key = คีย์ใน localStorage, data-user-field = ชื่อฟิลด์ถ้าเก็บเป็น JSON) */
+  function userHint() {
+    var key = me && me.dataset.userKey, field = me && me.dataset.userField, v = key ? ls(key) : '';
+    if (v && field) { try { v = (JSON.parse(v) || {})[field] || ''; } catch (e) { v = ''; } }
+    return String(v || creds().name || '').slice(0, 60);
+  }
+
   var counted = false;
   function countVisit() {
-    if (counted || !APP || !creds().name) return;
+    if (counted || !APP) return;
     counted = true;
     var key = 'pea_hub_seen_' + APP, now = Date.now(), last = 0;
     try { last = parseInt(sessionStorage.getItem(key), 10) || 0; sessionStorage.setItem(key, String(now)); } catch (e) {}
     if (!fromHub && last && now - last < IDLE_MS) return;      // ยังอยู่ในการเปิดครั้งเดิม
-    api({ action: 'appOpen', app: APP, src: SRC, page: location.pathname }).catch(function () {});
+    // มีบัญชีศูนย์รวมงาน = นับพร้อมชื่อที่ยืนยันแล้ว · ไม่มี = หลังบ้านนับแบบ "ไม่ได้ยืนยันตัวตน" ด้วยชื่อจาก userHint
+    api({ action: 'appOpen', app: APP, src: SRC, page: location.pathname, userHint: userHint() }).catch(function () {});
   }
 
   /* ---------- หน้าจอกั้น ---------- */
@@ -196,7 +205,8 @@
   function start() {
     var c = creds();
     if (!GATE) {
-      if (c.name) { countVisit(); api({ action: 'whoAmI' }).then(function (r) { if (r && r.role) decide(r); }).catch(function () {}); }
+      countVisit();
+      if (c.name) api({ action: 'whoAmI' }).then(function (r) { if (r && r.role) decide(r); }).catch(function () {});
       return;
     }
     if (!c.name || !c.pass) { lock(); showLogin('login'); return; }
