@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
 <script src="/pea-hub.js" data-app="budget" data-gate="off" data-user-key="budget_user_v1" data-user-field="name"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>ระบบตัดงบทำการ v3.6</title>
+  <title>ระบบตัดงบทำการ v3.7</title>
   <meta name="theme-color" content="#7A3E94">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1355,6 +1355,37 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     .d-reqit:hover { background: #ffedd5; }
     .d-reqit span { background: #c2410c; color: #fff; border-radius: 6px; padding: 1px 7px; font-size: 12px; margin-right: 6px; }
     body.m-mode .d-modewrap { display: none; }
+    /* v3.7: เลือกหลายรายการ (ผู้ดูแลระบบ) / ลบพร้อมเหตุผล */
+    .m-seltop { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; grid-column: 1 / -1; }
+    .m-seltop .bt { border: 1.5px solid #7A3E94; background: #fff; color: #7A3E94; border-radius: 10px; padding: 7px 13px; font-weight: 700; font-size: 14px; min-height: 40px; }
+    .m-seltop .lnk { border: 0; background: none; color: #7A3E94; font-weight: 700; font-size: 14px; padding: 6px 0; }
+    .m-seltop small { color: #999; font-size: 12px; }
+    .m-pickc { position: relative; padding-left: 50px; cursor: pointer; user-select: none; }
+    .m-pickc.sel { background: #fbf7fd; }
+    .m-pickc.off { opacity: .5; cursor: default; }
+    .m-ck { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; border: 2px solid #cbb6d6; background: #fff; color: #fff; font-weight: 800; font-size: 16px; }
+    .m-ck.on { background: #7A3E94; border-color: #7A3E94; }
+    .m-pickc > .m-ck { position: absolute; left: 13px; top: 18px; }
+    .m-pickc.off > .m-ck { background: #eee; border-color: #ddd; }
+    .m-pnext { font-size: 11.5px; color: #7A3E94; font-weight: 700; margin-top: 6px; }
+    .m-pickc.off .m-pnext { color: #999; }
+    .m-pickbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; background: #fff; border-top: 1px solid #eee; padding: 10px 14px calc(env(safe-area-inset-bottom) + 10px); box-shadow: 0 -6px 16px rgba(0,0,0,.08); display: none; }
+    .m-pickbar .sum { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 7px; max-width: 640px; margin-left: auto; margin-right: auto; }
+    .m-pickbar .go { display: block; width: 100%; max-width: 640px; margin: 0 auto; border: 0; border-radius: 13px; background: #16a34a; color: #fff; font-weight: 800; font-size: 16px; padding: 13px; }
+    .m-pickbar .go:disabled { background: #cbd5e1; }
+    body.m-picking .m-list { padding-bottom: 230px; }
+    body.m-picking:not(.m-mode) #oldMain { padding-bottom: 120px; }
+    @media (min-width: 900px) { body.m-mode .m-pickbar { left: 88px; } }
+    .m-plist { max-height: 45vh; overflow-y: auto; text-align: left; font-size: 13px; }
+    .m-plist div { display: flex; justify-content: space-between; gap: 8px; border-top: 1px dashed #e3d6ea; padding: 6px 2px; }
+    .m-plist b { white-space: nowrap; }
+    .m-qr { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+    .m-qr button { border: 0; background: #f5ecf9; color: #5b2a73; border-radius: 9px; padding: 5px 10px; font-size: 13px; }
+    .d-picktop { margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+    .d-picktop:empty { display: none; }
+    td.d-ckcol, th.d-ckcol { width: 44px; text-align: center; vertical-align: middle !important; }
+    tr.d-picked > td { background: #f5ecf9 !important; }
+    .swal2-confirm.m-swal-del { background: #dc2626 !important; box-shadow: none !important; }
 
   </style>
 </head><body>
@@ -1472,7 +1503,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     <div class="av" id="userAv">?</div><div class="nm"><span id="userNm"></span><small id="userRole"></small></div></div></div>
   <h4 class="m-0">
     <i class="bi bi-wallet2"></i> ระบบตัดงบทำการ
-    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.6</small>
+    <small class="d-block mt-1" style="font-size: 0.6em; opacity: 0.9;">Budget Management System v3.7</small>
   </h4>
   <button class="btn btn-register btn-sm rounded-pill px-4 shadow" id="headerRegisterBtn" style="display:none" onclick="showRegisterModal()">
     <i class="bi bi-person-plus-fill"></i> สมัครสมาชิก
@@ -2247,7 +2278,7 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
 <footer class="footer">
   <div class="fw-semibold">
     <i class="bi bi-lightning-charge-fill"></i> 
-    ระบบตัดงบทำการ เวอร์ชัน 3.6
+    ระบบตัดงบทำการ เวอร์ชัน 3.7
   </div>
   <div class="small mt-1">
     Budget Management System | Enhanced Analytics & Auto-refresh
@@ -5486,7 +5517,7 @@ function personCell(name) {
 }
 
 // ==================== v3.3: โหมดมือถือ / ไอแพด ====================
-const M = { mode: 'dept', requests: [], screen: 'pending', filter: 'all', sel: null, histSel: null, histShown: 60, histQ: '', histLoaded: false, lastLoad: 0,
+const M = { mode: 'dept', requests: [], pick: null, screen: 'pending', filter: 'all', sel: null, histSel: null, histShown: 60, histQ: '', histLoaded: false, lastLoad: 0,
             f: { branch: '', dept: '', code: '', amount: '', detail: '', requester: '', editRow: null, editReason: '' } };
 const MQ_MOBILE = window.matchMedia('(max-width: 1024px), ((pointer: coarse) and (max-width: 1400px))');
 const MQ_SPLIT = window.matchMedia('(min-width: 900px)');
@@ -5597,14 +5628,23 @@ function shortDate(s) {
 function mCard(item, src, i, selected) {
   const st = stInfo(item.status), p = person(item.requester), an = accName(item);
   const sub = [personPos(p), item.dept].filter(Boolean).join(' · ');
-  return `<div class="m-card ${st.card} ${selected ? 'sel' : ''}" onclick="mOpen('${src}', ${i})">
+  if (M.pick && src === 'p') {   // v3.7 โหมดเลือกหลายรายการ (ผู้ดูแลระบบ)
+    const can = pickable(item), on = M.pick.has(item.rowIndex);
+    return `<div class="m-card m-pickc ${st.card} ${on ? 'sel' : ''} ${can ? '' : 'off'}" ${can ? `onclick="mPickToggle(${item.rowIndex})"` : ''}>
+      <span class="m-ck ${on ? 'on' : ''}">${on ? '✓' : ''}</span>` + mCardBody(item, src, st, p, an, sub) +
+      `<div class="m-pnext">${can ? (st.key === 'w' ? 'รอผู้บันทึก → จะตรวจผ่าน' : 'รออนุมัติ → จะอนุมัติ') : 'เลือกไม่ได้ (รอผู้เสนอแก้ไข)'}</div></div>`;
+  }
+  return `<div class="m-card ${st.card} ${selected ? 'sel' : ''}" onclick="mOpen('${src}', ${i})">` + mCardBody(item, src, st, p, an, sub) + '</div>';
+}
+function mCardBody(item, src, st, p, an, sub) {
+  return `
     <div class="m-c1">${avatar(item.requester, 42)}<div class="nm"><b>${escHtml(item.requester || '-')}</b><small>${escHtml(sub)}</small></div>
       <div class="m-amt">${fNum(item.amount)}<small>บาท</small></div></div>
     <div class="m-det">${escHtml(item.detail)}</div>
     <div class="m-acc">${escHtml(item.accountCode)}${an ? ' · ' + escHtml(an) : ''}</div>
     <div class="m-c3"><span><i class="bi bi-clock"></i> ${shortDate(item.date)}</span>
       <span><span class="m-st ${st.cls}">${escHtml(st.label)}</span>${item.isNegative ? '<span class="m-neg">งบติดลบ</span>' : ''}${src === 'p' && myTurn(item) ? '<span class="m-turn">ถึงคิวคุณ</span>' : ''}${item.request ? '<span class="m-neg" style="background:#fff7ed;color:#c2410c">📨 มีคำขอ</span>' : ''}</span></div>
-  </div>`;
+`;
 }
 
 function mPendingSorted() {
@@ -5620,6 +5660,7 @@ function mRenderPending() {
   document.getElementById('mChips').innerHTML = chips.filter(c => c[0] === 'all' || c[0] === M.filter || cnt[c[0]])
     .map(c => `<button class="m-chip ${M.filter === c[0] ? 'on' : ''}" onclick="M.filter='${c[0]}'; mRenderPending()">${c[1]}<i>${cnt[c[0]]}</i></button>`).join('');
   if (M.filter === 'req') {
+    M.pick = null; mPickBar();
     document.getElementById('mPendList').innerHTML = (M.requests || []).length ? M.requests.map((it, i) => mCard(it, 'q', i, false)).join('')
       : '<div class="m-empty"><i class="bi bi-inbox"></i>ไม่มีคำขอค้าง</div>';
     if (isSplit()) document.getElementById('mPendPane').innerHTML = '<div class="m-empty"><i class="bi bi-envelope-paper"></i>แตะคำขอเพื่อดูรายละเอียด</div>';
@@ -5627,13 +5668,22 @@ function mRenderPending() {
     return;
   }
   const list = all.filter(x => M.filter === 'all' || (M.filter === 'mine' ? myTurn(x.it) : stInfo(x.it.status).key === M.filter));
-  document.getElementById('mPendList').innerHTML = list.length
+  if (M.pick && !isAdminMe()) M.pick = null;
+  const nPickable = list.filter(x => pickable(x.it)).length;
+  const selTop = !isAdminMe() || !list.length ? '' : M.pick
+    ? `<div class="m-seltop"><button class="lnk" onclick="mPickAll()">☑ ${list.filter(x => pickable(x.it)).every(x => M.pick.has(x.it.rowIndex)) && nPickable ? 'ไม่เลือกทั้งหมด' : 'เลือกทั้งหมดที่ทำได้ (' + nPickable + ')'}</button><button class="bt" onclick="mPickExit()">ยกเลิก</button></div>`
+    : (nPickable > 1 ? `<div class="m-seltop"><button class="bt" onclick="mPickStart()">☑ เลือกหลายรายการ</button><small>เฉพาะผู้ดูแลระบบ</small></div>` : '');
+  document.getElementById('mPendList').innerHTML = selTop + (list.length
     ? list.map(x => mCard(x.it, 'p', x.i, isSplit() && M.sel === x.it.rowIndex)).join('')
-    : `<div class="m-empty"><i class="bi bi-inbox"></i>ไม่มีรายการ${M.filter === 'all' ? 'รอตรวจสอบ' : 'ในกลุ่มนี้'}</div>`;
+    : `<div class="m-empty"><i class="bi bi-inbox"></i>ไม่มีรายการ${M.filter === 'all' ? 'รอตรวจสอบ' : 'ในกลุ่มนี้'}</div>`);
+  mPickBar();
   const bd = document.getElementById('mBdPend');
   bd.textContent = all.length; bd.style.display = all.length ? 'inline-block' : 'none';
   // ไอแพด: แสดงรายละเอียดรายการแรกไว้เลย
-  if (isSplit()) {
+  if (isSplit() && M.pick) {
+    document.getElementById('mPendPane').innerHTML = '<div class="m-empty"><i class="bi bi-ui-checks"></i>เลือกรายการทางซ้าย<br>แล้วกดปุ่มสีเขียวด้านล่าง</div>';
+    document.getElementById('mPendPane').dataset.sig = '';
+  } else if (isSplit()) {
     const cur = list.find(x => x.it.rowIndex === M.sel) || list[0];
     if (cur) { if (M.sel !== cur.it.rowIndex) { M.sel = cur.it.rowIndex; mRenderPending(); return; } mShowDetail(cur.it, 'p', document.getElementById('mPendPane'), true); }
     else document.getElementById('mPendPane').innerHTML = '<div class="m-empty"><i class="bi bi-check2-all"></i>ไม่มีรายการรอดำเนินการ</div>';
@@ -5781,16 +5831,18 @@ function mAct(rowIndex, role, fn) {
   const color = { approve: '#16a34a', reject: '#ea580c', delete: '#dc2626', return: '#1d4ed8' }[fn];
   const icon = { approve: 'success', reject: 'warning', delete: 'warning', return: 'question' }[fn];
   const it = (pendingDataCache || []).concat(approvedDataCache || [], M.requests || []).find(x => x.rowIndex === rowIndex) || {};
-  const needReason = fn === 'reject' || fn === 'return';
+  const adminDel = fn === 'delete' && isAdminMe();   // v3.7 ผู้ดูแลระบบลบได้ทุกขั้นตอน ต้องมีเหตุผล
+  const needReason = fn === 'reject' || fn === 'return' || adminDel;
   mCloseSheet();
   Swal.fire({
-    title: label + '?', icon: icon,
+    title: adminDel ? '🗑 ลบรายการ' : label + '?', icon: adminDel ? undefined : icon,
     html: `<div class="small">${escHtml(it.detail || '')}<br><b style="color:#7A3E94">${it.amount !== undefined ? fNum(it.amount) + ' บาท' : ''}</b>${it.requester ? ' · ' + escHtml(it.requester) : ''}</div>
-      ${needReason ? `<textarea id="aR" class="swal2-textarea w-100 m-0 mt-2" rows="2" placeholder="เหตุผล (จำเป็น) เช่น ยอดเงินไม่ตรงใบสั่ง"></textarea>` : ''}
+      ${needReason ? `<textarea id="aR" class="swal2-textarea w-100 m-0 mt-2" rows="2" placeholder="${adminDel ? 'เหตุผลที่ลบ (จำเป็น)' : 'เหตุผล (จำเป็น) เช่น ยอดเงินไม่ตรงใบสั่ง'}"></textarea>` : ''}
+      ${adminDel ? '<div class="m-qr">' + ['รายการซ้ำ', 'บันทึกผิดบัญชี', 'ผู้เสนอขอยกเลิก', 'ทดสอบระบบ'].map(t => `<button type="button" onclick="document.getElementById('aR').value='${t}'; Swal.resetValidationMessage()">${t}</button>`).join('') + '</div><div class="small text-muted mt-2">แจ้ง LINE ผู้เสนอพร้อมเหตุผล</div>' : ''}
       ${fn === 'delete' && stInfo(it.status).key === 'ok' ? '<div class="small text-danger mt-2">รายการที่อนุมัติแล้วจะถูกยกเลิก และคืนงบ</div>' : ''}
       ${fn === 'return' ? '<div class="small text-muted mt-2">รายการจะกลับเป็น “ตีกลับ” (คืนงบชั่วคราว) ผู้เสนอแก้ไขแล้วส่งตรวจ-อนุมัติใหม่</div>' : ''}
       <div class="small text-muted mt-2">ดำเนินการในชื่อ <b>${escHtml(me ? me.name : '')}</b>${M.mode === 'admin' ? ' · <span style="color:#b45309">โหมดผู้ดูแลระบบ</span>' : ''}</div>`,
-    showCancelButton: true, confirmButtonText: label, cancelButtonText: 'ยกเลิก', confirmButtonColor: color, focusConfirm: !needReason, reverseButtons: true,
+    showCancelButton: true, confirmButtonText: adminDel ? 'ลบเลย' : label, customClass: adminDel ? { confirmButton: 'm-swal-del' } : {}, cancelButtonText: 'ยกเลิก', confirmButtonColor: color, focusConfirm: !needReason, reverseButtons: true,
     didOpen: () => { if (needReason) setTimeout(() => document.getElementById('aR').focus(), 80); },
     preConfirm: () => {
       const r = needReason ? document.getElementById('aR').value.trim() : '';
@@ -5870,6 +5922,7 @@ function mSetMode(mode) {
   M.mode = mode === 'admin' && hasAdminRole() ? 'admin' : 'dept';
   M.sel = null; M.histSel = null;
   if (M.filter === 'req' && M.mode !== 'admin') M.filter = 'all';
+  M.pick = null; mPickBar();
   renderModeSwitch(); mRenderAll();
   if (!isM()) { renderPendingList(pendingDataCache || []); }
   showToast(M.mode === 'admin' ? 'โหมดผู้ดูแลระบบ' : 'โหมดหัวหน้าแผนก', M.mode === 'admin' ? 'warning' : 'info');
@@ -6049,7 +6102,7 @@ function mMoreMenu() {
     ${it('bi-book', 'คู่มือการใช้งาน', "window.open('guide.html','_blank')")}
     ${it('bi-key', 'เปลี่ยนรหัสผ่าน', 'changeMyPassword()')}
     ${it('bi-box-arrow-right', 'ออกจากระบบ', 'doUserLogout()')}
-    <div class="m-hint">ระบบตัดงบทำการ v3.6 · กฟส.อ่าวลึก</div>`);
+    <div class="m-hint">ระบบตัดงบทำการ v3.7 · กฟส.อ่าวลึก</div>`);
 }
 
 // ---------- ผูกกับของเดิม ----------
@@ -6186,6 +6239,97 @@ authAction = function (rowIndex) {
   if (item) mShowSheet(item, 'p');
 };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') mCloseSheet(); });
+
+// ==================== v3.7: ผู้ดูแลระบบ เลือกหลายรายการ แล้วตรวจผ่าน/อนุมัติครั้งเดียว (ขยับทีละ 1 ขั้น) ====================
+function pickable(item) { const k = stInfo(item.status).key; return isAdminMe() && (k === 'w' || k === 'a'); }
+function mPickItems() { return (pendingDataCache || []).filter(x => M.pick && M.pick.has(x.rowIndex) && pickable(x)); }
+function mPickRefresh() { if (isM()) mRenderPending(); else deskPickDecorate(); }
+function mPickStart() { if (!isAdminMe()) return; M.pick = new Set(); mCloseSheet(); mPickRefresh(); }
+function mPickExit() { M.pick = null; mPickRefresh(); mPickBar(); }
+function mPickToggle(row) { if (!M.pick) return; M.pick.has(row) ? M.pick.delete(row) : M.pick.add(row); mPickRefresh(); }
+function mPickAll() {
+  if (!M.pick) return;
+  let pool = (pendingDataCache || []).filter(pickable);
+  if (isM() && M.filter !== 'all') pool = pool.filter(x => M.filter === 'mine' ? myTurn(x) : stInfo(x.status).key === M.filter);
+  const allOn = pool.length && pool.every(x => M.pick.has(x.rowIndex));
+  pool.forEach(x => allOn ? M.pick.delete(x.rowIndex) : M.pick.add(x.rowIndex));
+  mPickRefresh();
+}
+function mPickBar() {
+  let bar = document.getElementById('mPickBar');
+  if (!M.pick) { if (bar) bar.style.display = 'none'; document.body.classList.remove('m-picking'); return; }
+  if (!bar) { document.body.insertAdjacentHTML('beforeend', '<div id="mPickBar" class="m-pickbar"></div>'); bar = document.getElementById('mPickBar'); }
+  const items = mPickItems(), w = items.filter(x => stInfo(x.status).key === 'w').length, a = items.length - w;
+  const sum = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
+  bar.innerHTML = `<div class="sum"><span>ตรวจผ่าน <b>${w}</b> · อนุมัติ <b>${a}</b></span><span>รวม <b>${fNum(sum)}</b> บาท</span></div>
+    <button class="go" ${items.length ? '' : 'disabled'} onclick="mPickRun()">${items.length ? '✓ ดำเนินการ ' + items.length + ' รายการ' : 'แตะรายการเพื่อเลือก'}</button>`;
+  const nav = document.getElementById('mNav');
+  bar.style.bottom = isM() && !isSplit() && nav ? nav.offsetHeight + 'px' : '0';
+  bar.style.display = 'block';
+  document.body.classList.add('m-picking');
+}
+function mPickRun() {
+  const items = mPickItems();
+  if (!items.length) return;
+  const neg = items.filter(x => x.isNegative).length;
+  const short = t => { t = String(t || ''); return t.length > 38 ? t.slice(0, 38) + '…' : t; };
+  Swal.fire({
+    title: 'ยืนยัน ' + items.length + ' รายการ?',
+    html: `<div class="small text-muted mb-2">ในชื่อ <b>${escHtml(me ? me.name : '')}</b> · <span style="color:#b45309">โหมดผู้ดูแลระบบ</span></div>
+      <div class="m-plist">${items.map(x => `<div><span>${stInfo(x.status).key === 'w' ? '✓ ตรวจผ่าน' : '✓ อนุมัติ'} · ${escHtml(short(x.detail))}</span><b>${fNum(x.amount)}</b></div>`).join('')}</div>
+      ${neg ? `<div class="small text-danger mt-2">⚠ ${neg} รายการงบติดลบ</div>` : ''}
+      <div class="small text-muted mt-2">แต่ละรายการขยับไป 1 ขั้น · รายการที่ “รอผู้บันทึก” จะไปเป็น “รออนุมัติ”</div>`,
+    showCancelButton: true, confirmButtonText: 'ยืนยัน ' + items.length + ' รายการ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#16a34a', reverseButtons: true,
+    preConfirm: () => {
+      Swal.showLoading();
+      return apiCall('approveBatch', [items.map(x => ({ row: x.rowIndex, step: stInfo(x.status).key === 'w' ? 'recorder' : 'approver' })), M.mode]).then(res => {
+        if (!res || res.status !== 'success') { Swal.hideLoading(); Swal.showValidationMessage((res && res.message) || 'ไม่สำเร็จ'); return false; }
+        return res;
+      }).catch(e => { Swal.hideLoading(); Swal.showValidationMessage(e.message); return false; });
+    }
+  }).then(r => {
+    if (!r.isConfirmed) return;
+    const res = r.value;
+    items.forEach(x => Object.keys(_tlCache).forEach(k => { if (k.indexOf(x.rowIndex + '|') === 0) delete _tlCache[k]; }));
+    M.pick = null; mPickBar();
+    loadPendingList(true);
+    if (res.skipped) {
+      const bad = (res.results || []).filter(x => !x.ok);
+      Swal.fire({ icon: 'info', title: res.message, confirmButtonColor: '#7A3E94',
+        html: '<div class="small text-start">' + bad.map(b => { const it = items.find(x => x.rowIndex === b.row) || {}; return '• ' + escHtml(short(it.detail)) + '<br><span class="text-muted">' + escHtml(b.message) + '</span>'; }).join('<br>') + '</div>' });
+    } else showToast(res.message, 'success');
+  });
+}
+// คอมพิวเตอร์: ช่องติ๊กหน้าแถวในตาราง
+function deskPickDecorate() {
+  if (isM()) return;
+  const tb = document.getElementById('pendingTableBody'); if (!tb) return;
+  const table = tb.closest('table'), headRow = table && table.querySelector('thead tr');
+  let bar = document.getElementById('dPickTop');
+  if (!bar) { const ref = document.getElementById('dReqBar') || table; ref.insertAdjacentHTML('afterend', '<div id="dPickTop" class="d-picktop"></div>'); bar = document.getElementById('dPickTop'); }
+  if (M.pick && !isAdminMe()) M.pick = null;
+  const n = (pendingDataCache || []).filter(pickable).length;
+  if (!isAdminMe() || n < 2 && !M.pick) { bar.innerHTML = ''; } else if (!M.pick) {
+    bar.innerHTML = '<button class="btn btn-sm btn-outline-primary rounded-pill" onclick="mPickStart()">☑ เลือกหลายรายการ</button> <small class="text-muted">เฉพาะผู้ดูแลระบบ</small>';
+  } else {
+    const allOn = (pendingDataCache || []).filter(pickable).every(x => M.pick.has(x.rowIndex));
+    bar.innerHTML = `<button class="btn btn-sm btn-link" onclick="mPickAll()">☑ ${allOn ? 'ไม่เลือกทั้งหมด' : 'เลือกทั้งหมดที่ทำได้ (' + n + ')'}</button> <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="mPickExit()">ยกเลิก</button>`;
+  }
+  if (headRow) { const th = headRow.querySelector('th.d-ckcol'); if (M.pick && !th) headRow.insertAdjacentHTML('afterbegin', '<th class="d-ckcol"></th>'); if (!M.pick && th) th.remove(); }
+  tb.querySelectorAll('td.d-ckcol').forEach(td => td.remove());
+  if (M.pick) {
+    const rows = [...tb.querySelectorAll('tr.account-row')];
+    rows.forEach((tr, i) => {
+      const it = (pendingDataCache || [])[i]; if (!it) return;
+      const can = pickable(it), on = M.pick.has(it.rowIndex);
+      tr.insertAdjacentHTML('afterbegin', `<td class="d-ckcol" onclick="event.stopPropagation(); ${can ? `mPickToggle(${it.rowIndex})` : ''}">${can ? `<span class="m-ck ${on ? 'on' : ''}">${on ? '✓' : ''}</span>` : ''}</td>`);
+      tr.classList.toggle('d-picked', on);
+    });
+  } else tb.querySelectorAll('tr.d-picked').forEach(tr => tr.classList.remove('d-picked'));
+  mPickBar();
+}
+const _origRenderPendingList = renderPendingList;
+renderPendingList = function (items) { _origRenderPendingList(items); deskPickDecorate(); };
 
 </script>
 
