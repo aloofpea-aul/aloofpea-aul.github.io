@@ -14,9 +14,10 @@
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="app.css">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
   <style>
     body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; overflow-x: hidden; }
     .pea-purple { background-color: #4b2e83; }
@@ -591,11 +592,11 @@
     }
 
     // ---------- เริ่มต้น ----------
-    window.onload = function() {
+    document.addEventListener('DOMContentLoaded', function() {  // ไม่ต้องรอฟอนต์/ไอคอนโหลดเสร็จ
       document.getElementById('officeCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
       document.getElementById('adminCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
       if (!token) showLogin(); else startApp();
-    };
+    });
 
     // ---------- เข้าระบบ ----------
     function showLogin(reason) {
@@ -671,6 +672,7 @@
       token = null; adminToken = null; lsDel(TOKEN_KEY);
       appStarted = false;
       Object.keys(dataCache).forEach(k => delete dataCache[k]);
+      try { Object.keys(localStorage).filter(k => k.indexOf('booknum_data_') === 0).forEach(lsDel); } catch (e) {}
       document.getElementById('userChip').classList.add('hidden');
       document.getElementById('userChip').classList.remove('flex');
       document.getElementById('fab').classList.add('hidden'); document.getElementById('fab').classList.remove('flex');
@@ -741,6 +743,7 @@
         if (el) el.className = k === cat ? "flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all tab-active text-sm" : "flex-1 min-w-0 md:min-w-[100px] py-3 px-1 md:px-2 text-center transition-all text-gray-500 border-l text-sm";
       });
       serverSearch = null;
+      if (!dataCache[cat]) { try { const c = JSON.parse(lsGet('booknum_data_' + cat) || 'null'); if (c && c.headers) dataCache[cat] = c; } catch (e) {} }  // ชุดล่าสุดในเครื่อง แสดงทันที
       if (dataCache[cat]) renderTable(); else showTableMessage('<i class="fas fa-circle-notch fa-spin mr-2"></i>กำลังโหลดข้อมูล...');
       loadCategory(cat);
     }
@@ -752,7 +755,9 @@
         if (seq !== loadSeq[cat]) return;
         if (!data || data.error) throw new Error(data && data.error ? data.error : 'ไม่มีข้อมูลตอบกลับ');
         dataCache[cat] = data;
+        lsSet('booknum_data_' + cat, JSON.stringify(data));
         if (cat !== currentCategory) return;
+        setStatus('');
         renderTable();
         maybeServerSearch();
       }).catch(e => {
