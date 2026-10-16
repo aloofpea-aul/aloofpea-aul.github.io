@@ -202,7 +202,7 @@
   </main>
 
   <footer>กฟส.อ่าวลึก · กฟต.2 · ระบบภายในหน่วยงาน<br>
-    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.10.16-01</span></span>
+    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.10.16-02</span></span>
   </footer>
 </div>
 
@@ -235,6 +235,20 @@ let CURRENT_USER = {
   role: null
 };
 
+/* ===== เปิดเร็ว: ใช้สิทธิ์และสถิติที่จำไว้ในเครื่องแสดงก่อนทันที แล้วค่อยตรวจกับหลังบ้านเบื้องหลัง ===== */
+const K_AUTH = 'pea_hub_auth', K_STATS = 'pea_hub_stats';
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k) || 'null'); }catch(e){ return null; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+(function(){
+  const a = lsGet(K_AUTH);
+  if(a && a.name && a.name === CURRENT_USER.name && a.role && CURRENT_USER.password) CURRENT_USER.role = a.role;
+})();
+let memberListP = null;
+function loadMembers(){
+  if(!memberListP) memberListP = fetch(GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 'action=getMemberList')
+    .then(r=>r.json()).then(j=>{ MEMBER_LIST = j.members || []; }).catch(()=>{ MEMBER_LIST = []; memberListP = null; });
+  return memberListP;
+}
 async function loadMemberList(){
   try{
     const url = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 'action=getMemberList';
@@ -254,8 +268,10 @@ async function verifyCredentials(name, password){
       body: JSON.stringify({ action:'whoAmI', changedBy:name, changedByPassword:password })
     });
     const json = await res.json();
+    if(json && json.role){ window.HUB_WHO = json; lsSet(K_AUTH, { name:name, role:json.role, apps:Array.isArray(json.apps)?json.apps:null, ts:Date.now() }); }
+    else if(json && json.error === 'unauthorized'){ lsSet(K_AUTH, null); }
     return json.role || null;
-  }catch(e){ return null; }
+  }catch(e){ return 'offline'; }
 }
 function updateUserBadge(){
   const badge = document.getElementById('userBadge');
@@ -280,6 +296,7 @@ function showUserPicker(){
     const passInput = document.getElementById('userPickPassword');
     const list = document.getElementById('userPickList');
     const err = document.getElementById('userPickErr');
+    loadMembers().then(()=>{ if(overlay.classList.contains('show') && document.activeElement===input) renderList(); });
     input.value = CURRENT_USER.name || '';
     passInput.value = '';
     err.textContent = '';
@@ -315,6 +332,7 @@ function showUserPicker(){
       btn.disabled = true; btn.textContent = '⏳ กำลังตรวจสอบ...';
       const role = await verifyCredentials(name, password);
       btn.disabled = false; btn.textContent = 'ยืนยัน';
+      if(role === 'offline'){ err.textContent = 'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'; return; }
       if(!role){ err.textContent = 'ชื่อหรือรหัสผ่านไม่ถูกต้อง'; return; }
       CURRENT_USER = { name, password, role };
       localStorage.setItem('pea_aoluek_username', name);
@@ -329,7 +347,23 @@ function showUserPicker(){
   });
 }
 
-loadMemberList().then(loadAppStats);
+/* เริ่มทำงาน: แสดงการ์ดทันที (ใช้สถิติที่จำไว้) → ตรวจสิทธิ์ + ดึงสถิติใหม่ พร้อมกันเบื้องหลัง */
+function boot(){
+  const has = CURRENT_USER.name && CURRENT_USER.password;
+  const who = has ? verifyCredentials(CURRENT_USER.name, CURRENT_USER.password) : null;
+  window.HUB_WHO_P = who;
+  updateUserBadge();
+  const cached = lsGet(K_STATS);
+  if(cached && cached.stats && CURRENT_USER.role) applyStats(cached.stats, cached.appList);
+  showGridNow();
+  if(!has) return;
+  loadAppStats();
+  return who.then(role=>{
+    if(role === 'offline') return;                 // เน็ตหลุด — ใช้สิทธิ์ที่จำไว้ต่อ
+    const changed = role !== CURRENT_USER.role; CURRENT_USER.role = role;
+    if(changed){ window.HUB_WHO_P = null; updateUserBadge(); }
+  });
+}
 
 /* ===== ตัวนับการใช้งาน — เรียงการ์ดตามการเข้าใช้ล่าสุด และบอกว่าใครเข้าล่าสุด ===== */
 async function callApi(payload){
@@ -339,30 +373,26 @@ async function callApi(payload){
   });
   return res.json();
 }
-const bootAt = Date.now();
-function showGrid(){
-  const wait = Math.max(0, 600 - (Date.now() - bootAt));   // ให้เห็นกราฟิกอย่างน้อยครึ่งวินาที
-  if(wait){ setTimeout(showGridNow, wait); return; }
-  showGridNow();
-}
+function showGrid(){ showGridNow(); }
+let gridShown = false;
 function showGridNow(){
+  if(gridShown) return; gridShown = true;
   const ld = document.getElementById('gridLoader');
   const grid = document.querySelector('.app-grid');
   if(ld) ld.style.display = 'none';
-  if(grid){ grid.style.display = ''; grid.style.animation = 'fadeIn .35s ease'; }
+  if(grid){ grid.style.display = ''; grid.style.animation = 'fadeIn .2s ease'; }
 }
 async function loadAppStats(){
-  // ยังไม่ล็อกอิน — แสดงการ์ดตามลำดับเดิมทันที ไม่ต้องรอ
-  if(!CURRENT_USER.name || !CURRENT_USER.role){ showGrid(); return; }
-  let stats = {}, appList = null;
+  if(!CURRENT_USER.name || !CURRENT_USER.password) return;
   try{
-    // จำกัดเวลารอไว้ 8 วินาที ถ้าเกินนั้นถือว่าดึงไม่ได้ แล้วแสดงการ์ดตามลำดับเดิม
     const r = await Promise.race([
       callApi({ action:'appStats' }),
-      new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), 8000))
+      new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), 15000))
     ]);
-    if(r && r.ok){ stats = r.stats || {}; appList = r.appList || null; }
-  }catch(e){ showGrid(); return; }
+    if(r && r.ok){ lsSet(K_STATS, { ts:Date.now(), stats:r.stats || {}, appList:r.appList || null }); if(CURRENT_USER.role) applyStats(r.stats || {}, r.appList || null); }
+  }catch(e){}
+}
+function applyStats(stats, appList){
 
   const grid = document.querySelector('.app-grid');
   const tiles = Array.from(grid.querySelectorAll('.app-tile'));
@@ -402,10 +432,8 @@ async function loadAppStats(){
   }).forEach(t=> grid.appendChild(t));
 
   if(window.hubAfterStats) try{ hubAfterStats(stats, appList); }catch(e){}   // แถบที่มาการเข้าใช้ + สิทธิ์ (hub-admin.js)
-  showGrid();
 }
-// กันค้างขั้นสุดท้าย — เครือข่ายมีปัญหาจริงๆ ค่อยแสดงการ์ดโดยไม่เรียง (ปกติไม่ถึงตรงนี้)
-setTimeout(showGrid, 10000);
+setTimeout(showGrid, 1500);   // กันค้าง
 
 /* บันทึกการเข้าใช้ก่อนเปิดโปรแกรม แล้วค่อยพาไป */
 document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
@@ -450,5 +478,6 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="hub-admin.js"></script>
+<script>boot();</script>
 </body>
 </html>

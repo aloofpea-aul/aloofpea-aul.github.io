@@ -414,7 +414,9 @@
     syncOutBtn();
     MY_APPS = null;
     if (!loggedIn()) { decorateTiles(); adminBtn.classList.remove('show'); return; }
-    callApi({ action: 'whoAmI' }).then(function (r) {
+    try { var ca = JSON.parse(localStorage.getItem('pea_hub_auth') || 'null'); if (ca && ca.name === CURRENT_USER.name && Array.isArray(ca.apps)) { MY_APPS = ca.apps; decorateTiles(); } } catch (e) {}
+    var wp = window.HUB_WHO_P ? window.HUB_WHO_P.then(function () { return window.HUB_WHO; }) : callApi({ action: 'whoAmI' });
+    wp.then(function (r) {
       if (r && Array.isArray(r.apps)) MY_APPS = r.apps;
       decorateTiles();
     }).catch(function () {});
