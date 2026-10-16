@@ -199,18 +199,20 @@
   }, true);
 
   /* ---------------- ผู้ดูแลระบบ ---------------- */
-  var ADM = { pending: [], requests: [], users: [] };
+  var ADM = { pending: [], requests: [], users: [], books: [] };
   function refreshAdminCount() {
     if (!isAdmin()) { adminBtn.classList.remove('show'); return Promise.resolve(); }
     adminBtn.classList.add('show');
     return Promise.all([
       callApi({ action: 'getPendingList' }).catch(function () { return null; }),
-      callApi({ action: 'appRequests' }).catch(function () { return null; })
+      callApi({ action: 'appRequests' }).catch(function () { return null; }),
+      callApi({ action: 'bookDlList' }).catch(function () { return null; })
     ]).then(function (rs) {
+      ADM.books = (rs[2] && rs[2].pending) || []; ADM.booksRecent = (rs[2] && rs[2].recent) || [];
       ADM.pending = (rs[0] && rs[0].pending) || [];
       ADM.requests = (rs[1] && rs[1].requests) || [];
       if (rs[1] && rs[1].appList) APP_LIST = rs[1].appList;
-      var n = ADM.pending.length + ADM.requests.length;
+      var n = ADM.pending.length + ADM.requests.length + ADM.books.length;
       adminBtn.textContent = n ? 'คำขอใหม่ ' + n : 'จัดการผู้ใช้';
       return n;
     });
@@ -218,8 +220,8 @@
 
   function openAdmin() {
     var body = modal('จัดการผู้ใช้', [
-      { id: 'req', label: 'คำขอใหม่' }, { id: 'users', label: 'ผู้ใช้ทั้งหมด' }, { id: 'stats', label: 'สถิติการเข้าใช้' }
-    ], function (t) { ({ req: tabReq, users: tabUsers, stats: tabStats })[t](body); });
+      { id: 'req', label: 'คำขอใหม่' }, { id: 'books', label: 'ขอดาวน์โหลดหนังสือ' }, { id: 'users', label: 'ผู้ใช้ทั้งหมด' }, { id: 'stats', label: 'สถิติการเข้าใช้' }
+    ], function (t) { ({ req: tabReq, books: tabBooks, users: tabUsers, stats: tabStats })[t](body); });
     tabReq(body);
   }
 
@@ -282,6 +284,38 @@
             if (r && r.ok) { msg.className = 'hm-msg ok'; msg.textContent = 'เรียบร้อย'; setTimeout(function () { tabReq(body); }, 600); }
             else { card.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = (r && (r.error || r.message)) || 'ไม่สำเร็จ'; }
           }).catch(function () { card.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
+        };
+      });
+    });
+  }
+
+  /* คำขอดาวน์โหลดหนังสือ (จากหน้าอ่านหนังสือ pea-drawings/reader.html) */
+  function tabBooks(body) {
+    loading(body);
+    refreshAdminCount().then(function () {
+      setTabLabel('books', 'ขอดาวน์โหลดหนังสือ' + (ADM.books.length ? ' (' + ADM.books.length + ')' : ''));
+      var ST = { approved: 'อนุมัติแล้ว', denied: 'ไม่อนุมัติ', revoked: 'ยกเลิกสิทธิ์แล้ว', expired: 'หมดอายุ' };
+      var card = function (q, done) {
+        return '<div class="hm-card" data-row="' + q.row + '"><div class="hm-row"><div class="hm-name">' + esc(q.user) + '</div><div class="hm-muted">' + esc(q.at) + '</div></div>' +
+          '<div>ขอดาวน์โหลด: <b>' + esc(q.title || ('เล่ม ' + q.book)) + '</b> · ' + (q.days ? q.days + ' วัน' : 'ถาวร') + '</div>' +
+          '<div class="hm-muted">เหตุผล: ' + esc(q.reason || '-') + '</div>' +
+          (done ? '<div class="hm-row"><div class="hm-muted" style="flex:1">' + esc(ST[q.status] || q.status) + (q.by ? ' โดย ' + esc(q.by) : '') + (q.status === 'approved' ? ' · ' + (q.expires ? 'ถึง ' + esc(q.expires) : 'ถาวร') : '') + '</div>' +
+              (q.status === 'approved' ? '<button class="hm-btn no" type="button" data-d="revoke">ยกเลิกสิทธิ์</button>' : '') + '</div>'
+            : '<div class="hm-row" style="justify-content:flex-end"><button class="hm-btn no" type="button" data-d="deny">ไม่อนุมัติ</button><button class="hm-btn ok" type="button" data-d="approve">อนุมัติ</button></div>') +
+          '<div class="hm-msg"></div></div>';
+      };
+      var h = ADM.books.length ? '<div class="hm-sec">รออนุมัติ</div>' + ADM.books.map(function (q) { return card(q, false); }).join('') : '<div class="hm-empty">ไม่มีคำขอค้าง</div>';
+      if ((ADM.booksRecent || []).length) h += '<div class="hm-sec">ล่าสุด</div>' + ADM.booksRecent.map(function (q) { return card(q, true); }).join('');
+      body.innerHTML = h;
+      body.querySelectorAll('[data-d]').forEach(function (b) {
+        b.onclick = function () {
+          var c = b.closest('.hm-card'), msg = c.querySelector('.hm-msg'), d = b.dataset.d;
+          if (d !== 'approve' && !confirm(d === 'deny' ? 'ไม่อนุมัติคำขอนี้?' : 'ยกเลิกสิทธิ์ดาวน์โหลดนี้?')) return;
+          c.querySelectorAll('button').forEach(function (x) { x.disabled = true; }); msg.className = 'hm-msg'; msg.textContent = 'กำลังบันทึก…';
+          callApi({ action: 'bookDlDecide', row: +c.dataset.row, decision: d }).then(function (r) {
+            if (r && r.ok) { msg.className = 'hm-msg ok'; msg.textContent = 'เรียบร้อย'; setTimeout(function () { tabBooks(body); }, 600); }
+            else { c.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = (r && (r.error || r.message)) || 'ไม่สำเร็จ'; }
+          }).catch(function () { c.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
         };
       });
     });
