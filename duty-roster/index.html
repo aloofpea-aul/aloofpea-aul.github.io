@@ -267,7 +267,13 @@ const S={boot:null,months:{},preview:null,pair:'auto',dGroup:'emp',dDay:1,dMonth
 async function apiGet(params){
   if(window.__MOCK__) return window.__MOCK__.get(params);
   const u=API_URL+'?'+new URLSearchParams(params).toString();
-  const r=await fetch(u); const j=await r.json(); if(!j.ok) throw new Error(j.error); return j;
+  // Apps Script ตอนเพิ่งตื่นบางครั้งตอบหน้า HTML แทน JSON — ลองใหม่อัตโนมัติ 2 ครั้ง
+  let last;
+  for(let k=0;k<3;k++){
+    try{ const r=await fetch(u); const j=JSON.parse(await r.text()); if(!j.ok) throw new Error(j.error); return j; }
+    catch(e){ last=e; if(!/JSON|fetch|network/i.test(e.message)) throw e; await new Promise(r=>setTimeout(r,1200*(k+1))); }
+  }
+  throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองรีเฟรชอีกครั้ง');
 }
 async function apiPost(body){
   if(window.__MOCK__) return window.__MOCK__.post(body);
