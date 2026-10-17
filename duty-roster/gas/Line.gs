@@ -274,7 +274,7 @@ function handleEvent_(ev) {
     const dd = dayData_(ymd);
     if (!dd) return reply_(ev.replyToken, [text_('ยังไม่มีตารางเวรของ ' + thDateLong_(ymd))]);
     return reply_(ev.replyToken, [flex_('เวรแก้ไฟ ' + thDateLong_(ymd),
-      bubble_('เวรแก้ไฟ' + (dd.day.off ? ' · วันหยุด' : ''), '#5B1A63', thDateLong_(ymd), [' '].concat(summaryLines_(dd)), null))]);
+      bubble_('เวรแก้ไฟ' + (dd.day.off ? ' · วันหยุด' : ''), '#5B1A63', thDateLong_(ymd), summaryLines_(dd), null))]);
   }
   if (/^เวรของฉัน$/.test(t)) return reply_(ev.replyToken, [text_(myDuties_(me))]);
   if (/เปลี่ยน|ลาเวร|แลก/.test(t)) {
