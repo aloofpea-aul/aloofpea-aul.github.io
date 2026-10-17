@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="/pea-hub.js" data-app="dutyroster" data-gate="off" data-name="ตารางเวรแก้ไฟ"></script>
+<script src="/pea-hub.js" data-app="dutyroster" data-perm="login" data-name="ตารางเวรแก้ไฟ"></script>
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
 <title>ตารางเวรแก้ไฟ กฟส.อ่าวลึก</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -280,9 +281,21 @@ async function apiPost(body){
   const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
   const j=await r.json(); if(!j.ok) throw new Error(j.error); return j;
 }
+/* ---------- แคชในเครื่อง: เปิดปุ๊บเห็นปั๊บ แล้วค่อยอัปเดตเบื้องหลัง ---------- */
+const LS={get(k){try{return JSON.parse(localStorage.getItem('dr_'+k));}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem('dr_'+k,JSON.stringify(v));}catch(e){}},
+  del(k){try{localStorage.removeItem('dr_'+k);}catch(e){}}};
+function forgetMonth(key){ if(key){delete S.months[key];LS.del('m_'+key);} else {Object.keys(S.months).forEach(k=>LS.del('m_'+k));S.months={};} }
+function currentView(){return ['viewDaily','viewGen','viewReport','viewReq','viewSet'].find(x=>!$(x).classList.contains('hide'));}
+function refreshView(){const v=currentView(); if(v==='viewDaily')renderDaily(); else if(v==='viewReport')drawReport();}
 async function loadMonth(key){
   if(S.months[key]) return S.months[key];
-  const j=await apiGet({action:'month',m:key}); S.months[key]=j.month; return j.month;
+  const c=LS.get('m_'+key);
+  const fresh=apiGet({action:'month',m:key}).then(j=>{
+    const changed=JSON.stringify(j.month)!==JSON.stringify(c);
+    S.months[key]=j.month; LS.set('m_'+key,j.month); if(c&&changed) refreshView(); return j.month;});
+  if(c){ S.months[key]=c; fresh.catch(()=>{}); return c; }
+  return fresh;
 }
 
 /* ---------- utils ---------- */
@@ -383,7 +396,7 @@ $('gSave').onclick=async()=>{
   $('gSave').disabled=true;msg('gMsg','กำลังบันทึก…');
   try{
     const j=await apiPost({action:'generate',m:key,pair:S.pair,pin:$('gPin').value,force:!!ex});
-    S.months[key]=j.month; if(!ex)S.boot.months.push({month:key,status:j.month.status}); else ex.status=j.month.status;
+    S.months[key]=j.month; LS.set('m_'+key,j.month); if(!ex)S.boot.months.push({month:key,status:j.month.status}); else ex.status=j.month.status;
     $('dMonth').innerHTML=''; msg('gMsg','บันทึก '+monthLabel(key)+' เป็นร่างแล้ว — ไปที่ "รายงาน" เพื่อพิมพ์เสนออนุมัติ');
   }catch(e){msg('gMsg',e.message,'err');}
   $('gSave').disabled=false;
@@ -501,7 +514,7 @@ $('rSetStatus').onclick=async()=>{
   const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
   const pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
   try{await apiPost({action:'setStatus',m:v,status:$('rStatus').value,pin});
-    S.months[v].status=$('rStatus').value; S.boot.months.find(x=>x.month===v).status=$('rStatus').value; $('dMonth').innerHTML='';
+    S.months[v].status=$('rStatus').value; LS.set('m_'+v,S.months[v]); S.boot.months.find(x=>x.month===v).status=$('rStatus').value; $('dMonth').innerHTML='';
     msg('rMsg','บันทึกสถานะแล้ว'); renderReport();}catch(e){msg('rMsg',e.message,'err');}
 };
 
@@ -570,7 +583,7 @@ $('qSubmit').onclick=async()=>{
   const body={action:'request',month:key,type:S.qType,payload,requester:a,reason:$('qReason').value.trim()};
   if($('qNow').checked){body.approveNow=true;body.pin=$('qPin').value;}
   $('qSubmit').disabled=true; msg('qMsg','กำลังส่ง…');
-  try{ const j=await apiPost(body); delete S.months[key];
+  try{ const j=await apiPost(body); forgetMonth(key);
     msg('qMsg',j.request.status==='อนุมัติ'?'แก้ไขตารางแล้ว และแจ้ง LINE ผู้เกี่ยวข้อง':'ส่งคำขอแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ');
     $('qReason').value=''; await qForm('month'); await loadRequests();
   }catch(e){msg('qMsg',e.message,'err');}
@@ -591,7 +604,7 @@ async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}
   let note=''; if(!ok){note=prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)')||'';}
   msg('pnMsg','กำลังบันทึก…');
-  try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); S.months={};
+  try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); forgetMonth();
     msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); await loadRequests(); if(ok) await qForm('month');
   }catch(e){msg('pnMsg',e.message,'err');}
 }
@@ -627,11 +640,15 @@ $('sSave').onclick=async()=>{
 
 /* ---------- เริ่ม ---------- */
 (async function(){
-  try{ const j=await apiGet({action:'bootstrap'}); S.boot=j; $('boot').classList.add('hide');
-    S.boot.months.sort((a,b)=>a.month<b.month?-1:1);
-    setDot(S.boot.pendingCount||0);
-    const v=new URLSearchParams(location.search).get('view'); show(v||'viewDaily');
-  }catch(e){ $('boot').innerHTML='โหลดข้อมูลไม่ได้: '+esc(e.message)+'<br><small>ตรวจ API_URL ใน index.html</small>'; }
+  const view=new URLSearchParams(location.search).get('view')||'viewDaily';
+  const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };
+  const cached=LS.get('boot');
+  if(cached&&cached.months&&cached.months.length){ use(cached); show(view); }      // เห็นทันทีจากข้อมูลล่าสุดในเครื่อง
+  try{
+    const j=await apiGet({action:'bootstrap'}); LS.set('boot',j);
+    if(!S.boot){ use(j); show(view); }
+    else if(JSON.stringify(j)!==JSON.stringify(cached)){ use(j); $('dMonth').innerHTML=''; refreshView(); }
+  }catch(e){ if(!S.boot) $('boot').innerHTML='โหลดข้อมูลไม่ได้: '+esc(e.message)+'<br><small>ลองรีเฟรชอีกครั้ง</small>'; }
 })();
 </script>
 </body>

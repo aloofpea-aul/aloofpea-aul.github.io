@@ -3,7 +3,7 @@
  *   <script src="/pea-hub.js" data-app="drawings"></script>
  * ทำ 2 อย่าง
  *   1) ตรวจสิทธิ์ — ยังไม่ล็อกอินจะขึ้นกล่องเข้าสู่ระบบ/สมัคร · ไม่มีสิทธิ์จะขึ้นปุ่มขอสิทธิ์
- *      (ไม่ต้องการล็อกให้ใส่ data-gate="off" — จะนับอย่างเดียว)
+ *      (ไม่ต้องการล็อกให้ใส่ data-gate="off" — จะนับอย่างเดียว · data-perm="login" = แค่ล็อกอินก็เข้าได้)
  *   2) นับการเข้าใช้ 1 ครั้งต่อการเปิดจริง แยกว่ามาจาก ศูนย์รวมงาน / ลิงก์ตรง / ไอคอนบนหน้าจอ
  *      เปิดจากศูนย์รวมงาน = นับทุกครั้ง · รีโหลดหรือเปลี่ยนหน้าในโปรแกรมเดิมภายใน 30 นาที = ไม่นับซ้ำ
  * ใช้ชื่อ/รหัสชุดเดียวกับศูนย์รวมงาน (จำไว้ในเครื่อง) — เข้าที่ไหนก่อนก็ได้ ที่อื่นเข้าได้เลย
@@ -14,6 +14,7 @@
   var me = document.currentScript;
   var APP = (me && me.dataset.app) || '';
   var GATE = !(me && me.dataset.gate === 'off');
+  var LOGIN_ONLY = !!(me && me.dataset.perm === 'login');   // data-perm="login" = ล็อกอินศูนย์รวมงานก็ใช้ได้ ไม่ต้องขอสิทธิ์รายโปรแกรม
   var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
   var K_USER = 'pea_aoluek_username', K_PASS = 'pea_aoluek_password', K_AUTH = 'pea_hub_auth';
   var IDLE_MS = 30 * 60 * 1000, CACHE_MS = 7 * 86400000;
@@ -31,7 +32,7 @@
       .then(function (r) { return r.json(); });
   }
   function readCache() { try { return JSON.parse(ls(K_AUTH) || 'null'); } catch (e) { return null; } }
-  function canUse(auth) { return !APP || !auth || !Array.isArray(auth.apps) || auth.apps.indexOf(APP) >= 0; }
+  function canUse(auth) { return LOGIN_ONLY || !APP || !auth || !Array.isArray(auth.apps) || auth.apps.indexOf(APP) >= 0; }
 
   /* ---------- ที่มาของการเปิด ---------- */
   var params = new URLSearchParams(location.search);
