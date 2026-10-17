@@ -332,9 +332,10 @@ function show(v){
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 
 /* ---------- เวรรายวัน ---------- */
+function rankOf(){const o={};[...S.boot.people.emp,...S.boot.people.wk].forEach((p,k)=>o[p.short]=k);return n=>(n in o?o[n]:999);}
 function shiftRows(data,group,i){
   const day=data.days[i];
-  const who=(map,test)=>Object.keys(map).filter(n=>test(map[n][i]));
+  const rank=rankOf(); const who=(map,test)=>Object.keys(map).filter(n=>test(map[n][i])).sort((x,y)=>rank(x)-rank(y));   // ตำแหน่งสูงกว่าขึ้นก่อน (ตามลำดับในรายงาน)
   if(group==='emp'){
     const e=data.emp;
     return [

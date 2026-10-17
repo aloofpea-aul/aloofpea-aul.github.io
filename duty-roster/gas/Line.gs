@@ -36,7 +36,18 @@ function dayData_(ymd) {
   Object.keys(d.wk).forEach(function (n) { w[n] = d.wk[n][i]; });
   return { day: d.days[i], emp: e, wk: w, status: mo.status };
 }
-function who_(map, test) { return Object.keys(map).filter(function (n) { return test(map[n]); }); }
+/** รายชื่อที่ตรงเงื่อนไข เรียงตำแหน่งสูงก่อน (ตาม reportOrder ในชีต People) */
+function who_(map, test) {
+  const rank = rankMap_();
+  return Object.keys(map).filter(function (n) { return test(map[n]); })
+    .sort(function (a, b) { return (rank[a] == null ? 999 : rank[a]) - (rank[b] == null ? 999 : rank[b]); });
+}
+let RANK_CACHE_ = null;
+function rankMap_() {
+  if (RANK_CACHE_) return RANK_CACHE_;
+  const o = {}; readTable_(SH.PEOPLE).forEach(function (r) { o[r.short] = (r.group === 'WK' ? 100 : 0) + Number(r.reportOrder || 0); });
+  return (RANK_CACHE_ = o);
+}
 
 /** ผู้รับของแต่ละ slot */
 function slotRecipients_(kind, dd, cfg) {
