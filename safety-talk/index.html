@@ -11,7 +11,7 @@
        แทน google.script.run ของ Apps Script ด้วยการส่ง POST ไปที่ Web App (doPost)
        โค้ดหน้าเว็บส่วนอื่นเหมือนเวอร์ชัน Apps Script ทุกอย่าง */
     (function () {
-      var DEFAULT_API = '__API_URL__';
+      var DEFAULT_API = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';
       var KEY = 'safetytalk_api_url';
       window.__ST_ON_GITHUB = true;
       function apiUrl() { try { return localStorage.getItem(KEY) || DEFAULT_API; } catch (e) { return DEFAULT_API; } }
