@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ตารางเวรแก้ไฟ กฟส.อ่าวลึก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#5B1A63;--pri2:#3E0F45;--bg:#F5F3F7;--ink:#1E1A22;--mut:#5E5666;--line:#E2DCE8;--card:#FFFFFF;
+  --c1:#E3E6FA;--c1f:#26307A;--c2:#FCE7B2;--c2f:#6B4500;--c3:#F1DDF4;--c3f:#5B1A63;--off:#FBEFD9;--offf:#8A4B00}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',sans-serif;-webkit-text-size-adjust:100%}
+button,input,select{font-family:inherit;font-size:14px}
+.app{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:72px}
+header.top{background:var(--pri);color:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:5}
+header.top .t1{font-size:12px;opacity:.85}header.top .t2{font-size:19px;font-weight:700}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{height:36px;padding:0 12px;border-radius:18px;border:0;background:#fff;color:var(--pri2);font-weight:600}
+.badge{height:26px;padding:0 10px;border-radius:13px;font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.b-draft{background:#FCE7B2;color:#6B4500}.b-ok{background:#D5EED8;color:#1F5A2A}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:rgba(0,0,0,.18);border-radius:12px;padding:4px}
+.seg button{height:38px;border:0;border-radius:9px;font-weight:600;background:transparent;color:#fff}
+.seg button.on{background:#fff;color:var(--pri2)}
+.seg.light{background:#E7E1EC}.seg.light button{color:#4A4450}.seg.light button.on{color:var(--pri2)}
+main{padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:0 1px 2px rgba(30,26,34,.08)}
+.card h3{margin:0 0 8px;font-size:14px}
+.days{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
+.days button{flex:0 0 44px;height:58px;border-radius:12px;border:1px solid var(--line);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;scroll-snap-align:center;color:var(--ink)}
+.days button.off{background:var(--off);color:var(--offf)}.days button.hol{background:#DCE5F6;color:#1F3F80}
+.days button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.days small{font-size:11px}.days b{font-size:17px}
+.duty{display:flex;gap:12px;align-items:center}
+.chip{width:48px;height:48px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 48px}
+.chip small{font-size:10px;font-weight:600}.chip b{font-size:18px;line-height:1}
+.duty .tm{font-size:12px;color:var(--mut)}.duty .nm{font-size:15px;font-weight:600}
+.btn{height:46px;border-radius:12px;border:0;background:var(--pri);color:#fff;font-weight:600;padding:0 16px;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--pri);border:1px solid var(--pri)}
+.btn:disabled{opacity:.5}
+.bar{height:10px;border-radius:5px;background:#EFEBF2;overflow:hidden}.bar>i{display:block;height:10px;border-radius:5px;background:#8E3FA0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.muted{color:var(--mut);font-size:12px}
+.note{background:#EDE4F0;border-radius:10px;padding:8px 10px;font-size:12px;color:var(--pri2);line-height:1.5}
+.warn{background:#FFF1D6;color:#6B4500}
+.err{background:#FBE1E1;color:#8A2B2B}
+.opt{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;background:#fff}
+.opt.on{border:2px solid var(--pri)}
+.opt .sc{margin-left:auto;text-align:right;font-weight:700}
+.mini{overflow-x:auto}
+.mini table{border-collapse:collapse;font-size:11px}
+.mini td,.mini th{border:1px solid var(--line);padding:2px 3px;text-align:center;min-width:22px;white-space:nowrap}
+.mini td.nm{text-align:left;min-width:80px;position:sticky;left:0;background:#fff}
+.mini .off{background:var(--off)}.mini .hol{background:#DCE5F6}
+input[type=text],input[type=date],input[type=number],input[type=password],select{height:42px;border-radius:10px;border:1px solid #CFC6D6;padding:0 10px;background:#fff;color:var(--ink);width:100%}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}
+.hrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #F0ECF3}
+.hrow:last-child{border-bottom:0}
+.tg{width:52px;height:30px;border-radius:15px;border:0;background:#C9C2CF;position:relative;flex:0 0 52px;cursor:pointer}
+.tg::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;transition:left .15s}
+.tg.on{background:#4472C4}.tg.on::after{left:25px}
+nav.bot{position:fixed;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+nav.bot button{border:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:#6B6372}
+nav.bot button.on{color:var(--pri);font-weight:700}
+nav.bot button{position:relative}
+.dot{position:absolute;top:6px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:#C0392B;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.rq{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.rq .tx{font-size:14px;font-weight:600;line-height:1.5}
+.st{font-size:12px;font-weight:700}
+.st.ok{color:#1F5A2A}.st.no{color:#8A2B2B}
+.btn.red{background:#fff;color:#8A2B2B;border:1px solid #E2C4C4}
+.lk{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F0ECF3;font-size:13px}
+.hide{display:none!important}
+.loading{padding:40px;text-align:center;color:var(--mut)}
+
+/* ===================== รายงาน (พิมพ์) ===================== */
+#printArea{display:flex;flex-direction:column;gap:16px;align-items:center;overflow-x:auto}
+.page{width:11in;height:8.5in;background:#fff;color:#000;font-family:'Sarabun',sans-serif;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.2);flex:0 0 auto}
+.rp{padding:.15in .2in .1in;font-size:12.5px;display:flex;flex-direction:column;gap:1px;height:100%}
+.rp .ln{display:grid;grid-template-columns:4.35in 1fr;padding-left:.2in}
+.rp .p{padding-left:.2in}
+.rp table.t{border-collapse:collapse;font-size:10.5px;border:2px solid #000}
+.rp table.t td,.rp table.t th{border:1px solid #000;padding:0;text-align:center;height:14px;line-height:13px;font-weight:400}
+.rp table.t th.d{width:.23in}
+.rp table.t tr.g td{border-top:2px solid #000}
+.lg{display:flex;flex-direction:column;gap:3px;font-size:11px;width:1.2in;margin-top:.62in}
+.lg div{display:flex;gap:4px;align-items:flex-start;line-height:1.25}
+.lg .sw{width:.32in;height:13px;border:2px solid #000;flex:0 0 .32in}
+.wk{padding:1.1in .25in .3in .3in;font-size:14px;display:flex;flex-direction:column;gap:14px;height:100%}
+.wk table{border-collapse:collapse;width:100%;font-size:12px}
+.wk td,.wk th{border:1px solid #000;padding:0;text-align:center}
+@page{size:letter landscape;margin:0}
+@media print{
+  body{background:#fff}
+  .app>*:not(#viewReport),nav.bot,#viewReport>.card{display:none!important}
+  .app{padding:0;max-width:none}
+  main#viewReport{padding:0}
+  #printArea{gap:0;display:block}
+  .page{box-shadow:none;break-after:page;page-break-after:always}
+  .page:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top" id="hdr">
+    <div class="row" style="justify-content:space-between">
+      <div><div class="t1">กฟส.อ่าวลึก · แผนกปฏิบัติการ</div><div class="t2" id="hdrTitle">ตารางเวรแก้ไฟ</div></div>
+      <span class="badge" id="hdrBadge"></span>
+    </div>
+  </header>
+
+  <div id="boot" class="loading">กำลังโหลดข้อมูล…</div>
+
+  <!-- ============ เวรรายวัน ============ -->
+  <main id="viewDaily" class="hide">
+    <div class="row">
+      <select id="dMonth" style="flex:1"></select>
+    </div>
+    <div class="seg light" id="dGroup"><button data-g="emp" class="on">พนักงาน</button><button data-g="wk">คนงาน</button></div>
+    <div class="days" id="dDays"></div>
+    <div class="row" style="justify-content:space-between;padding:0 4px">
+      <div style="font-size:17px;font-weight:700" id="dTitle"></div>
+      <div class="muted" id="dTag" style="font-weight:600"></div>
+    </div>
+    <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
+  </main>
+
+  <!-- ============ สร้างเวร ============ -->
+  <main id="viewGen" class="hide">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">① เดือนที่จะสร้าง</h3><b id="gMonthLbl" style="color:var(--pri)"></b></div>
+      <div class="muted" id="gFrom" style="margin-top:4px"></div>
+      <div id="gHol" class="note" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>② การจับคู่ช่วง 3</h3>
+      <div id="gPairs" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div class="muted" style="margin-top:6px">ตัวเลข = จำนวนครั้งที่คู่ซ้ำกับเดือนก่อน (น้อย = สลับคู่ได้มาก) · ทุกแบบยังหมุนตามลำดับเดิม</div>
+    </div>
+    <div class="card">
+      <h3>③ จำนวนครั้ง (พนักงาน)</h3>
+      <div id="gCounts" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div id="gNotes"></div>
+    </div>
+    <div class="card">
+      <h3>④ ตัวอย่างตาราง</h3>
+      <div class="mini" id="gMini"></div>
+    </div>
+    <div class="card">
+      <label class="f">PIN ผู้มีสิทธิ์ (หผ.ปร. / ชผ. รักษาการแทน)<input type="password" id="gPin" inputmode="numeric" autocomplete="off"></label>
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn ghost" id="gToReport">ดูตัวอย่างรายงาน</button>
+        <button class="btn" id="gSave">บันทึกเป็นร่าง</button>
+      </div>
+      <div id="gMsg" style="margin-top:8px"></div>
+    </div>
+  </main>
+
+  <!-- ============ รายงาน ============ -->
+  <main id="viewReport" class="hide">
+    <div class="card">
+      <div class="grid2">
+        <label class="f">เดือน<select id="rMonth"></select></label>
+        <label class="f">รายงาน<select id="rKind"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option></select></label>
+        <label class="f">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
+        <label class="f">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn ghost" id="rSetStatus">บันทึกสถานะ</button>
+        <button class="btn" id="rPrint">พิมพ์ / บันทึก PDF</button>
+      </div>
+      <div class="muted" style="margin-top:6px">ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"</div>
+      <div id="rMsg"></div>
+    </div>
+    <div id="printArea"></div>
+  </main>
+
+  <!-- ============ คำขอเปลี่ยน/ลาเวร ============ -->
+  <main id="viewReq" class="hide">
+    <div class="card">
+      <h3>ยื่นคำขอ</h3>
+      <div class="seg light" id="qType"><button data-t="swap" class="on">แลกเวร</button><button data-t="leave">ลาเวร · หาคนแทน</button></div>
+      <div class="grid2" style="margin-top:10px">
+        <label class="f">เดือน<select id="qMonth"></select></label>
+        <label class="f">กลุ่ม<select id="qGroup"><option value="emp">พนักงาน</option><option value="wk">คนงาน</option></select></label>
+        <label class="f">ผู้ขอ<select id="qA"></select></label>
+        <label class="f">เวรที่จะเปลี่ยน<select id="qDa"></select></label>
+        <label class="f" id="qBWrap">แลกกับ<select id="qB"></select></label>
+        <label class="f" id="qDbWrap">รับเวรของคู่วันที่<select id="qDb"></select></label>
+        <label class="f hide" id="qRWrap">คนเข้าแทน (เรียงจากเวรน้อยสุด)<select id="qR"></select></label>
+      </div>
+      <label class="f" style="margin-top:8px">เหตุผล<input type="text" id="qReason" placeholder="เช่น ลากิจ / ธุระส่วนตัว"></label>
+      <div id="qPreview" class="note" style="margin-top:8px"></div>
+      <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="qNow" style="width:20px;height:20px"> ผู้อนุมัติแก้ไขทันที (ไม่ต้องรออนุมัติ)</label>
+      <label class="f hide" id="qPinWrap" style="margin-top:6px">PIN ผู้อนุมัติ<input type="password" id="qPin" inputmode="numeric" autocomplete="off"></label>
+      <button class="btn" id="qSubmit" style="width:100%;margin-top:10px">ส่งคำขอ</button>
+      <div id="qMsg" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">รออนุมัติ</h3><span class="muted" id="pnApprovers"></span></div>
+      <label class="f" style="margin-top:8px">PIN ผู้อนุมัติ (หผ.ปร. / ชผ. รักษาการแทน)<input type="password" id="pnPin" inputmode="numeric" autocomplete="off"></label>
+      <div id="pnList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+      <div id="pnMsg" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>ประวัติ (30 รายการล่าสุด)</h3>
+      <div id="hsList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </main>
+
+  <!-- ============ ตั้งค่า ============ -->
+  <main id="viewSet" class="hide">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">วันหยุดประจำปี กฟภ.</h3><select id="sYear" style="width:110px"></select></div>
+      <div class="muted" style="margin:4px 0 6px">เปิด = กฟภ. หยุด (สีฟ้าในรายงาน · ช่วง 2+3 ได้ค่าตอบแทน)</div>
+      <div id="sHol"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="date" id="sNewDate" style="flex:1 1 150px"><input type="text" id="sNewName" placeholder="ชื่อวันหยุด" style="flex:2 1 180px">
+        <button class="btn ghost" id="sAdd" style="height:42px">+ เพิ่ม</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>โควต้าเวรพนักงาน (ครั้ง/เดือน)</h3>
+      <div class="muted" style="margin-bottom:6px">เว้นว่าง = หมุนตามสเต็ปอัตโนมัติ · ครบโควต้าแล้ว คิวจะข้ามไปคนถัดไปในลำดับเดิม</div>
+      <div id="sQuota"></div>
+    </div>
+    <div class="card">
+      <label class="f">คู่ที่ไม่ให้อยู่ช่วง 3 ด้วยกัน (เช่น ธวัชชัย/พงศธร, คั่นด้วย ,)<input type="text" id="sAvoid"></label>
+    </div>
+    <div class="card">
+      <h3>LINE แจ้งเตือนก่อนเข้ากะ 5 นาที</h3>
+      <div class="muted" style="margin-bottom:6px">พนักงานแต่ละคนเพิ่มเพื่อน LINE OA แล้วพิมพ์ <b>ลงทะเบียน ชื่อ รหัส</b> (รหัสอยู่ในชีต Config: lineRegCode)</div>
+      <div id="sLine"></div>
+      <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="sStandby" style="width:20px;height:20px"> แจ้งคนเตรียมพร้อมด้วย (ใช้โควต้าเพิ่ม ~30 ข้อความ/เดือน)</label>
+    </div>
+    <div class="card">
+      <label class="f">PIN<input type="password" id="sPin" inputmode="numeric" autocomplete="off"></label>
+      <button class="btn" id="sSave" style="width:100%;margin-top:10px">บันทึกการตั้งค่า</button>
+      <div id="sMsg" style="margin-top:8px"></div>
+    </div>
+  </main>
+</div>
+
+<nav class="bot" id="nav">
+  <button data-v="viewDaily" class="on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>เวรรายวัน</button>
+  <button data-v="viewGen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>สร้างเวร</button>
+  <button data-v="viewReport"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>รายงาน</button>
+  <button data-v="viewReq"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>เปลี่ยน/ลาเวร<span class="dot hide" id="navDot"></span></button>
+  <button data-v="viewSet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>ตั้งค่า</button>
+</nav>
+
+<script>
+/* ===== ตั้งค่า: วาง URL ของ Web app (Apps Script) ตรงนี้ ===== */
+const API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+
+const TH_MONTH=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_WD=['อา','จ','อ','พ','พฤ','ศ','ส'];
+const TH_WDF=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S={boot:null,months:{},preview:null,pair:'auto',dGroup:'emp',dDay:1,dMonth:null};
+
+/* ---------- API ---------- */
+async function apiGet(params){
+  if(window.__MOCK__) return window.__MOCK__.get(params);
+  const u=API_URL+'?'+new URLSearchParams(params).toString();
+  const r=await fetch(u); const j=await r.json(); if(!j.ok) throw new Error(j.error); return j;
+}
+async function apiPost(body){
+  if(window.__MOCK__) return window.__MOCK__.post(body);
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  const j=await r.json(); if(!j.ok) throw new Error(j.error); return j;
+}
+async function loadMonth(key){
+  if(S.months[key]) return S.months[key];
+  const j=await apiGet({action:'month',m:key}); S.months[key]=j.month; return j.month;
+}
+
+/* ---------- utils ---------- */
+const mk=(y,m)=>y+'-'+String(m).padStart(2,'0');
+const parseKey=k=>({y:+k.slice(0,4),m:+k.slice(5,7)});
+const nextKey=k=>{const {y,m}=parseKey(k);return m===12?mk(y+1,1):mk(y,m+1);};
+const monthLabel=k=>{const {y,m}=parseKey(k);return TH_MONTH[m-1]+' '+(y+543);};
+const thDate=iso=>{if(!iso)return '';const [y,m,d]=iso.split('-').map(Number);return d+' '+TH_MONTH[m-1]+' '+(y+543);};
+const todayIso=()=>{const t=new Date(Date.now()+7*3600e3);return t.toISOString().slice(0,10);};
+function msg(el,text,cls){$(el).innerHTML=text?`<div class="note ${cls||''}">${esc(text)}</div>`:'';}
+const fullName=s=>{const p=[...S.boot.people.emp,...S.boot.people.wk].find(x=>x.short===s);return p?p.full:s;};
+
+/* ---------- นำทาง ---------- */
+function show(v){
+  ['viewDaily','viewGen','viewReport','viewReq','viewSet'].forEach(x=>$(x).classList.toggle('hide',x!==v));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  ({viewDaily:renderDaily,viewGen:renderGen,viewReport:renderReport,viewReq:renderReq,viewSet:renderSet})[v]();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+
+/* ---------- เวรรายวัน ---------- */
+function shiftRows(data,group,i){
+  const day=data.days[i];
+  const who=(map,test)=>Object.keys(map).filter(n=>test(map[n][i])).join(' · ')||'—';
+  if(group==='emp'){
+    const e=data.emp;
+    return [
+      {l:'ช่วง',n:'1',t:'00.30 – 08.30 น.',v:who(e,c=>c==='1'),bg:'var(--c1)',fg:'var(--c1f)'},
+      {l:'ช่วง',n:'2',t:'08.30 – 16.30 น.',v:day.off?who(e,c=>c==='2,3'):'วันทำการ — ไม่มีเวร',bg:'var(--c2)',fg:'var(--c2f)'},
+      {l:'ช่วง',n:'3',t:'16.30 – 00.30 น.',v:who(e,c=>c==='3'||c==='2,3'),bg:'var(--c3)',fg:'var(--c3f)'},
+      {l:'พร้อม',n:'•',t:'เตรียมพร้อม (ช่วง 1)',v:who(e,c=>c==='S'),bg:'#E4E4E4',fg:'#3A3A3A'}];
+  }
+  const w=data.wk;
+  return [
+    {l:'กะ',n:'1',t:'24.00 – 08.00 น.',v:who(w,c=>c.split(',').includes('1')),bg:'var(--c1)',fg:'var(--c1f)'},
+    {l:'กะ',n:'2',t:'08.00 – 16.00 น.',v:who(w,c=>c==='2'),bg:'var(--c2)',fg:'var(--c2f)'},
+    {l:'กะ',n:'3',t:'16.00 – 24.00 น.',v:who(w,c=>c.split(',').includes('3')),bg:'var(--c3)',fg:'var(--c3f)'},
+    {l:'พัก',n:'0',t:'พักกะ',v:who(w,c=>c==='0'),bg:'#ECEAEE',fg:'#4A4450'}];
+}
+async function renderDaily(){
+  const sel=$('dMonth');
+  if(!sel.options.length){
+    S.boot.months.forEach(x=>sel.add(new Option(monthLabel(x.month)+' · '+x.status,x.month)));
+    const cur=todayIso().slice(0,7); const has=S.boot.months.find(x=>x.month===cur);
+    S.dMonth=has?cur:S.boot.months[S.boot.months.length-1].month;
+    S.dDay=has?+todayIso().slice(8,10):1; sel.value=S.dMonth;
+    sel.onchange=()=>{S.dMonth=sel.value;S.dDay=1;renderDaily();};
+    document.querySelectorAll('#dGroup button').forEach(b=>b.onclick=()=>{S.dGroup=b.dataset.g;
+      document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x===b));renderDaily();});
+  }
+  const mo=await loadMonth(S.dMonth); const data=mo.data;
+  setBadge(mo.status);
+  $('dDays').innerHTML=data.days.map(d=>`<button data-d="${d.d}" class="${d.hol?'hol':d.off?'off':''} ${d.d===S.dDay?'on':''}"><small>${TH_WD[d.wd]}</small><b>${d.d}</b></button>`).join('');
+  $('dDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.dDay=+b.dataset.d;renderDaily();});
+  const on=$('dDays').querySelector('.on'); on&&on.scrollIntoView({inline:'center',block:'nearest'});
+  const day=data.days[S.dDay-1],{m}=parseKey(S.dMonth);
+  $('dTitle').textContent=TH_WDF[day.wd]+' '+day.d+' '+TH_MS[m-1];
+  $('dTag').textContent=day.hol?'วันหยุดพิเศษ':day.off?'วันหยุด · ได้ค่าตอบแทน':'วันทำการ';
+  $('dRows').innerHTML=shiftRows(data,S.dGroup,S.dDay-1).map(r=>`<div class="card duty"><div class="chip" style="background:${r.bg};color:${r.fg}"><small>${r.l}</small><b>${r.n}</b></div><div><div class="tm">${r.t}</div><div class="nm">${esc(r.v)}</div></div></div>`).join('');
+}
+function setBadge(st){const b=$('hdrBadge');b.textContent=st||'';b.className='badge '+(st==='อนุมัติแล้ว'?'b-ok':'b-draft');b.style.display=st?'':'none';}
+
+/* ---------- สร้างเวร ---------- */
+function genKey(){const ms=S.boot.months.map(x=>x.month).sort();return nextKey(ms[ms.length-1]);}
+async function renderGen(){
+  const key=S.genKey||genKey(); S.genKey=key;
+  $('gMonthLbl').textContent=monthLabel(key);
+  $('gFrom').textContent='ต่อวงรอบจาก '+monthLabel(prevKeyOf(key))+' อัตโนมัติ';
+  setBadge('ร่าง (ยังไม่บันทึก)');
+  $('gPairs').innerHTML='<div class="muted">กำลังคำนวณ…</div>';
+  try{
+    const j=await apiGet({action:'preview',m:key,pair:S.pair}); S.preview=j.preview;
+  }catch(e){ $('gPairs').innerHTML=`<div class="note err">${esc(e.message)}</div>`; return; }
+  const pv=S.preview,g=pv.gen;
+  const hols=S.boot.holidays.filter(h=>h.pea&&h.date.startsWith(key));
+  $('gHol').innerHTML=hols.length?'วันหยุด กฟภ.: '+hols.map(h=>esc(thDate(h.date)+' '+h.name)).join(', '):'เดือนนี้ไม่มีวันหยุดพิเศษ (แก้ได้ที่ ตั้งค่า)';
+  const best=pv.scores.slice().sort((a,b)=>a.score-b.score||a.offset-b.offset)[0].offset;
+  const opts=[{k:'auto',t:'อัตโนมัติ (เลือกแบบที่ซ้ำน้อยสุด)',s:pv.scores[best]}].concat(pv.scores.map(s=>({k:String(s.offset),t:(s.offset===0?'ต่อรอบเดิม':'เลื่อนกลุ่ม ก +'+s.offset)+' · เริ่มที่ '+s.firstX,s})));
+  $('gPairs').innerHTML=opts.map(o=>`<div class="opt ${S.pair===o.k?'on':''}" data-k="${o.k}"><div><div style="font-weight:600">${esc(o.t)}${o.k!=='auto'&&+o.k===best?' · แนะนำ':''}</div>${o.s.avoidHits?`<div class="muted" style="color:#8A2B2B">มีคู่ต้องห้าม ${o.s.avoidHits} วัน</div>`:''}</div><div class="sc">${o.s.overlap}<div class="muted" style="font-weight:400">ครั้งซ้ำ</div></div></div>`).join('');
+  $('gPairs').querySelectorAll('.opt').forEach(el=>el.onclick=()=>{S.pair=el.dataset.k;renderGen();});
+  // นับครั้ง
+  const cnt=n=>g.emp[n].reduce((s,c)=>s+(c==='1'||c==='3'?1:c==='2,3'?2:0),0);
+  const names=S.boot.people.emp.map(p=>p.short), mx=Math.max(...names.map(cnt));
+  $('gCounts').innerHTML=names.map(n=>`<div style="display:grid;grid-template-columns:96px 1fr 30px;gap:8px;align-items:center;font-size:13px"><div>${esc(n)}${S.boot.people.quotas[n]!=null?' <span class="muted">(≤'+S.boot.people.quotas[n]+')</span>':''}</div><div class="bar"><i style="width:${cnt(n)/mx*100}%"></i></div><b style="text-align:right">${cnt(n)}</b></div>`).join('');
+  $('gNotes').innerHTML=g.notes.length?`<div class="note warn" style="margin-top:8px">${g.notes.map(esc).join('<br>')}</div>`:'';
+  // ตาราง mini
+  const head='<tr><th></th>'+g.days.map(d=>`<th class="${d.hol?'hol':d.off?'off':''}">${d.d}<br>${TH_WD[d.wd]}</th>`).join('')+'</tr>';
+  const row=(map,n)=>`<tr><td class="nm">${esc(n)}</td>`+map[n].map((c,i)=>`<td class="${g.days[i].hol?'hol':g.days[i].off?'off':''}">${c==='S'?'<span style="color:#888">พ</span>':esc(c)}</td>`).join('')+'</tr>';
+  $('gMini').innerHTML='<table>'+head+names.map(n=>row(g.emp,n)).join('')+'<tr><td class="nm" colspan="'+(g.days.length+1)+'" style="background:#F5F3F7;font-weight:600">คนงาน</td></tr>'+S.boot.people.wk.map(p=>row(g.wk,p.short)).join('')+'</table><div class="muted" style="margin-top:4px">พ = เตรียมพร้อม · 2,3 = ช่วง 2 และ 3</div>';
+  const ex=S.boot.months.find(x=>x.month===key);
+  $('gSave').textContent=ex?'บันทึกทับ ('+ex.status+')':'บันทึกเป็นร่าง';
+}
+function prevKeyOf(k){const {y,m}=parseKey(k);return m===1?mk(y-1,12):mk(y,m-1);}
+$('gSave').onclick=async()=>{
+  const key=S.genKey,ex=S.boot.months.find(x=>x.month===key);
+  if(ex&&ex.status==='อนุมัติแล้ว'&&!confirm('เดือนนี้อนุมัติแล้ว ต้องการสร้างทับใช่ไหม'))return;
+  $('gSave').disabled=true;msg('gMsg','กำลังบันทึก…');
+  try{
+    const j=await apiPost({action:'generate',m:key,pair:S.pair,pin:$('gPin').value,force:!!ex});
+    S.months[key]=j.month; if(!ex)S.boot.months.push({month:key,status:j.month.status}); else ex.status=j.month.status;
+    $('dMonth').innerHTML=''; msg('gMsg','บันทึก '+monthLabel(key)+' เป็นร่างแล้ว — ไปที่ "รายงาน" เพื่อพิมพ์เสนออนุมัติ');
+  }catch(e){msg('gMsg',e.message,'err');}
+  $('gSave').disabled=false;
+};
+$('gToReport').onclick=()=>{S.rUsePreview=true;show('viewReport');};
+
+/* ---------- รายงาน ---------- */
+async function renderReport(){
+  const sel=$('rMonth'); sel.innerHTML='';
+  S.boot.months.slice().sort((a,b)=>a.month<b.month?1:-1).forEach(x=>sel.add(new Option(monthLabel(x.month)+' · '+x.status,x.month)));
+  if(S.preview) sel.add(new Option(monthLabel(S.preview.month)+' · ตัวอย่าง (ยังไม่บันทึก)','__preview'),0);
+  if(S.rUsePreview&&S.preview) sel.value='__preview'; S.rUsePreview=false;
+  if(!$('rDate').value) $('rDate').value=todayIso();
+  sel.onchange=drawReport; $('rKind').onchange=drawReport; $('rDate').onchange=drawReport;
+  drawReport();
+}
+async function currentReportData(){
+  const v=$('rMonth').value;
+  if(v==='__preview') return {key:S.preview.month,data:S.preview.gen,status:'ตัวอย่าง'};
+  const mo=await loadMonth(v); return {key:v,data:mo.data,status:mo.status};
+}
+async function drawReport(){
+  const r=await currentReportData(); $('rStatus').value=r.status==='อนุมัติแล้ว'?'อนุมัติแล้ว':'ร่าง'; setBadge(r.status);
+  const k=$('rKind').value, cfg=S.boot.config, dt=thDate($('rDate').value);
+  let html='';
+  if(k==='emp'||k==='all') html+=empPage(r,cfg,dt,'memo')+empPage(r,cfg,dt,'order');
+  if(k==='wk'||k==='all') html+=wkPage(r,cfg,dt);
+  $('printArea').innerHTML=html;
+}
+function empPage(r,cfg,docDate,sheet){
+  const g=r.data,{y,m}=parseKey(r.key),N=g.days.length,mName=TH_MONTH[m-1],yTh=y+543;
+  const colBg=d=>d.hol?'#8EA9DB':d.off?'#F4B084':'#FFFFFF';
+  let rows='';
+  S.boot.people.emp.forEach(p=>{
+    const codes=g.emp[p.short]||[];
+    const has=(c,i)=>i===0?c==='1':i===1?c==='2,3':(c==='3'||c==='2,3');
+    const cnt=[0,1,2].map(i=>codes.filter(c=>has(c,i)).length), tot=cnt[0]+cnt[1]+cnt[2];
+    [0,1,2].forEach(i=>{
+      rows+=`<tr class="${i===0?'g':''}">`;
+      if(i===0) rows+=`<td rowspan="3" style="white-space:nowrap;padding:0 3px">${esc(p.full)}</td>`;
+      rows+=`<td style="text-align:left;padding-left:4px;white-space:nowrap">ช่วงที่ ${i+1}</td>`;
+      codes.forEach((c,di)=>{const on=has(c,i);const sb=i===0&&c==='S';
+        rows+=`<td style="background:${on?'#FFFF00':sb?'#BFBFBF':colBg(g.days[di])}">${on?(i+1):''}</td>`;});
+      rows+=`<td>${cnt[i]||''}</td>`;
+      if(i===0) rows+=`<td rowspan="3">${tot}</td>`;
+      rows+='</tr>';
+    });
+  });
+  const head=`<tr><th rowspan="3" style="width:1.25in">ชื่อ-สกุล</th><th rowspan="3" style="width:.55in">ช่วงเวลา</th><th colspan="${N}">วันที่</th><th rowspan="3" style="width:.3in">ครั้ง</th><th rowspan="3" style="width:.6in">รวมจำนวนครั้ง</th></tr>
+    <tr>${g.days.map(d=>`<th class="d" style="background:${colBg(d)};font-size:11px">${d.d}</th>`).join('')}</tr>
+    <tr>${g.days.map(d=>`<th style="background:${colBg(d)}">${TH_WD[d.wd]}</th>`).join('')}</tr>`;
+  const legend=`<div class="lg">
+    <div><span class="sw" style="background:linear-gradient(to top right,#fff 46%,#000 48%,#000 52%,#fff 54%)"></span><span>วันทำการ<br>(ไม่ได้ค่าตอบแทน)</span></div>
+    <div><span class="sw" style="background:#FFFF00"></span>ได้ค่าตอบแทน</div>
+    <div><span class="sw" style="background:#F4B084"></span>วันเสาร์</div>
+    <div><span class="sw" style="background:#F4B084"></span>วันอาทิตย์</div>
+    <div><span class="sw" style="background:#4472C4"></span>วันหยุดพิเศษ</div>
+    <div><span class="sw" style="background:#A6A6A6"></span>เตรียมพร้อม</div>
+    <div style="display:block;line-height:1.3">(กรณี ได้รับคำสั่งให้ไปปฏิบัติงานฉุกเฉินให้เบิกค่าล่วงเวลา หรือ ค่าทำงานวันหยุด)</div></div>`;
+  const top=`<img src="pea-logo.png" alt="ตราการไฟฟ้าส่วนภูมิภาค" style="width:.78in;height:.63in;object-fit:contain;margin-left:.18in">
+    <div class="ln"><div>จาก &nbsp;${esc(cfg.headTitle)}</div><div>ถึง ${esc(cfg.mgrTitle)}</div></div>
+    <div class="ln"><div>เลขที่ ${esc(cfg.docNo)}</div><div>วันที่ ${esc(docDate)}</div></div>
+    <div class="p">เรื่อง ขออนุมัติจัดตารางการปฏิบัติงานของชุดพนักงานช่างปฏิบัติการระบบไฟฟ้า(กฟส.ขนาดS) ประจำเดือน ${mName} ${yTh}</div>
+    <div class="p">เรียน &nbsp;${esc(cfg.mgrTitle)}</div>
+    <div class="p">เพื่อให้งานปฏิบัติการระบบไฟฟ้าเป็นไปด้วยความเรียบร้อยจึงขออนุมัติจัดตารางการปฏิบัติงานของชุดพนักงานช่าง<br>ปฏิบัติการระบบไฟฟ้า ${esc(cfg.office)} ประจำเดือน ${mName} ปี${yTh} ดังต่อไปนี้</div>`;
+  const headName=String(cfg.headName||''), hn=headName.replace(/^นาย/,''), mgrName=String(cfg.mgrName||''), mn=mgrName.replace(/^นาย/,'');
+  const bottom = sheet==='memo' ? `
+    <div style="margin-top:4px;padding-left:.06in">เรียน ${esc(cfg.mgrTitle)}</div>
+    <div class="ln" style="padding-left:.36in"><div>จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</div><div style="padding-left:.7in">อนุมัติ</div></div>
+    <div style="display:grid;grid-template-columns:4.35in 3in;margin-top:.28in;text-align:center">
+      <div>( ${esc(headName)} )<br>${esc(cfg.headTitle)}</div><div>( ${esc(mgrName)} )<br>${esc(cfg.mgrTitle)}</div></div>
+    <div>หมายเหตุ ช่วง 1 เวลา(00.30-08.30น.),ช่วง 2 เวลา(08.30-16.30น.),ช่วง 3 เวลา(16.30-00.30น.)</div>`
+  : `<div style="font-size:12px;display:flex;flex-direction:column;gap:0;margin-top:4px">
+      <div style="text-align:center">ทั้งนี้ ตั้งแต่วันที่ 1-${N} ${mName} ${yTh}</div>
+      <div style="display:grid;grid-template-columns:2.7in 2.7in 1fr"><div>หมายเหตุ (1) เวรปฏิบัติงานตั้งแต่ 00.30น.-08.30น.</div><div style="padding-left:.2in">สั่ง ณ วันที่ ${esc(docDate)}</div><div style="padding-left:1.2in">ที่ ${esc(String(cfg.docNo).replace('(ปร.)','(ปร)'))}</div></div>
+      <div style="display:grid;grid-template-columns:5.4in 1fr"><div style="padding-left:.52in">(2) เวรปฏิบัติงานตั้งแต่ 08.30น.-16.30น.</div><div style="padding-left:.4in">${esc(cfg.ccTo)}</div></div>
+      <div style="display:grid;grid-template-columns:5.4in 1fr"><div style="padding-left:.52in">(3) เวรปฏิบัติงานตั้งแต่ 16.30น.-00.30น.<span style="padding-left:.9in">(ลงชื่อ) &nbsp;${esc(hn)}</span></div><div style="padding-left:1.2in">เพื่อโปรดทราบ</div></div>
+      <div style="display:grid;grid-template-columns:2.7in 1fr"><div style="padding-left:1.5in">อนุมัติ</div><div style="padding-left:.45in">${esc(headName)}</div></div>
+      <div style="display:grid;grid-template-columns:2.7in 1fr"><div style="padding-left:.4in">(ลงชื่อ) &nbsp;${esc(mn)}</div><div style="padding-left:.55in">${esc(cfg.headTitle)}</div></div>
+      <div style="padding-left:.68in">${esc(mgrName)}</div>
+      <div style="padding-left:.76in">${esc(cfg.mgrTitle)}</div></div>`;
+  const revTag=g.rev?`<div style="position:absolute;top:.15in;right:.25in;font-size:11px">ฉบับแก้ไขครั้งที่ ${g.rev}</div>`:'';
+  return `<div class="page">${revTag}<div class="rp">${top}
+    <div style="display:flex;gap:.08in;align-items:flex-start;margin-top:2px"><table class="t">${head}${rows}</table>${legend}</div>
+    ${bottom}</div></div>`;
+}
+function wkPage(r,cfg,docDate){
+  const g=r.data,{y,m}=parseKey(r.key),N=g.days.length,yTh=y+543;
+  const bg=d=>d.off?'#BFBFBF':'#FFFFFF';
+  let rows='';
+  S.boot.people.wk.forEach((p,i)=>{
+    rows+=`<tr style="height:.26in"><td style="font-size:11px">${i+1}</td><td style="font-size:11px">${esc(p.code)}</td><td style="text-align:left;padding-left:4px;font-size:14.5px;font-weight:600;white-space:pre">${esc(p.full)}</td>`+
+      (g.wk[p.short]||[]).map((c,di)=>`<td style="background:${bg(g.days[di])};font-size:10.5px">${esc(c)}</td>`).join('')+'</tr>';
+  });
+  for(let k=0;k<3;k++) rows+='<tr style="height:.26in"><td></td><td></td><td></td>'+g.days.map(d=>`<td style="background:${bg(d)}"></td>`).join('')+'</tr>';
+  const s=n=>`<span style="font-size:11px;font-weight:400">${n}</span>`;
+  const revTag=g.rev?`<div style="position:absolute;top:.4in;right:.3in;font-size:12px">ฉบับแก้ไขครั้งที่ ${g.rev}</div>`:'';
+  return `<div class="page">${revTag}<div class="wk">
+    <table><tr><th colspan="${N+3}" style="height:.27in;font-size:15px;font-weight:700">ประจำเดือน ${s('1 - '+N)} ${TH_MONTH[m-1]} ${s(yTh)}</th></tr>
+    <tr><th colspan="${N+3}" style="height:.27in;font-size:15px;font-weight:700">ทีมงาน &nbsp;${esc(cfg.headName).replace(' ','&nbsp; ')} &nbsp;${esc(cfg.office)}</th></tr>
+    <tr><th rowspan="2" style="width:.27in;font-size:15px">ที่</th><th rowspan="2" style="width:.36in;font-size:15px">รหัส</th><th rowspan="2" style="width:1.7in;font-size:15px">ชื่อ-สกุล</th><th colspan="${N}" style="height:.27in;font-size:15px">วันที่</th></tr>
+    <tr>${g.days.map(d=>`<th style="background:${bg(d)};height:.25in;font-weight:400;font-size:11px">${d.d}</th>`).join('')}</tr>
+    ${rows}</table>
+    <div style="font-size:15px;font-weight:600;white-space:nowrap">หมายเหตุ ${s('(1)')} เวรปฏิบัติงานตั้งแต่เวลา ${s('24.00 - 08.00')} น. ${s('(2)')} เวรปฏิบัติงานตั้งแต่เวลา ${s('08.00 - 16.00')} น. ${s('(3)')} เวรปฏิบัติงานตั้งแต่เวลา ${s('16.00 - 24.00')} น. ${s('(0)')} พักกะ</div>
+    <div style="display:flex;gap:.16in;align-items:center;padding-left:2.3in;font-size:15px;font-weight:600"><span style="width:.19in;height:.23in;border:1px solid #000;background:#A6A6A6;display:inline-block"></span>วันเสาร์ , วันอาทิตย์ และวันหยุดประเพณี</div>
+    <div style="margin-top:.25in;align-self:flex-end;width:3.5in;font-size:15px;line-height:1.75;font-weight:600">
+      <div>(ลงชื่อ) <span style="font-weight:400">.............................................</span> ผู้ควบคุมงาน</div>
+      <div style="padding-left:.38in">(${esc(cfg.headName)})</div>
+      <div style="padding-left:.55in">${esc(cfg.headTitle)}</div>
+      <div style="padding-left:.42in">วันที่ ${esc(docDate)}</div></div>
+  </div></div>`;
+}
+$('rPrint').onclick=()=>window.print();
+$('rSetStatus').onclick=async()=>{
+  const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
+  const pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
+  try{await apiPost({action:'setStatus',m:v,status:$('rStatus').value,pin});
+    S.months[v].status=$('rStatus').value; S.boot.months.find(x=>x.month===v).status=$('rStatus').value; $('dMonth').innerHTML='';
+    msg('rMsg','บันทึกสถานะแล้ว'); renderReport();}catch(e){msg('rMsg',e.message,'err');}
+};
+
+
+/* ---------- เปลี่ยน/ลาเวร ---------- */
+const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','S':'เตรียมพร้อม','':'ว่าง'})[c]||c, wk:c=>c==='0'?'พักกะ':'กะ '+c};
+const isFree=(g,c)=>g==='emp'?(c===''||c==='S'):c==='0';
+const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?(c==='1'||c==='3'?1:c==='2,3'?2:0):(c==='0'?0:c==='1,3'?2:1)),0);
+function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);}
+S.qType='swap';
+async function renderReq(){
+  setBadge('');
+  const ms=$('qMonth');
+  if(!ms.options.length){
+    const cur=todayIso().slice(0,7);
+    S.boot.months.filter(x=>x.month>=cur).forEach(x=>ms.add(new Option(monthLabel(x.month),x.month)));
+    if(!ms.options.length) S.boot.months.slice(-1).forEach(x=>ms.add(new Option(monthLabel(x.month),x.month)));
+    document.querySelectorAll('#qType button').forEach(b=>b.onclick=()=>{S.qType=b.dataset.t;
+      document.querySelectorAll('#qType button').forEach(x=>x.classList.toggle('on',x===b));qForm('type');});
+    ['qMonth','qGroup'].forEach(id=>$(id).onchange=()=>qForm('month'));
+    $('qA').onchange=()=>qForm('a'); $('qDa').onchange=()=>qForm('da'); $('qB').onchange=()=>qForm('b');
+    $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r');
+    $('qNow').onchange=()=>$('qPinWrap').classList.toggle('hide',!$('qNow').checked);
+  }
+  $('pnApprovers').textContent='ผู้อนุมัติ: '+(S.boot.approvers||[]).map(a=>a.role).join(' / ');
+  await qForm('month'); await loadRequests();
+}
+async function qForm(stage){
+  const key=$('qMonth').value; if(!key) return;
+  const mo=await loadMonth(key), g=$('qGroup').value, data=mo.data, map=data[g];
+  const names=(g==='emp'?S.boot.people.emp:S.boot.people.wk).map(p=>p.short).filter(n=>map[n]);
+  const dlab=(i)=>{const d=data.days[i];return d.d+' '+TH_WD[d.wd]+(d.off?' (หยุด)':'');};
+  const fill=(id,opts,keep)=>{const el=$(id),old=el.value;el.innerHTML='';opts.forEach(o=>el.add(new Option(o[1],o[0])));if(keep&&opts.some(o=>String(o[0])===old))el.value=old;};
+  if(['month','type'].includes(stage)) fill('qA',names.map(n=>[n,n]),true);
+  const a=$('qA').value;
+  if(['month','type','a'].includes(stage)) fill('qDa',map[a].map((c,i)=>[i+1,c]).filter(x=>!isFree(g,x[1])).map(x=>[x[0],dlab(x[0]-1)+' · '+CODE_LBL[g](x[1])]),true);
+  const da=+$('qDa').value, swap=S.qType==='swap';
+  $('qBWrap').classList.toggle('hide',!swap); $('qDbWrap').classList.toggle('hide',!swap); $('qRWrap').classList.toggle('hide',swap);
+  if(swap){
+    if(stage!=='b'&&stage!=='db') fill('qB',names.filter(n=>n!==a).map(n=>[n,n+' ('+CODE_LBL[g](map[n][da-1])+' วันนั้น)']),true);
+    const b=$('qB').value;
+    if(stage!=='db'){
+      const opts=[];
+      map[b].forEach((c,i)=>{ if(isFree(g,c))return; const d=i+1;
+        if(d===da) opts.push([d,dlab(i)+' · '+CODE_LBL[g](c)+' (สลับในวันเดียวกัน)']);
+        else if(isFree(g,map[a][i])&&isFree(g,map[b][da-1])) opts.push([d,dlab(i)+' · '+CODE_LBL[g](c)]); });
+      fill('qDb',opts,true);
+    }
+  }else{
+    const free=names.filter(n=>n!==a&&isFree(g,map[n][da-1])).map(n=>({n,c:dutyCount(g,map[n]),sb:map[n][da-1]==='S'})).sort((x,y)=>x.c-y.c);
+    fill('qR',free.map(x=>[x.n,x.n+' — เดือนนี้ '+x.c+' ครั้ง'+(x.sb?' · (เตรียมพร้อมวันนั้น)':'')]),true);
+  }
+  // สรุป
+  let txt='';
+  if(!a||!da) txt='ผู้ขอยังไม่มีเวรในเดือนนี้';
+  else if(swap){ const b=$('qB').value, db=+$('qDb').value;
+    txt=db?`${a} (${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[a][da-1])}) ⇄ ${b} (${data.days[db-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[b][db-1])})`:'ไม่มีวันที่แลกกันได้ — เลือกคู่คนอื่น';
+  } else { const r=$('qR').value;
+    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])}) → ${r} เข้าแทน`:'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" แทน'; }
+  $('qPreview').textContent=txt;
+  $('qSubmit').disabled=swap?!$('qDb').value:!$('qR').value;
+}
+$('qSubmit').onclick=async()=>{
+  const key=$('qMonth').value,g=$('qGroup').value,a=$('qA').value,da=+$('qDa').value;
+  const payload=S.qType==='swap'?{g,a,da,b:$('qB').value,db:+$('qDb').value}:{g,a,d:da,r:$('qR').value};
+  const body={action:'request',month:key,type:S.qType,payload,requester:a,reason:$('qReason').value.trim()};
+  if($('qNow').checked){body.approveNow=true;body.pin=$('qPin').value;}
+  $('qSubmit').disabled=true; msg('qMsg','กำลังส่ง…');
+  try{ const j=await apiPost(body); delete S.months[key];
+    msg('qMsg',j.request.status==='อนุมัติ'?'แก้ไขตารางแล้ว และแจ้ง LINE ผู้เกี่ยวข้อง':'ส่งคำขอแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ');
+    $('qReason').value=''; await qForm('month'); await loadRequests();
+  }catch(e){msg('qMsg',e.message,'err');}
+  $('qSubmit').disabled=false;
+};
+async function loadRequests(){
+  const j=await apiGet({action:'requests'}), R=j.requests; setDot(R.pending.length);
+  $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq"><div class="tx">${esc(r.text)}</div>
+      <div class="muted">ผู้ขอ ${esc(r.requester)} · ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
+      <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div></div>`).join('')
+    :'<div class="muted">ไม่มีคำขอค้าง</div>';
+  $('pnList').querySelectorAll('button').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
+  $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
+      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div></div>`).join('')
+    :'<div class="muted">ยังไม่มีประวัติ</div>';
+}
+async function decide(id,ok){
+  const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}
+  let note=''; if(!ok){note=prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)')||'';}
+  msg('pnMsg','กำลังบันทึก…');
+  try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); S.months={};
+    msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); await loadRequests(); if(ok) await qForm('month');
+  }catch(e){msg('pnMsg',e.message,'err');}
+}
+
+/* ---------- ตั้งค่า ---------- */
+function renderSet(){
+  setBadge('');
+  const ys=[...new Set(S.boot.holidays.map(h=>h.date.slice(0,4)).concat([todayIso().slice(0,4)]))].sort();
+  const yr=$('sYear'); if(!yr.options.length){ys.forEach(y=>yr.add(new Option(+y+543,y)));yr.value=todayIso().slice(0,4);yr.onchange=renderSet;}
+  const list=S.boot.holidays.map((h,i)=>({h,i})).filter(x=>x.h.date.startsWith(yr.value));
+  $('sHol').innerHTML=list.map(({h,i})=>`<div class="hrow"><div style="width:84px;font-size:13px;font-weight:600">${(()=>{const [y,m,d]=h.date.split('-').map(Number);return d+' '+TH_MS[m-1]})()}</div><div style="flex:1;min-width:0"><div style="font-size:14px">${esc(h.name)}</div>${h.note?`<div class="muted">${esc(h.note)}</div>`:''}</div><button class="tg ${h.pea?'on':''}" data-i="${i}" aria-label="กฟภ. หยุด"></button></div>`).join('')||'<div class="muted">ยังไม่มีวันหยุดในปีนี้</div>';
+  $('sHol').querySelectorAll('.tg').forEach(b=>b.onclick=()=>{const h=S.boot.holidays[+b.dataset.i];h.pea=!h.pea;b.classList.toggle('on',h.pea);});
+  $('sQuota').innerHTML=S.boot.people.emp.map(p=>`<div class="hrow"><div style="flex:1;font-size:14px">${esc(p.full)}</div><input type="number" min="0" max="31" data-n="${esc(p.short)}" value="${p.quota==null?'':p.quota}" placeholder="อัตโนมัติ" style="width:110px"></div>`).join('');
+  $('sAvoid').value=S.boot.config.avoidPairs||'';
+  $('sStandby').checked=String(S.boot.config.notifyStandby)==='true';
+  $('sLine').innerHTML=[...S.boot.people.emp,...S.boot.people.wk].map(p=>`<div class="lk"><span>${esc(p.full)}</span><span style="font-weight:600;color:${p.line?'#1F5A2A':'#8A4B00'}">${p.line?'✓ ลงทะเบียนแล้ว':'ยังไม่ลงทะเบียน'}</span></div>`).join('');
+}
+$('sAdd').onclick=()=>{
+  const d=$('sNewDate').value,n=$('sNewName').value.trim(); if(!d||!n){msg('sMsg','ใส่วันที่และชื่อวันหยุด','warn');return;}
+  S.boot.holidays.push({date:d,name:n,pea:true,note:'เพิ่มเอง'}); S.boot.holidays.sort((a,b)=>a.date<b.date?-1:1);
+  $('sNewDate').value='';$('sNewName').value='';$('sYear').value=d.slice(0,4);renderSet();
+};
+$('sSave').onclick=async()=>{
+  const pin=$('sPin').value; msg('sMsg','กำลังบันทึก…');
+  try{
+    const qs={}; document.querySelectorAll('#sQuota input').forEach(i=>qs[i.dataset.n]=i.value===''?null:+i.value);
+    await apiPost({action:'saveHolidays',holidays:S.boot.holidays,pin});
+    const j=await apiPost({action:'saveQuotas',quotas:qs,pin}); S.boot.people=j.people;
+    await apiPost({action:'saveConfig',config:{avoidPairs:$('sAvoid').value,notifyStandby:$('sStandby').checked},pin}); S.boot.config.avoidPairs=$('sAvoid').value; S.boot.config.notifyStandby=$('sStandby').checked;
+    S.preview=null; msg('sMsg','บันทึกแล้ว — ตารางที่สร้างใหม่จะใช้ค่านี้');
+  }catch(e){msg('sMsg',e.message,'err');}
+};
+
+/* ---------- เริ่ม ---------- */
+(async function(){
+  try{ const j=await apiGet({action:'bootstrap'}); S.boot=j; $('boot').classList.add('hide');
+    S.boot.months.sort((a,b)=>a.month<b.month?-1:1);
+    setDot(S.boot.pendingCount||0);
+    const v=new URLSearchParams(location.search).get('view'); show(v||'viewDaily');
+  }catch(e){ $('boot').innerHTML='โหลดข้อมูลไม่ได้: '+esc(e.message)+'<br><small>ตรวจ API_URL ใน index.html</small>'; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,414 @@
+/**
+ * ระบบตารางเวรแก้ไฟ กฟส.อ่าวลึก — Backend (Google Apps Script)
+ * ส่วนที่ 1: ฐานข้อมูล + ตัวสร้างเวร + API สำหรับหน้าเว็บ (GitHub Pages)
+ *
+ * ไฟล์ในโปรเจกต์: Code.gs (ไฟล์นี้) · Requests.gs (เปลี่ยน/ลาเวร) · Line.gs (LINE)
+ * ติดตั้ง: วางทั้ง 3 ไฟล์ใน Apps Script ที่ผูกกับ Google Sheet ใหม่ → รัน setup() ครั้งเดียว
+ *        → Deploy เป็น Web app (Execute as: Me, Who has access: Anyone)
+ */
+
+const TZ = 'Asia/Bangkok';
+const SH = { PEOPLE: 'People', HOL: 'Holidays', MONTHS: 'Months', CONFIG: 'Config', REQ: 'Requests', LOG: 'Log', APPR: 'Approvers' };
+const TH_MONTH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_WD = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+/* ======================================================================
+ *  ตัวสร้างเวร (ไม่แตะ Sheet — ทดสอบแยกได้)
+ * ====================================================================== */
+
+/** จำนวนวันในเดือน (m = 1..12) */
+function daysInMonth_(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+/** วันในสัปดาห์ 0=อา ... 6=ส */
+function weekday_(y, m, d) { return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
+function ymd_(y, m, d) { return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+
+/**
+ * สร้างตารางเวร 1 เดือน
+ * @param {Object} p
+ *   y, m              : ปี ค.ศ., เดือน 1..12
+ *   holidays          : ['2026-11-xx', ...] วันหยุด กฟภ. (เฉพาะที่หยุดจริง)
+ *   state             : สถานะต่อรอบจากเดือนก่อน
+ *                       { aIdx, xIdx, prevX, wPhase:{ชื่อ:phase} }
+ *   rot               : { A:[ชื่อ ช่วง1 หมุน 5], X:[ชื่อ กลุ่ม ก หมุน 4], W:[ชื่อคนงาน] }
+ *   pairOffset        : 0..3 เลื่อนจุดเริ่มกลุ่ม ก (0 = ต่อรอบเดิม)
+ *   quotas            : { ชื่อ: จำนวนครั้งสูงสุด } (ไม่ระบุ = หมุนตามสเต็ป)
+ * @return {Object} { days:[{d,wd,off,hol}], emp:{ชื่อ:[codes...]}, wk:{ชื่อ:[code...]},
+ *                    pairs:[[x,y]...], stateAfter, notes:[] }
+ *   code พนักงานต่อวัน: '' | '1' | '3' | '2,3' | 'S' (เตรียมพร้อม) — ช่วง 1 กับ S ไม่ซ้อนกัน
+ */
+function generateMonth_(p) {
+  const y = p.y, m = p.m, N = daysInMonth_(y, m);
+  const A = p.rot.A, X = p.rot.X, W = p.rot.W;
+  const holSet = {}; (p.holidays || []).forEach(function (s) { holSet[s] = true; });
+  const quotas = p.quotas || {};
+  const notes = [];
+
+  const days = [];
+  for (let d = 1; d <= N; d++) {
+    const wd = weekday_(y, m, d), hol = !!holSet[ymd_(y, m, d)];
+    days.push({ d: d, wd: wd, hol: hol, off: hol || wd === 0 || wd === 6 });
+  }
+
+  const emp = {}, used = {};
+  A.concat(X).forEach(function (n) { emp[n] = new Array(N).fill(''); used[n] = 0; });
+  const wk = {}; W.forEach(function (n) { wk[n] = new Array(N).fill(''); });
+
+  let a = p.state.aIdx, xi = (p.state.xIdx + (p.pairOffset || 0)) % X.length, prevX = p.state.prevX;
+  const pairs = [];
+  const over = function (n, add) { return quotas[n] != null && quotas[n] !== '' && used[n] + add > Number(quotas[n]); };
+  /** หาคนในลำดับ arr เริ่มที่ idx ที่ยังไม่เกินโควต้าและไม่อยู่ใน busy → {n, k} (k = ข้ามไปกี่คน) */
+  const pick = function (arr, idx, add, busy, label, d) {
+    for (let k = 0; k < arr.length; k++) {
+      const n = arr[(idx + k) % arr.length];
+      if (busy.indexOf(n) >= 0 || over(n, add)) continue;
+      if (k > 0) notes.push('วันที่ ' + d + ' ' + label + ': ' + arr[idx % arr.length] + ' ครบโควต้า → ' + n);
+      return { n: n, k: k };
+    }
+    notes.push('วันที่ ' + d + ' ' + label + ': ทุกคนครบโควต้า ใช้ ' + arr[idx % arr.length] + ' ตามรอบ');
+    return { n: arr[idx % arr.length], k: 0 };
+  };
+
+  days.forEach(function (day, i) {
+    const d = day.d, add3 = day.off ? 2 : 1;
+    const p1 = pick(A, a, 1, [], 'ช่วง 1', d), s1 = p1.n;
+    const yy = pick(A, a + p1.k + 1, add3, [s1], 'ช่วง 3 (กลุ่ม ข)', d).n;
+    const px = pick(X, xi, add3, [], 'ช่วง 3 (กลุ่ม ก)', d), x = px.n;
+    emp[s1][i] = '1'; used[s1] += 1;
+    [x, yy].forEach(function (n) { emp[n][i] = day.off ? '2,3' : '3'; used[n] += add3; });
+    if (prevX && emp[prevX] && emp[prevX][i] === '') emp[prevX][i] = 'S';
+    pairs.push([x, yy]);
+    // ข้ามคนครบโควต้า = คิวเลื่อนไปต่อจากคนที่มาแทน (แพทเทิร์นเดิม ไม่สุ่ม)
+    prevX = x; a = (a + p1.k + 1) % A.length; xi = (xi + px.k + 1) % X.length;
+  });
+
+  const wPhase = {};
+  W.forEach(function (n) {
+    let ph = p.state.wPhase[n] || 0;
+    days.forEach(function (day, i) { wk[n][i] = ['1,3', '3', '2', day.off ? '2' : '0'][ph]; ph = (ph + 1) % 4; });
+    wPhase[n] = ph;
+  });
+
+  return {
+    y: y, m: m, days: days, emp: emp, wk: wk, pairs: pairs, notes: notes,
+    pairOffset: p.pairOffset || 0,
+    stateAfter: { aIdx: a, xIdx: xi, prevX: prevX, wPhase: wPhase }
+  };
+}
+
+/** นับคู่ช่วง 3 */
+function countPairs_(pairs) {
+  const c = {}; (pairs || []).forEach(function (pr) { const k = pr[0] + '|' + pr[1]; c[k] = (c[k] || 0) + 1; }); return c;
+}
+
+/**
+ * ให้คะแนนแพทเทิร์นจับคู่ 4 แบบ เทียบกับคู่ของเดือนก่อน
+ * คะแนน = จำนวนครั้งที่คู่ซ้ำ (sum min) + 100 × จำนวนวันที่เจอคู่ต้องห้าม
+ */
+function scorePairings_(base, prevPairs, avoid) {
+  const pc = countPairs_(prevPairs);
+  const av = {}; (avoid || []).forEach(function (pr) { av[pr[0] + '|' + pr[1]] = 1; av[pr[1] + '|' + pr[0]] = 1; });
+  const out = [];
+  for (let s = 0; s < 4; s++) {
+    const g = generateMonth_(Object.assign({}, base, { pairOffset: s }));
+    const c = countPairs_(g.pairs);
+    let ov = 0, bad = 0;
+    Object.keys(c).forEach(function (k) { ov += Math.min(c[k], pc[k] || 0); if (av[k]) bad += c[k]; });
+    out.push({ offset: s, overlap: ov, avoidHits: bad, score: ov + 100 * bad, firstX: g.pairs[0][0] });
+  }
+  return out;
+}
+
+/* ======================================================================
+ *  Google Sheets
+ * ====================================================================== */
+
+function ss_() { return SpreadsheetApp.getActiveSpreadsheet(); }
+function sheet_(name) { return ss_().getSheetByName(name); }
+
+function toYmd_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  return String(v || '').trim();
+}
+
+function readTable_(name) {
+  const sh = sheet_(name); const v = sh.getDataRange().getValues();
+  const head = v.shift();
+  return v.filter(function (r) { return r.join('') !== ''; }).map(function (r) {
+    const o = {}; head.forEach(function (h, i) { o[h] = r[i]; }); return o;
+  });
+}
+
+function getConfig_() {
+  const o = {}; readTable_(SH.CONFIG).forEach(function (r) { o[r.key] = r.value; }); return o;
+}
+
+/** รายชื่อ + ลำดับหมุน */
+function getPeople_() {
+  const rows = readTable_(SH.PEOPLE).filter(function (r) { return r.active === true || r.active === 'TRUE' || r.active === ''; });
+  const by = function (g) {
+    return rows.filter(function (r) { return r.group === g; }).sort(function (a, b) { return a.rotOrder - b.rotOrder; });
+  };
+  const A = by('EMP_A'), X = by('EMP_X'), W = by('WK');
+  const emp = A.concat(X).sort(function (a, b) { return a.reportOrder - b.reportOrder; });
+  return {
+    rot: { A: A.map(function (r) { return r.short; }), X: X.map(function (r) { return r.short; }), W: W.map(function (r) { return r.short; }) },
+    emp: emp.map(pub_), wk: W.sort(function (a, b) { return a.reportOrder - b.reportOrder; }).map(pub_),
+    quotas: rows.reduce(function (o, r) { if (r.quota !== '' && r.quota != null) o[r.short] = Number(r.quota); return o; }, {})
+  };
+}
+function pub_(r) { return { short: r.short, full: r.full, code: r.code, group: r.group, quota: r.quota === '' ? null : r.quota, line: !!r.lineUserId }; }
+
+function getHolidays_() {
+  return readTable_(SH.HOL).map(function (r) {
+    return { date: toYmd_(r.date), name: r.name, pea: r.pea === true || r.pea === 'TRUE', note: r.note || '' };
+  }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+}
+function peaHolidaysOf_(y, m) {
+  const pre = y + '-' + String(m).padStart(2, '0') + '-';
+  return getHolidays_().filter(function (h) { return h.pea && h.date.indexOf(pre) === 0; }).map(function (h) { return h.date; });
+}
+
+/** Months: month | status | data(JSON) | stateAfter(JSON) | updatedAt | note */
+function findMonthRow_(key) {
+  const sh = sheet_(SH.MONTHS); const v = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+  for (let i = 1; i < v.length; i++) if (String(v[i][0]) === key) return i + 1;
+  return 0;
+}
+function getMonth_(key) {
+  const r = findMonthRow_(key); if (!r) return null;
+  const v = sheet_(SH.MONTHS).getRange(r, 1, 1, 6).getValues()[0];
+  return { month: key, status: v[1], data: JSON.parse(v[2]), stateAfter: JSON.parse(v[3]), updatedAt: v[4], note: v[5] };
+}
+function saveMonth_(key, status, data, stateAfter, note) {
+  const sh = sheet_(SH.MONTHS);
+  const row = [key, status, JSON.stringify(data), JSON.stringify(stateAfter), new Date(), note || ''];
+  const r = findMonthRow_(key);
+  if (r) sh.getRange(r, 1, 1, 6).setValues([row]); else sh.appendRow(row);
+}
+function monthKey_(y, m) { return y + '-' + String(m).padStart(2, '0'); }
+function prevKey_(y, m) { return m === 1 ? monthKey_(y - 1, 12) : monthKey_(y, m - 1); }
+
+/** เตรียมข้อมูลเพื่อสร้างเดือน key (ต้องมีเดือนก่อนหน้าในระบบ) */
+function buildBase_(key) {
+  const y = Number(key.slice(0, 4)), m = Number(key.slice(5, 7));
+  const prev = getMonth_(prevKey_(y, m));
+  if (!prev) throw new Error('ยังไม่มีตารางเดือนก่อนหน้า (' + prevKey_(y, m) + ') — ต้องสร้างตามลำดับเดือน');
+  const people = getPeople_();
+  const cfg = getConfig_();
+  const avoid = String(cfg.avoidPairs || '').split(',').map(function (s) { return s.trim(); }).filter(String)
+    .map(function (s) { return s.split('/').map(function (t) { return t.trim(); }); });
+  return {
+    base: { y: y, m: m, holidays: peaHolidaysOf_(y, m), state: prev.stateAfter, rot: people.rot, quotas: people.quotas },
+    prevPairs: prev.data.pairs, avoid: avoid, people: people
+  };
+}
+
+/** สร้าง (ยังไม่บันทึก) — pair: 'continue' | 'auto' | '0'..'3' */
+function previewMonth_(key, pair) {
+  const b = buildBase_(key);
+  const scores = scorePairings_(b.base, b.prevPairs, b.avoid);
+  let off = 0;
+  if (pair === 'auto') {
+    off = scores.slice().sort(function (p, q) { return p.score - q.score || p.offset - q.offset; })[0].offset;
+  } else if (/^[0-3]$/.test(String(pair))) off = Number(pair);
+  const g = generateMonth_(Object.assign({}, b.base, { pairOffset: off }));
+  return { month: key, gen: g, scores: scores, people: b.people };
+}
+
+/* ======================================================================
+ *  สิทธิ์ผู้อนุมัติ (PIN รายคน ในชีต Approvers)
+ * ====================================================================== */
+
+function approverByPin_(pin) {
+  if (pin == null || String(pin) === '') return null;
+  const rows = readTable_(SH.APPR);
+  for (let i = 0; i < rows.length; i++) {
+    if (String(rows[i].pin) === String(pin) && rows[i].active !== false && rows[i].active !== 'FALSE')
+      return { name: rows[i].name, role: rows[i].role, short: rows[i].short };
+  }
+  const admin = PropertiesService.getScriptProperties().getProperty('ADMIN_PIN');
+  if (admin && String(pin) === String(admin)) return { name: 'ผู้ดูแลระบบ', role: 'admin', short: '' };
+  return null;
+}
+function approverList_() {
+  return readTable_(SH.APPR).filter(function (r) { return r.active !== false && r.active !== 'FALSE'; })
+    .map(function (r) { return { name: r.name, role: r.role, short: r.short }; });
+}
+
+function log_(actor, action, month, detail) {
+  sheet_(SH.LOG).appendRow([new Date(), actor, action, month || '', typeof detail === 'string' ? detail : JSON.stringify(detail)]);
+}
+
+/* ======================================================================
+ *  API
+ * ====================================================================== */
+
+function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+function monthList_() {
+  const sh = sheet_(SH.MONTHS);
+  if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues()
+    .filter(function (r) { return r[0]; }).map(function (r) { return { month: String(r[0]), status: r[1] }; });
+}
+
+function doGet(e) {
+  try {
+    const q = e.parameter || {}, a = q.action || 'bootstrap';
+    if (a === 'bootstrap') {
+      const cfg = getConfig_();
+      delete cfg.lineRegCode;
+      return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),
+        approvers: approverList_(), pendingCount: listRequests_().pending.length });
+    }
+    if (a === 'month') return json_({ ok: true, month: getMonth_(q.m) });
+    if (a === 'preview') return json_({ ok: true, preview: previewMonth_(q.m, q.pair || 'continue') });
+    if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
+    return json_({ ok: false, error: 'unknown action' });
+  } catch (err) { return json_({ ok: false, error: String(err.message || err) }); }
+}
+
+function doPost(e) {
+  let b;
+  try { b = JSON.parse((e.postData && e.postData.contents) || '{}'); } catch (err) { return json_({ ok: false, error: 'bad json' }); }
+  if (b.events) return lineWebhook_(b);            // มาจาก LINE
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
+    if (b.action === 'request' && !b.approveNow) {
+      return json_({ ok: true, request: createRequest_(b, null) });
+    }
+    // ---- ต้องเป็นผู้อนุมัติ ----
+    const who = approverByPin_(b.pin);
+    if (!who) return json_({ ok: false, error: 'PIN ไม่ถูกต้อง' });
+
+    if (b.action === 'request') return json_({ ok: true, request: createRequest_(b, who) });
+    if (b.action === 'decide') return json_({ ok: true, request: decideRequest_(b.id, !!b.approve, who, b.note || '') });
+    if (b.action === 'checkPin') return json_({ ok: true, who: who });
+
+    if (b.action === 'generate') {
+      const cur = getMonth_(b.m);
+      if (cur && cur.status === 'อนุมัติแล้ว' && !b.force) return json_({ ok: false, error: 'เดือนนี้อนุมัติแล้ว — ถ้าจะสร้างใหม่ต้องยืนยันอีกครั้ง' });
+      const pv = previewMonth_(b.m, b.pair || 'continue');
+      pv.gen.rev = 0; pv.gen.changes = [];
+      saveMonth_(b.m, 'ร่าง', pv.gen, pv.gen.stateAfter, 'pair=' + pv.gen.pairOffset);
+      log_(who.name, 'สร้างตาราง', b.m, 'pair=' + pv.gen.pairOffset + (pv.gen.notes.length ? ' | ' + pv.gen.notes.join('; ') : ''));
+      return json_({ ok: true, month: getMonth_(b.m) });
+    }
+    if (b.action === 'setStatus') {
+      const cur = getMonth_(b.m); if (!cur) return json_({ ok: false, error: 'ไม่พบเดือน' });
+      saveMonth_(b.m, b.status, cur.data, cur.stateAfter, cur.note);
+      log_(who.name, 'สถานะ ' + b.status, b.m, '');
+      return json_({ ok: true });
+    }
+    if (b.action === 'saveHolidays') {
+      const sh = sheet_(SH.HOL); if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 4).clearContent();
+      const rows = (b.holidays || []).map(function (h) { return [h.date, h.name, !!h.pea, h.note || '']; });
+      if (rows.length) sh.getRange(2, 1, rows.length, 4).setValues(rows);
+      log_(who.name, 'แก้วันหยุด', '', rows.length + ' วัน');
+      return json_({ ok: true, holidays: getHolidays_() });
+    }
+    if (b.action === 'saveQuotas') {
+      const sh = sheet_(SH.PEOPLE); const v = sh.getDataRange().getValues(); const h = v[0];
+      const ci = h.indexOf('short'), qi = h.indexOf('quota');
+      for (let i = 1; i < v.length; i++) {
+        const n = v[i][ci]; if (n in (b.quotas || {})) sh.getRange(i + 1, qi + 1).setValue(b.quotas[n] === null ? '' : b.quotas[n]);
+      }
+      log_(who.name, 'แก้โควต้า', '', b.quotas);
+      return json_({ ok: true, people: getPeople_() });
+    }
+    if (b.action === 'saveConfig') {
+      const sh = sheet_(SH.CONFIG); const v = sh.getDataRange().getValues();
+      Object.keys(b.config || {}).forEach(function (k) {
+        if (['avoidPairs', 'notifyStandby'].indexOf(k) < 0) return;   // แก้จากหน้าเว็บได้เฉพาะคีย์เหล่านี้
+        const r = v.findIndex(function (row) { return row[0] === k; });
+        if (r < 0) sh.appendRow([k, b.config[k]]); else sh.getRange(r + 1, 2).setValue(b.config[k]);
+      });
+      return json_({ ok: true });
+    }
+    return json_({ ok: false, error: 'unknown action' });
+  } catch (err) { return json_({ ok: false, error: String(err.message || err) });
+  } finally { lock.releaseLock(); }
+}
+
+/* ======================================================================
+ *  setup() — รันครั้งเดียว (รันซ้ำได้: ไม่ลบข้อมูลที่มีอยู่ เติมเฉพาะชีตที่ยังไม่มี)
+ * ====================================================================== */
+
+function setup() {
+  const ss = ss_();
+  const rnd = function () { return String(1000 + Math.floor(Math.random() * 9000)); };   // PIN/รหัสสุ่ม — ดูได้ในชีต Approvers / Config
+  const mk = function (name, head, rows) {
+    let sh = ss.getSheetByName(name);
+    if (sh && sh.getLastRow() > 0) return sh;                 // มีอยู่แล้ว — ไม่แตะ
+    if (!sh) sh = ss.insertSheet(name);
+    sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold'); sh.setFrozenRows(1);
+    if (rows && rows.length) sh.getRange(2, 1, rows.length, head.length).setValues(rows);
+    return sh;
+  };
+
+  mk(SH.PEOPLE, ['group', 'rotOrder', 'reportOrder', 'short', 'full', 'code', 'quota', 'lineUserId', 'phone', 'active'], [
+    ['EMP_X', 4, 1, 'นทีธร', 'นายนทีธร เชียรแก้ว', '', '', '', '', true],
+    ['EMP_X', 1, 2, 'ธวัชชัย', 'นายธวัชชัย ไหมสุข', '', '', '', '', true],
+    ['EMP_X', 2, 3, 'กลวัชร', 'นายกลวัชร บุญช่วย', '', '', '', '', true],
+    ['EMP_X', 3, 4, 'พุทธภงค์', 'นายพุทธภงค์ เมืองด้วง', '', '', '', '', true],
+    ['EMP_A', 1, 5, 'กัมปนาทท์', 'นายกัมปนาทท์ เกลาจีน', '', '', '', '', true],
+    ['EMP_A', 2, 6, 'พงศธร', 'นายพงศธร เกตุมณี', '', '', '', '', true],
+    ['EMP_A', 3, 7, 'อติวิทย์', 'นายอติวิทย์ ทองลา', '', '', '', '', true],
+    ['EMP_A', 4, 8, 'สุรเชษฐ์', 'นายสุรเชษฐ์ นาคะเกษม', '', '', '', '', true],
+    ['EMP_A', 5, 9, 'ราชภัฎ', 'นายราชภัฎ จันทร์ชู', '', '', '', '', true],
+    ['WK', 1, 1, 'พยงค์', 'นายพยงค์  บุญแก้ว', '2', '', '', '', true],
+    ['WK', 2, 2, 'อาทิตย์', 'นายอาทิตย์  หมันการ', '3', '', '', '', true],
+    ['WK', 3, 3, 'ย่าร้อหมาด', 'นายย่าร้อหมาด  ดำเชื้อ', '2', '', '', '', true],
+    ['WK', 4, 4, 'บุญล่อง', 'นายบุญล่อง  คงชนะ', '3', '', '', '', true],
+    ['BOSS', 0, 0, 'มานศักดิ์', 'นายมานศักดิ์ พิลาฤทธิ์', '', '', '', '', true]
+  ]);
+
+  const hol = mk(SH.HOL, ['date', 'name', 'pea', 'note'], [
+    ['2026-01-01', 'วันขึ้นปีใหม่', true, ''], ['2026-01-02', 'วันหยุดพิเศษ', true, ''],
+    ['2026-03-03', 'วันมาฆบูชา', true, ''], ['2026-04-06', 'วันจักรี', true, ''],
+    ['2026-04-13', 'วันสงกรานต์', true, ''], ['2026-04-14', 'วันสงกรานต์', true, ''], ['2026-04-15', 'วันสงกรานต์', true, ''],
+    ['2026-05-01', 'วันแรงงานแห่งชาติ', true, ''], ['2026-05-04', 'วันฉัตรมงคล', true, ''],
+    ['2026-05-13', 'วันพืชมงคล', false, 'เฉพาะหน่วยราชการ — ตรวจสอบ'],
+    ['2026-06-01', 'ชดเชยวันวิสาขบูชา', true, ''], ['2026-06-03', 'วันเฉลิมพระชนมพรรษา พระราชินี', true, ''],
+    ['2026-07-28', 'วันเฉลิมพระชนมพรรษา ร.10', true, ''], ['2026-07-29', 'วันอาสาฬหบูชา', true, ''],
+    ['2026-07-30', 'วันเข้าพรรษา', false, 'เฉพาะหน่วยราชการ — ตรวจสอบ'],
+    ['2026-08-12', 'วันแม่แห่งชาติ', true, ''], ['2026-10-13', 'วันนวมินทรมหาราช', true, ''],
+    ['2026-10-16', 'วันหยุดพิเศษ (ครม.)', false, 'เฉพาะหน่วยราชการ — กฟภ. ไม่หยุด'],
+    ['2026-10-23', 'วันปิยมหาราช', true, ''], ['2026-12-05', 'วันพ่อแห่งชาติ', true, 'ตรงวันเสาร์'],
+    ['2026-12-07', 'ชดเชยวันพ่อแห่งชาติ', true, ''], ['2026-12-10', 'วันรัฐธรรมนูญ', true, ''],
+    ['2026-12-31', 'วันสิ้นปี', true, '']
+  ]);
+  hol.getRange('A:A').setNumberFormat('@');
+
+  mk(SH.CONFIG, ['key', 'value'], [
+    ['office', 'กฟส.อ่าวลึก'], ['headTitle', 'หผ.ปร.กฟส.อ่าวลึก'], ['headName', 'นายมานศักดิ์ พิลาฤทธิ์'],
+    ['mgrTitle', 'ผจก.กฟส.อ่าวลึก'], ['mgrName', 'นายชญานิน งานสัมพันธฤทธิ์'],
+    ['docNo', 'ต.2 กฟส.อล.(ปร.)'], ['ccTo', 'เรียน ผจก.กฟจ.กระบี่,หผ.ทุกแผนก'],
+    ['avoidPairs', ''],
+    ['webUrl', 'https://YOUR-GITHUB-NAME.github.io/duty-roster/'],
+    ['lineRegCode', rnd()], ['lineMonthlyLimit', 300], ['notifyStandby', false]
+  ]);
+
+  mk(SH.APPR, ['name', 'role', 'short', 'pin', 'active'], [
+    ['นายมานศักดิ์ พิลาฤทธิ์', 'หผ.ปร.', 'มานศักดิ์', rnd(), true],
+    ['นายธวัชชัย ไหมสุข', 'ชผ. (รักษาการแทน หผ.ปร.)', 'ธวัชชัย', rnd(), true]
+  ]);
+  sheet_(SH.APPR).getRange('D:D').setNumberFormat('@');
+
+  mk(SH.REQ, ['id', 'createdAt', 'month', 'type', 'payload', 'requester', 'reason', 'status', 'decidedBy', 'decidedAt', 'note', 'text']);
+  mk(SH.LOG, ['time', 'actor', 'action', 'month', 'detail']);
+
+  const months = mk(SH.MONTHS, ['month', 'status', 'data', 'stateAfter', 'updatedAt', 'note']);
+  if (months.getLastRow() < 2) {
+    // ตาราง ต.ค. 2569 สร้างจากสถานะสิ้นเดือน ก.ย. 2569 (ตรวจกับไฟล์จริงแล้ว)
+    const people = getPeople_();
+    const oct = generateMonth_({
+      y: 2026, m: 10, holidays: ['2026-10-13', '2026-10-23'], rot: people.rot, quotas: {}, pairOffset: 0,
+      state: { aIdx: 4, xIdx: 0, prevX: 'นทีธร', wPhase: { 'พยงค์': 1, 'อาทิตย์': 0, 'ย่าร้อหมาด': 3, 'บุญล่อง': 2 } }
+    });
+    oct.rev = 0; oct.changes = [];
+    saveMonth_('2026-10', 'อนุมัติแล้ว', oct, oct.stateAfter, 'นำเข้าจากไฟล์เดิม');
+  }
+  Logger.log('setup เสร็จ — PIN ผู้อนุมัติอยู่ในชีต Approvers · รหัสลงทะเบียน LINE (lineRegCode) อยู่ในชีต Config');
+}
