@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   // โปรแกรมที่ตรวจสิทธิ์จริงที่หน้าโปรแกรม (ผ่าน pea-hub.js) — ตัวอื่นยังเปิดได้ตามเดิม
-  var GATED = ['drawings'];
+  var GATED = ['drawings', 'dutyroster'];
   var APP_LIST = [];
   var MY_APPS = null;
   var STATS = {};
