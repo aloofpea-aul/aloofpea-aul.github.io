@@ -277,6 +277,8 @@ function doPost(e) {
   if (b.events) return lineWebhook_(b);            // มาจาก LINE
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
+    // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
+    if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'request' && !b.approveNow) {
       return json_({ ok: true, request: createRequest_(b, null) });
@@ -319,6 +321,11 @@ function doPost(e) {
       }
       log_(who.name, 'แก้โควต้า', '', b.quotas);
       return json_({ ok: true, people: getPeople_() });
+    }
+    if (b.action === 'saveContacts') {
+      saveContacts_(b.contacts || {});
+      log_(who.name, 'แก้เบอร์ติดต่อ', '', Object.keys(b.contacts || {}).length + ' คน');
+      return json_({ ok: true });
     }
     if (b.action === 'saveConfig') {
       const sh = sheet_(SH.CONFIG); const v = sh.getDataRange().getValues();
@@ -414,4 +421,58 @@ function setup() {
     saveMonth_('2026-10', 'อนุมัติแล้ว', oct, oct.stateAfter, 'นำเข้าจากไฟล์เดิม');
   }
   Logger.log('setup เสร็จ — PIN ผู้อนุมัติอยู่ในชีต Approvers · รหัสลงทะเบียน LINE (lineRegCode) อยู่ในชีต Config');
+}
+
+/* ======================================================================
+ *  เบอร์ติดต่อ (โทรศัพท์ / LINE ID) — ส่งให้เฉพาะผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ใช้ตารางเวร
+ * ====================================================================== */
+
+const HUB_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
+
+/** ตรวจชื่อ/รหัสกับศูนย์รวมงาน (จำผล 6 ชม.) */
+function hubAllowed_(user, pass) {
+  if (!user || !pass) return false;
+  const key = 'hub_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, user + '\u0001' + pass));
+  const cache = CacheService.getScriptCache(), hit = cache.get(key);
+  if (hit) return hit === '1';
+  let ok = false;
+  try {
+    const url = String(getConfig_().hubApi || HUB_API_DEFAULT);
+    const res = UrlFetchApp.fetch(url, { method: 'post', contentType: 'text/plain;charset=utf-8', muteHttpExceptions: true,
+      payload: JSON.stringify({ action: 'whoAmI', changedBy: user, changedByPassword: pass }) });
+    const r = JSON.parse(res.getContentText());
+    ok = !!(r && r.role && (r.role === 'admin' || !Array.isArray(r.apps) || r.apps.indexOf('dutyroster') >= 0));
+  } catch (e) { return false; }                         // ตรวจไม่ได้ = ไม่ให้ (ไม่จำผล)
+  cache.put(key, ok ? '1' : '0', ok ? 21600 : 300);
+  return ok;
+}
+
+function peopleCols_() {
+  const sh = sheet_(SH.PEOPLE); const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  if (h.indexOf('lineId') < 0) { sh.getRange(1, h.length + 1).setValue('lineId').setFontWeight('bold'); h.push('lineId'); }
+  return { sh: sh, h: h };
+}
+
+function contactsFor_(user, pass) {
+  if (!hubAllowed_(user, pass)) return { ok: false, error: 'ต้องล็อกอินศูนย์รวมงานและมีสิทธิ์ใช้ตารางเวร' };
+  const out = {};
+  readTable_(SH.PEOPLE).forEach(function (r) {
+    let ph = String(r.phone || '').replace(/[^0-9+]/g, '');
+    if (/^[1-9]\d{8}$/.test(ph)) ph = '0' + ph;               // Sheets ตัด 0 หน้าเบอร์มือถือ
+    out[r.short] = { phone: ph, lineId: String(r.lineId || '').trim().replace(/^@/, '') };
+  });
+  return { ok: true, contacts: out };
+}
+
+/** contacts: { short: { phone, lineId } } */
+function saveContacts_(contacts) {
+  const c = peopleCols_(), sh = c.sh, h = c.h;
+  const v = sh.getDataRange().getValues();
+  const si = h.indexOf('short'), pi = h.indexOf('phone'), li = h.indexOf('lineId');
+  sh.getRange(2, pi + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
+  for (let i = 1; i < v.length; i++) {
+    const x = contacts[v[i][si]]; if (!x) continue;
+    sh.getRange(i + 1, pi + 1).setValue(String(x.phone || '').replace(/[^0-9+]/g, ''));
+    sh.getRange(i + 1, li + 1).setValue(String(x.lineId || '').trim());
+  }
 }
