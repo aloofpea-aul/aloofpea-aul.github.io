@@ -65,7 +65,7 @@ function describe_(month, type, p, data) {
 function reqRows_() {
   const sh = sheet_(SH.REQ); if (sh.getLastRow() < 2) return [];
   return sh.getRange(2, 1, sh.getLastRow() - 1, 12).getValues().map(function (r, i) {
-    return { row: i + 2, id: String(r[0]), createdAt: r[1], month: String(r[2]), type: r[3], payload: JSON.parse(r[4] || '{}'),
+    return { row: i + 2, id: String(r[0]), createdAt: r[1], month: mkey_(r[2]), type: r[3], payload: JSON.parse(r[4] || '{}'),
       requester: r[5], reason: r[6], status: r[7], decidedBy: r[8], decidedAt: r[9], note: r[10], text: r[11] };
   });
 }
@@ -93,7 +93,7 @@ function createRequest_(b, who) {
   applyOps_(test, ops);                                     // ตรวจก่อนบันทึก
   const text = describe_(b.month, b.type, b.payload, mo.data);
   const id = 'R' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss') + Math.random().toString(36).slice(2, 5).toUpperCase();
-  sheet_(SH.REQ).appendRow([id, new Date(), b.month, b.type, JSON.stringify(b.payload), b.requester || (who && who.name) || '',
+  sheet_(SH.REQ).appendRow([id, new Date(), "'" + b.month, b.type, JSON.stringify(b.payload), b.requester || (who && who.name) || '',
     b.reason || '', 'รออนุมัติ', '', '', '', text]);
   log_(b.requester || (who && who.name) || '-', 'ยื่นคำขอ', b.month, text);
   if (who && b.approveNow) return decideRequest_(id, true, who, 'แก้ไขโดยผู้อนุมัติ');

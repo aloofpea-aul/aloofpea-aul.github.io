@@ -168,10 +168,13 @@ function peaHolidaysOf_(y, m) {
   return getHolidays_().filter(function (h) { return h.pea && h.date.indexOf(pre) === 0; }).map(function (h) { return h.date; });
 }
 
+/** คีย์เดือนจากเซลล์ (Sheets อาจแปลง "2026-10" เป็นวันที่ให้เอง) */
+function mkey_(v) { return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM') : String(v || '').replace(/^'/, '').trim(); }
+
 /** Months: month | status | data(JSON) | stateAfter(JSON) | updatedAt | note */
 function findMonthRow_(key) {
   const sh = sheet_(SH.MONTHS); const v = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
-  for (let i = 1; i < v.length; i++) if (String(v[i][0]) === key) return i + 1;
+  for (let i = 1; i < v.length; i++) if (mkey_(v[i][0]) === key) return i + 1;
   return 0;
 }
 function getMonth_(key) {
@@ -181,7 +184,7 @@ function getMonth_(key) {
 }
 function saveMonth_(key, status, data, stateAfter, note) {
   const sh = sheet_(SH.MONTHS);
-  const row = [key, status, JSON.stringify(data), JSON.stringify(stateAfter), new Date(), note || ''];
+  const row = ["'" + key, status, JSON.stringify(data), JSON.stringify(stateAfter), new Date(), note || ''];
   const r = findMonthRow_(key);
   if (r) sh.getRange(r, 1, 1, 6).setValues([row]); else sh.appendRow(row);
 }
@@ -236,7 +239,7 @@ function approverList_() {
 }
 
 function log_(actor, action, month, detail) {
-  sheet_(SH.LOG).appendRow([new Date(), actor, action, month || '', typeof detail === 'string' ? detail : JSON.stringify(detail)]);
+  sheet_(SH.LOG).appendRow([new Date(), actor, action, month ? "'" + month : '', typeof detail === 'string' ? detail : JSON.stringify(detail)]);
 }
 
 /* ======================================================================
@@ -249,7 +252,7 @@ function monthList_() {
   const sh = sheet_(SH.MONTHS);
   if (sh.getLastRow() < 2) return [];
   return sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues()
-    .filter(function (r) { return r[0]; }).map(function (r) { return { month: String(r[0]), status: r[1] }; });
+    .filter(function (r) { return r[0]; }).map(function (r) { return { month: mkey_(r[0]), status: r[1] }; });
 }
 
 function doGet(e) {
