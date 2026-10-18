@@ -158,6 +158,15 @@ function migrate_() {
   props.setProperty('MIG_2610B', '1');
 }
 
+/** ชั่วโมงที่เหลือจนจบเวรพนักงานปัจจุบัน (08:30 / 16:30 / 00:30) */
+function shiftHoursLeft_() {
+  const now = new Date(), hm = Utilities.formatDate(now, TZ, 'HH:mm'), ymd = Utilities.formatDate(now, TZ, 'yyyy-MM-dd');
+  const ends = ['00:30', '08:30', '16:30'].map(function (t) { return new Date(ymd + 'T' + t + ':00+07:00'); });
+  ends.push(new Date(new Date(ymd + 'T00:30:00+07:00').getTime() + 86400000));
+  const nx = ends.filter(function (d) { return d > now; })[0];
+  return Math.max(0.5, (nx - now) / 3600000);
+}
+
 function getConfig_() {
   const o = {}; readTable_(SH.CONFIG).forEach(function (r) { o[r.key] = r.value; }); return o;
 }
@@ -288,6 +297,7 @@ function doGet(e) {
     if (a === 'preview') return json_({ ok: true, preview: previewMonth_(q.m, q.pair || 'continue') });
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
+    if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) { return json_({ ok: false, error: String(err.message || err) }); }
 }
@@ -327,6 +337,11 @@ function doPost(e) {
       saveMonth_(b.m, b.status, cur.data, cur.stateAfter, cur.note);
       log_(who.name, 'สถานะ ' + b.status, b.m, '');
       return json_({ ok: true });
+    }
+    if (b.action === 'setWx') {                       // ตั้งระดับสภาพอากาศเอง (null = อัตโนมัติ)
+      let hrs = b.dur === 'forever' ? 0 : b.dur === 'shift' ? shiftHoursLeft_() : Number(getConfig_().wxManualHours || 6);
+      setWxOverride_(b.lv == null ? null : Number(b.lv), who.short || who.name, hrs, b.note || '');
+      return json_({ ok: true, wx: wxNow_() });
     }
     if (b.action === 'setApproval') {                 // เลขที่/วันที่หนังสืออนุมัติตารางประจำเดือน (ใช้ในบันทึกลาเวร)
       const cur = getMonth_(b.m); if (!cur) return json_({ ok: false, error: 'ไม่พบเดือน' });

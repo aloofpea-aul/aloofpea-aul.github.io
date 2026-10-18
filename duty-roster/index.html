@@ -118,6 +118,10 @@ nav.bot button{position:relative}
 .doc table.sg{border-collapse:collapse;width:100%;font-size:14px}
 .doc table.sg td,.doc table.sg th{border:1px solid #000;height:30px;padding:0 4px;text-align:center;font-weight:400}
 .sig{text-align:center;line-height:1.5}
+.wxg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
+.wxg button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;color:var(--ink);padding:4px}
+.wxg button.on{border:2px solid var(--pri);background:#F3E9F5;color:var(--pri2);font-weight:700}
+.wxg button.auto{border-style:dashed}
 @media print{
   body{background:#fff}
   .app>*:not(#viewReport),nav.bot,#viewReport>.card{display:none!important}
@@ -152,6 +156,7 @@ nav.bot button{position:relative}
       <div class="muted" id="dTag" style="font-weight:600"></div>
     </div>
     <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="card" id="dWx"></div>
     <button class="btn ghost hide" id="dSign" style="width:100%">พิมพ์บัญชีลงนามการอยู่เวรของวันนี้</button>
   </main>
 
@@ -406,6 +411,7 @@ async function renderDaily(){
   $('dRows').innerHTML=shiftRows(data,S.dGroup,S.dDay-1).map(r=>`<div class="card duty"><div class="chip" style="background:${r.bg};color:${r.fg}"><small>${r.l}</small><b>${r.n}</b></div><div style="flex:1;min-width:0"><div class="tm">${r.t}</div>${
     typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(personRow).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
   $('dSign').classList.toggle('hide',S.dGroup!=='emp');
+  renderWx();
   $('dSign').onclick=()=>{S.rPreset={kind:'sign',m:S.dMonth,day:S.dDay};show('viewReport');};
 }
 const TEL_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
@@ -428,6 +434,34 @@ async function loadContacts(){
 }
 function setBadge(st){const b=$('hdrBadge');b.textContent=st||'';b.className='badge '+(st==='อนุมัติแล้ว'?'b-ok':'b-draft');b.style.display=st?'':'none';}
 
+
+/* ---------- สภาพอากาศ (ระดับ 1–6) ---------- */
+const WX_LV={1:'ปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
+S.wxPick=null; S.wxDur='6h';
+async function loadWx(){ try{ const j=await apiGet({action:'wx'}); S.wx=j.wx; LS.set('wx',j.wx); }catch(e){} renderWx(); }
+function renderWx(){
+  const w=S.wx||LS.get('wx'); const el=$('dWx'); if(!el) return;
+  if(!S.wxLoading){S.wxLoading=1;loadWx();}
+  const keep={note:($('wxNote')||{}).value||'',pin:($('wxPin')||{}).value||''};
+  if(!w||w.lv==null){ el.innerHTML='<h3>สภาพอากาศตอนนี้</h3><div class="muted">กำลังโหลด…</div>'; return; }
+  const pick=S.wxPick!=null?S.wxPick:w.lv, m=w.manual;
+  const tm=t=>{const d=new Date(t+7*3600e3);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');};
+  el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">สภาพอากาศตอนนี้ : ${w.lv} <span style="font-weight:400">(${esc(WX_LV[w.lv]||'')})</span></h3><span class="muted">ระบบวิเคราะห์: ${w.auto==null?'—':w.auto}</span></div>
+    ${m?`<div class="note" style="margin-top:6px">ตั้งเองโดย ${esc(m.by)} ${tm(m.at)} น.${m.note?' · '+esc(m.note):''} · ${m.until?'ใช้ถึง '+tm(m.until)+' น.':'จนกว่าจะยกเลิก'}</div>`:''}
+    <div class="muted" style="margin-top:4px">${esc(w.detail||'')}</div>
+    <div class="wxg">${[1,2,3,4,5,6].map(n=>`<button data-l="${n}" class="${n===pick?'on':''} ${!m&&n===w.auto?'auto':''}">${n} ${WX_LV[n]}</button>`).join('')}</div>
+    <div class="seg light" id="wxDur">${[['6h','6 ชม.'],['shift','จบเวรนี้'],['forever','จนกว่าจะยกเลิก']].map(x=>`<button data-d="${x[0]}" class="${S.wxDur===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
+    <div class="grid2" style="margin-top:8px"><input type="text" id="wxNote" placeholder="หมายเหตุ (ไม่บังคับ)" aria-label="หมายเหตุสภาพอากาศ"><input type="password" id="wxPin" inputmode="numeric" autocomplete="off" placeholder="PIN ผู้มีสิทธิ์" aria-label="PIN"></div>
+    <div class="grid2" style="margin-top:8px"><button class="btn ghost" id="wxAuto">กลับเป็นอัตโนมัติ</button><button class="btn" id="wxSave">บันทึกระดับ ${pick}</button></div>
+    <div class="muted" style="margin-top:6px">ระดับ 5–6 ระบบแจ้ง หผ.ปร. / ชผ. ทาง LINE · คนอยู่เวรตั้งจาก LINE ได้: พิมพ์ "อากาศ 3"</div><div id="wxMsg"></div>`;
+  $('wxNote').value=keep.note; $('wxPin').value=keep.pin;
+  el.querySelectorAll('.wxg button').forEach(b=>b.onclick=()=>{S.wxPick=+b.dataset.l;renderWx();});
+  el.querySelectorAll('#wxDur button').forEach(b=>b.onclick=()=>{S.wxDur=b.dataset.d;renderWx();});
+  const send=async lv=>{ msg('wxMsg','กำลังบันทึก…');
+    try{ const j=await apiPost({action:'setWx',lv,dur:S.wxDur,note:$('wxNote').value.trim(),pin:$('wxPin').value}); S.wx=j.wx; LS.set('wx',j.wx); S.wxPick=null; renderWx(); msg('wxMsg',lv==null?'กลับเป็นอัตโนมัติแล้ว':'บันทึกระดับ '+lv+' แล้ว'+(lv>=5?' · แจ้ง หผ.ปร. / ชผ. แล้ว':'')); }
+    catch(e){ msg('wxMsg',e.message,'err'); } };
+  $('wxSave').onclick=()=>send(pick); $('wxAuto').onclick=()=>send(null);
+}
 /* ---------- สร้างเวร ---------- */
 function genKey(){const ms=S.boot.months.map(x=>x.month).sort();return nextKey(ms[ms.length-1]);}
 async function renderGen(){

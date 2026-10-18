@@ -148,26 +148,111 @@ function teamOf_(kind, dd) {
   return who_(e, function (c) { return c === '3' || c === '2,3'; });
 }
 
-/* ---- สภาพอากาศ (Open-Meteo ฟรี ไม่ต้องใช้คีย์) ---- */
+/* ---- สภาพอากาศ (Open-Meteo ฟรี ไม่ต้องใช้คีย์) + ระดับ 1–6 ---- */
 const WX_TH_ = { 0: 'ท้องฟ้าแจ่มใส', 1: 'มีเมฆบางส่วน', 2: 'มีเมฆบางส่วน', 3: 'มีเมฆมาก', 45: 'มีหมอก', 48: 'มีหมอก',
   51: 'ฝนปรอย', 53: 'ฝนปรอย', 55: 'ฝนปรอย', 56: 'ฝนปรอย', 57: 'ฝนปรอย', 61: 'ฝนตกเล็กน้อย', 63: 'ฝนตกปานกลาง', 65: 'ฝนตกหนัก',
   66: 'ฝนตก', 67: 'ฝนตกหนัก', 80: 'ฝนตกเป็นช่วง ๆ', 81: 'ฝนตกเป็นช่วง ๆ', 82: 'ฝนตกหนักเป็นช่วง ๆ',
   95: 'พายุฝนฟ้าคะนอง', 96: 'พายุฝนฟ้าคะนอง ลูกเห็บ', 99: 'พายุฝนฟ้าคะนองรุนแรง' };
-function weatherText_() {
-  const cache = CacheService.getScriptCache(), hit = cache.get('wx');
-  if (hit) return hit;
+const WX_LV_ = { 1: 'สภาพปกติ', 2: 'ชื้น', 3: 'ฝนตก', 4: 'ลมแรง', 5: 'ฝนตก ลมแรง', 6: 'ฝนตก ฟ้าคะนอง' };
+/** ข้อมูลดิบ (จำไว้ 30 นาที) */
+function weatherData_() {
+  const cache = CacheService.getScriptCache(), hit = cache.get('wx2');
+  if (hit) return JSON.parse(hit);
   try {
     const cfg = getConfig_(), lat = Number(cfg.wxLat || 8.3756), lon = Number(cfg.wxLon || 98.7271);
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-      '&current=temperature_2m,weather_code&hourly=precipitation_probability&forecast_hours=8&timezone=Asia%2FBangkok';
+      '&current=temperature_2m,relative_humidity_2m,weather_code,wind_gusts_10m' +
+      '&hourly=precipitation_probability,weather_code,wind_gusts_10m&forecast_hours=8&timezone=Asia%2FBangkok';
     const j = JSON.parse(UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText());
-    const code = j.current && j.current.weather_code, t = j.current && j.current.temperature_2m;
-    const pp = (j.hourly && j.hourly.precipitation_probability || []).filter(function (x) { return x != null; });
-    const maxP = pp.length ? Math.max.apply(null, pp) : null;
-    let s = (WX_TH_[code] || 'ไม่ทราบ') + (t != null ? ' · ' + Math.round(t) + '°C' : '') + (maxP != null ? ' · โอกาสฝน 8 ชม.ข้างหน้า ' + maxP + '%' : '');
-    cache.put('wx', s, 1800);
-    return s;
-  } catch (e) { return ''; }
+    const c = j.current || {}, h = j.hourly || {}, num = function (a) { return (a || []).filter(function (x) { return x != null; }); };
+    const d = { code: c.weather_code, t: c.temperature_2m, rh: c.relative_humidity_2m, gust: c.wind_gusts_10m,
+      codes: num(h.weather_code), probs: num(h.precipitation_probability), gusts: num(h.wind_gusts_10m) };
+    if (d.code == null) return null;
+    cache.put('wx2', JSON.stringify(d), 1800);
+    return d;
+  } catch (e) { return null; }
+}
+/** วิเคราะห์ระดับ 1–6 จากข้อมูล (ดูตอนนี้ + 8 ชม.ข้างหน้า) */
+function wxLevelOf_(d, cfg) {
+  if (!d) return null;
+  const G = Number(cfg.wxGust || 40), P = Number(cfg.wxRainProb || 60), H = Number(cfg.wxHumid || 85);
+  const codes = [d.code].concat(d.codes), max = function (a) { return a.length ? Math.max.apply(null, a) : 0; };
+  const isRain = function (c) { return (c >= 61 && c <= 67) || (c >= 80 && c <= 82); };
+  const thunder = codes.some(function (c) { return c >= 95; });
+  const rain = codes.some(isRain) || max(d.probs) >= P;
+  const windy = max([d.gust || 0].concat(d.gusts)) >= G;
+  if (thunder) return 6;
+  if (rain && windy) return 5;
+  if (windy) return 4;
+  if (rain) return 3;
+  if ((d.rh || 0) >= H || [45, 48, 51, 53, 55, 56, 57].indexOf(d.code) >= 0) return 2;
+  return 1;
+}
+function wxDetail_(d) {
+  if (!d) return '';
+  const max = function (a) { return a.length ? Math.max.apply(null, a) : null; };
+  const g = max([d.gust || 0].concat(d.gusts)), p = max(d.probs);
+  return [WX_TH_[d.code] || 'ไม่ทราบ', d.t != null ? Math.round(d.t) + '°C' : '', d.rh != null ? 'ความชื้น ' + Math.round(d.rh) + '%' : '',
+    g != null ? 'ลมกระโชก ' + Math.round(g) + ' กม./ชม.' : '', p != null ? 'โอกาสฝน 8 ชม.ข้างหน้า ' + p + '%' : ''].filter(String).join(' · ');
+}
+function wxOverride_() {
+  const o = JSON.parse(PropertiesService.getScriptProperties().getProperty('WX_OVERRIDE') || 'null');
+  if (!o) return null;
+  if (o.until && Date.now() > o.until) { PropertiesService.getScriptProperties().deleteProperty('WX_OVERRIDE'); return null; }
+  return o;
+}
+/** สถานะสภาพอากาศตอนนี้: { lv, auto, manual:{lv,by,at,until,note}|null, detail } */
+function wxNow_() {
+  const cfg = getConfig_(), d = weatherData_(), auto = wxLevelOf_(d, cfg), o = wxOverride_();
+  return { lv: o ? o.lv : auto, auto: auto, manual: o, detail: wxDetail_(d), label: WX_LV_[o ? o.lv : auto] || '' };
+}
+/** 2 บรรทัดท้ายข้อความ */
+function wxLines_() {
+  const w = wxNow_(); if (w.lv == null) return [];
+  const by = w.manual ? ' · หน้างานแจ้งโดย ' + w.manual.by + ' ' + Utilities.formatDate(new Date(w.manual.at), TZ, 'HH:mm') + (w.manual.note ? ' (' + w.manual.note + ')' : '') : '';
+  return ['สภาพอากาศ : ' + w.lv + by, w.detail ? '(' + w.detail + ')' : ''].filter(String);
+}
+function weatherText_() { return wxLines_().join(' '); }        // ใช้กับข้อความเดิม
+
+/** ตั้งระดับเอง — lv=null คือกลับเป็นอัตโนมัติ · hours=0 คือจนกว่าจะยกเลิก */
+function setWxOverride_(lv, by, hours, note) {
+  const props = PropertiesService.getScriptProperties();
+  if (lv == null) { props.deleteProperty('WX_OVERRIDE'); log_(by, 'สภาพอากาศ: อัตโนมัติ', '', ''); return null; }
+  const o = { lv: Number(lv), by: by, at: Date.now(), until: hours ? Date.now() + hours * 3600000 : 0, note: String(note || '').slice(0, 80) };
+  props.setProperty('WX_OVERRIDE', JSON.stringify(o));
+  log_(by, 'สภาพอากาศ: ตั้งระดับ ' + o.lv, '', (o.note || '') + (o.until ? ' ถึง ' + Utilities.formatDate(new Date(o.until), TZ, 'd/M HH:mm') : ' จนกว่าจะยกเลิก'));
+  if (o.lv >= 5) notifyWx_(o.lv, 'หน้างานแจ้งโดย ' + by + (o.note ? ' — ' + o.note : ''), true);
+  return o;
+}
+/** แจ้ง หผ.ปร. / ชผ. เมื่อระดับ 5–6 (ไม่ซ้ำภายใน 6 ชม. ยกเว้นตั้งเองจากหน้างาน) */
+function notifyWx_(lv, source, force) {
+  const props = PropertiesService.getScriptProperties();
+  const last = JSON.parse(props.getProperty('WX_ALERT') || '{}');
+  if (!force && last.lv >= lv && Date.now() - (last.at || 0) < 6 * 3600000) return;
+  props.setProperty('WX_ALERT', JSON.stringify({ lv: lv, at: Date.now() }));
+  const w = wxNow_(), lines = [source, w.detail ? '(' + w.detail + ')' : ''].filter(String);
+  const u = webUrl_('viewDaily'), btn = u ? [{ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูเวรวันนี้', uri: u } }] : null;
+  approverList_().forEach(function (a) {
+    const id = lineIdOf_(a.short);
+    if (id) push_(id, [flex_('สภาพอากาศ : ' + lv + ' ' + WX_LV_[lv], bubble_('แจ้งเตือนสภาพอากาศ', lv === 6 ? '#8A2B2B' : '#B4570B', 'สภาพอากาศ : ' + lv + ' · ' + WX_LV_[lv], lines, btn))], 'change');
+  });
+}
+/** คนที่อยู่เวรตอนนี้ (พนักงาน + คนงาน) */
+function onDutyNow_() {
+  const now = new Date(), ymd = bkkYmd_(now), hm = Utilities.formatDate(now, TZ, 'HH:mm'), out = {};
+  const dd = dayData_(ymd), py = dayData_(addDays_(ymd, -1));
+  if (dd) Object.keys(dd.emp).forEach(function (n) {
+    const c = dd.emp[n];
+    if (c === '1' && hm >= '00:00' && hm < '09:00') out[n] = 1;
+    if (c === '2,3' && hm >= '08:00') out[n] = 1;
+    if (c === '3' && hm >= '16:00') out[n] = 1;
+  });
+  if (py) Object.keys(py.emp).forEach(function (n) { const c = py.emp[n]; if ((c === '3' || c === '2,3') && hm < '01:00') out[n] = 1; });
+  if (dd) Object.keys(dd.wk).forEach(function (n) {
+    const k = String(dd.wk[n]).split(',');
+    if ((k.indexOf('1') >= 0 && hm < '08:30') || (k.indexOf('2') >= 0 && hm >= '07:30' && hm < '16:30') || (k.indexOf('3') >= 0 && hm >= '15:30')) out[n] = 1;
+  });
+  return out;
 }
 
 /** การ์ดแจ้งก่อนเข้าเวร (พนักงาน) — แบบประกาศ กฟส.อ่าวลึก + ปุ่มโทร */
@@ -191,7 +276,9 @@ function shiftMessage_(kind, ymd, name, dd) {
   body.push({ type: 'separator', margin: 'md' });
   const room = telBtn_('ห้องเวรแก้ไฟ ' + fmtPhone_(cfg.roomPhone), cfg.roomPhone, true); if (room) body.push(room);
   body.push(telBtn_('PEA Call Center 1129', '1129', false));
-  const wx = weatherText_(); if (wx) body.push({ type: 'text', text: 'สภาพอากาศ: ' + wx, size: 'xs', color: '#4A4450', wrap: true, margin: 'md' });
+  const wl = wxLines_();
+  if (wl.length) { body.push({ type: 'separator', margin: 'md' }); body.push({ type: 'text', text: wl[0], size: 'sm', weight: 'bold', color: '#1E1A22', wrap: true, margin: 'md' });
+    if (wl[1]) body.push({ type: 'text', text: wl[1], size: 'xs', color: '#4A4450', wrap: true }); }
   body.forEach(function (x) { if (x.type === 'button') x.margin = 'sm'; });
   const foot = [
     { type: 'button', style: 'primary', color: '#5B1A63', height: 'sm', action: { type: 'postback', label: 'รับทราบ', data: 'ack|' + kind + '|' + ymd + '|' + name, displayText: 'รับทราบ / เข้าเวรแล้ว' } },
@@ -219,7 +306,7 @@ function announceText_(kind, ymd) {
   });
   L.push('', '🏢 และเบอร์โทรศัพท์ติดต่อประจำห้องเวรแก้กระแสไฟฟ้าขัดข้อง การไฟฟ้าสาขาอำเภออ่าวลึก ติดต่อได้24ชม.' + (cfg.roomPhone ? ' ' + fmtPhone_(cfg.roomPhone) : ''));
   L.push('', '☎️PEA Call Center 1129');
-  const wx = weatherText_(); if (wx) L.push('', 'สภาพอากาศ: ' + wx);
+  const wl = wxLines_(); if (wl.length) L.push('', wl.join('\n'));
   return L.join('\n');
 }
 
@@ -398,6 +485,7 @@ function sendSlot() {
       });
       sent.push(s.key);
     });
+    try { const w = wxNow_(); if (w.lv >= 5 && !w.manual) notifyWx_(w.lv, 'ระบบวิเคราะห์จากพยากรณ์อากาศ', false); } catch (e) {}
     props.setProperty('SENT', JSON.stringify(sent.slice(-60)));
   } finally { lock.releaseLock(); }
 }
@@ -467,6 +555,16 @@ function handleEvent_(ev) {
       bubble_('เวรแก้ไฟ' + (dd.day.off ? ' · วันหยุด' : ''), '#5B1A63', thDateLong_(ymd), summaryLines_(dd), null))]);
   }
   if (/^เวรของฉัน$/.test(t)) return reply_(ev.replyToken, [text_(myDuties_(me))]);
+  m = t.match(/^อากาศ\s*(อัตโนมัติ|[1-6])\s*(.*)$/);
+  if (m) {
+    const isAppr = approverList_().some(function (a) { return a.short === me.short; });
+    if (!isAppr && !onDutyNow_()[me.short]) return reply_(ev.replyToken, [text_('ตั้งสภาพอากาศได้เฉพาะคนที่อยู่เวรตอนนี้ และ หผ.ปร. / ชผ.')]);
+    if (m[1] === 'อัตโนมัติ') { setWxOverride_(null, me.short); const w = wxNow_(); return reply_(ev.replyToken, [text_('กลับเป็นอัตโนมัติแล้ว ✓\nสภาพอากาศ : ' + w.lv + ' (' + w.label + ')')]); }
+    const hrs = Number(getConfig_().wxManualHours || 6), o = setWxOverride_(+m[1], me.short, hrs, m[2]);
+    return reply_(ev.replyToken, [text_('ตั้งสภาพอากาศ : ' + o.lv + ' (' + WX_LV_[o.lv] + ') แล้ว ✓\nใช้ถึง ' + Utilities.formatDate(new Date(o.until), TZ, 'HH:mm') + ' น. (' + hrs + ' ชม.)' +
+      (o.lv >= 5 ? '\nแจ้ง หผ.ปร. / ชผ. แล้ว' : '') + '\nพิมพ์ "อากาศ อัตโนมัติ" เพื่อยกเลิก')]);
+  }
+  if (/^อากาศ$/.test(t)) { const w = wxNow_(); return reply_(ev.replyToken, [text_(wxLines_().join('\n') + '\n\nตั้งเอง: อากาศ 1–6 (เฉพาะคนอยู่เวร / หผ.ปร. / ชผ.)\n1 ปกติ · 2 ชื้น · 3 ฝนตก · 4 ลมแรง · 5 ฝนตก ลมแรง · 6 ฝนตก ฟ้าคะนอง')]); }
   if (/^ตัวอย่างแจ้งเตือน$/.test(t)) {             // ดูหน้าตาการ์ดจริงโดยไม่เสียโควต้า (ตอบกลับ)
     const ymd = bkkYmd_(), dd = dayData_(ymd); if (!dd) return reply_(ev.replyToken, [text_('ยังไม่มีตารางวันนี้')]);
     const team = teamOf_('emp3', dd), wd = weekday_(+ymd.slice(0, 4), +ymd.slice(5, 7), +ymd.slice(8, 10));
@@ -478,7 +576,7 @@ function handleEvent_(ev) {
     return reply_(ev.replyToken, [text_(u ? 'ยื่นคำขอแลก/ลาเวรได้ที่\n' + u : 'ติดต่อ หผ.ปร. เพื่อขอเปลี่ยนเวร')]);
   }
   if (/ตาราง/.test(t)) { const u = webUrl_(''); return reply_(ev.replyToken, [text_(u ? 'ตารางเวรทั้งเดือน\n' + u : 'ยังไม่ได้ตั้งค่า webUrl')]); }
-  return reply_(ev.replyToken, [text_('คำสั่งที่ใช้ได้\n• เวรวันนี้\n• เวรพรุ่งนี้\n• เวรของฉัน\n• เวรคนงาน\n• ขอเปลี่ยน/ลาเวร\n• ตารางเดือนนี้')]);
+  return reply_(ev.replyToken, [text_('คำสั่งที่ใช้ได้\n• เวรวันนี้\n• เวรพรุ่งนี้\n• เวรของฉัน\n• เวรคนงาน\n• อากาศ (ดู/ตั้งระดับ)\n• ขอเปลี่ยน/ลาเวร\n• ตารางเดือนนี้')]);
 }
 
 function register_(uid, name, code) {
