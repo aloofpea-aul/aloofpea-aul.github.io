@@ -462,6 +462,12 @@ function handleEvent_(ev) {
       bubble_('เวรแก้ไฟ' + (dd.day.off ? ' · วันหยุด' : ''), '#5B1A63', thDateLong_(ymd), summaryLines_(dd), null))]);
   }
   if (/^เวรของฉัน$/.test(t)) return reply_(ev.replyToken, [text_(myDuties_(me))]);
+  if (/^ตัวอย่างแจ้งเตือน$/.test(t)) {             // ดูหน้าตาการ์ดจริงโดยไม่เสียโควต้า (ตอบกลับ)
+    const ymd = bkkYmd_(), dd = dayData_(ymd); if (!dd) return reply_(ev.replyToken, [text_('ยังไม่มีตารางวันนี้')]);
+    const team = teamOf_('emp3', dd), wd = weekday_(+ymd.slice(0, 4), +ymd.slice(5, 7), +ymd.slice(8, 10));
+    const mon = addDays_(ymd, -((wd + 6) % 7));
+    return reply_(ev.replyToken, [shiftMessage_('emp3', ymd, team[0] || '', dd), workersWeek_(mon)]);
+  }
   if (/เปลี่ยน|ลาเวร|แลก/.test(t)) {
     const u = webUrl_('viewReq');
     return reply_(ev.replyToken, [text_(u ? 'ยื่นคำขอแลก/ลาเวรได้ที่\n' + u : 'ติดต่อ หผ.ปร. เพื่อขอเปลี่ยนเวร')]);
