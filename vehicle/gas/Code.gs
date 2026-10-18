@@ -15,7 +15,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '15.1';
+const VERSION = '15.2';
 
 const SH = {
   CARS:  { name: 'รายการใช้รถ',  cols: ['ID', 'Plate', 'Model', 'Status', 'Mile', 'Image', 'User', 'UserId', 'CreatedDate'] },
@@ -50,8 +50,13 @@ function doPost(e) {
   let b;
   try { b = JSON.parse((e.postData && e.postData.contents) || '{}'); } catch (err) { return json_({ ok: false, error: 'bad json' }); }
   try {
-    const me = who_(b.user, b.pass);
-    if (!me) return json_({ ok: false, error: 'unauthorized', message: 'ชื่อหรือรหัสผ่านศูนย์รวมงานไม่ถูกต้อง' });
+    if (!b.user || !b.pass) return json_({ ok: false, error: 'unauthorized', message: 'ยังไม่ได้เข้าสู่ระบบศูนย์รวมงานในเครื่องนี้' });
+    let me;
+    try { me = who_(b.user, b.pass); }
+    catch (err) {                                      // ตรวจกับศูนย์รวมงานไม่ได้ (ส่วนมาก = ยังไม่ได้กด Run setup อนุญาตสิทธิ์)
+      return json_({ ok: false, error: 'hub', message: 'หลังบ้านระบบยานพาหนะเชื่อมศูนย์รวมงานไม่ได้ — ผู้ดูแลต้องเปิด Apps Script แล้วกด Run ฟังก์ชัน setup เพื่ออนุญาตสิทธิ์ (' + String(err.message || err).slice(0, 120) + ')' });
+    }
+    if (!me) return json_({ ok: false, error: 'unauthorized', message: 'ศูนย์รวมงานไม่รู้จักชื่อ "' + b.user + '" หรือรหัสผ่านไม่ตรง — ลองออกจากระบบแล้วเข้าใหม่ที่ศูนย์รวมงาน' });
     if (b.action === 'bootstrap') return json_(bootstrap_(me));
 
     const lock = LockService.getScriptLock();
@@ -273,13 +278,13 @@ function who_(user, pass) {
   const cache = CacheService.getScriptCache();
   let role = cache.get(key);
   if (role == null) {
-    try {
-      const res = UrlFetchApp.fetch(HUB_API, { method: 'post', contentType: 'text/plain;charset=utf-8', muteHttpExceptions: true,
+    const res = UrlFetchApp.fetch(HUB_API, { method: 'post', contentType: 'text/plain;charset=utf-8', muteHttpExceptions: true,
         payload: JSON.stringify({ action: 'whoAmI', changedBy: user, changedByPassword: pass }) });
-      const r = JSON.parse(res.getContentText());
-      role = (r && r.role) ? String(r.role) : '';
-    } catch (e) { return null; }                     // ตรวจไม่ได้ = ไม่ให้ (ไม่จำผล)
-    cache.put(key, role, role ? 21600 : 120);
+    const txt = res.getContentText();
+    let r;
+    try { r = JSON.parse(txt); } catch (e) { throw new Error('ศูนย์รวมงานตอบกลับไม่ใช่ JSON (HTTP ' + res.getResponseCode() + ')'); }
+    role = (r && r.role) ? String(r.role) : '';
+    cache.put(key, role, role ? 21600 : 30);
   }
   if (!role) return null;
   const extra = String(PropertiesService.getScriptProperties().getProperty('VEHICLE_ADMINS') || '')
