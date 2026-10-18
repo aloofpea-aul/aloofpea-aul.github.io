@@ -85,7 +85,7 @@ nav.bot button{position:relative}
 .loading{padding:40px;text-align:center;color:var(--mut)}
 
 /* ===================== รายงาน (พิมพ์) ===================== */
-#printArea{display:flex;flex-direction:column;gap:16px;align-items:center;overflow-x:auto}
+#printArea{display:flex;flex-direction:column;gap:16px;align-items:safe center;overflow-x:auto}
 .page{width:11in;height:8.5in;background:#fff;color:#000;font-family:'Sarabun',sans-serif;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.2);flex:0 0 auto}
 .rp{padding:.15in .2in .1in;font-size:12.5px;display:flex;flex-direction:column;gap:1px;height:100%}
 .rp .ln{display:grid;grid-template-columns:4.35in 1fr;padding-left:.2in}
@@ -101,6 +101,23 @@ nav.bot button{position:relative}
 .wk table{border-collapse:collapse;width:100%;font-size:12px}
 .wk td,.wk th{border:1px solid #000;padding:0;text-align:center}
 @page{size:letter landscape;margin:0}
+@page a4p{size:A4 portrait;margin:0}
+@page a4l{size:A4 landscape;margin:0}
+.page.a4p{width:210mm;height:297mm;page:a4p}
+.page.a4l{width:297mm;height:210mm;page:a4l}
+.doc{font-family:'Sarabun',sans-serif;color:#000;font-size:14.5px;line-height:1.62;height:100%}
+.doc .fl{display:inline-block;border-bottom:1px dotted #000;padding:0 8px;min-width:40px;text-align:center;line-height:1.3}
+.doc .bx{display:inline-block;width:15px;height:15px;border:1.3px solid #000;vertical-align:-2px;margin:0 5px 0 10px;position:relative}
+.doc .bx.on::after{content:'';position:absolute;left:4px;top:0;width:5px;height:10px;border:solid #000;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.doc .lh{display:flex;align-items:flex-end;gap:10px}
+.doc .lh img{width:62px;height:52px;object-fit:contain}
+.doc .org b{display:block;font-size:19px;line-height:1.1}.doc .org small{font-size:8.5px;letter-spacing:.4px;font-weight:700}
+.doc table.lg2{border-collapse:collapse;width:100%;font-size:12px;table-layout:fixed}
+.doc table.lg2 td{white-space:nowrap;overflow:hidden}
+.doc table.lg2 td,.doc table.lg2 th{border:1px solid #000;height:25px;padding:0 3px;text-align:center;font-weight:400;line-height:1.15}
+.doc table.sg{border-collapse:collapse;width:100%;font-size:14px}
+.doc table.sg td,.doc table.sg th{border:1px solid #000;height:30px;padding:0 4px;text-align:center;font-weight:400}
+.sig{text-align:center;line-height:1.5}
 @media print{
   body{background:#fff}
   .app>*:not(#viewReport),nav.bot,#viewReport>.card{display:none!important}
@@ -135,6 +152,7 @@ nav.bot button{position:relative}
       <div class="muted" id="dTag" style="font-weight:600"></div>
     </div>
     <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn ghost hide" id="dSign" style="width:100%">พิมพ์บัญชีลงนามการอยู่เวรของวันนี้</button>
   </main>
 
   <!-- ============ สร้างเวร ============ -->
@@ -173,15 +191,25 @@ nav.bot button{position:relative}
     <div class="card">
       <div class="grid2">
         <label class="f">เดือน<select id="rMonth"></select></label>
-        <label class="f">รายงาน<select id="rKind"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option></select></label>
-        <label class="f">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
-        <label class="f">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
+        <label class="f">รายงาน<select id="rKind">
+          <optgroup label="ตารางเวรประจำเดือน"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option></optgroup>
+          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option></optgroup></select></label>
+        <label class="f rRoster">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
+        <label class="f rRoster">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
+        <label class="f rDoc rLeave hide" style="grid-column:1/-1">ฉบับ<select id="rItem"></select></label>
+        <label class="f rDoc rSign hide" style="grid-column:1/-1">วันที่<select id="rDay"></select></label>
+        <label class="f rDoc rLeave hide">หนังสืออนุมัติตารางเดือนนี้ เลขที่<input type="text" id="rApNo" placeholder="อล.0009/2569"></label>
+        <label class="f rDoc rLeave hide">ลงวันที่<input type="date" id="rApDate"></label>
+        <label class="f rDoc rLeave hide">ผู้อนุมัติท้ายบันทึก<select id="rSigner"></select></label>
+        <div class="rDoc rLeave hide" style="display:flex;align-items:flex-end"><button class="btn ghost" id="rApSave" style="width:100%">บันทึกเลขที่อนุมัติ</button></div>
+        <label class="f rDoc rLeave rCustom hide">ชื่อผู้อนุมัติ<input type="text" id="rSgName" placeholder="นาย…"></label>
+        <label class="f rDoc rLeave rCustom hide">ตำแหน่ง<input type="text" id="rSgTitle" placeholder="รักษาการแทน ผจก.กฟส.อ่าวลึก"></label>
       </div>
       <div class="grid2" style="margin-top:10px">
-        <button class="btn ghost" id="rSetStatus">บันทึกสถานะ</button>
+        <button class="btn ghost rRoster" id="rSetStatus">บันทึกสถานะ</button>
         <button class="btn" id="rPrint">พิมพ์ / บันทึก PDF</button>
       </div>
-      <div class="muted" style="margin-top:6px">ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"</div>
+      <div class="muted" style="margin-top:6px" id="rHint">ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"</div>
       <div id="rMsg"></div>
     </div>
     <div id="printArea"></div>
@@ -201,7 +229,12 @@ nav.bot button{position:relative}
         <label class="f" id="qDbWrap">รับเวรของคู่วันที่<select id="qDb"></select></label>
         <label class="f hide" id="qRWrap">คนเข้าแทน (เรียงจากเวรน้อยสุด)<select id="qR"></select></label>
       </div>
-      <label class="f" style="margin-top:8px">เหตุผล<input type="text" id="qReason" placeholder="เช่น ลากิจ / ธุระส่วนตัว"></label>
+      <div class="grid2" style="margin-top:8px">
+        <label class="f">เหตุผล (ใช้ในบันทึกลาเวร)<select id="qWhy"><option value="errand">ลากิจ</option><option value="sick">ลาป่วย</option><option value="vacation">ลาพักผ่อน</option><option value="private">ธุระส่วนตัว</option><option value="official">ปฏิบัติงานราชการตามคำสั่ง</option></select></label>
+        <label class="f">รายละเอียดเพิ่มเติม (ไม่บังคับ)<input type="text" id="qReason" placeholder="เช่น พาบุตรไปโรงพยาบาล"></label>
+        <label class="f hide qOrd">คำสั่งที่<input type="text" id="qOrder" placeholder="กพค.(ก.)2425/2568"></label>
+        <label class="f hide qOrd">ลงวันที่<input type="date" id="qOrderDate"></label>
+      </div>
       <div id="qPreview" class="note" style="margin-top:8px"></div>
       <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="qNow" style="width:20px;height:20px"> ผู้อนุมัติแก้ไขทันที (ไม่ต้องรออนุมัติ)</label>
       <label class="f hide" id="qPinWrap" style="margin-top:6px">PIN ผู้อนุมัติ<input type="password" id="qPin" inputmode="numeric" autocomplete="off"></label>
@@ -240,8 +273,8 @@ nav.bot button{position:relative}
       <label class="f">คู่ที่ไม่ให้อยู่ช่วง 3 ด้วยกัน (เช่น ธวัชชัย/พงศธร, คั่นด้วย ,)<input type="text" id="sAvoid"></label>
     </div>
     <div class="card">
-      <h3>เบอร์โทร / LINE ID</h3>
-      <div class="muted" style="margin-bottom:6px">ใช้ทำปุ่มโทรออกในหน้าเวรรายวัน · LINE ID = ไอดีที่ใช้ค้นหาเพื่อน (ตั้งในแอป LINE → โปรไฟล์ → ไอดี) · บันทึกด้วย PIN ด้านล่าง</div>
+      <h3>เบอร์โทร / LINE ID / เลขประจำตัว / ตำแหน่ง</h3>
+      <div class="muted" style="margin-bottom:6px">ใช้ทำปุ่มโทรออกในหน้าเวรรายวัน · เลขประจำตัวและตำแหน่งใช้ในบันทึกลาเวร/แบบฟอร์มบันทึกการลา · LINE ID = ไอดีที่ใช้ค้นหาเพื่อน (ตั้งในแอป LINE → โปรไฟล์ → ไอดี) · บันทึกด้วย PIN ด้านล่าง</div>
       <div id="sContacts"></div>
     </div>
     <div class="card">
@@ -372,6 +405,8 @@ async function renderDaily(){
   $('dTag').textContent=day.hol?'วันหยุดพิเศษ':day.off?'วันหยุด · ได้ค่าตอบแทน':'วันทำการ';
   $('dRows').innerHTML=shiftRows(data,S.dGroup,S.dDay-1).map(r=>`<div class="card duty"><div class="chip" style="background:${r.bg};color:${r.fg}"><small>${r.l}</small><b>${r.n}</b></div><div style="flex:1;min-width:0"><div class="tm">${r.t}</div>${
     typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(personRow).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
+  $('dSign').classList.toggle('hide',S.dGroup!=='emp');
+  $('dSign').onclick=()=>{S.rPreset={kind:'sign',m:S.dMonth,day:S.dDay};show('viewReport');};
 }
 const TEL_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
 function personRow(n){
@@ -443,8 +478,15 @@ async function renderReport(){
   S.boot.months.slice().sort((a,b)=>a.month<b.month?1:-1).forEach(x=>sel.add(new Option(monthLabel(x.month)+' · '+x.status,x.month)));
   if(S.preview) sel.add(new Option(monthLabel(S.preview.month)+' · ตัวอย่าง (ยังไม่บันทึก)','__preview'),0);
   if(S.rUsePreview&&S.preview) sel.value='__preview'; S.rUsePreview=false;
+  const pr=S.rPreset; S.rPreset=null;
+  if(pr){ sel.value=pr.m; $('rKind').value=pr.kind; S.rWant=pr; }
+  else if(!sel.value) sel.value=todayIso().slice(0,7);
   if(!$('rDate').value) $('rDate').value=todayIso();
-  sel.onchange=drawReport; $('rKind').onchange=drawReport; $('rDate').onchange=drawReport;
+  sel.onchange=()=>{S.rWant=null;drawReport();}; $('rKind').onchange=drawReport; $('rDate').onchange=drawReport;
+  $('rItem').onchange=drawReport; $('rDay').onchange=drawReport;
+  $('rSigner').onchange=()=>{LS.set('signer',$('rSigner').value);drawReport();};
+  ['rSgName','rSgTitle'].forEach(id=>$(id).oninput=()=>{LS.set('signerCustom',{name:$('rSgName').value,title:$('rSgTitle').value});drawReport();});
+  const sc=LS.get('signerCustom')||{}; $('rSgName').value=sc.name||''; $('rSgTitle').value=sc.title||'';
   drawReport();
 }
 async function currentReportData(){
@@ -453,8 +495,15 @@ async function currentReportData(){
   const mo=await loadMonth(v); return {key:v,data:mo.data,status:mo.status};
 }
 async function drawReport(){
+  const k=$('rKind').value, isDoc=['leave','leavelog','sign'].includes(k);
+  document.querySelectorAll('.rRoster').forEach(e=>e.classList.toggle('hide',isDoc));
+  document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide'));
+  if(isDoc){ if($('rMonth').value==='__preview'){$('printArea').innerHTML='<div class="note warn">เอกสารประกอบใช้กับตารางที่บันทึกแล้วเท่านั้น</div>';return;}
+    $('rHint').textContent=k==='leavelog'?'ตั้งค่าเครื่องพิมพ์: A4 แนวนอน · ขอบ 0 (None)':'ตั้งค่าเครื่องพิมพ์: A4 แนวตั้ง · ขอบ 0 (None)';
+    return drawDocs(k); }
+  $('rHint').textContent='ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"';
   const r=await currentReportData(); $('rStatus').value=r.status==='อนุมัติแล้ว'?'อนุมัติแล้ว':'ร่าง'; setBadge(r.status);
-  const k=$('rKind').value, cfg=S.boot.config, dt=thDate($('rDate').value);
+  const cfg=S.boot.config, dt=thDate($('rDate').value);
   let html='';
   if(k==='emp'||k==='all') html+=empPage(r,cfg,dt,'memo')+empPage(r,cfg,dt,'order');
   if(k==='wk'||k==='all') html+=wkPage(r,cfg,dt);
@@ -543,6 +592,174 @@ function wkPage(r,cfg,docDate){
       <div style="padding-left:.42in">วันที่ ${esc(docDate)}</div></div>
   </div></div>`;
 }
+
+/* ---------- เอกสารประกอบ: บันทึกลาเวร / แบบฟอร์มบันทึกการลา / บัญชีลงนาม ---------- */
+const THD=s=>String(s==null?'':s).replace(/[0-9]/g,d=>'๐๑๒๓๔๕๖๗๘๙'[d]);
+const pInfo=n=>{const c=(S.contacts||{})[n]||{};return {full:fullName(n),id:c.empId||'',pos:c.position||''};};
+const dOf=(key,d)=>{const {y,m}=parseKey(key);return new Date(Date.UTC(y,m-1,d));};
+const dParts=dt=>({d:dt.getUTCDate(),m:dt.getUTCMonth(),y:dt.getUTCFullYear()+543,wd:dt.getUTCDay()});
+const dLong=dt=>{const p=dParts(dt);return p.d+' '+TH_MONTH[p.m]+' '+p.y;};
+const dSlash=dt=>{const p=dParts(dt);return p.d+'/'+(p.m+1)+'/'+String(p.y).slice(2);};
+const isoLong=iso=>iso?dLong(new Date(iso+'T00:00:00Z')):'';
+const isoShort=iso=>{if(!iso)return '';const p=dParts(new Date(iso+'T00:00:00Z'));return p.d+' '+TH_MS[p.m]+' '+p.y;};
+function rangeLong(a,b){ if(+a===+b) return dLong(a); const p=dParts(a),q=dParts(b);
+  if(p.m===q.m&&p.y===q.y) return p.d+'-'+q.d+' '+TH_MONTH[q.m]+' '+q.y;
+  return p.d+' '+TH_MONTH[p.m]+(p.y!==q.y?' '+p.y:'')+' - '+q.d+' '+TH_MONTH[q.m]+' '+q.y; }
+/* แยกเวรเป็นช่วงเวลา: ช่วง 2+3 = 2 ช่วง (08:30–16:30, 16:30–00:30) */
+function segsOf(key,day,code){
+  const a=dOf(key,day),b=dOf(key,day+1);
+  if(code==='1') return [{a,b:a,s:'00:30',e:'08:30'}];
+  if(code==='3') return [{a,b,s:'16:30',e:'00:30'}];
+  if(code==='2,3') return [{a,b:a,s:'08:30',e:'16:30'},{a,b,s:'16:30',e:'00:30'}];
+  return [];
+}
+const WHY={sick:'ลาป่วย',errand:'ลากิจ',vacation:'ลาพักผ่อน',private:'ธุระส่วนตัว',official:'ปฏิบัติงานราชการ'};
+async function monthReqs(key){
+  const c=LS.get('mr_'+key);
+  const f=apiGet({action:'monthReqs',m:key}).then(j=>{LS.set('mr_'+key,j.requests);S.mr=S.mr||{};const ch=JSON.stringify(j.requests)!==JSON.stringify(c);S.mr[key]=j.requests;if(c&&ch&&currentView()==='viewReport')drawReport();return j.requests;});
+  if(S.mr&&S.mr[key]) return S.mr[key];
+  if(c){f.catch(()=>{});return c;} return f;
+}
+/* รายการลาเวรของพนักงานที่อนุมัติแล้ว 1 แถว = 1 ช่วงเวลา */
+async function leaveItems(key){
+  const [mo,reqs]=await Promise.all([loadMonth(key),monthReqs(key)]);
+  const by={}; reqs.forEach(r=>by[r.id]=r);
+  const out=[];
+  (mo.data.changes||[]).filter(c=>c.g==='emp'&&by[c.req]).forEach((c,k)=>segsOf(key,c.day,c.code).forEach(sg=>out.push(Object.assign({req:by[c.req],from:c.from,to:c.to,day:c.day,k},sg))));
+  out.sort((x,y)=>x.a-y.a||x.s.localeCompare(y.s)||x.k-y.k);
+  return {mo,reqs,items:out};
+}
+function signerOf(){
+  const cfg=S.boot.config,v=$('rSigner').value;
+  if(v==='head') return {name:cfg.headName,title:String(cfg.headTitle).replace(/กฟส\..*$/,'').trim()+' รักษาการแทน '+cfg.mgrTitle};
+  if(v==='custom') return {name:$('rSgName').value.trim(),title:$('rSgTitle').value.trim()};
+  return {name:cfg.mgrName,title:cfg.mgrTitle};
+}
+async function drawDocs(k){
+  const key=$('rMonth').value, cfg=S.boot.config, want=S.rWant||{}; S.rWant=null;
+  if(k==='sign'){
+    $$('.rSign').forEach(e=>e.classList.remove('hide'));
+    const mo=await loadMonth(key), days=mo.data.days, el=$('rDay'), old=want.day?String(want.day):el.value;
+    el.innerHTML=''; el.add(new Option('ทั้งเดือน ('+days.length+' แผ่น)','all'));
+    days.forEach(d=>el.add(new Option(TH_WDF[d.wd]+' '+d.d+' '+TH_MS[parseKey(key).m-1]+(d.off?' · วันหยุด':''),String(d.d))));
+    el.value=[...el.options].some(o=>o.value===old)?old:'all';
+    let nx=null; const nk=nextKey(key); if(S.boot.months.some(x=>x.month===nk)) try{nx=await loadMonth(nk);}catch(e){}
+    const list=el.value==='all'?days.map(d=>d.d):[+el.value];
+    $('printArea').innerHTML=list.map(d=>signPage(key,mo.data,nx&&nx.data,d,cfg)).join('');
+    return;
+  }
+  const L=await leaveItems(key);
+  if(k==='leavelog'){ $('printArea').innerHTML=leaveLogPages(key,L.items,cfg); return; }
+  $$('.rLeave').forEach(e=>e.classList.remove('hide'));
+  const ap=(L.mo.data.approval)||{}; if(document.activeElement!==$('rApNo')) $('rApNo').value=ap.no||''; if(document.activeElement!==$('rApDate')) $('rApDate').value=ap.date||'';
+  const sg=$('rSigner'),sv=LS.get('signer')||'mgr';
+  if(!sg.options.length){ sg.add(new Option(cfg.mgrTitle+' ('+String(cfg.mgrName).replace(/^นาย/,'')+')','mgr'));
+    sg.add(new Option('หผ.ปร. รักษาการแทน ผจก. ('+String(cfg.headName).replace(/^นาย/,'')+')','head')); sg.add(new Option('อื่น ๆ (กรอกเอง)','custom')); }
+  sg.value=sv; $$('.rCustom').forEach(e=>e.classList.toggle('hide',sv!=='custom'));
+  const it=$('rItem'), old=want.id||it.value, ids=[...new Set(L.items.map(x=>x.req.id))];
+  it.innerHTML=''; it.add(new Option('ทั้งหมด ('+L.items.length+' ฉบับ)','all'));
+  ids.forEach(id=>{const r=L.items.find(x=>x.req.id===id).req;it.add(new Option(r.text,id));});
+  it.value=[...it.options].some(o=>o.value===old)?old:'all';
+  const sel=L.items.filter(x=>it.value==='all'||x.req.id===it.value);
+  $('printArea').innerHTML=sel.length?sel.map(x=>memoPage(key,x,ap,cfg,signerOf())).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
+}
+const $$=q=>document.querySelectorAll(q);
+const FL=(v,w)=>`<span class="fl" style="min-width:${w||60}px">${esc(v)||'&nbsp;'}</span>`;
+const ORG=(c,w)=>`<div style="${c?'text-align:center':''}"><img src="pea-logo.png" alt="ตราการไฟฟ้าส่วนภูมิภาค" style="width:${w||44}mm;height:auto;display:inline-block"></div>`;
+function memoPage(key,x,ap,cfg,sgn){
+  const r=x.req, w=(r.payload&&r.payload.why)||{}, A=pInfo(x.from), B=pInfo(x.to), {y,m}=parseKey(key);
+  const via=String(cfg.headTitle).replace(/^(หผ\.ปร\.)\s*/,'$1 ');
+  const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
+  return `<div class="page a4p"><div class="doc" style="padding:14mm 18mm 12mm 25mm">
+    ${ORG()}
+    <div style="display:grid;grid-template-columns:1fr 62mm;margin-top:8px">
+      <div>จาก &nbsp; ${esc(THD(A.pos))||FL('',160)}</div><div>ถึง &nbsp; ${esc(THD(cfg.mgrTitle))}</div>
+      <div>เลขที่</div><div>วันที่ &nbsp; ${esc(THD(isoLong(r.created)))}</div></div>
+    <div>เรื่อง &nbsp; ขออนุมัติลาเวร และ จัดเวรแทนชุดปฏิบัติการระบบไฟฟ้า รูปแบบ Standby</div>
+    <div style="border-bottom:1px solid #000;padding-bottom:4px">เรียน &nbsp; ${esc(THD(cfg.mgrTitle))} ผ่าน ${esc(THD(via))}</div>
+    <div style="text-indent:15mm;margin-top:6px;white-space:nowrap">ตามอนุมัติ ${esc(THD(cfg.mgrTitle))} ที่ ${FL(THD(ap.no),90)} ลว. ${FL(THD(isoShort(ap.date)),80)} เรื่อง อนุมัติ</div>
+    <div>จัดตารางการอยู่เวรของชุดปฏิบัติการระบบไฟฟ้า ประจำเดือน ${FL(THD(TH_MONTH[m-1]+' '+(y+543)),200)}</div>
+    <div>เนื่องจากข้าพเจ้า ${FL(A.full,230)} ${bx(w.k==='sick')}ลาป่วย ${bx(w.k==='errand')}ลากิจ ${bx(w.k==='vacation')}ลาพักผ่อน</div>
+    <div><span class="bx ${w.k==='private'?'on':''}" style="margin-left:0"></span>ธุระส่วนตัว</div>
+    <div><span class="bx ${w.k==='official'?'on':''}" style="margin-left:0"></span>ปฏิบัติงานราชการตามคำสั่งที่ ${w.k==='official'?FL(THD(w.order),150)+' ลงวันที่ '+FL(THD(isoLong(w.orderDate)),130):''}</div>
+    <div style="margin-top:4px">ทำให้ไม่มีพนักงานปฏิบัติงานในช่วงเวลาดังกล่าว</div>
+    <div style="text-indent:20mm;margin-top:8px;text-align:justify">ดังนั้นเพื่อให้งานปฏิบัติงานระบบไฟฟ้าเป็นไปด้วยความเรียบร้อย แผนกปฏิบัติการและบำรุงรักษามีความประสงค์ให้พนักงานปฏิบัติงานแทนเวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามรายชื่อดังต่อไปนี้ โดยมีสิทธิ์เบิกค่าตอบแทนการอยู่เวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามระเบียบของ กฟภ.</div>
+    <div>๑.ชื่อ-สกุล ${FL(B.full,150)} เลขประจำตัว ${FL(THD(B.id),70)} ตำแหน่ง ${FL(THD(B.pos),130)}</div>
+    <div>ปฏิบัติงานแทน ในวันที่ ${FL(THD(rangeLong(x.a,x.b)),190)} ระหว่างเวลา ${FL(THD(x.s+' – '+x.e+' น.'),150)}</div>
+    <div style="text-indent:20mm;margin-top:8px">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</div>
+    <div style="margin-left:72mm;margin-top:16mm" class="sig">..............................................<br>( ${esc(A.full)} )<br>${esc(THD(A.pos))||'&nbsp;'}<br>ผู้มอบเวร</div>
+    <div style="margin-left:72mm;margin-top:10mm" class="sig">..............................................<br>( ${esc(B.full)} )<br>${esc(THD(B.pos))||'&nbsp;'}<br>ผู้อยู่เวรแทน</div>
+    <div style="width:70mm;margin-left:6mm;margin-top:-2mm" class="sig"><b style="font-size:17px">อนุมัติ</b><br><br><br>..............................................<br>(${esc(sgn.name)||'&nbsp;'.repeat(30)})<br>${esc(THD(sgn.title))}</div>
+  </div></div>`;
+}
+function leaveLogPages(key,items,cfg){
+  const {y,m}=parseKey(key), per=19, pages=Math.max(1,Math.ceil(items.length/per));
+  const cell=v=>`<td>${esc(v)}</td>`;
+  let html='';
+  for(let p=0;p<pages;p++){
+    const chunk=items.slice(p*per,(p+1)*per);
+    let rows=chunk.map(x=>{const A=pInfo(x.from),B=pInfo(x.to),w=(x.req.payload&&x.req.payload.why)||{};
+      const cr=x.req.created?dSlash(new Date(x.req.created+'T00:00:00Z')):'';
+      return `<tr>${cell(cr)}${cell(dSlash(x.a))}${cell(x.s+' - '+x.e)}<td style="text-align:left">${esc(A.full)}</td>${cell(A.id)}<td></td><td style="text-align:left">${esc(B.full)}</td>${cell(B.id)}<td></td><td></td><td></td><td style="font-size:11px;white-space:normal;line-height:1.1">${esc(w.k==='official'?'ราชการ':(WHY[w.k]||''))}${x.req.type==='swap'?' (แลกเวร)':''}</td></tr>`;}).join('');
+    for(let i=chunk.length;i<per;i++) rows+='<tr>'+'<td></td>'.repeat(12)+'</tr>';
+    html+=`<div class="page a4l"><div class="doc" style="padding:9mm 10mm 8mm">
+      ${ORG(true,32)}
+      <div style="text-align:center;font-size:17px;font-weight:700;margin-top:2px">แบบฟอร์มบันทึกการลา การอยู่เวรปฏิบัติการระบบไฟฟ้า</div>
+      <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:8px">กฟส. ${FL(String(cfg.office).replace(/^กฟส\./,''),120)} <span style="margin-left:50px">เดือน</span> ${FL(TH_MONTH[m-1],110)} <span style="margin-left:50px">ปี</span> ${FL(y+543,70)}${pages>1?' <span style="font-weight:400;font-size:13px;margin-left:20px">แผ่นที่ '+(p+1)+'/'+pages+'</span>':''}</div>
+      <table class="lg2"><colgroup><col style="width:6.5%"><col style="width:6.5%"><col style="width:9%"><col style="width:14%"><col style="width:6%"><col style="width:6.5%"><col style="width:14%"><col style="width:6%"><col style="width:6.5%"><col style="width:9.5%"><col style="width:8%"><col style="width:7.5%"></colgroup>
+        <tr><th rowspan="2">วันยื่นใบลา</th><th colspan="2">วันที่ลาอยู่เวรฯ</th><th colspan="3" style="background:#BFBFBF">ผู้ลาอยู่เวรฯ</th><th colspan="3">ผู้อยู่เวรฯแทน</th><th rowspan="2">ผู้บังคับบัญชาชั้นต้น</th><th rowspan="2">ผู้อนุญาต</th><th rowspan="2">หมายเหตุ</th></tr>
+        <tr><th>วันที่</th><th>เวลา</th><th>ชื่อ - สกุล</th><th>รหัส</th><th>เซ็นชื่อ</th><th>ชื่อ - สกุล</th><th>รหัส</th><th>เซ็นชื่อ</th></tr>
+        ${rows}</table></div></div>`;
+  }
+  return html;
+}
+function signPage(key,data,next,d,cfg){
+  const day=data.days[d-1], rank=rankOf(), e=data.emp, N=data.days.length;
+  const nE=d<N?{data,i:d}:(next?{data:next,i:0}:null);
+  const ppl={};
+  Object.keys(e).forEach(n=>{const c=e[n][d-1]; if(c==='3'||c==='2,3') (ppl[n]=ppl[n]||[]).push(c==='3'?'ช่วง 3':'ช่วง 2+3');});
+  if(nE) Object.keys(nE.data.emp).forEach(n=>{ if(nE.data.emp[n][nE.i]==='1') (ppl[n]=ppl[n]||[]).push('ช่วง 1'); });
+  const names=Object.keys(ppl).sort((x,y)=>rank(x)-rank(y));
+  const a=dOf(key,d), b=dOf(key,d+1), pa=dParts(a), pb=dParts(b), t0=day.off?'๐๘.๓๐':'๑๖.๓๐';
+  const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${FL(TH_WDF[p.wd],70)}ที่${FL(THD(p.d),36)}เดือน${FL(TH_MONTH[p.m],90)}พ.ศ.${FL(THD(p.y),60)}เวลา${FL(t,70)}น.</div>`;
+  const nrow=Math.max(4,names.length);
+  let rows=''; for(let i=0;i<nrow;i++){const n=names[i];
+    rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td></td><td></td><td></td><td></td><td style="font-size:12px">${n?esc(ppl[n].join(', ')):''}</td></tr>`;}
+  const dots=w=>'.'.repeat(w);
+  return `<div class="page a4p"><div class="doc" style="padding:12mm 13mm 10mm 18mm;font-size:14px;line-height:1.75">
+    <div style="display:flex;gap:6px;align-items:flex-start">${ORG(true,34)}<div style="flex:1;padding-top:10px">
+      <div style="font-weight:700;font-size:15px;text-align:center;white-space:nowrap">บัญชีลงนามการอยู่เวรแก้ไขไฟฟ้าขัดข้องและรายงานการแก้ไขไฟฟ้าขัดข้อง</div>
+      <div style="margin-top:10px;padding-left:18mm">การไฟฟ้าส่วนภูมิภาค${FL(cfg.office,190)}</div></div></div>
+    <div style="margin-top:6px">เรียน &nbsp;${esc(cfg.mgrTitle)} ผ่าน ${esc(String(cfg.headTitle).replace(/^(หผ\.ปร\.)\s*/,'$1'))}</div>
+    <div style="padding-left:12mm">ขอรายงานผลการอยู่เวรแก้ไฟฟ้าขัดข้อง มีรายละเอียดดังนี้</div>
+    <div>๑. รายชื่อพนักงานอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
+    ${line('ประจำวัน',pa,t0)}${line('ถึงวัน',pb,'๐๘.๓๐')}
+    <table class="sg" style="margin:2px 0 6px"><colgroup><col style="width:5%"><col style="width:33%"><col style="width:11%"><col style="width:12%"><col style="width:11%"><col style="width:12%"><col style="width:16%"></colgroup>
+      <tr><th>ที่</th><th>ชื่อ-สกุล</th><th>เวลามา</th><th>ลงชื่อ</th><th>เวลากลับ</th><th>ลงชื่อ</th><th>หมายเหตุ</th></tr>${rows}</table>
+    <div style="white-space:nowrap;overflow:hidden">๒. เหตุการณ์กระแสไฟฟ้าแรงสูงขัดข้อง${dots(9)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${dots(9)}ชม. &nbsp;เวลาปฏิบัติงาน${dots(11)}ชม.</div>
+    <div style="white-space:nowrap;overflow:hidden">๓. เหตุการณ์กระแสไฟฟ้าแรงต่ำขัดข้อง${dots(9)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${dots(9)}ชม. &nbsp;เวลาปฏิบัติงาน${dots(11)}ชม.</div>
+    <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${dots(14)}รายการ &nbsp;ดังนี้${dots(200)}</div>
+    <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา${dots(14)}น. <span class="bx" style="margin-left:4px"></span>ติดต่อได้ทุก กฟฟ. <span class="bx"></span>ติดต่อไม่ได้ &nbsp;คือ${dots(100)}</div>
+    <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${dots(24)}ฉบับ</div>
+    <div style="white-space:nowrap;overflow:hidden">๗. อื่นๆ${dots(300)}</div>
+    <div style="padding-left:20mm">จึงเรียนมาเพื่อโปรดทราบ</div>
+    <div class="sig" style="margin-left:80mm;margin-top:8mm">( ${esc(names[0]?fullName(names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
+    <div style="margin-top:2mm">เรียน &nbsp;${esc(cfg.mgrTitle)}</div>
+    <div style="padding-left:14mm">ขอรายงานผลการตรวจสอบการอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
+    <div>ในวันที่${dots(60)}เวลา${dots(24)}น.</div>
+    <div>ปรากฏว่า &nbsp;พนักงานอยู่เวรฯ และคนงานอยู่เวรฯ</div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx" style="margin-left:0"></span>ครบถ้วน <span class="bx"></span>ไม่ครบถ้วน${dots(40)}</div><div style="padding-right:22mm">ทราบ</div></div>
+    <div>และความพร้อมยานพาหนะ,เครื่องมือ/เครื่องใช้แก้ไฟฟ้าขัดข้อง</div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx" style="margin-left:0"></span>พร้อม <span class="bx"></span>ไม่พร้อม${dots(40)}</div><div class="sig">(${dots(48)})<br>ผจก.${dots(26)}</div></div>
+    <div class="sig" style="width:80mm;margin-left:20mm;margin-top:4mm">(${dots(48)})<br>ผู้ตรวจสอบเวรฯ</div>
+  </div></div>`;
+}
+$('rApSave').onclick=async()=>{
+  const key=$('rMonth').value, pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
+  try{ const j=await apiPost({action:'setApproval',m:key,no:$('rApNo').value,date:$('rApDate').value,pin});
+    S.months[key]=j.month; LS.set('m_'+key,j.month); msg('rMsg','บันทึกเลขที่หนังสืออนุมัติแล้ว'); drawReport(); }catch(e){msg('rMsg',e.message,'err');}
+};
 $('rPrint').onclick=()=>window.print();
 $('rSetStatus').onclick=async()=>{
   const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
@@ -572,6 +789,7 @@ async function renderReq(){
     $('qA').onchange=()=>qForm('a'); $('qDa').onchange=()=>qForm('da'); $('qB').onchange=()=>qForm('b');
     $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r');
     $('qNow').onchange=()=>$('qPinWrap').classList.toggle('hide',!$('qNow').checked);
+    $('qWhy').onchange=()=>$$('.qOrd').forEach(e=>e.classList.toggle('hide',$('qWhy').value!=='official'));
   }
   $('pnApprovers').textContent='ผู้อนุมัติ: '+(S.boot.approvers||[]).map(a=>a.role).join(' / ');
   await qForm('month'); await loadRequests();
@@ -614,12 +832,18 @@ async function qForm(stage){
 $('qSubmit').onclick=async()=>{
   const key=$('qMonth').value,g=$('qGroup').value,a=$('qA').value,da=+$('qDa').value;
   const payload=S.qType==='swap'?{g,a,da,b:$('qB').value,db:+$('qDb').value}:{g,a,d:da,r:$('qR').value};
-  const body={action:'request',month:key,type:S.qType,payload,requester:a,reason:$('qReason').value.trim()};
+  const wk=$('qWhy').value; payload.why={k:wk};
+  if(wk==='official'){ payload.why.order=$('qOrder').value.trim(); payload.why.orderDate=$('qOrderDate').value;
+    if(!payload.why.order){msg('qMsg','ใส่เลขที่คำสั่งที่ไปปฏิบัติงานราชการ','warn');return;} }
+  const det=$('qReason').value.trim();
+  const reason=WHY[wk]+(wk==='official'?' ตามคำสั่งที่ '+payload.why.order:'')+(det?' — '+det:'');
+  const body={action:'request',month:key,type:S.qType,payload,requester:a,reason};
   if($('qNow').checked){body.approveNow=true;body.pin=$('qPin').value;}
   $('qSubmit').disabled=true; msg('qMsg','กำลังส่ง…');
   try{ const j=await apiPost(body); forgetMonth(key);
     msg('qMsg',j.request.status==='อนุมัติ'?'แก้ไขตารางแล้ว และแจ้ง LINE ผู้เกี่ยวข้อง':'ส่งคำขอแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ');
-    $('qReason').value=''; await qForm('month'); await loadRequests();
+    $('qReason').value=''; $('qOrder').value=''; $('qOrderDate').value=''; LS.del('mr_'+key); if(S.mr) delete S.mr[key];
+    await qForm('month'); await loadRequests();
   }catch(e){msg('qMsg',e.message,'err');}
   $('qSubmit').disabled=false;
 };
@@ -630,15 +854,16 @@ async function loadRequests(){
       <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div></div>`).join('')
     :'<div class="muted">ไม่มีคำขอค้าง</div>';
   $('pnList').querySelectorAll('button').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
+  setTimeout(()=>$('hsList').querySelectorAll('button[data-pid]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.pid};show('viewReport');}),0);
   $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
-      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div></div>`).join('')
+      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div>${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">พิมพ์บันทึกลาเวร / จัดเวรแทน</button>`:''}</div>`).join('')
     :'<div class="muted">ยังไม่มีประวัติ</div>';
 }
 async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}
   let note=''; if(!ok){note=prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)')||'';}
   msg('pnMsg','กำลังบันทึก…');
-  try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); forgetMonth();
+  try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
     msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); await loadRequests(); if(ok) await qForm('month');
   }catch(e){msg('pnMsg',e.message,'err');}
 }
@@ -648,7 +873,9 @@ function renderContacts(){
   const all=[...S.boot.people.emp,...S.boot.people.wk];
   if(S.contactsErr&&!Object.keys(S.contacts||{}).length){$('sContacts').innerHTML=`<div class="note warn">${esc(S.contactsErr)}</div>`;return;}
   $('sContacts').innerHTML=all.map(p=>{const c=(S.contacts||{})[p.short]||{};
-    return `<div class="ct"><div>${esc(p.full)}</div><input type="tel" inputmode="tel" data-n="${esc(p.short)}" data-k="phone" value="${esc(c.phone||'')}" placeholder="เบอร์โทร" aria-label="เบอร์โทร ${esc(p.short)}"><input type="text" data-n="${esc(p.short)}" data-k="lineId" value="${esc(c.lineId||'')}" placeholder="LINE ID" autocapitalize="off" aria-label="LINE ID ${esc(p.short)}"></div>`;}).join('');
+    const emp=p.group!=='WK';
+    return `<div class="ct" style="${emp?'border-bottom:0;padding-bottom:0':''}"><div>${esc(p.full)}</div><input type="tel" inputmode="tel" data-n="${esc(p.short)}" data-k="phone" value="${esc(c.phone||'')}" placeholder="เบอร์โทร" aria-label="เบอร์โทร ${esc(p.short)}"><input type="text" data-n="${esc(p.short)}" data-k="lineId" value="${esc(c.lineId||'')}" placeholder="LINE ID" autocapitalize="off" aria-label="LINE ID ${esc(p.short)}"></div>`+
+      (emp?`<div class="ct" style="grid-template-columns:128px 1fr"><input type="text" inputmode="numeric" data-n="${esc(p.short)}" data-k="empId" value="${esc(c.empId||'')}" placeholder="เลขประจำตัว" aria-label="เลขประจำตัว ${esc(p.short)}"><input type="text" data-n="${esc(p.short)}" data-k="position" value="${esc(c.position||'')}" placeholder="ตำแหน่ง เช่น พชง.5 ผบค.กฟส.อ่าวลึก" aria-label="ตำแหน่ง ${esc(p.short)}"></div>`:'');}).join('');
 }
 function renderSet(){
   setBadge('');

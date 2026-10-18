@@ -267,6 +267,7 @@ function doGet(e) {
     if (a === 'month') return json_({ ok: true, month: getMonth_(q.m) });
     if (a === 'preview') return json_({ ok: true, preview: previewMonth_(q.m, q.pair || 'continue') });
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
+    if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) { return json_({ ok: false, error: String(err.message || err) }); }
 }
@@ -305,6 +306,13 @@ function doPost(e) {
       saveMonth_(b.m, b.status, cur.data, cur.stateAfter, cur.note);
       log_(who.name, 'สถานะ ' + b.status, b.m, '');
       return json_({ ok: true });
+    }
+    if (b.action === 'setApproval') {                 // เลขที่/วันที่หนังสืออนุมัติตารางประจำเดือน (ใช้ในบันทึกลาเวร)
+      const cur = getMonth_(b.m); if (!cur) return json_({ ok: false, error: 'ไม่พบเดือน' });
+      cur.data.approval = { no: String(b.no || '').trim(), date: String(b.date || '').trim() };
+      saveMonth_(b.m, cur.status, cur.data, cur.stateAfter, cur.note);
+      log_(who.name, 'เลขที่อนุมัติตาราง', b.m, cur.data.approval);
+      return json_({ ok: true, month: getMonth_(b.m) });
     }
     if (b.action === 'saveHolidays') {
       const sh = sheet_(SH.HOL); if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 4).clearContent();
@@ -449,30 +457,49 @@ function hubAllowed_(user, pass) {
 
 function peopleCols_() {
   const sh = sheet_(SH.PEOPLE); const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  if (h.indexOf('lineId') < 0) { sh.getRange(1, h.length + 1).setValue('lineId').setFontWeight('bold'); h.push('lineId'); }
+  let added = false;
+  ['lineId', 'empId', 'position'].forEach(function (k) {
+    if (h.indexOf(k) < 0) { sh.getRange(1, h.length + 1).setValue(k).setFontWeight('bold'); h.push(k); added = added || k !== 'lineId'; }
+  });
+  if (added) {                                              // ค่าตั้งต้นจากเอกสารจริง (แก้ได้ที่หน้าตั้งค่า)
+    const seed = { 'ราชภัฎ': ['515597', 'พชง.3 ผบค.กฟส.อ่าวลึก'], 'กลวัชร': ['509913', 'พชง.5 ผบค.กฟส.อ่าวลึก'],
+      'ธวัชชัย': ['', 'พชง.6 กฟส.ปพย. รักษาการแทน ชผ.ปร.กฟส.อล.'] };
+    const v = sh.getDataRange().getValues(), si = h.indexOf('short'), ei = h.indexOf('empId'), pi = h.indexOf('position');
+    sh.getRange(2, ei + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
+    for (let i = 1; i < v.length; i++) {
+      const x = seed[v[i][si]]; if (!x) continue;
+      if (!v[i][ei] && x[0]) sh.getRange(i + 1, ei + 1).setValue(x[0]);
+      if (!v[i][pi] && x[1]) sh.getRange(i + 1, pi + 1).setValue(x[1]);
+    }
+  }
   return { sh: sh, h: h };
 }
 
 function contactsFor_(user, pass) {
   if (!hubAllowed_(user, pass)) return { ok: false, error: 'ต้องล็อกอินศูนย์รวมงานและมีสิทธิ์ใช้ตารางเวร' };
+  peopleCols_();
   const out = {};
   readTable_(SH.PEOPLE).forEach(function (r) {
     let ph = String(r.phone || '').replace(/[^0-9+]/g, '');
     if (/^[1-9]\d{8}$/.test(ph)) ph = '0' + ph;               // Sheets ตัด 0 หน้าเบอร์มือถือ
-    out[r.short] = { phone: ph, lineId: String(r.lineId || '').trim().replace(/^@/, '') };
+    out[r.short] = { phone: ph, lineId: String(r.lineId || '').trim().replace(/^@/, ''),
+      empId: String(r.empId == null ? '' : r.empId).trim(), position: String(r.position || '').trim() };
   });
   return { ok: true, contacts: out };
 }
 
-/** contacts: { short: { phone, lineId } } */
+/** contacts: { short: { phone, lineId, empId?, position? } } */
 function saveContacts_(contacts) {
   const c = peopleCols_(), sh = c.sh, h = c.h;
   const v = sh.getDataRange().getValues();
-  const si = h.indexOf('short'), pi = h.indexOf('phone'), li = h.indexOf('lineId');
+  const si = h.indexOf('short'), pi = h.indexOf('phone'), li = h.indexOf('lineId'), ei = h.indexOf('empId'), oi = h.indexOf('position');
   sh.getRange(2, pi + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
+  sh.getRange(2, ei + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
   for (let i = 1; i < v.length; i++) {
     const x = contacts[v[i][si]]; if (!x) continue;
-    sh.getRange(i + 1, pi + 1).setValue(String(x.phone || '').replace(/[^0-9+]/g, ''));
-    sh.getRange(i + 1, li + 1).setValue(String(x.lineId || '').trim());
+    if ('phone' in x) sh.getRange(i + 1, pi + 1).setValue(String(x.phone || '').replace(/[^0-9+]/g, ''));
+    if ('lineId' in x) sh.getRange(i + 1, li + 1).setValue(String(x.lineId || '').trim());
+    if ('empId' in x) sh.getRange(i + 1, ei + 1).setValue(String(x.empId || '').replace(/[^0-9]/g, ''));
+    if ('position' in x) sh.getRange(i + 1, oi + 1).setValue(String(x.position || '').trim());
   }
 }

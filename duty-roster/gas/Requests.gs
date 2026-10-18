@@ -82,6 +82,15 @@ function listRequests_() {
   };
 }
 
+/** คำขอที่อนุมัติแล้วของเดือน (ใช้ทำเอกสารลาเวร) — วันที่เป็น yyyy-MM-dd */
+function monthRequests_(key) {
+  const d = function (v) { return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v || '').slice(0, 10); };
+  return reqRows_().filter(function (r) { return r.month === key && r.status === 'อนุมัติ'; }).map(function (r) {
+    return { id: r.id, created: d(r.createdAt), type: r.type, payload: r.payload, requester: r.requester, reason: r.reason,
+      decidedBy: r.decidedBy, decided: d(r.decidedAt), text: r.text };
+  });
+}
+
 /**
  * ยื่นคำขอ — ถ้า who (ผู้อนุมัติ) ส่ง approveNow มา จะอนุมัติทันที (แก้ตรง)
  * b: { month, type, payload, requester, reason, approveNow }
