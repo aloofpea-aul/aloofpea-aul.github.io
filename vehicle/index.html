@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="/pea-hub.js?v=2026101703" data-app="vehicle" data-perm="login" data-name="ระบบยานพาหนะ"></script>
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<title>ระบบยานพาหนะ กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#5B1A63">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#5B1A63;--pri2:#3E0F45;--bg:#F5F3F7;--ink:#1E1A22;--mut:#5E5666;--line:#E2DCE8;--card:#fff;
+  --ok:#1F7A3A;--okb:#DDF2E2;--bad:#B3261E;--badb:#FBE1E1;--warn:#8A5A00;--warnb:#FCEBC4;
+  --navh:64px;--sb:env(safe-area-inset-bottom);--st:env(safe-area-inset-top)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:16px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+button{cursor:pointer}
+.hide{display:none!important}
+
+/* ---------- โครงหน้าเต็มจอ บน-ล่าง ---------- */
+header.top{position:sticky;top:0;z-index:20;background:var(--pri);color:#fff;
+  padding:calc(10px + var(--st)) calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left))}
+.hrow{display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto}
+.hback{width:40px;height:40px;border-radius:20px;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 40px}
+.htitle{flex:1;min-width:0}
+.htitle .t1{font-size:12px;opacity:.8}
+.htitle .t2{font-size:19px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hme{text-align:right;font-size:12px;line-height:1.3;max-width:42vw}
+.hme b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hme span{opacity:.8}
+.refresh{width:40px;height:40px;border-radius:20px;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:18px;flex:0 0 40px}
+.refresh.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+main{max-width:960px;margin:0 auto;padding:12px 12px calc(var(--navh) + var(--sb) + 20px);display:flex;flex-direction:column;gap:12px}
+nav.bot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);
+  padding:0 env(safe-area-inset-right) var(--sb) env(safe-area-inset-left);box-shadow:0 -2px 12px rgba(30,26,34,.06)}
+nav.bot .in{max-width:960px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--navh)}
+nav.bot button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#7A7282;font-size:13px;font-weight:600;position:relative}
+nav.bot button svg{width:24px;height:24px}
+nav.bot button.on{color:var(--pri)}
+nav.bot button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;height:3px;border-radius:0 0 3px 3px;background:var(--pri)}
+nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;height:18px;border-radius:9px;background:#D93025;color:#fff;font-size:11px;line-height:18px;padding:0 5px}
+
+/* ---------- ส่วนประกอบ ---------- */
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(30,26,34,.08)}
+.sec{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 2px -2px}
+.sec h2{margin:0;font-size:18px}
+.muted{color:var(--mut);font-size:14px}
+.small{font-size:13px}
+.btn{height:48px;border-radius:12px;border:0;background:var(--pri);color:#fff;font-weight:600;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.block{width:100%}
+.btn.ghost{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+.btn.green{background:var(--ok)}
+.btn.red{background:var(--bad)}
+.btn.soft{background:#EFE7F2;color:var(--pri2)}
+.btn.sm{height:40px;font-size:15px;padding:0 14px;border-radius:10px}
+.btn:disabled{opacity:.55}
+.pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font-size:13px;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--okb);color:var(--ok)}.p-bad{background:var(--badb);color:var(--bad)}.p-warn{background:var(--warnb);color:var(--warn)}.p-mut{background:#ECE8EF;color:var(--mut)}
+.empty{text-align:center;color:var(--mut);padding:28px 10px}
+.empty .ic{font-size:40px;opacity:.5}
+.note{background:#EDE4F0;color:var(--pri2);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.55}
+.note.err{background:var(--badb);color:var(--bad)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#fff;border-radius:14px;padding:12px 10px;border:0;text-align:left;box-shadow:0 1px 2px rgba(30,26,34,.08);border-top:4px solid var(--line)}
+.stat b{display:block;font-size:28px;line-height:1.1}
+.stat span{font-size:13px;color:var(--mut)}
+.stat.s-ok{border-top-color:#2E9E52}.stat.s-ok b{color:var(--ok)}
+.stat.s-bad{border-top-color:#D93025}.stat.s-bad b{color:var(--bad)}
+.stat.s-warn{border-top-color:#E0A000}.stat.s-warn b{color:var(--warn)}
+.stat.on{outline:2px solid var(--pri)}
+
+.cars{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.cars{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:900px){.cars{grid-template-columns:repeat(3,1fr)}}
+.car{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(30,26,34,.08);display:flex;flex-direction:column}
+.car .ph{position:relative;height:150px;background:linear-gradient(135deg,#EFE7F2,#E2DCE8);display:flex;align-items:center;justify-content:center}
+.car .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.car .ph .noimg{font-size:56px;opacity:.35}
+.car .ph .pill{position:absolute;top:10px;right:10px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.car .ph .edit{position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:20px;border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:17px}
+.car .bd{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.car .pl{font-size:22px;font-weight:700;letter-spacing:.3px}
+.car .md{font-size:15px;color:var(--mut)}
+.car .mi{font-size:14px;color:var(--mut)}
+.car .us{font-size:14px;color:var(--bad);font-weight:600}
+.car .nb{font-size:13px;color:var(--warn)}
+.car .btn{margin-top:8px}
+
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid #F0ECF3}
+.li:last-child{border-bottom:0}
+.li .ic{width:42px;height:42px;border-radius:12px;background:#EFE7F2;display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 42px}
+.li .tx{flex:1;min-width:0}
+.li .t{font-weight:600;font-size:16px}
+.li .s{font-size:14px;color:var(--mut);line-height:1.5}
+.li .r{text-align:right;flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* ปฏิทิน */
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-h b{font-size:17px}
+.cal-h button{width:44px;height:44px;border-radius:22px;border:1px solid var(--line);background:#fff;font-size:20px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dw{text-align:center;font-size:13px;color:var(--mut);padding:4px 0}
+.cal .d{aspect-ratio:1/1;max-height:62px;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;padding:0;position:relative}
+.cal .d.x{visibility:hidden}
+.cal .d.today{border:2px solid var(--pri);font-weight:700}
+.cal .d.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.cal .d i{display:flex;gap:2px;height:6px;margin-top:3px}
+.cal .d i u{width:6px;height:6px;border-radius:3px;background:#8E3FA0;display:block}
+.cal .d i u.pe{background:#E0A000}
+.cal .d.sel i u{background:#fff}
+
+/* แผนบำรุง */
+.plan{border-left:5px solid var(--line);padding:10px 12px;border-radius:10px;background:#FAF8FB;margin-bottom:8px}
+.plan.urgent{border-left-color:#D93025;background:#FDF1F0}
+.plan.soon{border-left-color:#E0A000;background:#FFF8E6}
+.plan .h{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.plan ul{margin:6px 0 0;padding-left:20px;font-size:15px;line-height:1.6}
+
+/* ฟอร์ม / ชีตล่าง */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(20,10,25,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;
+  padding:8px 16px calc(16px + var(--sb));animation:up .2s ease-out}
+@media(min-width:640px){.ov{align-items:center}.sheet{border-radius:20px;max-height:86vh}}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+.sheet .grab{width:44px;height:5px;border-radius:3px;background:#DDD5E3;margin:4px auto 10px}
+.sheet h3{margin:0 0 12px;font-size:20px;color:var(--pri2)}
+.fld{display:block;margin-bottom:14px}
+.fld>span{display:block;font-size:15px;font-weight:600;margin-bottom:6px}
+.fld input,.fld select,.fld textarea{width:100%;height:50px;border:1.5px solid #D6CEDC;border-radius:12px;padding:0 14px;background:#fff;outline:none}
+.fld textarea{height:84px;padding:10px 14px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--pri)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sbtns{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chips button{height:36px;border-radius:18px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:14px}
+.preview{width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-top:8px}
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.seg button{flex:0 0 auto;height:38px;border-radius:19px;border:1px solid var(--line);background:#fff;padding:0 14px;font-size:14px;font-weight:600;color:var(--mut)}
+.seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--navh) + var(--sb) + 14px);transform:translateX(-50%);z-index:60;background:#2B2230;color:#fff;
+  padding:12px 18px;border-radius:12px;font-size:15px;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25);text-align:center}
+.toast.err{background:var(--bad)}
+.busy{position:fixed;inset:0;z-index:70;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center}
+.busy div{background:#fff;border-radius:14px;padding:16px 22px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-weight:600;color:var(--pri2)}
+.skel{height:220px;border-radius:16px;background:linear-gradient(90deg,#ECE7EF 25%,#F6F3F8 50%,#ECE7EF 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="hrow">
+    <a class="hback" href="/index.html" aria-label="กลับศูนย์รวมงาน">‹</a>
+    <div class="htitle"><div class="t1">กฟส.อ่าวลึก</div><div class="t2" id="hTitle">ระบบยานพาหนะ</div></div>
+    <div class="hme" id="hMe"></div>
+    <button class="refresh" id="btnRefresh" aria-label="รีเฟรช"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
+  </div>
+</header>
+
+<main id="main">
+  <div id="setupBox" class="card hide"></div>
+  <div id="errBox" class="note err hide"></div>
+
+  <!-- หน้าหลัก -->
+  <section id="v-home">
+    <div class="stats">
+      <button class="stat s-ok" data-f="available"><b id="stA">–</b><span>ว่างพร้อมใช้</span></button>
+      <button class="stat s-bad" data-f="in-use"><b id="stU">–</b><span>กำลังใช้งาน</span></button>
+      <button class="stat s-warn" data-go="book"><b id="stP">–</b><span>รออนุมัติจอง</span></button>
+    </div>
+    <div id="myCar"></div>
+    <div class="sec"><h2>รายการรถ</h2><div><button class="btn sm soft hide" id="btnAddCar">+ เพิ่มรถ</button></div></div>
+    <div class="cars" id="cars"><div class="skel"></div><div class="skel"></div></div>
+    <div class="sec"><h2>ใช้รถล่าสุด</h2><button class="btn sm ghost" id="btnAllLogs">ดูทั้งหมด</button></div>
+    <div class="card"><div class="list" id="recent"></div></div>
+  </section>
+
+  <!-- จองรถ -->
+  <section id="v-book" class="hide">
+    <div class="sec"><h2>การจองรถ</h2><button class="btn sm" id="btnBook">+ จองรถ</button></div>
+    <div class="card">
+      <div class="cal-h"><button id="calPrev" aria-label="เดือนก่อน">‹</button><b id="calTitle"></b><button id="calNext" aria-label="เดือนถัดไป">›</button></div>
+      <div class="cal" id="cal"></div>
+    </div>
+    <div class="seg" id="bookSeg">
+      <button data-v="up" class="on">ที่จะถึง</button><button data-v="pending">รออนุมัติ</button><button data-v="mine">ของฉัน</button><button data-v="all">ทั้งหมด</button>
+    </div>
+    <div class="card"><div class="list" id="books"></div></div>
+  </section>
+
+  <!-- บันทึกซ่อม -->
+  <section id="v-repair" class="hide">
+    <div class="sec"><h2>บันทึกการซ่อม</h2><button class="btn sm" id="btnRepair">+ บันทึกซ่อม</button></div>
+    <div class="seg" id="repSeg"></div>
+    <div class="card" id="repSum"></div>
+    <div class="card"><div class="list" id="repairs"></div></div>
+  </section>
+
+  <!-- แผนบำรุง -->
+  <section id="v-plan" class="hide">
+    <div class="sec"><h2>แผนบำรุงรักษา</h2></div>
+    <div class="seg" id="planSeg"></div>
+    <div id="planBox"></div>
+  </section>
+</main>
+
+<nav class="bot"><div class="in">
+  <button data-v="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-6h9L18 17"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/><path d="M8 11l1-3h6l1 3"/></svg>รถ</button>
+  <button data-v="book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>จองรถ<span class="dot hide" id="navDot"></span></button>
+  <button data-v="repair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/></svg>บันทึกซ่อม</button>
+  <button data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10l2 2 4-4M9 16h6"/></svg>แผนบำรุง</button>
+</div></nav>
+
+<div id="layer"></div>
+
+<script>
+'use strict';
+/* ====== ตั้งค่า ====== */
+const DEFAULT_API = '';   // URL /exec ของ Apps Script ระบบยานพาหนะ (ใส่หลัง Deploy)
+const PLAN = [
+  {km:5000,items:['เปลี่ยนน้ำมันเครื่อง','เปลี่ยนกรองน้ำมันเครื่อง']},
+  {km:10000,items:['เปลี่ยนน้ำมันเครื่อง','เปลี่ยนกรองน้ำมันเครื่อง','ตรวจเช็คระบบเบรก']},
+  {km:20000,items:['เปลี่ยนกรองอากาศ','ตรวจสภาพแบตเตอรี่']},
+  {km:40000,items:['เปลี่ยนน้ำมันเกียร์','เปลี่ยนผ้าเบรก','ตรวจสภาพยาง']},
+  {km:60000,items:['เปลี่ยนหัวเทียน','ล้างหัวฉีด','เปลี่ยนน้ำมันเฟืองท้าย']},
+  {km:80000,items:['เปลี่ยนสายพาน','ตรวจช่วงล่าง','เปลี่ยนน้ำหล่อเย็น']},
+  {km:100000,items:['ตรวจเช็คใหญ่ (Full Service)','เปลี่ยนไส้กรองทุกชนิด']}
+];
+const REPAIR_TYPES = ['เปลี่ยนน้ำมันเครื่อง','เปลี่ยนยาง','เปลี่ยนแบตเตอรี่','ซ่อมเบรก','ซ่อมแอร์','เช็คระยะ','ล้าง/ดูดฝุ่น'];
+
+/* ====== ตัวช่วย ====== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {get(k){try{return JSON.parse(localStorage.getItem('vh_'+k));}catch(e){return null;}},set(k,v){try{localStorage.setItem('vh_'+k,JSON.stringify(v));}catch(e){}}};
+const TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_MF = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const pd = s => { if(!s) return null; const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})T?(\d{2})?:?(\d{2})?/); return m?new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0)):null; };
+const p2 = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+const fd = (s, time=true) => { const d = typeof s==='string'?pd(s):s; if(!d) return '-'; return d.getDate()+' '+TH_M[d.getMonth()]+' '+String(d.getFullYear()+543).slice(2)+(time?' '+p2(d.getHours())+':'+p2(d.getMinutes()):''); };
+const km = n => (Number(n)||0).toLocaleString('th-TH');
+const baht = n => (Number(n)||0).toLocaleString('th-TH',{maximumFractionDigits:2});
+const localInput = d => ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes());
+
+function apiUrl(){
+  const q = new URLSearchParams(location.search).get('api');
+  if (q) LS.set('api', q);
+  return LS.get('api') || DEFAULT_API;
+}
+function creds(){ try { return {user:localStorage.getItem('pea_aoluek_username')||'', pass:localStorage.getItem('pea_aoluek_password')||''}; } catch(e){ return {user:'',pass:''}; } }
+
+async function api(action, data={}){
+  if (window.__MOCK__) return window.__MOCK__(action, data);
+  const url = apiUrl(); if (!url) throw new Error('ยังไม่ได้ตั้งค่าหลังบ้าน');
+  const body = JSON.stringify(Object.assign({action}, creds(), data));
+  let last;
+  for (let k=0;k<3;k++){
+    try {
+      const r = await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body});
+      const t = await r.text(); let j;
+      try { j = JSON.parse(t); } catch(e){ throw new Error('JSON'); }
+      if (!j.ok) { const e = new Error(j.message || j.error || 'ผิดพลาด'); e.server = true; throw e; }
+      return j;
+    } catch(e){
+      last = e; if (e.server || action !== 'bootstrap') break;   // งานบันทึกไม่ส่งซ้ำ กันบันทึกซ้อน
+      await new Promise(r=>setTimeout(r,1200*(k+1)));
+    }
+  }
+  throw (last && last.server) ? last : new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+}
+
+let toastT;
+function toast(msg, err){ clearTimeout(toastT); let t=document.querySelector('.toast'); if(!t){t=document.createElement('div');document.body.appendChild(t);} t.className='toast'+(err?' err':''); t.textContent=msg; toastT=setTimeout(()=>t.remove(), err?4500:2600); }
+function busy(on, text='กำลังบันทึก…'){ let b=document.querySelector('.busy'); if(on){ if(!b){b=document.createElement('div');b.className='busy';document.body.appendChild(b);} b.innerHTML='<div>'+esc(text)+'</div>'; } else if(b) b.remove(); }
+
+/* ====== สถานะ ====== */
+const S = { d: LS.get('boot'), view: 'home', filter: null, calM: null, selDay: null, bookTab: 'up', repCar: '', planCar: '' };
+const me = () => (S.d && S.d.me) || {name: creds().user, admin: false};
+
+async function load(silent){
+  const btn = $('btnRefresh'); btn.classList.add('spin');
+  try {
+    const j = await api('bootstrap');
+    S.d = j; LS.set('boot', j); $('errBox').classList.add('hide'); render();
+  } catch(e){
+    if (!S.d || !silent) { $('errBox').textContent = e.message; $('errBox').classList.remove('hide'); }
+    if (!S.d) { $('cars').innerHTML = ''; }
+  } finally { btn.classList.remove('spin'); }
+}
+async function act(action, data, okClose=true){
+  busy(true);
+  try {
+    const j = await api(action, data);
+    S.d = j; LS.set('boot', j); render(); if (okClose) closeSheet(); toast(j.message || 'บันทึกแล้ว');
+    return true;
+  } catch(e){ toast(e.message, true); return false; }
+  finally { busy(false); }
+}
+
+/* ====== วาดหน้าจอ ====== */
+function render(){
+  if (!S.d) return;
+  const m = me();
+  $('hMe').innerHTML = '<b>'+esc(m.name)+'</b><span>'+(m.admin?'ผู้ดูแลระบบ':'ผู้ใช้งาน')+'</span>';
+  $('btnAddCar').classList.toggle('hide', !m.admin);
+  const pending = S.d.bookings.filter(b=>b.status==='pending').length;
+  $('navDot').textContent = pending; $('navDot').classList.toggle('hide', !(m.admin && pending));
+  renderHome(); renderBook(); renderRepair(); renderPlan();
+}
+
+function carStatusPill(v){ return v.status==='in-use' ? '<span class="pill p-bad">กำลังใช้งาน</span>' : '<span class="pill p-ok">ว่าง</span>'; }
+function nextBookingOf(plate){
+  const now = new Date();
+  return S.d.bookings.filter(b=>b.plate===plate && b.status!=='rejected' && pd(b.end)>now).sort((a,b)=>a.start<b.start?-1:1)[0];
+}
+
+function renderHome(){
+  const V = S.d.vehicles, m = me();
+  $('stA').textContent = V.filter(v=>v.status==='available').length;
+  $('stU').textContent = V.filter(v=>v.status==='in-use').length;
+  $('stP').textContent = S.d.bookings.filter(b=>b.status==='pending').length;
+  document.querySelectorAll('.stat[data-f]').forEach(b=>b.classList.toggle('on', S.filter===b.dataset.f));
+
+  const mine = V.filter(v=>v.status==='in-use' && v.user===m.name);
+  $('myCar').innerHTML = mine.map(v=>`<div class="note" style="display:flex;align-items:center;gap:10px;margin-top:2px">
+      <div style="flex:1">คุณกำลังใช้รถ <b>${esc(v.plate)}</b><br><span class="small">ไมล์ออก ${km(v.mile)} กม.</span></div>
+      <button class="btn green sm" onclick="openReturn('${esc(v.id)}')">คืนรถ</button></div>`).join('');
+
+  const list = S.filter ? V.filter(v=>v.status===S.filter) : V;
+  $('cars').innerHTML = list.length ? list.map(v=>{
+    const nb = nextBookingOf(v.plate);
+    const nbTxt = nb ? `<div class="nb">📅 จองถัดไป ${fd(nb.start)} · ${esc(nb.user)}</div>` : '';
+    const ph = v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'🚗'}))">` : '<div class="noimg">🚗</div>';
+    const btn = v.status==='available'
+      ? `<button class="btn block" onclick="openCheckout('${esc(v.id)}')">🔑 เบิกใช้รถ</button>`
+      : `<button class="btn block green" onclick="openReturn('${esc(v.id)}')">✓ คืนรถ</button>`;
+    return `<div class="car"><div class="ph">${ph}${carStatusPill(v)}${m.admin?`<button class="edit" aria-label="แก้ไข" onclick="openCar('${esc(v.id)}')">✏️</button>`:''}</div>
+      <div class="bd"><div class="pl">${esc(v.plate)}</div><div class="md">${esc(v.model)||'&nbsp;'}</div>
+      <div class="mi">เลขไมล์ ${km(v.mile)} กม.</div>${v.user?`<div class="us">👤 ${esc(v.user)}</div>`:''}${nbTxt}${btn}</div></div>`;
+  }).join('') : `<div class="card empty"><div class="ic">🚗</div>${S.filter?'ไม่มีรถในสถานะนี้':'ยังไม่มีรถในระบบ'}${m.admin&&!S.filter?'<br><br><button class="btn" onclick="openCar()">+ เพิ่มรถคันแรก</button>':''}</div>`;
+
+  const L = S.d.logs.slice(0,6);
+  $('recent').innerHTML = L.length ? L.map(logItem).join('') : '<div class="empty">ยังไม่มีประวัติการใช้รถ</div>';
+}
+function logItem(l){
+  const used = l.endMile!=null && l.startMile!=null ? ' · '+km(l.endMile-l.startMile)+' กม.' : '';
+  return `<div class="li"><div class="ic">${l.status==='in-use'?'🚙':'✅'}</div><div class="tx">
+    <div class="t">${esc(l.plate)} · ${esc(l.mission)||'-'}</div>
+    <div class="s">${esc(l.user)} · ออก ${fd(l.date)}${l.returnDate?'<br>คืน '+fd(l.returnDate)+(l.returnBy&&l.returnBy!==l.user?' โดย '+esc(l.returnBy):''):''}${used}</div></div>
+    <div class="r">${l.status==='in-use'?'<span class="pill p-bad">ใช้อยู่</span>':'<span class="pill p-mut">คืนแล้ว</span>'}</div></div>`;
+}
+
+/* ---- จอง ---- */
+function bookStatus(b){ return b.status==='approved'?'<span class="pill p-ok">อนุมัติ</span>':b.status==='rejected'?'<span class="pill p-bad">ไม่อนุมัติ</span>':'<span class="pill p-warn">รออนุมัติ</span>'; }
+function renderBook(){
+  const now = new Date(); if (!S.calM) S.calM = new Date(now.getFullYear(), now.getMonth(), 1);
+  const y = S.calM.getFullYear(), mo = S.calM.getMonth();
+  $('calTitle').textContent = TH_MF[mo]+' '+(y+543);
+  const first = new Date(y,mo,1).getDay(), days = new Date(y,mo+1,0).getDate();
+  const B = S.d.bookings.filter(b=>b.status!=='rejected');
+  let h = ['อา','จ','อ','พ','พฤ','ศ','ส'].map(d=>`<div class="dw">${d}</div>`).join('');
+  for (let i=0;i<first;i++) h += '<div class="d x"></div>';
+  const today = ymd(now);
+  for (let d=1; d<=days; d++){
+    const ds = y+'-'+p2(mo+1)+'-'+p2(d), s0 = new Date(y,mo,d), e0 = new Date(y,mo,d+1);
+    const on = B.filter(b=>pd(b.start)<e0 && pd(b.end||b.start)>=s0);
+    const dots = on.slice(0,3).map(b=>`<u class="${b.status==='pending'?'pe':''}"></u>`).join('');
+    h += `<button class="d${ds===today?' today':''}${ds===S.selDay?' sel':''}" data-day="${ds}">${d}<i>${dots}</i></button>`;
+  }
+  $('cal').innerHTML = h;
+
+  let L = S.d.bookings.slice(), title = '';
+  const m = me();
+  if (S.selDay){
+    const s0 = pd(S.selDay+'T00:00'), e0 = new Date(s0.getTime()+86400000);
+    L = L.filter(b=>pd(b.start)<e0 && pd(b.end||b.start)>=s0);
+  } else if (S.bookTab==='up') L = L.filter(b=>pd(b.end||b.start)>=now && b.status!=='rejected');
+  else if (S.bookTab==='pending') L = L.filter(b=>b.status==='pending');
+  else if (S.bookTab==='mine') L = L.filter(b=>b.user===m.name);
+  L.sort((a,b)=> S.bookTab==='all' && !S.selDay ? (a.start<b.start?1:-1) : (a.start<b.start?-1:1));
+  document.querySelectorAll('#bookSeg button').forEach(b=>b.classList.toggle('on', !S.selDay && b.dataset.v===S.bookTab));
+  title = S.selDay ? `<div class="sec" style="margin:0 0 4px"><b>วันที่ ${fd(S.selDay+'T00:00',false)}</b><button class="btn sm soft" onclick="S.selDay=null;renderBook()">ล้าง</button></div>` : '';
+  $('books').innerHTML = title + (L.length ? L.map(b=>{
+    const canDel = m.admin || b.user===m.name;
+    const acts = [];
+    if (m.admin && b.status==='pending') acts.push(`<button class="btn sm green" onclick="act('bookingStatus',{id:'${esc(b.id)}',status:'approved'},false)">อนุมัติ</button>`,`<button class="btn sm red" onclick="act('bookingStatus',{id:'${esc(b.id)}',status:'rejected'},false)">ไม่อนุมัติ</button>`);
+    if (canDel) acts.push(`<button class="btn sm soft" onclick="cancelBooking('${esc(b.id)}')">ยกเลิก</button>`);
+    return `<div class="li"><div class="ic">📅</div><div class="tx"><div class="t">${esc(b.mission)||'-'}</div>
+      <div class="s">${fd(b.start)} → ${fd(b.end)}<br>🚗 ${b.plate&&b.plate!=='-'?esc(b.plate):'ไม่ระบุรถ'} · 👤 ${esc(b.user)}</div>
+      ${acts.length?`<div class="acts">${acts.join('')}</div>`:''}</div><div class="r">${bookStatus(b)}</div></div>`;
+  }).join('') : '<div class="empty"><div class="ic">📅</div>ไม่มีรายการจอง</div>');
+}
+function cancelBooking(id){ if (confirm('ยกเลิกการจองนี้?')) act('bookingDelete',{id},false); }
+
+/* ---- ซ่อม ---- */
+function carSeg(el, cur, key, withAll){
+  const V = S.d.vehicles;
+  el.innerHTML = (withAll?`<button data-p="" class="${cur===''?'on':''}">ทุกคัน</button>`:'') + V.map(v=>`<button data-p="${esc(v.plate)}" class="${cur===v.plate?'on':''}">${esc(v.plate)}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if(!b) return; S[key] = b.dataset.p; render(); };
+}
+function renderRepair(){
+  carSeg($('repSeg'), S.repCar, 'repCar', true);
+  const L = S.d.maint.filter(x=>!S.repCar || x.plate===S.repCar);
+  const y = new Date().getFullYear(), yr = L.filter(x=>pd(x.date) && pd(x.date).getFullYear()===y);
+  $('repSum').innerHTML = `<div class="row2"><div><div class="muted">ค่าซ่อมปี ${y+543}</div><div style="font-size:24px;font-weight:700">${baht(yr.reduce((s,x)=>s+(x.cost||0),0))} ฿</div></div>
+    <div><div class="muted">จำนวนครั้ง (ปีนี้)</div><div style="font-size:24px;font-weight:700">${yr.length}</div></div></div>`;
+  const m = me();
+  $('repairs').innerHTML = L.length ? L.map(x=>`<div class="li"><div class="ic">🔧</div><div class="tx">
+      <div class="t">${esc(x.type)}</div><div class="s">${esc(x.plate)} · ${fd(x.date,false)} · ${esc(x.by)}${x.note?'<br>'+esc(x.note):''}</div></div>
+      <div class="r"><b>${baht(x.cost)} ฿</b>${m.admin?`<button class="btn sm soft" onclick="if(confirm('ลบรายการนี้?'))act('maintDelete',{id:'${esc(x.id)}'},false)">ลบ</button>`:''}</div></div>`).join('')
+    : '<div class="empty"><div class="ic">🔧</div>ยังไม่มีข้อมูลการซ่อม</div>';
+}
+
+/* ---- แผนบำรุง (คำนวณจากเลขไมล์ในเครื่อง ไม่ต้องรอเซิร์ฟเวอร์) ---- */
+function renderPlan(){
+  const V = S.d.vehicles;
+  if (!S.planCar && V.length) S.planCar = V[0].plate;
+  carSeg($('planSeg'), S.planCar, 'planCar', false);
+  const v = V.find(x=>x.plate===S.planCar);
+  if (!v){ $('planBox').innerHTML = '<div class="card empty"><div class="ic">📋</div>ยังไม่มีรถในระบบ</div>'; return; }
+  const plan = PLAN.map(p=>{ const next = Math.max(p.km, Math.ceil((v.mile+1)/p.km)*p.km), rem = next - v.mile;
+    return Object.assign({next, rem, u: rem<=500?'urgent':rem<=1500?'soon':''}, p); }).sort((a,b)=>a.rem-b.rem);
+  const hist = S.d.maint.filter(x=>x.plate===v.plate).slice(0,8);
+  $('planBox').innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
+      <div><div class="pl" style="font-size:22px;font-weight:700">${esc(v.plate)}</div><div class="muted">${esc(v.model)}</div></div>
+      <div style="text-align:right"><div class="muted">เลขไมล์ปัจจุบัน</div><b style="font-size:20px">${km(v.mile)} กม.</b></div></div>
+    ${plan.map(p=>`<div class="plan ${p.u}"><div class="h"><span>ทุก ${km(p.km)} กม. · ครั้งถัดไป ${km(p.next)}</span>
+      <span class="pill ${p.u==='urgent'?'p-bad':p.u==='soon'?'p-warn':'p-mut'}">อีก ${km(p.rem)} กม.</span></div>
+      <ul>${p.items.map(i=>'<li>'+esc(i)+'</li>').join('')}</ul></div>`).join('')}
+    <button class="btn block ghost" onclick="openRepair('${esc(v.plate)}')">+ บันทึกการเข้าศูนย์ของรถคันนี้</button></div>
+    <div class="sec"><h2>ประวัติซ่อมล่าสุด</h2></div>
+    <div class="card"><div class="list">${hist.length?hist.map(x=>`<div class="li"><div class="ic">🔧</div><div class="tx"><div class="t">${esc(x.type)}</div><div class="s">${fd(x.date,false)} · ${esc(x.by)}</div></div><div class="r"><b>${baht(x.cost)} ฿</b></div></div>`).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div></div>`;
+}
+
+/* ====== ชีตฟอร์ม ====== */
+function sheet(html){ $('layer').innerHTML = `<div class="ov" onclick="if(event.target===this)closeSheet()"><div class="sheet"><div class="grab"></div>${html}</div></div>`; document.body.style.overflow='hidden'; }
+function closeSheet(){ $('layer').innerHTML=''; document.body.style.overflow=''; }
+const carById = id => S.d.vehicles.find(v=>v.id===String(id));
+
+function openCheckout(id){
+  const v = carById(id); if(!v) return;
+  const nb = nextBookingOf(v.plate);
+  sheet(`<h3>🔑 เบิกใช้รถ ${esc(v.plate)}</h3>
+    ${nb?`<div class="note" style="margin-bottom:12px">มีการจองรถคันนี้ ${fd(nb.start)} – ${fd(nb.end)} โดย ${esc(nb.user)}</div>`:''}
+    <label class="fld"><span>ภารกิจ / จุดหมาย</span><input id="fMission" placeholder="เช่น แก้ไฟ ต.คลองหิน" autocomplete="off"></label>
+    <div class="chips">${['แก้ไฟฟ้าขัดข้อง','ตรวจระบบ','ติดต่อราชการ','ประชุม','ส่งเอกสาร'].map(t=>`<button type="button" onclick="$('fMission').value='${t}'">${t}</button>`).join('')}</div>
+    <p class="muted">เลขไมล์ขณะออก: <b>${km(v.mile)} กม.</b></p>
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" onclick="act('checkout',{carId:'${esc(v.id)}',mission:$('fMission').value})">ยืนยันเบิกรถ</button></div>`);
+  setTimeout(()=>$('fMission').focus(),150);
+}
+function openReturn(id){
+  const v = carById(id); if(!v) return;
+  sheet(`<h3>✓ คืนรถ ${esc(v.plate)}</h3>
+    <p class="muted" style="margin-top:-6px">ผู้เบิก: ${esc(v.user||'-')} · ไมล์ขณะออก ${km(v.mile)} กม.</p>
+    <label class="fld"><span>เลขไมล์ตอนคืน (กม.)</span><input id="fMile" type="number" inputmode="numeric" min="${v.mile}" placeholder="${v.mile}"></label>
+    <div class="muted" id="fUsed" style="margin:-6px 0 12px">&nbsp;</div>
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn green" onclick="act('returnCar',{carId:'${esc(v.id)}',endMile:$('fMile').value})">บันทึกคืนรถ</button></div>`);
+  $('fMile').oninput = e => { const d = Number(e.target.value) - v.mile; $('fUsed').textContent = e.target.value ? (d>=0 ? 'ระยะทางที่ใช้ '+km(d)+' กม.' : '⚠️ น้อยกว่าเลขไมล์เดิม') : ' '; };
+  setTimeout(()=>$('fMile').focus(),150);
+}
+function openBooking(){
+  const now = new Date(); now.setMinutes(0,0,0);
+  let s = S.selDay ? pd(S.selDay+'T08:00') : new Date(now.getTime()+3600000);
+  const e = new Date(s.getTime()+4*3600000);
+  sheet(`<h3>📅 จองรถ</h3>
+    <label class="fld"><span>รถ</span><select id="fCar"><option value="-">ไม่ระบุ (ให้ผู้ดูแลจัดให้)</option>${S.d.vehicles.map(v=>`<option>${esc(v.plate)}</option>`).join('')}</select></label>
+    <label class="fld"><span>เริ่ม</span><input id="fS" type="datetime-local" value="${localInput(s)}"></label>
+    <label class="fld"><span>สิ้นสุด</span><input id="fE" type="datetime-local" value="${localInput(e)}"></label>
+    <label class="fld"><span>ภารกิจ</span><input id="fM" placeholder="เช่น ประชุม กฟจ.กระบี่" autocomplete="off"></label>
+    ${me().admin?'':'<p class="muted">การจองจะรอผู้ดูแลอนุมัติ</p>'}
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" onclick="act('booking',{plate:$('fCar').value,start:$('fS').value,end:$('fE').value,mission:$('fM').value})">ส่งจอง</button></div>`);
+}
+function openRepair(plate){
+  sheet(`<h3>🔧 บันทึกการซ่อม</h3>
+    <label class="fld"><span>รถ</span><select id="rCar">${S.d.vehicles.map(v=>`<option ${v.plate===(plate||S.repCar)?'selected':''}>${esc(v.plate)}</option>`).join('')}</select></label>
+    <label class="fld"><span>รายการ</span><input id="rType" placeholder="เช่น เปลี่ยนน้ำมันเครื่อง" autocomplete="off"></label>
+    <div class="chips" style="margin:-6px 0 14px">${REPAIR_TYPES.map(t=>`<button type="button" onclick="$('rType').value='${t}'">${t}</button>`).join('')}</div>
+    <div class="row2"><label class="fld"><span>วันที่</span><input id="rDate" type="date" value="${ymd(new Date())}"></label>
+    <label class="fld"><span>ค่าใช้จ่าย (บาท)</span><input id="rCost" type="number" inputmode="decimal" min="0" placeholder="0"></label></div>
+    <label class="fld"><span>เลขไมล์ตอนซ่อม (ไม่บังคับ)</span><input id="rMile" type="number" inputmode="numeric" placeholder="ถ้ากรอก จะอัปเดตเลขไมล์รถด้วย"></label>
+    <label class="fld"><span>หมายเหตุ</span><textarea id="rNote" placeholder="ร้าน/ศูนย์บริการ รายละเอียด"></textarea></label>
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" onclick="act('maintSave',{plate:$('rCar').value,type:$('rType').value,date:$('rDate').value,cost:$('rCost').value,mile:$('rMile').value,note:$('rNote').value})">บันทึก</button></div>`);
+}
+function openCar(id){
+  const v = id ? carById(id) : null;
+  sheet(`<h3>${v?'✏️ แก้ไขข้อมูลรถ':'+ เพิ่มรถ'}</h3>
+    <label class="fld"><span>ทะเบียน</span><input id="cPlate" value="${v?esc(v.plate):''}" placeholder="เช่น 4ขบ 7022" autocomplete="off"></label>
+    <label class="fld"><span>ยี่ห้อ / รุ่น</span><input id="cModel" value="${v?esc(v.model):''}" placeholder="เช่น TOYOTA Hilux Revo"></label>
+    <label class="fld"><span>เลขไมล์ (กม.)</span><input id="cMile" type="number" inputmode="numeric" value="${v?v.mile:''}"></label>
+    <label class="fld"><span>รูปรถ ${v?'(เลือกใหม่เพื่อเปลี่ยน)':'(ไม่บังคับ)'}</span><input id="cImg" type="file" accept="image/*" style="padding-top:12px"></label>
+    <img id="cPrev" class="preview ${v&&v.image?'':'hide'}" src="${v?esc(v.image):''}" alt="">
+    <div class="sbtns" style="margin-top:14px"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" id="cSave">บันทึก</button></div>
+    ${v?`<button class="btn block red" style="margin-top:10px" onclick="if(confirm('ลบรถ ${esc(v.plate)} ออกจากระบบ?'))act('vehicleDelete',{id:'${esc(v.id)}'})">ลบรถคันนี้</button>`:''}`);
+  let img = '';
+  $('cImg').onchange = async e => { const f = e.target.files[0]; if(!f) return; img = await resize(f); $('cPrev').src = img; $('cPrev').classList.remove('hide'); };
+  $('cSave').onclick = () => act('vehicleSave',{id:v?v.id:'',plate:$('cPlate').value,model:$('cModel').value,mile:$('cMile').value,image:img});
+}
+function openLogs(){
+  const L = S.d.logs;
+  sheet(`<div class="sec" style="margin:0 0 8px"><h3 style="margin:0">ประวัติการใช้รถ</h3>${me().admin?'<button class="btn sm soft" onclick="exportCsv()">⬇ CSV</button>':''}</div>
+    <div class="list">${L.length?L.map(logItem).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div>
+    <button class="btn block ghost" style="margin-top:12px" onclick="closeSheet()">ปิด</button>`);
+}
+function exportCsv(){
+  const rows = [['วันที่ออก','ทะเบียน','ผู้ใช้','ภารกิจ','ไมล์ออก','ไมล์คืน','ระยะทาง','วันที่คืน','สถานะ']].concat(
+    S.d.logs.map(l=>[fd(l.date),l.plate,l.user,l.mission,l.startMile??'',l.endMile??'',l.endMile!=null&&l.startMile!=null?l.endMile-l.startMile:'',l.returnDate?fd(l.returnDate):'',l.status==='in-use'?'ใช้อยู่':'คืนแล้ว']));
+  const csv = '﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'ประวัติใช้รถ_'+ymd(new Date())+'.csv'; a.click();
+}
+function resize(file){
+  return new Promise((ok,no)=>{ const r = new FileReader(); r.onerror = no; r.onload = () => { const im = new Image(); im.onerror = no; im.onload = () => {
+    const k = Math.min(1, 900/Math.max(im.width, im.height)), c = document.createElement('canvas');
+    c.width = Math.round(im.width*k); c.height = Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); ok(c.toDataURL('image/jpeg',.72)); }; im.src = r.result; }; r.readAsDataURL(file); });
+}
+
+/* ====== เมนู / เหตุการณ์ ====== */
+const TITLES = {home:'ระบบยานพาหนะ',book:'จองรถ',repair:'บันทึกซ่อม',plan:'แผนบำรุงรักษา'};
+function go(v){
+  S.view = v; LS.set('view', v);
+  ['home','book','repair','plan'].forEach(x=>$('v-'+x).classList.toggle('hide', x!==v));
+  document.querySelectorAll('nav.bot button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  $('hTitle').textContent = TITLES[v]; window.scrollTo(0,0);
+}
+document.querySelector('nav.bot').onclick = e => { const b = e.target.closest('button'); if (b) go(b.dataset.v); };
+document.querySelectorAll('.stat').forEach(b=>b.onclick = () => { if (b.dataset.go){ S.bookTab='pending'; S.selDay=null; go('book'); renderBook(); return; } S.filter = S.filter===b.dataset.f ? null : b.dataset.f; renderHome(); });
+$('btnRefresh').onclick = () => load(false);
+$('btnAddCar').onclick = () => openCar();
+$('btnAllLogs').onclick = openLogs;
+$('btnBook').onclick = openBooking;
+$('btnRepair').onclick = () => openRepair();
+$('calPrev').onclick = () => { S.calM = new Date(S.calM.getFullYear(), S.calM.getMonth()-1, 1); renderBook(); };
+$('calNext').onclick = () => { S.calM = new Date(S.calM.getFullYear(), S.calM.getMonth()+1, 1); renderBook(); };
+$('cal').onclick = e => { const b = e.target.closest('[data-day]'); if (!b) return; S.selDay = S.selDay===b.dataset.day ? null : b.dataset.day; renderBook(); };
+$('bookSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.bookTab = b.dataset.v; S.selDay = null; renderBook(); };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible' && S.d) load(true); });
+
+function showSetup(){
+  const box = $('setupBox'); box.classList.remove('hide');
+  box.innerHTML = `<h3 style="margin:0 0 6px;color:var(--pri2)">เชื่อมต่อหลังบ้าน</h3>
+    <p class="muted" style="margin:0 0 10px">วาง URL ของ Apps Script ระบบยานพาหนะ (ลงท้ายด้วย /exec) — ทำครั้งเดียวต่อเครื่อง</p>
+    <label class="fld"><input id="apiIn" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <button class="btn block" onclick="const u=$('apiIn').value.trim();if(!/^https:\\/\\/script\\.google\\.com\\/.+\\/exec/.test(u)){toast('URL ไม่ถูกต้อง',true);return;}LS.set('api',u);$('setupBox').classList.add('hide');start()">บันทึก</button>`;
+  $('cars').innerHTML = '';
+}
+
+function start(){
+  if (!window.__MOCK__ && !apiUrl()) { showSetup(); return; }
+  if (!creds().user) { setTimeout(start, 800); return; }      // รอล็อกอินศูนย์รวมงาน (pea-hub.js)
+  if (S.d && S.d.me && S.d.me.name !== creds().user) S.d = null;   // เปลี่ยนผู้ใช้ ไม่ใช้ข้อมูลเก่า
+  render(); load(true);
+}
+go(['home','book','repair','plan'].indexOf(LS.get('view'))>=0 ? LS.get('view') : 'home');
+start();
+</script>
+</body>
+</html>
