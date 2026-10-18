@@ -148,6 +148,9 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 .seg button{flex:0 0 auto;height:38px;border-radius:19px;border:1px solid var(--line);background:#fff;padding:0 14px;font-size:14px;font-weight:600;color:var(--mut)}
 .seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
 
+.car .ph .addph{position:absolute;right:10px;bottom:10px;height:40px;border-radius:20px;border:0;background:#fff;color:var(--pri2);font-weight:600;font-size:14px;padding:0 14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.car .wait{margin-top:8px;min-height:48px;border-radius:12px;background:#F4EFF6;color:var(--mut);display:flex;align-items:center;justify-content:center;font-size:14px;text-align:center;padding:4px 10px}
+.p-used{background:#E3E6FA;color:#26307A}
 .toast{position:fixed;left:50%;bottom:calc(var(--navh) + var(--sb) + 14px);transform:translateX(-50%);z-index:60;background:#2B2230;color:#fff;
   padding:12px 18px;border-radius:12px;font-size:15px;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25);text-align:center}
 .toast.err{background:var(--bad)}
@@ -168,6 +171,8 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
   </div>
 </header>
 
+<div id="oldBar" class="hide" style="background:#FCEBC4;color:#6B4500;padding:10px 14px;font-size:14px;text-align:center">
+  ลิงก์เดิมย้ายมาที่นี่แล้ว · <a href="https://aloofpea-aul.github.io/vehicle/" target="_top" style="color:#5B1A63;font-weight:700">เปิดลิงก์ใหม่เต็มหน้าจอ</a></div>
 <main id="main">
   <div id="setupBox" class="card hide"></div>
   <div id="errBox" class="note err hide"></div>
@@ -228,16 +233,22 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 'use strict';
 /* ====== ตั้งค่า ====== */
 const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbzLnelFGNLqynkfwm06vBDZE23p5_1-kDV3CZm_EuuMHDex4vEtNNYeJ9sRo-m0KLq1/exec';   // URL /exec ของ Apps Script ระบบยานพาหนะ (ใส่หลัง Deploy)
+// แผนบำรุงตามระยะทาง (ระยะเดิมของระบบ) — key ใช้จับคู่กับ "รายการ" ในบันทึกซ่อม
 const PLAN = [
-  {km:5000,items:['เปลี่ยนน้ำมันเครื่อง','เปลี่ยนกรองน้ำมันเครื่อง']},
-  {km:10000,items:['เปลี่ยนน้ำมันเครื่อง','เปลี่ยนกรองน้ำมันเครื่อง','ตรวจเช็คระบบเบรก']},
-  {km:20000,items:['เปลี่ยนกรองอากาศ','ตรวจสภาพแบตเตอรี่']},
-  {km:40000,items:['เปลี่ยนน้ำมันเกียร์','เปลี่ยนผ้าเบรก','ตรวจสภาพยาง']},
-  {km:60000,items:['เปลี่ยนหัวเทียน','ล้างหัวฉีด','เปลี่ยนน้ำมันเฟืองท้าย']},
-  {km:80000,items:['เปลี่ยนสายพาน','ตรวจช่วงล่าง','เปลี่ยนน้ำหล่อเย็น']},
-  {km:100000,items:['ตรวจเช็คใหญ่ (Full Service)','เปลี่ยนไส้กรองทุกชนิด']}
+  {name:'เปลี่ยนน้ำมันเครื่อง + กรองน้ำมันเครื่อง', km:5000,  key:['น้ำมันเครื่อง','เช็คระยะ']},
+  {name:'ตรวจเช็คระบบเบรก',               km:10000, key:['เบรก','เช็คระยะ']},
+  {name:'เปลี่ยนกรองอากาศ',                km:20000, key:['กรองอากาศ']},
+  {name:'ตรวจสภาพแบตเตอรี่',              km:20000, key:['แบต']},
+  {name:'เปลี่ยนน้ำมันเกียร์',               km:40000, key:['น้ำมันเกียร์']},
+  {name:'เปลี่ยนผ้าเบรก',                  km:40000, key:['ผ้าเบรก']},
+  {name:'ตรวจสภาพยาง / สลับยาง',           km:40000, key:['ยาง']},
+  {name:'เปลี่ยนหัวเทียน / ล้างหัวฉีด',       km:60000, key:['หัวเทียน','หัวฉีด']},
+  {name:'เปลี่ยนน้ำมันเฟืองท้าย',             km:60000, key:['เฟืองท้าย']},
+  {name:'เปลี่ยนสายพาน',                  km:80000, key:['สายพาน']},
+  {name:'ตรวจช่วงล่าง',                    km:80000, key:['ช่วงล่าง']},
+  {name:'เปลี่ยนน้ำหล่อเย็น',                km:80000, key:['หล่อเย็น','หม้อน้ำ']}
 ];
-const REPAIR_TYPES = ['เปลี่ยนน้ำมันเครื่อง','เปลี่ยนยาง','เปลี่ยนแบตเตอรี่','ซ่อมเบรก','ซ่อมแอร์','เช็คระยะ','ล้าง/ดูดฝุ่น'];
+const REPAIR_TYPES = ['เปลี่ยนน้ำมันเครื่อง','เช็คระยะ','เปลี่ยนยาง','เปลี่ยนแบตเตอรี่','เปลี่ยนผ้าเบรก','ซ่อมแอร์','เปลี่ยนกรองอากาศ','เปลี่ยนน้ำมันเกียร์'];
 
 /* ====== ตัวช่วย ====== */
 const $ = id => document.getElementById(id);
@@ -251,6 +262,7 @@ const ymd = d => d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
 const fd = (s, time=true) => { const d = typeof s==='string'?pd(s):s; if(!d) return '-'; return d.getDate()+' '+TH_M[d.getMonth()]+' '+String(d.getFullYear()+543).slice(2)+(time?' '+p2(d.getHours())+':'+p2(d.getMinutes()):''); };
 const km = n => (Number(n)||0).toLocaleString('th-TH');
 const baht = n => (Number(n)||0).toLocaleString('th-TH',{maximumFractionDigits:2});
+const dur = s => { const ms = Math.max(0, Date.now() - (pd(s)||new Date()).getTime()), h = Math.floor(ms/3600000), d = Math.floor(h/24); return d>0 ? d+' วัน '+(h%24)+' ชม.' : h>0 ? h+' ชม. '+Math.floor(ms%3600000/60000)+' นาที' : Math.max(1,Math.floor(ms/60000))+' นาที'; };
 const localInput = d => ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes());
 
 function apiUrl(){
@@ -322,7 +334,7 @@ function render(){
 function carStatusPill(v){ return v.status==='in-use' ? '<span class="pill p-bad">กำลังใช้งาน</span>' : '<span class="pill p-ok">ว่าง</span>'; }
 function nextBookingOf(plate){
   const now = new Date();
-  return S.d.bookings.filter(b=>b.plate===plate && b.status!=='rejected' && pd(b.end)>now).sort((a,b)=>a.start<b.start?-1:1)[0];
+  return S.d.bookings.filter(b=>b.plate===plate && (b.status==='approved'||b.status==='pending') && pd(b.end)>now).sort((a,b)=>a.start<b.start?-1:1)[0];
 }
 
 function renderHome(){
@@ -334,7 +346,7 @@ function renderHome(){
 
   const mine = V.filter(v=>v.status==='in-use' && v.user===m.name);
   $('myCar').innerHTML = mine.map(v=>`<div class="note" style="display:flex;align-items:center;gap:10px;margin-top:2px">
-      <div style="flex:1">คุณกำลังใช้รถ <b>${esc(v.plate)}</b><br><span class="small">ไมล์ออก ${km(v.mile)} กม.</span></div>
+      <div style="flex:1">คุณกำลังใช้รถ <b>${esc(v.plate)}</b><br><span class="small">ไมล์ออก ${km(v.mile)} กม.${v.since?' · ใช้มา '+dur(v.since):''}</span></div>
       <button class="btn green sm" onclick="openReturn('${esc(v.id)}')">คืนรถ</button></div>`).join('');
 
   const list = S.filter ? V.filter(v=>v.status===S.filter) : V;
@@ -342,12 +354,16 @@ function renderHome(){
     const nb = nextBookingOf(v.plate);
     const nbTxt = nb ? `<div class="nb">📅 จองถัดไป ${fd(nb.start)} · ${esc(nb.user)}</div>` : '';
     const ph = v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'🚗'}))">` : '<div class="noimg">🚗</div>';
+    const canReturn = v.user===m.name || m.admin || !v.user;
     const btn = v.status==='available'
       ? `<button class="btn block" onclick="openCheckout('${esc(v.id)}')">🔑 เบิกใช้รถ</button>`
-      : `<button class="btn block green" onclick="openReturn('${esc(v.id)}')">✓ คืนรถ</button>`;
-    return `<div class="car"><div class="ph">${ph}${carStatusPill(v)}${m.admin?`<button class="edit" aria-label="แก้ไข" onclick="openCar('${esc(v.id)}')">✏️</button>`:''}</div>
+      : canReturn ? `<button class="btn block green" onclick="openReturn('${esc(v.id)}')">✓ คืนรถ</button>`
+      : `<div class="wait">กำลังใช้งานโดย ${esc(v.user)} — คืนได้เฉพาะผู้เบิกหรือผู้ดูแล</div>`;
+    const use = v.status==='in-use' ? `<div class="us">👤 ${esc(v.user||'-')}${v.since?' · ใช้มา '+dur(v.since):''}</div>${v.mission?`<div class="mi">📍 ${esc(v.mission)}</div>`:''}` : '';
+    const addPh = m.admin && !v.image ? `<button class="addph" onclick="openPhoto('${esc(v.id)}')">📷 เพิ่มรูปรถ</button>` : '';
+    return `<div class="car"><div class="ph"${m.admin&&v.image?` onclick="openPhoto('${esc(v.id)}')" style="cursor:pointer"`:''}>${ph}${carStatusPill(v)}${addPh}${m.admin?`<button class="edit" aria-label="แก้ไข" onclick="event.stopPropagation();openCar('${esc(v.id)}')">✏️</button>`:''}</div>
       <div class="bd"><div class="pl">${esc(v.plate)}</div><div class="md">${esc(v.model)||'&nbsp;'}</div>
-      <div class="mi">เลขไมล์ ${km(v.mile)} กม.</div>${v.user?`<div class="us">👤 ${esc(v.user)}</div>`:''}${nbTxt}${btn}</div></div>`;
+      <div class="mi">เลขไมล์ ${km(v.mile)} กม.</div>${use}${nbTxt}${btn}</div></div>`;
   }).join('') : `<div class="card empty"><div class="ic">🚗</div>${S.filter?'ไม่มีรถในสถานะนี้':'ยังไม่มีรถในระบบ'}${m.admin&&!S.filter?'<br><br><button class="btn" onclick="openCar()">+ เพิ่มรถคันแรก</button>':''}</div>`;
 
   const L = S.d.logs.slice(0,6);
@@ -362,13 +378,20 @@ function logItem(l){
 }
 
 /* ---- จอง ---- */
-function bookStatus(b){ return b.status==='approved'?'<span class="pill p-ok">อนุมัติ</span>':b.status==='rejected'?'<span class="pill p-bad">ไม่อนุมัติ</span>':'<span class="pill p-warn">รออนุมัติ</span>'; }
+function bookStatus(b){ return b.status==='approved'?'<span class="pill p-ok">อนุมัติ</span>':b.status==='rejected'?'<span class="pill p-bad">ไม่อนุมัติ</span>':b.status==='used'?'<span class="pill p-used">รับรถแล้ว</span>':'<span class="pill p-warn">รออนุมัติ</span>'; }
+function approve(id){
+  const b = S.d.bookings.find(x=>x.id===id); if(!b) return;
+  if (b.plate && b.plate!=='-') return act('bookingStatus',{id,status:'approved'},false);
+  sheet(`<h3>อนุมัติการจอง</h3><p class="muted" style="margin-top:-6px">${esc(b.mission)} · ${fd(b.start)} → ${fd(b.end)} · ${esc(b.user)}</p>
+    <label class="fld"><span>จัดรถให้</span><select id="aCar"><option value="-">ยังไม่ระบุรถ</option>${S.d.vehicles.map(v=>`<option>${esc(v.plate)}</option>`).join('')}</select></label>
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn green" onclick="act('bookingStatus',{id:'${esc(id)}',status:'approved',plate:$('aCar').value})">อนุมัติ</button></div>`);
+}
 function renderBook(){
   const now = new Date(); if (!S.calM) S.calM = new Date(now.getFullYear(), now.getMonth(), 1);
   const y = S.calM.getFullYear(), mo = S.calM.getMonth();
   $('calTitle').textContent = TH_MF[mo]+' '+(y+543);
   const first = new Date(y,mo,1).getDay(), days = new Date(y,mo+1,0).getDate();
-  const B = S.d.bookings.filter(b=>b.status!=='rejected');
+  const B = S.d.bookings.filter(b=>b.status!=='rejected' && b.status!=='used');
   let h = ['อา','จ','อ','พ','พฤ','ศ','ส'].map(d=>`<div class="dw">${d}</div>`).join('');
   for (let i=0;i<first;i++) h += '<div class="d x"></div>';
   const today = ymd(now);
@@ -385,7 +408,7 @@ function renderBook(){
   if (S.selDay){
     const s0 = pd(S.selDay+'T00:00'), e0 = new Date(s0.getTime()+86400000);
     L = L.filter(b=>pd(b.start)<e0 && pd(b.end||b.start)>=s0);
-  } else if (S.bookTab==='up') L = L.filter(b=>pd(b.end||b.start)>=now && b.status!=='rejected');
+  } else if (S.bookTab==='up') L = L.filter(b=>pd(b.end||b.start)>=now && b.status!=='rejected' && b.status!=='used');
   else if (S.bookTab==='pending') L = L.filter(b=>b.status==='pending');
   else if (S.bookTab==='mine') L = L.filter(b=>b.user===m.name);
   L.sort((a,b)=> S.bookTab==='all' && !S.selDay ? (a.start<b.start?1:-1) : (a.start<b.start?-1:1));
@@ -394,8 +417,8 @@ function renderBook(){
   $('books').innerHTML = title + (L.length ? L.map(b=>{
     const canDel = m.admin || b.user===m.name;
     const acts = [];
-    if (m.admin && b.status==='pending') acts.push(`<button class="btn sm green" onclick="act('bookingStatus',{id:'${esc(b.id)}',status:'approved'},false)">อนุมัติ</button>`,`<button class="btn sm red" onclick="act('bookingStatus',{id:'${esc(b.id)}',status:'rejected'},false)">ไม่อนุมัติ</button>`);
-    if (canDel) acts.push(`<button class="btn sm soft" onclick="cancelBooking('${esc(b.id)}')">ยกเลิก</button>`);
+    if (m.admin && b.status==='pending') acts.push(`<button class="btn sm green" onclick="approve('${esc(b.id)}')">อนุมัติ</button>`,`<button class="btn sm red" onclick="act('bookingStatus',{id:'${esc(b.id)}',status:'rejected'},false)">ไม่อนุมัติ</button>`);
+    if (canDel && b.status!=='used') acts.push(`<button class="btn sm soft" onclick="cancelBooking('${esc(b.id)}')">ยกเลิก</button>`);
     return `<div class="li"><div class="ic">📅</div><div class="tx"><div class="t">${esc(b.mission)||'-'}</div>
       <div class="s">${fd(b.start)} → ${fd(b.end)}<br>🚗 ${b.plate&&b.plate!=='-'?esc(b.plate):'ไม่ระบุรถ'} · 👤 ${esc(b.user)}</div>
       ${acts.length?`<div class="acts">${acts.join('')}</div>`:''}</div><div class="r">${bookStatus(b)}</div></div>`;
@@ -417,7 +440,7 @@ function renderRepair(){
     <div><div class="muted">จำนวนครั้ง (ปีนี้)</div><div style="font-size:24px;font-weight:700">${yr.length}</div></div></div>`;
   const m = me();
   $('repairs').innerHTML = L.length ? L.map(x=>`<div class="li"><div class="ic">🔧</div><div class="tx">
-      <div class="t">${esc(x.type)}</div><div class="s">${esc(x.plate)} · ${fd(x.date,false)} · ${esc(x.by)}${x.note?'<br>'+esc(x.note):''}</div></div>
+      <div class="t">${esc(x.type)}</div><div class="s">${esc(x.plate)} · ${fd(x.date,false)}${x.mile?' · '+km(x.mile)+' กม.':''} · ${esc(x.by)}${x.note?'<br>'+esc(x.note):''}</div></div>
       <div class="r"><b>${baht(x.cost)} ฿</b>${m.admin?`<button class="btn sm soft" onclick="if(confirm('ลบรายการนี้?'))act('maintDelete',{id:'${esc(x.id)}'},false)">ลบ</button>`:''}</div></div>`).join('')
     : '<div class="empty"><div class="ic">🔧</div>ยังไม่มีข้อมูลการซ่อม</div>';
 }
@@ -429,18 +452,27 @@ function renderPlan(){
   carSeg($('planSeg'), S.planCar, 'planCar', false);
   const v = V.find(x=>x.plate===S.planCar);
   if (!v){ $('planBox').innerHTML = '<div class="card empty"><div class="ic">📋</div>ยังไม่มีรถในระบบ</div>'; return; }
-  const plan = PLAN.map(p=>{ const next = Math.max(p.km, Math.ceil((v.mile+1)/p.km)*p.km), rem = next - v.mile;
-    return Object.assign({next, rem, u: rem<=500?'urgent':rem<=1500?'soon':''}, p); }).sort((a,b)=>a.rem-b.rem);
+  const recs = S.d.maint.filter(x=>x.plate===v.plate);
+  const plan = PLAN.map(p=>{
+    const last = recs.find(x=>p.key.some(k=>String(x.type).indexOf(k)>=0));   // รายการล่าสุดที่ตรงกับหัวข้อนี้
+    let next, basis;
+    if (last && last.mile) { next = last.mile + p.km; basis = 'ทำล่าสุด '+fd(last.date,false)+' ที่ '+km(last.mile)+' กม.'; }
+    else { next = Math.max(p.km, Math.ceil((v.mile+1)/p.km)*p.km); basis = last ? 'ทำล่าสุด '+fd(last.date,false)+' (ไม่ได้บันทึกเลขไมล์ นับตามรอบ)' : 'ยังไม่มีบันทึก · นับตามรอบ '+km(p.km)+' กม.'; }
+    const rem = next - v.mile;
+    return Object.assign({next, rem, basis, u: rem<=500?'urgent':rem<=1500?'soon':''}, p);
+  }).sort((a,b)=>a.rem-b.rem);
   const hist = S.d.maint.filter(x=>x.plate===v.plate).slice(0,8);
   $('planBox').innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
       <div><div class="pl" style="font-size:22px;font-weight:700">${esc(v.plate)}</div><div class="muted">${esc(v.model)}</div></div>
       <div style="text-align:right"><div class="muted">เลขไมล์ปัจจุบัน</div><b style="font-size:20px">${km(v.mile)} กม.</b></div></div>
-    ${plan.map(p=>`<div class="plan ${p.u}"><div class="h"><span>ทุก ${km(p.km)} กม. · ครั้งถัดไป ${km(p.next)}</span>
-      <span class="pill ${p.u==='urgent'?'p-bad':p.u==='soon'?'p-warn':'p-mut'}">อีก ${km(p.rem)} กม.</span></div>
-      <ul>${p.items.map(i=>'<li>'+esc(i)+'</li>').join('')}</ul></div>`).join('')}
+    <p class="muted small" style="margin:-4px 0 10px">บันทึกซ่อมพร้อมเลขไมล์ ระบบจะนับรอบถัดไปจากครั้งที่ทำจริง</p>
+    ${plan.map(p=>`<div class="plan ${p.u}"><div class="h"><span>${esc(p.name)}</span>
+      <span class="pill ${p.u==='urgent'?'p-bad':p.u==='soon'?'p-warn':'p-mut'}">${p.rem<=0?'เลยกำหนด '+km(-p.rem):'อีก '+km(p.rem)} กม.</span></div>
+      <div class="small muted" style="margin-top:4px">ทุก ${km(p.km)} กม. · ครั้งถัดไป ${km(p.next)} กม.<br>${esc(p.basis)}</div>
+      <div class="acts"><button class="btn sm soft" onclick="openRepair('${esc(v.plate)}','${esc(p.name)}')">บันทึกว่าทำแล้ว</button></div></div>`).join('')}
     <button class="btn block ghost" onclick="openRepair('${esc(v.plate)}')">+ บันทึกการเข้าศูนย์ของรถคันนี้</button></div>
     <div class="sec"><h2>ประวัติซ่อมล่าสุด</h2></div>
-    <div class="card"><div class="list">${hist.length?hist.map(x=>`<div class="li"><div class="ic">🔧</div><div class="tx"><div class="t">${esc(x.type)}</div><div class="s">${fd(x.date,false)} · ${esc(x.by)}</div></div><div class="r"><b>${baht(x.cost)} ฿</b></div></div>`).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div></div>`;
+    <div class="card"><div class="list">${hist.length?hist.map(x=>`<div class="li"><div class="ic">🔧</div><div class="tx"><div class="t">${esc(x.type)}</div><div class="s">${fd(x.date,false)}${x.mile?' · '+km(x.mile)+' กม.':''} · ${esc(x.by)}</div></div><div class="r"><b>${baht(x.cost)} ฿</b></div></div>`).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div></div>`;
 }
 
 /* ====== ชีตฟอร์ม ====== */
@@ -462,7 +494,7 @@ function openCheckout(id){
 function openReturn(id){
   const v = carById(id); if(!v) return;
   sheet(`<h3>✓ คืนรถ ${esc(v.plate)}</h3>
-    <p class="muted" style="margin-top:-6px">ผู้เบิก: ${esc(v.user||'-')} · ไมล์ขณะออก ${km(v.mile)} กม.</p>
+    <p class="muted" style="margin-top:-6px">ผู้เบิก: ${esc(v.user||'-')}${v.since?' · ออก '+fd(v.since)+' (ใช้มา '+dur(v.since)+')':''}<br>ไมล์ขณะออก ${km(v.mile)} กม.</p>
     <label class="fld"><span>เลขไมล์ตอนคืน (กม.)</span><input id="fMile" type="number" inputmode="numeric" min="${v.mile}" placeholder="${v.mile}"></label>
     <div class="muted" id="fUsed" style="margin:-6px 0 12px">&nbsp;</div>
     <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn green" onclick="act('returnCar',{carId:'${esc(v.id)}',endMile:$('fMile').value})">บันทึกคืนรถ</button></div>`);
@@ -481,14 +513,14 @@ function openBooking(){
     ${me().admin?'':'<p class="muted">การจองจะรอผู้ดูแลอนุมัติ</p>'}
     <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" onclick="act('booking',{plate:$('fCar').value,start:$('fS').value,end:$('fE').value,mission:$('fM').value})">ส่งจอง</button></div>`);
 }
-function openRepair(plate){
+function openRepair(plate, type){
   sheet(`<h3>🔧 บันทึกการซ่อม</h3>
     <label class="fld"><span>รถ</span><select id="rCar">${S.d.vehicles.map(v=>`<option ${v.plate===(plate||S.repCar)?'selected':''}>${esc(v.plate)}</option>`).join('')}</select></label>
-    <label class="fld"><span>รายการ</span><input id="rType" placeholder="เช่น เปลี่ยนน้ำมันเครื่อง" autocomplete="off"></label>
-    <div class="chips" style="margin:-6px 0 14px">${REPAIR_TYPES.map(t=>`<button type="button" onclick="$('rType').value='${t}'">${t}</button>`).join('')}</div>
+    <label class="fld"><span>รายการ</span><input id="rType" placeholder="เช่น เปลี่ยนน้ำมันเครื่อง" autocomplete="off" value="${esc(type||'')}"></label>
+    <div class="chips" style="margin:-6px 0 14px">${REPAIR_TYPES.map(t=>`<button type="button" onclick="const f=$('rType');f.value=f.value&&f.value.indexOf('${t}')<0?f.value+', ${t}':'${t}'">${t}</button>`).join('')}</div>
     <div class="row2"><label class="fld"><span>วันที่</span><input id="rDate" type="date" value="${ymd(new Date())}"></label>
     <label class="fld"><span>ค่าใช้จ่าย (บาท)</span><input id="rCost" type="number" inputmode="decimal" min="0" placeholder="0"></label></div>
-    <label class="fld"><span>เลขไมล์ตอนซ่อม (ไม่บังคับ)</span><input id="rMile" type="number" inputmode="numeric" placeholder="ถ้ากรอก จะอัปเดตเลขไมล์รถด้วย"></label>
+    <label class="fld"><span>เลขไมล์ตอนซ่อม (แนะนำให้กรอก)</span><input id="rMile" type="number" inputmode="numeric" placeholder="ใช้คำนวณแผนบำรุงรอบถัดไป"></label>
     <label class="fld"><span>หมายเหตุ</span><textarea id="rNote" placeholder="ร้าน/ศูนย์บริการ รายละเอียด"></textarea></label>
     <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" onclick="act('maintSave',{plate:$('rCar').value,type:$('rType').value,date:$('rDate').value,cost:$('rCost').value,mile:$('rMile').value,note:$('rNote').value})">บันทึก</button></div>`);
 }
@@ -505,6 +537,23 @@ function openCar(id){
   let img = '';
   $('cImg').onchange = async e => { const f = e.target.files[0]; if(!f) return; img = await resize(f); $('cPrev').src = img; $('cPrev').classList.remove('hide'); };
   $('cSave').onclick = () => act('vehicleSave',{id:v?v.id:'',plate:$('cPlate').value,model:$('cModel').value,mile:$('cMile').value,image:img});
+}
+function openPhoto(id){
+  const v = carById(id); if(!v) return;
+  sheet(`<h3>📷 รูปรถ ${esc(v.plate)}</h3>
+    ${v.image?`<img class="preview" src="${esc(v.image)}" alt="" style="max-height:220px">`:'<p class="muted">ยังไม่มีรูป — ถ่ายใหม่หรือเลือกจากเครื่องได้</p>'}
+    <div class="row2" style="margin-top:12px">
+      <label class="btn soft" style="cursor:pointer">📸 ถ่ายรูป<input type="file" accept="image/*" capture="environment" class="hide" onchange="pickPhoto(this,'${esc(v.id)}')"></label>
+      <label class="btn soft" style="cursor:pointer">🖼 เลือกจากเครื่อง<input type="file" accept="image/*" class="hide" onchange="pickPhoto(this,'${esc(v.id)}')"></label>
+    </div>
+    <img id="phNew" class="preview hide" alt="">
+    <div class="sbtns" style="margin-top:14px"><button class="btn ghost" onclick="closeSheet()">ปิด</button><button class="btn" id="phSave" disabled>บันทึกรูป</button></div>`);
+}
+async function pickPhoto(inp, id){
+  const f = inp.files[0]; if(!f) return;
+  try { const img = await resize(f); $('phNew').src = img; $('phNew').classList.remove('hide');
+    $('phSave').disabled = false; $('phSave').onclick = () => act('vehiclePhoto',{id,image:img}); }
+  catch(e){ toast('อ่านรูปไม่ได้ ลองรูปอื่น', true); }
 }
 function openLogs(){
   const L = S.d.logs;
@@ -560,6 +609,7 @@ function start(){
   if (S.d && S.d.me && S.d.me.name !== creds().user) S.d = null;   // เปลี่ยนผู้ใช้ ไม่ใช้ข้อมูลเก่า
   render(); load(true);
 }
+try { if (window.top !== window.self || new URLSearchParams(location.search).get('from')==='old') $('oldBar').classList.remove('hide'); } catch(e){ $('oldBar').classList.remove('hide'); }
 go(['home','book','repair','plan'].indexOf(LS.get('view'))>=0 ? LS.get('view') : 'home');
 start();
 </script>

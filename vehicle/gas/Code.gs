@@ -15,13 +15,13 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '15.0';
+const VERSION = '15.1';
 
 const SH = {
   CARS:  { name: 'รายการใช้รถ',  cols: ['ID', 'Plate', 'Model', 'Status', 'Mile', 'Image', 'User', 'UserId', 'CreatedDate'] },
   LOGS:  { name: 'Logใช้งานรถ',  cols: ['Date', 'User', 'Action', 'Detail', 'StartMile', 'EndMile', 'Status', 'CarId', 'ReturnDate', 'ReturnBy'] },
   BOOK:  { name: 'การจอง',       cols: ['ID', 'StartDate', 'EndDate', 'Mission', 'Status', 'User', 'CarPlate', 'CreatedDate'] },
-  MAINT: { name: 'การซ่อมบำรุง', cols: ['ID', 'Date', 'CarPlate', 'Type', 'Cost', 'Note', 'By'] }
+  MAINT: { name: 'การซ่อมบำรุง', cols: ['ID', 'Date', 'CarPlate', 'Type', 'Cost', 'Note', 'By', 'Mile'] }
 };
 // ชื่อหัวคอลัมน์รุ่นเก่าที่หมายถึงคอลัมน์เดียวกัน
 const ALIAS = { StartMile: ['Ref1'], EndMile: ['Ref2'], CarPlate: ['Plate'] };
@@ -31,15 +31,18 @@ const ALIAS = { StartMile: ['Ref1'], EndMile: ['Ref2'], CarPlate: ['Plate'] };
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === 'ping') return json_({ ok: true, version: VERSION });
-  // ลิงก์เดิม (script.google.com/.../exec) → พาไปหน้าใหม่บน GitHub
-  const html = '<div style="font-family:sans-serif;text-align:center;padding:40px 20px">' +
-    '<h2 style="color:#5B1A63">ระบบยานพาหนะย้ายไปที่ใหม่แล้ว</h2>' +
-    '<p>เปิดผ่านศูนย์รวมงาน กฟส.อ่าวลึก ได้ทั้งมือถือและคอม</p>' +
-    '<p><a href="' + WEB_URL + '" target="_top" style="display:inline-block;padding:14px 26px;background:#5B1A63;color:#fff;border-radius:12px;text-decoration:none;font-size:18px">เปิดระบบยานพาหนะ</a></p></div>' +
-    '<script>try{window.top.location.replace("' + WEB_URL + '")}catch(e){}</script>';
+  // ลิงก์เดิม (script.google.com/.../exec) → เปิดหน้าใหม่บน GitHub ให้อัตโนมัติ
+  // 1) พยายามพาทั้งหน้าไปที่ลิงก์ใหม่  2) ถ้าเบราว์เซอร์ไม่ยอม ก็แสดงระบบใหม่เต็มจอในหน้านี้เลย
+  const html = '<!doctype html><html><head><base target="_top"><style>' +
+    'html,body{margin:0;height:100%;overflow:hidden;background:#F5F3F7}' +
+    'iframe{position:fixed;inset:0;width:100%;height:100%;border:0}' +
+    '</style></head><body>' +
+    '<iframe src="' + WEB_URL + '?from=old" allow="camera; geolocation; clipboard-write"></iframe>' +
+    '<script>try{window.top.location.replace("' + WEB_URL + '")}catch(e){}</script>' +
+    '</body></html>';
   return HtmlService.createHtmlOutput(html)
     .setTitle('ระบบยานพาหนะ กฟส.อ่าวลึก')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -73,12 +76,20 @@ const ACTIONS = {
     const mission = clean_(b.mission);
     if (mission.length < 2) throw new Error('กรุณากรอกภารกิจ/จุดหมาย');
     const t = table_(SH.CARS), r = findRow_(t, 'ID', b.carId);
-    if (!r) throw new Error('ไม่พบรถคันนี้');
+    if (r == null) throw new Error('ไม่พบรถคันนี้');
     if (String(get_(t, r, 'Status')) === 'in-use') throw new Error('รถคันนี้มีคนเบิกใช้อยู่แล้ว — กดรีเฟรชเพื่อดูสถานะล่าสุด');
     set_(t, r, { Status: 'in-use', User: me.name, UserId: me.name });
     const plate = get_(t, r, 'Plate'), mile = Number(get_(t, r, 'Mile')) || 0;
     append_(table_(SH.LOGS), { Date: new Date(), User: me.name, Action: plate, Detail: mission,
       StartMile: mile, EndMile: '', Status: 'in-use', CarId: get_(t, r, 'ID') });
+    // ถ้ามีการจองของตัวเองสำหรับช่วงนี้ (รถคันนี้ หรือไม่ระบุรถ) → ปิดการจองเป็น "รับรถแล้ว"
+    const B = table_(SH.BOOK), now = new Date(), soon = new Date(now.getTime() + 3 * 3600000);
+    for (let i = 0; i < B.rows.length; i++) {
+      const row = B.rows[i], st = String(row[B.h.Status]);
+      if (String(row[B.h.User]) !== me.name || (st !== 'approved' && st !== 'pending')) continue;
+      const bp = String(row[B.h.CarPlate] || '-'), s2 = parseDate_(row[B.h.StartDate]), e2 = parseDate_(row[B.h.EndDate]);
+      if ((bp === plate || bp === '-') && s2 && e2 && s2 <= soon && e2 >= now) { set_(B, i, { Status: 'used', CarPlate: plate }); break; }
+    }
     return 'เบิกรถ ' + plate + ' แล้ว';
   },
 
@@ -86,14 +97,18 @@ const ACTIONS = {
     const endMile = Number(b.endMile);
     if (!isFinite(endMile) || endMile <= 0) throw new Error('กรุณากรอกเลขไมล์');
     const t = table_(SH.CARS), r = findRow_(t, 'ID', b.carId);
-    if (!r) throw new Error('ไม่พบรถคันนี้');
+    if (r == null) throw new Error('ไม่พบรถคันนี้');
+    if (String(get_(t, r, 'Status')) !== 'in-use') throw new Error('รถคันนี้คืนแล้ว — กดรีเฟรชเพื่อดูสถานะล่าสุด');
+    const holder = String(get_(t, r, 'User') || '');
+    if (!me.admin && holder && holder !== me.name) throw new Error('คืนได้เฉพาะผู้เบิก (' + holder + ') หรือผู้ดูแลระบบ');
     const start = Number(get_(t, r, 'Mile')) || 0;
     if (endMile < start) throw new Error('เลขไมล์ต้องไม่น้อยกว่าเลขไมล์เดิม (' + start.toLocaleString() + ' กม.)');
-    const plate = String(get_(t, r, 'Plate'));
+    const plate = String(get_(t, r, 'Plate')), carId = String(get_(t, r, 'ID'));
     set_(t, r, { Status: 'available', Mile: endMile, User: '', UserId: '' });
     const L = table_(SH.LOGS);
     for (let i = L.rows.length - 1; i >= 0; i--) {
-      if (String(L.rows[i][L.h.Action]) === plate && String(L.rows[i][L.h.Status]) === 'in-use') {
+      const lr = L.rows[i], same = String(lr[L.h.CarId]) === carId || (!lr[L.h.CarId] && String(lr[L.h.Action]) === plate);
+      if (same && String(lr[L.h.Status]) === 'in-use') {
         set_(L, i, { EndMile: endMile, Status: 'completed', ReturnDate: new Date(), ReturnBy: me.name });
         break;
       }
@@ -109,13 +124,7 @@ const ACTIONS = {
     if (mission.length < 2) throw new Error('กรุณากรอกภารกิจ');
     const plate = clean_(b.plate) || '-';
     const t = table_(SH.BOOK);
-    if (plate !== '-') {
-      t.rows.forEach(function (row) {
-        if (String(row[t.h.CarPlate]) !== plate || String(row[t.h.Status]) === 'rejected') return;
-        const s2 = parseDate_(row[t.h.StartDate]), e2 = parseDate_(row[t.h.EndDate]);
-        if (s2 && e2 && s < e2 && s2 < e) throw new Error('รถ ' + plate + ' ถูกจองช่วงนี้แล้ว โดย ' + row[t.h.User] + ' (' + fmt_(s2) + ' – ' + fmt_(e2) + ')');
-      });
-    }
+    conflict_(t, plate, s, e, null);
     append_(t, { ID: nextId_(t), StartDate: s, EndDate: e, Mission: mission, Status: me.admin ? 'approved' : 'pending',
       User: me.name, CarPlate: plate, CreatedDate: new Date() });
     return me.admin ? 'จองแล้ว (อนุมัติอัตโนมัติ)' : 'ส่งคำขอจองแล้ว รอผู้ดูแลอนุมัติ';
@@ -126,7 +135,13 @@ const ACTIONS = {
     if (['approved', 'rejected', 'pending'].indexOf(b.status) < 0) throw new Error('สถานะไม่ถูกต้อง');
     const t = table_(SH.BOOK), r = findRow_(t, 'ID', b.id);
     if (r == null) throw new Error('ไม่พบรายการจอง');
-    set_(t, r, { Status: b.status });
+    const v = { Status: b.status };
+    if (b.status === 'approved') {                      // อนุมัติพร้อมจัดรถให้ได้ (จองแบบไม่ระบุรถ)
+      const plate = clean_(b.plate) || String(get_(t, r, 'CarPlate') || '-');
+      conflict_(t, plate, parseDate_(get_(t, r, 'StartDate')), parseDate_(get_(t, r, 'EndDate')), r);
+      v.CarPlate = plate;
+    }
+    set_(t, r, v);
     return b.status === 'approved' ? 'อนุมัติแล้ว' : b.status === 'rejected' ? 'ไม่อนุมัติ' : 'บันทึกแล้ว';
   },
 
@@ -146,7 +161,7 @@ const ACTIONS = {
     if (!isFinite(cost) || cost < 0) throw new Error('ค่าใช้จ่ายไม่ถูกต้อง');
     const t = table_(SH.MAINT);
     append_(t, { ID: nextId_(t), Date: parseDate_(b.date) || new Date(), CarPlate: plate, Type: type,
-      Cost: cost, Note: clean_(b.note), By: me.name });
+      Cost: cost, Note: clean_(b.note), By: me.name, Mile: Number(b.mile) > 0 ? Number(b.mile) : '' });
     if (b.mile) {                                         // ถ้ากรอกเลขไมล์ตอนซ่อม อัปเดตเลขไมล์รถด้วย
       const c = table_(SH.CARS), r = findRow_(c, 'Plate', plate), m = Number(b.mile);
       if (r != null && m > (Number(get_(c, r, 'Mile')) || 0)) set_(c, r, { Mile: m });
@@ -185,6 +200,15 @@ const ACTIONS = {
     return 'เพิ่มรถ ' + plate + ' แล้ว';
   },
 
+  vehiclePhoto: function (b, me) {
+    if (!me.admin) throw new Error('เฉพาะผู้ดูแลระบบ');
+    if (!b.image || String(b.image).indexOf('data:image') !== 0) throw new Error('กรุณาเลือกรูป');
+    const t = table_(SH.CARS), r = findRow_(t, 'ID', b.id);
+    if (r == null) throw new Error('ไม่พบรถ');
+    set_(t, r, { Image: saveImage_(b.image, 'car_' + get_(t, r, 'Plate') + '_' + Date.now() + '.jpg') });
+    return 'บันทึกรูปรถแล้ว';
+  },
+
   vehicleDelete: function (b, me) {
     if (!me.admin) throw new Error('เฉพาะผู้ดูแลระบบ');
     const t = table_(SH.CARS), r = findRow_(t, 'ID', b.id);
@@ -199,10 +223,18 @@ const ACTIONS = {
 
 function bootstrap_(me) {
   const C = table_(SH.CARS), L = table_(SH.LOGS), B = table_(SH.BOOK), M = table_(SH.MAINT);
+  const since = {};                                     // เวลาเบิกของรถที่กำลังใช้งาน
+  L.rows.forEach(function (r) {
+    if (String(r[L.h.Status]) !== 'in-use') return;
+    const k = String(r[L.h.CarId] || '') || 'p:' + r[L.h.Action];
+    since[k] = { at: iso_(r[L.h.Date]), mission: String(r[L.h.Detail] || '') };
+  });
   const vehicles = C.rows.filter(function (r) { return r[C.h.ID] !== '' && r[C.h.Plate] !== ''; }).map(function (r) {
+    const inUse = String(r[C.h.Status] || 'available') === 'in-use';
+    const sc = inUse ? (since[String(r[C.h.ID])] || since['p:' + r[C.h.Plate]] || {}) : {};
     return { id: String(r[C.h.ID]), plate: String(r[C.h.Plate]), model: String(r[C.h.Model] || ''),
-      status: String(r[C.h.Status] || 'available') === 'in-use' ? 'in-use' : 'available',
-      mile: Number(r[C.h.Mile]) || 0, image: imgUrl_(r[C.h.Image]), user: String(r[C.h.User] || '') };
+      status: inUse ? 'in-use' : 'available', mile: Number(r[C.h.Mile]) || 0, image: imgUrl_(r[C.h.Image]),
+      user: inUse ? String(r[C.h.User] || '') : '', since: sc.at || '', mission: sc.mission || '' };
   });
   const logs = L.rows.slice(-150).reverse().map(function (r) {
     return { date: iso_(r[L.h.Date]), user: String(r[L.h.User] || ''), plate: String(r[L.h.Action] || ''),
@@ -216,9 +248,21 @@ function bootstrap_(me) {
   }).filter(function (x) { return x.start; });
   const maint = M.rows.slice(-200).reverse().map(function (r) {
     return { id: String(r[M.h.ID]), date: iso_(r[M.h.Date]), plate: String(r[M.h.CarPlate] || ''),
-      type: String(r[M.h.Type] || ''), cost: num_(r[M.h.Cost]), note: String(r[M.h.Note] || ''), by: String(r[M.h.By] || '') };
+      type: String(r[M.h.Type] || ''), cost: num_(String(r[M.h.Cost]).replace(/[,฿\s]/g, '')), note: String(r[M.h.Note] || ''),
+      by: String(r[M.h.By] || ''), mile: num_(r[M.h.Mile]) };
   });
   return { ok: true, version: VERSION, me: me, vehicles: vehicles, logs: logs, bookings: bookings, maint: maint, at: iso_(new Date()) };
+}
+
+/** รถคันเดียวกันห้ามจองซ้อนเวลา (ไม่นับรายการที่ไม่อนุมัติ/ใช้แล้ว และรายการที่กำลังแก้) */
+function conflict_(t, plate, s, e, skipRow) {
+  if (!plate || plate === '-' || !s || !e) return;
+  t.rows.forEach(function (row, i) {
+    if (i === skipRow || String(row[t.h.CarPlate]) !== plate) return;
+    const st = String(row[t.h.Status]); if (st === 'rejected' || st === 'used') return;
+    const s2 = parseDate_(row[t.h.StartDate]), e2 = parseDate_(row[t.h.EndDate]);
+    if (s2 && e2 && s < e2 && s2 < e) throw new Error('รถ ' + plate + ' ถูกจองช่วงนี้แล้ว โดย ' + row[t.h.User] + ' (' + fmt_(s2) + ' – ' + fmt_(e2) + ')');
+  });
 }
 
 /* ---------- ล็อกอินศูนย์รวมงาน ---------- */
@@ -240,7 +284,24 @@ function who_(user, pass) {
   if (!role) return null;
   const extra = String(PropertiesService.getScriptProperties().getProperty('VEHICLE_ADMINS') || '')
     .split(',').map(function (s) { return s.trim(); }).filter(String);
-  return { name: user, role: role, admin: role === 'admin' || extra.indexOf(user) >= 0 };
+  return { name: user, role: role, admin: role === 'admin' || extra.indexOf(user) >= 0 || oldAdmins_().indexOf(user) >= 0 };
+}
+
+/** ผู้ดูแลจากระบบสมาชิกเดิม (ชีต "ระบบสมาชิก" คอลัมน์ Role = admin) — ใช้ชื่อเดียวกับศูนย์รวมงาน */
+function oldAdmins_() {
+  const cache = CacheService.getScriptCache(), hit = cache.get('oldAdmins');
+  if (hit != null) return JSON.parse(hit);
+  let list = [];
+  try {
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('ระบบสมาชิก');
+    if (sh && sh.getLastRow() > 1) {
+      const v = sh.getDataRange().getValues(), h = v[0].map(String), ni = h.indexOf('Name'), ri = h.indexOf('Role');
+      if (ni >= 0 && ri >= 0) list = v.slice(1).filter(function (r) { return String(r[ri]).toLowerCase() === 'admin'; })
+        .map(function (r) { return String(r[ni]).trim(); }).filter(String);
+    }
+  } catch (e) {}
+  cache.put('oldAdmins', JSON.stringify(list), 3600);
+  return list;
 }
 
 /* ---------- ตาราง: อ่าน/เขียนตามชื่อหัวคอลัมน์ (รองรับชีตรุ่นเก่า) ---------- */
