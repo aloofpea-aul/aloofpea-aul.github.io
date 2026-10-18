@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '16.0';
+const VERSION = '16.1';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -402,35 +402,31 @@ function append_(t, obj) {
 }
 
 /**
- * ปรับชีตครั้งเดียว: ลบหัวคอลัมน์ที่รุ่น 15.x เติมต่อท้ายผิดตำแหน่ง (ตรวจว่าเป็นของรุ่นนั้นจริงก่อนลบ)
- * และเขียนป้ายหัวคอลัมน์ให้ตรงกับข้อมูล — ไม่แตะข้อมูลแถวที่ 2 เป็นต้นไปในคอลัมน์เดิม
+ * ดูแลหัวคอลัมน์: ลบหัวคอลัมน์ภาษาอังกฤษที่รุ่น 15.x เติมต่อท้ายผิดตำแหน่ง และเขียนป้ายหัวคอลัมน์ให้ตรงข้อมูล
+ * ลบเฉพาะคอลัมน์ที่อยู่ "หลัง" คอลัมน์ข้อมูลจริง และไม่มีข้อมูล (ยกเว้น ID ที่รุ่น 15.x เติมเอง) — ไม่แตะข้อมูลเดิม
+ * ตรวจทุกครั้ง (อ่านแค่แถวหัวตาราง) จำผล 10 นาที
  */
 function migrate_() {
-  const P = PropertiesService.getScriptProperties();
-  if (P.getProperty('LAYOUT_V16') === 'done') return;
-  const lock = LockService.getScriptLock(); lock.waitLock(20000);
-  try {
-    if (P.getProperty('LAYOUT_V16') === 'done') return;
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const fix = [
-      [SH.CARS, 10, ['Status', 'Mile', 'UserId']],
-      [SH.LOGS, 8, ['Date', 'User', 'Action', 'Detail', 'StartMile', 'EndMile', 'Status', 'CarId', 'ReturnDate', 'ReturnBy']],
-      [SH.BOOK, 9, ['ID', 'CreatedDate']],
-      [SH.MAINT, 8, ['ID', 'Mile']]
-    ];
-    fix.forEach(function (f) {
-      const sh = ss.getSheetByName(f[0].name); if (!sh) return;
-      const col = f[1], names = f[2], lastCol = sh.getLastColumn();
-      if (lastCol >= col) {
-        const head = sh.getRange(1, col, 1, names.length).getValues()[0].map(String);
-        if (head.join('|') === names.join('|')) {          // เป็นหัวคอลัมน์ที่รุ่น 15.x เติมไว้จริง
-          sh.getRange(1, col, Math.max(sh.getLastRow(), 1), names.length).clearContent();
-        }
-      }
-      sh.getRange(1, 1, 1, f[0].labels.length).setValues([f[0].labels]).setFontWeight('bold');
-    });
-    P.setProperty('LAYOUT_V16', 'done');
-  } finally { lock.releaseLock(); }
+  const cache = CacheService.getScriptCache();
+  if (cache.get('layout16') === 'ok') return;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ENG = ['ID', 'Plate', 'Model', 'Status', 'Mile', 'Image', 'User', 'UserId', 'CreatedDate', 'Date', 'Action', 'Detail',
+    'StartMile', 'EndMile', 'CarId', 'ReturnDate', 'ReturnBy', 'StartDate', 'EndDate', 'Mission', 'CarPlate', 'Type', 'Cost', 'Note', 'By'];
+  [SH.CARS, SH.LOGS, SH.BOOK, SH.MAINT].forEach(function (def) {
+    const sh = ss.getSheetByName(def.name); if (!sh) return;
+    const w = def.labels.length, lastCol = sh.getLastColumn(), lastRow = Math.max(sh.getLastRow(), 1);
+    const head = sh.getRange(1, 1, 1, Math.max(lastCol, w)).getValues()[0].map(function (x) { return String(x).trim(); });
+    if (head.slice(0, w).join('|') !== def.labels.join('|')) sh.getRange(1, 1, 1, w).setValues([def.labels]).setFontWeight('bold');
+    for (let c = w; c < head.length; c++) {
+      if (ENG.indexOf(head[c]) < 0) continue;            // ไม่ใช่หัวคอลัมน์ที่รุ่น 15.x เติม → ไม่ยุ่ง
+      const col = sh.getRange(1, c + 1, lastRow, 1);
+      const vals = col.getValues().slice(1).map(function (r) { return r[0]; });
+      const empty = vals.every(function (v) { return v === '' || v == null; });
+      const onlyIds = head[c] === 'ID' && vals.every(function (v) { return v === '' || /^\d+$/.test(String(v)); });
+      if (empty || onlyIds) col.clearContent();
+    }
+  });
+  cache.put('layout16', 'ok', 600);
 }
 
 /* ---------- รูป ---------- */
