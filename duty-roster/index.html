@@ -501,7 +501,7 @@ async function drawReport(){
   if(isDoc){ if($('rMonth').value==='__preview'){$('printArea').innerHTML='<div class="note warn">เอกสารประกอบใช้กับตารางที่บันทึกแล้วเท่านั้น</div>';return;}
     $('rHint').textContent=k==='leavelog'?'ตั้งค่าเครื่องพิมพ์: A4 แนวนอน · ขอบ 0 (None)':'ตั้งค่าเครื่องพิมพ์: A4 แนวตั้ง · ขอบ 0 (None)';
     return drawDocs(k); }
-  $('rHint').textContent='ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"';
+  $('rHint').textContent='ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"'; S.drawSeq=(S.drawSeq||0)+1;
   const r=await currentReportData(); $('rStatus').value=r.status==='อนุมัติแล้ว'?'อนุมัติแล้ว':'ร่าง'; setBadge(r.status);
   const cfg=S.boot.config, dt=thDate($('rDate').value);
   let html='';
@@ -637,6 +637,8 @@ function signerOf(){
 }
 async function drawDocs(k){
   const key=$('rMonth').value, cfg=S.boot.config, want=S.rWant||{}; S.rWant=null;
+  const seq=S.drawSeq=(S.drawSeq||0)+1; const PA={set innerHTML(h){ if(seq===S.drawSeq) $('printArea').innerHTML=h; }};
+  $('printArea').innerHTML='<div class="loading">กำลังเตรียมเอกสาร…</div>';
   if(k==='sign'){
     $$('.rSign').forEach(e=>e.classList.remove('hide'));
     const mo=await loadMonth(key), days=mo.data.days, el=$('rDay'), old=want.day?String(want.day):el.value;
@@ -645,11 +647,11 @@ async function drawDocs(k){
     el.value=[...el.options].some(o=>o.value===old)?old:'all';
     let nx=null; const nk=nextKey(key); if(S.boot.months.some(x=>x.month===nk)) try{nx=await loadMonth(nk);}catch(e){}
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
-    $('printArea').innerHTML=list.map(d=>signPage(key,mo.data,nx&&nx.data,d,cfg)).join('');
+    PA.innerHTML=list.map(d=>signPage(key,mo.data,nx&&nx.data,d,cfg)).join('');
     return;
   }
   const L=await leaveItems(key);
-  if(k==='leavelog'){ $('printArea').innerHTML=leaveLogPages(key,L.items,cfg); return; }
+  if(k==='leavelog'){ PA.innerHTML=leaveLogPages(key,L.items,cfg); return; }
   $$('.rLeave').forEach(e=>e.classList.remove('hide'));
   const ap=(L.mo.data.approval)||{}; if(document.activeElement!==$('rApNo')) $('rApNo').value=ap.no||''; if(document.activeElement!==$('rApDate')) $('rApDate').value=ap.date||'';
   const sg=$('rSigner'),sv=LS.get('signer')||'mgr';
@@ -661,7 +663,7 @@ async function drawDocs(k){
   ids.forEach(id=>{const r=L.items.find(x=>x.req.id===id).req;it.add(new Option(r.text,id));});
   it.value=[...it.options].some(o=>o.value===old)?old:'all';
   const sel=L.items.filter(x=>it.value==='all'||x.req.id===it.value);
-  $('printArea').innerHTML=sel.length?sel.map(x=>memoPage(key,x,ap,cfg,signerOf())).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
+  PA.innerHTML=sel.length?sel.map(x=>memoPage(key,x,ap,cfg,signerOf())).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
 }
 const $$=q=>document.querySelectorAll(q);
 const FL=(v,w)=>`<span class="fl" style="min-width:${w||60}px">${esc(v)||'&nbsp;'}</span>`;
