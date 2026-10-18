@@ -432,7 +432,12 @@ function handleEvent_(ev) {
   }
   if (ev.type === 'postback') {
     const p = String(ev.postback.data || '').split('|');
-    if (p[0] === 'ack') { log_(p[3] || uid, 'รับทราบเวร', (p[2] || '').slice(0, 7), p[1] + ' ' + p[2]); return reply_(ev.replyToken, [text_('บันทึกการรับทราบแล้ว ✓')]); }
+    if (p[0] === 'ack') {
+      const who = peopleRows_().filter(function (r) { return r.lineUserId && r.lineUserId === uid; })[0];
+      const by = who ? who.short : uid;
+      log_(by, 'รับทราบเวร', (p[2] || '').slice(0, 7), p[1] + ' ' + p[2] + (p[3] && p[3] !== by ? ' (การ์ดของ ' + p[3] + ')' : ''));
+      return reply_(ev.replyToken, [text_('บันทึกการรับทราบแล้ว ✓\n' + (who ? who.full : '') + ' · ' + Utilities.formatDate(new Date(), TZ, 'HH:mm') + ' น.')]);
+    }
     if (p[0] === 'ann') return reply_(ev.replyToken, [text_(announceText_(p[1], p[2]))]);
     return;
   }
