@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="/pea-hub.js?v=2026101703" data-app="vehicle" data-perm="login" data-name="ระบบยานพาหนะ"></script>
+<script src="/pea-hub.js?v=2026101703" data-app="vehicle" data-gate="off" data-name="ระบบยานพาหนะ" data-user-key="vh_u"></script>
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
 <title>ระบบยานพาหนะ กฟส.อ่าวลึก</title>
 <meta name="theme-color" content="#5B1A63">
@@ -166,7 +166,7 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
   <div class="hrow">
     <a class="hback" href="/index.html" aria-label="กลับศูนย์รวมงาน">‹</a>
     <div class="htitle"><div class="t1">กฟส.อ่าวลึก</div><div class="t2" id="hTitle">ระบบยานพาหนะ</div></div>
-    <div class="hme" id="hMe"></div>
+    <div class="hme" id="hMe" role="button" tabindex="0" onclick="if(S.d)openAccount()" style="cursor:pointer"></div>
     <button class="refresh" id="btnRefresh" aria-label="รีเฟรช"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
   </div>
 </header>
@@ -270,7 +270,17 @@ function apiUrl(){
   if (q) LS.set('api', q);
   return LS.get('api') || DEFAULT_API;
 }
-function creds(){ try { return {user:localStorage.getItem('pea_aoluek_username')||'', pass:localStorage.getItem('pea_aoluek_password')||''}; } catch(e){ return {user:'',pass:''}; } }
+/* เข้าสู่ระบบ: ใช้รหัสของระบบยานพาหนะที่จำไว้ (vh_u/vh_p) ถ้าไม่มี ใช้บัญชีศูนย์รวมงานในเครื่องนี้ */
+function rawGet(k){ try { return localStorage.getItem(k)||''; } catch(e){ return ''; } }
+function rawSet(k,v){ try { if (v==null) localStorage.removeItem(k); else localStorage.setItem(k,v); } catch(e){} }
+function creds(){
+  const u = rawGet('vh_u'), p = rawGet('vh_p');
+  if (u && p) return {user:u, pass:p, via:'vehicle'};
+  return {user:rawGet('pea_aoluek_username'), pass:rawGet('pea_aoluek_password'), via:'hub'};
+}
+const nm = s => String(s==null?'':s).replace(/[\s\u200b-\u200d\ufeff]/g,'').toLowerCase();
+const np = s => String(s==null?'':s).replace(/[\s\-\u200b]/g,'').toUpperCase();
+const isMe = n => !!n && nm(n) === nm(me().name);
 
 async function api(action, data={}){
   if (window.__MOCK__) return window.__MOCK__(action, data);
@@ -304,13 +314,10 @@ async function load(silent){
   const btn = $('btnRefresh'); btn.classList.add('spin');
   try {
     const j = await api('bootstrap');
-    S.d = j; LS.set('boot', j); $('errBox').classList.add('hide'); render();
+    S.d = j; LS.set('boot', j); LS.set('bootUser', creds().user); $('errBox').classList.add('hide'); render();
   } catch(e){
-    if (!S.d || !silent || e.code) {
-      $('errBox').innerHTML = esc(e.message) + (e.code==='unauthorized' && window.PEAHub ? '<br><button class="btn sm" style="margin-top:8px" onclick="PEAHub.logout(true)">เข้าสู่ระบบใหม่</button>' : '');
-      $('errBox').classList.remove('hide');
-    }
-    if (!S.d) $('hMe').innerHTML = '<b>'+esc(creds().user)+'</b>';
+    if (e.code==='unauthorized') { S.d = null; LS.set('boot', null); $('cars').innerHTML=''; showLogin(creds().user ? 'เข้าสู่ระบบไม่สำเร็จ: '+e.message : ''); return; }
+    if (!S.d || !silent || e.code) { $('errBox').textContent = e.message; $('errBox').classList.remove('hide'); }
     if (!S.d) { $('cars').innerHTML = ''; }
   } finally { btn.classList.remove('spin'); }
 }
@@ -338,7 +345,7 @@ function render(){
 function carStatusPill(v){ return v.status==='in-use' ? '<span class="pill p-bad">กำลังใช้งาน</span>' : '<span class="pill p-ok">ว่าง</span>'; }
 function nextBookingOf(plate){
   const now = new Date();
-  return S.d.bookings.filter(b=>b.plate===plate && (b.status==='approved'||b.status==='pending') && pd(b.end)>now).sort((a,b)=>a.start<b.start?-1:1)[0];
+  return S.d.bookings.filter(b=>np(b.plate)===np(plate) && (b.status==='approved'||b.status==='pending') && pd(b.end)>now).sort((a,b)=>a.start<b.start?-1:1)[0];
 }
 
 function renderHome(){
@@ -348,7 +355,7 @@ function renderHome(){
   $('stP').textContent = S.d.bookings.filter(b=>b.status==='pending').length;
   document.querySelectorAll('.stat[data-f]').forEach(b=>b.classList.toggle('on', S.filter===b.dataset.f));
 
-  const mine = V.filter(v=>v.status==='in-use' && v.user===m.name);
+  const mine = V.filter(v=>v.status==='in-use' && isMe(v.user));
   $('myCar').innerHTML = mine.map(v=>`<div class="note" style="display:flex;align-items:center;gap:10px;margin-top:2px">
       <div style="flex:1">คุณกำลังใช้รถ <b>${esc(v.plate)}</b><br><span class="small">ไมล์ออก ${km(v.mile)} กม.${v.since?' · ใช้มา '+dur(v.since):''}</span></div>
       <button class="btn green sm" onclick="openReturn('${esc(v.id)}')">คืนรถ</button></div>`).join('');
@@ -358,7 +365,7 @@ function renderHome(){
     const nb = nextBookingOf(v.plate);
     const nbTxt = nb ? `<div class="nb">📅 จองถัดไป ${fd(nb.start)} · ${esc(nb.user)}</div>` : '';
     const ph = v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'🚗'}))">` : '<div class="noimg">🚗</div>';
-    const canReturn = v.user===m.name || m.admin || !v.user;
+    const canReturn = isMe(v.user) || m.admin || !v.user;
     const btn = v.status==='available'
       ? `<button class="btn block" onclick="openCheckout('${esc(v.id)}')">🔑 เบิกใช้รถ</button>`
       : canReturn ? `<button class="btn block green" onclick="openReturn('${esc(v.id)}')">✓ คืนรถ</button>`
@@ -414,12 +421,12 @@ function renderBook(){
     L = L.filter(b=>pd(b.start)<e0 && pd(b.end||b.start)>=s0);
   } else if (S.bookTab==='up') L = L.filter(b=>pd(b.end||b.start)>=now && b.status!=='rejected' && b.status!=='used');
   else if (S.bookTab==='pending') L = L.filter(b=>b.status==='pending');
-  else if (S.bookTab==='mine') L = L.filter(b=>b.user===m.name);
+  else if (S.bookTab==='mine') L = L.filter(b=>isMe(b.user));
   L.sort((a,b)=> S.bookTab==='all' && !S.selDay ? (a.start<b.start?1:-1) : (a.start<b.start?-1:1));
   document.querySelectorAll('#bookSeg button').forEach(b=>b.classList.toggle('on', !S.selDay && b.dataset.v===S.bookTab));
   title = S.selDay ? `<div class="sec" style="margin:0 0 4px"><b>วันที่ ${fd(S.selDay+'T00:00',false)}</b><button class="btn sm soft" onclick="S.selDay=null;renderBook()">ล้าง</button></div>` : '';
   $('books').innerHTML = title + (L.length ? L.map(b=>{
-    const canDel = m.admin || b.user===m.name;
+    const canDel = m.admin || isMe(b.user);
     const acts = [];
     if (m.admin && b.status==='pending') acts.push(`<button class="btn sm green" onclick="approve('${esc(b.id)}')">อนุมัติ</button>`,`<button class="btn sm red" onclick="act('bookingStatus',{id:'${esc(b.id)}',status:'rejected'},false)">ไม่อนุมัติ</button>`);
     if (canDel && b.status!=='used') acts.push(`<button class="btn sm soft" onclick="cancelBooking('${esc(b.id)}')">ยกเลิก</button>`);
@@ -438,7 +445,7 @@ function carSeg(el, cur, key, withAll){
 }
 function renderRepair(){
   carSeg($('repSeg'), S.repCar, 'repCar', true);
-  const L = S.d.maint.filter(x=>!S.repCar || x.plate===S.repCar);
+  const L = S.d.maint.filter(x=>!S.repCar || np(x.plate)===np(S.repCar));
   const y = new Date().getFullYear(), yr = L.filter(x=>pd(x.date) && pd(x.date).getFullYear()===y);
   $('repSum').innerHTML = `<div class="row2"><div><div class="muted">ค่าซ่อมปี ${y+543}</div><div style="font-size:24px;font-weight:700">${baht(yr.reduce((s,x)=>s+(x.cost||0),0))} ฿</div></div>
     <div><div class="muted">จำนวนครั้ง (ปีนี้)</div><div style="font-size:24px;font-weight:700">${yr.length}</div></div></div>`;
@@ -456,7 +463,7 @@ function renderPlan(){
   carSeg($('planSeg'), S.planCar, 'planCar', false);
   const v = V.find(x=>x.plate===S.planCar);
   if (!v){ $('planBox').innerHTML = '<div class="card empty"><div class="ic">📋</div>ยังไม่มีรถในระบบ</div>'; return; }
-  const recs = S.d.maint.filter(x=>x.plate===v.plate);
+  const recs = S.d.maint.filter(x=>np(x.plate)===np(v.plate));
   const plan = PLAN.map(p=>{
     const last = recs.find(x=>p.key.some(k=>String(x.type).indexOf(k)>=0));   // รายการล่าสุดที่ตรงกับหัวข้อนี้
     let next, basis;
@@ -465,7 +472,7 @@ function renderPlan(){
     const rem = next - v.mile;
     return Object.assign({next, rem, basis, u: rem<=500?'urgent':rem<=1500?'soon':''}, p);
   }).sort((a,b)=>a.rem-b.rem);
-  const hist = S.d.maint.filter(x=>x.plate===v.plate).slice(0,8);
+  const hist = S.d.maint.filter(x=>np(x.plate)===np(v.plate)).slice(0,8);
   $('planBox').innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
       <div><div class="pl" style="font-size:22px;font-weight:700">${esc(v.plate)}</div><div class="muted">${esc(v.model)}</div></div>
       <div style="text-align:right"><div class="muted">เลขไมล์ปัจจุบัน</div><b style="font-size:20px">${km(v.mile)} กม.</b></div></div>
@@ -480,7 +487,7 @@ function renderPlan(){
 }
 
 /* ====== ชีตฟอร์ม ====== */
-function sheet(html){ $('layer').innerHTML = `<div class="ov" onclick="if(event.target===this)closeSheet()"><div class="sheet"><div class="grab"></div>${html}</div></div>`; document.body.style.overflow='hidden'; }
+function sheet(html, locked){ $('layer').innerHTML = `<div class="ov" ${locked?'':'onclick="if(event.target===this)closeSheet()"'}><div class="sheet"><div class="grab"></div>${html}</div></div>`; document.body.style.overflow='hidden'; }
 function closeSheet(){ $('layer').innerHTML=''; document.body.style.overflow=''; }
 const carById = id => S.d.vehicles.find(v=>v.id===String(id));
 
@@ -598,6 +605,49 @@ $('cal').onclick = e => { const b = e.target.closest('[data-day]'); if (!b) retu
 $('bookSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.bookTab = b.dataset.v; S.selDay = null; renderBook(); };
 document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible' && S.d) load(true); });
 
+function showLogin(msg){
+  const hub = rawGet('pea_aoluek_username');
+  sheet(`<h3>🚗 เข้าสู่ระบบยานพาหนะ</h3>
+    ${msg?`<div class="note err" style="margin-bottom:12px">${esc(msg)}</div>`:''}
+    <label class="fld"><span>รหัสพนักงาน หรือ ชื่อในศูนย์รวมงาน</span><input id="lgU" autocomplete="username" inputmode="text" placeholder="เช่น 495518"></label>
+    <label class="fld"><span>รหัสผ่าน</span><input id="lgP" type="password" autocomplete="current-password"></label>
+    <button class="btn block" id="lgGo">เข้าสู่ระบบ</button>
+    <p class="muted small" style="margin:12px 0 0;line-height:1.6">ใช้รหัสพนักงานและรหัสผ่านเดิมของระบบยานพาหนะได้เลย หรือใช้ชื่อ+รหัสผ่านศูนย์รวมงาน กฟส.อ่าวลึก</p>
+    ${hub?`<button class="btn block soft" style="margin-top:10px" onclick="useHub()">ใช้บัญชีศูนย์รวมงาน (${esc(hub)})</button>`:''}
+    <button class="btn block ghost" style="margin-top:10px" onclick="showRegister()">ยังไม่มีบัญชี? สมัครด้วยรหัสพนักงาน</button>`, true);
+  const go = async () => {
+    const u = $('lgU').value.trim(), p = $('lgP').value;
+    if (!u || !p) { toast('กรุณากรอกให้ครบ', true); return; }
+    rawSet('vh_u', u); rawSet('vh_p', p); closeSheet(); $('errBox').classList.add('hide'); busy(true,'กำลังเข้าสู่ระบบ…');
+    try { await load(false); } finally { busy(false); }
+  };
+  $('lgGo').onclick = go; $('lgP').onkeydown = e => { if (e.key==='Enter') go(); };
+  setTimeout(()=>$('lgU').focus(),150);
+}
+function useHub(){ rawSet('vh_u',null); rawSet('vh_p',null); closeSheet(); load(false); }
+function showRegister(){
+  sheet(`<h3>สมัครใช้งานระบบยานพาหนะ</h3>
+    <label class="fld"><span>รหัสพนักงาน</span><input id="rgE" inputmode="numeric" autocomplete="username"></label>
+    <label class="fld"><span>ชื่อ-นามสกุล</span><input id="rgN" autocomplete="name"></label>
+    <div class="row2"><label class="fld"><span>ตำแหน่ง</span><input id="rgPo"></label><label class="fld"><span>แผนก</span><input id="rgD"></label></div>
+    <label class="fld"><span>รหัสผ่าน (อย่างน้อย 6 ตัว)</span><input id="rgP" type="password" autocomplete="new-password"></label>
+    <div class="sbtns"><button class="btn ghost" onclick="showLogin()">กลับ</button><button class="btn" id="rgGo">สมัคร</button></div>`, true);
+  $('rgGo').onclick = async () => {
+    const d = {empId:$('rgE').value.trim(), name:$('rgN').value.trim(), position:$('rgPo').value.trim(), dept:$('rgD').value.trim(), password:$('rgP').value};
+    busy(true,'กำลังสมัคร…');
+    try { const j = await api('register', d); rawSet('vh_u', d.empId); rawSet('vh_p', d.password); closeSheet(); toast(j.message); await load(false); }
+    catch(e){ toast(e.message, true); } finally { busy(false); }
+  };
+}
+function openAccount(){
+  const m = me(), c = creds();
+  sheet(`<h3>👤 ${esc(m.name)}</h3>
+    <p class="muted" style="margin-top:-6px">${m.admin?'ผู้ดูแลระบบ':'ผู้ใช้งาน'} · เข้าด้วย${c.via==='vehicle'?'รหัสระบบยานพาหนะ':'บัญชีศูนย์รวมงาน'}</p>
+    <button class="btn block red" onclick="logout()">ออกจากระบบ</button>
+    <button class="btn block ghost" style="margin-top:10px" onclick="closeSheet()">ปิด</button>`);
+}
+function logout(){ rawSet('vh_u',null); rawSet('vh_p',null); LS.set('boot',null); S.d=null; closeSheet(); $('cars').innerHTML=''; $('hMe').innerHTML=''; showLogin(); }
+
 function showSetup(){
   const box = $('setupBox'); box.classList.remove('hide');
   box.innerHTML = `<h3 style="margin:0 0 6px;color:var(--pri2)">เชื่อมต่อหลังบ้าน</h3>
@@ -609,8 +659,9 @@ function showSetup(){
 
 function start(){
   if (!window.__MOCK__ && !apiUrl()) { showSetup(); return; }
-  if (!creds().user) { setTimeout(start, 800); return; }      // รอล็อกอินศูนย์รวมงาน (pea-hub.js)
-  if (S.d && S.d.me && S.d.me.name !== creds().user) S.d = null;   // เปลี่ยนผู้ใช้ ไม่ใช้ข้อมูลเก่า
+  const c = creds();
+  if (!c.user || !c.pass) { S.d = null; $('cars').innerHTML = ''; showLogin(); return; }
+  if (S.d && LS.get('bootUser') !== c.user) S.d = null;            // เปลี่ยนผู้ใช้ ไม่ใช้ข้อมูลเก่า
   render(); load(true);
 }
 try { if (window.top !== window.self || new URLSearchParams(location.search).get('from')==='old') $('oldBar').classList.remove('hide'); } catch(e){ $('oldBar').classList.remove('hide'); }
