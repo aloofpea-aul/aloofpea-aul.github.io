@@ -130,8 +130,22 @@ function decideRequest_(id, approve, who, note) {
   try {
     const names = {};
     if (r.type === 'swap') { names[r.payload.a] = 1; names[r.payload.b] = 1; } else { names[r.payload.a] = 1; names[r.payload.r] = 1; }
-    notifyPeople_(Object.keys(names), approve ? 'อนุมัติเปลี่ยนเวรแล้ว' : 'คำขอเปลี่ยนเวรไม่ได้รับอนุมัติ',
-      r.text + '\n' + st + 'โดย ' + who.name + (note ? '\nหมายเหตุ: ' + note : ''), approve ? '#5B1A63' : '#8A2B2B');
+    const fullOf = {}; readTable_(SH.PEOPLE).forEach(function (p) { fullOf[p.short] = String(p.full || p.short).replace(/\s+/g, ' '); });
+    let lines, title, btn = [];
+    if (approve) {
+      title = changes.map(function (c) { return thShort_(r.month, c.day) + ' ' + codeLabel_(c.g, c.code); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' · ');
+      lines = [];
+      changes.forEach(function (c) { lines.push(thShort_(r.month, c.day) + ' ' + codeLabel_(c.g, c.code)); lines.push('ผู้มอบเวร: ' + (fullOf[c.from] || c.from)); lines.push('ผู้อยู่เวรแทน: ' + (fullOf[c.to] || c.to)); });
+      if (r.reason) lines.push('เหตุผล: ' + r.reason);
+      lines.push('อนุมัติโดย ' + who.name + (note ? ' · ' + note : ''));
+      const u1 = webUrl_(''); if (u1) btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ตารางเวร', uri: u1 } });
+      const u2 = r.payload.g === 'emp' ? webUrl_('viewReport', { kind: 'leave', m: r.month, id: id }) : null;
+      if (u2) btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'บันทึกลาเวร (PDF)', uri: u2 } });
+    } else {
+      title = 'ไม่อนุมัติ'; lines = [r.text, 'โดย ' + who.name + (note ? '\nหมายเหตุ: ' + note : '')];
+    }
+    notifyPeople_(Object.keys(names), approve ? (r.type === 'swap' ? 'อนุมัติแลกเวรแล้ว' : 'อนุมัติลาเวรแล้ว') : 'คำขอเปลี่ยนเวร',
+      lines.join('\n'), approve ? '#5B1A63' : '#8A2B2B', title, btn);
   } catch (e) { log_('system', 'LINE error', r.month, String(e)); }
   return pubReq_(reqRows_().filter(function (x) { return x.id === id; })[0]);
 }

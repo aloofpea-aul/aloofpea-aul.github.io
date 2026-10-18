@@ -138,6 +138,26 @@ function readTable_(name) {
   });
 }
 
+function setConfigKey_(k, val) {
+  const sh = sheet_(SH.CONFIG); const v = sh.getDataRange().getValues();
+  const r = v.findIndex(function (row) { return row[0] === k; });
+  if (r < 0) sh.appendRow([k, val]); else sh.getRange(r + 1, 2).setValue(val);
+}
+
+/** ปรับข้อมูลครั้งเดียว (รันอัตโนมัติ): เบอร์คนงาน + เบอร์ห้องเวร */
+function migrate_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('MIG_2610B')) return;
+  const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
+  const si = h.indexOf('short'), pi = h.indexOf('phone');
+  const ph = { 'พยงค์': '0908621908', 'อาทิตย์': '0618593147', 'บุญล่อง': '0810027950', 'ย่าร้อหมาด': '0936192802' };
+  sh.getRange(2, pi + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
+  for (let i = 1; i < v.length; i++) if (ph[v[i][si]] && !String(v[i][pi] || '').trim()) sh.getRange(i + 1, pi + 1).setValue(ph[v[i][si]]);
+  const cfg = getConfig_();
+  if (!cfg.roomPhone) { setConfigKey_('roomPhone', "'075666918"); }
+  props.setProperty('MIG_2610B', '1');
+}
+
 function getConfig_() {
   const o = {}; readTable_(SH.CONFIG).forEach(function (r) { o[r.key] = r.value; }); return o;
 }
@@ -278,6 +298,7 @@ function doPost(e) {
   if (b.events) return lineWebhook_(b);            // มาจาก LINE
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
+    try { migrate_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
     // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----

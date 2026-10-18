@@ -278,8 +278,8 @@ nav.bot button{position:relative}
       <div id="sContacts"></div>
     </div>
     <div class="card">
-      <h3>LINE แจ้งเตือนก่อนเข้ากะ 5 นาที</h3>
-      <div class="muted" style="margin-bottom:6px">พนักงานแต่ละคนเพิ่มเพื่อน LINE OA แล้วพิมพ์ <b>ลงทะเบียน ชื่อ รหัส</b> (รหัสอยู่ในชีต Config: lineRegCode)</div>
+      <h3>LINE แจ้งเตือน</h3>
+      <div class="muted" style="margin-bottom:6px"><b>พนักงาน</b> แจ้งรายคนก่อนเข้าเวร 5 นาที (00:25 · 16:25 · วันหยุดเพิ่ม 08:25) — เพิ่มเพื่อน LINE OA แล้วพิมพ์ <b>ลงทะเบียน ชื่อ รหัส</b><br><b>คนงาน</b> ส่งสรุปรายสัปดาห์เข้ากลุ่มคนงานทุกวันจันทร์ 07:55 — เชิญ LINE OA เข้ากลุ่ม แล้วพิมพ์ในกลุ่ม <b>ตั้งกลุ่มคนงาน รหัส</b> · ในกลุ่มพิมพ์ <b>เวรคนงาน</b> ดูเวรวันนี้ได้ฟรี<br>(รหัสอยู่ในชีต Config: lineRegCode)</div>
       <div id="sLine"></div>
       <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="sStandby" style="width:20px;height:20px"> แจ้งคนเตรียมพร้อมด้วย (ใช้โควต้าเพิ่ม ~30 ข้อความ/เดือน)</label>
     </div>
@@ -890,7 +890,7 @@ function renderSet(){
   $('sAvoid').value=S.boot.config.avoidPairs||'';
   renderContacts();
   $('sStandby').checked=String(S.boot.config.notifyStandby)==='true';
-  $('sLine').innerHTML=[...S.boot.people.emp,...S.boot.people.wk].map(p=>`<div class="lk"><span>${esc(p.full)}</span><span style="font-weight:600;color:${p.line?'#1F5A2A':'#8A4B00'}">${p.line?'✓ ลงทะเบียนแล้ว':'ยังไม่ลงทะเบียน'}</span></div>`).join('');
+  $('sLine').innerHTML=[...S.boot.people.emp,...S.boot.people.wk].map(p=>`<div class="lk"><span>${esc(p.full)}</span><span style="font-weight:600;color:${p.line?'#1F5A2A':p.group==='WK'?'#5E5666':'#8A4B00'}">${p.line?'✓ ลงทะเบียนแล้ว':p.group==='WK'?'แจ้งผ่านกลุ่มคนงาน':'ยังไม่ลงทะเบียน'}</span></div>`).join('');
 }
 $('sAdd').onclick=()=>{
   const d=$('sNewDate').value,n=$('sNewName').value.trim(); if(!d||!n){msg('sMsg','ใส่วันที่และชื่อวันหยุด','warn');return;}
@@ -912,7 +912,9 @@ $('sSave').onclick=async()=>{
 
 /* ---------- เริ่ม ---------- */
 (async function(){
-  const view=new URLSearchParams(location.search).get('view')||'viewDaily';
+  const qs=new URLSearchParams(location.search), view=qs.get('view')||'viewDaily';
+  if(qs.get('kind')&&qs.get('m')) S.rPreset={kind:qs.get('kind'),m:qs.get('m'),id:qs.get('id')||undefined,day:qs.get('day')?+qs.get('day'):undefined};
+  if(qs.get('g')==='wk'){ S.dGroup='wk'; document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x.dataset.g==='wk')); }
   const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };
   const cached=LS.get('boot');
   S.contacts=LS.get('contacts')||{}; loadContacts();
