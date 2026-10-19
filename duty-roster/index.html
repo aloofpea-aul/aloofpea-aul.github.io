@@ -85,7 +85,11 @@ nav.bot button{position:relative}
 .loading{padding:40px;text-align:center;color:var(--mut)}
 
 /* ===================== รายงาน (พิมพ์) ===================== */
-#printArea{display:flex;flex-direction:column;gap:16px;align-items:safe center;overflow-x:auto}
+#printArea{display:flex;flex-direction:column;gap:16px;align-items:safe center;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+/* หน้ารายงาน: คอมเห็นเอกสารเต็มหน้า · มือถือเลื่อนซ้าย-ขวาได้ */
+body.wide .app{max-width:none}
+body.wide header.top>.row{max-width:736px;width:100%;margin:0 auto}
+body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 .page{width:11in;height:8.5in;background:#fff;color:#000;font-family:'Sarabun',sans-serif;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.2);flex:0 0 auto}
 .rp{padding:.15in .2in .1in;font-size:12.5px;display:flex;flex-direction:column;gap:1px;height:100%}
 .rp .ln{display:grid;grid-template-columns:4.35in 1fr;padding-left:.2in}
@@ -388,6 +392,7 @@ const fullName=s=>{const p=[...S.boot.people.emp,...S.boot.people.wk].find(x=>x.
 /* ---------- นำทาง ---------- */
 function show(v){
   ['viewDaily','viewGen','viewReport','viewReq','viewSet'].forEach(x=>$(x).classList.toggle('hide',x!==v));
+  document.body.classList.toggle('wide',v==='viewReport');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   ({viewDaily:renderDaily,viewGen:renderGen,viewReport:renderReport,viewReq:renderReq,viewSet:renderSet})[v]();
   window.scrollTo(0,0);
