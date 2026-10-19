@@ -40,6 +40,10 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .ppl{display:flex;flex-direction:column;gap:6px;margin-top:2px}
 .pp{display:flex;align-items:center;gap:6px;min-height:40px}
 .pp .n{font-size:15px;font-weight:600;flex:1;min-width:0}
+.pp .n small.cg{display:block;font-size:11.5px;font-weight:600;color:#7A3E00;margin-top:1px}
+.chg{border-left:4px solid #E08A00;background:#FFF8EC}
+.chg .li{font-size:13px;padding:6px 0;border-top:1px dashed #EAD9BF}.chg .li:first-of-type{border-top:0}
+.chg .li b{color:#5B3300}.chg .li .muted{font-size:11.5px}
 .cb{width:40px;height:40px;border-radius:20px;border:1px solid var(--line);background:#fff;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 40px}
 .cb.tel{color:#1F5A2A;border-color:#BFE0C5;background:#F1FAF2}
 .cb.ln{color:#fff;background:#06C755;border-color:#06C755;font-size:11px;font-weight:700}
@@ -184,7 +188,8 @@ fieldset:disabled{opacity:.55}
       <div style="font-size:17px;font-weight:700" id="dTitle"></div>
       <div class="muted" id="dTag" style="font-weight:600"></div>
     </div>
-    <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="dChg" class="card chg hide"></div>
+      <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="card hide" id="dRep"></div>
     <div class="card" id="dWx"></div>
     <button class="btn ghost hide" id="dSign" style="width:100%">พิมพ์บัญชีลงนามการอยู่เวรของวันนี้</button>
@@ -227,7 +232,7 @@ fieldset:disabled{opacity:.55}
       <div class="grid2">
         <label class="f">เดือน<select id="rMonth"></select></label>
         <label class="f">รายงาน<select id="rKind">
-          <optgroup label="ตารางเวรประจำเดือน"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option></optgroup>
+          <optgroup label="ตารางเวรประจำเดือน"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option><option value="chg">รายการเปลี่ยนแปลงเวร (แนบเบิกค่าตอบแทน)</option></optgroup>
           <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option><option value="insporder">คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน)</option></optgroup></select></label>
         <label class="f rRoster">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
         <label class="f rRoster">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
@@ -412,6 +417,15 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset
 
 /* ---------- เวรรายวัน ---------- */
 function rankOf(){const o={};[...S.boot.people.emp,...S.boot.people.wk].forEach((p,k)=>o[p.short]=k);return n=>(n in o?o[n]:999);}
+/* การเปลี่ยนเวรของวัน i (อนุมัติแล้ว) — ล่าสุดของแต่ละคน+ช่วง */
+const CODE_TH={'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','S':'เตรียมพร้อม'};
+function dayChanges(data,group,i){
+  const by={}; (S.mrAll||[]).forEach(r=>by[r.id]=r);
+  const L=(data.changes||[]).filter(c=>c.g===group&&c.day===i+1);
+  const last={}; L.forEach(c=>last[c.to+'|'+c.code]=c);
+  return Object.values(last).map(c=>{const r=by[c.req]||{}, back=r.type==='swap'?L.find(x=>x.req===c.req&&x.from===c.to):null;
+    return Object.assign({},c,{type:r.type,back,reason:r.reason||''});});
+}
 function shiftRows(data,group,i){
   const day=data.days[i];
   const rank=rankOf(); const who=(map,test)=>Object.keys(map).filter(n=>test(map[n][i])).sort((x,y)=>rank(x)-rank(y));   // ตำแหน่งสูงกว่าขึ้นก่อน (ตามลำดับในรายงาน)
@@ -444,6 +458,7 @@ async function renderDaily(){
       document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x===b));renderDaily();});
   }
   const mo=await loadMonth(S.dMonth); const data=mo.data;
+  try{ S.mrAll=await monthReqs(S.dMonth); }catch(e){ S.mrAll=[]; }
   setBadge(mo.status);
   $('dDays').innerHTML=data.days.map(d=>`<button data-d="${d.d}" class="${d.hol?'hol':d.off?'off':''} ${d.d===S.dDay?'on':''}"><small>${TH_WD[d.wd]}</small><b>${d.d}</b></button>`).join('');
   $('dDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.dDay=+b.dataset.d;renderDaily();});
@@ -451,20 +466,26 @@ async function renderDaily(){
   const day=data.days[S.dDay-1],{m}=parseKey(S.dMonth);
   $('dTitle').textContent=TH_WDF[day.wd]+' '+day.d+' '+TH_MS[m-1];
   $('dTag').textContent=day.hol?'วันหยุดพิเศษ':day.off?'วันหยุด · ได้ค่าตอบแทน':'วันทำการ';
+  const CH=dayChanges(data,S.dGroup,S.dDay-1), NOTE={};
+  CH.forEach(c=>{NOTE[c.to]=(c.type==='swap'?'⇄ แลกเวรกับ ':'↻ อยู่แทน ')+c.from;});
+  $('dChg').classList.toggle('hide',!CH.length);
+  $('dChg').innerHTML='<div class="row" style="justify-content:space-between"><b style="font-size:14px;color:#5B3300">การเปลี่ยนเวรวันนี้</b><span class="muted">อนุมัติแล้ว '+CH.length+' รายการ</span></div>'+
+    CH.map(c=>`<div class="li"><b>${esc(CODE_TH[c.code]||c.code)}</b> &nbsp;${esc(c.from)} → <b>${esc(c.to)}</b>
+      <div class="muted">${c.type==='swap'?'แลกเวร'+(c.back?' (รับ'+esc(CODE_TH[c.back.code]||c.back.code)+'คืน)':''):'ลาเวร / จัดเวรแทน'}${c.reason?' · '+esc(c.reason):''} · อนุมัติโดย ${esc(String(c.by||'').replace(/^นาย|^นางสาว|^นาง/,'').split(' ')[0])} ${esc(c.at?c.at.slice(8,10)+'/'+c.at.slice(5,7):'')}</div></div>`).join('');
   $('dRows').innerHTML=shiftRows(data,S.dGroup,S.dDay-1).map(r=>`<div class="card duty"><div class="chip" style="background:${r.bg};color:${r.fg}"><small>${r.l}</small><b>${r.n}</b></div><div style="flex:1;min-width:0"><div class="tm">${r.t}</div>${
-    typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(personRow).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
+    typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(n=>personRow(n,NOTE[n])).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
   $('dSign').classList.toggle('hide',S.dGroup!=='emp');
   renderRepCard(data);
   renderWx();
   $('dSign').onclick=()=>{S.rPreset={kind:'sign',m:S.dMonth,day:S.dDay};show('viewReport');};
 }
 const TEL_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
-function personRow(n){
+function personRow(n,note){
   const c=(S.contacts||{})[n]||{};
   const tel=c.phone?`<a class="cb tel" href="tel:${esc(c.phone)}" aria-label="โทรหา ${esc(n)} ${esc(c.phone)}">${TEL_SVG}</a>`:'';
   const ln=c.lineId?`<a class="cb ln" href="https://line.me/ti/p/~${encodeURIComponent(c.lineId)}" target="_blank" rel="noopener" aria-label="เปิด LINE ของ ${esc(n)} เพื่อโทร">LINE</a>`:'';
   const gap='<span style="width:40px;flex:0 0 40px" aria-hidden="true"></span>';
-  return `<div class="pp"><span class="n">${esc(n)}</span>${tel||(ln?gap:'')}${ln||(tel?gap:'')}</div>`;
+  return `<div class="pp"><span class="n">${esc(n)}${note?`<small class="cg">${esc(note)}</small>`:''}</span>${tel||(ln?gap:'')}${ln||(tel?gap:'')}</div>`;
 }
 /* เบอร์ติดต่อ — ส่งให้เฉพาะผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ · เก็บในเครื่องเพื่อเปิดทันที */
 function hubCreds(){try{return {user:localStorage.getItem('pea_aoluek_username')||'',pass:localStorage.getItem('pea_aoluek_password')||''};}catch(e){return {user:'',pass:''};}}
@@ -643,17 +664,21 @@ async function drawReport(){
     $('rHint').textContent=k==='leavelog'?'ตั้งค่าเครื่องพิมพ์: A4 แนวนอน · ขอบ 0 (None)':'ตั้งค่าเครื่องพิมพ์: A4 แนวตั้ง · ขอบ 0 (None)';
     return drawDocs(k); }
   $('rHint').textContent='ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"'; S.drawSeq=(S.drawSeq||0)+1;
-  const r=await currentReportData(); $('rStatus').value=r.status==='อนุมัติแล้ว'?'อนุมัติแล้ว':'ร่าง'; setBadge(r.status);
+  const r=await currentReportData(); try{ if(r.key&&r.key!=='__preview') S.mrAll=await monthReqs(r.key); }catch(e){}
+  $('rStatus').value=r.status==='อนุมัติแล้ว'?'อนุมัติแล้ว':'ร่าง'; setBadge(r.status);
   const cfg=S.boot.config, dt=thDate($('rDate').value);
   let html='';
-  if(k==='emp'||k==='all') html+=empPage(r,cfg,dt,'memo')+empPage(r,cfg,dt,'order');
+  const CL=chgList(r.data);
+  if(k==='emp'||k==='all') html+=empPage(r,cfg,dt,'memo')+empPage(r,cfg,dt,'order')+(CL.length?chgPage(r,cfg,CL):'');
+  if(k==='chg') html+=CL.length?chgPage(r,cfg,CL):'<div class="note">เดือนนี้ยังไม่มีการเปลี่ยน/แลกเวรที่อนุมัติแล้ว</div>';
   if(k==='wk'||k==='all') html+=wkPage(r,cfg,dt);
   $('printArea').innerHTML=html;
 }
 function empPage(r,cfg,docDate,sheet){
   const g=r.data,{y,m}=parseKey(r.key),N=g.days.length,mName=TH_MONTH[m-1],yTh=y+543;
   const colBg=d=>d.hol?'#8EA9DB':d.off?'#F4B084':'#FFFFFF';
-  let rows='';
+  let rows=''; const CHG={}, CL=chgList(g);
+  CL.forEach((c,k)=>{CHG[c.to+'|'+c.day]=CHG[c.to+'|'+c.day]||String(k+1);});
   S.boot.people.emp.forEach(p=>{
     const codes=g.emp[p.short]||[];
     const has=(c,i)=>i===0?c==='1':i===1?c==='2,3':(c==='3'||c==='2,3');
@@ -663,7 +688,8 @@ function empPage(r,cfg,docDate,sheet){
       if(i===0) rows+=`<td rowspan="3" style="white-space:nowrap;padding:0 3px">${esc(p.full)}</td>`;
       rows+=`<td style="text-align:left;padding-left:4px;white-space:nowrap">ช่วงที่ ${i+1}</td>`;
       codes.forEach((c,di)=>{const on=has(c,i);const sb=i===0&&c==='S';
-        rows+=`<td style="background:${on?'#FFFF00':sb?'#BFBFBF':colBg(g.days[di])}">${on?(i+1):''}</td>`;});
+        const ch=on&&CHG[p.short+'|'+(di+1)];
+        rows+=`<td style="background:${on?'#FFFF00':sb?'#BFBFBF':colBg(g.days[di])};${ch?'box-shadow:inset 0 0 0 1.6px #D00000;position:relative':''}">${on?(i+1):''}${ch?`<sup style="position:absolute;top:-1px;right:1px;font-size:7px;color:#D00000;font-weight:700">${ch}</sup>`:''}</td>`;});
       rows+=`<td>${cnt[i]||''}</td>`;
       if(i===0) rows+=`<td rowspan="3">${tot}</td>`;
       rows+='</tr>';
@@ -678,7 +704,7 @@ function empPage(r,cfg,docDate,sheet){
     <div><span class="sw" style="background:#F4B084"></span>วันเสาร์</div>
     <div><span class="sw" style="background:#F4B084"></span>วันอาทิตย์</div>
     <div><span class="sw" style="background:#4472C4"></span>วันหยุดพิเศษ</div>
-    <div><span class="sw" style="background:#A6A6A6"></span>เตรียมพร้อม</div>
+    <div><span class="sw" style="background:#A6A6A6"></span>เตรียมพร้อม</div>${CL.length?'<div><span class="sw" style="background:#FFFF00;box-shadow:inset 0 0 0 1.6px #D00000"></span>เปลี่ยน/แลกเวร<br>(ดูรายการแนบท้าย)</div>':''}
     <div style="display:block;line-height:1.3">(กรณี ได้รับคำสั่งให้ไปปฏิบัติงานฉุกเฉินให้เบิกค่าล่วงเวลา หรือ ค่าทำงานวันหยุด)</div></div>`;
   const top=`<img src="pea-logo.png" alt="ตราการไฟฟ้าส่วนภูมิภาค" style="width:.78in;height:.63in;object-fit:contain;margin-left:.18in">
     <div class="ln"><div>จาก &nbsp;${esc(cfg.headTitle)}</div><div>ถึง ${esc(cfg.mgrTitle)}</div></div>
@@ -706,6 +732,22 @@ function empPage(r,cfg,docDate,sheet){
   return `<div class="page">${revTag}<div class="rp">${top}
     <div style="display:flex;gap:.08in;align-items:flex-start;margin-top:2px"><table class="t">${head}${rows}</table>${legend}</div>
     ${bottom}</div></div>`;
+}
+function chgList(g){
+  const by={}; (S.mrAll||[]).forEach(r=>by[r.id]=r);
+  return (g.changes||[]).filter(c=>c.g==='emp').map(c=>Object.assign({},c,{type:(by[c.req]||{}).type,reason:(by[c.req]||{}).reason||''})).sort((a,b)=>a.day-b.day||String(a.at).localeCompare(b.at));
+}
+function chgPage(r,cfg,CL){
+  const {y,m}=parseKey(r.key);
+  const rows=CL.map((c,k)=>`<tr><td>${k+1}</td><td>${c.day} ${TH_MS[m-1]}</td><td>${esc(CODE_TH[c.code]||c.code)}</td><td style="text-align:left">${esc(fullName(c.from))}</td><td style="text-align:left">${esc(fullName(c.to))}</td><td>${c.type==='swap'?'แลกเวร':'ลาเวร/จัดเวรแทน'}</td><td style="text-align:left">${esc(c.reason)}</td><td style="text-align:left">${esc(c.by||'')}<br><span style="font-size:10px">${esc(c.at||'')}</span></td></tr>`).join('');
+  return `<div class="page"><div class="rp" style="font-size:13px">
+    <div style="text-align:center;font-weight:700;font-size:16px;margin-top:.1in">รายการเปลี่ยนแปลงเวร (แนบท้ายตารางเวร) ประจำเดือน ${TH_MONTH[m-1]} ${y+543}</div>
+    <div style="text-align:center;margin-bottom:6px">${esc(cfg.office)} · ช่องที่มีกรอบแดงในตารางเวร ตรงกับลำดับที่ในตารางนี้</div>
+    <table class="t" style="width:100%"><tr><th style="width:.35in">ที่</th><th style="width:.8in">วันที่</th><th style="width:.9in">ช่วงเวร</th><th>ผู้มอบเวร (เดิม)</th><th>ผู้อยู่เวร (ใหม่)</th><th style="width:1in">ประเภท</th><th>เหตุผล</th><th>อนุมัติโดย</th></tr>${rows}</table>
+    <div style="margin-top:.15in">รวม ${CL.length} รายการ · ข้อมูลจากระบบตารางเวรแก้ไฟ ณ ${esc(thDate(todayIso()))}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;margin-top:.45in;text-align:center;line-height:1.8">
+      <div>ขอรับรองว่าถูกต้อง<br><br>(ลงชื่อ) .............................................<br>( ${esc(cfg.headName)} )<br>${esc(cfg.headTitle)}</div>
+      <div>อนุมัติ<br><br>(ลงชื่อ) .............................................<br>( ${esc(cfg.mgrName)} )<br>${esc(cfg.mgrTitle)}</div></div></div></div>`;
 }
 function wkPage(r,cfg,docDate){
   const g=r.data,{y,m}=parseKey(r.key),N=g.days.length,yTh=y+543;
