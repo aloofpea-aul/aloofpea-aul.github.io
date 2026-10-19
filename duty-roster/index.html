@@ -149,6 +149,7 @@ body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 .doc.m2 p.ind{margin-top:8px}.doc.m2 .ck .bx{margin:0 4px 0 0}.doc.m2 .ck .bx~.bx{margin-left:14px}
 .doc.m2 .fv{display:inline-block;border-bottom:1px dotted #000;padding:0 3px;line-height:1.05;text-indent:0;text-align:center}
 .doc.m2.nodot .fv{border-bottom:0;padding:0 1px;min-width:0!important}.doc.m2.nodot .fv.e{border-bottom:1px dotted #000;min-width:30mm!important}
+.doc.m2 .io{display:grid;grid-template-columns:7mm 62mm 1fr;padding-left:25mm;margin-top:3mm}
 .doc.m2 .it{display:flex;padding-left:25mm;margin-top:4px}.doc.m2 .it .no{width:7mm;flex:0 0 7mm}
 .doc.m2 .sig{line-height:1.3;text-align:center;width:80mm}
 .wxg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
@@ -982,26 +983,29 @@ async function monthReports(key){
   return f.catch(()=>({}));
 }
 /* คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน) */
+/* ย่อเลขวันที่ต่อเนื่อง: 1,2,3,4,5,21,22 → ๑–๕, ๒๑, ๒๒ */
+function dayRuns(ds){ const out=[]; for(let i=0;i<ds.length;){ let j=i; while(j+1<ds.length&&ds[j+1]===ds[j]+1) j++;
+  if(j-i>=2) out.push(ds[i]+'–'+ds[j]); else for(let k=i;k<=j;k++) out.push(String(ds[k])); i=j+1; } return THD(out.join(', ')); }
 function inspOrderPage(key,data,cfg,sgn){
   const {y,m}=parseKey(key), N=data.days.length, od=data.inspOrderDoc||{}, ins=data.insp||[];
   const list=(S.boot.inspectors||[]).slice(), byShort={}; list.forEach(x=>byShort[x.short]=x);
   const order=[]; ins.forEach(n=>{ if(n&&order.indexOf(n)<0) order.push(n); });
   order.sort((a,b)=>((byShort[a]||{}).order||99)-((byShort[b]||{}).order||99));
-  const yy=od.date?String(+od.date.slice(0,4)+543):String(y+543);
+  const yy=od.date?String(+od.date.slice(0,4)+543):String(y+543), mY=TH_MONTH[m-1]+' '+THD(y+543);
   const items=order.map((n,i)=>{const p=byShort[n]||{full:fullName(n),pos:''};const ds=ins.map((x,k)=>x===n?k+1:0).filter(Boolean);
-    return `<div style="display:grid;grid-template-columns:62mm 1fr;margin-top:6mm;padding-left:38mm"><div>${THD(i+1)}.${esc(p.full)}</div><div>ตำแหน่ง ${esc(THD(p.pos||''))}</div></div>
-      <div style="text-align:center;margin-top:1mm">ตรวจเวรวันที่ ${THD(ds.join(','))}</div>`;}).join('');
-  return `<div class="page a4p"><div class="doc std">
+    return `<div class="io"><span>${THD(i+1)}.</span><span>${esc(p.full)}</span><span>ตำแหน่ง ${esc(THD(p.pos||''))}</span>
+      <span></span><span style="grid-column:2/4">ตรวจเวรวันที่ ${dayRuns(ds)} ${mY}</span></div>`;}).join('');
+  return `<div class="page a4p"><div class="doc std m2 nodot">
     ${ORG(true,40)}
-    <div style="text-align:center;margin-top:4mm">คำสั่ง &nbsp; การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก</div>
-    <div style="text-align:center">ที่ ต.๒ กฟส.อล. ${od.no?FL(THD(od.no),50):'<span class="fl" style="min-width:50px">&nbsp;</span>'} /${THD(yy)}</div>
-    <div style="text-align:center">เรื่อง &nbsp; แต่งตั้งผู้ตรวจเวรแก้กระแสไฟฟ้าขัดข้อง</div>
-    <div style="border-bottom:1px solid #000;margin:3mm -8mm 6mm"></div>
-    <div class="ind" style="text-align:justify">เพื่อให้การปฏิบัติงานอยู่เวรแก้กระแสไฟฟ้าขัดข้อง ${esc(cfg.office)} เป็นไปด้วยความเรียบร้อย ${esc(cfg.office)} จึงแต่งตั้งผู้ตรวจเวรประจำเดือน ${TH_MONTH[m-1]} ${THD(y+543)} ดังนี้</div>
-    ${items}
-    <div style="text-align:center;margin-top:10mm">ทั้งนี้ &nbsp;ตั้งแต่วันที่ ${THD('1-'+N)} ${TH_MONTH[m-1]} ${THD(y+543)}</div>
-    <div style="text-align:center">สั่ง ณ วันที่ ${od.date?THD(isoLong(od.date)):'<span class="fl" style="min-width:150px">&nbsp;</span>'}</div>
-    <div class="sig" style="margin-left:65mm;margin-top:18mm">(${esc(sgn.name)})<br>${esc(THD(sgn.title))}</div>
+    <div style="text-align:center;margin-top:4mm">คำสั่ง การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก</div>
+    <div style="text-align:center">ที่ ต.๒ กฟส.อล. ${od.no?esc(THD(od.no)):'<span class="fv e" style="min-width:18mm"></span>'}/${THD(yy)}</div>
+    <div style="text-align:center">เรื่อง แต่งตั้งผู้ตรวจเวรแก้กระแสไฟฟ้าขัดข้อง</div>
+    <div style="text-align:center;margin:1mm 0 6mm">-------------------------------------</div>
+    <p class="ind">เพื่อให้การปฏิบัติงานอยู่เวรแก้กระแสไฟฟ้าขัดข้องของ ${esc(cfg.office)} เป็นไปด้วยความเรียบร้อย ${esc(cfg.office)} จึงแต่งตั้งผู้ตรวจเวรประจำเดือน ${mY} ดังนี้</p>
+    <div style="margin-top:3mm">${items}</div>
+    <p class="ind" style="margin-top:6mm">ทั้งนี้ ตั้งแต่วันที่ ${THD('1')}–${THD(N)} ${mY}</p>
+    <div style="margin-top:1.3em;padding-left:50mm">สั่ง ณ วันที่ ${od.date?THD(isoLong(od.date)):'<span class="fv e" style="min-width:40mm"></span>'}</div>
+    <div style="margin-top:3.9em;padding-left:80mm;line-height:1.25"><div style="display:inline-block;text-align:center">(${esc(sgn.name)})<br>${esc(THD(sgn.title))}</div></div>
   </div></div>`;
 }
 $('rIoSave').onclick=async()=>{
