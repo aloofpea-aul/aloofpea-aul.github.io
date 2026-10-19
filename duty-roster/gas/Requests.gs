@@ -149,3 +149,114 @@ function decideRequest_(id, approve, who, note) {
   } catch (e) { log_('system', 'LINE error', r.month, String(e)); }
   return pubReq_(reqRows_().filter(function (x) { return x.id === id; })[0]);
 }
+
+/* ======================================================================
+ *  ผู้ตรวจเวร (หมุนคนละ 3 วัน) + รายงานการอยู่เวร (กรอกจากแอป/ลิงก์ LINE)
+ * ====================================================================== */
+
+/** ผู้ตรวจเวรตามลำดับ (คอลัมน์ inspOrder ในชีต People ว่าง = ไม่ใช่ผู้ตรวจ) */
+function inspectors_() {
+  peopleCols_();
+  return readTable_(SH.PEOPLE).filter(function (r) { return r.inspOrder !== '' && r.inspOrder != null && Number(r.inspOrder) > 0 && r.active !== false && r.active !== 'FALSE'; })
+    .sort(function (a, b) { return Number(a.inspOrder) - Number(b.inspOrder); })
+    .map(function (r) { return { short: r.short, full: String(r.full).replace(/\s+/g, ' ').trim(), pos: String(r.inspPos || '').trim(), order: Number(r.inspOrder) }; });
+}
+/** ตารางผู้ตรวจของเดือน: คนละ blockDays วันต่อกัน ต่อจากเดือนก่อน */
+function inspGenerate_(y, m, prevData) {
+  const list = inspectors_().map(function (x) { return x.short; }); const N = daysInMonth_(y, m), out = [];
+  if (!list.length) return { insp: [], inspAfter: null };
+  const block = Number(getConfig_().inspBlockDays || 3);
+  let st = prevData && prevData.inspAfter;
+  if (!st || list.indexOf(st.who) < 0) {
+    const last = prevData && prevData.insp && prevData.insp.length ? prevData.insp[prevData.insp.length - 1] : null;
+    const i = list.indexOf(last);
+    st = { who: list[(i + 1) % list.length], used: 0 };        // เริ่มคนถัดไปจากวันสุดท้ายของเดือนก่อน
+  }
+  let who = st.who, used = st.used;
+  for (let d = 0; d < N; d++) {
+    if (used >= block) { who = list[(list.indexOf(who) + 1) % list.length]; used = 0; }
+    out.push(who); used++;
+  }
+  return { insp: out, inspAfter: { who: who, used: used } };
+}
+/** เติมตารางผู้ตรวจให้เดือนที่ยังไม่มี (ไม่แตะเดือนที่กำหนดเองแล้ว) */
+function ensureInsp_(key) {
+  const mo = getMonth_(key); if (!mo) return null;
+  if (mo.data.insp && mo.data.insp.length) return mo;
+  const y = +key.slice(0, 4), m = +key.slice(5, 7), prev = getMonth_(prevKey_(y, m));
+  const pd = prev ? ((prev.data.insp && prev.data.insp.length) ? prev.data : (ensureInsp_(prev.month) || prev).data) : null;
+  const g = inspGenerate_(y, m, pd);
+  mo.data.insp = g.insp; mo.data.inspAfter = g.inspAfter;
+  saveMonth_(key, mo.status, mo.data, mo.stateAfter, mo.note);
+  return mo;
+}
+function inspOf_(ymd) {
+  const mo = getMonth_(ymd.slice(0, 7)); if (!mo || !mo.data.insp) return '';
+  return mo.data.insp[+ymd.slice(8, 10) - 1] || '';
+}
+
+/* ---- ลิงก์ลงรายงานแบบมีลายเซ็น (ไม่ต้องล็อกอิน) ---- */
+function repSecret_() {
+  const p = PropertiesService.getScriptProperties(); let s = p.getProperty('REP_SECRET');
+  if (!s) { s = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('REP_SECRET', s); }
+  return s;
+}
+function repToken_(k, short, role, exp) {
+  const sig = Utilities.computeHmacSha256Signature(k + '|' + short + '|' + role + '|' + exp, repSecret_());
+  return Utilities.base64EncodeWebSafe(sig).replace(/=+$/, '').slice(0, 24);
+}
+function repLink_(k, short, role) {
+  const exp = Date.now() + 48 * 3600000;
+  return webUrl_('viewDaily', { rep: k, u: short, r: role, x: exp, t: repToken_(k, short, role, exp) });
+}
+/** ชุดเวรของคนนี้ที่กำลังอยู่ หรือเพิ่งจบไม่เกิน 12 ชม. → 'yyyy-MM-dd|p1' / '|p3' */
+function myRecentBlock_(short) {
+  const now = Date.now(), today = bkkYmd_(), cand = [];
+  [addDays_(today, -1), today].forEach(function (d) {
+    const c = empCode_(d, short);
+    if (c === '1') cand.push({ k: d + '|p1', s: new Date(d + 'T00:30:00+07:00').getTime(), e: new Date(d + 'T08:30:00+07:00').getTime() });
+    if (c === '3' || c === '2,3') cand.push({ k: d + '|p3', s: new Date(d + 'T' + (c === '3' ? '16:30' : '08:30') + ':00+07:00').getTime(), e: new Date(addDays_(d, 1) + 'T00:30:00+07:00').getTime() });
+  });
+  const ok = cand.filter(function (b) { return now >= b.s - 3600000 && now <= b.e + 12 * 3600000; });
+  return ok.length ? ok[ok.length - 1] : null;
+}
+
+/* ---- เก็บรายงาน: ชีต Reports  key | data(JSON) | updatedAt | by ---- */
+function repSheet_() {
+  let sh = sheet_('Reports');
+  if (!sh) { sh = ss_().insertSheet('Reports'); sh.getRange(1, 1, 1, 4).setValues([['key', 'data', 'updatedAt', 'by']]).setFontWeight('bold'); sh.setFrozenRows(1); sh.getRange('A:A').setNumberFormat('@'); }
+  return sh;
+}
+function reportsOf_(month) {
+  const sh = repSheet_(); if (sh.getLastRow() < 2) return {};
+  const out = {};
+  sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues().forEach(function (r) {
+    const k = String(r[0]).replace(/^'/, '');
+    if (k.indexOf(month) === 0) { try { out[k] = JSON.parse(r[1] || '{}'); out[k]._by = r[3]; out[k]._at = r[2] instanceof Date ? Utilities.formatDate(r[2], TZ, 'd/M/yyyy HH:mm') : String(r[2]); } catch (e) {} }
+  });
+  return out;
+}
+const DUTY_FIELDS_ = ['arr', 'dep', 'hv', 'lv', 'temp', 'comm', 'att', 'other'];
+const INSP_FIELDS_ = ['insp'];
+/** b: { k, data, pin? | u, r, x, t } */
+function saveReport_(b) {
+  const k = String(b.k || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k)) throw new Error('รหัสรายงานไม่ถูกต้อง');
+  let fields, by;
+  const who = approverByPin_(b.pin);
+  if (who) { fields = DUTY_FIELDS_.concat(INSP_FIELDS_); by = who.short || who.name; }
+  else {
+    if (!b.t || Number(b.x) < Date.now() || repToken_(b.r === 'insp' ? k.slice(0, 10) : k, b.u, b.r, b.x) !== b.t) throw new Error('ลิงก์หมดอายุหรือไม่ถูกต้อง — ขอลิงก์ใหม่ทาง LINE (พิมพ์ "รายงานเวร" หรือ "ตรวจเวร")');
+    if (b.r === 'insp') { if (b.k.slice(0, 10) !== k.slice(0, 10)) throw new Error('ไม่ใช่วันที่ตรวจ'); fields = INSP_FIELDS_; }
+    else fields = DUTY_FIELDS_;
+    by = b.u;
+  }
+  const sh = repSheet_(), v = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues() : [];
+  let row = -1, cur = {};
+  for (let i = 0; i < v.length; i++) if (String(v[i][0]).replace(/^'/, '') === k) { row = i + 2; try { cur = JSON.parse(v[i][1] || '{}'); } catch (e) {} break; }
+  fields.forEach(function (f) { if (b.data && f in b.data) cur[f] = b.data[f]; });
+  if (fields === INSP_FIELDS_ && cur.insp) cur.insp.by = by;
+  const rec = ["'" + k, JSON.stringify(cur), new Date(), by];
+  if (row > 0) sh.getRange(row, 1, 1, 4).setValues([rec]); else sh.appendRow(rec);
+  log_(by, 'รายงานเวร', k.slice(0, 7), k + ' ' + fields.join(','));
+  return reportsOf_(k.slice(0, 7))[k];
+}

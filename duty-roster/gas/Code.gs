@@ -157,6 +157,36 @@ function migrate_() {
   if (!cfg.roomPhone) { setConfigKey_('roomPhone', "'075666918"); }
   props.setProperty('MIG_2610B', '1');
 }
+/** ผู้ตรวจเวร 4 คน + ตารางตรวจเดือน ต.ค. 2569 ตามคำสั่งที่ออกแล้ว + เลขที่อนุมัติตาราง ต.ค. */
+function migrateInsp_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('MIG_INSP1')) return;
+  const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
+  const si = h.indexOf('short'), oi = h.indexOf('inspOrder'), pi = h.indexOf('inspPos');
+  const want = [['มานศักดิ์', 'นายมานศักดิ์ พิลาฤทธิ์', 'หผ.ปร.กฟส.อ่าวลึก'], ['นงคราญ', 'นางสาวนงคราญ ยศศิริ', 'หผ.บง.กฟส.อ่าวลึก'],
+    ['พัชรียา', 'นางสาวพัชรียา เรียงสันเทียะ', 'ชผ.บง.กฟส.อ่าวลึก'], ['นทีธร', 'นายนทีธร เชียรแก้ว', 'ชผ.ผค.กฟส.อ่าวลึก']];
+  want.forEach(function (w, k) {
+    let r = -1; for (let i = 1; i < v.length; i++) if (v[i][si] === w[0]) { r = i; break; }
+    if (r < 0) {
+      const base = { group: 'INSP', rotOrder: 0, reportOrder: 50, short: w[0], full: w[1], active: true };
+      const row = h.map(function (col) { return base[col] != null ? base[col] : ''; }); sh.appendRow(row); r = sh.getLastRow() - 1; v.push(row);
+    }
+    if (!v[r][oi]) sh.getRange(r + 1, oi + 1).setValue(k + 1);
+    if (!v[r][pi]) sh.getRange(r + 1, pi + 1).setValue(w[2]);
+  });
+  const oct = getMonth_('2026-10');
+  if (oct) {
+    if (!oct.data.insp || !oct.data.insp.length) {
+      const map = { 'มานศักดิ์': [1, 2, 3, 4, 5, 21, 22, 29], 'นงคราญ': [6, 7, 8, 9, 10, 23, 24, 30], 'พัชรียา': [11, 12, 13, 14, 15, 25, 26, 31], 'นทีธร': [16, 17, 18, 19, 20, 27, 28] };
+      const arr = []; Object.keys(map).forEach(function (n) { map[n].forEach(function (d) { arr[d - 1] = n; }); });
+      oct.data.insp = arr; oct.data.inspAfter = null;
+    }
+    if (!oct.data.approval || !oct.data.approval.no) oct.data.approval = { no: 'ต.2กฟส.อล.(กป.)17/2569', date: '2026-09-30' };
+    if (!oct.data.inspOrderDoc) oct.data.inspOrderDoc = { no: '', date: '2026-09-30' };
+    saveMonth_('2026-10', oct.status, oct.data, oct.stateAfter, oct.note);
+  }
+  props.setProperty('MIG_INSP1', '1');
+}
 
 /** ชั่วโมงที่เหลือจนจบเวรพนักงานปัจจุบัน (08:30 / 16:30 / 00:30) */
 function shiftHoursLeft_() {
@@ -244,6 +274,7 @@ function previewMonth_(key, pair) {
     off = scores.slice().sort(function (p, q) { return p.score - q.score || p.offset - q.offset; })[0].offset;
   } else if (/^[0-3]$/.test(String(pair))) off = Number(pair);
   const g = generateMonth_(Object.assign({}, b.base, { pairOffset: off }));
+  try { const y = +key.slice(0, 4), m = +key.slice(5, 7), pv = getMonth_(prevKey_(y, m)); const ig = inspGenerate_(y, m, pv && pv.data); g.insp = ig.insp; g.inspAfter = ig.inspAfter; } catch (e) {}
   return { month: key, gen: g, scores: scores, people: b.people };
 }
 
@@ -288,12 +319,15 @@ function doGet(e) {
   try {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
+      try { migrateInsp_(); } catch (e) {}
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),
-        approvers: approverList_(), pendingCount: listRequests_().pending.length });
+        approvers: approverList_(), pendingCount: listRequests_().pending.length, inspectors: (function () { try { return inspectors_(); } catch (e) { return []; } })() });
     }
-    if (a === 'month') return json_({ ok: true, month: getMonth_(q.m) });
+    if (a === 'month') { try { ensureInsp_(q.m); } catch (e) {} return json_({ ok: true, month: getMonth_(q.m) }); }
+    if (a === 'reports') return json_({ ok: true, reports: reportsOf_(q.m) });
+    if (a === 'inspectors') return json_({ ok: true, inspectors: inspectors_() });
     if (a === 'preview') return json_({ ok: true, preview: previewMonth_(q.m, q.pair || 'continue') });
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
@@ -308,9 +342,11 @@ function doPost(e) {
   if (b.events) return lineWebhook_(b);            // มาจาก LINE
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    try { migrate_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
+    try { migrate_(); migrateInsp_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
     // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
+    // ---- รายงานเวร: ลิงก์มีลายเซ็นจาก LINE หรือ PIN ผู้อนุมัติ ----
+    if (b.action === 'saveReport') return json_({ ok: true, report: saveReport_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'request' && !b.approveNow) {
       return json_({ ok: true, request: createRequest_(b, null) });
@@ -337,6 +373,38 @@ function doPost(e) {
       saveMonth_(b.m, b.status, cur.data, cur.stateAfter, cur.note);
       log_(who.name, 'สถานะ ' + b.status, b.m, '');
       return json_({ ok: true });
+    }
+    if (b.action === 'setInsp') {                     // เปลี่ยนผู้ตรวจเวรรายวัน
+      const mo = ensureInsp_(b.m); if (!mo) return json_({ ok: false, error: 'ไม่พบเดือน' });
+      mo.data.insp[Number(b.day) - 1] = String(b.short || '');
+      saveMonth_(b.m, mo.status, mo.data, mo.stateAfter, mo.note);
+      log_(who.name, 'เปลี่ยนผู้ตรวจเวร', b.m, b.day + ' → ' + b.short);
+      return json_({ ok: true, month: getMonth_(b.m) });
+    }
+    if (b.action === 'saveInspectors') {              // [{short?, full, pos}] ตามลำดับ — คนที่ไม่อยู่ในรายการ = เลิกเป็นผู้ตรวจ
+      const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
+      const si = h.indexOf('short'), fi = h.indexOf('full'), oi = h.indexOf('inspOrder'), pi = h.indexOf('inspPos'), gi = h.indexOf('group'), ai = h.indexOf('active');
+      const list = b.inspectors || [];
+      for (let i = 1; i < v.length; i++) { sh.getRange(i + 1, oi + 1).setValue(''); }
+      list.forEach(function (x, k) {
+        const full = String(x.full || '').replace(/\s+/g, ' ').trim(); if (!full) return;
+        let r = -1;
+        for (let i = 1; i < v.length; i++) if ((x.short && v[i][si] === x.short) || String(v[i][fi]).replace(/\s+/g, ' ').trim() === full) { r = i; break; }
+        if (r < 0) {
+          const short = x.short || full.replace(/^(นาย|นางสาว|นาง)/, '').split(' ')[0];
+          const row = h.map(function (col) { return ({ group: 'INSP', rotOrder: 0, reportOrder: 50, short: short, full: full, active: true })[col] != null ? ({ group: 'INSP', rotOrder: 0, reportOrder: 50, short: short, full: full, active: true })[col] : ''; });
+          sh.appendRow(row); r = sh.getLastRow() - 1; v.push(row);
+        }
+        sh.getRange(r + 1, oi + 1).setValue(k + 1); sh.getRange(r + 1, pi + 1).setValue(String(x.pos || ''));
+      });
+      log_(who.name, 'แก้รายชื่อผู้ตรวจเวร', '', list.map(function (x) { return x.full; }).join(', '));
+      return json_({ ok: true, inspectors: inspectors_() });
+    }
+    if (b.action === 'setInspOrder') {                // เลขที่/วันที่คำสั่งแต่งตั้งผู้ตรวจเวร
+      const mo = ensureInsp_(b.m); if (!mo) return json_({ ok: false, error: 'ไม่พบเดือน' });
+      mo.data.inspOrderDoc = { no: String(b.no || '').trim(), date: String(b.date || '').trim() };
+      saveMonth_(b.m, mo.status, mo.data, mo.stateAfter, mo.note);
+      return json_({ ok: true, month: getMonth_(b.m) });
     }
     if (b.action === 'setWx') {                       // ตั้งระดับสภาพอากาศเอง (null = อัตโนมัติ)
       let hrs = b.dur === 'forever' ? 0 : b.dur === 'shift' ? shiftHoursLeft_() : Number(getConfig_().wxManualHours || 6);
@@ -494,7 +562,7 @@ function hubAllowed_(user, pass) {
 function peopleCols_() {
   const sh = sheet_(SH.PEOPLE); const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   let added = false;
-  ['lineId', 'empId', 'position'].forEach(function (k) {
+  ['lineId', 'empId', 'position', 'inspOrder', 'inspPos'].forEach(function (k) {
     if (h.indexOf(k) < 0) { sh.getRange(1, h.length + 1).setValue(k).setFontWeight('bold'); h.push(k); added = added || k !== 'lineId'; }
   });
   if (added) {                                              // ค่าตั้งต้นจากเอกสารจริง (แก้ได้ที่หน้าตั้งค่า)

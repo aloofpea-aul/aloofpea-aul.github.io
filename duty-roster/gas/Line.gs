@@ -271,6 +271,11 @@ function shiftMessage_(kind, ymd, name, dd) {
     if (bl) body.push({ type: 'text', text: 'เข้า ' + thShortD_(bl.inD) + ' ' + bl.inT + ' → ออก ' + thShortD_(bl.outD) + ' ' + bl.outT + ' น.', size: 'xs', color: '#4A4450', wrap: true });
     const tb = telBtn_('โทร ' + fmtPhone_(p.phone), p.phone, false); if (tb) body.push(tb);
   });
+  if (name && dd.emp[name] !== 'S') {
+    const rl = repLink_(ymd + '|' + (kind === 'emp1' ? 'p1' : 'p3'), name, 'duty');
+    if (rl) body.push({ type: 'button', style: 'secondary', height: 'sm', margin: 'md', action: { type: 'uri', label: 'ลงรายงานการอยู่เวร', uri: rl } });
+  }
+  const ins = inspOf_(ymd); if (ins) body.push({ type: 'text', text: 'ผู้ตรวจเวรวันนี้: ' + personOf_(ins).full, size: 'xs', color: '#6B6372', margin: 'md', wrap: true });
   const sb = who_(dd.emp, function (c) { return c === 'S'; });
   if (kind === 'emp1' && sb.length) body.push({ type: 'text', text: 'เตรียมพร้อม: ' + sb.join(', '), size: 'xs', color: '#6B6372', margin: 'md', wrap: true });
   body.push({ type: 'separator', margin: 'md' });
@@ -565,6 +570,22 @@ function handleEvent_(ev) {
       (o.lv >= 5 ? '\nแจ้ง หผ.ปร. / ชผ. แล้ว' : '') + '\nพิมพ์ "อากาศ อัตโนมัติ" เพื่อยกเลิก')]);
   }
   if (/^อากาศ$/.test(t)) { const w = wxNow_(); return reply_(ev.replyToken, [text_(wxLines_().join('\n') + '\n\nตั้งเอง: อากาศ 1–6 (เฉพาะคนอยู่เวร / หผ.ปร. / ชผ.)\n1 ปกติ · 2 ชื้น · 3 ฝนตก · 4 ลมแรง · 5 ฝนตก ลมแรง · 6 ฝนตก ฟ้าคะนอง')]); }
+  if (/^รายงานเวร$/.test(t)) {
+    const blk = myRecentBlock_(me.short);
+    const isAppr = approverList_().some(function (a) { return a.short === me.short; });
+    if (!blk && !isAppr) return reply_(ev.replyToken, [text_('ไม่พบเวรของคุณที่กำลังอยู่ หรือเพิ่งจบภายใน 12 ชม.')]);
+    if (!blk) return reply_(ev.replyToken, [text_('ผู้อนุมัติแก้รายงานได้ที่หน้าเวรรายวัน (ใช้ PIN)\n' + webUrl_('viewDaily'))]);
+    const lab = blk.k.slice(11) === 'p1' ? 'ช่วง 1' : 'ช่วง 3';
+    return reply_(ev.replyToken, [flex_('ลงรายงานการอยู่เวร', bubble_('รายงานการอยู่เวร', '#5B1A63', thDateLong_(blk.k.slice(0, 10)) + ' · ' + lab,
+      ['ลิงก์นี้ใช้ได้ 48 ชม. เฉพาะ ' + me.full], [{ type: 'button', style: 'primary', color: '#5B1A63', height: 'sm', action: { type: 'uri', label: 'เปิดแบบรายงาน', uri: repLink_(blk.k, me.short, 'duty') } }]))]);
+  }
+  if (/^ตรวจเวร$/.test(t)) {
+    const today = bkkYmd_(), hm = Utilities.formatDate(new Date(), TZ, 'HH:mm');
+    const d = hm < '12:00' && inspOf_(addDays_(today, -1)) === me.short ? addDays_(today, -1) : today;   // ช่วงเช้าตรวจของเมื่อวานได้
+    if (inspOf_(d) !== me.short) return reply_(ev.replyToken, [text_('วันนี้คุณไม่ได้เป็นผู้ตรวจเวร' + (inspOf_(today) ? '\nผู้ตรวจเวรวันนี้: ' + personOf_(inspOf_(today)).full : ''))]);
+    return reply_(ev.replyToken, [flex_('ตรวจเวร', bubble_('ผู้ตรวจเวร', '#26307A', thDateLong_(d), ['ติ๊กผลตรวจของช่วง 1 และช่วง 3 วันนี้', 'ลิงก์ใช้ได้ 48 ชม.'],
+      [{ type: 'button', style: 'primary', color: '#26307A', height: 'sm', action: { type: 'uri', label: 'เปิดแบบตรวจเวร', uri: repLink_(d, me.short, 'insp') } }]))]);
+  }
   if (/^ตัวอย่างแจ้งเตือน$/.test(t)) {             // ดูหน้าตาการ์ดจริงโดยไม่เสียโควต้า (ตอบกลับ)
     const ymd = bkkYmd_(), dd = dayData_(ymd); if (!dd) return reply_(ev.replyToken, [text_('ยังไม่มีตารางวันนี้')]);
     const team = teamOf_('emp3', dd), wd = weekday_(+ymd.slice(0, 4), +ymd.slice(5, 7), +ymd.slice(8, 10));
@@ -576,7 +597,7 @@ function handleEvent_(ev) {
     return reply_(ev.replyToken, [text_(u ? 'ยื่นคำขอแลก/ลาเวรได้ที่\n' + u : 'ติดต่อ หผ.ปร. เพื่อขอเปลี่ยนเวร')]);
   }
   if (/ตาราง/.test(t)) { const u = webUrl_(''); return reply_(ev.replyToken, [text_(u ? 'ตารางเวรทั้งเดือน\n' + u : 'ยังไม่ได้ตั้งค่า webUrl')]); }
-  return reply_(ev.replyToken, [text_('คำสั่งที่ใช้ได้\n• เวรวันนี้\n• เวรพรุ่งนี้\n• เวรของฉัน\n• เวรคนงาน\n• อากาศ (ดู/ตั้งระดับ)\n• ขอเปลี่ยน/ลาเวร\n• ตารางเดือนนี้')]);
+  return reply_(ev.replyToken, [text_('คำสั่งที่ใช้ได้\n• เวรวันนี้\n• เวรพรุ่งนี้\n• เวรของฉัน\n• เวรคนงาน\n• รายงานเวร\n• ตรวจเวร\n• อากาศ (ดู/ตั้งระดับ)\n• ขอเปลี่ยน/ลาเวร\n• ตารางเดือนนี้')]);
 }
 
 function register_(uid, name, code) {

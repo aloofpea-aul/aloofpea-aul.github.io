@@ -122,6 +122,14 @@ nav.bot button{position:relative}
 .wxg button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;color:var(--ink);padding:4px}
 .wxg button.on{border:2px solid var(--pri);background:#F3E9F5;color:var(--pri2);font-weight:700}
 .wxg button.auto{border-style:dashed}
+.rpf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0}
+.rpf input,.rpf select{height:40px}
+.rp-sec{border-top:1px solid #F0ECF3;padding-top:8px;margin-top:8px}
+.rp-sec h4{margin:0 0 6px;font-size:13px}
+.ckb{display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:14px}
+.ckb input{width:20px;height:20px}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+fieldset:disabled{opacity:.55}
 @media print{
   body{background:#fff}
   .app>*:not(#viewReport),nav.bot,#viewReport>.card{display:none!important}
@@ -156,6 +164,7 @@ nav.bot button{position:relative}
       <div class="muted" id="dTag" style="font-weight:600"></div>
     </div>
     <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="card hide" id="dRep"></div>
     <div class="card" id="dWx"></div>
     <button class="btn ghost hide" id="dSign" style="width:100%">พิมพ์บัญชีลงนามการอยู่เวรของวันนี้</button>
   </main>
@@ -198,17 +207,20 @@ nav.bot button{position:relative}
         <label class="f">เดือน<select id="rMonth"></select></label>
         <label class="f">รายงาน<select id="rKind">
           <optgroup label="ตารางเวรประจำเดือน"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option></optgroup>
-          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option></optgroup></select></label>
+          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option><option value="insporder">คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน)</option></optgroup></select></label>
         <label class="f rRoster">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
         <label class="f rRoster">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
         <label class="f rDoc rLeave hide" style="grid-column:1/-1">ฉบับ<select id="rItem"></select></label>
         <label class="f rDoc rSign hide" style="grid-column:1/-1">วันที่<select id="rDay"></select></label>
         <label class="f rDoc rLeave hide">หนังสืออนุมัติตารางเดือนนี้ เลขที่<input type="text" id="rApNo" placeholder="อล.0009/2569"></label>
         <label class="f rDoc rLeave hide">ลงวันที่<input type="date" id="rApDate"></label>
-        <label class="f rDoc rLeave hide">ผู้อนุมัติท้ายบันทึก<select id="rSigner"></select></label>
+        <label class="f rDoc rLeave rSg hide">ผู้ลงนาม / ผู้อนุมัติท้ายเอกสาร<select id="rSigner"></select></label>
+        <label class="f rDoc rInsp hide">คำสั่งที่ ต.2 กฟส.อล. (เลข)<input type="text" id="rIoNo" placeholder="เว้นว่างได้"></label>
+        <label class="f rDoc rInsp hide">สั่ง ณ วันที่<input type="date" id="rIoDate"></label>
+        <div class="rDoc rInsp hide" style="display:flex;align-items:flex-end"><button class="btn ghost" id="rIoSave" style="width:100%">บันทึกเลขที่/วันที่คำสั่ง</button></div>
         <div class="rDoc rLeave hide" style="display:flex;align-items:flex-end"><button class="btn ghost" id="rApSave" style="width:100%">บันทึกเลขที่อนุมัติ</button></div>
-        <label class="f rDoc rLeave rCustom hide">ชื่อผู้อนุมัติ<input type="text" id="rSgName" placeholder="นาย…"></label>
-        <label class="f rDoc rLeave rCustom hide">ตำแหน่ง<input type="text" id="rSgTitle" placeholder="รักษาการแทน ผจก.กฟส.อ่าวลึก"></label>
+        <label class="f rDoc rCustom hide">ชื่อผู้อนุมัติ<input type="text" id="rSgName" placeholder="นาย…"></label>
+        <label class="f rDoc rCustom hide">ตำแหน่ง<input type="text" id="rSgTitle" placeholder="รักษาการแทน ผจก.กฟส.อ่าวลึก"></label>
       </div>
       <div class="grid2" style="margin-top:10px">
         <button class="btn ghost rRoster" id="rSetStatus">บันทึกสถานะ</button>
@@ -276,6 +288,12 @@ nav.bot button{position:relative}
     </div>
     <div class="card">
       <label class="f">คู่ที่ไม่ให้อยู่ช่วง 3 ด้วยกัน (เช่น ธวัชชัย/พงศธร, คั่นด้วย ,)<input type="text" id="sAvoid"></label>
+    </div>
+    <div class="card">
+      <h3>ผู้ตรวจเวร (หมุนคนละ 3 วัน ตามลำดับ)</h3>
+      <div class="muted" style="margin-bottom:6px">เรียงลำดับ = ลำดับการหมุน · เพิ่ม/ลบได้ · มีผลกับเดือนที่สร้างใหม่ (เดือนที่สร้างแล้วเปลี่ยนรายวันได้ที่หน้าเวรรายวัน) · บันทึกด้วย PIN ด้านล่าง</div>
+      <div id="sInsp"></div>
+      <button class="btn ghost" id="sInspAdd" style="height:40px;margin-top:6px">+ เพิ่มผู้ตรวจเวร</button>
     </div>
     <div class="card">
       <h3>เบอร์โทร / LINE ID / เลขประจำตัว / ตำแหน่ง</h3>
@@ -395,7 +413,9 @@ async function renderDaily(){
     S.boot.months.forEach(x=>sel.add(new Option(monthLabel(x.month)+' · '+x.status,x.month)));
     const cur=todayIso().slice(0,7); const has=S.boot.months.find(x=>x.month===cur);
     S.dMonth=has?cur:S.boot.months[S.boot.months.length-1].month;
-    S.dDay=has?+todayIso().slice(8,10):1; sel.value=S.dMonth;
+    S.dDay=has?+todayIso().slice(8,10):1;
+    if(S.dMonthWant&&S.boot.months.find(x=>x.month===S.dMonthWant)){ S.dMonth=S.dMonthWant; S.dDay=S.dDayWant; S.dMonthWant=null; setTimeout(()=>{const e=$('dRep'); e&&e.scrollIntoView({block:'start'});},400); }
+    sel.value=S.dMonth;
     sel.onchange=()=>{S.dMonth=sel.value;S.dDay=1;renderDaily();};
     document.querySelectorAll('#dGroup button').forEach(b=>b.onclick=()=>{S.dGroup=b.dataset.g;
       document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x===b));renderDaily();});
@@ -411,6 +431,7 @@ async function renderDaily(){
   $('dRows').innerHTML=shiftRows(data,S.dGroup,S.dDay-1).map(r=>`<div class="card duty"><div class="chip" style="background:${r.bg};color:${r.fg}"><small>${r.l}</small><b>${r.n}</b></div><div style="flex:1;min-width:0"><div class="tm">${r.t}</div>${
     typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(personRow).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
   $('dSign').classList.toggle('hide',S.dGroup!=='emp');
+  renderRepCard(data);
   renderWx();
   $('dSign').onclick=()=>{S.rPreset={kind:'sign',m:S.dMonth,day:S.dDay};show('viewReport');};
 }
@@ -435,6 +456,69 @@ async function loadContacts(){
 function setBadge(st){const b=$('hdrBadge');b.textContent=st||'';b.className='badge '+(st==='อนุมัติแล้ว'?'b-ok':'b-draft');b.style.display=st?'':'none';}
 
 
+
+/* ---------- ผู้ตรวจเวร + รายงานการอยู่เวร (หน้าเวรรายวัน) ---------- */
+S.repOpen=null;
+function repAuthFor(k){ const a=S.repAuth; if(!a) return null; if(a.r==='duty'&&a.k===k) return a; if(a.r==='insp'&&k.indexOf(a.k)===0) return a; return null; }
+async function renderRepCard(data){
+  const el=$('dRep'); if(S.dGroup!=='emp'){el.classList.add('hide');return;} el.classList.remove('hide');
+  const key=S.dMonth, d=S.dDay, R=(S.reps&&S.reps[key])||LS.get('rp_'+key)||{};
+  if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; monthReports(key).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
+  const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
+  const parts=[['p1','ช่วง 1'],['p3',data.days[d-1].off?'ช่วง 2+3':'ช่วง 3']];
+  const st=k=>{const r=R[k]; if(!r) return '<span class="muted">ยังไม่กรอก</span>'; return '<span style="color:#1F5A2A;font-weight:600">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span style="color:#26307A;font-weight:600">ตรวจแล้ว</span>':'');};
+  el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
+      <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
+    <div class="grid2" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
+      return `<button class="btn ${S.repOpen===k?'':'ghost'}" data-k="${k}" style="height:auto;min-height:46px;padding:6px 8px;line-height:1.3">${l}<br><small style="font-weight:400">${st(k)}</small></button>`;}).join('')}</div>
+    <div id="repEd"></div>`;
+  el.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k;renderRepCard(data);});
+  $('inspChg').onclick=async ev=>{ev.preventDefault();
+    const L=(S.boot.inspectors||[]); const pick=prompt('เปลี่ยนผู้ตรวจเวรวันที่ '+d+'\n'+L.map((x,i)=>(i+1)+'. '+x.full).join('\n')+'\nพิมพ์หมายเลข'); if(!pick) return;
+    const x=L[+pick-1]; if(!x) return; const pin=prompt('PIN ผู้มีสิทธิ์'); if(!pin) return;
+    try{ const j=await apiPost({action:'setInsp',m:key,day:d,short:x.short,pin}); S.months[key]=j.month; LS.set('m_'+key,j.month); renderDaily(); }catch(e){alert(e.message);} };
+  if(S.repOpen&&S.repOpen.indexOf(key+'-'+String(d).padStart(2,'0'))===0) repEditor(data,S.repOpen,R[S.repOpen]||{});
+}
+function repEditor(data,k,r){
+  const p=k.slice(-2), d=+k.slice(8,10), I=sheetInfo(S.dMonth,data,d,p), auth=repAuthFor(k);
+  const canDuty=!auth||auth.r==='duty', canInsp=!auth||auth.r==='insp';
+  const hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
+  const num=(id,val,ph)=>`<input type="number" step="0.5" min="0" id="${id}" value="${val==null?'':esc(val)}" placeholder="${ph}" inputmode="decimal">`;
+  const yn=(name,val,a,b)=>`<label class="ckb"><input type="radio" name="${name}" value="1" ${val===true?'checked':''}>${a}</label><label class="ckb"><input type="radio" name="${name}" value="0" ${val===false?'checked':''}>${b}</label>`;
+  $('repEd').innerHTML=`<div class="note" style="margin-top:8px">${auth?'เข้าจากลิงก์ LINE ของ '+esc(auth.u)+' · '+(auth.r==='insp'?'ผู้ตรวจเวร':'คนอยู่เวร'):'ผู้อนุมัติแก้ได้ทุกช่องด้วย PIN · คนอยู่เวร/ผู้ตรวจ ขอลิงก์ทาง LINE: พิมพ์ "รายงานเวร" หรือ "ตรวจเวร"'}</div>
+   <fieldset id="rpDuty" ${canDuty?'':'disabled'}>
+    <div class="rp-sec"><h4>๑. เวลามา–กลับ <span class="muted">(${tTh(I.t0)} → ${tTh(I.t1)})</span></h4>
+      ${I.names.map(n=>`<div class="rpf" style="grid-template-columns:1fr 92px 92px"><div style="align-self:center">${esc(n)}</div><input type="time" data-arr="${esc(n)}" value="${esc((r.arr||{})[n]||I.t0)}"><input type="time" data-dep="${esc(n)}" value="${esc((r.dep||{})[n]||I.t1)}"></div>`).join('')||'<div class="muted">ไม่มีคนเวรชุดนี้</div>'}</div>
+    <div class="rp-sec"><h4>๒. ไฟฟ้าแรงสูงขัดข้อง</h4><div class="rpf">${num('hvN',hv.n,'ครั้ง')}${num('hvO',hv.out,'ชม.ไฟดับ')}${num('hvW',hv.work,'ชม.ทำงาน')}</div>
+      <h4 style="margin-top:6px">๓. ไฟฟ้าแรงต่ำขัดข้อง</h4><div class="rpf">${num('lvN',lv.n,'ครั้ง')}${num('lvO',lv.out,'ชม.ไฟดับ')}${num('lvW',lv.work,'ชม.ทำงาน')}</div></div>
+    <div class="rp-sec"><h4>๔. แก้ไฟฟ้าขัดข้องไว้ชั่วคราว</h4><div class="rpf" style="grid-template-columns:90px 1fr">${num('tpN',tp.n,'รายการ')}<input type="text" id="tpT" value="${esc(tp.text||'')}" placeholder="รายละเอียด"></div></div>
+    <div class="rp-sec"><h4>๕. ตรวจระบบสื่อสาร</h4><div class="row"><input type="time" id="cmT" value="${esc(cm.time||I.t0)}" style="width:110px">${yn('cmOk',cm.ok,'ติดต่อได้ทุก กฟฟ.','ติดต่อไม่ได้')}</div>
+      <input type="text" id="cmF" value="${esc(cm.fail||'')}" placeholder="ติดต่อไม่ได้ คือ…" style="margin-top:6px"></div>
+    <div class="rp-sec"><h4>๖–๗. แนบบันทึก / อื่น ๆ</h4><div class="rpf" style="grid-template-columns:90px 1fr">${num('att',r.att,'ฉบับ')}<input type="text" id="oth" value="${esc(r.other||'')}" placeholder="อื่น ๆ"></div></div>
+   </fieldset>
+   <fieldset id="rpInsp" ${canInsp?'':'disabled'}>
+    <div class="rp-sec" style="background:#F4F5FC;border-radius:10px;padding:8px"><h4>ผลการตรวจสอบ (ผู้ตรวจเวร)</h4>
+      <div class="rpf" style="grid-template-columns:1fr 110px"><input type="date" id="inD" value="${esc(ins.date||I.a.toISOString().slice(0,10))}"><input type="time" id="inT" value="${esc(ins.time||I.t0)}"></div>
+      <div>พนักงาน/คนงานอยู่เวร: ${yn('inC',ins.complete,'ครบถ้วน','ไม่ครบถ้วน')}</div><input type="text" id="inM" value="${esc(ins.missing||'')}" placeholder="ไม่ครบถ้วน (ระบุ)" style="margin:4px 0 6px">
+      <div>ยานพาหนะ/เครื่องมือ: ${yn('inR',ins.ready,'พร้อม','ไม่พร้อม')}</div><input type="text" id="inN" value="${esc(ins.notready||'')}" placeholder="ไม่พร้อม (ระบุ)" style="margin-top:4px"></div>
+   </fieldset>
+   ${auth?'':'<label class="f" style="margin-top:8px">PIN ผู้อนุมัติ<input type="password" id="rpPin" inputmode="numeric" autocomplete="off"></label>'}
+   <div class="grid2" style="margin-top:8px"><button class="btn ghost" id="rpPrint">พิมพ์แผ่นนี้</button><button class="btn" id="rpSave">บันทึก</button></div>
+   <div class="muted" style="margin-top:4px">${r._by?'บันทึกล่าสุดโดย '+esc(r._by)+' · '+esc(r._at||''):''}</div><div id="rpMsg"></div>`;
+  const val=id=>{const e=$(id);return e&&e.value!==''?e.value:null;}, nv=id=>{const x=val(id);return x==null?null:+x;};
+  const rad=n=>{const e=document.querySelector('input[name="'+n+'"]:checked');return e?e.value==='1':null;};
+  $('rpSave').onclick=async()=>{
+    const arr={},dep={}; $('repEd').querySelectorAll('[data-arr]').forEach(e=>arr[e.dataset.arr]=e.value); $('repEd').querySelectorAll('[data-dep]').forEach(e=>dep[e.dataset.dep]=e.value);
+    const dataO={arr,dep,hv:{n:nv('hvN'),out:nv('hvO'),work:nv('hvW')},lv:{n:nv('lvN'),out:nv('lvO'),work:nv('lvW')},temp:{n:nv('tpN'),text:val('tpT')},
+      comm:{time:val('cmT'),ok:rad('cmOk'),fail:val('cmF')},att:nv('att'),other:val('oth'),
+      insp:{date:val('inD'),time:val('inT'),complete:rad('inC'),missing:val('inM'),ready:rad('inR'),notready:val('inN')}};
+    const body=Object.assign({action:'saveReport',k,data:dataO}, auth?{u:auth.u,r:auth.r,x:auth.x,t:auth.t}:{pin:($('rpPin')||{}).value});
+    msg('rpMsg','กำลังบันทึก…');
+    try{ const j=await apiPost(body); S.reps=S.reps||{}; (S.reps[S.dMonth]=S.reps[S.dMonth]||{})[k]=j.report; LS.set('rp_'+S.dMonth,S.reps[S.dMonth]); msg('rpMsg','บันทึกแล้ว ✓'); renderRepCard(data); }
+    catch(e){ msg('rpMsg',e.message,'err'); }
+  };
+  $('rpPrint').onclick=()=>{ const R=(S.reps&&S.reps[S.dMonth])||{}; S.rPreset={kind:'sign',m:S.dMonth,day:d}; show('viewReport'); };
+}
 /* ---------- สภาพอากาศ (ระดับ 1–6) ---------- */
 const WX_LV={1:'ปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
 S.wxPick=null; S.wxDur='6h';
@@ -529,7 +613,7 @@ async function currentReportData(){
   const mo=await loadMonth(v); return {key:v,data:mo.data,status:mo.status};
 }
 async function drawReport(){
-  const k=$('rKind').value, isDoc=['leave','leavelog','sign'].includes(k);
+  const k=$('rKind').value, isDoc=['leave','leavelog','sign','insporder'].includes(k);
   document.querySelectorAll('.rRoster').forEach(e=>e.classList.toggle('hide',isDoc));
   document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide'));
   if(isDoc){ if($('rMonth').value==='__preview'){$('printArea').innerHTML='<div class="note warn">เอกสารประกอบใช้กับตารางที่บันทึกแล้วเท่านั้น</div>';return;}
@@ -669,6 +753,12 @@ function signerOf(){
   if(v==='custom') return {name:$('rSgName').value.trim(),title:$('rSgTitle').value.trim()};
   return {name:cfg.mgrName,title:cfg.mgrTitle};
 }
+function fillSigner(){
+  const cfg=S.boot.config, sg=$('rSigner'), sv=LS.get('signer')||'mgr';
+  if(!sg.options.length){ sg.add(new Option(cfg.mgrTitle+' ('+String(cfg.mgrName).replace(/^นาย/,'')+')','mgr'));
+    sg.add(new Option('หผ.ปร. รักษาการแทน ผจก. ('+String(cfg.headName).replace(/^นาย/,'')+')','head')); sg.add(new Option('อื่น ๆ (กรอกเอง)','custom')); }
+  sg.value=sv; $$('.rCustom').forEach(e=>e.classList.toggle('hide',sv!=='custom'));
+}
 async function drawDocs(k){
   const key=$('rMonth').value, cfg=S.boot.config, want=S.rWant||{}; S.rWant=null;
   const seq=S.drawSeq=(S.drawSeq||0)+1; const PA={set innerHTML(h){ if(seq===S.drawSeq) $('printArea').innerHTML=h; }};
@@ -680,17 +770,22 @@ async function drawDocs(k){
     days.forEach(d=>el.add(new Option(TH_WDF[d.wd]+' '+d.d+' '+TH_MS[parseKey(key).m-1]+(d.off?' · วันหยุด':''),String(d.d))));
     el.value=[...el.options].some(o=>o.value===old)?old:'all';
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
-    PA.innerHTML=list.map(d=>signPage(key,mo.data,null,d,cfg,'p1')+signPage(key,mo.data,null,d,cfg,'p3')).join('');
+    const R=await monthReports(key), kk=(d,p)=>key+'-'+String(d).padStart(2,'0')+'|'+p;
+    PA.innerHTML=list.map(d=>signPage(key,mo.data,null,d,cfg,'p1',R[kk(d,'p1')])+signPage(key,mo.data,null,d,cfg,'p3',R[kk(d,'p3')])).join('');
+    return;
+  }
+  if(k==='insporder'){
+    $$('.rInsp').forEach(e=>e.classList.remove('hide')); $$('.rSg').forEach(e=>e.classList.remove('hide')); fillSigner();
+    const mo=await loadMonth(key), od=mo.data.inspOrderDoc||{};
+    if(document.activeElement!==$('rIoNo')) $('rIoNo').value=od.no||''; if(document.activeElement!==$('rIoDate')) $('rIoDate').value=od.date||'';
+    PA.innerHTML=(mo.data.insp&&mo.data.insp.length)?inspOrderPage(key,mo.data,cfg,signerOf()):'<div class="note">เดือนนี้ยังไม่มีตารางผู้ตรวจเวร</div>';
     return;
   }
   const L=await leaveItems(key);
   if(k==='leavelog'){ PA.innerHTML=leaveLogPages(key,L.items,cfg); return; }
   $$('.rLeave').forEach(e=>e.classList.remove('hide'));
   const ap=(L.mo.data.approval)||{}; if(document.activeElement!==$('rApNo')) $('rApNo').value=ap.no||''; if(document.activeElement!==$('rApDate')) $('rApDate').value=ap.date||'';
-  const sg=$('rSigner'),sv=LS.get('signer')||'mgr';
-  if(!sg.options.length){ sg.add(new Option(cfg.mgrTitle+' ('+String(cfg.mgrName).replace(/^นาย/,'')+')','mgr'));
-    sg.add(new Option('หผ.ปร. รักษาการแทน ผจก. ('+String(cfg.headName).replace(/^นาย/,'')+')','head')); sg.add(new Option('อื่น ๆ (กรอกเอง)','custom')); }
-  sg.value=sv; $$('.rCustom').forEach(e=>e.classList.toggle('hide',sv!=='custom'));
+  fillSigner();
   const it=$('rItem'), old=want.id||it.value, ids=[...new Set(L.items.map(x=>x.req.id))];
   it.innerHTML=''; it.add(new Option('ทั้งหมด ('+L.items.length+' ฉบับ)','all'));
   ids.forEach(id=>{const r=L.items.find(x=>x.req.id===id).req;it.add(new Option(r.text,id));});
@@ -748,22 +843,32 @@ function leaveLogPages(key,items,cfg){
   }
   return html;
 }
-/* บัญชีลงนาม 1 แผ่นต่อ 1 ชุดเวร: part 'p1' = ช่วง 1 (00.30–08.30) · 'p3' = ช่วง 3 / ช่วง 2+3 (ถึง 00.30 วันรุ่งขึ้น) */
-function signPage(key,data,next,d,cfg,part){
-  const day=data.days[d-1], rank=rankOf(), e=data.emp;
-  const ppl={};
+/* บัญชีลงนาม 1 แผ่นต่อ 1 ชุดเวร: part 'p1' = ช่วง 1 (00.30–08.30) · 'p3' = ช่วง 3 / ช่วง 2+3 (ถึง 00.30 วันรุ่งขึ้น)
+   ข้อมูลที่คนเวร/ผู้ตรวจกรอกในแอป (rep) จะพิมพ์ลงช่องเดิม */
+function sheetInfo(key,data,d,part){
+  const day=data.days[d-1], rank=rankOf(), e=data.emp, ppl={};
   Object.keys(e).forEach(n=>{const c=e[n][d-1];
-    if(part==='p1'&&c==='1') ppl[n]=['ช่วง 1'];
-    if(part==='p3'&&(c==='3'||c==='2,3')) ppl[n]=[c==='3'?'ช่วง 3':'ช่วง 2+3'];});
+    if(part==='p1'&&c==='1') ppl[n]='ช่วง 1';
+    if(part==='p3'&&(c==='3'||c==='2,3')) ppl[n]=c==='3'?'ช่วง 3':'ช่วง 2+3';});
   const names=Object.keys(ppl).sort((x,y)=>rank(x)-rank(y));
-  const a=dOf(key,d), b=part==='p1'?a:dOf(key,d+1), pa=dParts(a), pb=dParts(b);
-  const t0=part==='p1'?'๐๐.๓๐':day.off?'๐๘.๓๐':'๑๖.๓๐', t1=part==='p1'?'๐๘.๓๐':'๐๐.๓๐';
-  const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${FL(TH_WDF[p.wd],70)}ที่${FL(THD(p.d),36)}เดือน${FL(TH_MONTH[p.m],90)}พ.ศ.${FL(THD(p.y),60)}เวลา${FL(t,70)}น.</div>`;
-  const nrow=Math.max(4,names.length);
-  let rows=''; for(let i=0;i<nrow;i++){const n=names[i];
-    rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td>${n?t0+' น.':''}</td><td></td><td>${n?t1+' น.':''}</td><td></td><td style="font-size:12px">${n?esc(ppl[n].join(', ')):''}</td></tr>`;}
-  const dLongTh=p=>THD(TH_WDF[p.wd]+' '+p.d+' '+TH_MONTH[p.m]+' '+p.y);
-  const dots=w=>'.'.repeat(w);
+  const t0=part==='p1'?'00:30':day.off?'08:30':'16:30', t1=part==='p1'?'08:30':'00:30';
+  const a=dOf(key,d), b=part==='p1'?a:dOf(key,d+1);
+  return {names,ppl,t0,t1,a,b,day,insp:(data.insp||[])[d-1]||'',k:key+'-'+String(d).padStart(2,'0')+'|'+part};
+}
+const tTh=t=>THD(String(t||'').replace(':','.'));
+function signPage(key,data,next,d,cfg,part,rp){
+  const I=sheetInfo(key,data,d,part), r=rp||{}, pa=dParts(I.a), pb=dParts(I.b);
+  const v=(x,w)=>x!=null&&x!==''?FL(THD(x),w||50):'.'.repeat(Math.round((w||50)/6));
+  const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${FL(TH_WDF[p.wd],70)}ที่${FL(THD(p.d),36)}เดือน${FL(TH_MONTH[p.m],90)}พ.ศ.${FL(THD(p.y),60)}เวลา${FL(tTh(t),70)}น.</div>`;
+  const nrow=Math.max(4,I.names.length);
+  let rows=''; for(let i=0;i<nrow;i++){const n=I.names[i];
+    const ar=n?((r.arr||{})[n]||I.t0):'', dp=n?((r.dep||{})[n]||I.t1):'';
+    rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td>${n?tTh(ar)+' น.':''}</td><td></td><td>${n?tTh(dp)+' น.':''}</td><td></td><td style="font-size:12px">${n?esc(I.ppl[n]):''}</td></tr>`;}
+  const dLongTh=dt=>{const p=dParts(dt);return THD(TH_WDF[p.wd]+' '+p.d+' '+TH_MONTH[p.m]+' '+p.y);};
+  const dots=w=>'.'.repeat(w), hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
+  const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
+  const inspD=ins.date?new Date(ins.date+'T00:00:00Z'):I.a, inspT=ins.time||I.t0;
+  const inspName=I.insp?fullName(I.insp):'';
   return `<div class="page a4p"><div class="doc" style="padding:12mm 13mm 10mm 18mm;font-size:14px;line-height:1.75">
     <div style="display:flex;gap:6px;align-items:flex-start">${ORG(true,34)}<div style="flex:1;padding-top:10px">
       <div style="font-weight:700;font-size:15px;text-align:center;white-space:nowrap">บัญชีลงนามการอยู่เวรแก้ไขไฟฟ้าขัดข้องและรายงานการแก้ไขไฟฟ้าขัดข้อง</div>
@@ -771,28 +876,62 @@ function signPage(key,data,next,d,cfg,part){
     <div style="margin-top:6px">เรียน &nbsp;${esc(cfg.mgrTitle)} ผ่าน ${esc(String(cfg.headTitle).replace(/^(หผ\.ปร\.)\s*/,'$1'))}</div>
     <div style="padding-left:12mm">ขอรายงานผลการอยู่เวรแก้ไฟฟ้าขัดข้อง มีรายละเอียดดังนี้</div>
     <div>๑. รายชื่อพนักงานอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
-    ${line('ประจำวัน',pa,t0)}${line('ถึงวัน',pb,t1)}
+    ${line('ประจำวัน',pa,I.t0)}${line('ถึงวัน',pb,I.t1)}
     <table class="sg" style="margin:2px 0 6px"><colgroup><col style="width:5%"><col style="width:33%"><col style="width:11%"><col style="width:12%"><col style="width:11%"><col style="width:12%"><col style="width:16%"></colgroup>
       <tr><th>ที่</th><th>ชื่อ-สกุล</th><th>เวลามา</th><th>ลงชื่อ</th><th>เวลากลับ</th><th>ลงชื่อ</th><th>หมายเหตุ</th></tr>${rows}</table>
-    <div style="white-space:nowrap;overflow:hidden">๒. เหตุการณ์กระแสไฟฟ้าแรงสูงขัดข้อง${dots(9)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${dots(9)}ชม. &nbsp;เวลาปฏิบัติงาน${dots(11)}ชม.</div>
-    <div style="white-space:nowrap;overflow:hidden">๓. เหตุการณ์กระแสไฟฟ้าแรงต่ำขัดข้อง${dots(9)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${dots(9)}ชม. &nbsp;เวลาปฏิบัติงาน${dots(11)}ชม.</div>
-    <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${dots(14)}รายการ &nbsp;ดังนี้${dots(200)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๒. เหตุการณ์กระแสไฟฟ้าแรงสูงขัดข้อง${v(hv.n,40)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${v(hv.out,45)}ชม. &nbsp;เวลาปฏิบัติงาน${v(hv.work,50)}ชม.</div>
+    <div style="white-space:nowrap;overflow:hidden">๓. เหตุการณ์กระแสไฟฟ้าแรงต่ำขัดข้อง${v(lv.n,40)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${v(lv.out,45)}ชม. &nbsp;เวลาปฏิบัติงาน${v(lv.work,50)}ชม.</div>
+    <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${v(tp.n,50)}รายการ &nbsp;ดังนี้${tp.text?FL(tp.text,300):dots(200)}</div>
     <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>
-    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา${FL(t0,60)}น. <span class="bx" style="margin-left:4px"></span>ติดต่อได้ทุก กฟฟ. <span class="bx"></span>ติดต่อไม่ได้ &nbsp;คือ${dots(100)}</div>
-    <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${dots(24)}ฉบับ</div>
-    <div style="white-space:nowrap;overflow:hidden">๗. อื่นๆ${dots(300)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา${FL(tTh(cm.time||I.t0),60)}น. ${bx(cm.ok===true).replace('class="bx','style="margin-left:4px" class="bx')}ติดต่อได้ทุก กฟฟ. ${bx(cm.ok===false)}ติดต่อไม่ได้ &nbsp;คือ${cm.fail?FL(cm.fail,200):dots(100)}</div>
+    <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${v(r.att,60)}ฉบับ</div>
+    <div style="white-space:nowrap;overflow:hidden">๗. อื่นๆ${r.other?FL(r.other,500):dots(300)}</div>
     <div style="padding-left:20mm">จึงเรียนมาเพื่อโปรดทราบ</div>
-    <div class="sig" style="margin-left:80mm;margin-top:8mm">( ${esc(names[0]?fullName(names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
+    <div class="sig" style="margin-left:80mm;margin-top:8mm">( ${esc(I.names[0]?fullName(I.names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
     <div style="margin-top:2mm">เรียน &nbsp;${esc(cfg.mgrTitle)}</div>
     <div style="padding-left:14mm">ขอรายงานผลการตรวจสอบการอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
-    <div>ในวันที่${FL(dLongTh(pa),220)}เวลา${FL(t0,70)}น.</div>
+    <div>ในวันที่${FL(dLongTh(inspD),220)}เวลา${FL(tTh(inspT),70)}น.</div>
     <div>ปรากฏว่า &nbsp;พนักงานอยู่เวรฯ และคนงานอยู่เวรฯ</div>
-    <div style="display:flex;justify-content:space-between"><div><span class="bx" style="margin-left:0"></span>ครบถ้วน <span class="bx"></span>ไม่ครบถ้วน${dots(40)}</div><div style="padding-right:22mm">ทราบ</div></div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.complete===true?'on':''}" style="margin-left:0"></span>ครบถ้วน ${bx(ins.complete===false)}ไม่ครบถ้วน${ins.missing?FL(ins.missing,160):dots(40)}</div><div style="padding-right:22mm">ทราบ</div></div>
     <div>และความพร้อมยานพาหนะ,เครื่องมือ/เครื่องใช้แก้ไฟฟ้าขัดข้อง</div>
-    <div style="display:flex;justify-content:space-between"><div><span class="bx" style="margin-left:0"></span>พร้อม <span class="bx"></span>ไม่พร้อม${dots(40)}</div><div class="sig">(${dots(48)})<br>ผจก.${dots(26)}</div></div>
-    <div class="sig" style="width:80mm;margin-left:20mm;margin-top:4mm">(${dots(48)})<br>ผู้ตรวจสอบเวรฯ</div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.ready===true?'on':''}" style="margin-left:0"></span>พร้อม ${bx(ins.ready===false)}ไม่พร้อม${ins.notready?FL(ins.notready,160):dots(40)}</div><div class="sig">(${esc(String(cfg.mgrName||''))||dots(48)})<br>${esc(cfg.mgrTitle)}</div></div>
+    <div class="sig" style="width:80mm;margin-left:20mm;margin-top:4mm">( ${inspName?esc(inspName):dots(48)} )<br>ผู้ตรวจสอบเวรฯ</div>
   </div></div>`;
 }
+async function monthReports(key){
+  const c=LS.get('rp_'+key);
+  const f=apiGet({action:'reports',m:key}).then(j=>{S.reps=S.reps||{};S.reps[key]=j.reports;LS.set('rp_'+key,j.reports);return j.reports;});
+  if(c){ S.reps=S.reps||{}; S.reps[key]=c; f.then(n=>{ if(JSON.stringify(n)!==JSON.stringify(c)) refreshView(); }).catch(()=>{}); return c; }
+  return f.catch(()=>({}));
+}
+/* คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน) */
+function inspOrderPage(key,data,cfg,sgn){
+  const {y,m}=parseKey(key), N=data.days.length, od=data.inspOrderDoc||{}, ins=data.insp||[];
+  const list=(S.boot.inspectors||[]).slice(), byShort={}; list.forEach(x=>byShort[x.short]=x);
+  const order=[]; ins.forEach(n=>{ if(n&&order.indexOf(n)<0) order.push(n); });
+  order.sort((a,b)=>((byShort[a]||{}).order||99)-((byShort[b]||{}).order||99));
+  const yy=od.date?String(+od.date.slice(0,4)+543):String(y+543);
+  const items=order.map((n,i)=>{const p=byShort[n]||{full:fullName(n),pos:''};const ds=ins.map((x,k)=>x===n?k+1:0).filter(Boolean);
+    return `<div style="display:grid;grid-template-columns:62mm 1fr;margin-top:6mm;padding-left:38mm"><div>${THD(i+1)}.${esc(p.full)}</div><div>ตำแหน่ง ${esc(THD(p.pos||''))}</div></div>
+      <div style="text-align:center;margin-top:1mm">ตรวจเวรวันที่ ${THD(ds.join(','))}</div>`;}).join('');
+  return `<div class="page a4p"><div class="doc" style="padding:14mm 18mm 12mm 25mm;font-size:16px;line-height:1.7">
+    ${ORG(true,40)}
+    <div style="text-align:center;margin-top:4mm">คำสั่ง &nbsp; การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก</div>
+    <div style="text-align:center">ที่ ต.๒ กฟส.อล. ${od.no?FL(THD(od.no),50):'<span class="fl" style="min-width:50px">&nbsp;</span>'} /${THD(yy)}</div>
+    <div style="text-align:center">เรื่อง &nbsp; แต่งตั้งผู้ตรวจเวรแก้กระแสไฟฟ้าขัดข้อง</div>
+    <div style="border-bottom:1px solid #000;margin:3mm -8mm 6mm"></div>
+    <div style="text-indent:15mm;text-align:justify">เพื่อให้การปฏิบัติงานอยู่เวรแก้กระแสไฟฟ้าขัดข้อง ${esc(cfg.office)} เป็นไปด้วยความเรียบร้อย ${esc(cfg.office)} จึงแต่งตั้งผู้ตรวจเวรประจำเดือน ${TH_MONTH[m-1]} ${THD(y+543)} ดังนี้</div>
+    ${items}
+    <div style="text-align:center;margin-top:10mm">ทั้งนี้ &nbsp;ตั้งแต่วันที่ ${THD('1-'+N)} ${TH_MONTH[m-1]} ${THD(y+543)}</div>
+    <div style="text-align:center">สั่ง ณ วันที่ ${od.date?THD(isoLong(od.date)):'<span class="fl" style="min-width:150px">&nbsp;</span>'}</div>
+    <div class="sig" style="margin-left:55mm;margin-top:18mm">(${esc(sgn.name)})<br>${esc(THD(sgn.title))}</div>
+  </div></div>`;
+}
+$('rIoSave').onclick=async()=>{
+  const key=$('rMonth').value, pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
+  try{ const j=await apiPost({action:'setInspOrder',m:key,no:$('rIoNo').value,date:$('rIoDate').value,pin});
+    S.months[key]=j.month; LS.set('m_'+key,j.month); msg('rMsg','บันทึกแล้ว'); drawReport(); }catch(e){msg('rMsg',e.message,'err');}
+};
 $('rApSave').onclick=async()=>{
   const key=$('rMonth').value, pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
   try{ const j=await apiPost({action:'setApproval',m:key,no:$('rApNo').value,date:$('rApDate').value,pin});
@@ -915,6 +1054,18 @@ function renderContacts(){
     return `<div class="ct" style="${emp?'border-bottom:0;padding-bottom:0':''}"><div>${esc(p.full)}</div><input type="tel" inputmode="tel" data-n="${esc(p.short)}" data-k="phone" value="${esc(c.phone||'')}" placeholder="เบอร์โทร" aria-label="เบอร์โทร ${esc(p.short)}"><input type="text" data-n="${esc(p.short)}" data-k="lineId" value="${esc(c.lineId||'')}" placeholder="LINE ID" autocapitalize="off" aria-label="LINE ID ${esc(p.short)}"></div>`+
       (emp?`<div class="ct" style="grid-template-columns:128px 1fr"><input type="text" inputmode="numeric" data-n="${esc(p.short)}" data-k="empId" value="${esc(c.empId||'')}" placeholder="เลขประจำตัว" aria-label="เลขประจำตัว ${esc(p.short)}"><input type="text" data-n="${esc(p.short)}" data-k="position" value="${esc(c.position||'')}" placeholder="ตำแหน่ง เช่น พชง.5 ผบค.กฟส.อ่าวลึก" aria-label="ตำแหน่ง ${esc(p.short)}"></div>`:'');}).join('');
 }
+
+function renderInsp(){
+  const L=S.inspEdit||(S.inspEdit=(S.boot.inspectors||[]).map(x=>({short:x.short,full:x.full,pos:x.pos})));
+  $('sInsp').innerHTML=L.map((x,i)=>`<div class="ct" style="grid-template-columns:24px 1fr 1fr 84px"><b>${i+1}</b>
+    <input type="text" data-i="${i}" data-k="full" value="${esc(x.full)}" placeholder="ชื่อ-สกุล (มีคำนำหน้า)">
+    <input type="text" data-i="${i}" data-k="pos" value="${esc(x.pos)}" placeholder="ตำแหน่ง เช่น หผ.ปร.กฟส.อ่าวลึก">
+    <div class="row" style="gap:4px;flex-wrap:nowrap"><button class="cb" data-up="${i}" aria-label="เลื่อนขึ้น">↑</button><button class="cb" data-del="${i}" aria-label="ลบ" style="color:#8A2B2B">✕</button></div></div>`).join('')||'<div class="muted">ยังไม่มีผู้ตรวจเวร</div>';
+  $('sInsp').querySelectorAll('input').forEach(e=>e.oninput=()=>{L[+e.dataset.i][e.dataset.k]=e.value;});
+  $('sInsp').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const i=+b.dataset.up; if(i>0){[L[i-1],L[i]]=[L[i],L[i-1]]; renderInsp();}});
+  $('sInsp').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const i=+b.dataset.del; if(confirm('ลบ '+L[i].full+' ออกจากผู้ตรวจเวร?')){L.splice(i,1); renderInsp();}});
+}
+$('sInspAdd').onclick=()=>{(S.inspEdit=S.inspEdit||[]).push({short:'',full:'',pos:''}); renderInsp();};
 function renderSet(){
   setBadge('');
   const ys=[...new Set(S.boot.holidays.map(h=>h.date.slice(0,4)).concat([todayIso().slice(0,4)]))].sort();
@@ -924,7 +1075,7 @@ function renderSet(){
   $('sHol').querySelectorAll('.tg').forEach(b=>b.onclick=()=>{const h=S.boot.holidays[+b.dataset.i];h.pea=!h.pea;b.classList.toggle('on',h.pea);});
   $('sQuota').innerHTML=S.boot.people.emp.map(p=>`<div class="hrow"><div style="flex:1;font-size:14px">${esc(p.full)}</div><input type="number" min="0" max="31" data-n="${esc(p.short)}" value="${p.quota==null?'':p.quota}" placeholder="อัตโนมัติ" style="width:110px"></div>`).join('');
   $('sAvoid').value=S.boot.config.avoidPairs||'';
-  renderContacts();
+  renderContacts(); S.inspEdit=null; renderInsp();
   $('sStandby').checked=String(S.boot.config.notifyStandby)==='true';
   $('sLine').innerHTML=[...S.boot.people.emp,...S.boot.people.wk].map(p=>`<div class="lk"><span>${esc(p.full)}</span><span style="font-weight:600;color:${p.line?'#1F5A2A':p.group==='WK'?'#5E5666':'#8A4B00'}">${p.line?'✓ ลงทะเบียนแล้ว':p.group==='WK'?'แจ้งผ่านกลุ่มคนงาน':'ยังไม่ลงทะเบียน'}</span></div>`).join('');
 }
@@ -941,6 +1092,7 @@ $('sSave').onclick=async()=>{
     const j=await apiPost({action:'saveQuotas',quotas:qs,pin}); S.boot.people=j.people;
     const cs={}; document.querySelectorAll('#sContacts input').forEach(i=>{(cs[i.dataset.n]=cs[i.dataset.n]||{})[i.dataset.k]=i.value.trim();});
     if(Object.keys(cs).length){ await apiPost({action:'saveContacts',contacts:cs,pin}); S.contacts=Object.assign({},S.contacts,cs); LS.set('contacts',S.contacts); }
+    if(S.inspEdit){ const ji=await apiPost({action:'saveInspectors',inspectors:S.inspEdit.filter(x=>x.full.trim()),pin}); S.boot.inspectors=ji.inspectors; S.inspEdit=null; renderInsp(); }
     await apiPost({action:'saveConfig',config:{avoidPairs:$('sAvoid').value,notifyStandby:$('sStandby').checked},pin}); S.boot.config.avoidPairs=$('sAvoid').value; S.boot.config.notifyStandby=$('sStandby').checked;
     S.preview=null; msg('sMsg','บันทึกแล้ว — ตารางที่สร้างใหม่จะใช้ค่านี้');
   }catch(e){msg('sMsg',e.message,'err');}
@@ -950,6 +1102,9 @@ $('sSave').onclick=async()=>{
 (async function(){
   const qs=new URLSearchParams(location.search), view=qs.get('view')||'viewDaily';
   if(qs.get('kind')&&qs.get('m')) S.rPreset={kind:qs.get('kind'),m:qs.get('m'),id:qs.get('id')||undefined,day:qs.get('day')?+qs.get('day'):undefined};
+  if(qs.get('rep')&&qs.get('t')){ const k=qs.get('rep'); S.repAuth={k,u:qs.get('u'),r:qs.get('r'),x:qs.get('x'),t:qs.get('t')};
+    const k10=k.slice(0,10); S.dMonthWant=k10.slice(0,7); S.dDayWant=+k10.slice(8,10); S.dGroup='emp';
+    if(k.length>10) S.repOpen=k; else S.repOpen=k10+'|p1'; }
   if(qs.get('g')==='wk'){ S.dGroup='wk'; document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x.dataset.g==='wk')); }
   const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };
   const cached=LS.get('boot');
