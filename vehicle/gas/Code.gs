@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '16.2';
+const VERSION = '16.3';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -227,6 +227,15 @@ const ACTIONS = {
     if (r == null) throw new Error('ไม่พบรถ');
     set_(t, r, { Image: saveImage_(b.image, 'car_' + np_(get_(t, r, 'Plate')) + '_' + Date.now() + '.jpg') });
     return 'บันทึกรูปรถแล้ว';
+  },
+
+  driveTest: function (b, me) {                       // ผู้ดูแล: ตรวจสิทธิ์บันทึกรูปลงไดรฟ์
+    if (!me.admin) throw new Error('เฉพาะผู้ดูแลระบบ');
+    const out = { user: Session.getEffectiveUser().getEmail() };
+    try { out.auth = String(ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL).getAuthorizationStatus()); } catch (e) { out.auth = 'ERR ' + e.message; }
+    try { out.folder = DriveApp.getFolderById(IMAGE_FOLDER_ID).getName(); } catch (e) { out.folder = 'ERR ' + e.message; }
+    try { const f = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile('test_web.txt', 'ok'); f.setTrashed(true); out.create = 'ok'; } catch (e) { out.create = 'ERR ' + e.message; }
+    return 'DRIVETEST ' + JSON.stringify(out);
   },
 
   vehicleDelete: function (b, me) {
