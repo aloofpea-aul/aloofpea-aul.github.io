@@ -906,13 +906,13 @@ function leaveLogPages(key,items,cfg){
     const chunk=items.slice(p*per,(p+1)*per);
     let rows=chunk.map(x=>{const A=pInfo(x.from),B=pInfo(x.to),w=(x.req.payload&&x.req.payload.why)||{};
       const cd=(x.req.payload&&x.req.payload.docDate)||x.req.created, cr=cd?dSlash(new Date(cd+'T00:00:00Z')):'';
-      return `<tr>${cell(cr)}${cell(dSlash(x.a))}${cell(x.s+' - '+x.e)}<td style="text-align:left">${esc(A.full)}</td>${cell(A.id)}<td></td><td style="text-align:left">${esc(B.full)}</td>${cell(B.id)}<td></td><td></td><td></td><td style="font-size:12.1pt;white-space:normal;line-height:1.1">${esc(w.k==='official'?'ราชการ':(WHY[w.k]||''))}${x.req.type==='swap'?' (แลกเวร)':''}</td></tr>`;}).join('');
+      return `<tr>${cell(THD(cr))}${cell(THD(dSlash(x.a)))}${cell(tTh(x.s)+' – '+tTh(x.e))}<td style="text-align:left;padding-left:5px">${esc(A.full)}</td>${cell(THD(A.id))}<td></td><td style="text-align:left;padding-left:5px">${esc(B.full)}</td>${cell(THD(B.id))}<td></td><td></td><td></td><td style="text-align:left;padding-left:5px;font-size:13pt;white-space:normal;line-height:1.05">${esc(w.k==='official'?'ราชการ':(WHY[w.k]||''))}${x.req.type==='swap'?' (แลกเวร)':''}</td></tr>`;}).join('');
     for(let i=chunk.length;i<per;i++) rows+='<tr>'+'<td></td>'.repeat(12)+'</tr>';
     html+=`<div class="page a4l"><div class="doc" style="padding:9mm 10mm 8mm">
       ${ORG(true,32)}
       <div style="text-align:center;font-size:18.7pt;font-weight:700;margin-top:2px">แบบฟอร์มบันทึกการลา การอยู่เวรปฏิบัติการระบบไฟฟ้า</div>
-      <div style="text-align:center;font-size:17.6pt;font-weight:700;margin-bottom:8px">กฟส. ${FL(String(cfg.office).replace(/^กฟส\./,''),120)} <span style="margin-left:50px">เดือน</span> ${FL(TH_MONTH[m-1],110)} <span style="margin-left:50px">ปี</span> ${FL(y+543,70)}${pages>1?' <span style="font-weight:400;font-size:14.3pt;margin-left:20px">แผ่นที่ '+(p+1)+'/'+pages+'</span>':''}</div>
-      <table class="lg2"><colgroup><col style="width:6.5%"><col style="width:6.5%"><col style="width:9%"><col style="width:14%"><col style="width:6%"><col style="width:6.5%"><col style="width:14%"><col style="width:6%"><col style="width:6.5%"><col style="width:9.5%"><col style="width:8%"><col style="width:7.5%"></colgroup>
+      <div style="text-align:center;font-size:17.6pt;font-weight:700;margin-bottom:8px">${esc(cfg.office)} <span style="margin-left:14mm">เดือน ${TH_MONTH[m-1]}</span> <span style="margin-left:14mm">ปี ${THD(y+543)}</span>${pages>1?' <span style="font-weight:400;font-size:14.3pt;margin-left:20px">แผ่นที่ '+(p+1)+'/'+pages+'</span>':''}</div>
+      <table class="lg2"><colgroup><col style="width:7%"><col style="width:7%"><col style="width:10%"><col style="width:13%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:13%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7.5%"><col style="width:6.5%"><col style="width:10%"></colgroup>
         <tr><th rowspan="2">วันยื่นใบลา</th><th colspan="2">วันที่ลาอยู่เวรฯ</th><th colspan="3" style="background:#BFBFBF">ผู้ลาอยู่เวรฯ</th><th colspan="3">ผู้อยู่เวรฯแทน</th><th rowspan="2">ผู้บังคับบัญชาชั้นต้น</th><th rowspan="2">ผู้อนุญาต</th><th rowspan="2">หมายเหตุ</th></tr>
         <tr><th>วันที่</th><th>เวลา</th><th>ชื่อ - สกุล</th><th>รหัส</th><th>เซ็นชื่อ</th><th>ชื่อ - สกุล</th><th>รหัส</th><th>เซ็นชื่อ</th></tr>
         ${rows}</table></div></div>`;
@@ -934,8 +934,9 @@ function sheetInfo(key,data,d,part){
 const tTh=t=>THD(String(t||'').replace(':','.'));
 function signPage(key,data,next,d,cfg,part,rp){
   const I=sheetInfo(key,data,d,part), r=rp||{}, pa=dParts(I.a), pb=dParts(I.b);
-  const v=(x,w)=>x!=null&&x!==''?FL(THD(x),w||50):'.'.repeat(Math.round((w||50)/6));
-  const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${FL(TH_WDF[p.wd],70)}ที่${FL(THD(p.d),36)}เดือน${FL(TH_MONTH[p.m],90)}พ.ศ.${FL(THD(p.y),60)}เวลา${FL(tTh(t),70)}น.</div>`;
+  const v=(x,w)=>x!=null&&x!==''?' '+esc(THD(x))+' ':'.'.repeat(Math.round((w||50)/6));
+  const T=x=>' '+esc(THD(x))+' ';
+  const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${esc(TH_WDF[p.wd])}ที่ ${THD(p.d)} เดือน${TH_MONTH[p.m]} พ.ศ. ${THD(p.y)} เวลา ${tTh(t)} น.</div>`;
   const nrow=Math.max(4,I.names.length);
   let rows=''; for(let i=0;i<nrow;i++){const n=I.names[i];
     const ar=n?((r.arr||{})[n]||I.t0):'', dp=n?((r.dep||{})[n]||I.t1):'';
@@ -944,11 +945,11 @@ function signPage(key,data,next,d,cfg,part,rp){
   const dots=w=>'.'.repeat(w), hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
   const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
   const inspD=ins.date?new Date(ins.date+'T00:00:00Z'):I.a, inspT=ins.time||I.t0;
-  const inspName=I.insp?fullName(I.insp):'';
+  const ip=(S.boot.inspectors||[]).find(x=>x.short===I.insp), inspName=I.insp?(ip?ip.full:fullName(I.insp)):'';
   return `<div class="page a4p"><div class="doc" style="padding:12mm 13mm 10mm 18mm;font-size:15pt;line-height:1.28">
     <div style="display:flex;gap:6px;align-items:flex-start">${ORG(true,34)}<div style="flex:1;padding-top:10px">
       <div style="font-weight:700;font-size:16.5pt;text-align:center;white-space:nowrap">บัญชีลงนามการอยู่เวรแก้ไขไฟฟ้าขัดข้องและรายงานการแก้ไขไฟฟ้าขัดข้อง</div>
-      <div style="margin-top:10px;padding-left:18mm">การไฟฟ้าส่วนภูมิภาค${FL(cfg.office,190)}</div></div></div>
+      <div style="margin-top:8px;text-align:center">การไฟฟ้าส่วนภูมิภาค ${esc(cfg.office)}</div></div></div>
     <div style="margin-top:6px">เรียน &nbsp;${esc(cfg.mgrTitle)} ผ่าน ${esc(String(cfg.headTitle).replace(/^(หผ\.ปร\.)\s*/,'$1'))}</div>
     <div style="padding-left:12mm">ขอรายงานผลการอยู่เวรแก้ไฟฟ้าขัดข้อง มีรายละเอียดดังนี้</div>
     <div>๑. รายชื่อพนักงานอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
@@ -957,21 +958,21 @@ function signPage(key,data,next,d,cfg,part,rp){
       <tr><th>ที่</th><th>ชื่อ-สกุล</th><th>เวลามา</th><th>ลงชื่อ</th><th>เวลากลับ</th><th>ลงชื่อ</th><th>หมายเหตุ</th></tr>${rows}</table>
     <div style="white-space:nowrap;overflow:hidden">๒. เหตุการณ์กระแสไฟฟ้าแรงสูงขัดข้อง${v(hv.n,40)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${v(hv.out,45)}ชม. &nbsp;เวลาปฏิบัติงาน${v(hv.work,50)}ชม.</div>
     <div style="white-space:nowrap;overflow:hidden">๓. เหตุการณ์กระแสไฟฟ้าแรงต่ำขัดข้อง${v(lv.n,40)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${v(lv.out,45)}ชม. &nbsp;เวลาปฏิบัติงาน${v(lv.work,50)}ชม.</div>
-    <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${v(tp.n,50)}รายการ &nbsp;ดังนี้${tp.text?FL(tp.text,300):dots(200)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${v(tp.n,50)}รายการ &nbsp;ดังนี้${tp.text?T(tp.text):dots(200)}</div>
     <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>
-    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา${FL(tTh(cm.time||I.t0),60)}น. ${bx(cm.ok===true).replace('class="bx','style="margin-left:4px" class="bx')}ติดต่อได้ทุก กฟฟ. ${bx(cm.ok===false)}ติดต่อไม่ได้ &nbsp;คือ${cm.fail?FL(cm.fail,200):dots(100)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา ${tTh(cm.time||I.t0)} น. ${bx(cm.ok===true).replace('class="bx','style="margin-left:4px" class="bx')}ติดต่อได้ทุก กฟฟ. ${bx(cm.ok===false)}ติดต่อไม่ได้ &nbsp;คือ${cm.fail?T(cm.fail):dots(100)}</div>
     <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${v(r.att,60)}ฉบับ</div>
-    <div style="white-space:nowrap;overflow:hidden">๗. อื่นๆ${r.other?FL(r.other,500):dots(300)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๗. อื่น ๆ${r.other?T(r.other):dots(300)}</div>
     <div style="padding-left:20mm">จึงเรียนมาเพื่อโปรดทราบ</div>
-    <div class="sig" style="margin-left:80mm;margin-top:8mm">( ${esc(I.names[0]?fullName(I.names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
+    <div class="sig" style="margin-left:80mm;margin-top:3mm;width:80mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${esc(I.names[0]?fullName(I.names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
     <div style="margin-top:2mm">เรียน &nbsp;${esc(cfg.mgrTitle)}</div>
     <div style="padding-left:14mm">ขอรายงานผลการตรวจสอบการอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
-    <div>ในวันที่${FL(dLongTh(inspD),220)}เวลา${FL(tTh(inspT),70)}น.</div>
+    <div>ในวันที่ ${esc(dLongTh(inspD))} เวลา ${tTh(inspT)} น.</div>
     <div>ปรากฏว่า &nbsp;พนักงานอยู่เวรฯ และคนงานอยู่เวรฯ</div>
-    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.complete===true?'on':''}" style="margin-left:0"></span>ครบถ้วน ${bx(ins.complete===false)}ไม่ครบถ้วน${ins.missing?FL(ins.missing,160):dots(40)}</div><div style="padding-right:22mm">ทราบ</div></div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.complete===true?'on':''}" style="margin-left:0"></span>ครบถ้วน ${bx(ins.complete===false)}ไม่ครบถ้วน${ins.missing?T(ins.missing):dots(40)}</div><div style="width:75mm;text-align:center">ทราบ</div></div>
     <div>และความพร้อมยานพาหนะ,เครื่องมือ/เครื่องใช้แก้ไฟฟ้าขัดข้อง</div>
-    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.ready===true?'on':''}" style="margin-left:0"></span>พร้อม ${bx(ins.ready===false)}ไม่พร้อม${ins.notready?FL(ins.notready,160):dots(40)}</div><div class="sig">(${esc(String(cfg.mgrName||''))||dots(48)})<br>${esc(cfg.mgrTitle)}</div></div>
-    <div class="sig" style="width:80mm;margin-left:20mm;margin-top:4mm">( ${inspName?esc(inspName):dots(48)} )<br>ผู้ตรวจสอบเวรฯ</div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.ready===true?'on':''}" style="margin-left:0"></span>พร้อม ${bx(ins.ready===false)}ไม่พร้อม${ins.notready?T(ins.notready):dots(40)}</div><div class="sig" style="width:75mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${esc(String(cfg.mgrName||''))||dots(48)} )<br>${esc(cfg.mgrTitle)}</div></div>
+    <div class="sig" style="width:80mm;margin-left:10mm;margin-top:-4mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${inspName?esc(inspName):dots(48)} )<br>ผู้ตรวจสอบเวรฯ</div>
   </div></div>`;
 }
 async function monthReports(key){
