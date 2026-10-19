@@ -249,6 +249,7 @@ fieldset:disabled{opacity:.55}
       <div class="grid2" style="margin-top:8px">
         <label class="f">เหตุผล (ใช้ในบันทึกลาเวร)<select id="qWhy"><option value="errand">ลากิจ</option><option value="sick">ลาป่วย</option><option value="vacation">ลาพักผ่อน</option><option value="private">ธุระส่วนตัว</option><option value="official">ปฏิบัติงานราชการตามคำสั่ง</option></select></label>
         <label class="f">รายละเอียดเพิ่มเติม (ไม่บังคับ)<input type="text" id="qReason" placeholder="เช่น พาบุตรไปโรงพยาบาล"></label>
+        <label class="f">วันที่ขอเสนอ (ลงในบันทึก/ใบลา)<input type="date" id="qDocDate"></label>
         <label class="f hide qOrd">คำสั่งที่<input type="text" id="qOrder" placeholder="กพค.(ก.)2425/2568"></label>
         <label class="f hide qOrd">ลงวันที่<input type="date" id="qOrderDate"></label>
       </div>
@@ -804,7 +805,7 @@ function memoPage(key,x,ap,cfg,sgn){
     ${ORG()}
     <div style="display:grid;grid-template-columns:1fr 62mm;margin-top:8px">
       <div>จาก &nbsp; ${esc(THD(A.pos))||FL('',160)}</div><div>ถึง &nbsp; ${esc(THD(cfg.mgrTitle))}</div>
-      <div>เลขที่</div><div>วันที่ &nbsp; ${esc(THD(isoLong(r.created)))}</div></div>
+      <div>เลขที่</div><div>วันที่ &nbsp; ${esc(THD(isoLong((r.payload&&r.payload.docDate)||r.created)))}</div></div>
     <div>เรื่อง &nbsp; ขออนุมัติลาเวร และ จัดเวรแทนชุดปฏิบัติการระบบไฟฟ้า รูปแบบ Standby</div>
     <div style="border-bottom:1px solid #000;padding-bottom:4px">เรียน &nbsp; ${esc(THD(cfg.mgrTitle))} ผ่าน ${esc(THD(via))}</div>
     <div style="text-indent:15mm;margin-top:6px;white-space:nowrap">ตามอนุมัติ ${esc(THD(cfg.mgrTitle))} ที่ ${FL(THD(ap.no),90)} ลว. ${FL(THD(isoShort(ap.date)),80)} เรื่อง อนุมัติ</div>
@@ -829,7 +830,7 @@ function leaveLogPages(key,items,cfg){
   for(let p=0;p<pages;p++){
     const chunk=items.slice(p*per,(p+1)*per);
     let rows=chunk.map(x=>{const A=pInfo(x.from),B=pInfo(x.to),w=(x.req.payload&&x.req.payload.why)||{};
-      const cr=x.req.created?dSlash(new Date(x.req.created+'T00:00:00Z')):'';
+      const cd=(x.req.payload&&x.req.payload.docDate)||x.req.created, cr=cd?dSlash(new Date(cd+'T00:00:00Z')):'';
       return `<tr>${cell(cr)}${cell(dSlash(x.a))}${cell(x.s+' - '+x.e)}<td style="text-align:left">${esc(A.full)}</td>${cell(A.id)}<td></td><td style="text-align:left">${esc(B.full)}</td>${cell(B.id)}<td></td><td></td><td></td><td style="font-size:11px;white-space:normal;line-height:1.1">${esc(w.k==='official'?'ราชการ':(WHY[w.k]||''))}${x.req.type==='swap'?' (แลกเวร)':''}</td></tr>`;}).join('');
     for(let i=chunk.length;i<per;i++) rows+='<tr>'+'<td></td>'.repeat(12)+'</tr>';
     html+=`<div class="page a4l"><div class="doc" style="padding:9mm 10mm 8mm">
@@ -966,6 +967,7 @@ async function renderReq(){
     $('qA').onchange=()=>qForm('a'); $('qDa').onchange=()=>qForm('da'); $('qB').onchange=()=>qForm('b');
     $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r');
     $('qNow').onchange=()=>$('qPinWrap').classList.toggle('hide',!$('qNow').checked);
+    $('qDocDate').value=todayIso();
     $('qWhy').onchange=()=>$$('.qOrd').forEach(e=>e.classList.toggle('hide',$('qWhy').value!=='official'));
   }
   $('pnApprovers').textContent='ผู้อนุมัติ: '+(S.boot.approvers||[]).map(a=>a.role).join(' / ');
@@ -1009,7 +1011,7 @@ async function qForm(stage){
 $('qSubmit').onclick=async()=>{
   const key=$('qMonth').value,g=$('qGroup').value,a=$('qA').value,da=+$('qDa').value;
   const payload=S.qType==='swap'?{g,a,da,b:$('qB').value,db:+$('qDb').value}:{g,a,d:da,r:$('qR').value};
-  const wk=$('qWhy').value; payload.why={k:wk};
+  const wk=$('qWhy').value; payload.why={k:wk}; payload.docDate=$('qDocDate').value||todayIso();
   if(wk==='official'){ payload.why.order=$('qOrder').value.trim(); payload.why.orderDate=$('qOrderDate').value;
     if(!payload.why.order){msg('qMsg','ใส่เลขที่คำสั่งที่ไปปฏิบัติงานราชการ','warn');return;} }
   const det=$('qReason').value.trim();
@@ -1027,7 +1029,7 @@ $('qSubmit').onclick=async()=>{
 async function loadRequests(){
   const j=await apiGet({action:'requests'}), R=j.requests; setDot(R.pending.length);
   $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq"><div class="tx">${esc(r.text)}</div>
-      <div class="muted">ผู้ขอ ${esc(r.requester)} · ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
+      <div class="muted">ผู้ขอ ${esc(r.requester)} · ${r.payload&&r.payload.docDate?'วันที่เสนอ '+esc(thDate(r.payload.docDate))+' · ':''}ยื่นในระบบ ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
       <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div></div>`).join('')
     :'<div class="muted">ไม่มีคำขอค้าง</div>';
   $('pnList').querySelectorAll('button').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
