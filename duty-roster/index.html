@@ -1036,13 +1036,27 @@ async function loadRequests(){
   const j=await apiGet({action:'requests'}), R=j.requests; setDot(R.pending.length);
   $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq"><div class="tx">${esc(r.text)}</div>
       <div class="muted">ผู้ขอ ${esc(r.requester)} · ${r.payload&&r.payload.docDate?'วันที่เสนอ '+esc(thDate(r.payload.docDate))+' · ':''}ยื่นในระบบ ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
-      <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div></div>`).join('')
+      <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div>
+      <button class="btn ghost" style="height:34px;font-size:12px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบรายการ</button></div>`).join('')
     :'<div class="muted">ไม่มีคำขอค้าง</div>';
   $('pnList').querySelectorAll('button').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
+  document.querySelectorAll('#pnList button[data-del], #hsList button[data-del]').forEach(b=>b.onclick=()=>delReq(b.dataset.del,b.dataset.st));
   setTimeout(()=>$('hsList').querySelectorAll('button[data-pid]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.pid};show('viewReport');}),0);
   $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
-      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div>${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">พิมพ์บันทึกลาเวร / จัดเวรแทน</button>`:''}</div>`).join('')
+      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div>
+      <div class="row" style="gap:6px">${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px;flex:1" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">พิมพ์บันทึกลาเวร / จัดเวรแทน</button>`:''}
+      <button class="btn ghost" style="height:38px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบ</button></div></div>`).join('')
     :'<div class="muted">ยังไม่มีประวัติ</div>';
+}
+async function delReq(id,st){
+  if(!confirm('ลบรายการนี้ออกจากระบบและเอกสาร?')) return;
+  let revert=false;
+  if(st==='อนุมัติ') revert=confirm('คืนตารางเวรให้กลับเป็นเหมือนก่อนแลก/ลาเวรด้วยไหม?\n\nตกลง = คืนตาราง\nยกเลิก = ลบเฉพาะเอกสาร ตารางคงเดิม');
+  const pin=$('pnPin').value||prompt('PIN ผู้อนุมัติ / แอดมิน'); if(!pin) return;
+  msg('pnMsg','กำลังลบ…');
+  try{ const j=await apiPost({action:'deleteRequest',id,revert,pin}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
+    msg('pnMsg','ลบแล้ว'+(j.result.note?' — '+j.result.note.replace(/^ลบโดย [^·]+· ?/,''):'')); await loadRequests(); await qForm('month');
+  }catch(e){ msg('pnMsg',e.message,'err'); }
 }
 async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}

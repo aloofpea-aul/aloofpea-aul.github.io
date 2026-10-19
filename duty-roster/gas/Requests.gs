@@ -78,7 +78,7 @@ function listRequests_() {
   const all = reqRows_();
   return {
     pending: all.filter(function (r) { return r.status === 'รออนุมัติ'; }).map(pubReq_),
-    done: all.filter(function (r) { return r.status !== 'รออนุมัติ'; }).slice(-30).reverse().map(pubReq_)
+    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ลบแล้ว'; }).slice(-30).reverse().map(pubReq_)
   };
 }
 
@@ -259,4 +259,37 @@ function saveReport_(b) {
   if (row > 0) sh.getRange(row, 1, 1, 4).setValues([rec]); else sh.appendRow(rec);
   log_(by, 'รายงานเวร', k.slice(0, 7), k + ' ' + fields.join(','));
   return reportsOf_(k.slice(0, 7))[k];
+}
+
+/** ลบคำขอ/เอกสาร (ผู้อนุมัติ/แอดมิน) — revert=true คืนตารางเวรให้เหมือนก่อนอนุมัติ (ถ้ายังไม่ถูกแก้ทับ) */
+function deleteRequest_(id, revert, who) {
+  const r = reqRows_().filter(function (x) { return x.id === id; })[0];
+  if (!r) throw new Error('ไม่พบรายการ ' + id);
+  if (r.status === 'ลบแล้ว') throw new Error('รายการนี้ถูกลบไปแล้ว');
+  let reverted = 0, skipped = 0;
+  const mo = getMonth_(r.month);
+  if (mo && r.status === 'อนุมัติ') {
+    const mine = (mo.data.changes || []).filter(function (c) { return c.req === id; });
+    if (revert && mine.length) {
+      const sameDaySwap = r.type === 'swap' && Number(r.payload.da) === Number(r.payload.db);
+      if (sameDaySwap) {
+        const c = mine[0], map = mo.data[c.g], i = c.day - 1;
+        if (map[c.from][i] === mine[1].code && map[c.to][i] === c.code) { map[c.from][i] = c.code; map[c.to][i] = mine[1].code; reverted = 2; } else skipped = 2;
+      } else {
+        mine.slice().reverse().forEach(function (c) {
+          const map = mo.data[c.g], i = c.day - 1;
+          if (map[c.to] && map[c.to][i] === c.code && isFree_(c.g, map[c.from][i])) {
+            map[c.from][i] = c.code; map[c.to][i] = c.replacedStandby ? 'S' : FREE_[c.g]; reverted++;
+          } else skipped++;
+        });
+      }
+      if (reverted) mo.data.rev = (mo.data.rev || 0) + 1;
+    }
+    mo.data.changes = (mo.data.changes || []).filter(function (c) { return c.req !== id; });
+    saveMonth_(r.month, mo.status, mo.data, mo.stateAfter, mo.note);
+  }
+  const note = 'ลบโดย ' + who.name + (revert ? (reverted ? ' · คืนตารางแล้ว' : '') + (skipped ? ' · คืนไม่ได้ ' + skipped + ' ช่อง (ตารางถูกแก้ทับ)' : '') : ' · ไม่คืนตาราง');
+  sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([['ลบแล้ว', who.name + ' (' + who.role + ')', new Date(), note]]);
+  log_(who.name, 'ลบคำขอ', r.month, r.text + ' | ' + note);
+  return { id: id, reverted: reverted, skipped: skipped, note: note };
 }

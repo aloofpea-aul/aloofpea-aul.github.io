@@ -358,6 +358,7 @@ function doPost(e) {
     if (b.action === 'request') return json_({ ok: true, request: createRequest_(b, who) });
     if (b.action === 'decide') return json_({ ok: true, request: decideRequest_(b.id, !!b.approve, who, b.note || '') });
     if (b.action === 'checkPin') return json_({ ok: true, who: who });
+    if (b.action === 'deleteRequest') return json_({ ok: true, result: deleteRequest_(b.id, !!b.revert, who) });
 
     if (b.action === 'generate') {
       const cur = getMonth_(b.m);
