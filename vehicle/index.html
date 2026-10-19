@@ -348,6 +348,21 @@ function render(){
   renderHome(); renderBook(); renderRepair(); renderPlan();
 }
 
+/* รูปรถ: ลองลิงก์ไดรฟ์ก่อน ถ้าเปิดไม่ได้ (บัญชีห้ามแชร์สาธารณะ) โหลดผ่านหลังบ้านแล้วจำไว้ในเครื่อง */
+const PH = {};
+function carImg(v, cls, style){
+  const c = PH[v.imageId] || (v.imageId && rawGet('vh_ph_'+v.imageId));
+  return `<img ${cls?`class="${cls}"`:''} ${style?`style="${style}"`:''} src="${esc(c || v.image)}" data-fid="${esc(v.imageId||'')}" alt="" loading="lazy" onerror="photoFallback(this)">`;
+}
+async function photoFallback(img){
+  const id = img.dataset.fid;
+  if (!id || img.dataset.tried) { img.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'🚗'})); return; }
+  img.dataset.tried = '1';
+  try {
+    if (!PH[id]) { const j = await api('photo', {fileId:id}); PH[id] = j.data; try { localStorage.setItem('vh_ph_'+id, j.data); } catch(e){} }
+    img.src = PH[id];
+  } catch(e){ img.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'🚗'})); }
+}
 function carStatusPill(v){ return v.status==='in-use' ? '<span class="pill p-bad">กำลังใช้งาน</span>' : '<span class="pill p-ok">ว่าง</span>'; }
 function nextBookingOf(plate){
   const now = new Date();
@@ -370,7 +385,7 @@ function renderHome(){
   $('cars').innerHTML = list.length ? list.map(v=>{
     const nb = nextBookingOf(v.plate);
     const nbTxt = nb ? `<div class="nb">📅 จองถัดไป ${fd(nb.start)} · ${esc(nb.user)}</div>` : '';
-    const ph = v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'🚗'}))">` : '<div class="noimg">🚗</div>';
+    const ph = v.image ? carImg(v, '') : '<div class="noimg">🚗</div>';
     const canReturn = isMe(v.user) || m.admin || !v.user;
     const btn = v.status==='available'
       ? `<button class="btn block" onclick="openCheckout('${esc(v.id)}')">🔑 เบิกใช้รถ</button>`
@@ -558,7 +573,7 @@ function openCar(id){
 function openPhoto(id){
   const v = carById(id); if(!v) return;
   sheet(`<h3>📷 รูปรถ ${esc(v.plate)}</h3>
-    ${v.image?`<img class="preview" src="${esc(v.image)}" alt="" style="max-height:220px">`:'<p class="muted">ยังไม่มีรูป — ถ่ายใหม่หรือเลือกจากเครื่องได้</p>'}
+    ${v.image?carImg(v,'preview','max-height:220px'):'<p class="muted">ยังไม่มีรูป — ถ่ายใหม่หรือเลือกจากเครื่องได้</p>'}
     <div class="row2" style="margin-top:12px">
       <label class="btn soft" style="cursor:pointer">📸 ถ่ายรูป<input type="file" accept="image/*" capture="environment" class="hide" onchange="pickPhoto(this,'${esc(v.id)}')"></label>
       <label class="btn soft" style="cursor:pointer">🖼 เลือกจากเครื่อง<input type="file" accept="image/*" class="hide" onchange="pickPhoto(this,'${esc(v.id)}')"></label>

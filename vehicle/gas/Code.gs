@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '16.3';
+const VERSION = '16.4';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -64,6 +64,7 @@ function doPost(e) {
     }
     if (!me) return json_({ ok: false, error: 'unauthorized', message: 'รหัสพนักงาน/ชื่อ หรือรหัสผ่านไม่ถูกต้อง' });
     if (b.action === 'bootstrap') return json_(bootstrap_(me));
+    if (b.action === 'photo') return json_({ ok: true, data: photo_(String(b.fileId || '')) });
 
     const fn = ACTIONS[b.action];
     if (!fn) return json_({ ok: false, error: 'unknown action' });
@@ -234,7 +235,9 @@ const ACTIONS = {
     const out = {};
     try { out.auth = String(ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL).getAuthorizationStatus()); } catch (e) { out.auth = 'ERR ' + e.message; }
     try { out.folder = DriveApp.getFolderById(IMAGE_FOLDER_ID).getName(); } catch (e) { out.folder = 'ERR ' + e.message; }
-    try { const f = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile('test_web.txt', 'ok'); f.setTrashed(true); out.create = 'ok'; } catch (e) { out.create = 'ERR ' + e.message; }
+    try { const f = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile('test_web.txt', 'ok'); out.create = 'ok';
+      try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); out.share = 'ok'; } catch (e) { out.share = 'ERR ' + e.message; }
+      f.setTrashed(true); } catch (e) { out.create = 'ERR ' + e.message; }
     return 'DRIVETEST ' + JSON.stringify(out);
   },
 
@@ -264,7 +267,7 @@ function bootstrap_(me) {
     const inUse = String(r[C.h.Status]) === 'in-use';
     const sc = inUse ? (since['id:' + r[C.h.ID]] || since['p:' + np_(r[C.h.Plate])] || {}) : {};
     return { id: String(r[C.h.ID]), plate: String(r[C.h.Plate]), model: String(r[C.h.Model] || ''),
-      status: inUse ? 'in-use' : 'available', mile: Number(r[C.h.Mile]) || 0, image: imgUrl_(r[C.h.Image]),
+      status: inUse ? 'in-use' : 'available', mile: Number(r[C.h.Mile]) || 0, image: imgUrl_(r[C.h.Image]), imageId: imgId_(r[C.h.Image]),
       user: inUse ? String(r[C.h.User] || '') : '', since: sc.at || '', mission: sc.mission || '' };
   });
   const logs = L.rows.filter(filled).slice(-200).reverse().map(function (r) {
@@ -455,10 +458,24 @@ function saveImage_(dataUrl, filename) {
   const type = parts[0].split(':')[1].split(';')[0];
   const blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), type, filename);
   const file = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}  // บางบัญชีห้ามแชร์สาธารณะ → หน้าเว็บโหลดรูปผ่านหลังบ้านแทน
   return 'https://drive.google.com/uc?export=view&id=' + file.getId();
 }
 /** ลิงก์ uc?export=view ของ Drive ไม่แสดงในเว็บอื่นแล้ว → แปลงเป็นลิงก์รูปย่อที่แสดงได้ */
+function imgId_(v) { const s = String(v || ''), m = s.match(/[?&]id=([\w-]+)/) || s.match(/\/d\/([\w-]+)/); return m ? m[1] : ''; }
+/** ส่งรูปรถเป็น data URL — เฉพาะไฟล์ที่อยู่ในรายการรถเท่านั้น (กันการขอไฟล์อื่นในไดรฟ์) */
+function photo_(fileId) {
+  const C = table_(SH.CARS);
+  if (!fileId || !C.rows.some(function (r) { return imgId_(r[C.h.Image]) === fileId; })) throw new Error('ไม่พบรูป');
+  const cache = CacheService.getScriptCache(), hit = cache.get('ph_' + fileId);
+  if (hit) return hit;
+  const f = DriveApp.getFileById(fileId);
+  let blob = f.getBlob();
+  if (blob.getBytes().length > 300000) { try { blob = f.getThumbnail(); } catch (e) {} }
+  const url = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+  if (url.length < 95000) cache.put('ph_' + fileId, url, 21600);
+  return url;
+}
 function imgUrl_(v) {
   const s = String(v || ''), m = s.match(/[?&]id=([\w-]+)/) || s.match(/\/d\/([\w-]+)/);
   return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w800' : s;
