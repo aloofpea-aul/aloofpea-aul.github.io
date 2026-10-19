@@ -49,6 +49,17 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .btn{height:46px;border-radius:12px;border:0;background:var(--pri);color:#fff;font-weight:600;padding:0 16px;cursor:pointer}
 .btn.ghost{background:#fff;color:var(--pri);border:1px solid var(--pri)}
 .btn:disabled{opacity:.5}
+.dlgBg{position:fixed;inset:0;background:rgba(30,26,34,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+@media(min-width:600px){.dlgBg{align-items:center}}
+.dlg{background:#fff;border-radius:16px;width:100%;max-width:420px;padding:18px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.dlg h3{margin:0;font-size:17px;color:#8A2B2B}.dlg .tx{font-size:13px;background:var(--bg);border-radius:10px;padding:8px 10px}
+.dlg label.ch{display:flex;gap:8px;align-items:flex-start;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer}
+.dlg label.ch.on{border:2px solid var(--pri)}
+.dlg .btn.danger{background:#A23434;color:#fff;border:0}.dlg .btn.danger:disabled{opacity:.85}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1E1A22;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;max-width:90vw;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.rq.gone{opacity:.4;pointer-events:none;transition:opacity .2s}
 .bar{height:10px;border-radius:5px;background:#EFEBF2;overflow:hidden}.bar>i{display:block;height:10px;border-radius:5px;background:#8E3FA0}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .muted{color:var(--mut);font-size:12px}
@@ -1046,24 +1057,45 @@ async function loadRequests(){
       <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div>
       <button class="btn ghost" style="height:34px;font-size:12px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบรายการ</button></div>`).join('')
     :'<div class="muted">ไม่มีคำขอค้าง</div>';
-  $('pnList').querySelectorAll('button').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
-  document.querySelectorAll('#pnList button[data-del], #hsList button[data-del]').forEach(b=>b.onclick=()=>delReq(b.dataset.del,b.dataset.st));
+  $('pnList').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
   setTimeout(()=>$('hsList').querySelectorAll('button[data-pid]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.pid};show('viewReport');}),0);
   $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
       <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div>
       <div class="row" style="gap:6px">${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px;flex:1" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">พิมพ์บันทึกลาเวร / จัดเวรแทน</button>`:''}
       <button class="btn ghost" style="height:38px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบ</button></div></div>`).join('')
     :'<div class="muted">ยังไม่มีประวัติ</div>';
+  document.querySelectorAll('#pnList button[data-del], #hsList button[data-del]').forEach(b=>b.onclick=()=>delReq(b.dataset.del,b.dataset.st,b));
 }
-async function delReq(id,st){
-  if(!confirm('ลบรายการนี้ออกจากระบบและเอกสาร?')) return;
-  let revert=false;
-  if(st==='อนุมัติ') revert=confirm('คืนตารางเวรให้กลับเป็นเหมือนก่อนแลก/ลาเวรด้วยไหม?\n\nตกลง = คืนตาราง\nยกเลิก = ลบเฉพาะเอกสาร ตารางคงเดิม');
-  const pin=$('pnPin').value||prompt('PIN ผู้อนุมัติ / แอดมิน'); if(!pin) return;
-  msg('pnMsg','กำลังลบ…');
-  try{ const j=await apiPost({action:'deleteRequest',id,revert,pin}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
-    msg('pnMsg','ลบแล้ว'+(j.result.note?' — '+j.result.note.replace(/^ลบโดย [^·]+· ?/,''):'')); await loadRequests(); await qForm('month');
-  }catch(e){ msg('pnMsg',e.message,'err'); }
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),3200);}
+/* ลบคำขอ: กล่องยืนยันในแอป → แสดงสถานะกำลังลบ → เอารายการออกทันที */
+function delReq(id,st,btn){
+  const card=btn&&btn.closest('.rq'), txt=card?(card.querySelector('.tx,div[style*="font-size:13px"]')||{}).textContent||'':'';
+  const ok=st==='อนุมัติ', bg=document.createElement('div'); bg.className='dlgBg';
+  bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
+    <h3 id="dlgT">ลบรายการนี้?</h3><div class="tx">${esc(txt)}</div>
+    ${ok?`<div style="font-size:13px;color:var(--mut)">รายการนี้อนุมัติแล้ว เลือกว่าจะทำอะไรกับตารางเวร</div>
+      <label class="ch on"><input type="radio" name="dRv" value="0" checked><span><b>ลบเฉพาะรายการและเอกสาร</b><br>ตารางเวรคงเดิม</span></label>
+      <label class="ch"><input type="radio" name="dRv" value="1"><span><b>ลบ และคืนตารางเวร</b><br>กลับเป็นเหมือนก่อนแลก/ลาเวร</span></label>`:''}
+    <label class="f">PIN ผู้อนุมัติ / แอดมิน<input type="password" id="dPin" inputmode="numeric" autocomplete="off" value="${esc($('pnPin').value||'')}"></label>
+    <div id="dMsg"></div>
+    <div class="grid2"><button class="btn ghost" id="dNo">ยกเลิก</button><button class="btn danger" id="dYes">ลบรายการ</button></div></div>`;
+  document.body.appendChild(bg);
+  const close=()=>bg.remove();
+  bg.onclick=e=>{if(e.target===bg&&!bg.busy)close();};
+  bg.querySelectorAll('label.ch').forEach(l=>l.onclick=()=>bg.querySelectorAll('label.ch').forEach(x=>x.classList.toggle('on',x===l)));
+  $('dNo').onclick=()=>{if(!bg.busy)close();};
+  setTimeout(()=>{const p=$('dPin'); if(!p.value) p.focus();},50);
+  $('dYes').onclick=async()=>{
+    const pin=$('dPin').value.trim(); if(!pin){msg('dMsg','ใส่ PIN ก่อน','warn');return;}
+    const revert=ok&&(bg.querySelector('input[name=dRv]:checked')||{}).value==='1';
+    bg.busy=true; $('dYes').disabled=$('dNo').disabled=true; $('dYes').innerHTML='<span class="spin"></span>กำลังลบ…'; msg('dMsg','');
+    try{ const j=await apiPost({action:'deleteRequest',id,revert,pin}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
+      if(!$('pnPin').value) $('pnPin').value=pin;
+      if(card) card.remove(); close();
+      toast('ลบแล้ว'+(revert?' · คืนตารางเวรแล้ว':'')+(j.result&&j.result.note?' — '+j.result.note.replace(/^ลบโดย [^·]+· ?/,''):''));
+      loadRequests().catch(()=>{}); qForm('month').catch(()=>{});
+    }catch(e){ bg.busy=false; $('dYes').disabled=$('dNo').disabled=false; $('dYes').textContent='ลบรายการ'; msg('dMsg',e.message,'err'); }
+  };
 }
 async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}
