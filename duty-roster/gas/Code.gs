@@ -164,7 +164,7 @@ function migrateInsp_() {
   const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
   const si = h.indexOf('short'), oi = h.indexOf('inspOrder'), pi = h.indexOf('inspPos');
   const want = [['มานศักดิ์', 'นายมานศักดิ์ พิลาฤทธิ์', 'หผ.ปร.กฟส.อ่าวลึก'], ['นงคราญ', 'นางสาวนงคราญ ยศศิริ', 'หผ.บง.กฟส.อ่าวลึก'],
-    ['พัชรียา', 'นางสาวพัชรียา เรียงสันเทียะ', 'ชผ.บง.กฟส.อ่าวลึก'], ['นทีธร', 'นายนทีธร เชียรแก้ว', 'ชผ.ผค.กฟส.อ่าวลึก']];
+    ['พัชรียา', 'นางสาวพัชรียา เรียงสันเทียะ', 'ชผ.บง.กฟส.อ่าวลึก'], ['นทีธร', 'นายนทีธร เชียรแก้ว', 'ชผ.บค.กฟส.อ่าวลึก']];
   want.forEach(function (w, k) {
     let r = -1; for (let i = 1; i < v.length; i++) if (v[i][si] === w[0]) { r = i; break; }
     if (r < 0) {
@@ -186,6 +186,24 @@ function migrateInsp_() {
     saveMonth_('2026-10', oct.status, oct.data, oct.stateAfter, oct.note);
   }
   props.setProperty('MIG_INSP1', '1');
+}
+/** รหัสพนักงาน + ตำแหน่ง ครบ 9 คน (ข้อมูลจาก หผ.ปร. 19 ต.ค. 69) */
+function migrateEmp_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('MIG_EMP1')) return;
+  const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
+  const si = h.indexOf('short'), ei = h.indexOf('empId'), pi = h.indexOf('position'), ii = h.indexOf('inspPos');
+  const d = { 'ธวัชชัย': ['501389', 'พชง.6 กฟส.ปลายพระยา รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'],
+    'นทีธร': ['499491', 'ชผ.บค.กฟส.อ่าวลึก'], 'พุทธภงค์': ['511753', 'พชง.4 ผปร.กฟส.อ่าวลึก'],
+    'กัมปนาทท์': ['513793', 'พชง.3 ผบค.กฟส.อ่าวลึก'], 'พงศธร': ['514400', 'พชง.3 ผปร.กฟส.อ่าวลึก'],
+    'อติวิทย์': ['514601', 'พชง.3 ผปร.กฟส.อ่าวลึก'], 'สุรเชษฐ์': ['9008385', 'ชชค.กฟส.อ่าวลึก'] };
+  sh.getRange(2, ei + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
+  for (let i = 1; i < v.length; i++) {
+    const x = d[v[i][si]]; if (!x) continue;
+    sh.getRange(i + 1, ei + 1).setValue(x[0]); sh.getRange(i + 1, pi + 1).setValue(x[1]);
+    if (ii >= 0 && v[i][ii] === 'ชผ.ผค.กฟส.อ่าวลึก') sh.getRange(i + 1, ii + 1).setValue('ชผ.บค.กฟส.อ่าวลึก');
+  }
+  props.setProperty('MIG_EMP1', '1');
 }
 
 /** ชั่วโมงที่เหลือจนจบเวรพนักงานปัจจุบัน (08:30 / 16:30 / 00:30) */
@@ -319,7 +337,7 @@ function doGet(e) {
   try {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
-      try { migrateInsp_(); } catch (e) {}
+      try { migrateInsp_(); migrateEmp_(); } catch (e) {}
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),
@@ -342,7 +360,7 @@ function doPost(e) {
   if (b.events) return lineWebhook_(b);            // มาจาก LINE
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    try { migrate_(); migrateInsp_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
+    try { migrate_(); migrateInsp_(); migrateEmp_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
     // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- รายงานเวร: ลิงก์มีลายเซ็นจาก LINE หรือ PIN ผู้อนุมัติ ----
