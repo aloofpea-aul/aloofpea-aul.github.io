@@ -761,7 +761,8 @@ function signPage(key,data,next,d,cfg,part){
   const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${FL(TH_WDF[p.wd],70)}ที่${FL(THD(p.d),36)}เดือน${FL(TH_MONTH[p.m],90)}พ.ศ.${FL(THD(p.y),60)}เวลา${FL(t,70)}น.</div>`;
   const nrow=Math.max(4,names.length);
   let rows=''; for(let i=0;i<nrow;i++){const n=names[i];
-    rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td></td><td></td><td></td><td></td><td style="font-size:12px">${n?esc(ppl[n].join(', ')):''}</td></tr>`;}
+    rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td>${n?t0+' น.':''}</td><td></td><td>${n?t1+' น.':''}</td><td></td><td style="font-size:12px">${n?esc(ppl[n].join(', ')):''}</td></tr>`;}
+  const dLongTh=p=>THD(TH_WDF[p.wd]+' '+p.d+' '+TH_MONTH[p.m]+' '+p.y);
   const dots=w=>'.'.repeat(w);
   return `<div class="page a4p"><div class="doc" style="padding:12mm 13mm 10mm 18mm;font-size:14px;line-height:1.75">
     <div style="display:flex;gap:6px;align-items:flex-start">${ORG(true,34)}<div style="flex:1;padding-top:10px">
@@ -777,14 +778,14 @@ function signPage(key,data,next,d,cfg,part){
     <div style="white-space:nowrap;overflow:hidden">๓. เหตุการณ์กระแสไฟฟ้าแรงต่ำขัดข้อง${dots(9)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${dots(9)}ชม. &nbsp;เวลาปฏิบัติงาน${dots(11)}ชม.</div>
     <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${dots(14)}รายการ &nbsp;ดังนี้${dots(200)}</div>
     <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>
-    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา${dots(14)}น. <span class="bx" style="margin-left:4px"></span>ติดต่อได้ทุก กฟฟ. <span class="bx"></span>ติดต่อไม่ได้ &nbsp;คือ${dots(100)}</div>
+    <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา${FL(t0,60)}น. <span class="bx" style="margin-left:4px"></span>ติดต่อได้ทุก กฟฟ. <span class="bx"></span>ติดต่อไม่ได้ &nbsp;คือ${dots(100)}</div>
     <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${dots(24)}ฉบับ</div>
     <div style="white-space:nowrap;overflow:hidden">๗. อื่นๆ${dots(300)}</div>
     <div style="padding-left:20mm">จึงเรียนมาเพื่อโปรดทราบ</div>
     <div class="sig" style="margin-left:80mm;margin-top:8mm">( ${esc(names[0]?fullName(names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
     <div style="margin-top:2mm">เรียน &nbsp;${esc(cfg.mgrTitle)}</div>
     <div style="padding-left:14mm">ขอรายงานผลการตรวจสอบการอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
-    <div>ในวันที่${dots(60)}เวลา${dots(24)}น.</div>
+    <div>ในวันที่${FL(dLongTh(pa),220)}เวลา${FL(t0,70)}น.</div>
     <div>ปรากฏว่า &nbsp;พนักงานอยู่เวรฯ และคนงานอยู่เวรฯ</div>
     <div style="display:flex;justify-content:space-between"><div><span class="bx" style="margin-left:0"></span>ครบถ้วน <span class="bx"></span>ไม่ครบถ้วน${dots(40)}</div><div style="padding-right:22mm">ทราบ</div></div>
     <div>และความพร้อมยานพาหนะ,เครื่องมือ/เครื่องใช้แก้ไฟฟ้าขัดข้อง</div>
