@@ -231,7 +231,7 @@ const ACTIONS = {
 
   driveTest: function (b, me) {                       // ผู้ดูแล: ตรวจสิทธิ์บันทึกรูปลงไดรฟ์
     if (!me.admin) throw new Error('เฉพาะผู้ดูแลระบบ');
-    const out = { user: Session.getEffectiveUser().getEmail() };
+    const out = {};
     try { out.auth = String(ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL).getAuthorizationStatus()); } catch (e) { out.auth = 'ERR ' + e.message; }
     try { out.folder = DriveApp.getFolderById(IMAGE_FOLDER_ID).getName(); } catch (e) { out.folder = 'ERR ' + e.message; }
     try { const f = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile('test_web.txt', 'ok'); f.setTrashed(true); out.create = 'ok'; } catch (e) { out.create = 'ERR ' + e.message; }
