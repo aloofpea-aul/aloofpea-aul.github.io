@@ -81,7 +81,7 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 @media(min-width:640px){.cars{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:900px){.cars{grid-template-columns:repeat(3,1fr)}}
 .car{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(30,26,34,.08);display:flex;flex-direction:column}
-.car .ph{position:relative;height:150px;background:linear-gradient(135deg,#EFE7F2,#E2DCE8);display:flex;align-items:center;justify-content:center}
+.car .ph{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#EFE7F2,#E2DCE8);display:flex;align-items:center;justify-content:center}
 .car .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .car .ph .noimg{font-size:56px;opacity:.35}
 .car .ph .pill{position:absolute;top:10px;right:10px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
@@ -151,6 +151,10 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 .car .ph .addph{position:absolute;right:10px;bottom:10px;height:40px;border-radius:20px;border:0;background:#fff;color:var(--pri2);font-weight:600;font-size:14px;padding:0 14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .car .wait{margin-top:8px;min-height:48px;border-radius:12px;background:#F4EFF6;color:var(--mut);display:flex;align-items:center;justify-content:center;font-size:14px;text-align:center;padding:4px 10px}
 .p-used{background:#E3E6FA;color:#26307A}
+.crop{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#2B2230;touch-action:none;margin-top:12px;cursor:grab}
+.crop img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none;max-width:none}
+.crop .hint{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 8px;border-radius:8px;pointer-events:none}
+.zoom{display:flex;align-items:center;gap:10px;margin-top:10px}.zoom input{flex:1}
 .toast{position:fixed;left:50%;bottom:calc(var(--navh) + var(--sb) + 14px);transform:translateX(-50%);z-index:60;background:#2B2230;color:#fff;
   padding:12px 18px;border-radius:12px;font-size:15px;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25);text-align:center}
 .toast.err{background:var(--bad)}
@@ -519,8 +523,18 @@ function openCheckout(id){
     ${nb?`<div class="note" style="margin-bottom:12px">มีการจองรถคันนี้ ${fd(nb.start)} – ${fd(nb.end)} โดย ${esc(nb.user)}</div>`:''}
     <label class="fld"><span>ภารกิจ / จุดหมาย</span><input id="fMission" placeholder="เช่น แก้ไฟ ต.คลองหิน" autocomplete="off"></label>
     <div class="chips">${['แก้ไฟฟ้าขัดข้อง','ตรวจระบบ','ติดต่อราชการ','ประชุม','ส่งเอกสาร'].map(t=>`<button type="button" onclick="$('fMission').value='${t}'">${t}</button>`).join('')}</div>
-    <p class="muted">เลขไมล์ขณะออก: <b>${km(v.mile)} กม.</b></p>
-    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" onclick="act('checkout',{carId:'${esc(v.id)}',mission:$('fMission').value})">ยืนยันเบิกรถ</button></div>`);
+    <label class="fld" style="margin-top:14px"><span>เลขไมล์ขณะออก (กม.)</span><input id="fStart" type="number" inputmode="numeric" value="${v.mile}"></label>
+    <div class="muted small" id="fStartNote" style="margin:-8px 0 12px">ตรวจกับหน้าปัดรถ ถ้าไม่ตรง (คนก่อนลืมบันทึก) แก้ได้เลย</div>
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn" id="fGo">ยืนยันเบิกรถ</button></div>`);
+  $('fStart').oninput = e => { const n = Number(e.target.value), d = n - v.mile;
+    $('fStartNote').innerHTML = !e.target.value ? 'กรุณากรอกเลขไมล์' : d === 0 ? 'ตรงกับที่บันทึกล่าสุด' :
+      d > 0 ? `มากกว่าที่บันทึกล่าสุด ${km(d)} กม. (${km(v.mile)} → ${km(n)})` : `<span style="color:var(--bad)">⚠️ น้อยกว่าที่บันทึกล่าสุด ${km(-d)} กม. — ตรวจอีกครั้ง</span>`; };
+  $('fGo').onclick = () => {
+    const n = Number($('fStart').value);
+    if (!n || n <= 0) { toast('กรุณากรอกเลขไมล์ขณะออก', true); return; }
+    if (n < v.mile && !confirm('เลขไมล์น้อยกว่าที่บันทึกล่าสุด ('+km(v.mile)+' กม.) ยืนยันใช้ '+km(n)+' กม.?')) return;
+    act('checkout', {carId:v.id, mission:$('fMission').value, startMile:n});
+  };
   setTimeout(()=>$('fMission').focus(),150);
 }
 function openReturn(id){
@@ -578,14 +592,45 @@ function openPhoto(id){
       <label class="btn soft" style="cursor:pointer">📸 ถ่ายรูป<input type="file" accept="image/*" capture="environment" class="hide" onchange="pickPhoto(this,'${esc(v.id)}')"></label>
       <label class="btn soft" style="cursor:pointer">🖼 เลือกจากเครื่อง<input type="file" accept="image/*" class="hide" onchange="pickPhoto(this,'${esc(v.id)}')"></label>
     </div>
-    <img id="phNew" class="preview hide" alt="">
+    <div id="phCrop" class="hide"></div>
     <div class="sbtns" style="margin-top:14px"><button class="btn ghost" onclick="closeSheet()">ปิด</button><button class="btn" id="phSave" disabled>บันทึกรูป</button></div>`);
 }
-async function pickPhoto(inp, id){
+/* จัดตำแหน่งรูป: ลากเลื่อน + ซูม ในกรอบ 16:9 เท่ากับการ์ดรถ — เห็นแบบไหน บันทึกแบบนั้น */
+function pickPhoto(inp, id){
   const f = inp.files[0]; if(!f) return;
-  try { const img = await resize(f); $('phNew').src = img; $('phNew').classList.remove('hide');
-    $('phSave').disabled = false; $('phSave').onclick = () => act('vehiclePhoto',{id,image:img}); }
-  catch(e){ toast('อ่านรูปไม่ได้ ลองรูปอื่น', true); }
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onerror = () => toast('อ่านรูปไม่ได้ ลองรูปอื่น', true);
+  im.onload = () => {
+    const box = $('phCrop'); box.className = '';
+    box.innerHTML = `<div class="crop" id="cpBox"><img id="cpImg" alt=""><span class="hint">ลากเพื่อเลื่อนรูป</span></div>
+      <div class="zoom"><span class="small muted">ย่อ</span><input type="range" id="cpZoom" min="1" max="3" step="0.01" value="1"><span class="small muted">ขยาย</span></div>`;
+    const B = $('cpBox'), I = $('cpImg'); I.src = url;
+    const st = { z:1, x:0, y:0 };
+    const dims = () => { const W = B.clientWidth, H = B.clientHeight, base = Math.max(W/im.naturalWidth, H/im.naturalHeight); return {W, H, s: base*st.z}; };
+    const clamp = () => { const d = dims(), w = im.naturalWidth*d.s, h = im.naturalHeight*d.s;
+      st.x = Math.min(0, Math.max(d.W - w, st.x)); st.y = Math.min(0, Math.max(d.H - h, st.y)); };
+    const draw = () => { clamp(); const d = dims(); I.style.transform = `translate(${st.x}px,${st.y}px) scale(${d.s})`; };
+    { const d = dims(); st.x = (d.W - im.naturalWidth*d.s)/2; st.y = (d.H - im.naturalHeight*d.s)/2; } draw();
+    let drag = null; const pts = new Map();
+    B.onpointerdown = e => { B.setPointerCapture(e.pointerId); pts.set(e.pointerId, e); drag = {x:e.clientX, y:e.clientY, sx:st.x, sy:st.y, pinch: pts.size===2 ? {d:dist(), z:st.z} : null}; };
+    const dist = () => { const p=[...pts.values()]; return p.length<2?0:Math.hypot(p[0].clientX-p[1].clientX, p[0].clientY-p[1].clientY); };
+    B.onpointermove = e => { if (!drag) return; pts.set(e.pointerId, e);
+      if (pts.size===2 && drag.pinch) { zoomTo(drag.pinch.z * dist()/drag.pinch.d); return; }
+      st.x = drag.sx + e.clientX - drag.x; st.y = drag.sy + e.clientY - drag.y; draw(); };
+    B.onpointerup = B.onpointercancel = e => { pts.delete(e.pointerId); drag = pts.size ? {x:[...pts.values()][0].clientX, y:[...pts.values()][0].clientY, sx:st.x, sy:st.y, pinch:null} : null; };
+    const zoomTo = z => { const d0 = dims(), cx = d0.W/2, cy = d0.H/2, ix = (cx - st.x)/d0.s, iy = (cy - st.y)/d0.s;
+      st.z = Math.min(3, Math.max(1, z)); const d1 = dims(); st.x = cx - ix*d1.s; st.y = cy - iy*d1.s; $('cpZoom').value = st.z; draw(); };
+    $('cpZoom').oninput = e => zoomTo(+e.target.value);
+    $('phSave').disabled = false;
+    $('phSave').onclick = () => {
+      const d = dims(), c = document.createElement('canvas'); c.width = 1280; c.height = 720;
+      const k = c.width / d.W;
+      c.getContext('2d').drawImage(im, -st.x/d.s, -st.y/d.s, d.W/d.s, d.H/d.s, 0, 0, c.width, c.height);
+      const img = c.toDataURL('image/jpeg', .72);
+      act('vehiclePhoto', {id, image: img});
+    };
+  };
+  im.src = url;
 }
 function openLogs(){
   const L = S.d.logs;

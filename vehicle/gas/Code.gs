@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '16.4';
+const VERSION = '16.5';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -94,8 +94,12 @@ const ACTIONS = {
       if (nm_(holder) === nm_(me.name)) return 'เบิกรถ ' + get_(t, r, 'Plate') + ' ไว้แล้ว (บันทึกสำเร็จตั้งแต่ครั้งแรก)';   // กดซ้ำ/เน็ตช้า
       throw new Error('รถคันนี้ ' + (holder ? holder + ' ' : '') + 'เบิกใช้อยู่ — กดรีเฟรชเพื่อดูสถานะล่าสุด');
     }
-    const plate = String(get_(t, r, 'Plate')), mile = Number(get_(t, r, 'Mile')) || 0;
-    set_(t, r, { Status: 'in-use', User: me.name, UserId: me.empId || '' });
+    const plate = String(get_(t, r, 'Plate')), was = Number(get_(t, r, 'Mile')) || 0;
+    const given = Number(b.startMile);                    // แก้เลขไมล์ขณะออกได้ (คนก่อนลืมบันทึก/บันทึกผิด)
+    if (b.startMile !== undefined && b.startMile !== '' && (!isFinite(given) || given <= 0)) throw new Error('เลขไมล์ขณะออกไม่ถูกต้อง');
+    const mile = given > 0 ? given : was;
+    if (was > 0 && Math.abs(mile - was) > 50000) throw new Error('เลขไมล์ต่างจากที่บันทึกล่าสุดมากเกินไป (' + was.toLocaleString() + ' กม.) — ตรวจอีกครั้ง');
+    set_(t, r, { Status: 'in-use', User: me.name, UserId: me.empId || '', Mile: mile });
     append_(table_(SH.LOGS), { Date: new Date(), User: me.name, Action: plate, Detail: mission,
       StartMile: mile, EndMile: '', Status: 'in-use', CarId: get_(t, r, 'ID') });
     // การจองของตัวเองช่วงนี้ (รถคันนี้หรือไม่ระบุรถ) → "รับรถแล้ว"
