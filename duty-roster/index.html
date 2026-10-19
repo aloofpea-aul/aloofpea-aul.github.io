@@ -735,12 +735,12 @@ const isoShort=iso=>{if(!iso)return '';const p=dParts(new Date(iso+'T00:00:00Z')
 function rangeLong(a,b){ if(+a===+b) return dLong(a); const p=dParts(a),q=dParts(b);
   if(p.m===q.m&&p.y===q.y) return p.d+'-'+q.d+' '+TH_MONTH[q.m]+' '+q.y;
   return p.d+' '+TH_MONTH[p.m]+(p.y!==q.y?' '+p.y:'')+' - '+q.d+' '+TH_MONTH[q.m]+' '+q.y; }
-/* แยกเวรเป็นช่วงเวลา: ช่วง 2+3 = 2 ช่วง (08:30–16:30, 16:30–00:30) */
+/* ช่วงเวลาของเวร 1 ชุด: ช่วง 2+3 = ต่อเนื่อง 08:30 – 00:30 วันรุ่งขึ้น (1 ฉบับ) */
 function segsOf(key,day,code){
   const a=dOf(key,day),b=dOf(key,day+1);
   if(code==='1') return [{a,b:a,s:'00:30',e:'08:30'}];
   if(code==='3') return [{a,b,s:'16:30',e:'00:30'}];
-  if(code==='2,3') return [{a,b:a,s:'08:30',e:'16:30'},{a,b,s:'16:30',e:'00:30'}];
+  if(code==='2,3') return [{a,b,s:'08:30',e:'00:30'}];
   return [];
 }
 const WHY={sick:'ลาป่วย',errand:'ลากิจ',vacation:'ลาพักผ่อน',private:'ธุระส่วนตัว',official:'ปฏิบัติงานราชการ'};
@@ -755,7 +755,9 @@ async function leaveItems(key){
   const [mo,reqs]=await Promise.all([loadMonth(key),monthReqs(key)]);
   const by={}; reqs.forEach(r=>by[r.id]=r);
   const out=[];
-  (mo.data.changes||[]).filter(c=>c.g==='emp'&&by[c.req]).forEach((c,k)=>segsOf(key,c.day,c.code).forEach(sg=>out.push(Object.assign({req:by[c.req],from:c.from,to:c.to,day:c.day,k},sg))));
+  /* แลกเวร: ออกเอกสารเฉพาะฝั่งผู้ยื่นคำขอ (ผู้มอบเวร → ผู้อยู่เวรแทน) ส่วนเวรที่รับคืนไม่ใช่การลา */
+  const giver=r=>{const p=r.payload||{};return r.type!=='swap'?null:(r.requester===p.b?p.b:p.a);};
+  (mo.data.changes||[]).filter(c=>c.g==='emp'&&by[c.req]&&(giver(by[c.req])==null||c.from===giver(by[c.req]))).forEach((c,k)=>segsOf(key,c.day,c.code).forEach(sg=>out.push(Object.assign({req:by[c.req],from:c.from,to:c.to,day:c.day,k},sg))));
   out.sort((x,y)=>x.a-y.a||x.s.localeCompare(y.s)||x.k-y.k);
   return {mo,reqs,items:out};
 }
