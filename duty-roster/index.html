@@ -1073,9 +1073,9 @@ function delReq(id,st,btn){
   const ok=st==='อนุมัติ', bg=document.createElement('div'); bg.className='dlgBg';
   bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
     <h3 id="dlgT">ลบรายการนี้?</h3><div class="tx">${esc(txt)}</div>
-    ${ok?`<div style="font-size:13px;color:var(--mut)">รายการนี้อนุมัติแล้ว เลือกว่าจะทำอะไรกับตารางเวร</div>
-      <label class="ch on"><input type="radio" name="dRv" value="0" checked><span><b>ลบเฉพาะรายการและเอกสาร</b><br>ตารางเวรคงเดิม</span></label>
-      <label class="ch"><input type="radio" name="dRv" value="1"><span><b>ลบ และคืนตารางเวร</b><br>กลับเป็นเหมือนก่อนแลก/ลาเวร</span></label>`:''}
+    ${ok?`<div style="font-size:13px;color:var(--mut)">รายการนี้อนุมัติแล้ว เลือกแบบที่ต้องการ</div>
+      <label class="ch on"><input type="radio" name="dRv" value="0" checked><span><b>ลบทิ้งอย่างเดียว</b><br>ตารางเวรไม่เปลี่ยน (ใช้เมื่อกดซ้ำ/กดลอง)</span></label>
+      <label class="ch"><input type="radio" name="dRv" value="1"><span><b>ยกเลิกการแลก/ลาเวร</b><br>ตารางเวรกลับเป็นแบบก่อนแลก</span></label>`:''}
     <label class="f">PIN ผู้อนุมัติ / แอดมิน<input type="password" id="dPin" inputmode="numeric" autocomplete="off" value="${esc($('pnPin').value||'')}"></label>
     <div id="dMsg"></div>
     <div class="grid2"><button class="btn ghost" id="dNo">ยกเลิก</button><button class="btn danger" id="dYes">ลบรายการ</button></div></div>`;
@@ -1092,7 +1092,7 @@ function delReq(id,st,btn){
     try{ const j=await apiPost({action:'deleteRequest',id,revert,pin}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
       if(!$('pnPin').value) $('pnPin').value=pin;
       if(card) card.remove(); close();
-      toast('ลบแล้ว'+(revert?' · คืนตารางเวรแล้ว':'')+(j.result&&j.result.note?' — '+j.result.note.replace(/^ลบโดย [^·]+· ?/,''):''));
+      toast((revert?'ยกเลิกแล้ว · ตารางเวรกลับเป็นแบบก่อนแลก':'ลบแล้ว · ตารางเวรไม่เปลี่ยน')+(j.result&&j.result.note?' — '+j.result.note.replace(/^ลบโดย [^·]+· ?/,''):''));
       loadRequests().catch(()=>{}); qForm('month').catch(()=>{});
     }catch(e){ bg.busy=false; $('dYes').disabled=$('dNo').disabled=false; $('dYes').textContent='ลบรายการ'; msg('dMsg',e.message,'err'); }
   };
