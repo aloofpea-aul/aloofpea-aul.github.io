@@ -676,12 +676,11 @@ async function drawDocs(k){
   if(k==='sign'){
     $$('.rSign').forEach(e=>e.classList.remove('hide'));
     const mo=await loadMonth(key), days=mo.data.days, el=$('rDay'), old=want.day?String(want.day):el.value;
-    el.innerHTML=''; el.add(new Option('ทั้งเดือน ('+days.length+' แผ่น)','all'));
+    el.innerHTML=''; el.add(new Option('ทั้งเดือน ('+days.length*2+' แผ่น · วันละ 2 ชุด)','all'));
     days.forEach(d=>el.add(new Option(TH_WDF[d.wd]+' '+d.d+' '+TH_MS[parseKey(key).m-1]+(d.off?' · วันหยุด':''),String(d.d))));
     el.value=[...el.options].some(o=>o.value===old)?old:'all';
-    let nx=null; const nk=nextKey(key); if(S.boot.months.some(x=>x.month===nk)) try{nx=await loadMonth(nk);}catch(e){}
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
-    PA.innerHTML=list.map(d=>signPage(key,mo.data,nx&&nx.data,d,cfg)).join('');
+    PA.innerHTML=list.map(d=>signPage(key,mo.data,null,d,cfg,'p1')+signPage(key,mo.data,null,d,cfg,'p3')).join('');
     return;
   }
   const L=await leaveItems(key);
@@ -749,14 +748,16 @@ function leaveLogPages(key,items,cfg){
   }
   return html;
 }
-function signPage(key,data,next,d,cfg){
-  const day=data.days[d-1], rank=rankOf(), e=data.emp, N=data.days.length;
-  const nE=d<N?{data,i:d}:(next?{data:next,i:0}:null);
+/* บัญชีลงนาม 1 แผ่นต่อ 1 ชุดเวร: part 'p1' = ช่วง 1 (00.30–08.30) · 'p3' = ช่วง 3 / ช่วง 2+3 (ถึง 00.30 วันรุ่งขึ้น) */
+function signPage(key,data,next,d,cfg,part){
+  const day=data.days[d-1], rank=rankOf(), e=data.emp;
   const ppl={};
-  Object.keys(e).forEach(n=>{const c=e[n][d-1]; if(c==='3'||c==='2,3') (ppl[n]=ppl[n]||[]).push(c==='3'?'ช่วง 3':'ช่วง 2+3');});
-  if(nE) Object.keys(nE.data.emp).forEach(n=>{ if(nE.data.emp[n][nE.i]==='1') (ppl[n]=ppl[n]||[]).push('ช่วง 1'); });
+  Object.keys(e).forEach(n=>{const c=e[n][d-1];
+    if(part==='p1'&&c==='1') ppl[n]=['ช่วง 1'];
+    if(part==='p3'&&(c==='3'||c==='2,3')) ppl[n]=[c==='3'?'ช่วง 3':'ช่วง 2+3'];});
   const names=Object.keys(ppl).sort((x,y)=>rank(x)-rank(y));
-  const a=dOf(key,d), b=dOf(key,d+1), pa=dParts(a), pb=dParts(b), t0=day.off?'๐๘.๓๐':'๑๖.๓๐';
+  const a=dOf(key,d), b=part==='p1'?a:dOf(key,d+1), pa=dParts(a), pb=dParts(b);
+  const t0=part==='p1'?'๐๐.๓๐':day.off?'๐๘.๓๐':'๑๖.๓๐', t1=part==='p1'?'๐๘.๓๐':'๐๐.๓๐';
   const line=(lbl,p,t)=>`<div style="padding-left:6mm">${lbl}${FL(TH_WDF[p.wd],70)}ที่${FL(THD(p.d),36)}เดือน${FL(TH_MONTH[p.m],90)}พ.ศ.${FL(THD(p.y),60)}เวลา${FL(t,70)}น.</div>`;
   const nrow=Math.max(4,names.length);
   let rows=''; for(let i=0;i<nrow;i++){const n=names[i];
@@ -769,7 +770,7 @@ function signPage(key,data,next,d,cfg){
     <div style="margin-top:6px">เรียน &nbsp;${esc(cfg.mgrTitle)} ผ่าน ${esc(String(cfg.headTitle).replace(/^(หผ\.ปร\.)\s*/,'$1'))}</div>
     <div style="padding-left:12mm">ขอรายงานผลการอยู่เวรแก้ไฟฟ้าขัดข้อง มีรายละเอียดดังนี้</div>
     <div>๑. รายชื่อพนักงานอยู่เวรแก้ไฟฟ้าขัดข้อง</div>
-    ${line('ประจำวัน',pa,t0)}${line('ถึงวัน',pb,'๐๘.๓๐')}
+    ${line('ประจำวัน',pa,t0)}${line('ถึงวัน',pb,t1)}
     <table class="sg" style="margin:2px 0 6px"><colgroup><col style="width:5%"><col style="width:33%"><col style="width:11%"><col style="width:12%"><col style="width:11%"><col style="width:12%"><col style="width:16%"></colgroup>
       <tr><th>ที่</th><th>ชื่อ-สกุล</th><th>เวลามา</th><th>ลงชื่อ</th><th>เวลากลับ</th><th>ลงชื่อ</th><th>หมายเหตุ</th></tr>${rows}</table>
     <div style="white-space:nowrap;overflow:hidden">๒. เหตุการณ์กระแสไฟฟ้าแรงสูงขัดข้อง${dots(9)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${dots(9)}ชม. &nbsp;เวลาปฏิบัติงาน${dots(11)}ชม.</div>
