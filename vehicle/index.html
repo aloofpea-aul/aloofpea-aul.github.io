@@ -327,7 +327,13 @@ async function act(action, data, okClose=true){
     const j = await api(action, data);
     S.d = j; LS.set('boot', j); render(); if (okClose) closeSheet(); toast(j.message || 'บันทึกแล้ว');
     return true;
-  } catch(e){ toast(e.message, true); return false; }
+  } catch(e){
+    if (!e.server) {                          // เน็ตช้า/หลุดระหว่างบันทึก — อาจบันทึกไปแล้ว ดึงสถานะจริงมาให้ดูก่อน
+      busy(true, 'ตรวจสอบผลการบันทึก…'); closeSheet(); await load(true);
+      toast('สัญญาณไม่ดี — โหลดสถานะล่าสุดให้แล้ว ตรวจดูว่ารายการบันทึกแล้วหรือยังก่อนกดซ้ำ', true); return false;
+    }
+    toast(e.message, true); return false;
+  }
   finally { busy(false); }
 }
 

@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '16.1';
+const VERSION = '16.2';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -88,7 +88,11 @@ const ACTIONS = {
     if (mission.length < 2) throw new Error('กรุณากรอกภารกิจ/จุดหมาย');
     const t = table_(SH.CARS), r = findRow_(t, 'ID', b.carId);
     if (r == null) throw new Error('ไม่พบรถคันนี้');
-    if (String(get_(t, r, 'Status')) === 'in-use') throw new Error('รถคันนี้มีคนเบิกใช้อยู่แล้ว — กดรีเฟรชเพื่อดูสถานะล่าสุด');
+    if (String(get_(t, r, 'Status')) === 'in-use') {
+      const holder = String(get_(t, r, 'User') || '');
+      if (nm_(holder) === nm_(me.name)) return 'เบิกรถ ' + get_(t, r, 'Plate') + ' ไว้แล้ว (บันทึกสำเร็จตั้งแต่ครั้งแรก)';   // กดซ้ำ/เน็ตช้า
+      throw new Error('รถคันนี้ ' + (holder ? holder + ' ' : '') + 'เบิกใช้อยู่ — กดรีเฟรชเพื่อดูสถานะล่าสุด');
+    }
     const plate = String(get_(t, r, 'Plate')), mile = Number(get_(t, r, 'Mile')) || 0;
     set_(t, r, { Status: 'in-use', User: me.name, UserId: me.empId || '' });
     append_(table_(SH.LOGS), { Date: new Date(), User: me.name, Action: plate, Detail: mission,
@@ -109,7 +113,10 @@ const ACTIONS = {
     if (!isFinite(endMile) || endMile <= 0) throw new Error('กรุณากรอกเลขไมล์');
     const t = table_(SH.CARS), r = findRow_(t, 'ID', b.carId);
     if (r == null) throw new Error('ไม่พบรถคันนี้');
-    if (String(get_(t, r, 'Status')) !== 'in-use') throw new Error('รถคันนี้คืนแล้ว — กดรีเฟรชเพื่อดูสถานะล่าสุด');
+    if (String(get_(t, r, 'Status')) !== 'in-use') {
+      if (Number(get_(t, r, 'Mile')) === endMile) return 'คืนรถ ' + get_(t, r, 'Plate') + ' แล้ว (บันทึกสำเร็จตั้งแต่ครั้งแรก)';  // กดซ้ำ/เน็ตช้า
+      throw new Error('รถคันนี้คืนแล้ว — กดรีเฟรชเพื่อดูสถานะล่าสุด');
+    }
     const holder = String(get_(t, r, 'User') || '');
     if (!me.admin && holder && nm_(holder) !== nm_(me.name)) throw new Error('คืนได้เฉพาะผู้เบิก (' + holder + ') หรือผู้ดูแลระบบ');
     const start = Number(get_(t, r, 'Mile')) || 0;
@@ -391,13 +398,17 @@ function findRow_(t, col, val) {
 }
 function get_(t, r, col) { return t.rows[r][t.h[col]]; }
 function set_(t, r, obj) {
-  Object.keys(obj).forEach(function (k) { t.sh.getRange(r + 2, t.h[k] + 1).setValue(obj[k]); t.rows[r][t.h[k]] = obj[k]; });
+  Object.keys(obj).forEach(function (k) {
+    const cell = t.sh.getRange(r + 2, t.h[k] + 1); cell.setValue(obj[k]); t.rows[r][t.h[k]] = obj[k];
+    if (obj[k] instanceof Date) cell.setNumberFormat('d/M/yyyy, H:mm:ss');
+  });
 }
 function append_(t, obj) {
   const row = new Array(t.width).fill('');
   Object.keys(obj).forEach(function (k) { if (t.h[k] != null) row[t.h[k]] = obj[k]; });
   // เขียนต่อจากแถวที่มีข้อมูลจริงแถวสุดท้าย (ชีตเดิมอาจมีคอลัมน์อื่นยาวกว่า)
   const last = t.rows.length; t.sh.getRange(last + 2, 1, 1, t.width).setValues([row]);
+  row.forEach(function (v, i) { if (v instanceof Date) t.sh.getRange(last + 2, i + 1).setNumberFormat('d/M/yyyy, H:mm:ss'); });
   t.rows.push(row);
 }
 
@@ -469,6 +480,7 @@ function setup() {
   migrate_();
   [SH.CARS, SH.LOGS, SH.BOOK, SH.MAINT].forEach(table_);
   UrlFetchApp.fetch(HUB_API + '?action=ping', { muteHttpExceptions: true });
-  DriveApp.getFolderById(IMAGE_FOLDER_ID).getName();
-  Logger.log('พร้อมใช้งาน v' + VERSION);
+  const f = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile('test_permission.txt', 'ok');   // ขอสิทธิ์เขียนไฟล์รูป
+  f.setTrashed(true);
+  Logger.log('พร้อมใช้งาน v' + VERSION + ' (บันทึกรูปลงไดรฟ์ได้)');
 }
