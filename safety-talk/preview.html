@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>พรีวิวรายงาน Safety Talk</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E9EEE7;font-family:'Noto Sans Thai',sans-serif;color:#17251A}
+header{background:#1B5E20;color:#fff;padding:14px 16px}
+header b{font-size:19px}
+main{max-width:1320px;margin:0 auto;padding:14px 16px 40px}
+.note{background:#fff;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.6;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+figure{margin:0;background:#fff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+figcaption{font-weight:700}
+figcaption span{display:block;font-weight:400;font-size:13px;color:#4A5A4D}
+canvas{width:100%;height:auto;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.15);background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.row button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #C9D6C5;background:#fff;font:inherit}
+.row button.on{background:#1B5E20;color:#fff;border-color:#1B5E20}
+#st{font-size:14px;color:#4A5A4D}
+</style>
+</head>
+<body>
+<header><b>พรีวิวแบบรายงาน (ยังไม่ใช้จริง)</b><div style="font-size:13px;color:#CFE3CB">เทียบ 2 แบบด้วยรูปจริง — เลือกแบบที่ชอบแล้วแจ้งในแชต</div></header>
+<main>
+  <div class="note">
+    <b>แบบ A — ตามสัดส่วนจริง</b> รูปทุกใบคงสัดส่วนเดิม ไม่ตัดขอบ จัดแถวให้เต็มความกว้างเอง (รูปแนวตั้งก็วางได้)<br>
+    <b>แบบ B — กรอบเท่ากัน</b> ทุกช่องเป็น 4:3 เรียบร้อยเป็นระเบียบ รูปวางเต็มรูปในกรอบ ถ้าสัดส่วนไม่ตรง ขอบที่เหลือเติมด้วยรูปเดียวกันแบบเบลอ<br>
+    ทั้งสองแบบ: รองรับได้ถึง 7 รูป · ตัวเลขผู้เข้าร่วมย่อเหลือแถบเดียว · ข้อความไม่ล้นขอบ
+  </div>
+  <div class="row" id="pick"></div>
+  <div id="st">กำลังโหลดข้อมูลและรูป…</div>
+  <div class="grid" id="g"></div>
+</main>
+<script src="sheet.js?v=1"></script>
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';
+const ls = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+async function api(action, data) {
+  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: 'st', args: [Object.assign({ action, auth: { name: ls('pea_aoluek_username'), pass: ls('pea_aoluek_password') } }, data || {})] }) });
+  const j = await r.json(); if (!j.ok) throw new Error(j.error); return j.result;
+}
+function shrink(src, max) { return new Promise(res => { const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.85)); }; im.onerror = () => res(null); im.src = src; }); }
+let D = null, extra = [], n = 0;
+const VIEWS = [['report', 'A', 'รายงาน · แบบ A ตามสัดส่วนจริง'], ['report', 'B', 'รายงาน · แบบ B กรอบเท่ากัน'], ['news', 'A', 'ข่าวภาพเดียว · แบบ A'], ['news', 'B', 'ข่าวภาพเดียว · แบบ B']];
+async function render() {
+  const imgs = D.images.concat(extra).slice(0, n);
+  document.getElementById('g').innerHTML = VIEWS.map((v, i) => '<figure><figcaption>' + v[2] + '<span>' + imgs.length + ' รูป</span></figcaption><canvas id="c' + i + '"></canvas></figure>').join('');
+  for (let i = 0; i < VIEWS.length; i++) await STSheet.draw(document.getElementById('c' + i), Object.assign({}, D, { images: imgs }), { kind: VIEWS[i][0], layout: VIEWS[i][1] });
+}
+function drawPick(max) {
+  document.getElementById('pick').innerHTML = Array.from({ length: max }, (_, i) => i + 1).filter(k => k >= 3).map(k => '<button data-n="' + k + '" class="' + (k === n ? 'on' : '') + '">' + k + ' รูป</button>').join('');
+  document.querySelectorAll('#pick button').forEach(b => b.onclick = () => { n = +b.dataset.n; drawPick(max); render(); });
+}
+(async () => {
+  const st = document.getElementById('st');
+  try {
+    const q = new URLSearchParams(location.search);
+    let id = q.get('id');
+    if (!id) { const b = await api('boot'); id = (b.last || b.next).id; }
+    D = await api('reportData', { sessionId: id });
+    n = D.images.length; drawPick(Math.max(n, D.images.length)); await render();
+    st.textContent = 'กิจกรรม ' + id + ' · รูปที่เลือกลงรายงาน ' + D.images.length + ' รูป — กำลังโหลดรูปเพิ่มจากอัลบั้มเพื่อลอง 6–7 รูป…';
+    const ph = await api('photos', { sessionId: id });
+    const used = new Set(), sel = ph.filter(p => p.selected);
+    const others = ph.filter(p => !p.selected).slice(0, 7 - D.images.length);
+    for (const p of others) {
+      try { const f = await api('photoFull', { fileId: p.fileId }); const s = await shrink(f.data, 1600); if (s) { extra.push({ tag: 'อื่นๆ', data: s }); drawPick(D.images.length + extra.length); } } catch (e) {}
+    }
+    st.textContent = 'กิจกรรม ' + id + ' · กดเลือกจำนวนรูปด้านบนเพื่อดูการจัดวาง';
+  } catch (e) { st.textContent = 'โหลดไม่ได้: ' + e.message + ' (ต้องเคยเข้า Safety Talk ในเครื่องนี้ก่อน)'; }
+})();
+</script>
+</body>
+</html>
