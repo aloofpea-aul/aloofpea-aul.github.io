@@ -206,9 +206,45 @@ function avatar(name) {
 }
 function imgTag(p) {
   const src = p.thumb || LOCAL_THUMB[p.fileId] || '';
-  return src ? '<img src="' + src + '" alt="" loading="lazy">' : '<span class="ph">รูป</span>';
+  return src ? '<img src="' + src + '" alt="" loading="lazy">' : '<span class="ph" data-nt="' + p.fileId + '"><span class="spin" style="width:18px;height:18px;margin:0"></span></span>';
 }
-const LOCAL_THUMB = {};   // รูปย่อจากเครื่องตัวเอง แสดงทันทีระหว่างรอหลังบ้าน
+const LOCAL_THUMB = {};
+/* รูปเก่าที่ยังไม่มีรูปย่อ: โหลดรูปเต็มทีละรูป ย่อในเครื่อง แล้วส่งรูปย่อกลับไปเก็บ (ทำครั้งเดียวต่อรูป) */
+const THUMB_Q = { busy: false, done: {} };
+function backfillThumbs(list) {
+  const need = (list || []).filter(p => !p.thumb && !LOCAL_THUMB[p.fileId] && !THUMB_Q.done[p.fileId]);
+  if (!need.length || THUMB_Q.busy) return;
+  THUMB_Q.busy = true;
+  (async () => {
+    for (const p of need) {
+      THUMB_Q.done[p.fileId] = 1;
+      try {
+        const f = await api('photoFull', { fileId: p.fileId });
+        const t = await shrinkSrc(f.data, 320, 0.6);
+        p.thumb = t; LOCAL_THUMB[p.fileId] = t;
+        document.querySelectorAll('[data-nt="' + p.fileId + '"]').forEach(el => { el.outerHTML = '<img src="' + t + '" alt="">'; });
+        api('setThumb', { fileId: p.fileId, thumb: t }).catch(() => {});
+      } catch (e) {
+        document.querySelectorAll('[data-nt="' + p.fileId + '"]').forEach(el => { el.innerHTML = 'รูป'; });
+      }
+    }
+    THUMB_Q.busy = false;
+  })();
+}
+function shrinkSrc(src, max, q) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      let d = c.toDataURL('image/jpeg', q); if (d.length > 45000) d = c.toDataURL('image/jpeg', 0.4);
+      res(d);
+    };
+    img.onerror = () => rej(new Error('อ่านรูปไม่ได้'));
+    img.src = src;
+  });
+}   // รูปย่อจากเครื่องตัวเอง แสดงทันทีระหว่างรอหลังบ้าน
 function header(sub, title) { $('#hdSub').textContent = sub; $('#hdTitle').textContent = title; }
 const ICON = {
   home: '<path d="M3 11l9-7 9 7v9H3z"/>',
@@ -380,7 +416,7 @@ async function loadThumbs() {
     const ph = await api('photos', { sessionId: as.id });
     S.photos = { id: as.id, list: ph };
     const box = $('#hThumbs'); if (!box) return;
-    drawHomeThumbs();
+    drawHomeThumbs(); backfillThumbs(ph.slice(-4));
     const h = $('#albumCard .h'); if (h) h.textContent = 'รูปกิจกรรมรวม · ' + ph.length + ' รูป';
   } catch (e) {}
 }
@@ -511,7 +547,7 @@ async function vAlbum() {
     (isPr ? '<div class="mut">แตะรูปเพื่อเลือกลงรายงาน (สูงสุด ' + S.boot.maxSelect + ' รูป) และตั้งป้าย</div>' : '<div class="mut">แตะรูปของคุณเพื่อลบ</div>') +
     '<div id="upBox"></div><div class="grid2"><button class="btn pri" id="bCam2">' + 'ถ่ายรูป' + '</button><button class="btn" id="bPick2">เลือกจากคลัง</button></div></div>' +
     '<div class="grid3"><span id="albPend" style="display:contents"></span>' + ph.slice().reverse().map(p => '<button class="thumb' + (p.selected ? ' sel' : '') + '" data-f="' + p.fileId + '">' + imgTag(p) + '<span class="by">' + esc(p.uploader) + '</span>' + (p.selected ? '<span class="tag">★ ' + esc(p.tag || 'เลือก') + '</span>' : '') + '</button>').join('') + '</div>';
-  drawUploads(); drawAlbumPending();
+  drawUploads(); drawAlbumPending(); backfillThumbs(ph.slice().reverse());
   $('#bCam2').onclick = () => $('#fileCam').click(); $('#bPick2').onclick = () => $('#filePick').click();
   $('#view').querySelectorAll('.pill [data-s]').forEach(b => b.onclick = () => { S.albumSid = b.dataset.s; vAlbum(); });
   $('#view').querySelectorAll('[data-f]').forEach(b => b.onclick = () => photoSheet(ph.find(p => p.fileId === b.dataset.f), isPr, myName));
