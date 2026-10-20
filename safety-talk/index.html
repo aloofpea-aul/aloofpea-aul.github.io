@@ -694,14 +694,15 @@ async function vNews() {
   const sid = S.newsSid || (workSession() || {}).id;
   header('ข่าว / รายงาน', '');
   $('#view').innerHTML = '<div class="loading"><div class="spin"></div>กำลังเตรียมข้อมูลและรูป…</div>';
-  let d; try { d = await api('reportData', { sessionId: sid }); } catch (e) { $('#view').innerHTML = '<div class="card">' + esc(e.message) + '</div>'; return; }
+  let d; try { d = await api('reportData', { sessionId: sid, lite: true }); } catch (e) { $('#view').innerHTML = '<div class="card">' + esc(e.message) + '</div>'; return; }
   S.news = d;
   const s = d.session;
   header('ข่าว / รายงาน', thDate(s.date));
   const mode = ls(K_MODE) || 'short';
   S.newsMode = mode;
-  ED.sel = -1; ED.arm = null; ED.swap = false; ED.dirty = false; ED.photos = null;
-  ED.slots = d.images.map(i => ({ fileId: i.fileId, tag: i.tag || 'อื่นๆ', crop: i.crop || null, data: i.data, img: null }));
+  ED.gen++; ED.sel = -1; ED.arm = null; ED.swap = false; ED.dirty = false; ED.photos = null;
+  ED.chain = Promise.resolve();
+  ED.slots = d.images.map(i => ({ fileId: i.fileId, tag: i.tag || 'อื่นๆ', crop: i.crop || null, data: i.data || i.thumb || '', img: null, loading: !i.data }));
   $('#view').innerHTML = '<div class="pill">' + (S.boot.recent || []).map(r => '<button data-s="' + r.id + '" class="' + (r.id === s.id ? 'on' : '') + '">' + esc(thDate(r.date)) + '</button>').join('') + '</div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="row"><b class="sp">1. ข้อมูลกิจกรรม</b><button class="btn" id="nDet" style="min-height:40px">แก้ไข</button></div>' +
       '<div style="font-size:14px;line-height:1.7">หัวข้อ: ' + (esc(s.topic) || '<span style="color:var(--red)">ยังไม่กรอก</span>') + '<br>นำโดย: ' + (esc(s.leadBy) || '-') + '<br>ผู้พูด: ' + (esc(s.speaker) || '-') + '<br>ผู้รับจ้าง: ' + (s.contractorCount || 0) + ' คน ' + esc(s.contractorCompany) + '<br>ผู้เข้าร่วม: พนักงาน ' + d.counts.staff + ' · ลูกจ้าง ' + d.counts.hired + ' · ติดภารกิจ/ลา ' + (d.counts.duty + d.counts.leave) + '</div></div>' +
@@ -729,6 +730,7 @@ async function vNews() {
   edBind();
   await Promise.all(ED.slots.map(async sl => { sl.img = await STSheet.loadImg(sl.data); }));
   buildNews(mode);
+  ED.slots.forEach(sl => { if (sl.loading) edFull(sl); });
   edLoadAlbum(s.id);
 }
 const fileName = ext => 'SafetyTalk_' + S.news.session.date + '.' + ext;
@@ -758,7 +760,7 @@ async function buildNews(mode) {
   edHint();
 }
 /* ================= จัดรูปในรายงาน (เลือกช่อง/รูป · ลากเลื่อน · ถ่างนิ้วซูม) ================= */
-const ED = { slots: [], sel: -1, arm: null, swap: false, dirty: false, photos: null, boxes: [], W: 1240, raf: 0, ptr: new Map(), g: null };
+const ED = { gen: 0, chain: Promise.resolve(), slots: [], sel: -1, arm: null, swap: false, dirty: false, photos: null, boxes: [], W: 1240, raf: 0, ptr: new Map(), g: null };
 const edMax = () => (S.boot && S.boot.maxSelect) || 5;
 function edImages() { return ED.slots.map(sl => ({ fileId: sl.fileId, tag: sl.tag, crop: sl.crop, data: sl.data, img: sl.img })); }
 async function edDraw(final) {
@@ -771,6 +773,7 @@ function edLater() { if (ED.raf) return; ED.raf = requestAnimationFrame(() => { 
 function edChanged() { ED.dirty = true; S.newsBlob = null; const b = $('#edSaveBtn'); if (b) { b.style.display = ''; b.className = 'btn pri'; b.textContent = 'บันทึกการจัดรูป'; } }
 /** รูปสุดท้ายที่จะใช้ส่ง: วาดใหม่แบบไม่มีกรอบเลือก + บันทึกการจัดรูปเบื้องหลัง */
 async function edFinal() {
+  if (ED.slots.some(sl => sl.loading)) await run(() => ED.chain, '', 'กำลังโหลดรูปความละเอียดเต็ม…');
   S.news.images = edImages();
   if (S.newsBlob && !ED.dirty) return;
   await edDraw(true);
@@ -862,13 +865,24 @@ function edPlace(p, i) {
   }
   ED.sel = i; ED.arm = null; edChanged(); edCtl(); edDraw(); edStrip();
 }
-async function edFull(sl) {
-  try {
-    const f = await api('photoFull', { fileId: sl.fileId });
-    const im = await STSheet.loadImg(f.data);
-    if (im) { sl.data = f.data; sl.img = im; }
-  } catch (e) { toast('โหลดรูปความละเอียดเต็มไม่ได้ ใช้รูปย่อแทน', true); }
-  sl.loading = false; edDraw(); edStrip();
+/** โหลดรูปความละเอียดเต็มทีละรูป (ส่งพร้อมกันหลายรูปหลังบ้านรับไม่ไหว) — ระหว่างรอใช้รูปย่อ */
+function edFull(sl) {
+  sl.loading = true;
+  const gen = ED.gen;
+  ED.chain = ED.chain.then(async () => {
+    if (gen !== ED.gen || ED.slots.indexOf(sl) < 0) { sl.loading = false; return; }
+    for (let t = 0; t < 2; t++) {
+      try {
+        const f = await api('photoFull', { fileId: sl.fileId });
+        const im = await STSheet.loadImg(f.data);
+        if (im) { sl.data = f.data; sl.img = im; }
+        break;
+      } catch (e) { if (t) toast('โหลดรูปความละเอียดเต็มไม่ได้ ใช้รูปย่อแทน', true); }
+    }
+    sl.loading = false; S.newsBlob = null;
+    if (gen === ED.gen) { edDraw(); edStrip(); }
+  });
+  return ED.chain;
 }
 async function edLoadAlbum(id) {
   try { ED.photos = await api('photos', { sessionId: id }); } catch (e) { const st = $('#edStrip'); if (st) st.innerHTML = '<span class="mut">' + esc(e.message) + '</span>'; return; }
