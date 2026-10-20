@@ -83,6 +83,18 @@ nav.tabs .dot{position:absolute;top:6px;right:calc(50% - 20px);background:var(--
 .warn{background:var(--amb2);border:1px solid #E5C770;border-radius:12px;padding:12px}
 canvas.prev{width:100%;border-radius:8px;box-shadow:0 1px 8px rgba(0,0,0,.15);background:#fff}
 .hidden{display:none!important}
+#busy{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(243,246,241,.55);backdrop-filter:blur(1px)}
+#busy .box{background:#17251A;color:#fff;border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:10px;font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+#busy .spin{border-color:rgba(255,255,255,.3);border-top-color:#fff;margin:0}
+#topbar{position:fixed;top:0;left:0;height:3px;width:30%;background:var(--amb);z-index:80;animation:tb 1.1s ease-in-out infinite}
+@keyframes tb{0%{left:-30%}100%{left:100%}}
+.gps{display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 12px;border-radius:10px;background:#fff}
+.gps .dot{width:10px;height:10px;border-radius:50%;background:#bbb;flex:none}
+.gps.ok .dot{background:#2E7D32}.gps.far .dot{background:#F2A900}.gps.err .dot{background:#A3261C}.gps.wait .dot{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.thumb .up{position:absolute;inset:0;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center}
+.thumb .up .spin{margin:0;width:22px;height:22px}
+.thumb .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#7A8A7D;font-size:11px}
 </style>
 </head>
 <body>
@@ -139,9 +151,11 @@ function creds() { return { name: ls(K_USER) || '', pass: ls(K_PASS) || '' }; }
 async function api(action, data) {
   const body = JSON.stringify({ fn: 'st', args: [Object.assign({ action: action, auth: creds() }, data || {})] });
   let r;
+  net(1);
   try { r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body }); }
-  catch (e) { throw new Error('เชื่อมต่อไม่ได้ ตรวจสอบสัญญาณอินเทอร์เน็ต'); }
-  let j; try { j = await r.json(); } catch (e) { throw new Error('หลังบ้านตอบกลับไม่ถูกต้อง'); }
+  catch (e) { net(-1); throw new Error('เชื่อมต่อไม่ได้ ตรวจสอบสัญญาณอินเทอร์เน็ต'); }
+  let j; try { j = await r.json(); } catch (e) { net(-1); throw new Error('หลังบ้านตอบกลับไม่ถูกต้อง'); }
+  net(-1);
   if (!j || !j.ok) {
     const msg = (j && j.error) || 'เกิดข้อผิดพลาด';
     if (/ไม่อนุญาตให้เรียกฟังก์ชัน: st|ไม่พบฟังก์ชัน: st/.test(msg)) { location.replace('old.html'); throw new Error('กำลังเปิดระบบเดิม…'); }
@@ -150,12 +164,24 @@ async function api(action, data) {
   }
   return j.result;
 }
-async function run(fn, okMsg) {
+function busy(on, label) {
+  let el = $('#busy'), bar = $('#topbar');
+  if (on) {
+    if (!el) { el = document.createElement('div'); el.id = 'busy'; el.innerHTML = '<div class="box"><span class="spin"></span><span class="lb"></span></div>'; document.body.appendChild(el); }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'topbar'; document.body.appendChild(bar); }
+    el.querySelector('.lb').textContent = label || 'กำลังดำเนินการ…';
+  } else { if (el) el.remove(); if (bar) bar.remove(); }
+}
+async function run(fn, okMsg, label) {
   if (S.busy) return; S.busy = true;
+  busy(true, label);
   try { const r = await fn(); if (okMsg) toast(okMsg); return r; }
   catch (e) { toast(e.message, true); }
-  finally { S.busy = false; }
+  finally { S.busy = false; busy(false); }
 }
+/* แถบเคลื่อนไหวบางๆ ด้านบนทุกครั้งที่คุยกับหลังบ้าน (รวมการโหลดหน้า) */
+let NET = 0;
+function net(d) { NET += d; let bar = $('#topbar'); if (NET > 0 && !bar) { bar = document.createElement('div'); bar.id = 'topbar'; document.body.appendChild(bar); } if (NET <= 0 && bar && !S.busy) bar.remove(); }
 
 function sheet(html, bind) {
   const bg = document.createElement('div'); bg.className = 'sheet-bg';
@@ -178,9 +204,11 @@ function avatar(name) {
   const p = personOf(name);
   return '<span class="av">' + (p && p.photo ? '<img src="' + esc(p.photo) + '" alt="" onerror="this.remove()">' : '') + esc(initials(name)) + '</span>';
 }
-function imgTag(id, w) {
-  return '<img src="' + photoUrl(id, w) + '" alt="" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=\'' + thumbFallback(id) + '\'}">';
+function imgTag(p) {
+  const src = p.thumb || LOCAL_THUMB[p.fileId] || '';
+  return src ? '<img src="' + src + '" alt="" loading="lazy">' : '<span class="ph">รูป</span>';
 }
+const LOCAL_THUMB = {};   // รูปย่อจากเครื่องตัวเอง แสดงทันทีระหว่างรอหลังบ้าน
 function header(sub, title) { $('#hdSub').textContent = sub; $('#hdTitle').textContent = title; }
 const ICON = {
   home: '<path d="M3 11l9-7 9 7v9H3z"/>',
@@ -208,7 +236,7 @@ function showLogin(note) {
     e.preventDefault();
     const f = e.target, name = f.u.value.trim(), pass = f.p.value;
     ls(K_USER, name); ls(K_PASS, pass);
-    const ok = await run(() => api('hubLogin'));
+    const ok = await run(() => api('hubLogin'), '', 'กำลังตรวจสอบชื่อและรหัสผ่าน…');
     if (ok) start(true);
   };
 }
@@ -239,7 +267,7 @@ function showLink() {
       '<button class="row" data-n="' + esc(p.name) + '" style="width:100%;border:0;background:none;padding:10px 0;text-align:left">' + avatar(p.name) + '<span class="sp"><b>' + esc(p.name) + '</b><br><span class="mut">' + esc(p.dept) + '</span></span></button>').join('') || '<div class="mut">ไม่พบ</div>';
     $('#pl').querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
       if (!(await confirmBox('ยืนยันชื่อ', b.dataset.n, 'ใช่ ชื่อของฉัน'))) return;
-      if (await run(() => api('linkName', { empName: b.dataset.n }), 'บันทึกแล้ว')) start(true);
+      if (await run(() => api('linkName', { empName: b.dataset.n }), 'บันทึกแล้ว', 'กำลังบันทึก…')) start(true);
     });
   };
   $('#q').oninput = draw; draw();
@@ -299,7 +327,7 @@ function vHome() {
   const mine = b.mine;
   let bigBtn, sub = '';
   if (mine && mine.status === 'มา') { bigBtn = '<button class="big done" disabled>' + svg('check', 26) + 'ลงชื่อแล้ว</button>'; sub = '<span class="mut">' + esc(mine.remark) + '</span>'; }
-  else if (b.isToday) { bigBtn = '<button class="big" id="bCheck">' + svg('check', 26) + 'ลงชื่อเข้าร่วม</button>'; sub = '<span class="mut">ระบบตรวจตำแหน่ง GPS ตอนกด</span>'; }
+  else if (b.isToday) { bigBtn = '<div class="gps wait" id="gps"></div><button class="big" id="bCheck">' + svg('check', 26) + 'ลงชื่อเข้าร่วม</button>'; }
   else bigBtn = '<button class="big off" disabled>เปิดให้ลงชื่อ ' + esc(thDate(n.date)) + '</button>';
   let absence = '<button class="btn ghost" id="bAbs">แจ้งติดภารกิจ / ลา</button>';
   if (mine && mine.status && mine.status !== 'มา') absence = '<span class="chip amb">แจ้ง' + esc(mine.status) + 'แล้ว</span><button class="btn ghost" id="bAbsCancel">ยกเลิก</button>';
@@ -322,9 +350,9 @@ function vHome() {
       '<div class="grid2"><button class="btn pri" id="bCam" style="display:flex;align-items:center;justify-content:center;gap:8px">' + svg('cam', 20) + 'ถ่ายรูป</button><button class="btn" id="bPick">เลือกจากคลัง</button></div>' +
       '<div class="mut" id="albumFor"></div></section>' +
     (hist ? '<section class="card"><div class="h" style="margin-bottom:10px">ของฉัน ' + (b.history.length) + ' ครั้งล่าสุด</div><div class="grid4">' + hist + '</div></section>' : '');
-  if ($('#bCheck')) $('#bCheck').onclick = doCheckIn;
+  if ($('#bCheck')) { $('#bCheck').onclick = doCheckIn; drawGps(); startGps(); }
   if ($('#bAbs')) $('#bAbs').onclick = () => absenceSheet(n);
-  if ($('#bAbsCancel')) $('#bAbsCancel').onclick = async () => { if (await run(() => api('cancelAbsence', { sessionId: n.id }), 'ยกเลิกแล้ว')) { await refreshBoot(); render(); } };
+  if ($('#bAbsCancel')) $('#bAbsCancel').onclick = async () => { if (await run(() => api('cancelAbsence', { sessionId: n.id }), 'ยกเลิกแล้ว', 'กำลังยกเลิก…')) { await refreshBoot(); render(); } };
   $('#aAll').onclick = e => { e.preventDefault(); go('album'); };
   $('#bCam').onclick = () => $('#fileCam').click();
   $('#bPick').onclick = () => $('#filePick').click();
@@ -334,28 +362,62 @@ function vHome() {
   drawUploads();
 }
 function albumSession() { const b = S.boot; return b.isToday ? b.next : (b.last || b.next); }
+function drawHomeThumbs() {
+  const box = $('#hThumbs'); if (!box) return;
+  const ph = (S.photos && S.photos.list) || [];
+  const pend = UP.items.filter(x => !x.done).map(x => ({ local: x.thumb }));
+  const last = pend.concat(ph.slice().reverse()).slice(0, 4);
+  box.innerHTML = [0, 1, 2, 3].map(i => {
+    const p = last[i];
+    if (!p) return '<div class="thumb" style="background:#EEF2EC"></div>';
+    if (p.local) return '<div class="thumb"><img src="' + p.local + '" alt=""><span class="up"><span class="spin"></span></span></div>';
+    return '<div class="thumb">' + imgTag(p) + '</div>';
+  }).join('');
+}
 async function loadThumbs() {
   const as = albumSession(); if (!as) return;
   try {
     const ph = await api('photos', { sessionId: as.id });
     S.photos = { id: as.id, list: ph };
     const box = $('#hThumbs'); if (!box) return;
-    const last = ph.slice(-4).reverse();
-    box.innerHTML = [0, 1, 2, 3].map(i => last[i] ? '<div class="thumb">' + imgTag(last[i].fileId, 300) + '</div>' : '<div class="thumb" style="background:#EEF2EC"></div>').join('');
+    drawHomeThumbs();
     const h = $('#albumCard .h'); if (h) h.textContent = 'รูปกิจกรรมรวม · ' + ph.length + ' รูป';
   } catch (e) {}
 }
+const GPS = { c: null, err: '', watching: false };
+function startGps() {
+  if (GPS.watching || !navigator.geolocation) { if (!navigator.geolocation) GPS.err = 'เครื่องนี้ไม่รองรับ GPS'; return; }
+  GPS.watching = true;
+  navigator.geolocation.watchPosition(p => { GPS.c = p.coords; GPS.err = ''; drawGps(); },
+    e => { GPS.err = e.code === 1 ? 'ยังไม่อนุญาตให้ใช้ตำแหน่ง' : 'หาตำแหน่งไม่ได้ ลองออกไปที่โล่ง'; GPS.denied = e.code === 1; if (e.code === 1) GPS.watching = false; drawGps(); },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 15000 });
+}
+function distM(a, b, c, d) { const R = 6371000, r = x => x * Math.PI / 180, x = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return Math.round(2 * R * Math.asin(Math.sqrt(x))); }
+function drawGps() {
+  const el = $('#gps'); if (!el) return;
+  const o = S.boot.office;
+  if (GPS.c) {
+    const dm = distM(GPS.c.latitude, GPS.c.longitude, o.lat, o.lng), inside = dm <= o.radius;
+    el.className = 'gps ' + (inside ? 'ok' : 'far');
+    el.innerHTML = '<span class="dot"></span><span class="sp">' + (inside ? 'อยู่ในสำนักงาน' : 'ห่างสำนักงาน ' + (dm >= 1000 ? (dm / 1000).toFixed(1) + ' กม.' : dm + ' ม.')) + ' <span class="mut">(แม่นยำ ±' + Math.round(GPS.c.accuracy) + ' ม.)</span></span>';
+  } else if (GPS.err) {
+    el.className = 'gps err';
+    el.innerHTML = '<span class="dot"></span><span class="sp">' + esc(GPS.err) + (GPS.denied ? '<br><span class="mut">iPhone: ตั้งค่า › ความเป็นส่วนตัว › บริการหาตำแหน่ง › Safari/LINE › ขณะใช้แอป · Android: แตะรูปกุญแจข้างลิงก์ › ตำแหน่ง › อนุญาต</span>' : '') + '</span><button class="btn" id="gpsRetry" style="min-height:36px;padding:0 10px">ลองใหม่</button>';
+    $('#gpsRetry').onclick = () => { GPS.err = ''; GPS.watching = false; drawGps(); startGps(); };
+  } else { el.className = 'gps wait'; el.innerHTML = '<span class="dot"></span><span class="sp">กำลังหาตำแหน่ง…</span>'; }
+}
 function getPos() {
+  if (GPS.c) return Promise.resolve(GPS.c);
   return new Promise(res => {
     if (!navigator.geolocation) return res(null);
     navigator.geolocation.getCurrentPosition(p => res(p.coords), () => res(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
   });
 }
 async function doCheckIn() {
-  const btn = $('#bCheck'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>กำลังหาตำแหน่ง…';
+  const btn = $('#bCheck'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + (GPS.c ? 'กำลังบันทึก…' : 'กำลังหาตำแหน่ง…');
   const c = await getPos();
   btn.innerHTML = '<span class="spin"></span>กำลังบันทึก…';
-  const r = await run(() => api('checkIn', c ? { lat: c.latitude, lng: c.longitude, acc: c.accuracy } : {}));
+  const r = await run(() => api('checkIn', c ? { lat: c.latitude, lng: c.longitude, acc: c.accuracy } : {}), '', 'กำลังบันทึกการลงชื่อ…');
   if (r) {
     toast(r.inside === false ? 'ลงชื่อแล้ว (ตำแหน่งห่างสำนักงาน ' + r.distance + ' ม. หัวหน้าจะเห็นหมายเหตุ)' : r.inside === null ? 'ลงชื่อแล้ว (ไม่มีพิกัด)' : 'ลงชื่อแล้ว ' + r.time + ' น.');
     await refreshBoot();
@@ -370,47 +432,61 @@ function absenceSheet(n) {
       const paint = () => btns.forEach(b => { b.className = 'btn' + (b.dataset.s === st ? ' pri' : ''); });
       btns.forEach(b => b.onclick = () => { st = b.dataset.s; paint(); }); paint();
       el.querySelector('#absOk').onclick = async () => {
-        if (await run(() => api('reportAbsence', { sessionId: n.id, status: st, reason: el.querySelector('#absR').value }), 'แจ้งแล้ว หัวหน้าจะเห็นในรายชื่อ')) { close(); await refreshBoot(); render(); }
+        if (await run(() => api('reportAbsence', { sessionId: n.id, status: st, reason: el.querySelector('#absR').value }), 'แจ้งแล้ว หัวหน้าจะเห็นในรายชื่อ', 'กำลังส่งแจ้ง…')) { close(); await refreshBoot(); render(); }
       };
     });
 }
 
 /* ================= อัปโหลดรูป (หลายคน/หลายรูปพร้อมกัน) ================= */
-const UP = { queue: [], done: 0, total: 0, active: 0, failed: 0 };
+const UP = { queue: [], items: [], done: 0, total: 0, active: 0, failed: 0 };
 ['fileCam', 'filePick'].forEach(id => $('#' + id).addEventListener('change', e => {
   const files = Array.from(e.target.files || []); e.target.value = '';
   const as = albumSession(); if (!as || !files.length) return;
-  files.forEach(f => UP.queue.push({ f, sid: as.id }));
+  files.forEach(f => { const it = { f, sid: as.id, thumb: '', done: false }; UP.queue.push(it); UP.items.push(it); });
   UP.total += files.length; drawUploads(); pump();
 }));
 function pump() {
   while (UP.active < 3 && UP.queue.length) {
     const it = UP.queue.shift(); UP.active++;
-    shrink(it.f).then(b64 => api('uploadPhoto', { sessionId: it.sid, base64: b64, mime: 'image/jpeg' }))
+    shrink(it.f).then(async r => {
+      it.thumb = r.thumb; drawHomeThumbs(); drawAlbumPending();
+      const res = await api('uploadPhoto', { sessionId: it.sid, base64: r.full, mime: 'image/jpeg', thumb: r.thumb });
+      LOCAL_THUMB[res.fileId] = r.thumb;
+      if (S.photos && S.photos.id === it.sid) S.photos.list.push({ fileId: res.fileId, uploader: res.uploader, at: '', selected: false, order: 0, tag: '', thumb: r.thumb });
+    })
       .then(() => { UP.done++; }, e => { UP.failed++; UP.lastErr = e.message; })
-      .finally(() => { UP.active--; drawUploads(); if (!UP.queue.length && !UP.active) { finishUploads(); } else pump(); });
+      .finally(() => { it.done = true; UP.active--; drawUploads(); drawHomeThumbs(); if (!UP.queue.length && !UP.active) { finishUploads(); } else pump(); });
   }
 }
 function finishUploads() {
   toast(UP.failed ? 'ส่งสำเร็จ ' + UP.done + ' รูป ไม่สำเร็จ ' + UP.failed + ' รูป (' + UP.lastErr + ')' : 'ส่งรูปเข้าอัลบั้มแล้ว ' + UP.done + ' รูป', !!UP.failed);
-  UP.done = UP.total = UP.failed = 0; drawUploads();
+  UP.done = UP.total = UP.failed = 0; UP.items = []; drawUploads();
   if (S.tab === 'home') loadThumbs(); if (S.tab === 'album') vAlbum();
 }
 function drawUploads() {
   const box = $('#upBox'); if (!box) return;
   if (!UP.total) { box.innerHTML = ''; return; }
   const pct = Math.round((UP.done + UP.failed) * 100 / UP.total);
-  box.innerHTML = '<div class="row" style="font-size:13px"><b>กำลังส่ง ' + (UP.done + UP.failed) + '/' + UP.total + ' รูป</b><span class="sp"></span><span class="mut">อย่าเพิ่งปิดหน้านี้</span></div><div class="prog" style="margin-top:6px"><div style="width:' + pct + '%"></div></div>';
+  box.innerHTML = '<div class="row" style="font-size:13px"><span class="spin" style="width:16px;height:16px;border-width:2px;margin:0"></span><b>กำลังส่ง ' + (UP.done + UP.failed) + '/' + UP.total + ' รูป</b><span class="sp"></span><span class="mut">อย่าเพิ่งปิดหน้านี้</span></div><div class="prog" style="margin-top:6px"><div style="width:' + Math.max(pct, 6) + '%"></div></div>';
+}
+function drawAlbumPending() {
+  const g = $('#albPend'); if (!g) return;
+  g.innerHTML = UP.items.filter(x => !x.done && x.thumb).map(x => '<div class="thumb"><img src="' + x.thumb + '" alt=""><span class="up"><span class="spin"></span></span></div>').join('');
 }
 function shrink(file, max) {
   max = max || 1600;
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
-      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-      res(c.toDataURL('image/jpeg', 0.82));
+      const draw = (m, q) => {
+        const k = Math.min(1, m / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q);
+      };
+      const full = draw(max, 0.82);
+      let thumb = draw(320, 0.6); if (thumb.length > 45000) thumb = draw(220, 0.5);
+      URL.revokeObjectURL(url);
+      res({ full: full, thumb: thumb });
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('อ่านรูปไม่ได้: ' + file.name)); };
     img.src = url;
@@ -434,21 +510,22 @@ async function vAlbum() {
     '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row"><b>' + ph.length + ' รูป · ถ่ายโดย ' + new Set(ph.map(p => p.uploader)).size + ' คน</b><span class="sp"></span>' + (isPr ? '<span class="chip amb">★ ลงรายงาน ' + sel + '/' + S.boot.maxSelect + '</span>' : '') + '</div>' +
     (isPr ? '<div class="mut">แตะรูปเพื่อเลือกลงรายงาน (สูงสุด ' + S.boot.maxSelect + ' รูป) และตั้งป้าย</div>' : '<div class="mut">แตะรูปของคุณเพื่อลบ</div>') +
     '<div id="upBox"></div><div class="grid2"><button class="btn pri" id="bCam2">' + 'ถ่ายรูป' + '</button><button class="btn" id="bPick2">เลือกจากคลัง</button></div></div>' +
-    '<div class="grid3">' + ph.slice().reverse().map(p => '<button class="thumb' + (p.selected ? ' sel' : '') + '" data-f="' + p.fileId + '">' + imgTag(p.fileId) + '<span class="by">' + esc(p.uploader) + '</span>' + (p.selected ? '<span class="tag">★ ' + esc(p.tag || 'เลือก') + '</span>' : '') + '</button>').join('') + '</div>';
-  drawUploads();
+    '<div class="grid3"><span id="albPend" style="display:contents"></span>' + ph.slice().reverse().map(p => '<button class="thumb' + (p.selected ? ' sel' : '') + '" data-f="' + p.fileId + '">' + imgTag(p) + '<span class="by">' + esc(p.uploader) + '</span>' + (p.selected ? '<span class="tag">★ ' + esc(p.tag || 'เลือก') + '</span>' : '') + '</button>').join('') + '</div>';
+  drawUploads(); drawAlbumPending();
   $('#bCam2').onclick = () => $('#fileCam').click(); $('#bPick2').onclick = () => $('#filePick').click();
   $('#view').querySelectorAll('.pill [data-s]').forEach(b => b.onclick = () => { S.albumSid = b.dataset.s; vAlbum(); });
   $('#view').querySelectorAll('[data-f]').forEach(b => b.onclick = () => photoSheet(ph.find(p => p.fileId === b.dataset.f), isPr, myName));
 }
 function photoSheet(p, isPr, myName) {
   const mine = p.uploader === myName;
-  sheet('<img src="' + photoUrl(p.fileId, 1000) + '" alt="" style="width:100%;border-radius:10px" onerror="this.src=\'' + thumbFallback(p.fileId) + '\'"><div class="mut">ถ่ายโดย ' + esc(p.uploader) + ' · ' + esc(p.at) + ' น.</div>' +
+  sheet('<div style="position:relative"><img id="fullImg" src="' + (p.thumb || LOCAL_THUMB[p.fileId] || '') + '" alt="" style="width:100%;min-height:160px;border-radius:10px;background:#EEF2EC"><span id="fullSpin" class="up" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span class="spin"></span></span></div><div class="mut">ถ่ายโดย ' + esc(p.uploader) + ' · ' + esc(p.at) + ' น.</div>' +
     (isPr ? '<div class="h">ลงรายงาน</div><div class="pill" style="flex-wrap:wrap">' + TAGS.map(t => '<button data-t="' + esc(t) + '" class="' + (p.selected && p.tag === t ? 'on' : '') + '">' + esc(t) + '</button>').join('') + '</div>' +
       (p.selected ? '<button class="btn" data-un>เอาออกจากรายงาน</button>' : '') : '') +
     ((mine || isPr) ? '<button class="btn red" data-del>ลบรูปนี้</button>' : ''), (el, close) => {
-      el.querySelectorAll('[data-t]').forEach(b => b.onclick = async () => { if (await run(() => api('selectPhoto', { fileId: p.fileId, selected: true, tag: b.dataset.t }))) { close(); vAlbum(); } });
-      const un = el.querySelector('[data-un]'); if (un) un.onclick = async () => { if (await run(() => api('selectPhoto', { fileId: p.fileId, selected: false }))) { close(); vAlbum(); } };
-      const del = el.querySelector('[data-del]'); if (del) del.onclick = async () => { if (await confirmBox('ลบรูป', 'ลบรูปนี้ออกจากอัลบั้ม?', 'ลบ') && await run(() => api('deletePhoto', { fileId: p.fileId }), 'ลบแล้ว')) { close(); vAlbum(); } };
+      api('photoFull', { fileId: p.fileId }).then(r => { const im = el.querySelector('#fullImg'); if (im) im.src = r.data; }).catch(() => {}).finally(() => { const sp = el.querySelector('#fullSpin'); if (sp) sp.remove(); });
+      el.querySelectorAll('[data-t]').forEach(b => b.onclick = async () => { if (await run(() => api('selectPhoto', { fileId: p.fileId, selected: true, tag: b.dataset.t }), '', 'กำลังเลือกรูป…')) { close(); vAlbum(); } });
+      const un = el.querySelector('[data-un]'); if (un) un.onclick = async () => { if (await run(() => api('selectPhoto', { fileId: p.fileId, selected: false }), '', 'กำลังบันทึก…')) { close(); vAlbum(); } };
+      const del = el.querySelector('[data-del]'); if (del) del.onclick = async () => { if (await confirmBox('ลบรูป', 'ลบรูปนี้ออกจากอัลบั้ม?', 'ลบ') && await run(() => api('deletePhoto', { fileId: p.fileId }), 'ลบแล้ว', 'กำลังลบรูป…')) { close(); vAlbum(); } };
     });
 }
 
@@ -496,7 +573,7 @@ async function vDept() {
     if (c['']) return toast('ยังไม่ระบุสถานะอีก ' + c[''] + ' คน', true);
     if (!(await confirmBox('ส่งให้ผู้จัดการ', 'มา ' + c['มา'] + ' · ภารกิจ ' + c['ติดภารกิจ'] + ' · ลา ' + c['ลา'] + ' · ขาด ' + c['ขาด'], 'ยืนยันส่ง'))) return;
     const entries = Object.keys(draft).map(k => ({ name: k, status: draft[k].status, remark: draft[k].remark }));
-    if (await run(() => api('submitDept', { sessionId: s.id, dept: dept, entries: entries }), 'ส่งแล้ว รอผู้จัดการอนุมัติ')) vDept();
+    if (await run(() => api('submitDept', { sessionId: s.id, dept: dept, entries: entries }), 'ส่งแล้ว รอผู้จัดการอนุมัติ', 'กำลังส่งให้ผู้จัดการ…')) vDept();
   };
 }
 function detailsSheet(s, after) {
@@ -509,11 +586,19 @@ function detailsSheet(s, after) {
     '<div class="grid2"><label class="f">ผู้รับจ้าง (คน)<input class="in" id="xCc" type="number" min="0" inputmode="numeric" value="' + (s.contractorCount || '') + '"></label><label class="f">บริษัท<input class="in" id="xCo" value="' + esc(s.contractorCompany) + '"></label></div>' +
     '<button class="btn pri" id="xOk">บันทึก</button>', (el, close) => {
       el.querySelector('#xLead').value = s.leadBy || ''; el.querySelector('#xSp').value = s.speaker || '';
-      const autoPos = (sel, inp, sfx) => el.querySelector(sel).onchange = e => { const p = personOf(e.target.value); if (p && !el.querySelector(inp).value) el.querySelector(inp).value = (p.position || '') + (sfx ? ' ' + sfx : ''); };
+      const autoPos = (sel, inp, sfx) => el.querySelector(sel).onchange = e => {
+        const p = personOf(e.target.value), box = el.querySelector(inp);
+        if (!p) { box.value = ''; return; }
+        let pos = String(p.position || '').trim();
+        if (/^admin$/i.test(pos) || pos === '-') pos = '';
+        if (/^ผู้จัดการ$/.test(pos)) pos = 'ผจก.';
+        box.value = pos ? (pos + (sfx && pos.indexOf(sfx) < 0 ? (/\.$/.test(pos) ? '' : ' ') + sfx : '')) : '';
+        if (!pos) box.placeholder = 'ไม่มีตำแหน่งในชีตพนักงาน — พิมพ์เอง';
+      };
       autoPos('#xLead', '#xLeadPos', S.boot.orgShort); autoPos('#xSp', '#xSpPos', S.boot.orgShort);
       el.querySelector('#xOk').onclick = async () => {
         const det = { topic: el.querySelector('#xTopic').value, leadBy: el.querySelector('#xLead').value, leadByPos: el.querySelector('#xLeadPos').value, speaker: el.querySelector('#xSp').value, speakerPos: el.querySelector('#xSpPos').value, emphasis: el.querySelector('#xEmp').value, contractorCount: el.querySelector('#xCc').value, contractorCompany: el.querySelector('#xCo').value };
-        const r = await run(() => api('saveDetails', { sessionId: s.id, details: det }), 'บันทึกแล้ว');
+        const r = await run(() => api('saveDetails', { sessionId: s.id, details: det }), 'บันทึกแล้ว', 'กำลังบันทึก…');
         if (r) { close(); Object.assign(s, r.session); if (after) after(r.session); }
       };
     });
@@ -545,11 +630,11 @@ function drawApprove(a) {
     }).join('');
   const sid = s.id;
   $('#view').querySelectorAll('.pill [data-s]').forEach(b => b.onclick = () => { S.apSid = b.dataset.s; vApprove(); });
-  const all = $('#apAll'); if (all) all.onclick = async () => { const r = await run(() => api('approveDept', { sessionId: sid, dept: 'ALL' }), 'อนุมัติแล้ว'); if (r) drawApprove(r); };
-  $('#view').querySelectorAll('[data-a]').forEach(b => b.onclick = async () => { const r = await run(() => api('approveDept', { sessionId: sid, dept: a.depts[b.dataset.a].dept }), 'อนุมัติแล้ว'); if (r) drawApprove(r); });
-  $('#view').querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { const why = await promptBox('ส่งกลับให้หัวหน้าแก้', 'เหตุผล', 'เช่น ขาดรายชื่อ 2 คน'); if (!why) return; const r = await run(() => api('returnDept', { sessionId: sid, dept: a.depts[b.dataset.r].dept, reason: why }), 'ส่งกลับแล้ว'); if (r) drawApprove(r); });
+  const all = $('#apAll'); if (all) all.onclick = async () => { const r = await run(() => api('approveDept', { sessionId: sid, dept: 'ALL' }), 'อนุมัติแล้ว', 'กำลังอนุมัติ…'); if (r) drawApprove(r); };
+  $('#view').querySelectorAll('[data-a]').forEach(b => b.onclick = async () => { const r = await run(() => api('approveDept', { sessionId: sid, dept: a.depts[b.dataset.a].dept }), 'อนุมัติแล้ว', 'กำลังอนุมัติ…'); if (r) drawApprove(r); });
+  $('#view').querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { const why = await promptBox('ส่งกลับให้หัวหน้าแก้', 'เหตุผล', 'เช่น ขาดรายชื่อ 2 คน'); if (!why) return; const r = await run(() => api('returnDept', { sessionId: sid, dept: a.depts[b.dataset.r].dept, reason: why }), 'ส่งกลับแล้ว', 'กำลังส่งกลับ…'); if (r) drawApprove(r); });
   $('#view').querySelectorAll('[data-v]').forEach(b => b.onclick = async () => {
-    const d = await run(() => api('deptSheet', { sessionId: sid, dept: a.depts[b.dataset.v].dept })); if (!d) return;
+    const d = await run(() => api('deptSheet', { sessionId: sid, dept: a.depts[b.dataset.v].dept }), '', 'กำลังโหลดรายชื่อ…'); if (!d) return;
     sheet('<div class="h" style="font-size:18px">' + esc(d.dept) + '</div><div class="list">' + d.people.map(p => '<div class="row" style="padding:8px 0">' + avatar(p.name) + '<div class="sp"><b>' + esc(p.name) + '</b><div class="mut">' + esc(p.remark) + '</div></div><span class="chip' + (p.status === 'มา' ? '' : p.status ? ' amb' : ' gray') + '">' + esc(p.status || 'ยังไม่ระบุ') + '</span></div>').join('') + '</div><button class="btn" data-x>ปิด</button>', (el, close) => el.querySelector('[data-x]').onclick = close);
   });
 }
@@ -760,7 +845,7 @@ async function makePdf() {
     pdf.addImage(cv.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297);
     if (S.newsMode === 'one') { const cv2 = document.createElement('canvas'); await drawSheet(cv2, S.news, 'news'); pdf.addPage(); pdf.addImage(cv2.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297); }
     pdf.save(fileName('pdf'));
-  });
+  }, '', 'กำลังสร้าง PDF…');
 }
 async function sendBot() {
   const mode = S.newsMode, text = mode === 'one' ? '' : $('#nText').value;
@@ -769,7 +854,7 @@ async function sendBot() {
     const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(S.newsBlob); });
     const img = await api('saveReportImage', { sessionId: S.news.session.id, base64: b64, kind: mode === 'one' ? 'news' : 'report' });
     await api('sendNews', { sessionId: S.news.session.id, text: text, imageFileId: img.fileId });
-  }, 'ส่งเข้า LINE แล้ว');
+  }, 'ส่งเข้า LINE แล้ว', 'กำลังส่งเข้า LINE…');
 }
 
 /* ================= สรุปรายเดือน ================= */
@@ -837,11 +922,11 @@ function calSheet(s) {
         const extra = el.querySelector('#cReason').value.trim(), reason = [why === 'อื่นๆ' ? '' : why, extra].filter(Boolean).join(' · ');
         const notify = el.querySelector('#cNotify').checked;
         const r = mode === 'move'
-          ? await run(() => api('moveSession', { sessionId: s.id, date: el.querySelector('#cDate').value, time: el.querySelector('#cTime').value, reason: reason, notify: notify }), 'บันทึกแล้ว')
-          : await run(() => api('cancelSession', { sessionId: s.id, reason: reason, notify: notify }), 'งดกิจกรรมแล้ว');
+          ? await run(() => api('moveSession', { sessionId: s.id, date: el.querySelector('#cDate').value, time: el.querySelector('#cTime').value, reason: reason, notify: notify }), 'บันทึกแล้ว', 'กำลังเลื่อนกิจกรรม…')
+          : await run(() => api('cancelSession', { sessionId: s.id, reason: reason, notify: notify }), 'งดกิจกรรมแล้ว', 'กำลังบันทึกการงด…');
         if (r) { close(); drawCalendar(r); refreshBoot(); }
       };
-      const rs = el.querySelector('#cRestore'); if (rs) rs.onclick = async () => { const r = await run(() => api('restoreSession', { sessionId: s.id }), 'คืนเป็นวันเดิมแล้ว'); if (r) { close(); drawCalendar(r); refreshBoot(); } };
+      const rs = el.querySelector('#cRestore'); if (rs) rs.onclick = async () => { const r = await run(() => api('restoreSession', { sessionId: s.id }), 'คืนเป็นวันเดิมแล้ว', 'กำลังบันทึก…'); if (r) { close(); drawCalendar(r); refreshBoot(); } };
     });
 }
 
@@ -858,12 +943,12 @@ async function vSettings() {
     '<section class="card" style="display:flex;flex-direction:column;gap:10px"><b>แจ้งเตือน LINE อัตโนมัติ</b><div class="mut">16:00 วันก่อนกิจกรรม เตือนทุกคน · 12:00 วันกิจกรรม เตือนแผนกที่หัวหน้ายังไม่ส่ง (ใช้กลุ่ม LINE ที่ตั้งไว้ในระบบเดิม)</div><div class="grid2"><button class="btn pri" id="sOn">เปิด</button><button class="btn" id="sOff">ปิด</button></div></section>';
   const drawList = list => {
     $('#sList').innerHTML = list.length ? list.map((r, i) => '<div class="row" style="padding:8px 0"><span class="sp"><b>' + esc(r.name) + '</b><div class="mut">' + esc(RN[r.role] || r.role) + ' · โดย ' + esc(r.by) + '</div></span><button class="btn red" data-i="' + i + '" style="min-height:40px">ลบ</button></div>').join('') : '<div class="mut">ยังไม่มีการมอบสิทธิ์เพิ่ม</div>';
-    $('#sList').querySelectorAll('[data-i]').forEach(b => b.onclick = async () => { const r = list[b.dataset.i]; const res = await run(() => api('setRole', { name: r.name, role: r.role, on: false }), 'ลบสิทธิ์แล้ว'); if (res) drawList(res.roles); });
+    $('#sList').querySelectorAll('[data-i]').forEach(b => b.onclick = async () => { const r = list[b.dataset.i]; const res = await run(() => api('setRole', { name: r.name, role: r.role, on: false }), 'ลบสิทธิ์แล้ว', 'กำลังบันทึก…'); if (res) drawList(res.roles); });
   };
   drawList(roleList);
-  $('#sAdd').onclick = async () => { const n = $('#sN').value; if (!n) return toast('เลือกชื่อก่อน', true); const res = await run(() => api('setRole', { name: n, role: $('#sR').value, on: true }), 'เพิ่มสิทธิ์แล้ว'); if (res) drawList(res.roles); };
-  $('#sOn').onclick = () => run(() => api('setupReminders', { on: true }), 'เปิดแจ้งเตือนอัตโนมัติแล้ว');
-  $('#sOff').onclick = () => run(() => api('setupReminders', { on: false }), 'ปิดแจ้งเตือนแล้ว');
+  $('#sAdd').onclick = async () => { const n = $('#sN').value; if (!n) return toast('เลือกชื่อก่อน', true); const res = await run(() => api('setRole', { name: n, role: $('#sR').value, on: true }), 'เพิ่มสิทธิ์แล้ว', 'กำลังบันทึก…'); if (res) drawList(res.roles); };
+  $('#sOn').onclick = () => run(() => api('setupReminders', { on: true }), 'เปิดแจ้งเตือนอัตโนมัติแล้ว', 'กำลังตั้งเวลาแจ้งเตือน…');
+  $('#sOff').onclick = () => run(() => api('setupReminders', { on: false }), 'ปิดแจ้งเตือนแล้ว', 'กำลังปิดแจ้งเตือน…');
 }
 
 start();
