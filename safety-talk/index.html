@@ -7,6 +7,7 @@
 <title>Safety Talk อ่าวลึก</title>
 <script src="/pea-hub.js" data-app="safetytalk" data-gate="off" data-name="Safety Talk"></script>
 <link rel="icon" type="image/png" href="/icon-192.png">
+<script src="sheet.js?v=3" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://script.google.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -772,89 +773,8 @@ function label(ctx, text, x, y) {
   ctx.fillStyle = 'rgba(255,255,255,.92)'; roundRect(ctx, x + 10, y - 44, w, 34, 6); ctx.fill();
   ctx.fillStyle = '#17251A'; ctx.fillText(text, x + 20, y - 18);
 }
-async function drawSheet(cv, d, kind) {
-  const W = 1240, H = 1754, M = 76;
-  cv.width = W; cv.height = H;
-  const ctx = cv.getContext('2d');
-  try { await Promise.all(['400 30px Sarabun', '700 30px Sarabun', '800 30px Sarabun', '600 30px Sarabun'].map(f => document.fonts.load(f))); } catch (e) {}
-  const imgs = await Promise.all(d.images.map(i => loadImg(i.data)));
-  const tags = d.images.map(i => i.tag);
-  const s = d.session, c = d.counts, total = c.present + (Number(s.contractorCount) || 0);
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
-  const G = '#1B5E20';
-  if (kind === 'report') {
-    ctx.fillStyle = G; ctx.fillRect(0, 0, W, 180);
-    ctx.fillStyle = '#fff'; ctx.font = '700 50px Sarabun'; ctx.fillText('รายงานกิจกรรม SAFETY TALK', M, 92);
-    ctx.font = '400 28px Sarabun'; ctx.fillStyle = '#D7EAD3'; ctx.fillText(d.org + ' · กฟต.2', M, 140);
-    ctx.fillStyle = '#F2A900'; roundRect(ctx, W - M - 170, 46, 170, 90, 14); ctx.fill();
-    ctx.fillStyle = '#1F1A00'; ctx.font = '700 24px Sarabun'; ctx.textAlign = 'center'; ctx.fillText('ครั้งที่', W - M - 85, 82); ctx.font = '800 34px Sarabun'; ctx.fillText(s.seq + '/' + (+s.date.slice(0, 4) + 543), W - M - 85, 120); ctx.textAlign = 'left';
-    let y = 232; ctx.fillStyle = '#141A15'; ctx.font = '400 27px Sarabun';
-    const info = [['วันที่', thDateLong(s.date).replace(/^วัน/, '')], ['เวลา', s.time + ' น. · ' + s.place], ['นำโดย', s.leadBy ? s.leadBy + ' ' + (s.leadByPos || '') : '-'], ['ผู้นำออกกำลังกาย', s.leaderDept]];
-    info.forEach((r, i) => { const x = M + (i % 2) * 560, yy = y + Math.floor(i / 2) * 42; ctx.font = '700 27px Sarabun'; ctx.fillText(r[0], x, yy); const lw = ctx.measureText(r[0] + ' ').width; ctx.font = '400 27px Sarabun'; textBlock(ctx, r[1], x + lw, yy, 540 - lw, 34, 1); });
-    y = 320; ctx.fillStyle = '#C9D6C5'; ctx.fillRect(M, y - 10, W - 2 * M, 2);
-    const smalls = imgs.slice(1, 5), rowsN = Math.ceil(smalls.length / 2);
-    const avail = (H - 260) - (y + 8) - 250;               // พื้นที่รูป = เต็มหน้าที่เหลือหลังกันที่ให้สาระสำคัญ
-    const gh = rowsN ? Math.min(330, Math.round(avail * 0.42 / rowsN)) : 0;
-    const heroH = Math.max(380, avail - rowsN * (gh + 18) - 18);
-    cover(ctx, imgs[0], M, y + 8, W - 2 * M, heroH); label(ctx, tags[0], M, y + 8 + heroH);
-    y += 8 + heroH + 18;
-    if (smalls.length) {
-      const cols = smalls.length === 1 ? 1 : 2, gw = (W - 2 * M - 18 * (cols - 1)) / cols;
-      smalls.forEach((im, i) => { const x = M + (i % cols) * (gw + 18), yy = y + Math.floor(i / cols) * (gh + 18); cover(ctx, im, x, yy, gw, gh, 8); label(ctx, tags[i + 1], x, yy + gh); });
-      y += Math.ceil(smalls.length / cols) * (gh + 18);
-    }
-    y += 22; ctx.fillStyle = G; ctx.font = '700 30px Sarabun'; ctx.fillText('สาระสำคัญ', M, y + 6); y += 46;
-    ctx.fillStyle = '#141A15'; ctx.font = '400 26px Sarabun';
-    const pts = [];
-    if (s.topic) pts.push('• ' + s.topic);
-    if (s.speaker || s.emphasis) pts.push('• ' + (s.speaker ? s.speaker + ' ' + (s.speakerPos || '') + ' ' : '') + 'เน้นย้ำ ' + (s.emphasis || ''));
-    pts.push('• ' + s.leaderDept + 'นำออกกำลังกาย (WARM UP) และกล่าวคำขวัญความปลอดภัยพร้อมกัน');
-    pts.forEach(p => { y = textBlock(ctx, p, M, y, W - 2 * M, 36, 2) + 4; });
-    y = Math.max(y + 10, H - 240);
-    const cols = [['พนักงาน', c.staff], ['ลูกจ้าง', c.hired], ['ผู้รับจ้าง', Number(s.contractorCount) || 0], ['ติดภารกิจ / ลา', c.duty + c.leave], ['รวมผู้เข้าร่วม', total]];
-    const cw = (W - 2 * M) / cols.length;
-    cols.forEach((col, i) => {
-      const x = M + i * cw; ctx.fillStyle = i === cols.length - 1 ? G : '#E3F0E0'; ctx.fillRect(x, y, cw, 46); ctx.fillStyle = i === cols.length - 1 ? '#fff' : '#141A15';
-      ctx.textAlign = 'center'; ctx.font = '600 24px Sarabun'; ctx.fillText(col[0], x + cw / 2, y + 32);
-      ctx.fillStyle = '#141A15'; ctx.font = '800 36px Sarabun'; ctx.fillText(col[1] + (i === cols.length - 1 ? ' คน' : ''), x + cw / 2, y + 100);
-      ctx.strokeStyle = '#9DB397'; ctx.lineWidth = 2; ctx.strokeRect(x, y, cw, 120);
-    });
-    ctx.textAlign = 'left';
-    ctx.fillStyle = G; ctx.font = '700 24px Sarabun'; ctx.fillText('“' + d.slogan + '”', M, H - 60);
-    ctx.fillStyle = '#33433A'; ctx.font = '400 22px Sarabun'; ctx.textAlign = 'right'; ctx.fillText('ภาพ/ข่าว ประชาสัมพันธ์ ' + d.orgShort, W - M, H - 60); ctx.textAlign = 'left';
-  } else {
-    ctx.fillStyle = G; ctx.fillRect(0, 0, W, 236);
-    ctx.fillStyle = '#D7EAD3'; ctx.font = '400 26px Sarabun'; ctx.fillText('ภาพ/ข่าว ประชาสัมพันธ์ · ' + d.orgShort, M, 66);
-    ctx.fillStyle = '#fff'; ctx.font = '800 96px Sarabun'; ctx.fillText('SAFETY TALK', M, 160);
-    ctx.font = '400 30px Sarabun'; ctx.fillText(thDateLong(s.date) + ' · ' + s.time + ' น.', M, 208);
-    let y = 260;
-    const smalls = imgs.slice(1, 5), heroH = smalls.length ? 560 : 820;
-    cover(ctx, imgs[0], M, y, W - 2 * M, heroH, 12); label(ctx, tags[0], M, y + heroH);
-    y += heroH + 52;
-    ctx.fillStyle = G; ctx.font = '700 38px Sarabun';
-    const head = (s.leadByPos || 'ผจก.' + d.orgShort) + ' นำพนักงาน ลูกจ้าง' + (s.contractorCount ? ' และผู้รับจ้าง' : '') + ' ร่วมกิจกรรมพูดคุยด้านความปลอดภัย';
-    y = textBlock(ctx, head, M, y, W - 2 * M, 50, 2) + 6;
-    ctx.fillStyle = '#141A15'; ctx.font = '400 28px Sarabun';
-    const body = (s.leadBy ? s.leadBy + ' ' + (s.leadByPos || '') + ' ' : '') + (s.topic ? (/^(มอบ|การ|พูดคุย|ให้ความรู้)/.test(s.topic) ? '' : 'พูดคุยเรื่อง ') + s.topic + ' ' : '') + (s.speaker ? 'โดย ' + s.speaker + ' ' + (s.speakerPos || '') + ' ' : '') + (s.emphasis ? 'เน้นย้ำ ' + s.emphasis + ' ' : '') + 'จากนั้น' + s.leaderDept + 'นำออกกำลังกาย (WARM UP) และกล่าวคำขวัญความปลอดภัยพร้อมกัน';
-    y = textBlock(ctx, body, M, y, W - 2 * M, 40, 4) + 18;
-    if (smalls.length) {
-      const n = smalls.length, gw = (W - 2 * M - 16 * (n - 1)) / n, gh = Math.max(200, Math.min(n > 2 ? 300 : 380, (H - 260) - y - 24));
-      smalls.forEach((im, i) => { const x = M + i * (gw + 16); cover(ctx, im, x, y, gw, gh, 8); label(ctx, tags[i + 1], x, y + gh); });
-      y += gh + 22;
-    }
-    const yb = Math.max(y, H - 260), cols = [['พนักงาน', c.staff], ['ลูกจ้าง', c.hired], ['ผู้รับจ้าง', Number(s.contractorCount) || 0], ['รวมผู้เข้าร่วม', total]];
-    const cw = (W - 2 * M) / cols.length;
-    cols.forEach((col, i) => {
-      const x = M + i * cw, last = i === cols.length - 1;
-      ctx.fillStyle = last ? G : '#fff'; ctx.fillRect(x, yb, cw, 120); ctx.strokeStyle = '#9DB397'; ctx.lineWidth = 2; ctx.strokeRect(x, yb, cw, 120);
-      ctx.textAlign = 'center'; ctx.fillStyle = last ? '#fff' : G; ctx.font = '800 48px Sarabun'; ctx.fillText(col[1], x + cw / 2, yb + 62);
-      ctx.fillStyle = last ? '#fff' : '#141A15'; ctx.font = '400 24px Sarabun'; ctx.fillText(col[0], x + cw / 2, yb + 100);
-    });
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#F2A900'; ctx.fillRect(0, H - 110, W, 110);
-    ctx.fillStyle = '#1F1A00'; ctx.font = '700 30px Sarabun'; ctx.textAlign = 'center'; ctx.fillText('“' + d.slogan + '”', W / 2, H - 46); ctx.textAlign = 'left';
-  }
-}
+/* วาดรายงาน/ข่าว A4 — ใช้ sheet.js แบบ B (กรอบ 4:3 ไม่มีเบลอ) */
+function drawSheet(cv, d, kind) { return STSheet.draw(cv, d, { kind: kind, layout: 'B' }); }
 function downloadBlob(blob, name) {
   if (!blob) return;
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
