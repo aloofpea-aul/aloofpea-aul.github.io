@@ -20,6 +20,9 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
     justify-content: center; flex-wrap: wrap !important; overflow: visible !important;
   }
   #cclNavTabs .ccl-nav-btn { height: 42px !important; padding: 0 12px !important; font-size: 13px !important; }
+}
+@media (min-width: 1200px) and (max-width: 1599px) {
+  #cclNavTabs .ccl-nav-btn { padding: 0 9px !important; font-size: 12.5px !important; }
   #page-inspectMap { height: calc(100vh - var(--ccl-nav-h, 140px) - 20px) !important; height: calc(100dvh - var(--ccl-nav-h, 140px) - 20px) !important; }
 }
 
@@ -40,7 +43,9 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
 
   /* หัวจอ */
   nav#cclNav { height: 52px !important; padding: 0 10px !important; gap: 8px !important; padding-top: env(safe-area-inset-top, 0px) !important; box-sizing: content-box; }
-  #cclNavTabs, #cclUserInfo, #cclLogoutBtn, #cclNavBrand .ccl-brand-sub { display: none !important; }
+  #cclNavTabs, #cclUserInfo, #cclLogoutBtn { display: none !important; }
+  #cclNavBrand .ccl-brand-sub { font-size: 11px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
+  #cclNavBrand .ccl-brand-text { min-width: 0; }
   #cclNavBrand { flex: 1 1 auto; min-width: 0; gap: 8px !important; }
   #cclNavBrand .ccl-logo { width: 32px; height: 32px; }
   #cclNavBrand .ccl-brand-title { font-size: 16px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -183,6 +188,8 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
   #page-inspectMap > div > div:nth-child(3) button { flex: 0 0 auto; white-space: nowrap; }
   #page-inspectMap > div > div:nth-child(3) button:last-child { margin-left: 0 !important; }
   #mainApp footer, #mainApp > footer { padding-bottom: 8px; }
+  #page-admin .flex.justify-between { flex-wrap: wrap; gap: 6px; }
+  #page-admin .flex.justify-between > h3 { flex: 1 0 100%; }
 }
 
 @media (max-width: 380px) {
