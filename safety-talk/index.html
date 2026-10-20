@@ -210,14 +210,14 @@ function imgTag(p) {
 }
 const LOCAL_THUMB = {};
 /* รูปเก่าที่ยังไม่มีรูปย่อ: โหลดรูปเต็มทีละรูป ย่อในเครื่อง แล้วส่งรูปย่อกลับไปเก็บ (ทำครั้งเดียวต่อรูป) */
-const THUMB_Q = { busy: false, done: {} };
+const THUMB_Q = { busy: false, done: {}, q: [] };
 function backfillThumbs(list) {
-  const need = (list || []).filter(p => !p.thumb && !LOCAL_THUMB[p.fileId] && !THUMB_Q.done[p.fileId]);
-  if (!need.length || THUMB_Q.busy) return;
+  (list || []).forEach(p => { if (!p.thumb && !LOCAL_THUMB[p.fileId] && !THUMB_Q.done[p.fileId]) { THUMB_Q.done[p.fileId] = 1; THUMB_Q.q.push(p); } });
+  if (THUMB_Q.busy || !THUMB_Q.q.length) return;
   THUMB_Q.busy = true;
   (async () => {
-    for (const p of need) {
-      THUMB_Q.done[p.fileId] = 1;
+    while (THUMB_Q.q.length) {
+      const p = THUMB_Q.q.shift();
       try {
         const f = await api('photoFull', { fileId: p.fileId });
         const t = await shrinkSrc(f.data, 320, 0.6);
