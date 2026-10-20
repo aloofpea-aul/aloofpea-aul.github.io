@@ -1,0 +1,195 @@
+/* CCL — ชั้นปรับหน้าจอ (มือถือ / iPad / คอมจอเล็ก)
+   ไม่แตะโค้ดเดิม แค่ปรับการจัดวางตามความกว้างจอ
+   - จอกว้าง 1600px ขึ้นไป : เหมือนเดิมทุกอย่าง
+   - 768–1599px (iPad / โน้ตบุ๊ก) : แถบเมนูแยกเป็นแถวที่สอง เห็นครบทุกเมนู
+   - ต่ำกว่า 768px (มือถือ) : เมนูย้ายลงล่างจอ + ตารางเป็นการ์ด + แผนที่ครึ่งบน/รายการครึ่งล่าง */
+
+#cclBottomNav, #cclMoreSheet, #cclMoreBackdrop, .ccl-imap-toggle { display: none; }
+
+/* iOS: ช่องวันที่ล้นจอ */
+input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+/* ───────── iPad / โน้ตบุ๊ก : เมนูแถวที่สอง ───────── */
+@media (min-width: 768px) and (max-width: 1599px) {
+  nav#cclNav { flex-wrap: wrap !important; height: auto !important; row-gap: 0 !important; }
+  #cclNavBrand { height: 52px; }
+  #cclNavRight { height: 52px; }
+  #cclNavTabs {
+    order: 3; flex: 0 0 100% !important; width: 100%;
+    height: auto !important; min-height: 44px; border-top: 1px solid rgba(255,255,255,0.08);
+    justify-content: center; flex-wrap: wrap !important; overflow: visible !important;
+  }
+  #cclNavTabs .ccl-nav-btn { height: 42px !important; padding: 0 12px !important; font-size: 13px !important; }
+  #page-inspectMap { height: calc(100vh - var(--ccl-nav-h, 140px) - 20px) !important; height: calc(100dvh - var(--ccl-nav-h, 140px) - 20px) !important; }
+}
+
+/* iPad แนวตั้ง: แผงรายการแผนที่ให้กว้างขึ้นนิด ปุ่มกดง่าย */
+@media (min-width: 768px) and (max-width: 1024px) {
+  #page-inspectMap > div > div:nth-child(2) > div:first-child { width: 300px !important; }
+  #page-inspectMap button { font-size: 12px !important; }
+  #page-inspectMap input, #page-inspectMap select { font-size: 13px !important; padding: 7px 8px !important; }
+}
+
+/* ───────── มือถือ ───────── */
+@media (max-width: 767px) {
+  html, body { overflow-x: hidden; max-width: 100%; }
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+  input, select, textarea { font-size: 16px !important; } /* กัน iPhone ซูมเองตอนแตะช่องกรอก */
+  input[type="date"], input[type="month"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 40px; background-color: #fff; }
+  input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
+  /* หัวจอ */
+  nav#cclNav { height: 52px !important; padding: 0 10px !important; gap: 8px !important; padding-top: env(safe-area-inset-top, 0px) !important; box-sizing: content-box; }
+  #cclNavTabs, #cclUserInfo, #cclLogoutBtn, #cclNavBrand .ccl-brand-sub { display: none !important; }
+  #cclNavBrand { flex: 1 1 auto; min-width: 0; gap: 8px !important; }
+  #cclNavBrand .ccl-logo { width: 32px; height: 32px; }
+  #cclNavBrand .ccl-brand-title { font-size: 16px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #cclNavRight { gap: 6px !important; }
+  #cclNavRight .ccl-icon-btn { width: 36px; height: 36px; }
+  #cclUserChip { padding: 3px !important; cursor: pointer !important; }
+  #cclUserChip .ccl-avatar { width: 30px; height: 30px; font-size: 13px; }
+
+  /* พื้นที่เนื้อหา */
+  #mainApp > .container { padding: 10px 8px !important; }
+  .card.p-6, .card.p-8, .card.p-5 { padding: 0.9rem !important; }
+  .page-section h2.text-2xl, .page-section h2.text-3xl { font-size: 1.25rem !important; line-height: 1.6 !important; }
+  .page-section .text-4xl { font-size: 1.9rem !important; }
+  .grid { min-width: 0; }
+  .grid > * { min-width: 0; }
+
+  /* แถบเมนูล่าง */
+  #cclBottomNav {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+    background: #fff; border-top: 1px solid #E2E8F0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 16px rgba(13,27,75,0.06);
+  }
+  #cclBottomNav button {
+    flex: 1; height: 60px; border: 0; background: none; padding: 6px 0 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: #94A3B8; font-family: 'Sarabun', sans-serif; font-size: 11.5px; font-weight: 700;
+    position: relative; -webkit-tap-highlight-color: transparent;
+  }
+  #cclBottomNav button i { font-size: 19px; }
+  #cclBottomNav button.on { color: #0D1B4B; }
+  #cclBottomNav button.on i { color: #F57C00; }
+  #cclBottomNav button.on::before { content: ''; position: absolute; top: 0; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: #F57C00; }
+  .ccl-bn-badge {
+    position: absolute; top: 5px; left: 50%; margin-left: 6px; min-width: 17px; height: 17px; padding: 0 4px;
+    border-radius: 999px; font-size: 10px; line-height: 17px; color: #fff; background: #EF4444; display: none;
+  }
+  .ccl-bn-badge.show { display: block; }
+
+  /* แผ่น "อื่นๆ" */
+  #cclMoreBackdrop.open { display: block; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 46; }
+  #cclMoreSheet.open {
+    display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 47;
+    background: #F8FAFC; border-radius: 18px 18px 0 0; max-height: 85vh; overflow-y: auto;
+    padding: 8px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: cclSheetUp .18s ease-out;
+  }
+  @keyframes cclSheetUp { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+  .ccl-sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: #CBD5E1; margin: 2px auto 10px; }
+  .ccl-sheet-user { display: flex; align-items: center; gap: 10px; background: #0D1B4B; color: #fff; border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; }
+  .ccl-sheet-user .ccl-avatar { width: 38px; height: 38px; font-size: 15px; }
+  .ccl-sheet-user b { display: block; font-size: 15px; }
+  .ccl-sheet-user small { color: #FFC107; font-size: 12px; font-weight: 700; }
+  .ccl-sheet-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .ccl-sheet-grid button, .ccl-sheet-grid a {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; min-height: 78px; padding: 10px 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700; color: #1E293B; text-decoration: none;
+    position: relative; text-align: center; line-height: 1.25;
+  }
+  .ccl-sheet-grid i { font-size: 20px; color: #0D1B4B; }
+  .ccl-sheet-grid .on { border-color: #F57C00; background: #FFF7ED; }
+  .ccl-sheet-grid .on i { color: #F57C00; }
+  .ccl-sheet-grid .ccl-bn-badge { top: 6px; left: auto; right: 8px; margin: 0; display: none; }
+  .ccl-sheet-grid .ccl-bn-badge.show { display: block; }
+  .ccl-sheet-title { font-size: 12px; font-weight: 700; color: #64748B; margin: 14px 2px 8px; }
+  .ccl-sheet-grid .ccl-danger { color: #DC2626; }
+  .ccl-sheet-grid .ccl-danger i { color: #DC2626; }
+
+  /* ตาราง → การ์ด */
+  #mainApp table.ccl-cards { width: 100% !important; min-width: 0 !important; border-collapse: separate !important; border-spacing: 0 !important; }
+  #mainApp table.ccl-cards thead { display: none !important; }
+  #mainApp table.ccl-cards, #mainApp table.ccl-cards tbody { display: block !important; }
+  #mainApp table.ccl-cards tr {
+    display: block !important; background: #fff; border: 1px solid #E2E8F0 !important; border-radius: 12px;
+    margin: 0 0 10px !important; padding: 10px 12px !important; height: auto !important;
+    box-shadow: 0 1px 4px rgba(13,27,75,0.05);
+  }
+  #mainApp table.ccl-cards td {
+    display: block !important; position: relative; border: 0 !important; width: auto !important; max-width: none !important;
+    padding: 4px 0 4px 104px !important; min-height: 24px; text-align: left !important; white-space: normal !important;
+    word-break: break-word; font-size: 14px;
+  }
+  #mainApp table.ccl-cards td::before {
+    content: attr(data-label); position: absolute; left: 0; top: 5px; width: 96px;
+    font-size: 12px; font-weight: 700; color: #64748B; line-height: 1.35;
+  }
+  #mainApp table.ccl-cards td.ccl-td-head { padding: 0 0 6px !important; margin-bottom: 4px; border-bottom: 1px dashed #E2E8F0 !important; font-size: 15px; }
+  #mainApp table.ccl-cards td.ccl-td-head::before { display: none; }
+  #mainApp table.ccl-cards td.ccl-td-empty { display: none !important; }
+  #mainApp table.ccl-cards td.ccl-td-full { padding-left: 0 !important; text-align: center !important; }
+  #mainApp table.ccl-cards td.ccl-td-full::before { display: none; }
+  #mainApp table.ccl-cards td.ccl-td-actions { padding: 8px 0 0 !important; margin-top: 4px; border-top: 1px dashed #E2E8F0 !important; }
+  #mainApp table.ccl-cards td.ccl-td-actions::before { display: none; }
+  #mainApp table.ccl-cards td.ccl-td-actions > div, #mainApp table.ccl-cards td.ccl-td-actions > .flex { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; gap: 6px !important; justify-content: flex-start !important; }
+  #mainApp table.ccl-cards td.ccl-td-actions button, #mainApp table.ccl-cards td.ccl-td-actions a { min-height: 38px; min-width: 42px; font-size: 13px !important; padding: 6px 12px !important; flex: 0 0 auto; width: auto !important; }
+  #mainApp table.ccl-cards tr.ccl-tr-empty { background: transparent; border: 0 !important; box-shadow: none; }
+  #mainApp .overflow-x-auto:has(> table.ccl-cards) { overflow: visible !important; }
+
+  /* หน้าต่างป๊อปอัป */
+  [id$="Modal"].fixed { padding: 6px !important; align-items: flex-end !important; }
+  [id$="Modal"].fixed > div { width: 100% !important; max-width: 100% !important; max-height: 94vh !important; max-height: 94dvh !important; overflow-y: auto !important; border-radius: 16px !important; }
+  #inspectionMapModal.fixed { padding: 0 !important; align-items: stretch !important; }
+  #inspectionMapModal.fixed > div { max-height: none !important; border-radius: 0 !important; }
+  .swal2-popup { width: calc(100vw - 16px) !important; max-width: 560px !important; padding: 1rem 0.75rem !important; }
+  .swal2-html-container { margin: 0.75rem 0.25rem 0 !important; overflow-x: hidden !important; }
+  .swal2-input, .swal2-select, .swal2-textarea { margin: 0.5rem 0 !important; max-width: 100% !important; width: 100% !important; box-sizing: border-box; }
+  .swal2-actions { flex-wrap: wrap; gap: 6px; }
+  .swal2-actions button { min-height: 42px; }
+
+  /* แผนที่ตรวจรับ : แผนที่ด้านบน รายการด้านล่าง */
+  #page-inspectMap {
+    height: calc(100vh - 140px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(100dvh - 140px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important; width: 100% !important;
+  }
+  #imap-list > div { padding: 10px 12px !important; }
+  #imap-list p { font-size: 14px !important; }
+  #imap-list p:first-child { font-size: 12.5px !important; }
+  #imap-list p + p + div, #imap-list div[style*="font-size:9px"] { font-size: 12px !important; }
+  #imap-selbar, #imap-selbar span, #imap-selbar button { font-size: 13px !important; }
+  #page-inspectMap > div > div:nth-child(1) { padding: 8px 10px !important; gap: 6px; }
+  #page-inspectMap > div > div:nth-child(1) p { display: none; }
+  #page-inspectMap > div > div:nth-child(1) h2 { font-size: 15px !important; white-space: nowrap; }
+  #page-inspectMap > div > div:nth-child(1) > div:last-child { gap: 5px !important; }
+  #page-inspectMap > div > div:nth-child(1) button { font-size: 12px !important; padding: 6px 9px !important; white-space: nowrap; }
+  #page-inspectMap .ccl-imap-toggle { display: inline-block; }
+  #page-inspectMap > div > div:nth-child(2) { flex-direction: column-reverse !important; }
+  #page-inspectMap > div > div:nth-child(2) > div:last-child { flex: 0 0 40% !important; min-height: 0; transition: flex-basis .2s; }
+  #page-inspectMap.ccl-map-big > div > div:nth-child(2) > div:last-child { flex-basis: 72% !important; }
+  #page-inspectMap > div > div:nth-child(2) > div:first-child { width: 100% !important; flex: 1 1 auto !important; min-height: 0; border-right: 0 !important; border-top: 1px solid #E2E8F0; }
+  #page-inspectMap > div > div:nth-child(2) > div:last-child > div:last-child { display: none !important; } /* คำอธิบายสีหมุด */
+  #page-inspectMap input, #page-inspectMap select { font-size: 16px !important; padding: 7px 9px !important; }
+  #page-inspectMap #imap-search { margin-bottom: 6px !important; }
+  #page-inspectMap #imap-list { font-size: 14px; }
+  #page-inspectMap > div > div:nth-child(2) > div:first-child > div:nth-last-child(-n+2) { padding: 5px 8px !important; }
+  #page-inspectMap > div > div:nth-child(2) > div:first-child > div:nth-last-child(-n+2) button,
+  #page-inspectMap > div > div:nth-child(3) button { font-size: 12.5px !important; padding: 8px 6px !important; }
+  #page-inspectMap > div > div:nth-child(3) { flex-wrap: nowrap !important; overflow-x: auto; gap: 6px !important; padding: 6px 8px !important; }
+  #page-inspectMap > div > div:nth-child(3) button { flex: 0 0 auto; white-space: nowrap; }
+  #page-inspectMap > div > div:nth-child(3) button:last-child { margin-left: 0 !important; }
+  #mainApp footer, #mainApp > footer { padding-bottom: 8px; }
+}
+
+@media (max-width: 380px) {
+  #page-inspectMap > div > div:nth-child(1) h2 { font-size: 14px !important; }
+  #page-inspectMap > div > div:nth-child(1) h2 i { display: none; }
+  #page-inspectMap > div > div:nth-child(1) button { padding: 6px 7px !important; }
+  #cclBottomNav button { font-size: 10.5px; }
+  #mainApp table.ccl-cards td { padding-left: 92px !important; }
+  #mainApp table.ccl-cards td::before { width: 86px; }
+}
