@@ -27,14 +27,14 @@ canvas{width:100%;height:auto;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,
 <main>
   <div class="note">
     <b>แบบ A — ตามสัดส่วนจริง</b> รูปทุกใบคงสัดส่วนเดิม ไม่ตัดขอบ จัดแถวให้เต็มความกว้างเอง (รูปแนวตั้งก็วางได้)<br>
-    <b>แบบ B — กรอบเท่ากัน</b> ทุกช่องเป็น 4:3 เรียบร้อยเป็นระเบียบ รูปวางเต็มรูปในกรอบ ถ้าสัดส่วนไม่ตรง ขอบที่เหลือเติมด้วยรูปเดียวกันแบบเบลอ<br>
+    <b>แบบ B — กรอบเท่ากัน (ไม่มีเบลอ)</b> ทุกช่องเป็น 4:3 ตรงกับรูปจากมือถือ ระบบเลือกการจัดวางที่เต็มหน้าที่สุดเอง รูปแนวตั้งตัดส่วนเกินเล็กน้อยโดยเก็บช่วงบนไว้<br>
     ทั้งสองแบบ: รองรับได้ถึง 7 รูป · ตัวเลขผู้เข้าร่วมย่อเหลือแถบเดียว · ข้อความไม่ล้นขอบ
   </div>
   <div class="row" id="pick"></div>
   <div id="st">กำลังโหลดข้อมูลและรูป…</div>
   <div class="grid" id="g"></div>
 </main>
-<script src="sheet.js?v=1"></script>
+<script src="sheet.js?v=2"></script>
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';
 const ls = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
@@ -44,7 +44,7 @@ async function api(action, data) {
 }
 function shrink(src, max) { return new Promise(res => { const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.85)); }; im.onerror = () => res(null); im.src = src; }); }
 let D = null, extra = [], n = 0;
-const VIEWS = [['report', 'A', 'รายงาน · แบบ A ตามสัดส่วนจริง'], ['report', 'B', 'รายงาน · แบบ B กรอบเท่ากัน'], ['news', 'A', 'ข่าวภาพเดียว · แบบ A'], ['news', 'B', 'ข่าวภาพเดียว · แบบ B']];
+const VIEWS = [['report', 'A', 'รายงาน · แบบ A ตามสัดส่วนจริง'], ['report', 'B', 'รายงาน · แบบ B กรอบเท่ากัน (ไม่มีเบลอ)'], ['news', 'A', 'ข่าวภาพเดียว · แบบ A'], ['news', 'B', 'ข่าวภาพเดียว · แบบ B']];
 async function render() {
   const imgs = D.images.concat(extra).slice(0, n);
   document.getElementById('g').innerHTML = VIEWS.map((v, i) => '<figure><figcaption>' + v[2] + '<span>' + imgs.length + ' รูป</span></figcaption><canvas id="c' + i + '"></canvas></figure>').join('');

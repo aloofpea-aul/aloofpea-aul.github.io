@@ -106,24 +106,58 @@
     });
     return { boxes: out, used: yy - gap - y };
   }
-  // แบบ B: รูปใหญ่ + ตาราง 3 คอลัมน์ ทุกช่อง 4:3
+  // แบบ B: ทุกช่อง 4:3 — ลองหลายรูปแบบ (แถว 1–4 รูป หรือบล็อกรูปใหญ่ + 2 รูปซ้อน) เลือกแบบที่รูปใหญ่และเต็มหน้าที่สุด
+  const PLANS_B = {
+    1: [[1]], 2: [[2], [1, 1]], 3: [['B'], [1, 2], [3]], 4: [[1, 3], [2, 2], ['B', 1]],
+    5: [['B', 2], [1, 4], [2, 3], [1, 2, 2]], 6: [['B', 3], [2, 2, 2], [1, 2, 3], [3, 3]],
+    7: [['B', 4], ['B', 2, 2], [1, 3, 3], [3, 2, 2], [1, 2, 4]]
+  };
   function layoutB(imgs, x, y, w, h, gap) {
-    const rest = imgs.slice(1, 7), cols = rest.length <= 2 ? Math.max(rest.length, 1) : 3;
-    const nrows = Math.ceil(rest.length / cols);
-    const cw = (w - gap * (cols - 1)) / cols, ch = Math.min(cw * 3 / 4, nrows ? (h * 0.5 - gap * nrows) / nrows : 0);
-    const heroH = Math.min(w * 3 / 4, h - nrows * (ch + gap));
-    const out = [{ i: 0, x, y, w, h: heroH, fit: true }];
-    rest.forEach((im, j) => {
-      const r = Math.floor(j / cols), cInRow = Math.min(cols, rest.length - r * cols);
-      const rowW = cInRow * cw + gap * (cInRow - 1), x0 = x + (w - rowW) / 2;
-      out.push({ i: j + 1, x: x0 + (j % cols) * (cw + gap), y: y + heroH + gap + r * (ch + gap), w: cw, h: ch, fit: true });
+    const n = Math.max(1, Math.min(imgs.length, 7)), R = 3 / 4;
+    function build(plan, x0, ww) {
+      const out = []; let yy = y, i = 0;
+      plan.forEach((r, ri) => {
+        if (ri) yy += gap;
+        if (r === 'B') {
+          const ws = (ww - gap - gap / R) / 3, wh = ww - gap - ws;
+          out.push({ i: i++, x: x0, y: yy, w: wh, h: wh * R });
+          out.push({ i: i++, x: x0 + wh + gap, y: yy, w: ws, h: ws * R });
+          out.push({ i: i++, x: x0 + wh + gap, y: yy + ws * R + gap, w: ws, h: ws * R });
+          yy += wh * R;
+        } else {
+          const cw = (ww - gap * (r - 1)) / r;
+          for (let j = 0; j < r; j++) out.push({ i: i++, x: x0 + j * (cw + gap), y: yy, w: cw, h: cw * R });
+          yy += cw * R;
+        }
+      });
+      return { boxes: out, used: yy - y };
+    }
+    let best = null;
+    PLANS_B[n].forEach((plan, pi) => {
+      let L = build(plan, x, w), k = 1;
+      if (L.used > h) { k = h / L.used; const nw = w * k; L = build(plan, x + (w - nw) / 2, nw); }
+      const minW = Math.min(...L.boxes.map(b => b.w)), heroArea = L.boxes[0].w * L.boxes[0].h;
+      // คะแนน: เต็มหน้า + รูปเล็กสุดไม่เล็กเกิน + รูปแรกเด่น + ไม่ต้องย่อจนเหลือขอบข้างมาก
+      const score = (L.used / h) * 3 + Math.min(1, minW / 360) * 1.5 + Math.min(1, heroArea / (w * w * 0.4)) + (k < 0.7 ? -3 : -(1 - k) * 4) - pi * 0.05;
+      if (!best || score > best.score) best = Object.assign(L, { score });
     });
-    return { boxes: out, used: heroH + nrows * (ch + gap) };
+    return best;
+  }
+  /* เติมเต็มกรอบโดยคงสัดส่วน (ไม่บีบ) — ส่วนเกินตัดออก เน้นเก็บช่วงบนของภาพแนวตั้ง */
+  function cover(ctx, img, x, y, w, h, r) {
+    ctx.save(); rr(ctx, x, y, w, h, r || 8); ctx.clip();
+    if (!img) { ctx.fillStyle = '#DDE7DA'; ctx.fillRect(x, y, w, h); }
+    else {
+      const k = Math.max(w / img.width, h / img.height), dw = img.width * k, dh = img.height * k;
+      const fy = img.height > img.width ? 0.3 : 0.5;            // แนวตั้ง: เก็บส่วนบน (หน้า/หมวก)
+      ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) * fy, dw, dh);
+    }
+    ctx.restore();
   }
   function drawPhotos(ctx, imgs, tags, x, y, w, h, layout) {
     const L = (layout === 'B' ? layoutB : layoutA)(imgs, x, y, w, h, 14);
     L.boxes.forEach(b => {
-      const r = b.fit || layout === 'B' ? fit(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8) : (fit(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8), b);
+      if (layout === 'B') cover(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8); else fit(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8);
       chip(ctx, tags[b.i], b.x, b.y + b.h);
     });
     return L.used;
