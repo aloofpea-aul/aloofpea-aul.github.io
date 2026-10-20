@@ -162,12 +162,18 @@ function toast(msg, err) {
 }
 function creds() { return { name: ls(K_USER) || '', pass: ls(K_PASS) || '' }; }
 
+const READ_ONLY = /^(boot|photos|photoFull|reportData|month|sessions|people)$/;
 async function api(action, data) {
   const body = JSON.stringify({ fn: 'st', args: [Object.assign({ action: action, auth: creds() }, data || {})] });
   let r;
   net(1);
-  try { r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body }); }
-  catch (e) { net(-1); throw new Error('เชื่อมต่อไม่ได้ ตรวจสอบสัญญาณอินเทอร์เน็ต'); }
+  const send = () => fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body });
+  try { r = await send(); }
+  catch (e) {
+    /* อ่านข้อมูลอย่างเดียว: สะดุดครั้งแรก (หลังบ้านเพิ่งตื่น/สัญญาณกระตุก) ลองซ้ำอีกครั้ง */
+    if (READ_ONLY.test(action)) { try { await new Promise(x => setTimeout(x, 1200)); r = await send(); } catch (e2) {} }
+    if (!r) { net(-1); throw new Error('เชื่อมต่อไม่ได้ ตรวจสอบสัญญาณอินเทอร์เน็ต'); }
+  }
   let j; try { j = await r.json(); } catch (e) { net(-1); throw new Error('หลังบ้านตอบกลับไม่ถูกต้อง'); }
   net(-1);
   if (!j || !j.ok) {
@@ -694,13 +700,15 @@ async function vNews() {
   const sid = S.newsSid || (workSession() || {}).id;
   header('ข่าว / รายงาน', '');
   $('#view').innerHTML = '<div class="loading"><div class="spin"></div>กำลังเตรียมข้อมูลและรูป…</div>';
-  let d; try { d = await api('reportData', { sessionId: sid, lite: true }); } catch (e) { $('#view').innerHTML = '<div class="card">' + esc(e.message) + '</div>'; return; }
+  const my = ++ED.gen;
+  let d; try { d = await api('reportData', { sessionId: sid, lite: true }); } catch (e) { if (my === ED.gen && S.tab === 'news') $('#view').innerHTML = '<div class="card">' + esc(e.message) + ' <button class="btn" onclick="vNews()">ลองใหม่</button></div>'; return; }
+  if (my !== ED.gen || S.tab !== 'news') return;
   S.news = d;
   const s = d.session;
   header('ข่าว / รายงาน', thDate(s.date));
   const mode = ls(K_MODE) || 'short';
   S.newsMode = mode;
-  ED.gen++; ED.sel = -1; ED.arm = null; ED.swap = false; ED.dirty = false; ED.photos = null;
+  ED.sel = -1; ED.arm = null; ED.swap = false; ED.dirty = false; ED.photos = null;
   ED.chain = Promise.resolve();
   ED.slots = d.images.map(i => ({ fileId: i.fileId, tag: i.tag || 'อื่นๆ', crop: i.crop || null, data: i.data || i.thumb || '', img: null, loading: !i.data }));
   $('#view').innerHTML = '<div class="pill">' + (S.boot.recent || []).map(r => '<button data-s="' + r.id + '" class="' + (r.id === s.id ? 'on' : '') + '">' + esc(thDate(r.date)) + '</button>').join('') + '</div>' +
