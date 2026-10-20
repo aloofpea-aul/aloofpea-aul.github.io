@@ -144,23 +144,40 @@
     return best;
   }
   /* เติมเต็มกรอบโดยคงสัดส่วน (ไม่บีบ) — ส่วนเกินตัดออก เน้นเก็บช่วงบนของภาพแนวตั้ง */
-  function cover(ctx, img, x, y, w, h, r) {
+  /* ส่วนของรูปที่เห็นในช่อง (crop = {z ซูม ≥1, cx, cy จุดกึ่งกลาง 0–1}) — ไม่ระบุ = เต็มช่อง แนวตั้งเก็บส่วนบน */
+  function view(img, w, h, crop) {
+    const z = Math.max(1, Math.min(6, (crop && crop.z) || 1));
+    const s = Math.max(w / img.width, h / img.height) * z, vw = w / s, vh = h / s;
+    let cx = crop && isFinite(crop.cx) ? crop.cx : 0.5;
+    let cy = crop && isFinite(crop.cy) ? crop.cy : (img.height > img.width ? (vh / 2 + 0.3 * (img.height - vh)) / img.height : 0.5);
+    cx = Math.min(1 - vw / 2 / img.width, Math.max(vw / 2 / img.width, cx));
+    cy = Math.min(1 - vh / 2 / img.height, Math.max(vh / 2 / img.height, cy));
+    return { s, vw, vh, cx, cy, z, sx: cx * img.width - vw / 2, sy: cy * img.height - vh / 2 };
+  }
+  function cover(ctx, img, x, y, w, h, r, crop) {
     ctx.save(); rr(ctx, x, y, w, h, r || 8); ctx.clip();
     if (!img) { ctx.fillStyle = '#DDE7DA'; ctx.fillRect(x, y, w, h); }
-    else {
-      const k = Math.max(w / img.width, h / img.height), dw = img.width * k, dh = img.height * k;
-      const fy = img.height > img.width ? 0.3 : 0.5;            // แนวตั้ง: เก็บส่วนบน (หน้า/หมวก)
-      ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) * fy, dw, dh);
-    }
+    else { const v = view(img, w, h, crop); ctx.drawImage(img, v.sx, v.sy, v.vw, v.vh, x, y, w, h); }
     ctx.restore();
   }
-  function drawPhotos(ctx, imgs, tags, x, y, w, h, layout) {
+  let lastBoxes = [];
+  function drawPhotos(ctx, imgs, tags, x, y, w, h, layout, crops, hi) {
     const L = (layout === 'B' ? layoutB : layoutA)(imgs, x, y, w, h, 14);
     L.boxes.forEach(b => {
-      if (layout === 'B') cover(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8); else fit(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8);
+      if (layout === 'B') cover(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8, crops[b.i]); else fit(ctx, imgs[b.i], b.x, b.y, b.w, b.h, 8);
       chip(ctx, tags[b.i], b.x, b.y + b.h);
+      if (hi === b.i) { ctx.save(); ctx.strokeStyle = '#F2A900'; ctx.lineWidth = 10; rr(ctx, b.x + 5, b.y + 5, b.w - 10, b.h - 10, 8); ctx.stroke(); ctx.restore(); }
     });
+    lastBoxes = L.boxes.map(b => ({ i: b.i, x: b.x, y: b.y, w: b.w, h: b.h }));
     return L.used;
+  }
+  /* โหลดรูปครั้งเดียวแล้วจำไว้ (ลากหรือซูมจะวาดใหม่ได้ลื่น) */
+  const imgCache = new Map();
+  function loadImg(src) {
+    if (!src) return Promise.resolve(null);
+    if (imgCache.has(src)) return imgCache.get(src);
+    const p = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+    imgCache.set(src, p); return p;
   }
 
   /* ---------- แถบตัวเลขแบบเล็ก ---------- */
@@ -190,8 +207,8 @@
     cv.width = W; cv.height = H;
     const ctx = cv.getContext('2d');
     try { await Promise.all(['400 30px Sarabun', '600 30px Sarabun', '700 30px Sarabun', '800 30px Sarabun'].map(x => document.fonts.load(x))); } catch (e) {}
-    const imgs = await Promise.all(d.images.map(i => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = i.data; })));
-    const tags = d.images.map(i => i.tag);
+    const imgs = await Promise.all(d.images.map(i => i.img ? Promise.resolve(i.img) : loadImg(i.data)));
+    const tags = d.images.map(i => i.tag), crops = d.images.map(i => i.crop || null), hi = opt.highlight;
     const s = d.session, c = d.counts, cc = Number(s.contractorCount) || 0, total = c.present + cc;
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     const statItems = [['พนักงาน', c.staff], ['ลูกจ้าง', c.hired], ['ผู้รับจ้าง', cc], ['ติดภารกิจ/ลา', c.duty + c.leave]];
@@ -220,7 +237,7 @@
       const ptLines = pts.reduce((a, p) => a + Math.min(2, wrap(ctx, p, W - 2 * M).length), 0);
       const bottomH = 44 + ptLines * 34 + 22 + 60 + 70;
       const photoTop = 272, photoH = H - bottomH - photoTop - 16;
-      const used = drawPhotos(ctx, imgs, tags, M, photoTop, W - 2 * M, photoH, layout);
+      const used = drawPhotos(ctx, imgs, tags, M, photoTop, W - 2 * M, photoH, layout, crops, hi);
       y = photoTop + used + 34;
       ctx.fillStyle = G; ctx.font = f(700, 28); T(ctx, 'สาระสำคัญ', M, y + 4); y += 40;
       ctx.fillStyle = INK; ctx.font = f(400, 24);
@@ -241,7 +258,7 @@
       const bl = Math.min(3, wrap(ctx, body, W - 2 * M).length);
       const textH = hl * 46 + bl * 36 + 30;
       const photoTop = 236, photoH = H - 96 - 60 - 24 - textH - 40 - photoTop;
-      const used = drawPhotos(ctx, imgs, tags, M, photoTop, W - 2 * M, photoH, layout);
+      const used = drawPhotos(ctx, imgs, tags, M, photoTop, W - 2 * M, photoH, layout, crops, hi);
       y = photoTop + used + 46;
       ctx.fillStyle = G; ctx.font = f(700, 34); y = textBlock(ctx, head, M, y, W - 2 * M, 46, 2) + 4;
       ctx.fillStyle = INK; ctx.font = f(400, 26); y = textBlock(ctx, body, M, y, W - 2 * M, 36, 3) + 12;
@@ -250,6 +267,7 @@
       ctx.fillStyle = '#F2A900'; ctx.fillRect(0, H - 90, W, 90);
       ctx.fillStyle = '#1F1A00'; ctx.font = f(700, 28); T(ctx, '“' + d.slogan + '”', W / 2, H - 36, 'center');
     }
+    return { boxes: lastBoxes, W: W, H: H };
   }
-  window.STSheet = { draw: draw, MAX: 7 };
+  window.STSheet = { draw: draw, view: view, loadImg: loadImg, MAX: 7 };
 })();
