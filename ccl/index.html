@@ -7,7 +7,7 @@
   // ===== CCL บน GitHub (ศูนย์รวมงาน) — เชื่อม Apps Script ผ่าน fetch =====
   // หน้าเว็บนี้ไม่มี google.script.run ของจริง จึงสร้างตัวจำลองที่ส่งคำขอไปยัง Api.gs แทน
   // โค้ดเดิมทั้งหมดทำงานได้เหมือนเดิม และใช้ข้อมูลชุดเดียวกับระบบเดิม
-  var CCL_API_DEFAULT = '';   // ใส่ลิงก์ Web app ของ Api.gs (New deployment) ที่นี่
+  var CCL_API_DEFAULT = 'https://script.google.com/macros/s/AKfycby4f-2rofhzok_cg9-YLftco1XuC-MCrKn72TTakoPhQfz-qGqjX9WTzZkY5Ye_BxejNQ/exec';   // ใส่ลิงก์ Web app ของ Api.gs (New deployment) ที่นี่
   var CCL_TOKEN_KEY = 'ccl_token_v1', CCL_USER_KEY = 'ccl_user_v1';
   function cclLs(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function cclApiUrl() { return cclLs('ccl_api_url') || CCL_API_DEFAULT; }
@@ -954,6 +954,9 @@ body {
       <span id="inspectionBadge" class="ccl-badge ccl-badge-orange">0</span>
       <span id="badge-inspection" class="ccl-badge ccl-badge-red" style="display:none;">0</span>
     </button>
+    <button onclick="showPage('inspectMap')" id="nav-inspectMap" class="ccl-nav-btn">
+      <i class="fa-solid fa-map-location-dot"></i>แผนที่ตรวจรับ
+    </button>
 
     <button onclick="showPage('close')" id="nav-close" class="ccl-nav-btn">
       <i class="fa-solid fa-paper-plane"></i>ส่งปิดงาน
@@ -1716,6 +1719,88 @@ body {
         </div>
     </div>
 
+    <!-- PAGE: INSPECT MAP -->
+    <div id="page-inspectMap" class="page-section hidden" style="height:calc(100vh - 120px)">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div style="padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-size:15px;font-weight:600;color:#1f2937"><i class="fa-solid fa-map-location-dot" style="color:#2563eb;margin-right:8px"></i>แผนที่ตรวจรับงาน</h2>
+            <p style="font-size:11px;color:#9ca3af;margin-top:2px">เลือกหลายงานพร้อมกัน แล้ววาดเส้นทางไปตรวจในคลิกเดียว <span id="imap-count-badge" style="color:#2563eb;font-weight:500"></span></p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="findNearestInspect()" style="font-size:11px;padding:6px 12px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;cursor:pointer"><i class="fa-solid fa-star"></i> ใกล้สุด</button>
+            <button onclick="sortInspectByNearest()" style="font-size:11px;padding:6px 12px;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:10px;cursor:pointer"><i class="fa-solid fa-sort"></i> เรียงลำดับ</button>
+          </div>
+        </div>
+        <div style="display:flex;flex:1;overflow:hidden">
+          <div style="width:288px;display:flex;flex-direction:column;border-right:1px solid #f3f4f6;background:#f9fafb;flex-shrink:0">
+            <div style="padding:8px 12px;border-bottom:1px solid #f3f4f6;background:#fff">
+              <input id="imap-search" type="text" placeholder="ค้นหาเลขที่, ชื่องาน..." oninput="renderInspectList()" style="width:100%;font-size:11px;padding:5px 8px;border:1px solid #e5e7eb;border-radius:8px;box-sizing:border-box;margin-bottom:6px">
+              <div style="display:flex;gap:6px">
+                <select id="imap-status" onchange="renderInspectList()" style="flex:1;font-size:10px;padding:4px 6px;border:1px solid #e5e7eb;border-radius:6px;background:#fff">
+                  <option value="">— ทุกสถานะ —</option>
+                  <option value="ตรวจรับงาน">ตรวจรับงาน</option>
+                  <option value="สำรวจหน้างาน">สำรวจหน้างาน</option>
+                  <option value="ดำเนินงาน">ดำเนินงาน</option>
+                  <option value="รับเรื่อง">รับเรื่อง</option>
+                </select>
+                <select id="imap-co" onchange="renderInspectList()" style="flex:1;font-size:10px;padding:4px 6px;border:1px solid #e5e7eb;border-radius:6px;background:#fff"><option value="">— ทุกบริษัท —</option></select>
+              </div>
+            </div>
+            <div id="imap-selbar" style="display:none;padding:5px 10px;background:#eff6ff;border-bottom:1px solid #bfdbfe">
+              <span id="imap-selbar-text" style="font-size:10px;color:#1d4ed8;flex:1"></span>
+              <button onclick="imapSelectAll()" style="font-size:10px;color:#2563eb;background:none;border:none;cursor:pointer;margin-left:6px">ทั้งหมด</button>
+              <button onclick="imapClearSel()" style="font-size:10px;color:#2563eb;background:none;border:none;cursor:pointer;margin-left:6px">ล้าง</button>
+            </div>
+            <div id="imap-list" style="flex:1;overflow-y:auto"></div>
+            <div id="imap-route-summary" style="display:none;padding:8px 12px;background:#fffbeb;border-top:1px solid #fde68a">
+              <div style="display:flex;justify-content:space-between"><span id="imap-rt-title" style="font-size:11px;font-weight:500;color:#78350f"></span><span id="imap-rt-dist" style="font-size:12px;font-weight:600;color:#451a03"></span></div>
+              <p id="imap-rt-stops" style="font-size:10px;color:#92400e;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></p>
+            </div>
+            <div style="padding:8px 10px;border-top:1px solid #f3f4f6;background:#fff;display:flex;gap:6px">
+              <button id="imap-draw-btn" onclick="imapDrawRoute()" style="flex:1;font-size:10px;padding:7px 4px;background:#f59e0b;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:500"><i class="fa-solid fa-route"></i> วาดเส้นทาง</button>
+              <button onclick="imapOpenGoogleMaps()" style="flex:1;font-size:10px;padding:7px 4px;background:#16a34a;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:500"><i class="fa-solid fa-map"></i> Google Maps</button>
+            </div>
+            <div style="padding:8px 10px;border-top:1px solid #f3f4f6;background:#fff;display:flex;gap:6px">
+              <button onclick="imapSavePlan()" style="flex:1;font-size:10px;padding:7px 4px;background:#2563eb;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:500"><i class="fa-solid fa-floppy-disk"></i> บันทึกแผน</button>
+              <button onclick="imapShowPlans()" style="flex:1;font-size:10px;padding:7px 4px;background:#475569;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:500"><i class="fa-solid fa-folder-open"></i> เปิดแผน</button>
+            </div>
+          </div>
+          <div style="flex:1;position:relative">
+            <div id="imap-map" style="width:100%;height:100%"></div>
+            <div style="position:absolute;top:8px;left:8px;z-index:999;display:flex;flex-direction:column;gap:5px">
+              <button id="imap-myloc-btn" onclick="imapGoMyLoc()" title="พิกัดปัจจุบัน" style="width:34px;height:34px;background:#fff;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:14px"><i class="fa-solid fa-location-crosshairs"></i></button>
+              <button onclick="findNearestInspect()" title="ใกล้สุด" style="width:34px;height:34px;background:#fff;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:14px"><i class="fa-solid fa-star"></i></button>
+              <button onclick="imapFitAll()" title="ดูทั้งหมด" style="width:34px;height:34px;background:#fff;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:14px"><i class="fa-solid fa-expand"></i></button>
+            </div>
+            <div style="position:absolute;top:8px;right:8px;z-index:999;display:flex;flex-direction:column;gap:5px">
+              <button onclick="_imapMap&&_imapMap.zoomIn()" style="width:34px;height:34px;background:#fff;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:16px;font-weight:300">+</button>
+              <button onclick="_imapMap&&_imapMap.zoomOut()" style="width:34px;height:34px;background:#fff;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:16px;font-weight:300">-</button>
+            </div>
+            <div id="imap-strip" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:999;background:rgba(30,64,175,.93);padding:6px 10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span id="imap-strip-title" style="font-size:10px;font-weight:500;color:#fff"></span>
+                <span id="imap-strip-dist" style="font-size:10px;color:#93c5fd"></span>
+              </div>
+              <div id="imap-strip-stops" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px"></div>
+            </div>
+            <div style="position:absolute;bottom:8px;right:8px;z-index:998;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:7px 10px;font-size:10px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0"></div><span style="color:#6b7280">ตรวจรับงาน</span></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div style="width:10px;height:10px;border-radius:50%;background:#2563eb;flex-shrink:0"></div><span style="color:#6b7280">สำรวจหน้างาน</span></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0"></div><span style="color:#6b7280">ดำเนินงาน/รับเรื่อง</span></div>
+              <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#22c55e;outline:2px solid rgba(34,197,94,.3);outline-offset:1px;flex-shrink:0"></div><span style="color:#6b7280">ตำแหน่งฉัน</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:#fff;border-top:1px solid #f3f4f6;flex-wrap:wrap;flex-shrink:0">
+          <button onclick="imapDoAction('inspect')" style="font-size:10px;padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:10px;cursor:pointer"><i class="fa-solid fa-circle-check"></i> ตรวจรับงาน</button>
+          <button onclick="imapDoAction('std')" style="font-size:10px;padding:6px 12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;cursor:pointer"><i class="fa-solid fa-award"></i> ตรวจมาตรฐาน</button>
+          <button onclick="imapDoAction('delivery')" style="font-size:10px;padding:6px 12px;background:#f59e0b;color:#fff;border:none;border-radius:10px;cursor:pointer"><i class="fa-solid fa-calendar-check"></i> วันส่งมอบ</button>
+          <button onclick="imapClearSel()" style="font-size:10px;padding:6px 12px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:10px;cursor:pointer;margin-left:auto"><i class="fa-solid fa-xmark"></i> ล้างการเลือก</button>
+        </div>
+      </div>
+    </div>
+    <!-- /page-inspectMap -->
     <!-- PAGE 4: INSPECTION SYSTEM -->
     <div id="page-inspection" class="page-section hidden fade-in">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200" style="min-height:calc(100vh - 120px);">
@@ -3690,6 +3775,7 @@ if (el1) { el1.innerText = visibleCount; el1.style.display = visibleCount > 0 ? 
                 const inspectionWait = allData.filter(d => (d.status.includes('ตรวจรับงาน') || d.status.includes('เสร็จสิ้น')) && d.inspectionStatus === 'รอตรวจสอบ').length;
                 if (el2) { el2.innerText = inspectionWait; el2.style.display = inspectionWait > 0 ? 'block' : 'none'; }
                 renderTable(allData); renderBudgetTable(allData); renderInspectionTable(allData); renderCloseTable(allData); renderCompletedTable(allData); renderApprovalFromBudget();
+                var _p=document.getElementById('page-inspectMap'); if(_p&&!_p.classList.contains('hidden')&&typeof _imapBuildJobs==='function') _imapBuildJobs(allData);
                 if(currentBudgetJobId && !document.getElementById('budgetModal').classList.contains('hidden')) { renderBudgetModalUI(currentBudgetJobId); }
                 updateBadges();
             } catch(error) { console.error('Error in loadData:', error); allData = []; }
@@ -5796,7 +5882,8 @@ function getCurrentLocationFor(targetId) {
         if (page) page.classList.remove('hidden');
         if (navBtn) navBtn.classList.add('active');
         if (id === 'dashboard') loadDashboard();
-        if (id === 'list' || id === 'budget' || id === 'inspection') loadData();
+        if (id === 'list' || id === 'budget' || id === 'inspection' || id === 'inspectMap') loadData();
+        if (id === 'inspectMap') setTimeout(function(){ initInspectMap(); }, 200);
         if (id === 'oldJobs' && !_oldJobsLoaded) loadAllOldJobs();
       if (id === 'admin') {
         if (currentUser.role !== 'Admin') {
@@ -8778,6 +8865,226 @@ function closeOldJobTypeDetail() {
   document.querySelectorAll('.old-type-card').forEach(c => c.classList.remove('ring-2','ring-amber-400'));
   document.getElementById('oldJobTypeDetail').classList.add('hidden');
 }
+
+
+// === INSPECT MAP MODULE ===
+var _imapMap=null,_imapMyMarker=null,_imapRouteLayers=[];
+var _imapSelected=new Set(),_imapMarkers={},_imapJobs=[];
+var _imapMyLoc=[8.36,98.74];
+var _IMAP_SC={'ตรวจรับงาน':'#f59e0b','สำรวจหน้างาน':'#2563eb','สำรวจงาน':'#2563eb','ดำเนินงาน':'#16a34a','รับเรื่อง':'#16a34a','ตรวจมาตรฐาน':'#7c3aed'};
+function _imapColor(s){return _IMAP_SC[s]||'#6b7280';}
+function initInspectMap(){
+  if(_imapMap){setTimeout(function(){try{_imapMap.invalidateSize();}catch(e){}},200);return;}
+  setTimeout(function(){
+    var el=document.getElementById('imap-map');
+    if(!el)return;
+    try{
+      _imapMap=L.map('imap-map',{zoomControl:false,attributionControl:false}).setView([8.42,98.80],11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(_imapMap);
+      setTimeout(function(){try{_imapMap.invalidateSize();}catch(e){}},400);
+    }catch(e){console.error('imap init:',e);}
+  },300);
+}
+function _imapBuildJobs(src){
+  _imapJobs=(src||[]).map(function(j){
+    var cs=String(j.coordinates||'').trim(),lat=0,lng=0;
+    if(cs){var p=cs.split(',');if(p.length>=2){lat=parseFloat(p[0]);lng=parseFloat(p[1]);}}
+    return {id:String(j.id||Math.random()),receiveNo:String(j.receiveNo||''),jobName:String(j.jobName||''),status:String(j.status||''),company:String(j.responsibleEntity||j.company||''),lat:lat,lng:lng,dist:0};
+  }).filter(function(j){return j.lat>4&&j.lat<22&&j.lng>97&&j.lng<106;});
+  _imapCalcDist(_imapMyLoc);
+  _imapRenderMarkers();
+  _imapBuildCoFilter();
+  renderInspectList();
+  var badge=document.getElementById('imap-count-badge');
+  if(badge)badge.textContent='(มีพิกัด '+_imapJobs.length+' จาก '+(src||[]).length+' งาน)';
+  if(_imapJobs.length&&_imapMap)setTimeout(imapFitAll,500);
+}
+function _imapCalcDist(from){
+  _imapJobs.forEach(function(j){j.dist=parseFloat((Math.sqrt(Math.pow(j.lat-from[0],2)+Math.pow(j.lng-from[1],2))*111).toFixed(1));});
+}
+function _imapMakeIcon(j,seq){
+  var c=_imapColor(j.status),lbl=seq!=null?seq:j.receiveNo.split('/')[0].slice(-3);
+  var html='<div style="background:'+c+';width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff;font-size:9px;font-weight:600">'+lbl+'</span></div><div style="text-align:center;font-size:9px;font-weight:500;color:#1e293b;margin-top:1px">'+j.receiveNo.split('/')[0]+'</div>';
+  return L.divIcon({className:'',iconSize:[30,44],iconAnchor:[15,44],html:html});
+}
+function _imapRenderMarkers(){
+  Object.values(_imapMarkers).forEach(function(m){if(_imapMap)_imapMap.removeLayer(m);});
+  _imapMarkers={};
+  var arr=_imapGetOrdered(),hasSel=_imapSelected.size>0,toShow=hasSel?arr:_imapJobs;
+  toShow.forEach(function(j){
+    var seq=arr.findIndex(function(x){return x.id===j.id;}),isSel=_imapSelected.has(j.id);
+    var m=L.marker([j.lat,j.lng],{icon:_imapMakeIcon(j,seq>=0?seq+1:null)}).addTo(_imapMap);
+    var popHtml='<b style="color:'+_imapColor(j.status)+';font-size:11px">'+j.receiveNo+'</b><br><span style="font-size:11px">'+j.jobName+'</span><br><span style="font-size:10px;color:#64748b">'+j.status+'</span><br>';
+    popHtml+='<div style="margin-top:6px;display:flex;gap:5px">';
+    popHtml+='<button onclick="imapToggle(\''+j.id+'\')" style="font-size:10px;background:'+(isSel?'#dc2626':'#2563eb')+';color:#fff;border:none;padding:3px 9px;border-radius:5px;cursor:pointer">'+(isSel?'ยกเลิก':'เลือก')+'</button>';
+    popHtml+='<button onclick="imapSoloRoute(\''+j.id+'\')" style="font-size:10px;background:#f59e0b;color:#fff;border:none;padding:3px 9px;border-radius:5px;cursor:pointer">นำทาง</button></div>';
+    m.bindPopup(popHtml);
+    m.on('click',function(){imapToggle(j.id);});
+    _imapMarkers[j.id]=m;
+  });
+}
+function _imapGetOrdered(){return _imapJobs.filter(function(j){return _imapSelected.has(j.id);});}
+function renderInspectList(){
+  var q=((document.getElementById('imap-search')||{}).value||'').toLowerCase();
+  var st=((document.getElementById('imap-status')||{}).value||'');
+  var co=((document.getElementById('imap-co')||{}).value||'');
+  var arr=_imapGetOrdered();
+  var fil=_imapJobs.filter(function(j){return(!q||j.receiveNo.toLowerCase().includes(q)||j.jobName.toLowerCase().includes(q))&&(!st||j.status===st)&&(!co||j.company===co);});
+  var el=document.getElementById('imap-list');
+  if(!el)return;
+  if(!fil.length){el.innerHTML='<p style="text-align:center;font-size:11px;color:#9ca3af;padding:24px">ไม่พบข้อมูล</p>';_imapUpdateSelUI();return;}
+  el.innerHTML=fil.map(function(j){
+    var seq=arr.findIndex(function(x){return x.id===j.id;}),isSel=_imapSelected.has(j.id),c=_imapColor(j.status);
+    var seqHtml='<div style="margin-top:2px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;'+(isSel?'background:'+c+';color:#fff':'border:1px solid #d1d5db;color:#d1d5db')+'">'+(isSel?seq+1:'')+'</div>';
+    return '<div onclick="imapToggle(\''+j.id+'\')" style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-bottom:1px solid #f3f4f6;cursor:pointer;background:'+(isSel?'#eff6ff':'#fff')+'">'+seqHtml+'<div style="flex:1;min-width:0"><p style="font-size:10px;font-weight:500;color:'+c+';margin:0">'+j.receiveNo+'</p><p style="font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0">'+j.jobName+'</p><div style="display:flex;gap:6px;font-size:9px;color:#9ca3af"><span>'+j.status+'</span><span style="margin-left:auto">'+j.dist+' กม.</span></div></div></div>';
+  }).join('');
+  _imapUpdateSelUI();
+}
+function _imapUpdateSelUI(){
+  var n=_imapSelected.size,arr=_imapGetOrdered(),total=arr.reduce(function(s,j){return s+j.dist;},0).toFixed(1);
+  var sb=document.getElementById('imap-selbar');if(sb)sb.style.display=n>0?'flex':'none';
+  var st=document.getElementById('imap-selbar-text');if(st)st.textContent='เลือก '+n+' จุด';
+  var rs=document.getElementById('imap-route-summary');
+  if(rs){
+    rs.style.display=n>0?'block':'none';
+    if(n>0){
+      var t=document.getElementById('imap-rt-title');if(t)t.textContent='เส้นทาง '+n+' จุด';
+      var d=document.getElementById('imap-rt-dist');if(d)d.textContent='~'+total+' กม.';
+      var sp=document.getElementById('imap-rt-stops');if(sp)sp.textContent=arr.map(function(j,i){return (i+1)+'.'+j.receiveNo.split('/')[0];}).join(' -> ');
+    } else {
+      _imapClearLayers();
+      var strip=document.getElementById('imap-strip');if(strip)strip.style.display='none';
+    }
+  }
+}
+function imapToggle(id){_imapSelected.has(id)?_imapSelected.delete(id):_imapSelected.add(id);_imapRenderMarkers();renderInspectList();}
+function imapSelectAll(){_imapJobs.forEach(function(j){_imapSelected.add(j.id);});_imapRenderMarkers();renderInspectList();}
+function imapClearSel(){_imapSelected.clear();_imapClearLayers();_imapRenderMarkers();renderInspectList();var s=document.getElementById('imap-strip');if(s)s.style.display='none';}
+function imapSoloRoute(id){_imapSelected.clear();_imapSelected.add(id);_imapRenderMarkers();renderInspectList();imapDrawRoute();}
+function _imapClearLayers(){_imapRouteLayers.forEach(function(l){if(_imapMap)_imapMap.removeLayer(l);});_imapRouteLayers=[];}
+function imapDrawRoute(){
+  if(!_imapMap||!_imapSelected.size)return;
+  _imapClearLayers();
+  var arr=_imapGetOrdered(),pts=[_imapMyLoc].concat(arr.map(function(j){return[j.lat,j.lng];}));
+  var total=arr.reduce(function(s,j){return s+j.dist;},0).toFixed(1);
+  var strip=document.getElementById('imap-strip');if(strip)strip.style.display='block';
+  var st=document.getElementById('imap-strip-title');if(st)st.textContent='เส้นทาง '+arr.length+' จุด';
+  var sd=document.getElementById('imap-strip-dist');if(sd)sd.textContent='~'+total+' กม. (คำนวณ...)';
+  var sp=document.getElementById('imap-strip-stops');
+  if(sp)sp.innerHTML='<span style="background:rgba(255,255,255,.2);color:#fff;font-size:9px;padding:2px 8px;border-radius:10px">จุดเริ่ม</span>'+arr.map(function(j,i){return '<span style="background:rgba(255,255,255,.15);color:#bfdbfe;font-size:9px;padding:2px 8px;border-radius:10px">'+(i+1)+'. '+j.receiveNo.split('/')[0]+'</span>';}).join('');
+  var btn=document.getElementById('imap-draw-btn');if(btn){btn.textContent='กำลังโหลด...';btn.disabled=true;}
+  var coords=pts.map(function(p){return p[1]+','+p[0];}).join(';');
+  fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(btn){btn.innerHTML='<i class="fa-solid fa-route"></i> วาดเส้นทาง';btn.disabled=false;}
+      if(data.code!=='Ok'||!data.routes||!data.routes[0]){_imapDrawStraight(pts,arr);return;}
+      var geom=data.routes[0].geometry.coordinates;
+      var lls=geom.map(function(c){return[c[1],c[0]];});
+      var dist=(data.routes[0].distance/1000).toFixed(1),dur=Math.round(data.routes[0].duration/60);
+      var sh=L.polyline(lls,{color:'#fff',weight:8,opacity:0.6}).addTo(_imapMap);
+      var ln=L.polyline(lls,{color:'#f59e0b',weight:5,opacity:0.95}).addTo(_imapMap);
+      _imapRouteLayers.push(sh,ln);
+      var COLS=['#f59e0b','#2563eb','#16a34a','#7c3aed','#dc2626','#0891b2'];
+      arr.forEach(function(j,i){
+        var nm=L.marker([j.lat,j.lng],{icon:L.divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],html:'<div style="background:'+COLS[i%COLS.length]+';color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">'+(i+1)+'</div>'})}).addTo(_imapMap);
+        _imapRouteLayers.push(nm);
+      });
+      if(sd)sd.textContent=dist+' กม. ~'+dur+' นาที (ตามถนน)';
+      _imapMap.fitBounds(ln.getBounds(),{padding:[40,40]});
+    })
+    .catch(function(){if(btn){btn.innerHTML='<i class="fa-solid fa-route"></i> วาดเส้นทาง';btn.disabled=false;}_imapDrawStraight(pts,arr);});
+}
+function _imapDrawStraight(pts,arr){
+  var COLS=['#f59e0b','#2563eb','#16a34a','#7c3aed','#dc2626','#0891b2'];
+  for(var i=0;i<pts.length-1;i++){
+    var f=pts[i],t=pts[i+1],c=COLS[i%COLS.length];
+    _imapRouteLayers.push(L.polyline([f,t],{color:'#fff',weight:7,opacity:0.5}).addTo(_imapMap));
+    _imapRouteLayers.push(L.polyline([f,t],{color:c,weight:4,opacity:0.9,dashArray:'8,4'}).addTo(_imapMap));
+  }
+  arr.forEach(function(j,i){_imapRouteLayers.push(L.marker([j.lat,j.lng],{icon:L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],html:'<div style="background:#f59e0b;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;border:2px solid #fff">'+(i+1)+'</div>'})}).addTo(_imapMap));});
+  _imapMap.fitBounds(L.polyline(pts).getBounds(),{padding:[50,50]});
+}
+function imapGoMyLoc(){
+  var btn=document.getElementById('imap-myloc-btn');
+  if(btn)btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>';
+  var done=function(ll){
+    if(btn)btn.innerHTML='<i class="fa-solid fa-location-crosshairs"></i>';
+    _imapMyLoc=[ll[0],ll[1]];_imapCalcDist(_imapMyLoc);
+    if(_imapMyMarker)_imapMap.removeLayer(_imapMyMarker);
+    _imapMyMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;background:#22c55e;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(34,197,94,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(_imapMap).bindPopup('ตำแหน่งปัจจุบัน');
+    _imapMap.setView(ll,13);renderInspectList();
+  };
+  if(navigator.geolocation)navigator.geolocation.getCurrentPosition(function(p){done([p.coords.latitude,p.coords.longitude]);},function(){done(_imapMyLoc);},{timeout:8000});
+  else done(_imapMyLoc);
+}
+function findNearestInspect(){
+  var c=_imapJobs.filter(function(j){return['ตรวจรับงาน','สำรวจหน้างาน','ดำเนินงาน','รับเรื่อง'].indexOf(j.status)>=0;}).sort(function(a,b){return a.dist-b.dist;});
+  if(!c.length)return;imapToggle(c[0].id);if(_imapMap)_imapMap.setView([c[0].lat,c[0].lng],14);
+}
+function sortInspectByNearest(){
+  var ids=Array.from(_imapSelected);
+  var s=_imapJobs.filter(function(j){return ids.indexOf(j.id)>=0;}).sort(function(a,b){return a.dist-b.dist;});
+  _imapSelected.clear();s.forEach(function(j){_imapSelected.add(j.id);});
+  _imapRenderMarkers();renderInspectList();imapDrawRoute();
+}
+function imapFitAll(){if(!_imapMap||!_imapJobs.length)return;_imapMap.fitBounds(_imapJobs.map(function(j){return[j.lat,j.lng];}),{padding:[30,30]});}
+function imapOpenGoogleMaps(){
+  var arr=_imapGetOrdered();if(!arr.length)return;
+  window.open('https://www.google.com/maps/dir/'+_imapMyLoc[0]+','+_imapMyLoc[1]+'/'+arr.map(function(j){return j.lat+','+j.lng;}).join('/'),'_blank');
+}
+function _imapBuildCoFilter(){
+  var el=document.getElementById('imap-co');if(!el)return;
+  var cos=[];_imapJobs.forEach(function(j){if(j.company&&cos.indexOf(j.company)<0)cos.push(j.company);});cos.sort();
+  el.innerHTML='<option value="">-- ทุกบริษัท --</option>'+cos.map(function(c){return '<option>'+c+'</option>';}).join('');
+}
+function imapDoAction(type){
+  var arr=_imapGetOrdered();if(!arr.length)return;
+  var labels={inspect:'ตรวจรับงาน',std:'ตรวจมาตรฐาน',delivery:'บันทึกวันส่งมอบ'};
+  Swal.fire({title:labels[type],text:'ดำเนินการกับ '+arr.length+' งาน',icon:'question',showCancelButton:true,confirmButtonText:'ยืนยัน',cancelButtonText:'ยกเลิก'}).then(function(r){if(r.isConfirmed)Swal.fire('สำเร็จ','บันทึกแล้ว','success');});
+}
+function imapSavePlan(){
+  if(!_imapSelected.size)return;
+  var arr=_imapGetOrdered();
+  Swal.fire({title:'บันทึกแผนการตรวจรับ',input:'text',inputLabel:'ชื่อแผน',inputValue:'แผน '+new Date().toLocaleDateString('th-TH'),showCancelButton:true,confirmButtonText:'บันทึก',cancelButtonText:'ยกเลิก'})
+  .then(function(r){
+    if(!r.isConfirmed)return;
+    Swal.fire({title:'กำลังบันทึก...',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+    google.script.run.withSuccessHandler(function(res){if(res&&res.success)Swal.fire('บันทึกแล้ว',r.value+' — '+arr.length+' งาน','success');else Swal.fire('ผิดพลาด',res.error||'','error');}).withFailureHandler(function(e){Swal.fire('ผิดพลาด',String(e),'error');}).saveInspectPlan({name:r.value,savedBy:(typeof currentUser!='undefined'?currentUser.name:'')||'-',jobs:arr});
+  });
+}
+function imapShowPlans(){
+  var modal=document.getElementById('imap-plan-modal');
+  var listEl=document.getElementById('imap-plan-list');
+  if(!modal||!listEl)return;
+  listEl.innerHTML='<p style="text-align:center;padding:24px;font-size:11px;color:#9ca3af">กำลังโหลด...</p>';
+  modal.style.display='flex';
+  google.script.run.withSuccessHandler(function(plans){
+    if(!plans||!plans.length){listEl.innerHTML='<p style="text-align:center;padding:24px;font-size:11px;color:#9ca3af">ยังไม่มีแผน</p>';return;}
+    listEl.innerHTML=plans.map(function(p){
+      return '<div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #e5e7eb"><p style="font-size:13px;font-weight:600;color:#1f2937;margin:0 0 2px 0">'+p.name+'</p><p style="font-size:10px;color:#9ca3af;margin:0 0 8px 0">บันทึกโดย: '+p.savedBy+' · '+p.jobs.length+' งาน</p><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">'+p.jobs.map(function(j){return '<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:8px">'+j.receiveNo+'</span>';}).join('')+'</div><div style="display:flex;gap:6px"><button onclick="imapLoadPlan(\''+p.id+'\')" style="flex:1;padding:6px;font-size:11px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer">เปิดแผนนี้</button><button onclick="imapDeletePlan(\''+p.id+'\')" style="padding:6px 10px;font-size:11px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer">ลบ</button></div></div>';
+    }).join('');
+  }).withFailureHandler(function(e){listEl.innerHTML='<p style="color:red;padding:12px;font-size:11px">'+e+'</p>';}).getInspectPlans();
+}
+function imapLoadPlan(id){
+  google.script.run.withSuccessHandler(function(plans){
+    var plan=(plans||[]).find(function(p){return String(p.id)===String(id);});
+    if(!plan)return;
+    _imapSelected.clear();_imapClearLayers();
+    plan.jobs.forEach(function(pj){var ex=_imapJobs.find(function(j){return j.receiveNo===pj.receiveNo;});if(ex)_imapSelected.add(ex.id);});
+    var modal=document.getElementById('imap-plan-modal');if(modal)modal.style.display='none';
+    _imapRenderMarkers();renderInspectList();_imapUpdateSelUI();
+    var arr=_imapGetOrdered();if(arr.length&&_imapMap)setTimeout(function(){_imapMap.fitBounds(arr.map(function(j){return[j.lat,j.lng];}),{padding:[50,50]});},200);
+    Swal.fire({toast:true,position:'top-end',icon:'success',title:'โหลดแผน "'+plan.name+'" แล้ว',showConfirmButton:false,timer:2000});
+  }).withFailureHandler(function(){}).getInspectPlans();
+}
+function imapDeletePlan(id){
+  Swal.fire({title:'ลบแผนนี้?',icon:'warning',showCancelButton:true,confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก',confirmButtonColor:'#dc2626'}).then(function(r){if(r.isConfirmed)google.script.run.withSuccessHandler(imapShowPlans).withFailureHandler(imapShowPlans).deleteInspectPlan(id);});
+}
+window.imapToggle=imapToggle;
+window.imapSoloRoute=imapSoloRoute;
+window.imapDeletePlan=imapDeletePlan;
+window.imapLoadPlan=imapLoadPlan;
 
 </script>
 
