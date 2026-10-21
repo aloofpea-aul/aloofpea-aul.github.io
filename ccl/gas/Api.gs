@@ -12,27 +12,31 @@
 
 // ฟังก์ชันเดิมที่หน้าเว็บเรียกได้ (ต้องล็อกอินก่อน)
 var CCL_API_FNS = [
-  'getOptionsData','addOption','deleteOption','updateOption','getOptions',
-  'getDefaultRecorderName','updateDefaultRecorderName','getApproverName','updateApproverName',
-  'getLineToken','updateLineToken','updateLineTargets','testLineMessaging',
+  'getOptionsData','getOptions','getDefaultRecorderName','getApproverName',
   'getNextRunningNo','saveConstructionData','editConstructionData','getConstructionData',
   'updateWorkStatus','updateInspectionStatus','updateStandardInspection','closeJobWithRemarks',
   'addExpense','updateExpense','deleteExpense','getDashboardStats','exportToExcel','sendFollowUpLine',
   'getPendingApprovals','approveByAssignee','approveByManager',
   'uploadAttachment','deleteAttachment','saveDeliveryDate','saveStdFormData','getStdFormData',
-  'createContractorUser','getContractorUsers','toggleContractorUserStatus','updateContractorUser',
-  'deleteContractorUser','updateContractorPassword','addPEAReply',
-  'createAppointment','getAllAppointments','deleteAppointment',
-  'getMaterialData','updateOldJobStatus','getAllOldJobs',
+  'addPEAReply','getMaterialData','updateOldJobStatus','getAllOldJobs',
   'saveInspectPlan','getInspectPlans','deleteInspectPlan'
 ];
-// ต้องเป็น Admin ของหน่วยงาน (หรือผู้ดูแลสูงสุด)
-var CCL_API_ADMIN = ['getPendingUsers','approveUser','rejectUser'];
+// ต้องเป็น Admin ของหน่วยงาน (หรือผู้ดูแลสูงสุด) — ตรวจที่หลังบ้าน ไม่ได้แค่ซ่อนปุ่มบนหน้าจอ
+var CCL_API_ADMIN = [
+  'getPendingUsers','approveUser','rejectUser',
+  'addOption','deleteOption','updateOption','updateDefaultRecorderName','updateApproverName',
+  'getLineToken','updateLineToken','updateLineTargets','testLineMessaging',
+  'createContractorUser','getContractorUsers','toggleContractorUserStatus','updateContractorUser',
+  'deleteContractorUser','updateContractorPassword',
+  'createAppointment','getAllAppointments','deleteAppointment'
+];
 var CCL_API_BRANCH_ADMIN = ['cclListUsers','cclSetUserRole','cclSetUserStatus','cclResetUserPassword'];
 // เฉพาะผู้ดูแลสูงสุด
 var CCL_API_SUPER = ['cclAdminBranches','cclCreateBranch','cclUpdateBranch','cclSwitchBranch'];
 
 var CCL_TOKEN_TTL = 21600; // 6 ชั่วโมง (สูงสุดที่ CacheService เก็บได้)
+var CCL_MAX_FAIL = 5;    // ใส่รหัสผิดได้กี่ครั้ง
+var CCL_LOCK_SEC = 900;  // ล็อก 15 นาที
 var CCL_HOME_BRANCH = 'aoluek';
 var CCL_HOME_NAME = 'กฟส.อ่าวลึก';
 var __CCL_CTX = null; // หน่วยงานของคำขอนี้ {branch, ss}
@@ -139,9 +143,15 @@ function cclApiLogin_(u, p, branchId) {
   catch (e) { return { success: false, error: e.message }; }
   var sheet = cclSS_().getSheetByName(SHEET_USERS_NAME);
   if (!sheet) return { success: false, error: 'ไม่พบชีต Users ของหน่วยงานนี้' };
+  // ใส่รหัสผิดเกิน CCL_MAX_FAIL ครั้ง → ล็อกชื่อผู้ใช้นี้ CCL_LOCK_SEC วินาที
+  var cache = CacheService.getScriptCache();
+  var failKey = 'ccl_fail_' + br.id + ':' + String(u || '').toLowerCase();
+  var fails = Number(cache.get(failKey) || 0);
+  if (fails >= CCL_MAX_FAIL) return { success: false, error: 'ใส่รหัสผ่านผิดหลายครั้ง บัญชีนี้ถูกล็อกชั่วคราว ' + Math.round(CCL_LOCK_SEC / 60) + ' นาที ลองใหม่ภายหลัง หรือให้ Admin ตั้งรหัสใหม่' };
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]) === String(u) && String(data[i][1]) === String(p) && String(u) !== '') {
+      cache.remove(failKey);
       var status = data[i][6] || 'Active';
       if (status === 'Pending')  return { success: false, error: 'บัญชีของคุณรอการอนุมัติจาก Admin กรุณารอการยืนยัน' };
       if (status === 'Rejected') return { success: false, error: 'บัญชีของคุณถูกปิดหรือถูกปฏิเสธ กรุณาติดต่อ Admin ของหน่วยงาน' };
@@ -154,7 +164,10 @@ function cclApiLogin_(u, p, branchId) {
       return { success: true, user: user, token: cclNewToken_(user) };
     }
   }
-  return { success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' };
+  fails++;
+  cache.put(failKey, String(fails), CCL_LOCK_SEC);
+  var left = CCL_MAX_FAIL - fails;
+  return { success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' + (left > 0 && left <= 2 ? ' (เหลืออีก ' + left + ' ครั้งก่อนถูกล็อก ' + Math.round(CCL_LOCK_SEC / 60) + ' นาที)' : (left <= 0 ? ' — ถูกล็อก ' + Math.round(CCL_LOCK_SEC / 60) + ' นาที' : '')) };
 }
 
 function cclNewToken_(user) {
@@ -360,6 +373,7 @@ function cclResetUserPassword_(sess, row, username, newPass) {
   if (newPass.length < 4) throw new Error('รหัสผ่านต้องมีอย่างน้อย 4 ตัว');
   var sh = cclUsersSheet_(); row = cclCheckRow_(sh, row, username);
   sh.getRange(row, 2).setValue(newPass);
+  try { CacheService.getScriptCache().remove('ccl_fail_' + (sess.branchId || CCL_HOME_BRANCH) + ':' + String(username).toLowerCase()); } catch (e) {}
   return { success: true };
 }
 
