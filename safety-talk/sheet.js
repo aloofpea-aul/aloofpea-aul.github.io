@@ -200,6 +200,12 @@
     return h;
   }
 
+  /* ผู้พูดหน้าแถว (หลายคน) — ข้อมูลเก่ามีคนเดียวใน speaker/speakerPos/emphasis */
+  function speakersOf(s) {
+    const L = (Array.isArray(s.speakers) ? s.speakers : []).filter(p => p && (p.name || p.text));
+    if (L.length) return L;
+    return (s.speaker || s.emphasis) ? [{ name: s.speaker, pos: s.speakerPos, text: s.emphasis }] : [];
+  }
   /* ---------- รายงาน ---------- */
   async function draw(cv, d, opt) {
     opt = opt || {};
@@ -232,7 +238,7 @@
       ctx.font = f(400, 24);
       const pts = [];
       if (s.topic) pts.push('• ' + s.topic);
-      if (s.speaker || s.emphasis) pts.push('• ' + (s.speaker ? s.speaker + ' ' + (s.speakerPos || '') + ' ' : '') + 'เน้นย้ำ ' + (s.emphasis || ''));
+      speakersOf(s).forEach(p => pts.push('• ' + (p.name ? p.name + ' ' + (p.pos || '') + ' ' : '') + 'เน้นย้ำ ' + (p.text || '')));
       pts.push('• ' + s.leaderDept + 'นำออกกำลังกาย (WARM UP) และกล่าวคำขวัญความปลอดภัยพร้อมกัน');
       const ptLines = pts.reduce((a, p) => a + Math.min(2, wrap(ctx, p, W - 2 * M).length), 0);
       const bottomH = 44 + ptLines * 34 + 22 + 60 + 70;
@@ -253,15 +259,15 @@
       ctx.font = f(400, 28); T(ctx, thLong(s.date) + ' · ' + s.time + ' น.', M, 186);
       ctx.font = f(700, 34);
       const head = (s.leadByPos || 'ผจก.' + d.orgShort) + ' นำพนักงาน ลูกจ้าง' + (cc ? ' และผู้รับจ้าง' : '') + ' ร่วมกิจกรรมพูดคุยด้านความปลอดภัย';
-      const body = (s.leadBy ? s.leadBy + ' ' + (s.leadByPos || '') + ' ' : '') + (s.topic ? s.topic + ' ' : '') + (s.speaker ? 'โดย ' + s.speaker + ' ' + (s.speakerPos || '') + ' ' : '') + (s.emphasis ? 'เน้นย้ำ ' + s.emphasis + ' ' : '') + 'จากนั้น' + s.leaderDept + 'นำออกกำลังกาย (WARM UP) และกล่าวคำขวัญความปลอดภัยพร้อมกัน';
+      const body = (s.leadBy ? s.leadBy + ' ' + (s.leadByPos || '') + ' ' : '') + (s.topic ? s.topic + ' ' : '') + (speakersOf(s).length ? 'โดย ' + speakersOf(s).map(p => (p.name ? p.name + ' ' + (p.pos ? p.pos + ' ' : '') : '') + (p.text ? 'เน้นย้ำ ' + p.text : '')).join(' และ ') + ' ' : '') + 'จากนั้น' + s.leaderDept + 'นำออกกำลังกาย (WARM UP) และกล่าวคำขวัญความปลอดภัยพร้อมกัน';
       const hl = Math.min(2, wrap(ctx, head, W - 2 * M).length); ctx.font = f(400, 26);
-      const bl = Math.min(3, wrap(ctx, body, W - 2 * M).length);
+      const bl = Math.min(5, wrap(ctx, body, W - 2 * M).length);
       const textH = hl * 46 + bl * 36 + 30;
       const photoTop = 236, photoH = H - 96 - 60 - 24 - textH - 40 - photoTop;
       const used = drawPhotos(ctx, imgs, tags, M, photoTop, W - 2 * M, photoH, layout, crops, hi);
       y = photoTop + used + 46;
       ctx.fillStyle = G; ctx.font = f(700, 34); y = textBlock(ctx, head, M, y, W - 2 * M, 46, 2) + 4;
-      ctx.fillStyle = INK; ctx.font = f(400, 26); y = textBlock(ctx, body, M, y, W - 2 * M, 36, 3) + 12;
+      ctx.fillStyle = INK; ctx.font = f(400, 26); y = textBlock(ctx, body, M, y, W - 2 * M, 36, 5) + 12;
       y = Math.max(y, H - 96 - 60 - 24);
       stats(ctx, statItems, total, M, y, W - 2 * M);
       ctx.fillStyle = '#F2A900'; ctx.fillRect(0, H - 90, W, 90);
@@ -269,5 +275,5 @@
     }
     return { boxes: lastBoxes, W: W, H: H };
   }
-  window.STSheet = { draw: draw, view: view, loadImg: loadImg, MAX: 7 };
+  window.STSheet = { draw: draw, view: view, loadImg: loadImg, speakersOf: speakersOf, MAX: 7 };
 })();

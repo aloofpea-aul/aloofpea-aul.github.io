@@ -7,7 +7,7 @@
 <title>Safety Talk อ่าวลึก</title>
 <script src="/pea-hub.js" data-app="safetytalk" data-gate="off" data-name="Safety Talk"></script>
 <link rel="icon" type="image/png" href="/icon-192.png">
-<script src="sheet.js?v=4" defer></script>
+<script src="sheet.js?v=5" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://script.google.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -637,13 +637,13 @@ function detailsSheet(s, after) {
   sheet('<div class="h" style="font-size:18px">รายละเอียดกิจกรรม · ' + esc(thDate(s.date)) + '</div>' +
     '<label class="f">หัวข้อที่พูดคุย<textarea class="in" rows="2" id="xTopic">' + esc(s.topic) + '</textarea></label>' +
     '<label class="f">นำโดย (ประธาน)<select class="in" id="xLead">' + opts + '</select></label><label class="f">ตำแหน่ง (ในข่าว)<input class="in" id="xLeadPos" value="' + esc(s.leadByPos) + '" placeholder="เช่น ผจก.กฟส.อ่าวลึก"></label>' +
-    '<label class="f">ผู้พูด / เน้นย้ำโดย<select class="in" id="xSp">' + opts + '</select></label><label class="f">ตำแหน่งผู้พูด<input class="in" id="xSpPos" value="' + esc(s.speakerPos) + '" placeholder="เช่น พชง.6 กฟส.อ่าวลึก"></label>' +
-    '<label class="f">ประเด็นที่เน้นย้ำ<textarea class="in" rows="2" id="xEmp">' + esc(s.emphasis) + '</textarea></label>' +
+    '<div class="h" style="margin-top:4px">ผู้พูดหน้าแถว <span id="xSpN"></span></div><div id="xSps" style="display:flex;flex-direction:column;gap:10px"></div>' +
+    '<button class="btn" id="xSpAdd" style="border:2px dashed var(--g);color:var(--g);background:#F6FBF5">＋ เพิ่มผู้พูด</button>' +
     '<div class="grid2"><label class="f">ผู้รับจ้าง (คน)<input class="in" id="xCc" type="number" min="0" inputmode="numeric" value="' + (s.contractorCount || '') + '"></label><label class="f">บริษัท<input class="in" id="xCo" value="' + esc(s.contractorCompany) + '"></label></div>' +
     '<button class="btn pri" id="xOk">บันทึก</button>', (el, close) => {
-      el.querySelector('#xLead').value = s.leadBy || ''; el.querySelector('#xSp').value = s.speaker || '';
-      const autoPos = (sel, inp, sfx) => el.querySelector(sel).onchange = e => {
-        const p = personOf(e.target.value), box = el.querySelector(inp);
+      el.querySelector('#xLead').value = s.leadBy || '';
+      const fillPos = (name, box) => {
+        const p = personOf(name), sfx = S.boot.orgShort;
         if (!p) { box.value = ''; return; }
         let pos = String(p.position || '').trim();
         if (/^admin$/i.test(pos) || pos === '-') pos = '';
@@ -651,9 +651,32 @@ function detailsSheet(s, after) {
         box.value = pos ? (pos + (sfx && pos.indexOf(sfx) < 0 ? (/\.$/.test(pos) ? '' : ' ') + sfx : '')) : '';
         if (!pos) box.placeholder = 'ไม่มีตำแหน่งในชีตพนักงาน — พิมพ์เอง';
       };
-      autoPos('#xLead', '#xLeadPos', S.boot.orgShort); autoPos('#xSp', '#xSpPos', S.boot.orgShort);
+      el.querySelector('#xLead').onchange = e => fillPos(e.target.value, el.querySelector('#xLeadPos'));
+      /* ผู้พูดหน้าแถวหลายคน: เลือกชื่อ → ขึ้นตำแหน่งให้เอง */
+      const MAXSP = 5, box = el.querySelector('#xSps');
+      let sps = STSheet.speakersOf(s).map(p => Object.assign({}, p));
+      if (!sps.length) sps = [{ name: '', pos: '', text: '' }];
+      const readSp = () => { sps = Array.from(box.querySelectorAll('[data-sp]')).map(b => ({ name: b.querySelector('select').value, pos: b.querySelector('input').value, text: b.querySelector('textarea').value })); };
+      const drawSp = () => {
+        box.innerHTML = sps.map((p, i) => '<div data-sp="' + i + '" style="background:#fff;border:1px solid #C9D6C5;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px">' +
+          '<div class="row"><span style="width:24px;height:24px;border-radius:50%;background:var(--g);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">' + (i + 1) + '</span><b class="sp" style="font-size:14px">ผู้พูดคนที่ ' + (i + 1) + '</b>' +
+          (sps.length > 1 ? '<button class="btn" data-del="' + i + '" style="min-height:34px;border:0;color:var(--red);background:none">ลบ</button>' : '') + '</div>' +
+          '<select class="in">' + opts + '</select><input class="in" placeholder="ตำแหน่ง (ขึ้นให้เองเมื่อเลือกชื่อ)">' +
+          '<textarea class="in" rows="2" placeholder="เรื่องที่เน้นย้ำ"></textarea></div>').join('');
+        box.querySelectorAll('[data-sp]').forEach((b, i) => {
+          const sel = b.querySelector('select'), pos = b.querySelector('input');
+          sel.value = sps[i].name || ''; pos.value = sps[i].pos || ''; b.querySelector('textarea').value = sps[i].text || '';
+          if (sps[i].name && !sel.value) { const o = document.createElement('option'); o.textContent = sps[i].name; sel.appendChild(o); sel.value = sps[i].name; }
+          sel.onchange = () => fillPos(sel.value, pos);
+        });
+        box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { readSp(); sps.splice(+b.dataset.del, 1); drawSp(); });
+        el.querySelector('#xSpN').textContent = '(' + sps.length + '/' + MAXSP + ')';
+        el.querySelector('#xSpAdd').style.display = sps.length >= MAXSP ? 'none' : '';
+      };
+      el.querySelector('#xSpAdd').onclick = () => { readSp(); sps.push({ name: '', pos: '', text: '' }); drawSp(); const last = box.lastElementChild; if (last) last.querySelector('select').focus(); };
+      drawSp();
       el.querySelector('#xOk').onclick = async () => {
-        const det = { topic: el.querySelector('#xTopic').value, leadBy: el.querySelector('#xLead').value, leadByPos: el.querySelector('#xLeadPos').value, speaker: el.querySelector('#xSp').value, speakerPos: el.querySelector('#xSpPos').value, emphasis: el.querySelector('#xEmp').value, contractorCount: el.querySelector('#xCc').value, contractorCompany: el.querySelector('#xCo').value };
+        const det = { topic: el.querySelector('#xTopic').value, leadBy: el.querySelector('#xLead').value, leadByPos: el.querySelector('#xLeadPos').value, speakers: (readSp(), sps.filter(p => p.name || p.text)), contractorCount: el.querySelector('#xCc').value, contractorCompany: el.querySelector('#xCo').value };
         const r = await run(() => api('saveDetails', { sessionId: s.id, details: det }), 'บันทึกแล้ว', 'กำลังบันทึก…');
         if (r) { close(); Object.assign(s, r.session); if (after) after(r.session); }
       };
@@ -713,7 +736,7 @@ async function vNews() {
   ED.slots = d.images.map(i => ({ fileId: i.fileId, tag: i.tag || 'อื่นๆ', crop: i.crop || null, data: i.data || i.thumb || '', img: null, loading: !i.data }));
   $('#view').innerHTML = '<div class="pill">' + (S.boot.recent || []).map(r => '<button data-s="' + r.id + '" class="' + (r.id === s.id ? 'on' : '') + '">' + esc(thDate(r.date)) + '</button>').join('') + '</div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="row"><b class="sp">1. ข้อมูลกิจกรรม</b><button class="btn" id="nDet" style="min-height:40px">แก้ไข</button></div>' +
-      '<div style="font-size:14px;line-height:1.7">หัวข้อ: ' + (esc(s.topic) || '<span style="color:var(--red)">ยังไม่กรอก</span>') + '<br>นำโดย: ' + (esc(s.leadBy) || '-') + '<br>ผู้พูด: ' + (esc(s.speaker) || '-') + '<br>ผู้รับจ้าง: ' + (s.contractorCount || 0) + ' คน ' + esc(s.contractorCompany) + '<br>ผู้เข้าร่วม: พนักงาน ' + d.counts.staff + ' · ลูกจ้าง ' + d.counts.hired + ' · ติดภารกิจ/ลา ' + (d.counts.duty + d.counts.leave) + '</div></div>' +
+      '<div style="font-size:14px;line-height:1.7">หัวข้อ: ' + (esc(s.topic) || '<span style="color:var(--red)">ยังไม่กรอก</span>') + '<br>นำโดย: ' + (esc(s.leadBy) || '-') + '<br>ผู้พูด: ' + (STSheet.speakersOf(s).map(p => esc(p.name || '-')).join(', ') || '-') + '<br>ผู้รับจ้าง: ' + (s.contractorCount || 0) + ' คน ' + esc(s.contractorCompany) + '<br>ผู้เข้าร่วม: พนักงาน ' + d.counts.staff + ' · ลูกจ้าง ' + d.counts.hired + ' · ติดภารกิจ/ลา ' + (d.counts.duty + d.counts.leave) + '</div></div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row"><b class="sp">2. จัดรูปในรายงาน <span id="edCount"></span></b><button class="btn" id="edSaveBtn" style="min-height:40px;display:none">บันทึกการจัดรูป</button></div>' +
       '<div class="grid3" id="nMode">' + [['short', 'สั้น + รูป A4'], ['full', 'เต็ม + รูป A4'], ['one', 'ภาพเดียว']].map(m => '<button class="btn' + (m[0] === mode ? ' pri' : '') + '" data-m="' + m[0] + '" style="padding:0 6px;font-size:14px">' + m[1] + '</button>').join('') + '</div>' +
       '<div class="edhint" id="edHint"></div>' +
@@ -743,18 +766,18 @@ async function vNews() {
 }
 const fileName = ext => 'SafetyTalk_' + S.news.session.date + '.' + ext;
 function newsText(mode, d) {
-  const s = d.session, c = d.counts;
+  const s = d.session, c = d.counts, sps = STSheet.speakersOf(s);
   const total = c.present + (Number(s.contractorCount) || 0);
   const lead = s.leadBy ? s.leadBy + (s.leadByPos ? ' ' + s.leadByPos : '') : '[ผู้นำกิจกรรม]';
   if (mode === 'short') {
     return 'SAFETY TALK ' + d.orgShort + '\n' + thDateShort(s.date) + ' · ' + s.time + ' น.\nนำโดย ' + lead + '\nผู้เข้าร่วม ' + total + ' คน (พนักงาน ลูกจ้าง' + (s.contractorCount ? ' ผู้รับจ้าง' : '') + ')\n' +
-      'เน้นย้ำ: ' + (s.emphasis || s.topic || '[ประเด็น]') + '\n“PEA Safety For All”';
+      (sps.length > 1 ? 'เน้นย้ำ:\n' + sps.map(p => '• ' + (p.text || '-') + (p.name ? ' (' + p.name.replace(/^(นางสาว|นาง|นาย|น\.ส\.)\s*/, '').split(/\s+/)[0] + ')' : '')).join('\n') : 'เน้นย้ำ: ' + ((sps[0] && sps[0].text) || s.topic || '[ประเด็น]')) + '\n“PEA Safety For All”';
   }
   let t = thDateLong(s.date) + ' เวลา ' + s.time + ' น.\n' + d.org + '\nจัดกิจกรรมพูดคุยเกี่ยวกับความปลอดภัย (SAFETY TALK)\n';
   t += ' นำโดย ' + lead + ' และพนักงาน ลูกจ้าง' + (s.contractorCount ? ' ผู้รับจ้าง' + (s.contractorCompany ? ' (' + s.contractorCompany + ')' : '') : '') + ' รวม ' + total + ' คน';
   if (s.topic) t += ' โดยมีเนื้อหา ' + s.topic;
   t += '\n\n';
-  if (s.speaker || s.emphasis) t += '  ' + (s.speaker ? s.speaker + (s.speakerPos ? ' ' + s.speakerPos : '') + ' ' : '') + 'เน้นย้ำ' + (s.emphasis ? ' ' + s.emphasis : '') + '\n\n';
+  if (sps.length) t += sps.map(p => '  ' + (p.name ? p.name + (p.pos ? ' ' + p.pos : '') + ' ' : '') + 'เน้นย้ำ' + (p.text ? ' ' + p.text : '')).join('\n') + '\n\n';
   t += ' และ' + s.leaderDept + 'นำออกกำลังกาย (WARM UP) และกล่าวคำขวัญความปลอดภัยพร้อมกัน เพื่อเสริมสร้างวัฒนธรรมด้านความปลอดภัย (Safety Talk) อย่างต่อเนื่อง ภายใต้แนวคิด “' + d.slogan + '”\n\nภาพ/ข่าว ประชาสัมพันธ์\n' + d.org;
   return t;
 }
