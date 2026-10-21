@@ -37,6 +37,7 @@
     '.cb-users{width:100%;border-collapse:collapse;font-size:13px}.cb-users th{text-align:left;font-size:12px;color:#64748B;padding:8px;border-bottom:1px solid #E2E8F0}.cb-users td{padding:8px;border-bottom:1px solid #F1F5F9;vertical-align:middle}' +
     '.cb-users select{border:1px solid #CBD5E1;border-radius:8px;padding:5px 8px;font-size:13px;background:#fff}' +
     '.cb-swal label{display:block;text-align:left;font-size:13px;font-weight:700;color:#334155;margin:10px 0 4px}.cb-swal input{width:100%;box-sizing:border-box;border:1px solid #CBD5E1;border-radius:10px;padding:9px 12px;font-size:15px}.cb-swal small{display:block;text-align:left;color:#64748B;font-size:12px;margin-top:3px}.cb-swal .cb-sec{margin-top:14px;padding-top:10px;border-top:1px dashed #E2E8F0;text-align:left;font-weight:800;color:#0D1B4B;font-size:13px}' +
+    'body.cb-ext a[href="/index.html"]{display:none!important}' +
     '@media (max-width:767px){.cb-grid{grid-template-columns:1fr}.cb-head h2{font-size:19px}.cb-users thead{display:none}.cb-users tr{display:block;border:1px solid #E2E8F0;border-radius:12px;margin-bottom:8px;padding:8px 10px}.cb-users td{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;padding:4px 0}.cb-users td::before{content:attr(data-l);font-size:12px;font-weight:700;color:#64748B}#cclNavBrand .cb-chip{display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -92,6 +93,9 @@
     var u = user();
     if (!u || !u.name) return;
     var bname = u.branchName || 'กฟส.อ่าวลึก';
+    // ผู้ใช้หน่วยงานอื่น: ซ่อนปุ่มไปศูนย์รวมงาน (ศูนย์รวมงานเป็นของ กฟส.อ่าวลึก)
+    var ext = (u.homeBranchId || u.branchId || 'aoluek') !== 'aoluek' && !u.superAdmin;
+    document.body.classList.toggle('cb-ext', ext);
     var sub = document.querySelector('#cclNavBrand .ccl-brand-sub');
     if (sub) sub.textContent = bname + ' · v3.1.1';
     var title = document.querySelector('#cclNavBrand .ccl-brand-title');
