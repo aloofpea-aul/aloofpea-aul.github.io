@@ -790,7 +790,7 @@ async function outForm(k,I,o,data){
       <div class="qa">${MC.filter(m=>!picked.has(m.n)).map(m=>`<button type="button" data-ma="${esc(m.n)}" data-u="${esc(m.u)}">＋ ${esc(m.n)}</button>`).join('')}<button type="button" data-ma="__other">＋ อื่น ๆ (พิมพ์เอง)</button></div>
       <div class="lb">รายละเอียด / สิ่งที่ทำ</div><textarea id="ofDet" rows="2" placeholder="เช่น ฟ้าผ่าลูกถ้วยแตก 1 ลูก บายพาสไว้ก่อน">${esc(F.detail||'')}</textarea>
       <label class="tf" style="margin-top:6px">เลขใบสั่งงาน (ไม่บังคับ)<input type="text" id="ofWo" value="${esc(F.wo||'')}" inputmode="numeric"></label>
-      ${auth&&auth.r==='duty'?'':`<label class="tf" style="margin-top:6px">PIN ผู้อนุมัติ<input type="password" id="ofPin" inputmode="numeric" autocomplete="off" value="${esc(($('rpPin')||{}).value||'')}"></label>`}
+      ${auth&&auth.r==='duty'?`<div class="muted" style="margin-top:6px">บันทึกในชื่อ ${esc(auth.u)} (ลิงก์จาก LINE)</div>`:hubCreds().user?`<div class="muted" style="margin-top:6px">บันทึกในชื่อ ${esc(hubCreds().user)} (บัญชีศูนย์รวมงาน) · ไม่ต้องใส่ PIN</div>`:`<label class="tf" style="margin-top:6px">PIN ผู้อนุมัติ <span class="muted" style="font-weight:400">(หรือล็อกอินศูนย์รวมงานก่อน จะไม่ต้องใส่ PIN)</span><input type="password" id="ofPin" inputmode="numeric" autocomplete="off" value="${esc(($('rpPin')||{}).value||'')}"></label>`}
       <div id="ofMsg"></div>
       <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">ลบรายการนี้</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">บันทึก</button></div>
     </div>`;
@@ -852,7 +852,10 @@ async function outForm(k,I,o,data){
   async function afterSave(){ await monthOutages(S.dMonth,true); renderRepCard(data); }
   draw();
 }
-function outAuthBody(auth,pin){ return auth&&auth.r==='duty'?{u:auth.u,r:auth.r,x:auth.x,t:auth.t,rk:auth.k}:{pin:pin||($('rpPin')||{}).value||''}; }
+function outAuthBody(auth,pin){
+  if(auth&&auth.r==='duty') return {u:auth.u,r:auth.r,x:auth.x,t:auth.t,rk:auth.k};
+  const p=pin||($('rpPin')||{}).value||'', c=hubCreds();
+  return p?{pin:p}:(c.user&&c.pass?{hubUser:c.user,hubPass:c.pass}:{pin:''}); }
 function shrinkPhoto(file){ return new Promise((res,rej)=>{ const im=new Image(), u=URL.createObjectURL(file);
   im.onload=()=>{ const s=Math.min(1,1280/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
     c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res({kind:'before',mimeType:'image/jpeg',base64:c.toDataURL('image/jpeg',.72).split(',')[1],takenAt:new Date().toISOString()}); };

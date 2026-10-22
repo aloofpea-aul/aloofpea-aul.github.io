@@ -389,8 +389,12 @@ function outagesOf_(month) {
 function outAuth_(b, k) {
   const who = approverByPin_(b.pin);
   if (who) return who.short || who.name;
+  if (b.hubUser && b.hubPass && !b.t) {                       // ล็อกอินศูนย์รวมงานและมีสิทธิ์ใช้ตารางเวร
+    if (hubAllowed_(String(b.hubUser), String(b.hubPass))) return String(b.hubUser).slice(0, 60);
+    throw new Error('บัญชีศูนย์รวมงานนี้ไม่มีสิทธิ์ใช้ตารางเวร — ใส่ PIN ผู้อนุมัติ หรือใช้ลิงก์จาก LINE');
+  }
   if (b.r !== 'duty' || !b.t || Number(b.x) < Date.now() || repToken_(String(b.rk || k), b.u, 'duty', b.x) !== b.t)
-    throw new Error('ไม่มีสิทธิ์บันทึก — ใช้ลิงก์ "ลงรายงานการอยู่เวร" จาก LINE ของเวรชุดนี้ หรือใส่ PIN ผู้อนุมัติ');
+    throw new Error('ไม่มีสิทธิ์บันทึก — ล็อกอินศูนย์รวมงาน, ใช้ลิงก์จาก LINE ของเวรชุดนี้ หรือใส่ PIN ผู้อนุมัติ');
   if (String(b.rk || '') !== k) throw new Error('ลิงก์นี้ใช้บันทึกได้เฉพาะเวรของตัวเอง');
   return b.u;
 }
