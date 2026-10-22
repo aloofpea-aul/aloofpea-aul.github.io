@@ -347,8 +347,18 @@ async function start(force) {
     S.boot = b; lsJ(K_BOOT, b);
     if (!b.me.linked) { await loadPeople(); return showLink(); }
     render();
-    if (!S.people.length) loadPeople().then(() => render());
+    if (!S.people.length) loadPeople().then(() => render()); else loadPeople();
+    const r = b.me.roles || {};
+    if (r.pr || r.manager || r.admin) setTimeout(() => newsPrefetch((workSession() || {}).id), 1500);
   } catch (e) { if (!cached) { $('#view').innerHTML = '<div class="card">' + esc(e.message) + '<br><br><button class="btn pri" onclick="start(true)">ลองใหม่</button></div>'; } }
+}
+/* โหลดข้อมูลหน้าข่าวล่วงหน้าตอนเปิดแอป (สำหรับผู้ทำข่าว) — กดแท็บข่าวแล้วขึ้นทันที */
+const NEWS_PRE = {};
+function newsPrefetch(sid) {
+  if (!sid || NEWS_PRE[sid]) return;
+  const d = api('reportData', { sessionId: sid, lite: true }), photos = api('photos', { sessionId: sid });
+  d.catch(() => { delete NEWS_PRE[sid]; }); photos.catch(() => {});
+  NEWS_PRE[sid] = { at: Date.now(), d: d, photos: photos };
 }
 async function loadPeople() {
   try { S.people = await api('people'); lsJ(K_PEOPLE, S.people); } catch (e) {}
@@ -768,7 +778,8 @@ async function vNews() {
   header('ข่าว / รายงาน', '');
   $('#view').innerHTML = '<div class="loading"><div class="spin"></div>กำลังเตรียมข้อมูลและรูป…</div>';
   const my = ++ED.gen;
-  let d; try { d = await api('reportData', { sessionId: sid, lite: true }); } catch (e) { if (my === ED.gen && S.tab === 'news') $('#view').innerHTML = '<div class="card">' + esc(e.message) + ' <button class="btn" onclick="vNews()">ลองใหม่</button></div>'; return; }
+  const pre = NEWS_PRE[sid] && Date.now() - NEWS_PRE[sid].at < 180000 ? NEWS_PRE[sid] : null;
+  let d; try { d = pre ? await pre.d : await api('reportData', { sessionId: sid, lite: true }); } catch (e) { if (my === ED.gen && S.tab === 'news') $('#view').innerHTML = '<div class="card">' + esc(e.message) + ' <button class="btn" onclick="vNews()">ลองใหม่</button></div>'; return; }
   if (my !== ED.gen || S.tab !== 'news') return;
   S.news = d;
   const s = d.session;
@@ -805,7 +816,9 @@ async function vNews() {
   await Promise.all(ED.slots.map(async sl => { sl.img = await STSheet.loadImg(sl.data); }));
   buildNews(mode);
   ED.slots.forEach(sl => { if (sl.loading) edFull(sl); });
-  edLoadAlbum(s.id);
+  if (pre && pre.photos) pre.photos.then(ph => { if (ph && my === ED.gen) { ED.photos = ph; edStrip(); backfillThumbs(ED.photos); edHint(); } else edLoadAlbum(s.id); }, () => edLoadAlbum(s.id));
+  else edLoadAlbum(s.id);
+  delete NEWS_PRE[sid];
 }
 const fileName = ext => 'SafetyTalk_' + S.news.session.date + '.' + ext;
 function newsText(mode, d) {
