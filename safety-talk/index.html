@@ -354,10 +354,13 @@ async function start(force) {
 }
 /* โหลดข้อมูลหน้าข่าวล่วงหน้าตอนเปิดแอป (สำหรับผู้ทำข่าว) — กดแท็บข่าวแล้วขึ้นทันที */
 const NEWS_PRE = {};
+function newsCacheGet(sid) { try { const c = JSON.parse(localStorage.getItem('st_news') || 'null'); return c && c.sid === sid && c.d && c.photos ? c : null; } catch (e) { return null; } }
+function newsCacheSet(sid, d, photos) { try { if (d && photos) localStorage.setItem('st_news', JSON.stringify({ sid: sid, d: d, photos: photos, at: Date.now() })); } catch (e) {} }
 function newsPrefetch(sid) {
   if (!sid || NEWS_PRE[sid]) return;
   const d = api('reportData', { sessionId: sid, lite: true }), photos = api('photos', { sessionId: sid });
   d.catch(() => { delete NEWS_PRE[sid]; }); photos.catch(() => {});
+  Promise.all([d, photos]).then(([a, b]) => newsCacheSet(sid, a, b)).catch(() => {});
   NEWS_PRE[sid] = { at: Date.now(), d: d, photos: photos };
 }
 async function loadPeople() {
@@ -732,6 +735,7 @@ function detailsSheet(s, after) {
       el.querySelector('#xOk').onclick = async () => {
         const det = { topic: el.querySelector('#xTopic').value, leadBy: el.querySelector('#xLead').value, leadByPos: el.querySelector('#xLeadPos').value, speakers: (readSp(), sps.filter(p => p.name || p.text)), contractorCount: el.querySelector('#xCc').value, contractorCompany: el.querySelector('#xCo').value };
         const r = await run(() => api('saveDetails', { sessionId: s.id, details: det }), 'บันทึกแล้ว', 'กำลังบันทึก…');
+        try { localStorage.removeItem('st_news'); } catch (e) {}
         if (r) { close(); Object.assign(s, r.session); if (after) after(r.session); }
       };
     });
@@ -778,10 +782,22 @@ async function vNews() {
   header('ข่าว / รายงาน', '');
   $('#view').innerHTML = '<div class="loading"><div class="spin"></div>กำลังเตรียมข้อมูลและรูป…</div>';
   const my = ++ED.gen;
-  const pre = NEWS_PRE[sid] && Date.now() - NEWS_PRE[sid].at < 180000 ? NEWS_PRE[sid] : null;
+  let pre = NEWS_PRE[sid] && Date.now() - NEWS_PRE[sid].at < 180000 ? NEWS_PRE[sid] : null;
+  /* มีข้อมูลเก่าในเครื่อง → แสดงทันที แล้วดึงของใหม่เบื้องหลัง (ถ้าต่างค่อยแสดงใหม่) */
+  const cached = !pre && newsCacheGet(sid);
+  if (cached) {
+    pre = { at: Date.now(), d: Promise.resolve(cached.d), photos: Promise.resolve(cached.photos) };
+    Promise.all([api('reportData', { sessionId: sid, lite: true }), api('photos', { sessionId: sid })]).then(([d2, p2]) => {
+      newsCacheSet(sid, d2, p2);
+      const same = JSON.stringify([cached.d.session, cached.d.counts, cached.d.images.map(i => [i.fileId, i.tag, i.crop])]) === JSON.stringify([d2.session, d2.counts, d2.images.map(i => [i.fileId, i.tag, i.crop])]);
+      if (my !== ED.gen || S.tab !== 'news') return;
+      if (!same && !ED.dirty && ED.sel < 0 && !document.querySelector('.sheet')) { NEWS_PRE[sid] = { at: Date.now(), d: Promise.resolve(d2), photos: Promise.resolve(p2) }; vNews(); }
+      else if (!document.querySelector('.sheet')) { ED.photos = p2; edStrip(); }
+    }).catch(() => {});
+  }
   let d; try { d = pre ? await pre.d : await api('reportData', { sessionId: sid, lite: true }); } catch (e) { if (my === ED.gen && S.tab === 'news') $('#view').innerHTML = '<div class="card">' + esc(e.message) + ' <button class="btn" onclick="vNews()">ลองใหม่</button></div>'; return; }
   if (my !== ED.gen || S.tab !== 'news') return;
-  S.news = d;
+  S.news = d; S.newsRawStr = JSON.stringify(d);
   const s = d.session;
   header('ข่าว / รายงาน', thDate(s.date));
   const mode = ls(K_MODE) || 'short';
@@ -875,6 +891,7 @@ async function edSave(quiet) {
   if (b) { b.textContent = 'กำลังบันทึก…'; b.disabled = true; }
   try {
     await api('setReportSlots', { sessionId: S.news.session.id, slots: slots });
+    try { localStorage.removeItem('st_news'); } catch (e) {}
     ED.dirty = false;
     if (b) { b.className = 'btn'; b.textContent = 'บันทึกแล้ว ✓'; setTimeout(() => { if (!ED.dirty && b.isConnected) b.style.display = 'none'; }, 1500); }
     if (!quiet) toast('บันทึกการจัดรูปแล้ว');
@@ -975,6 +992,7 @@ function edFull(sl) {
 }
 async function edLoadAlbum(id) {
   try { ED.photos = await api('photos', { sessionId: id }); } catch (e) { ED.photos = []; toast(e.message, true); }
+  if (S.news && S.news.session.id === id && S.newsRawStr) newsCacheSet(id, JSON.parse(S.newsRawStr), ED.photos);
   edStrip(); backfillThumbs(ED.photos); edHint();
 }
 const edThumb = sl => { const p = (ED.photos || []).find(x => x.fileId === sl.fileId); return (p && p.thumb) || LOCAL_THUMB[sl.fileId] || sl.data || ''; };
