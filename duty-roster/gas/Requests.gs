@@ -331,6 +331,7 @@ function editRequest_(b, who) {
   if (w.k && !KS[w.k]) throw new Error('เหตุผลไม่ถูกต้อง');
   p.why = { k: w.k || (p.why && p.why.k) || '' };
   if (p.why.k === 'official') { p.why.order = String(w.order || '').slice(0, 80); p.why.orderDate = String(w.orderDate || '').slice(0, 10); }
+  if (b.signer && b.signer.name) p.signer = { k: String(b.signer.k || 'custom').slice(0, 10), name: String(b.signer.name).slice(0, 80), title: String(b.signer.title || '').slice(0, 120) };
   if (b.docDate !== undefined) p.docDate = /^\d{4}-\d{2}-\d{2}$/.test(String(b.docDate)) ? b.docDate : '';
   const reason = KS[p.why.k] ? KS[p.why.k] + (p.why.k === 'official' && p.why.order ? ' คำสั่ง ' + p.why.order : '') : r.reason;
   sheet_(SH.REQ).getRange(r.row, 5).setValue(JSON.stringify(p));

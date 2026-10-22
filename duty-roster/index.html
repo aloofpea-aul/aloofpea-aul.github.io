@@ -320,6 +320,9 @@ fieldset:disabled{opacity:.55}
         <label class="f">วันที่ขอเสนอ (ลงในบันทึก/ใบลา)<input type="date" id="qDocDate"></label>
         <label class="f hide qOrd">คำสั่งที่<input type="text" id="qOrder" placeholder="กพค.(ก.)2425/2568"></label>
         <label class="f hide qOrd">ลงวันที่<input type="date" id="qOrderDate"></label>
+        <label class="f" style="grid-column:1/-1">ผู้อนุมัติในเอกสาร (ช่อง "อนุมัติ" ท้ายบันทึกลาเวร)<select id="qSg"></select></label>
+        <label class="f hide qSgC">ชื่อผู้อนุมัติ<input type="text" id="qSgN" placeholder="นาย…"></label>
+        <label class="f hide qSgC">ตำแหน่ง<input type="text" id="qSgT" placeholder="… รักษาการแทน ผจก.กฟส.อ่าวลึก"></label>
       </div>
       <div id="qPreview" class="note" style="margin-top:8px"></div>
       <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="qNow" style="width:20px;height:20px"> ผู้อนุมัติแก้ไขทันที (ไม่ต้องรออนุมัติ)</label>
@@ -1172,6 +1175,15 @@ async function leaveItems(key){
   });
   return {mo,reqs,items:out,drafts};
 }
+/* ผู้อนุมัติท้ายเอกสาร: mgr = ผจก. · head = หผ.ปร. รักษาการแทน · custom = กรอกเอง */
+function sgnOf(k,name,title){ const cfg=S.boot.config;
+  if(k==='head') return {k,name:cfg.headName,title:String(cfg.headTitle).replace(/กฟส\..*$/,'').trim()+' รักษาการแทน '+cfg.mgrTitle};
+  if(k==='custom') return {k,name:String(name||'').trim(),title:String(title||'').trim()};
+  return {k:'mgr',name:cfg.mgrName,title:cfg.mgrTitle}; }
+function sgOptions(sel,v){ const cfg=S.boot.config; sel.innerHTML='';
+  sel.add(new Option(cfg.mgrTitle+' ('+String(cfg.mgrName).replace(/^นาย/,'')+')','mgr'));
+  sel.add(new Option('หผ.ปร. รักษาการแทน ผจก. ('+String(cfg.headName).replace(/^นาย/,'')+')','head'));
+  sel.add(new Option('อื่น ๆ (กรอกเอง)','custom')); sel.value=v||'mgr'; }
 const sgT=t=>'<span style="white-space:nowrap">'+esc(THD(t))+'</span>';
 function signerOf(){
   const cfg=S.boot.config,v=$('rSigner').value;
@@ -1230,7 +1242,8 @@ async function drawDocs(k){
   const one=it.value!=='all'&&sel[0]&&sel[0].req;
   const bar=isDraft?`<div class="docbar draft"><b>ร่าง — รออนุมัติ</b> · ดูได้อย่างเดียว ยังไม่ใช่เอกสารจริง ตารางเวรยังไม่เปลี่ยน · พิมพ์ได้แต่มีลายน้ำ "ร่าง" · อนุมัติแล้วลายน้ำหายเอง</div>`
     :one?`<div class="docbar ok"><b>อนุมัติแล้ว</b>${one.decidedBy?' โดย '+esc(one.decidedBy):''}${one.decided?' · '+esc(isoShort(one.decided)):''} · พิมพ์ใช้งานได้</div>`:'';
-  PA.innerHTML=sel.length?bar+sel.map(x=>memoPage(key,x,ap,cfg,signerOf(),isDraft)).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
+  const sgFor=x=>{const g=x.req.payload&&x.req.payload.signer; return g&&g.name?g:signerOf();};
+  PA.innerHTML=sel.length?bar+sel.map(x=>memoPage(key,x,ap,cfg,sgFor(x),isDraft)).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
 }
 const $$=q=>document.querySelectorAll(q);
 const FL=(v,w)=>`<span class="fl" style="min-width:${w||60}px">${esc(v)||'&nbsp;'}</span>`;
@@ -1414,6 +1427,7 @@ async function renderReq(){
     $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r');
     $('qNow').onchange=()=>$('qPinWrap').classList.toggle('hide',!$('qNow').checked);
     $('qDocDate').value=todayIso();
+    sgOptions($('qSg')); $('qSg').onchange=()=>$$('.qSgC').forEach(e=>e.classList.toggle('hide',$('qSg').value!=='custom'));
     $('qWhy').onchange=()=>$$('.qOrd').forEach(e=>e.classList.toggle('hide',$('qWhy').value!=='official'));
   }
   $('pnApprovers').textContent='ผู้อนุมัติ: '+(S.boot.approvers||[]).map(a=>a.role).join(' / ');
@@ -1460,6 +1474,8 @@ $('qSubmit').onclick=async()=>{
   const wk=$('qWhy').value; payload.why={k:wk}; payload.docDate=$('qDocDate').value||todayIso();
   if(wk==='official'){ payload.why.order=$('qOrder').value.trim(); payload.why.orderDate=$('qOrderDate').value;
     if(!payload.why.order){msg('qMsg','ใส่เลขที่คำสั่งที่ไปปฏิบัติงานราชการ','warn');return;} }
+  payload.signer=sgnOf($('qSg').value,$('qSgN').value,$('qSgT').value);
+  if($('qSg').value==='custom'&&!payload.signer.name){msg('qMsg','ใส่ชื่อผู้อนุมัติในเอกสาร','warn');return;}
   const det=$('qReason').value.trim();
   const reason=WHY[wk]+(wk==='official'?' ตามคำสั่งที่ '+payload.why.order:'')+(det?' — '+det:'');
   const body={action:'request',month:key,type:S.qType,payload,requester:a,reason};
@@ -1539,7 +1555,7 @@ async function delReq(id,st,btn){
 }
 /* แก้ข้อมูลเอกสาร (ตารางเวรไม่เปลี่ยน) */
 function editReq(r){
-  if(!r) return; const p=r.payload||{}, w=p.why||{}; let k=w.k||'';
+  if(!r) return; const p=r.payload||{}, w=p.why||{}, sgn0=p.signer||{k:'mgr'}; let k=w.k||'', sgk=sgn0.k||'mgr';
   const bg=document.createElement('div'); bg.className='dlgBg'; document.body.appendChild(bg);
   const draw=()=>{ bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="eT">
     <h3 id="eT" style="color:var(--pri2)">แก้ไขเอกสาร</h3><div class="tx">${esc(r.text)}</div>
@@ -1548,14 +1564,17 @@ function editReq(r){
     <div class="row" style="flex-wrap:wrap;gap:6px">${Object.keys(WHY).map(x=>`<label class="ckb"><input type="radio" name="eK" value="${x}" ${k===x?'checked':''}>${esc(WHY[x])}</label>`).join('')}</div>
     ${k==='official'?`<div class="grid2"><label class="f">คำสั่งที่<input type="text" id="eO" value="${esc(w.order||'')}"></label><label class="f">ลงวันที่<input type="date" id="eOD" value="${esc(w.orderDate||'')}"></label></div>`:''}
     <label class="f">วันที่ขอเสนอ<input type="date" id="eD" value="${esc(p.docDate||'')}"></label>
+    <label class="f">ผู้อนุมัติในเอกสาร<select id="eSg"></select></label>
+    <div class="grid2 ${sgk==='custom'?'':'hide'}" id="eSgC"><label class="f">ชื่อ<input type="text" id="eSgN" value="${esc(sgn0.k==='custom'?sgn0.name:'')}"></label><label class="f">ตำแหน่ง<input type="text" id="eSgT" value="${esc(sgn0.k==='custom'?sgn0.title:'')}"></label></div>
     <label class="f">PIN ผู้อนุมัติ<input type="password" id="ePin" inputmode="numeric" autocomplete="off" value="${esc($('pnPin').value||'')}"></label>
     <div id="eMsg"></div>
     <div class="grid2"><button class="btn ghost" id="eNo">ยกเลิก</button><button class="btn" id="eYes">บันทึก</button></div></div>`;
+    sgOptions($('eSg'),sgk); $('eSg').onchange=()=>{ sgk=$('eSg').value; $('eSgC').classList.toggle('hide',sgk!=='custom'); };
     bg.querySelectorAll('input[name=eK]').forEach(x=>x.onchange=()=>{ w.order=($('eO')||{}).value||w.order; p.docDate=$('eD').value; k=x.value; draw(); });
     $('eNo').onclick=()=>bg.remove();
     $('eYes').onclick=async()=>{ const pin=$('ePin').value.trim(); if(!pin){msg('eMsg','ใส่ PIN ก่อน','warn');return;}
       $('eYes').disabled=true; $('eYes').innerHTML='<span class="spin"></span>กำลังบันทึก…';
-      try{ await apiPost({action:'editRequest',id:r.id,pin,why:{k,order:($('eO')||{}).value||'',orderDate:($('eOD')||{}).value||''},docDate:$('eD').value});
+      try{ await apiPost({action:'editRequest',id:r.id,pin,why:{k,order:($('eO')||{}).value||'',orderDate:($('eOD')||{}).value||''},docDate:$('eD').value,signer:sgnOf(sgk,$('eSgN').value,$('eSgT').value)});
         if(!$('pnPin').value) $('pnPin').value=pin; S.mr={}; Object.keys(localStorage).filter(x=>x.startsWith('dr_mr_')).forEach(x=>localStorage.removeItem(x));
         bg.remove(); toast('แก้ไขเอกสารแล้ว · ตารางเวรไม่เปลี่ยน'); loadRequests().catch(()=>{});
       }catch(e){ $('eYes').disabled=false; $('eYes').textContent='บันทึก'; msg('eMsg',e.message,'err'); } };
