@@ -61,6 +61,8 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .dlg label.ch.on{border:2px solid var(--pri)}
 .docbar{width:100%;max-width:210mm;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;box-sizing:border-box}.docbar.draft{background:#FFF1D6;color:#7A4A00}.docbar.ok{background:#E6F4E8;color:#1F5A2A}
 .wmk{position:absolute;top:45%;left:-10%;width:120%;text-align:center;transform:rotate(-30deg);font-size:72pt;font-weight:800;color:rgba(200,40,40,.15);letter-spacing:4px;pointer-events:none;z-index:2;font-family:'THSarabunIT9','Sarabun',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.dlg table.dtb{border-collapse:collapse;width:100%;font-size:13px}.dlg table.dtb td{border-top:1px solid var(--line);padding:5px 4px}
+.rq.hl{outline:3px solid #E08A00;outline-offset:2px;transition:outline .3s}
 .dlg .btn.danger{background:#A23434;color:#fff;border:0}.dlg .btn.danger:disabled{opacity:.85}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -334,6 +336,7 @@ fieldset:disabled{opacity:.55}
     <div class="card">
       <h3>ประวัติ (30 รายการล่าสุด)</h3>
       <div id="hsList" style="display:flex;flex-direction:column;gap:8px"></div>
+      <details id="hsDel" style="margin-top:10px"><summary style="font-weight:700;font-size:13px;cursor:pointer">ที่ลบแล้ว</summary><div id="hsDelList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></details>
     </div>
   </main>
 
@@ -1480,43 +1483,84 @@ async function loadRequests(){
   $('pnList').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
   $('pnList').querySelectorAll('button[data-prev]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.prev};show('viewReport');});
   setTimeout(()=>$('hsList').querySelectorAll('button[data-pid]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.pid};show('viewReport');}),0);
-  $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
-      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div>
-      <div class="row" style="gap:6px">${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px;flex:1" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">พิมพ์บันทึกลาเวร / จัดเวรแทน</button>`:''}
+  S.reqAll={}; [...R.pending,...R.done].forEach(r=>S.reqAll[r.id]=r);
+  $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq" id="rq_${esc(r.id)}"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status==='อนุมัติ'&&r.note==='แก้ไขโดยผู้อนุมัติ'?'อนุมัติทันที (ผู้อนุมัติแก้เอง)':r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
+      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note&&r.note!=='แก้ไขโดยผู้อนุมัติ'?' · '+esc(r.note):''}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
+      <div class="row" style="gap:6px">${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px;flex:1" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">🖨 พิมพ์บันทึก</button>`:''}
+      ${r.status==='อนุมัติ'?`<button class="btn ghost" style="height:38px" data-edit="${esc(r.id)}">แก้ไข</button>`:''}
       <button class="btn ghost" style="height:38px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบ</button></div></div>`).join('')
     :'<div class="muted">ยังไม่มีประวัติ</div>';
+  const D=R.deleted||[]; $('hsDel').querySelector('summary').textContent='ที่ลบแล้ว ('+D.length+')';
+  $('hsDelList').innerHTML=D.map(r=>`<div class="rq" style="opacity:.8"><div class="row" style="justify-content:space-between"><span class="st" style="background:#EEE;color:#555">${esc(/คืนตารางแล้ว/.test(r.note||'')?'ลบแล้ว · ตารางคืนแล้ว':'ลบแล้ว')}</span><span class="muted">${esc(r.decidedAt)}</span></div>
+      <div style="font-size:13px">${esc(r.text)}</div><div class="muted">${esc(r.note||'')}</div></div>`).join('')||'<div class="muted">ไม่มี</div>';
+  $('hsList').querySelectorAll('button[data-edit]').forEach(b=>b.onclick=()=>editReq(S.reqAll[b.dataset.edit]));
   document.querySelectorAll('#pnList button[data-del], #hsList button[data-del]').forEach(b=>b.onclick=()=>delReq(b.dataset.del,b.dataset.st,b));
 }
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),3200);}
 /* ลบคำขอ: กล่องยืนยันในแอป → แสดงสถานะกำลังลบ → เอารายการออกทันที */
-function delReq(id,st,btn){
+async function delReq(id,st,btn){
   const card=btn&&btn.closest('.rq'), txt=card?(card.querySelector('.tx,div[style*="font-size:13px"]')||{}).textContent||'':'';
-  const ok=st==='อนุมัติ', bg=document.createElement('div'); bg.className='dlgBg';
+  const r=(S.reqAll||{})[id]||{}, ok=st==='อนุมัติ', bg=document.createElement('div'); bg.className='dlgBg';
+  let rows='';
+  if(ok&&r.month){ try{ const mo=await loadMonth(r.month), ch=(mo.data.changes||[]).filter(c=>c.req===id), {m}=parseKey(r.month);
+      rows=ch.map(c=>`<tr><td>${c.day} ${TH_MS[m-1]} ${esc(c.g==='emp'?({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3'}[c.code]||c.code):'กะ '+c.code)}</td><td>${esc(c.to)} → <b>${esc(c.from)}</b></td></tr>`).join(''); }catch(e){} }
   bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
     <h3 id="dlgT">ลบรายการนี้?</h3><div class="tx">${esc(txt)}</div>
-    ${ok?`<div style="font-size:13px;color:var(--mut)">รายการนี้อนุมัติแล้ว เลือกแบบที่ต้องการ</div>
-      <label class="ch on"><input type="radio" name="dRv" value="0" checked><span><b>ลบทิ้งอย่างเดียว</b><br>ตารางเวรไม่เปลี่ยน (ใช้เมื่อกดซ้ำ/กดลอง)</span></label>
-      <label class="ch"><input type="radio" name="dRv" value="1"><span><b>ยกเลิกการแลก/ลาเวร</b><br>ตารางเวรกลับเป็นแบบก่อนแลก</span></label>`:''}
+    ${ok?`<div style="font-size:13px;font-weight:700">ตารางเวรจะกลับเป็นแบบก่อนแลก/ลาเวร</div>${rows?`<table class="dtb">${rows}</table>`:''}
+      <div style="font-size:12.5px;color:var(--mut)">บันทึกลาเวรของรายการนี้จะไม่ออกอีก · ถ้าแค่เอกสารผิด ให้กด "แก้ไข" แทน</div>`
+      :'<div style="font-size:13px;color:var(--mut)">ยังไม่อนุมัติ — ตารางเวรไม่เปลี่ยน</div>'}
     <label class="f">PIN ผู้อนุมัติ / แอดมิน<input type="password" id="dPin" inputmode="numeric" autocomplete="off" value="${esc($('pnPin').value||'')}"></label>
     <div id="dMsg"></div>
-    <div class="grid2"><button class="btn ghost" id="dNo">ยกเลิก</button><button class="btn danger" id="dYes">ลบรายการ</button></div></div>`;
+    <div class="grid2"><button class="btn ghost" id="dNo">ยกเลิก</button><button class="btn danger" id="dYes">${ok?'ลบ และคืนตาราง':'ลบรายการ'}</button></div></div>`;
   document.body.appendChild(bg);
   const close=()=>bg.remove();
   bg.onclick=e=>{if(e.target===bg&&!bg.busy)close();};
-  bg.querySelectorAll('label.ch').forEach(l=>l.onclick=()=>bg.querySelectorAll('label.ch').forEach(x=>x.classList.toggle('on',x===l)));
   $('dNo').onclick=()=>{if(!bg.busy)close();};
   setTimeout(()=>{const p=$('dPin'); if(!p.value) p.focus();},50);
   $('dYes').onclick=async()=>{
     const pin=$('dPin').value.trim(); if(!pin){msg('dMsg','ใส่ PIN ก่อน','warn');return;}
-    const revert=ok&&(bg.querySelector('input[name=dRv]:checked')||{}).value==='1';
     bg.busy=true; $('dYes').disabled=$('dNo').disabled=true; $('dYes').innerHTML='<span class="spin"></span>กำลังลบ…'; msg('dMsg','');
-    try{ const j=await apiPost({action:'deleteRequest',id,revert,pin}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
+    try{ const j=await apiPost({action:'deleteRequest',id,pin}), x=j.result;
       if(!$('pnPin').value) $('pnPin').value=pin;
+      if(x.blocked){ bg.busy=false;
+        bg.querySelector('.dlg').innerHTML=`<h3>ยังลบรายการนี้ไม่ได้</h3><div class="tx">${esc(txt)}</div>
+          <div class="note err" style="font-size:12.5px">ช่องเวรเดียวกันถูกเปลี่ยนต่อโดยรายการที่ใหม่กว่า:<br>${x.blocked.map(b=>'• '+esc(b.text)+(b.at?' ('+esc(b.at)+')':'')).join('<br>')}<br><br>ลบรายการนั้นก่อน แล้วค่อยลบรายการนี้ ตารางจะได้ย้อนถูกลำดับ</div>
+          <div class="grid2"><button class="btn ghost" id="dNo2">ปิด</button><button class="btn" id="dGo">ไปที่รายการนั้น</button></div>`;
+        $('dNo2').onclick=close; $('dGo').onclick=()=>{ close(); const el=$('rq_'+x.blocked[0].id); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),2500);} };
+        return; }
+      if(x.mismatch){ bg.busy=false; $('dYes').disabled=$('dNo').disabled=false; $('dYes').textContent=ok?'ลบ และคืนตาราง':'ลบรายการ';
+        msg('dMsg','ช่องเวรนี้ถูกแก้ไขด้วยวิธีอื่นไปแล้ว ระบบคืนตารางอัตโนมัติไม่ได้ — ติดต่อผู้ดูแลระบบ','err'); return; }
+      forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
       if(card) card.remove(); close();
-      toast((revert?'ยกเลิกแล้ว · ตารางเวรกลับเป็นแบบก่อนแลก':'ลบแล้ว · ตารางเวรไม่เปลี่ยน')+(j.result&&j.result.note?' — '+j.result.note.replace(/^ลบโดย [^·]+· ?/,''):''));
+      toast(ok?(x.reverted?'ลบแล้ว · ตารางเวรกลับเป็นแบบเดิม':'ลบแล้ว'):'ลบแล้ว');
       loadRequests().catch(()=>{}); qForm('month').catch(()=>{});
-    }catch(e){ bg.busy=false; $('dYes').disabled=$('dNo').disabled=false; $('dYes').textContent='ลบรายการ'; msg('dMsg',e.message,'err'); }
+    }catch(e){ bg.busy=false; $('dYes').disabled=$('dNo').disabled=false; $('dYes').textContent=ok?'ลบ และคืนตาราง':'ลบรายการ'; msg('dMsg',e.message,'err'); }
   };
+}
+/* แก้ข้อมูลเอกสาร (ตารางเวรไม่เปลี่ยน) */
+function editReq(r){
+  if(!r) return; const p=r.payload||{}, w=p.why||{}; let k=w.k||'';
+  const bg=document.createElement('div'); bg.className='dlgBg'; document.body.appendChild(bg);
+  const draw=()=>{ bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="eT">
+    <h3 id="eT" style="color:var(--pri2)">แก้ไขเอกสาร</h3><div class="tx">${esc(r.text)}</div>
+    <div style="font-size:12.5px;color:var(--mut)">ตารางเวรไม่เปลี่ยน · แก้ได้เฉพาะข้อมูลในบันทึกลาเวร</div>
+    <div style="font-size:12.5px;font-weight:700">เหตุผล</div>
+    <div class="row" style="flex-wrap:wrap;gap:6px">${Object.keys(WHY).map(x=>`<label class="ckb"><input type="radio" name="eK" value="${x}" ${k===x?'checked':''}>${esc(WHY[x])}</label>`).join('')}</div>
+    ${k==='official'?`<div class="grid2"><label class="f">คำสั่งที่<input type="text" id="eO" value="${esc(w.order||'')}"></label><label class="f">ลงวันที่<input type="date" id="eOD" value="${esc(w.orderDate||'')}"></label></div>`:''}
+    <label class="f">วันที่ขอเสนอ<input type="date" id="eD" value="${esc(p.docDate||'')}"></label>
+    <label class="f">PIN ผู้อนุมัติ<input type="password" id="ePin" inputmode="numeric" autocomplete="off" value="${esc($('pnPin').value||'')}"></label>
+    <div id="eMsg"></div>
+    <div class="grid2"><button class="btn ghost" id="eNo">ยกเลิก</button><button class="btn" id="eYes">บันทึก</button></div></div>`;
+    bg.querySelectorAll('input[name=eK]').forEach(x=>x.onchange=()=>{ w.order=($('eO')||{}).value||w.order; p.docDate=$('eD').value; k=x.value; draw(); });
+    $('eNo').onclick=()=>bg.remove();
+    $('eYes').onclick=async()=>{ const pin=$('ePin').value.trim(); if(!pin){msg('eMsg','ใส่ PIN ก่อน','warn');return;}
+      $('eYes').disabled=true; $('eYes').innerHTML='<span class="spin"></span>กำลังบันทึก…';
+      try{ await apiPost({action:'editRequest',id:r.id,pin,why:{k,order:($('eO')||{}).value||'',orderDate:($('eOD')||{}).value||''},docDate:$('eD').value});
+        if(!$('pnPin').value) $('pnPin').value=pin; S.mr={}; Object.keys(localStorage).filter(x=>x.startsWith('dr_mr_')).forEach(x=>localStorage.removeItem(x));
+        bg.remove(); toast('แก้ไขเอกสารแล้ว · ตารางเวรไม่เปลี่ยน'); loadRequests().catch(()=>{});
+      }catch(e){ $('eYes').disabled=false; $('eYes').textContent='บันทึก'; msg('eMsg',e.message,'err'); } };
+  };
+  bg.onclick=e=>{if(e.target===bg)bg.remove();}; draw();
 }
 async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}

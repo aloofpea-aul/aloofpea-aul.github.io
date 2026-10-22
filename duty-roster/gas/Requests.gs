@@ -78,7 +78,8 @@ function listRequests_() {
   const all = reqRows_();
   return {
     pending: all.filter(function (r) { return r.status === 'รออนุมัติ'; }).map(pubReq_),
-    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ลบแล้ว'; }).slice(-30).reverse().map(pubReq_)
+    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ลบแล้ว'; }).slice(-30).reverse().map(pubReq_),
+    deleted: all.filter(function (r) { return r.status === 'ลบแล้ว'; }).slice(-20).reverse().map(pubReq_)
   };
 }
 
@@ -99,6 +100,8 @@ function createRequest_(b, who) {
   const mo = getMonth_(b.month); if (!mo) throw new Error('ไม่พบตารางเดือน ' + b.month);
   const ops = buildOps_(b.type, b.payload);
   const test = JSON.parse(JSON.stringify(mo.data));
+  const dup = dupOf_(b.month, b.type, b.payload);
+  if (dup) throw new Error('มีรายการนี้อยู่แล้ว: ' + dup.text + ' — ' + (dup.status === 'อนุมัติ' ? 'อนุมัติเมื่อ ' + fmtTime_(dup.decidedAt) : 'รออนุมัติอยู่') + ' · ไม่ต้องยื่นซ้ำ (ถ้าต้องการยกเลิก ให้ลบรายการนั้น)');
   applyOps_(test, ops);                                     // ตรวจก่อนบันทึก
   const text = describe_(b.month, b.type, b.payload, mo.data);
   const id = 'R' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss') + Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -262,36 +265,78 @@ function saveReport_(b) {
 }
 
 /** ลบคำขอ/เอกสาร (ผู้อนุมัติ/แอดมิน) — revert=true คืนตารางเวรให้เหมือนก่อนอนุมัติ (ถ้ายังไม่ถูกแก้ทับ) */
-function deleteRequest_(id, revert, who) {
-  const r = reqRows_().filter(function (x) { return x.id === id; })[0];
+/** ช่องเวรที่คำขอแตะ (ใช้ตรวจยื่นซ้ำ) */
+function slotKey_(type, p) {
+  const sl = type === 'swap' ? [p.a + '@' + Number(p.da), p.b + '@' + Number(p.db)].sort().join('&') : p.a + '@' + Number(p.d) + '>' + p.r;
+  return type + '|' + p.g + '|' + sl;
+}
+function dupOf_(month, type, p) {
+  const k = slotKey_(type, p);
+  return reqRows_().filter(function (r) { return r.month === month && (r.status === 'อนุมัติ' || r.status === 'รออนุมัติ') && r.type === type && slotKey_(r.type, r.payload) === k; })[0] || null;
+}
+
+/** ลบคำขอ (ผู้อนุมัติ/แอดมิน) — ที่อนุมัติแล้วคืนตารางให้เหมือนก่อนอนุมัติเสมอ
+ *  ถ้าช่องเดียวกันถูกเปลี่ยนต่อโดยรายการที่ใหม่กว่า → ไม่ลบ คืน blocked ให้ลบรายการนั้นก่อน */
+function deleteRequest_(id, revertIgnored, who) {
+  const all = reqRows_(), r = all.filter(function (x) { return x.id === id; })[0];
   if (!r) throw new Error('ไม่พบรายการ ' + id);
   if (r.status === 'ลบแล้ว') throw new Error('รายการนี้ถูกลบไปแล้ว');
-  let reverted = 0, skipped = 0;
-  const mo = getMonth_(r.month);
-  if (mo && r.status === 'อนุมัติ') {
-    const mine = (mo.data.changes || []).filter(function (c) { return c.req === id; });
-    if (revert && mine.length) {
+  let reverted = 0, note;
+  const mo = r.status === 'อนุมัติ' ? getMonth_(r.month) : null;
+  if (mo) {
+    const ch = mo.data.changes || [], idx = [];
+    ch.forEach(function (c, i) { if (c.req === id) idx.push(i); });
+    if (idx.length) {
+      const last = idx[idx.length - 1], mine = idx.map(function (i) { return ch[i]; });
+      const people = {}; mine.forEach(function (c) { people[c.from] = 1; people[c.to] = 1; });
+      const blk = {};
+      ch.forEach(function (c, i) { if (i > last && c.req !== id && mine.some(function (m) { return m.g === c.g && m.day === c.day && (people[c.from] || people[c.to]); })) blk[c.req] = 1; });
+      const ids = Object.keys(blk);
+      if (ids.length) return { blocked: ids.map(function (x) { const q = all.filter(function (y) { return y.id === x; })[0]; return { id: x, text: q ? q.text : x, at: q ? fmtTime_(q.decidedAt) : '' }; }) };
+      // ตรวจทุกช่องก่อน แล้วค่อยคืนพร้อมกัน (ไม่คืนครึ่ง ๆ กลาง ๆ)
+      const test = JSON.parse(JSON.stringify(mo.data));
       const sameDaySwap = r.type === 'swap' && Number(r.payload.da) === Number(r.payload.db);
-      if (sameDaySwap) {
-        const c = mine[0], map = mo.data[c.g], i = c.day - 1;
-        if (map[c.from][i] === mine[1].code && map[c.to][i] === c.code) { map[c.from][i] = c.code; map[c.to][i] = mine[1].code; reverted = 2; } else skipped = 2;
-      } else {
-        mine.slice().reverse().forEach(function (c) {
-          const map = mo.data[c.g], i = c.day - 1;
-          if (map[c.to] && map[c.to][i] === c.code && isFree_(c.g, map[c.from][i])) {
-            map[c.from][i] = c.code; map[c.to][i] = c.replacedStandby ? 'S' : FREE_[c.g]; reverted++;
-          } else skipped++;
+      const undo = function (data) {
+        if (sameDaySwap) {
+          const c = mine[0], map = data[c.g], i = c.day - 1;
+          if (map[c.from][i] !== mine[1].code || map[c.to][i] !== c.code) return false;
+          map[c.from][i] = c.code; map[c.to][i] = mine[1].code; return true;
+        }
+        return mine.slice().reverse().every(function (c) {
+          const map = data[c.g], i = c.day - 1;
+          if (!map[c.to] || map[c.to][i] !== c.code || !isFree_(c.g, map[c.from][i])) return false;
+          map[c.from][i] = c.code; map[c.to][i] = c.replacedStandby ? 'S' : FREE_[c.g]; return true;
         });
-      }
-      if (reverted) mo.data.rev = (mo.data.rev || 0) + 1;
+      };
+      if (!undo(test)) return { mismatch: true };
+      undo(mo.data); reverted = mine.length;
+      mo.data.rev = (mo.data.rev || 0) + 1;
+      mo.data.changes = ch.filter(function (c) { return c.req !== id; });
+      saveMonth_(r.month, mo.status, mo.data, mo.stateAfter, mo.note);
     }
-    mo.data.changes = (mo.data.changes || []).filter(function (c) { return c.req !== id; });
-    saveMonth_(r.month, mo.status, mo.data, mo.stateAfter, mo.note);
-  }
-  const note = 'ลบโดย ' + who.name + (revert ? (reverted ? ' · คืนตารางแล้ว' : '') + (skipped ? ' · คืนไม่ได้ ' + skipped + ' ช่อง (ตารางถูกแก้ทับ)' : '') : ' · ไม่คืนตาราง');
+    note = 'ลบโดย ' + who.name + (reverted ? ' · คืนตารางแล้ว' : ' · ไม่มีข้อมูลการเปลี่ยนในตาราง');
+  } else note = 'ลบโดย ' + who.name + (r.status === 'รออนุมัติ' ? ' · ยังไม่อนุมัติ ตารางไม่เปลี่ยน' : '');
   sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([['ลบแล้ว', who.name + ' (' + who.role + ')', new Date(), note]]);
   log_(who.name, 'ลบคำขอ', r.month, r.text + ' | ' + note);
-  return { id: id, reverted: reverted, skipped: skipped, note: note };
+  return { id: id, reverted: reverted, note: note };
+}
+
+/** แก้ข้อมูลเอกสาร (เหตุผล / วันที่ขอเสนอ / คำสั่ง) — ไม่แตะตารางเวร */
+function editRequest_(b, who) {
+  const r = reqRows_().filter(function (x) { return x.id === String(b.id); })[0];
+  if (!r) throw new Error('ไม่พบรายการ');
+  if (r.status === 'ลบแล้ว') throw new Error('รายการนี้ถูกลบไปแล้ว');
+  const p = r.payload, w = b.why || {};
+  const KS = { sick: 'ลาป่วย', errand: 'ลากิจ', vacation: 'ลาพักผ่อน', private: 'ธุระส่วนตัว', official: 'ปฏิบัติงานราชการ' };
+  if (w.k && !KS[w.k]) throw new Error('เหตุผลไม่ถูกต้อง');
+  p.why = { k: w.k || (p.why && p.why.k) || '' };
+  if (p.why.k === 'official') { p.why.order = String(w.order || '').slice(0, 80); p.why.orderDate = String(w.orderDate || '').slice(0, 10); }
+  if (b.docDate !== undefined) p.docDate = /^\d{4}-\d{2}-\d{2}$/.test(String(b.docDate)) ? b.docDate : '';
+  const reason = KS[p.why.k] ? KS[p.why.k] + (p.why.k === 'official' && p.why.order ? ' คำสั่ง ' + p.why.order : '') : r.reason;
+  sheet_(SH.REQ).getRange(r.row, 5).setValue(JSON.stringify(p));
+  sheet_(SH.REQ).getRange(r.row, 7).setValue(reason);
+  log_(who.name, 'แก้เอกสารคำขอ', r.month, r.text + ' | ' + reason + (p.docDate ? ' | เสนอ ' + p.docDate : ''));
+  return pubReq_(reqRows_().filter(function (x) { return x.id === r.id; })[0]);
 }
 
 /* ======================================================================
