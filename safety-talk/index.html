@@ -95,8 +95,14 @@ nav.tabs .dot{position:absolute;top:6px;right:calc(50% - 20px);background:var(--
 .esl.empty .n{background:#9DB89A}
 .esl.on{outline:4px solid var(--amb);outline-offset:-4px}
 .esl .up{position:absolute;inset:0;background:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center}
-.pkgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:46vh;overflow-y:auto}
-.pkgrid .thumb{cursor:pointer}
+.sheet>*{flex-shrink:0}
+.pkgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pkgrid .thumb{cursor:pointer;aspect-ratio:4/3;width:100%}
+.pkconf{position:fixed;inset:0;z-index:80;background:rgba(10,20,10,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+.pkconf img{max-width:100%;max-height:62vh;object-fit:contain;border-radius:10px;background:#000}
+.pkconf .cap{color:#fff;font-size:14px;text-align:center;line-height:1.5}
+.pkconf .bt{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;width:100%;max-width:520px}
+.pkconf .btn{min-height:52px;font-size:16px}
 .pkgrid .thumb.used{outline:4px solid var(--g);outline-offset:-4px}
 .pkgrid .thumb .slot{position:absolute;right:4px;top:4px;background:var(--g);color:#fff;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px}
 .pkgrid .thumb .by{right:auto;left:4px;top:auto;bottom:4px}
@@ -985,7 +991,7 @@ function edPicker(i) {
     (ED.slots[i] ? '<div class="pkcur"><img src="' + edThumb(ED.slots[i]) + '" alt=""><div class="sp"><b>รูปที่ใช้อยู่</b><div class="mut" style="font-size:12px">แตะรูปในอัลบั้มด้านล่างเพื่อเปลี่ยน</div></div></div>' +
       '<div class="grid2"><button class="btn" data-adj>✋ จัดตำแหน่ง / ซูม</button><button class="btn" data-del style="color:var(--red)">🗑 เอาออก</button></div>' : '') +
     '<div class="grid2"><button class="btn pri" data-cam>📷 ถ่ายรูปใหม่</button><button class="btn" data-pick>🖼 เลือกจากเครื่อง</button></div>' +
-    '<div class="mut" style="font-size:13px">ป้ายรูป</div><div class="pill" style="flex-wrap:wrap" id="pkTags"></div>' +
+    '<div class="mut" style="font-size:13px">ป้ายรูป</div><div class="pill" style="flex-wrap:wrap;overflow:visible" id="pkTags"></div>' +
     '<div class="mut" style="font-size:13px" id="pkCnt">อัลบั้มรวม</div><div class="pkgrid" id="pkGrid"></div>', (el, close) => {
       const done = () => { ED.pickerRefresh = null; close(); };
       el.parentNode.addEventListener('click', e => { if (e.target === el.parentNode) ED.pickerRefresh = null; });
@@ -1011,13 +1017,29 @@ function edPicker(i) {
           return '<button class="thumb' + (k >= 0 ? ' used' : '') + '" data-pf="' + p.fileId + '">' + imgTag(p) + (k >= 0 ? '<span class="slot">ช่อง ' + (k + 1) + '</span>' : '') +
             (p.uploader ? '<span class="by">' + esc(String(p.uploader).split(/\s+/)[0]) + '</span>' : '') + '</button>';
         }).join('');
-        g.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => {
-          const p = ED.photos.find(x => x.fileId === b.dataset.pf);
-          done(); edPlace(p, i); if (ED.slots[ED.sel]) { ED.slots[ED.sel].tag = tag; edCtl(); edStrip(); edDraw(); }
-        });
+        g.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => edConfirm(ED.photos.find(x => x.fileId === b.dataset.pf), i, () => {
+          done(); edPlace(ED.photos.find(x => x.fileId === b.dataset.pf), i); if (ED.slots[ED.sel]) { ED.slots[ED.sel].tag = tag; edCtl(); edStrip(); edDraw(); }
+        }));
       };
       drawTags(); ED.pickerRefresh();
     });
+}
+/** ดูรูปเต็มก่อน แล้วกดยืนยันจึงใส่ช่อง */
+function edConfirm(p, i, ok) {
+  if (!p) return;
+  const k = ED.slots.findIndex(sl => sl.fileId === p.fileId);
+  const src = p.thumb || LOCAL_THUMB[p.fileId] || '';
+  const ov = document.createElement('div'); ov.className = 'pkconf';
+  ov.innerHTML = '<img alt="" src="' + src + '"><div class="cap">' + (p.uploader ? 'ถ่ายโดย ' + esc(p.uploader) + (p.at ? ' · ' + esc(p.at) + ' น.' : '') + '<br>' : '') +
+    (k === i ? 'รูปนี้อยู่ในช่อง ' + (i + 1) + ' แล้ว' : k >= 0 ? 'รูปนี้อยู่ช่อง ' + (k + 1) + ' — ถ้าใช้ จะสลับกับช่อง ' + (i + 1) : 'ใส่รูปนี้ลงช่อง ' + (i + 1) + ' ?') + '</div>' +
+    '<div class="bt"><button class="btn" data-n>← เลือกรูปอื่น</button><button class="btn pri" data-y' + (k === i ? ' disabled' : '') + '>✓ ใช้รูปนี้ (ช่อง ' + (i + 1) + ')</button></div>';
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector('[data-n]').onclick = close;
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  ov.querySelector('[data-y]').onclick = () => { close(); ok(); };
+  /* โหลดรูปความละเอียดเต็มมาแทนรูปย่อ (ถ้าเร็วพอ) */
+  api('photoFull', { fileId: p.fileId }).then(f => { const im = ov.querySelector('img'); if (im && ov.isConnected && f && f.data) im.src = f.data; }).catch(() => {});
 }
 /** รูปที่ถ่าย/เลือกจากหน้าต่างเลือกรูป → ใส่ช่องที่กดไว้ทันที (รูปถัดไปเติมช่องว่างต่อ) */
 function edUploaded(tgt, res, full, thumb) {
