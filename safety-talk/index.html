@@ -246,6 +246,8 @@ async function loadFaces(force) {
     if (!force && Date.now() - at < 864e5 && Object.keys(FACES).length) return;
     const f = await api('faces');
     if (f && typeof f === 'object') {
+      /* ย่อเหลือรูปเล็ก (เก็บในเครื่องได้สบาย แสดงเร็ว) */
+      for (const k of Object.keys(f)) { try { const t = await shrinkSrc(f[k], 120, 0.75); if (t) f[k] = t; } catch (e) {} }
       FACES = f;
       try { localStorage.setItem('st_faces', JSON.stringify(f)); localStorage.setItem('st_faces_at', String(Date.now())); } catch (e) {}
       document.querySelectorAll('.av[data-av]').forEach(el => { const src = FACES[el.dataset.av]; if (src && !el.querySelector('img')) el.insertAdjacentHTML('afterbegin', '<img src="' + src + '" alt="">'); });
