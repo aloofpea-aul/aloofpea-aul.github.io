@@ -1,5 +1,5 @@
 /**
- * ระบบตารางเวรแก้ไฟ กฟส.อ่าวลึก — Backend (Google Apps Script)
+ * ระบบงานเวรแก้ไฟ (เดิม: ตารางเวรแก้ไฟ) กฟส.อ่าวลึก — Backend (Google Apps Script)
  * ส่วนที่ 1: ฐานข้อมูล + ตัวสร้างเวร + API สำหรับหน้าเว็บ (GitHub Pages)
  *
  * ไฟล์ในโปรเจกต์: Code.gs (ไฟล์นี้) · Requests.gs (เปลี่ยน/ลาเวร) · Line.gs (LINE)

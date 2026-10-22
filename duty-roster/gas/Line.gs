@@ -417,7 +417,7 @@ function notifyPeople_(shorts, head, body, color, title, buttons) {
   const rows = peopleRows_();
   shorts.forEach(function (n) {
     const p = rows.filter(function (r) { return r.short === n; })[0];
-    if (p && p.lineUserId) push_(p.lineUserId, [flex_(head + ' ' + (title || ''), bubble_(head, color || '#5B1A63', title || 'ตารางเวรแก้ไฟ', body.split('\n'), buttons || null))], 'change');
+    if (p && p.lineUserId) push_(p.lineUserId, [flex_(head + ' ' + (title || ''), bubble_(head, color || '#5B1A63', title || 'งานเวรแก้ไฟ', body.split('\n'), buttons || null))], 'change');
   });
 }
 function notifyApprovers_(head, body) {
@@ -519,10 +519,10 @@ function handleEvent_(ev) {
   const uid = ev.source && ev.source.userId;
   const inGroup = ev.source && (ev.source.type === 'group' || ev.source.type === 'room');
   if (ev.type === 'join') {
-    return reply_(ev.replyToken, [text_('สวัสดีครับ บอทตารางเวรแก้ไฟ กฟส.อ่าวลึก\nถ้ากลุ่มนี้เป็นกลุ่มคนงาน ให้ หผ.ปร. พิมพ์:\nตั้งกลุ่มคนงาน รหัส\n\nคำสั่งในกลุ่ม: เวรคนงาน · เวรวันนี้ · เวรพรุ่งนี้')]);
+    return reply_(ev.replyToken, [text_('สวัสดีครับ บอทงานเวรแก้ไฟ กฟส.อ่าวลึก\nถ้ากลุ่มนี้เป็นกลุ่มคนงาน ให้ หผ.ปร. พิมพ์:\nตั้งกลุ่มคนงาน รหัส\n\nคำสั่งในกลุ่ม: เวรคนงาน · เวรวันนี้ · เวรพรุ่งนี้')]);
   }
   if (ev.type === 'follow') {
-    return reply_(ev.replyToken, [text_('สวัสดีครับ ระบบตารางเวรแก้ไฟ กฟส.อ่าวลึก\nลงทะเบียนครั้งแรก พิมพ์:\nลงทะเบียน ชื่อของคุณ รหัส\nเช่น  ลงทะเบียน พงศธร 1234\n(ขอรหัสจาก หผ.ปร.)')]);
+    return reply_(ev.replyToken, [text_('สวัสดีครับ ระบบงานเวรแก้ไฟ กฟส.อ่าวลึก\nลงทะเบียนครั้งแรก พิมพ์:\nลงทะเบียน ชื่อของคุณ รหัส\nเช่น  ลงทะเบียน พงศธร 1234\n(ขอรหัสจาก หผ.ปร.)')]);
   }
   if (ev.type === 'postback') {
     const p = String(ev.postback.data || '').split('|');

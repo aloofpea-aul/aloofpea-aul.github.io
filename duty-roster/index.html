@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="/pea-hub.js?v=2026101703" data-app="dutyroster" data-name="ตารางเวรแก้ไฟ"></script>
+<script src="/pea-hub.js?v=2026101703" data-app="dutyroster" data-name="งานเวรแก้ไฟ"></script>
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
-<title>ตารางเวรแก้ไฟ กฟส.อ่าวลึก</title>
+<title>งานเวรแก้ไฟ กฟส.อ่าวลึก</title>
+<meta name="apple-mobile-web-app-title" content="งานเวรแก้ไฟ"><meta name="application-name" content="งานเวรแก้ไฟ">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -218,7 +219,7 @@ fieldset:disabled{opacity:.55}
 <div class="app" id="app">
   <header class="top" id="hdr">
     <div class="row" style="justify-content:space-between">
-      <div><div class="t1">กฟส.อ่าวลึก · แผนกปฏิบัติการ</div><div class="t2" id="hdrTitle">ตารางเวรแก้ไฟ</div></div>
+      <div><div class="t1">กฟส.อ่าวลึก · ตารางเวร · รายงานเวร · ไฟดับ</div><div class="t2" id="hdrTitle">งานเวรแก้ไฟ</div></div>
       <span class="badge" id="hdrBadge"></span>
     </div>
   </header>
@@ -1133,7 +1134,7 @@ function chgPage(r,cfg,CL){
     <div style="text-align:center;font-weight:700;font-size:16px;margin-top:.1in">รายการเปลี่ยนแปลงเวร (แนบท้ายตารางเวร) ประจำเดือน ${TH_MONTH[m-1]} ${y+543}</div>
     <div style="text-align:center;margin-bottom:6px">${esc(cfg.office)} · ช่องที่มีกรอบแดงในตารางเวร ตรงกับลำดับที่ในตารางนี้</div>
     <table class="t" style="width:100%"><tr><th style="width:.35in">ที่</th><th style="width:.8in">วันที่</th><th style="width:.9in">ช่วงเวร</th><th>ผู้มอบเวร (เดิม)</th><th>ผู้อยู่เวร (ใหม่)</th><th style="width:1in">ประเภท</th><th>เหตุผล</th><th>อนุมัติโดย</th></tr>${rows}</table>
-    <div style="margin-top:.15in">รวม ${CL.length} รายการ · ข้อมูลจากระบบตารางเวรแก้ไฟ ณ ${esc(thDate(todayIso()))}</div>
+    <div style="margin-top:.15in">รวม ${CL.length} รายการ · ข้อมูลจากระบบงานเวรแก้ไฟ ณ ${esc(thDate(todayIso()))}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;margin-top:.45in;text-align:center;line-height:1.8">
       <div>ขอรับรองว่าถูกต้อง<br><br>(ลงชื่อ) .............................................<br>( ${esc(cfg.headName)} )<br>${esc(cfg.headTitle)}</div>
       <div>อนุมัติ<br><br>(ลงชื่อ) .............................................<br>( ${esc(cfg.mgrName)} )<br>${esc(cfg.mgrTitle)}</div></div></div></div>`;
