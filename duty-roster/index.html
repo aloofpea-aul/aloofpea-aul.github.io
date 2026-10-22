@@ -160,6 +160,30 @@ body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 .rpf input,.rpf select{height:40px}
 .rp-sec{border-top:1px solid #F0ECF3;padding-top:8px;margin-top:8px}
 .rp-sec h4{margin:0 0 6px;font-size:13px}
+.osum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.osum div{background:var(--bg);border-radius:10px;padding:6px;text-align:center}.osum b{display:block;font-size:19px;color:var(--pri)}.osum span{font-size:11px;color:var(--mut)}
+.evl .ev{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}.evl .ev:first-child{border-top:0}
+.ev .tag{font-size:11px;font-weight:700;border-radius:8px;padding:3px 7px;white-space:nowrap;height:fit-content}.tag.hv{background:#FDE4E4;color:#9B1C1C}.tag.lv{background:#E3ECFD;color:#1C3F9B}
+.ev .t{font-weight:700;font-size:13.5px;overflow-wrap:anywhere}.ev .d{font-size:12px;color:var(--mut);margin-top:2px;line-height:1.5}
+.opl{display:inline-block;font-size:11px;line-height:1.5;border-radius:999px;padding:1px 8px;margin:3px 4px 0 0;background:#F1EDF4;color:#4A3A52}.opl.tmp{background:#FFF1D6;color:#7A4A00}.opl.ok{background:#E6F4E8;color:#1F5A2A}.opl.warn{background:#FDE9E4;color:#8A2B2B}
+.osheet{align-items:flex-end;padding:0}@media(min-width:600px){.osheet{align-items:center;padding:16px}}
+.dlg.ofm{max-width:520px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;gap:4px}@media(min-width:600px){.dlg.ofm{border-radius:18px}}
+.ofm .lb{font-size:12.5px;font-weight:700;margin:10px 0 4px;display:flex;justify-content:space-between}.ofm .lb i{font-style:normal;font-weight:400;color:var(--mut)}
+.seg2{display:grid;grid-template-columns:1fr 1fr;background:#EEE9F2;border-radius:12px;padding:3px}.seg2 button{border:0;background:none;padding:9px 0;border-radius:10px;font-weight:700;font-size:14px;color:#5E5666;font-family:inherit}
+.seg2 button.on{background:#fff;color:var(--pri2);box-shadow:0 1px 3px rgba(0,0,0,.12)}.seg2 button.on.hv{color:#9B1C1C}.seg2 button.on.lv{color:#1C3F9B}.seg2.sm button{padding:5px 0;font-size:12.5px}
+.ofm .chips{display:flex;flex-wrap:wrap;gap:6px}.ofm .ch{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;font-family:inherit;color:var(--ink)}
+.ofm .ch.on{border-color:var(--pri);background:#F4ECF6;color:var(--pri2)}.ofm .ch.sm{font-size:12.5px;padding:5px 9px}.ofm .dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.ofm .sub{background:#F8F5FA;border-radius:12px;padding:8px;margin-top:6px}.ofm .sgt{font-size:11.5px;font-weight:700;color:var(--mut);margin:6px 0 3px}
+.ofm .tf{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600}.ofm .tf .row{gap:4px}.ofm .tf input[type=time]{flex:1;min-width:0}
+.ofm .lnk{border:0;background:none;color:var(--pri);font-weight:700;font-size:12.5px;padding:4px;font-family:inherit;cursor:pointer}
+.ofm .dur{margin-top:6px;font-size:12.5px;background:#EEF7EE;color:#1F5A2A;border-radius:8px;padding:5px 9px;font-weight:600}
+.ofm .hit{display:flex;justify-content:space-between;gap:6px;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 9px;margin-top:5px;font-size:12.5px;line-height:1.45;font-family:inherit;color:var(--ink)}.ofm .hit.on{border-color:var(--pri);background:#FBF7FC}
+.ofm .fx{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ofm .fx button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--ink)}.ofm .fx button.on{border-color:var(--pri);background:#F4ECF6}.ofm .fx button.on.tmp{border-color:#E08A00;background:#FFF6E6;color:#7A4A00}.ofm .fx small{font-weight:400;font-size:11px}
+.ofm .mt{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--pri);background:#FBF7FC;border-radius:10px;padding:5px 8px 5px 10px;margin-top:5px;font-size:13.5px}
+.ofm .stp{display:flex;align-items:center;gap:6px}.ofm .stp button{width:30px;height:30px;border-radius:8px;border:0;background:#EEE9F2;font-size:16px;font-weight:700;color:var(--pri2)}.ofm .stp b{min-width:20px;text-align:center}.ofm .stp small{color:var(--mut);min-width:28px}
+.ofm .qa{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.ofm .qa button{font-size:12px;border:1.5px dashed #C9BED2;background:#fff;border-radius:999px;padding:4px 9px;color:#4A3A52;font-family:inherit}
+.ofm textarea{width:100%;font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:8px}
+.btn.ghost.red{color:#8A2B2B;border-color:#E2C4C4}
+.doc table.an{border-collapse:collapse;width:100%;font-size:14pt;margin-top:2mm}.doc table.an td,.doc table.an th{border:1px solid #000;padding:1px 4px;vertical-align:top;text-align:center;font-weight:400;line-height:1.2}.doc table.an th{font-weight:700;background:#F2F2F2}
 .ckb{display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:14px}
 .ckb input{width:20px;height:20px}
 fieldset{border:0;padding:0;margin:0;min-width:0}
@@ -244,7 +268,7 @@ fieldset:disabled{opacity:.55}
         <label class="f">เดือน<select id="rMonth"></select></label>
         <label class="f">รายงาน<select id="rKind">
           <optgroup label="ตารางเวรประจำเดือน"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option><option value="chg">รายการเปลี่ยนแปลงเวร (แนบเบิกค่าตอบแทน)</option></optgroup>
-          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option><option value="insporder">คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน)</option></optgroup></select></label>
+          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option><option value="insporder">คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน)</option><option value="outsum">สรุปไฟดับ + อุปกรณ์ที่ใช้ (รายเดือน)</option></optgroup></select></label>
         <label class="f rRoster">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
         <label class="f rRoster">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
         <label class="f rDoc rLeave hide" style="grid-column:1/-1">ฉบับ<select id="rItem"></select></label>
@@ -256,6 +280,8 @@ fieldset:disabled{opacity:.55}
         <label class="f rDoc rInsp hide">สั่ง ณ วันที่<input type="date" id="rIoDate"></label>
         <div class="rDoc rInsp hide" style="display:flex;align-items:flex-end"><button class="btn ghost" id="rIoSave" style="width:100%">บันทึกเลขที่/วันที่คำสั่ง</button></div>
         <div class="rDoc rLeave hide" style="display:flex;align-items:flex-end"><button class="btn ghost" id="rApSave" style="width:100%">บันทึกเลขที่อนุมัติ</button></div>
+        <label class="rDoc rSign hide row" style="grid-column:1/-1;gap:8px;font-size:13px;font-weight:600"><input type="checkbox" id="rAnnex" checked style="width:20px;height:20px"> พิมพ์ตารางเหตุการณ์ไฟดับแนบท้าย (เฉพาะชุดที่มีไฟดับ)</label>
+        <div class="rDoc rOut hide" style="grid-column:1/-1"><button class="btn ghost" id="rCsv" style="width:100%">ส่งออก CSV (หัวคอลัมน์เดียวกับระบบวิเคราะห์ข้อมูลไฟฟ้า)</button></div>
         <label class="f rDoc rCustom hide">ชื่อผู้อนุมัติ<input type="text" id="rSgName" placeholder="นาย…"></label>
         <label class="f rDoc rCustom hide">ตำแหน่ง<input type="text" id="rSgTitle" placeholder="รักษาการแทน ผจก.กฟส.อ่าวลึก"></label>
       </div>
@@ -337,6 +363,10 @@ fieldset:disabled{opacity:.55}
       <h3>เบอร์โทร / LINE ID / เลขประจำตัว / ตำแหน่ง</h3>
       <div class="muted" style="margin-bottom:6px">ใช้ทำปุ่มโทรออกในหน้าเวรรายวัน · เลขประจำตัวและตำแหน่งใช้ในบันทึกลาเวร/แบบฟอร์มบันทึกการลา · LINE ID = ไอดีที่ใช้ค้นหาเพื่อน (ตั้งในแอป LINE → โปรไฟล์ → ไอดี) · บันทึกด้วย PIN ด้านล่าง</div>
       <div id="sContacts"></div>
+    </div>
+    <div class="card">
+      <h3>อุปกรณ์ที่ใช้แก้ไฟ (ปุ่มในหน้าบันทึกไฟดับ)</h3>
+      <div id="sMats"></div>
     </div>
     <div class="card">
       <h3>LINE แจ้งเตือน</h3>
@@ -518,7 +548,8 @@ function repAuthFor(k){ const a=S.repAuth; if(!a) return null; if(a.r==='duty'&&
 async function renderRepCard(data){
   const el=$('dRep'); if(S.dGroup!=='emp'){el.classList.add('hide');return;} el.classList.remove('hide');
   const key=S.dMonth, d=S.dDay, R=(S.reps&&S.reps[key])||LS.get('rp_'+key)||{};
-  if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; monthReports(key).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
+  if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
+  const OD=((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k.slice(0,10)===key+'-'+String(d).padStart(2,'0')), OT=outTotals(OD);
   const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
   const parts=[['p1','ช่วง 1'],['p3',data.days[d-1].off?'ช่วง 2+3':'ช่วง 3']];
   const st=k=>{const r=R[k]; if(!r) return '<span class="muted">ยังไม่กรอก</span>'; return '<span style="color:#1F5A2A;font-weight:600">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span style="color:#26307A;font-weight:600">ตรวจแล้ว</span>':'');};
@@ -526,6 +557,7 @@ async function renderRepCard(data){
       <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
     <div class="grid2" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
       return `<button class="btn ${S.repOpen===k?'':'ghost'}" data-k="${k}" style="height:auto;min-height:46px;padding:6px 8px;line-height:1.3">${l}<br><small style="font-weight:400">${st(k)}</small></button>`;}).join('')}</div>
+    ${OD.length?`<div class="muted" style="margin-top:6px">⚡ ไฟดับวันนี้: แรงสูง ${OT.hv.n} ครั้ง · แรงต่ำ ${OT.lv.n} ครั้ง${OT.temp.length?' · แก้ชั่วคราว '+OT.temp.length:''}</div>`:''}
     <div id="repEd"></div>`;
   el.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k;renderRepCard(data);});
   $('inspChg').onclick=async ev=>{ev.preventDefault();
@@ -544,9 +576,7 @@ function repEditor(data,k,r){
    <fieldset id="rpDuty" ${canDuty?'':'disabled'}>
     <div class="rp-sec"><h4>๑. เวลามา–กลับ <span class="muted">(${tTh(I.t0)} → ${tTh(I.t1)})</span></h4>
       ${I.names.map(n=>`<div class="rpf" style="grid-template-columns:1fr 92px 92px"><div style="align-self:center">${esc(n)}</div><input type="time" data-arr="${esc(n)}" value="${esc((r.arr||{})[n]||I.t0)}"><input type="time" data-dep="${esc(n)}" value="${esc((r.dep||{})[n]||I.t1)}"></div>`).join('')||'<div class="muted">ไม่มีคนเวรชุดนี้</div>'}</div>
-    <div class="rp-sec"><h4>๒. ไฟฟ้าแรงสูงขัดข้อง</h4><div class="rpf">${num('hvN',hv.n,'ครั้ง')}${num('hvO',hv.out,'ชม.ไฟดับ')}${num('hvW',hv.work,'ชม.ทำงาน')}</div>
-      <h4 style="margin-top:6px">๓. ไฟฟ้าแรงต่ำขัดข้อง</h4><div class="rpf">${num('lvN',lv.n,'ครั้ง')}${num('lvO',lv.out,'ชม.ไฟดับ')}${num('lvW',lv.work,'ชม.ทำงาน')}</div></div>
-    <div class="rp-sec"><h4>๔. แก้ไฟฟ้าขัดข้องไว้ชั่วคราว</h4><div class="rpf" style="grid-template-columns:90px 1fr">${num('tpN',tp.n,'รายการ')}<input type="text" id="tpT" value="${esc(tp.text||'')}" placeholder="รายละเอียด"></div></div>
+    ${outCardHtml(k,canDuty)}
     <div class="rp-sec"><h4>๕. ตรวจระบบสื่อสาร</h4><div class="row"><input type="time" id="cmT" value="${esc(cm.time||I.t0)}" style="width:110px">${yn('cmOk',cm.ok,'ติดต่อได้ทุก กฟฟ.','ติดต่อไม่ได้')}</div>
       <input type="text" id="cmF" value="${esc(cm.fail||'')}" placeholder="ติดต่อไม่ได้ คือ…" style="margin-top:6px"></div>
     <div class="rp-sec"><h4>๖–๗. แนบบันทึก / อื่น ๆ</h4><div class="rpf" style="grid-template-columns:90px 1fr">${num('att',r.att,'ฉบับ')}<input type="text" id="oth" value="${esc(r.other||'')}" placeholder="อื่น ๆ"></div></div>
@@ -564,7 +594,7 @@ function repEditor(data,k,r){
   const rad=n=>{const e=document.querySelector('input[name="'+n+'"]:checked');return e?e.value==='1':null;};
   $('rpSave').onclick=async()=>{
     const arr={},dep={}; $('repEd').querySelectorAll('[data-arr]').forEach(e=>arr[e.dataset.arr]=e.value); $('repEd').querySelectorAll('[data-dep]').forEach(e=>dep[e.dataset.dep]=e.value);
-    const dataO={arr,dep,hv:{n:nv('hvN'),out:nv('hvO'),work:nv('hvW')},lv:{n:nv('lvN'),out:nv('lvO'),work:nv('lvW')},temp:{n:nv('tpN'),text:val('tpT')},
+    const dataO={arr,dep,
       comm:{time:val('cmT'),ok:rad('cmOk'),fail:val('cmF')},att:nv('att'),other:val('oth'),
       insp:{date:val('inD'),time:val('inT'),complete:rad('inC'),missing:val('inM'),ready:rad('inR'),notready:val('inN')}};
     const body=Object.assign({action:'saveReport',k,data:dataO}, auth?{u:auth.u,r:auth.r,x:auth.x,t:auth.t}:{pin:($('rpPin')||{}).value});
@@ -573,7 +603,307 @@ function repEditor(data,k,r){
     catch(e){ msg('rpMsg',e.message,'err'); }
   };
   $('rpPrint').onclick=()=>{ const R=(S.reps&&S.reps[S.dMonth])||{}; S.rPreset={kind:'sign',m:S.dMonth,day:d}; show('viewReport'); };
+  bindOutCard(k,I,data);
 }
+/* ======================================================================
+   เหตุการณ์ไฟดับ — บันทึกโดยคนอยู่เวร (การ์ดในรายงานการอยู่เวร)
+   สาเหตุใช้ CauseType/CauseData ชุดเดียวกับข้อมูลไฟฟ้าขัดข้องของ กฟภ.
+   ฟีดเดอร์/อุปกรณ์/หม้อแปลง อ่านจากระบบ Single Line Diagram (อ่านอย่างเดียว)
+   ====================================================================== */
+const SLD_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
+const FEEDERS0=[['ALA01','#e30613'],['ALA02','#a020f0'],['ALA03','#0033cc'],['ALA05','#00b0f0'],['ALA06','#ff8c00'],['ALA07','#4caf00'],['ALA09','#000000']];
+const CAUSES=[
+ {k:'animal',ic:'🐍',l:'สัตว์',g:[['สัตว์',['งู','ลิง/ค่าง/ชะนี/นางอาย','นก/ค้างคาว','กระรอก/กระแต/หนู','ตุ๊กแก/ตะกวด/กิ้งก่า/ตัวเงินตัวทอง','แมลง/แมง','แมว','สัตว์อื่นๆ']]]},
+ {k:'tree',ic:'🌳',l:'ต้นไม้',g:[['ต้นไม้',['กิ่งไม้หักพาดสาย','ต้นไม้ล้มทับสาย','ลมพัดต้นไม้มาแตะสาย','ต้นไม้เลื้อย/โตมาแตะสาย','เศษกิ่งไม้ใบไม้/ฟาง/ทางมะพร้าวปลิวมาแตะ']]]},
+ {k:'equip',ic:'🔧',l:'อุปกรณ์',g:[['อุปกรณ์',['ชำรุด','โหลดเกินพิกัด','อุปกรณ์ทำงานไม่สัมพันธ์กัน','ทำงานผิดพลาด','การผุกร่อน/สนิม','ติดตั้งไม่ได้มาตรฐาน','สุดวิสัยเกินกว่าเกณฑ์/มาตรฐานที่ กฟภ. กำหนด']]]},
+ {k:'nature',ic:'⛈️',l:'ภัยธรรมชาติ/สิ่งแวดล้อม',g:[['ภัยธรรมชาติ',['พายุฤดูร้อน/พายุดีเปรสชั่น','พายุโซนร้อน/ใต้ฝุ่น','น้ำท่วม (อุทกภัย)','ดินถล่ม/โคลนถล่ม','ไฟป่าจากภัยธรรมชาติ']],['สภาพสิ่งแวดล้อม',['ฟ้าผ่า','ความชื้น','ไอเกลือ','ไฟไหม้','ดินทรุด','น้ำเซาะ/น้ำซึม','ฝุ่น','สภาพสิ่งแวดล้อมอื่นๆ']]]},
+ {k:'ext',ic:'🚗',l:'ยานพาหนะ/บุคคลภายนอก',g:[['ยานพาหนะ',['รถบรรทุก','รถยนต์','รถก่อสร้าง/เครื่องจักรกล/ปั้นจั่น/เครน','รถจักรยานยนต์','ยานพาหนะทางน้ำ','ยานพาหนะอื่นๆ']],['บุคคลภายนอก',['คนตัดต้นไม้','ขโมย','ผู้รับเหมาภายนอก','คนงานพาดสายสื่อสาร','คนละเมิดใช้ไฟ','การกระทำรุนแรงอื่นๆ จากคน']],['วัสดุแปลกปลอม',['สายสื่อสารมาแตะ','ว่าว/โคมลอย/ลูกโป่ง/บั้งไฟ','เศษวัสดุ/ผ้า/เชือก/ถุง/ลวด/ร่ม/รังนก','ป้ายโฆษณา','โคมไฟถนน','วัสดุแปลกปลอมอื่นๆ']]]},
+ {k:'unk',ic:'❓',l:'ไม่ทราบ',g:[]},
+ {k:'other',ic:'•',l:'อื่น ๆ',g:[['ฉุกเฉิน',['ความปลอดภัยของอุปกรณ์ และทรัพย์สิน กฟภ.','ความปลอดภัยของบุคคล','ฉุกเฉินอื่นๆ']],['พนักงานกฟภ.',['คนงาน/พนักงานของ กฟภ.','ผู้รับเหมางานของ กฟภ.','ผู้สั่งการของ กฟภ.']],['เหตุขัดข้องร้ายแรงจากแหล่งผลิต',['แหล่งจ่ายไฟฟ้าจากหน่วยงานภายนอกขัดข้อง']]]}];
+const CAUSE_IC={}; CAUSES.forEach(c=>c.g.forEach(g=>CAUSE_IC[g[0]]=c.ic));
+const WX_PEA={1:'อากาศปกติ',2:'อากาศชื้น / หมอก',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
+const DEV_TH={WR:'รีโคลสเซอร์',WB:'เบรกเกอร์',WS:'สวิตช์',WF:'ฟิวส์',WC:'คาปาซิเตอร์',SW:'สวิตช์',MR:'มิเตอร์ HV',MVMETER:'มิเตอร์ HV',TRANSFORMER:'หม้อแปลง'};
+
+/* ---- ข้อมูลไฟดับรายเดือน ---- */
+async function monthOutages(key,force){
+  S.outs=S.outs||{};
+  if(S.outs[key]&&!force) return S.outs[key];
+  const c=LS.get('out_'+key);
+  const f=apiGet({action:'outages',m:key}).then(j=>{S.outs[key]=j.outages;LS.set('out_'+key,j.outages);return j.outages;});
+  if(c&&!force){ S.outs[key]=c; f.then(n=>{ if(JSON.stringify(n)!==JSON.stringify(c)) refreshView(); }).catch(()=>{}); return c; }
+  return f;
+}
+const outOf=(key,k)=>((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k===k);
+const tMin=s=>s?Date.parse(s+':00+07:00')/60000:null;
+const durMin=(a,b)=>a&&b?Math.max(0,tMin(b)-tMin(a)):null;
+const hrs=m=>m==null?null:Math.round(m/6)/10;
+const hmTh=s=>s?String(s).slice(11,16).replace(':','.'):'';
+const durTxt=m=>m==null?'ยังไม่จ่ายไฟ':(m>=60?Math.floor(m/60)+' ชม. ':'')+(m%60?m%60+' นาที':'');
+function outTotals(L){
+  const t={hv:{n:0,out:0,work:0},lv:{n:0,out:0,work:0},temp:[]};
+  L.forEach(o=>{const g=t[o.lvl]; if(!g) return; g.n++; g.out+=durMin(o.off,o.on)||0; g.work+=durMin(o.ws||o.off,o.we||o.on)||0; if(o.fix==='temp') t.temp.push(o);});
+  ['hv','lv'].forEach(x=>{t[x].out=hrs(t[x].out);t[x].work=hrs(t[x].work);});
+  return t;
+}
+const outWhere=o=>[o.feeder,o.dev&&o.dev.id?((DEV_TH[o.dev.type]&&o.dev.type!=='TRANSFORMER'?DEV_TH[o.dev.type]+' ':o.dev.type==='TRANSFORMER'?'หม้อแปลง ':'')+o.dev.id+(o.dev.desc?' '+o.dev.desc:'')):(o.place||'')].filter(Boolean).join(' · ');
+const outCause=o=>[o.cType,o.cData].filter(Boolean).join(' / ')||(o.cBtn==='unk'?'ไม่ทราบสาเหตุ':'');
+const outMatsTxt=L=>{const m={};L.forEach(o=>(o.mats||[]).forEach(x=>{const k=x.n+'|'+(x.u||'');m[k]=(m[k]||0)+Number(x.q||0);}));return Object.keys(m).map(k=>{const [n,u]=k.split('|');return {n,u,q:m[k]};});};
+
+/* ---- ข้อมูลจาก SLD (แคชในเครื่อง 3 วัน) ---- */
+async function sldData(){
+  if(S.sld) return S.sld;
+  const c=LS.get('sld'); if(c&&c.at>Date.now()-3*864e5){ S.sld=c; return c; }
+  try{
+    const url=(()=>{try{return localStorage.getItem('sld_gas_url')||SLD_API;}catch(e){return SLD_API;}})();
+    const j=await fetch(url).then(r=>r.json());
+    const fd=[], dev=[];
+    (j.feeders||[]).forEach(f=>{fd.push([f.id,f.color]);(f.devices||[]).forEach(d=>dev.push([d.id,d.type,d.rating||'',d.desc||'',f.id,d.lat||null,d.lon||null,d.parentId||'',d.meterCount||0,d.customerImpact||0]));});
+    S.sld={at:Date.now(),fd,dev}; LS.set('sld',S.sld);
+  }catch(e){ S.sld=c||{at:0,fd:FEEDERS0,dev:[]}; }
+  return S.sld;
+}
+/* ผู้ใช้ไฟใต้อุปกรณ์ = รวมมิเตอร์ของหม้อแปลง/มิเตอร์ HV ที่อยู่ใต้อุปกรณ์นั้น */
+function custBelow(id){
+  const s=S.sld; if(!s||!s.dev.length) return null;
+  const me=s.dev.find(d=>d[0]===id); if(me&&me[9]) return me[9];   // ค่าผู้ใช้ไฟที่ระบบ SLD คำนวณไว้
+  if(!s.kids){ s.kids={}; s.byId={}; s.dev.forEach(d=>{s.byId[d[0]]=d; if(d[7]) (s.kids[d[7]]=s.kids[d[7]]||[]).push(d[0]);}); }
+  let n=0,seen=0; const st=[id], vis={};
+  while(st.length){ const x=st.pop(); if(vis[x]) continue; vis[x]=1; const d=s.byId[x]; if(d&&(d[1]==='TRANSFORMER'||d[1]==='MVMETER')){ n+=Number(d[8])||0; seen++; } (s.kids[x]||[]).forEach(k=>st.push(k)); }
+  return seen&&n?n:null;
+}
+const devObj=d=>({id:d[0],type:d[1],rating:d[2],desc:d[3],lat:d[5],lon:d[6]});
+
+/* ---- การ์ดในหน้ารายงานการอยู่เวร ---- */
+function outCardHtml(k,canEdit){
+  const L=outOf(S.dMonth,k), T=outTotals(L);
+  const row=o=>`<div class="ev" data-oid="${esc(o.id)}" ${canEdit?'role="button" tabindex="0"':''}><span class="tag ${o.lvl}">${o.lvl==='hv'?'แรงสูง':'แรงต่ำ'}</span><div style="min-width:0;flex:1">
+     <div class="t">${esc(outWhere(o)||'ไม่ระบุที่เกิดเหตุ')}</div>
+     <div class="d">ดับ ${hmTh(o.off)} – ${o.on?'มา '+hmTh(o.on)+' น.':'ยังไม่จ่ายไฟ'} (${durTxt(durMin(o.off,o.on))})<br>
+     ${outCause(o)?`<span class="opl">${CAUSE_IC[o.cType]||''} ${esc(outCause(o))}</span>`:''}${o.cust?`<span class="opl">ผู้ใช้ไฟ ~${o.cust} ราย</span>`:''}<span class="opl ${o.fix==='temp'?'tmp':''}">${o.fix==='temp'?'แก้ชั่วคราว':'แก้ถาวร'}</span>
+     ${(o.mats||[]).length?`<span class="opl">ใช้ ${esc(o.mats.map(m=>m.n+' ×'+m.q).join(', '))}</span>`:''}
+     ${o.fix==='temp'?(o.patrol&&o.patrol.id?`<span class="opl ok">Patrol: ${esc(o.patrol.status||'ส่งแล้ว')}</span>`:`<span class="opl warn">ยังไม่เข้า Patrol${o.patrol&&o.patrol.err?' — '+esc(o.patrol.err):''}</span>`):''}</div></div></div>`;
+  return `<div class="rp-sec"><h4>๒–๔. เหตุการณ์ไฟดับในเวรนี้</h4>
+    <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hrs(((T.hv.out||0)+(T.lv.out||0))*60)||0}</b><span>ชม. ไฟดับรวม</span></div></div>
+    <div class="evl">${L.map(row).join('')||'<div class="muted" style="padding:8px 0">ยังไม่มีเหตุการณ์ไฟดับ</div>'}</div>
+    ${canEdit?'<button class="btn" type="button" id="outAdd" style="width:100%;margin-top:6px">＋ เพิ่มเหตุการณ์ไฟดับ</button>':''}
+    <div class="muted" style="margin-top:4px">ข้อ ๒–๔ ในบัญชีลงนามคำนวณจากรายการนี้ให้เอง</div></div>`;
+}
+function bindOutCard(k,I,data){
+  const a=$('outAdd'); if(a) a.onclick=()=>outForm(k,I,null,data);
+  document.querySelectorAll('#repEd .ev[data-oid]').forEach(e=>{ if(!e.getAttribute('role')) return; const go=()=>{const o=outOf(S.dMonth,k).find(x=>x.id===e.dataset.oid); if(o) outForm(k,I,o,data);}; e.onclick=go; e.onkeydown=ev=>{if(ev.key==='Enter')go();}; });
+}
+
+/* ---- หน้ากรอก (เลื่อนขึ้นจากด้านล่าง) ---- */
+function outDateFor(k,hm){ // เวลาในเวรนี้ → วันที่จริง (ช่วง 3 หลังเที่ยงคืนเป็นวันรุ่งขึ้น)
+  const d=k.slice(0,10); if(!hm) return null;
+  if(k.endsWith('p3')&&hm<'06:00'){ const t=new Date(d+'T00:00:00Z'); t.setUTCDate(t.getUTCDate()+1); return t.toISOString().slice(0,10)+'T'+hm; }
+  return d+'T'+hm;
+}
+function nowHm(){const t=new Date(Date.now()+7*3600e3);return String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0');}
+function outMatsCfg(){ let L=[]; try{L=JSON.parse(S.boot.config.outMats||'[]');}catch(e){} return L.length?L:[]; }
+function matUsage(){ const c={}; Object.values(S.outs||{}).forEach(L=>L.forEach(o=>(o.mats||[]).forEach(m=>c[m.n]=(c[m.n]||0)+1))); return c; }
+async function outForm(k,I,o,data){
+  const auth=repAuthFor(k), wx=(S.wx||LS.get('wx')||{}).lv||1;
+  const F=o?JSON.parse(JSON.stringify(o)):{lvl:'hv',off:outDateFor(k,nowHm()),on:null,feeder:'',dev:null,cust:null,cBtn:'',cType:'',cData:'',known:'ทราบสาเหตุ',weather:WX_PEA[wx],fix:'perm',mats:[],detail:'',wo:''};
+  F.workSame=!o||(!o.ws&&!o.we)||(o.ws===o.off&&o.we===o.on);
+  let photos=[];
+  const bg=document.createElement('div'); bg.className='dlgBg osheet'; document.body.appendChild(bg);
+  sldData().then(()=>{ if(document.body.contains(bg)) draw(); });
+  const close=()=>bg.remove();
+  function devHits(q){
+    const s=S.sld; if(!s||!s.dev.length) return [];
+    q=q.trim().toLowerCase(); if(q.length<2) return [];
+    const pref=F.lvl==='lv'?{TRANSFORMER:0}:{WR:0,WB:0,WS:1,WF:2,SW:1,MR:3,MVMETER:3,WC:3,TRANSFORMER:4};
+    return s.dev.filter(d=>(!F.feeder||d[4]===F.feeder)&&(d[0].toLowerCase().includes(q)||d[3].toLowerCase().includes(q)))
+      .sort((a,b)=>(pref[a[1]]??5)-(pref[b[1]]??5)).slice(0,8).map(d=>[d,null]);
+  }
+  function near(lat,lon){
+    const s=S.sld; if(!s) return []; const c=Math.cos(lat*Math.PI/180);
+    return s.dev.filter(d=>d[5]&&(!F.feeder||d[4]===F.feeder)&&(F.lvl==='lv'?d[1]==='TRANSFORMER':true))
+      .map(d=>[d,Math.hypot((d[5]-lat)*111,(d[6]-lon)*111*c)]).sort((a,b)=>a[1]-b[1]).slice(0,4);
+  }
+  function draw(){
+    const fd=(S.sld&&S.sld.fd&&S.sld.fd.length?S.sld.fd:FEEDERS0);
+    const cb=CAUSES.find(c=>c.k===F.cBtn);
+    const used=matUsage(), MC=outMatsCfg().slice().sort((a,b)=>(used[b.n]||0)-(used[a.n]||0));
+    const picked=new Set(F.mats.map(m=>m.n));
+    const offHm=F.off?F.off.slice(11,16):'', onHm=F.on?F.on.slice(11,16):'';
+    const dd=durMin(F.off,F.on);
+    bg.innerHTML=`<div class="dlg ofm" role="dialog" aria-modal="true" aria-labelledby="ofT">
+      <div class="row" style="justify-content:space-between"><h3 id="ofT" style="margin:0;color:var(--ink)">${o?'แก้ไขเหตุการณ์ไฟดับ':'เหตุการณ์ไฟดับ'}</h3><button class="lnk" id="ofX" type="button">ปิด</button></div>
+      <div class="lb">1. ระดับแรงดัน</div>
+      <div class="seg2"><button type="button" data-lvl="hv" class="${F.lvl==='hv'?'on hv':''}">⚡ แรงสูง 33 kV</button><button type="button" data-lvl="lv" class="${F.lvl==='lv'?'on lv':''}">แรงต่ำ 400/230 V</button></div>
+      <div class="lb">2. เวลา</div>
+      <div class="grid2"><label class="tf">ไฟดับ<span class="row"><input type="time" id="ofOff" value="${offHm}"><button type="button" class="lnk" data-now="off">ตอนนี้</button></span></label>
+        <label class="tf">ไฟมา / จ่ายไฟได้<span class="row"><input type="time" id="ofOn" value="${onHm}"><button type="button" class="lnk" data-now="on">ตอนนี้</button></span></label></div>
+      <div class="dur">${F.off?'ดับ '+esc(isoShort(F.off.slice(0,10)))+' '+hmTh(F.off)+' น. · ':''}${dd==null?'ยังไม่จ่ายไฟ (ใส่เวลาไฟมาทีหลังได้)':'ไฟดับ '+durTxt(dd)}</div>
+      <label class="ckb" style="margin-top:6px"><input type="checkbox" id="ofWs" ${F.workSame?'checked':''}> เวลาปฏิบัติงาน เท่ากับเวลาไฟดับ</label>
+      ${F.workSame?'':`<div class="grid2"><label class="tf">เริ่มปฏิบัติงาน<input type="time" id="ofWS" value="${(F.ws||F.off||'').slice(11,16)}"></label><label class="tf">เสร็จ<input type="time" id="ofWE" value="${(F.we||F.on||'').slice(11,16)}"></label></div>`}
+      <div class="lb">3. ฟีดเดอร์ <i>จากระบบ SLD</i></div>
+      <div class="chips">${fd.map(([id,c])=>`<button type="button" class="ch ${F.feeder===id?'on':''}" data-fd="${id}"><span class="dot" style="background:${c}"></span>${id}</button>`).join('')}</div>
+      <div class="lb">4. ${F.lvl==='lv'?'หม้อแปลง / จุดที่เกิด':'อุปกรณ์ที่ตัด / จุดที่เกิด'} <i>ไม่บังคับ</i></div>
+      ${F.dev?`<div class="hit on"><div><b>${esc(F.dev.id)}</b> ${esc(DEV_TH[F.dev.type]||F.dev.type||'')} ${esc(F.dev.rating||'')} · ${esc(F.dev.desc||'')}${F.cust?'<br>ผู้ใช้ไฟใต้อุปกรณ์นี้ประมาณ '+F.cust+' ราย (จาก SLD)':''}</div><button type="button" class="lnk" id="ofDevX">เปลี่ยน</button></div>`
+        :`<div class="row" style="gap:6px"><input type="search" id="ofQ" placeholder="${F.lvl==='lv'?'เลขหม้อแปลง หรือชื่อสถานที่':'รหัสอุปกรณ์ เช่น F-09, WR-02 หรือชื่อหมู่บ้าน'}" style="flex:1" autocomplete="off"><button type="button" class="btn ghost" id="ofGps" style="height:40px;padding:0 10px">📍 GPS</button></div>
+        <div id="ofHits"></div>${!S.sld||!S.sld.dev.length?'<div class="muted">กำลังโหลดข้อมูลอุปกรณ์จาก SLD…</div>':''}
+        <input type="text" id="ofPlace" value="${esc(F.place||'')}" placeholder="หรือพิมพ์สถานที่เอง (ไม่พบในรายการ)" style="margin-top:6px">`}
+      ${F.lat&&!F.dev?`<div class="muted">พิกัด GPS ${(+F.lat).toFixed(5)}, ${(+F.lon).toFixed(5)}</div>`:''}
+      <div class="lb">5. สาเหตุ</div>
+      <div class="chips">${CAUSES.map(c=>`<button type="button" class="ch ${F.cBtn===c.k?'on':''}" data-cb="${c.k}">${c.ic} ${c.l}</button>`).join('')}</div>
+      ${cb&&cb.g.length?`<div class="sub"><div class="muted" style="margin-bottom:5px">ระบุย่อย (ไม่บังคับ · ตามรายการของ กฟภ.)</div>${cb.g.map(([gt,items])=>`${cb.g.length>1?`<div class="sgt">${esc(gt)}</div>`:''}<div class="chips">${items.map(x=>`<button type="button" class="ch sm ${F.cType===gt&&F.cData===x?'on':''}" data-ct="${esc(gt)}" data-cd="${esc(x)}">${esc(x)}</button>`).join('')}</div>`).join('')}</div>`:''}
+      <div class="seg2 sm" style="margin-top:6px"><button type="button" data-kn="ทราบสาเหตุ" class="${F.known==='ทราบสาเหตุ'?'on':''}">ทราบสาเหตุ</button><button type="button" data-kn="สันนิษฐาน" class="${F.known==='สันนิษฐาน'?'on':''}">สันนิษฐาน</button></div>
+      <div class="lb">สภาพอากาศขณะเกิดเหตุ</div>
+      <div class="chips">${[1,2,3,4,5,6].map(n=>`<button type="button" class="ch sm ${F.weather===WX_PEA[n]?'on':''}" data-wx="${n}">${n} ${esc(WX_PEA[n])}</button>`).join('')}</div>
+      <div class="lb">6. การแก้ไข</div>
+      <div class="fx"><button type="button" data-fx="perm" class="${F.fix==='perm'?'on':''}">✔ แก้ถาวรแล้ว</button><button type="button" data-fx="temp" class="${F.fix==='temp'?'on tmp':''}">⏳ แก้ชั่วคราว<br><small>ส่งเข้า Patrol ตามแก้ถาวร</small></button></div>
+      ${F.fix==='temp'?`<div class="note warn" style="margin-top:6px">ระบบส่งเข้า Patrol ให้เอง ต้องมีพิกัด (เลือกอุปกรณ์จาก SLD หรือกด GPS)${o&&o.patrol&&o.patrol.id?' · ส่งแล้ว: '+esc(o.patrol.id):''}</div>
+        <label class="tf" style="margin-top:6px">📷 รูปก่อนแก้ (แนบไปกับ Patrol · ไม่บังคับ)<input type="file" id="ofPh" accept="image/*" capture="environment" multiple></label><div class="muted" id="ofPhN">${photos.length?'เลือกแล้ว '+photos.length+' รูป':''}</div>`:''}
+      <div class="lb">7. อุปกรณ์ที่ใช้แก้ไข <i>แตะเพิ่ม · ปรับจำนวน</i></div>
+      ${F.mats.map((m,i)=>`<div class="mt"><span>${esc(m.n)}</span><span class="stp"><button type="button" data-mq="${i}" data-d="-1" aria-label="ลด">−</button><b>${m.q}</b><button type="button" data-mq="${i}" data-d="1" aria-label="เพิ่ม">＋</button><small>${esc(m.u||'')}</small></span></div>`).join('')}
+      <div class="qa">${MC.filter(m=>!picked.has(m.n)).map(m=>`<button type="button" data-ma="${esc(m.n)}" data-u="${esc(m.u)}">＋ ${esc(m.n)}</button>`).join('')}<button type="button" data-ma="__other">＋ อื่น ๆ (พิมพ์เอง)</button></div>
+      <div class="lb">รายละเอียด / สิ่งที่ทำ</div><textarea id="ofDet" rows="2" placeholder="เช่น ฟ้าผ่าลูกถ้วยแตก 1 ลูก บายพาสไว้ก่อน">${esc(F.detail||'')}</textarea>
+      <label class="tf" style="margin-top:6px">เลขใบสั่งงาน (ไม่บังคับ)<input type="text" id="ofWo" value="${esc(F.wo||'')}" inputmode="numeric"></label>
+      ${auth&&auth.r==='duty'?'':`<label class="tf" style="margin-top:6px">PIN ผู้อนุมัติ<input type="password" id="ofPin" inputmode="numeric" autocomplete="off" value="${esc(($('rpPin')||{}).value||'')}"></label>`}
+      <div id="ofMsg"></div>
+      <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">ลบรายการนี้</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">บันทึก</button></div>
+    </div>`;
+    bind();
+  }
+  function keep(){ // เก็บค่าที่พิมพ์ไว้ก่อนวาดใหม่
+    const v=id=>{const e=$(id);return e?e.value:null;};
+    if(v('ofOff')!=null) F.off=v('ofOff')?outDateFor(k,v('ofOff')):null;
+    if(v('ofOn')!=null){ const h=v('ofOn'); if(!h) F.on=null; else { let x=outDateFor(k,h); if(F.off&&x<F.off){const t=new Date(x.slice(0,10)+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+1);x=t.toISOString().slice(0,10)+'T'+h;} F.on=x; } }
+    if(v('ofWS')!=null){ F.ws=v('ofWS')?outDateFor(k,v('ofWS')):null; F.we=v('ofWE')?outDateFor(k,v('ofWE')):null; if(F.ws&&F.we&&F.we<F.ws){const t=new Date(F.we.slice(0,10)+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+1);F.we=t.toISOString().slice(0,10)+'T'+F.we.slice(11);} }
+    if(v('ofDet')!=null) F.detail=v('ofDet'); if(v('ofWo')!=null) F.wo=v('ofWo'); if(v('ofPlace')!=null) F.place=v('ofPlace');
+    F._pin=v('ofPin')!=null?v('ofPin'):F._pin;
+  }
+  function bind(){
+    const on=(sel,fn)=>bg.querySelectorAll(sel).forEach(b=>b.onclick=()=>{keep();fn(b);draw();});
+    $('ofX').onclick=close; if($('ofNo')) $('ofNo').onclick=close;
+    bg.onclick=e=>{ if(e.target===bg) close(); };
+    on('[data-lvl]',b=>{F.lvl=b.dataset.lvl; F.dev=null; F.cust=null;});
+    on('[data-now]',b=>{ const x=outDateFor(k,nowHm()); if(b.dataset.now==='off') F.off=x; else F.on=x; });
+    $('ofWs').onchange=()=>{keep();F.workSame=$('ofWs').checked;draw();};
+    on('[data-fd]',b=>{F.feeder=F.feeder===b.dataset.fd?'':b.dataset.fd; if(F.dev&&F.dev.feeder&&F.dev.feeder!==F.feeder) F.dev=null;});
+    on('[data-cb]',b=>{ const c=CAUSES.find(x=>x.k===b.dataset.cb); F.cBtn=c.k; F.cData=''; F.cType=c.g.length===1?c.g[0][0]:''; if(c.k==='unk') F.known='สันนิษฐาน'; });
+    on('[data-ct]',b=>{ if(F.cType===b.dataset.ct&&F.cData===b.dataset.cd){F.cData='';} else {F.cType=b.dataset.ct;F.cData=b.dataset.cd;} });
+    on('[data-kn]',b=>{F.known=b.dataset.kn;});
+    on('[data-wx]',b=>{F.weather=WX_PEA[b.dataset.wx];});
+    on('[data-fx]',b=>{F.fix=b.dataset.fx;});
+    on('[data-mq]',b=>{ const m=F.mats[+b.dataset.mq]; m.q=Math.max(0,m.q+Number(b.dataset.d)); if(!m.q) F.mats.splice(+b.dataset.mq,1); });
+    bg.querySelectorAll('[data-ma]').forEach(b=>b.onclick=()=>{ keep();
+      if(b.dataset.ma==='__other'){ const n=(prompt('ชื่ออุปกรณ์ที่ใช้')||'').trim(); if(!n) return; const u=(prompt('หน่วย (เช่น ชิ้น, ตัว, เมตร)','ชิ้น')||'ชิ้น').trim(); F.mats.push({n,q:1,u}); }
+      else F.mats.push({n:b.dataset.ma,q:1,u:b.dataset.u}); draw(); });
+    if($('ofDevX')) $('ofDevX').onclick=()=>{keep();F.dev=null;F.cust=null;draw();};
+    const q=$('ofQ'), hits=$('ofHits');
+    const pick=d=>{ keep(); F.dev=Object.assign(devObj(d),{feeder:d[4]}); F.feeder=d[4]; F.cust=custBelow(d[0]); F.place=''; draw(); };
+    const showHits=L=>{ hits.innerHTML=L.map(([d,km],i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])} ${esc(d[2])} · ${esc(d[3])}</span><span class="muted" style="white-space:nowrap">${esc(d[4])}${km!=null?' · '+(km<1?Math.round(km*1000)+' ม.':km.toFixed(1)+' กม.'):''}</span></button>`).join('')||(L===null?'':'<div class="muted" style="margin-top:4px">ไม่พบ — ลองพิมพ์ส่วนอื่นของรหัส หรือพิมพ์สถานที่เองด้านล่าง</div>');
+      hits.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>pick(L[+b.dataset.h][0])); };
+    if(q&&F._near){ showHits(F._near); F._near=null; const m=document.createElement('div'); m.className='muted'; m.textContent='ได้พิกัดแล้ว · แตะเลือกอุปกรณ์ใกล้ที่สุด หรือไม่เลือกก็ได้ (ใช้พิกัด GPS)'; hits.prepend(m); }
+    if(q){ q.oninput=()=>{ const v=q.value.trim(); if(v.length<2){hits.innerHTML='';return;} showHits(devHits(v)); }; }
+    if($('ofGps')) $('ofGps').onclick=()=>{ if(!navigator.geolocation){msg('ofMsg','เครื่องนี้ใช้ GPS ไม่ได้','err');return;} msg('ofMsg','กำลังหาตำแหน่ง…');
+      navigator.geolocation.getCurrentPosition(p=>{ keep(); F.lat=+p.coords.latitude.toFixed(6); F.lon=+p.coords.longitude.toFixed(6); F._near=near(F.lat,F.lon); draw(); },
+        e=>msg('ofMsg','หาตำแหน่งไม่ได้: '+e.message,'err'),{enableHighAccuracy:true,timeout:15000}); };
+    if($('ofPh')) $('ofPh').onchange=async e=>{ photos=[]; for(const f of e.target.files){ try{photos.push(await shrinkPhoto(f));}catch(x){} } $('ofPhN').textContent='เลือกแล้ว '+photos.length+' รูป'; };
+    if($('ofDel')) $('ofDel').onclick=async()=>{ if(!confirm('ลบเหตุการณ์ไฟดับนี้?')) return; keep();
+      try{ msg('ofMsg','กำลังลบ…'); await apiPost(Object.assign({action:'deleteOutage',id:o.id},outAuthBody(auth,F._pin))); await afterSave(); close(); toast('ลบแล้ว'); }catch(x){ msg('ofMsg',x.message,'err'); } };
+    $('ofSave').onclick=async()=>{ keep();
+      if(!F.off){ msg('ofMsg','ใส่เวลาไฟดับ','err'); return; }
+      const body={lvl:F.lvl,off:F.off,on:F.on,ws:F.workSame?F.off:F.ws,we:F.workSame?F.on:F.we,feeder:F.feeder,dev:F.dev,cust:F.cust,lat:F.lat||null,lon:F.lon||null,place:F.place||'',
+        cBtn:F.cBtn,cType:F.cType,cData:F.cData,known:F.known,weather:F.weather,fix:F.fix,mats:F.mats,detail:F.detail,wo:F.wo};
+      if(o) body.id=o.id;
+      $('ofSave').disabled=true; $('ofSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';
+      try{ const j=await apiPost(Object.assign({action:'saveOutage',k,o:body},outAuthBody(auth,F._pin)));
+        let note='';
+        if(photos.length&&j.outage.patrol&&j.outage.patrol.id){ note=await patrolPhotos(j.outage.patrol.id,photos); }
+        await afterSave(); close();
+        toast('บันทึกแล้ว'+(j.outage.patrol&&j.outage.patrol.id&&!(o&&o.patrol&&o.patrol.id)?' · ส่งเข้า Patrol แล้ว':'')+(j.outage.patrol&&j.outage.patrol.err?' · ยังไม่เข้า Patrol: '+j.outage.patrol.err:'')+note);
+      }catch(x){ $('ofSave').disabled=false; $('ofSave').textContent='บันทึก'; msg('ofMsg',x.message,'err'); }
+    };
+  }
+  async function afterSave(){ await monthOutages(S.dMonth,true); renderRepCard(data); }
+  draw();
+}
+function outAuthBody(auth,pin){ return auth&&auth.r==='duty'?{u:auth.u,r:auth.r,x:auth.x,t:auth.t,rk:auth.k}:{pin:pin||($('rpPin')||{}).value||''}; }
+function shrinkPhoto(file){ return new Promise((res,rej)=>{ const im=new Image(), u=URL.createObjectURL(file);
+  im.onload=()=>{ const s=Math.min(1,1280/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res({kind:'before',mimeType:'image/jpeg',base64:c.toDataURL('image/jpeg',.72).split(',')[1],takenAt:new Date().toISOString()}); };
+  im.onerror=rej; im.src=u; }); }
+/* แนบรูปเข้า Patrol ด้วยบัญชีศูนย์รวมงานในเครื่องนี้ */
+async function patrolPhotos(fid,photos){
+  const c=hubCreds(); if(!c.user||!c.pass) return ' · รูปยังไม่ได้แนบ (เครื่องนี้ยังไม่ล็อกอินศูนย์รวมงาน — เพิ่มรูปในแอป Patrol ได้)';
+  try{ const url=(()=>{try{return localStorage.getItem('sld_gas_url')||SLD_API;}catch(e){return SLD_API;}})();
+    const j=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'patrolAddPhoto',changedBy:c.user,changedByPassword:c.pass,parentType:'FINDING',parentId:fid,photos})}).then(r=>r.json());
+    return j.ok?' · แนบรูป '+(j.photos||[]).length+' รูป':' · รูปยังไม่ได้แนบ: '+(j.error||'');
+  }catch(e){ return ' · รูปยังไม่ได้แนบ: '+e.message; }
+}
+
+/* ---- เอกสาร: ตารางเหตุการณ์ไฟดับแนบท้ายบัญชีลงนาม ---- */
+function outAnnexPage(I,L){
+  const pa=dParts(I.a), pb=dParts(I.b);
+  const rows=L.map((o,i)=>`<tr><td>${THD(i+1)}</td><td>${THD(hmTh(o.off))}–${o.on?THD(hmTh(o.on)):'…'}</td><td>${o.lvl==='hv'?'แรงสูง':'แรงต่ำ'}</td><td style="text-align:left">${esc(outWhere(o))}${o.cust?'<br><span style="font-size:12pt">ผู้ใช้ไฟ ~'+THD(o.cust)+' ราย</span>':''}</td><td style="text-align:left">${esc(outCause(o))}</td><td>${o.fix==='temp'?'ชั่วคราว':'ถาวร'}</td><td style="text-align:left">${(o.mats||[]).map(m=>esc(m.n)+' ×'+THD(m.q)).join('<br>')||'-'}</td></tr>`).join('');
+  const M=outMatsTxt(L);
+  return `<div class="page a4p"><div class="doc std m2" style="padding-top:18mm;font-size:15pt">
+    <div style="text-align:center;font-weight:700;font-size:17pt">รายการเหตุการณ์ไฟฟ้าขัดข้อง (แนบท้ายบัญชีลงนาม)</div>
+    <div style="text-align:center">เวรวัน${TH_WDF[pa.wd]}ที่ ${THD(pa.d)} ${TH_MONTH[pa.m]} ${THD(pa.y)} เวลา ${tTh(I.t0)} น. ถึงวัน${TH_WDF[pb.wd]}ที่ ${THD(pb.d)} ${TH_MONTH[pb.m]} ${THD(pb.y)} เวลา ${tTh(I.t1)} น.</div>
+    <table class="an"><colgroup><col style="width:6%"><col style="width:15%"><col style="width:9%"><col style="width:26%"><col style="width:18%"><col style="width:9%"><col style="width:17%"></colgroup>
+      <tr><th>ที่</th><th>เวลาดับ–มา</th><th>ระดับ</th><th>ฟีดเดอร์ / อุปกรณ์</th><th>สาเหตุ</th><th>การแก้ไข</th><th>อุปกรณ์ที่ใช้</th></tr>${rows}</table>
+    ${M.length?`<div style="margin-top:3mm">รวมอุปกรณ์ที่ใช้: ${M.map(m=>esc(m.n)+' ×'+THD(m.q)+(m.u?' '+esc(m.u):'')).join(' · ')}</div>`:''}
+    ${L.some(o=>o.detail)?`<div style="margin-top:2mm">รายละเอียด: ${L.map((o,i)=>o.detail?THD(i+1)+') '+esc(o.detail):'').filter(Boolean).join(' · ')}</div>`:''}
+  </div></div>`;
+}
+
+/* ---- รายงาน: สรุปไฟดับ + อุปกรณ์ที่ใช้ ประจำเดือน ---- */
+function outSummaryPages(key,L,cfg){
+  const {y,m}=parseKey(key), mY=TH_MONTH[m-1]+' '+THD(y+543);
+  const T=outTotals(L), M=outMatsTxt(L).sort((a,b)=>b.q-a.q);
+  const byF={}; L.forEach(o=>{const f=o.feeder||'ไม่ระบุ', x=byF[f]=byF[f]||{hv:0,hvm:0,lv:0,lvm:0,cust:0}; x[o.lvl]++; x[o.lvl+'m']+=durMin(o.off,o.on)||0; x.cust+=o.cust||0;});
+  const byC={}; L.forEach(o=>{const c=o.cType||'ไม่ทราบสาเหตุ'; byC[c]=(byC[c]||0)+1;});
+  const temp=L.filter(o=>o.fix==='temp');
+  const dsh=o=>{const p=dParts(new Date(o.off.slice(0,10)+'T00:00:00Z'));return THD(p.d+' '+TH_MS[p.m]);};
+  const head=`<div style="text-align:center;font-weight:700;font-size:18pt">สรุปเหตุการณ์ไฟฟ้าขัดข้องและอุปกรณ์ที่ใช้แก้ไข</div>
+    <div style="text-align:center;margin-bottom:3mm">${esc(cfg.office)} · ประจำเดือน ${mY} · บันทึกโดยพนักงานอยู่เวรแก้ไฟ</div>`;
+  const p1=`<div class="page a4l"><div class="doc m2" style="padding:12mm 14mm;font-size:15pt">${head}
+    <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:8mm">
+      <div><b>แยกตามฟีดเดอร์</b><table class="an"><tr><th>ฟีดเดอร์</th><th>แรงสูง (ครั้ง)</th><th>ชม.</th><th>แรงต่ำ (ครั้ง)</th><th>ชม.</th><th>ผู้ใช้ไฟ~</th></tr>
+        ${Object.keys(byF).sort().map(f=>{const x=byF[f];return `<tr><td>${esc(f)}</td><td>${THD(x.hv)}</td><td>${THD(hrs(x.hvm))}</td><td>${THD(x.lv)}</td><td>${THD(hrs(x.lvm))}</td><td>${x.cust?THD(x.cust):'-'}</td></tr>`;}).join('')}
+        <tr><th>รวม</th><th>${THD(T.hv.n)}</th><th>${THD(T.hv.out)}</th><th>${THD(T.lv.n)}</th><th>${THD(T.lv.out)}</th><th></th></tr></table>
+        <div style="margin-top:3mm"><b>แยกตามสาเหตุ</b> (ตามกลุ่มสาเหตุของ กฟภ.)</div>
+        <table class="an">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<tr><td style="text-align:left">${esc(c)}</td><td style="width:22%">${THD(n)} ครั้ง</td></tr>`).join('')}</table></div>
+      <div><b>อุปกรณ์ที่ใช้แก้ไขรวมทั้งเดือน</b><table class="an"><tr><th>รายการ</th><th>จำนวน</th></tr>${M.map(x=>`<tr><td style="text-align:left">${esc(x.n)}</td><td>${THD(x.q)} ${esc(x.u||'')}</td></tr>`).join('')||'<tr><td colspan="2">-</td></tr>'}</table>
+        <div style="margin-top:3mm"><b>แก้ชั่วคราว (ตามแก้ถาวรใน Patrol)</b> ${THD(temp.length)} รายการ</div>
+        <table class="an">${temp.map(o=>`<tr><td style="text-align:left">${dsh(o)} · ${esc(outWhere(o))}</td><td style="width:30%">${o.patrol&&o.patrol.id?esc(o.patrol.status||'ส่งแล้ว'):'ยังไม่เข้า Patrol'}</td></tr>`).join('')||'<tr><td>-</td></tr>'}</table></div></div></div></div>`;
+  const per=16, pages=[];
+  for(let i=0;i<Math.max(L.length,1);i+=per){
+    const ch=L.slice(i,i+per);
+    pages.push(`<div class="page a4l"><div class="doc m2" style="padding:12mm 14mm;font-size:14pt">${head}<b>รายการทั้งหมด</b>${L.length>per?' (แผ่นที่ '+THD(i/per+1)+'/'+THD(Math.ceil(L.length/per))+')':''}
+      <table class="an"><colgroup><col style="width:4%"><col style="width:9%"><col style="width:11%"><col style="width:7%"><col style="width:25%"><col style="width:20%"><col style="width:7%"><col style="width:17%"></colgroup>
+      <tr><th>ที่</th><th>วันที่</th><th>เวลาดับ–มา</th><th>ระดับ</th><th>ฟีดเดอร์ / อุปกรณ์</th><th>สาเหตุ</th><th>แก้ไข</th><th>อุปกรณ์ที่ใช้</th></tr>
+      ${ch.map((o,j)=>`<tr><td>${THD(i+j+1)}</td><td>${dsh(o)}</td><td>${THD(hmTh(o.off))}–${o.on?THD(hmTh(o.on)):'…'}</td><td>${o.lvl==='hv'?'แรงสูง':'แรงต่ำ'}</td><td style="text-align:left">${esc(outWhere(o))}</td><td style="text-align:left">${esc(outCause(o))}</td><td>${o.fix==='temp'?'ชั่วคราว':'ถาวร'}</td><td style="text-align:left">${(o.mats||[]).map(m=>esc(m.n)+' ×'+THD(m.q)).join(', ')||'-'}</td></tr>`).join('')||'<tr><td colspan="8">ยังไม่มีบันทึก</td></tr>'}
+      </table></div></div>`);
+  }
+  return p1+pages.join('');
+}
+/* ส่งออก CSV หัวคอลัมน์เดียวกับข้อมูลในระบบวิเคราะห์ข้อมูลไฟฟ้า */
+function outCsv(key,L){
+  const H=['No.','Substation','SubstationName','Feeder','Equipment','EquipmentType','Operate','Date-Time','Duration','PEA','Known','Weather','CauseType','CauseData','Location','Customer','Level','Fix','Materials','Detail','RecordedBy'];
+  const eqT=o=>o.lvl==='lv'?(o.dev&&o.dev.type==='TRANSFORMER'?'Transformer':'Switch'):(o.dev&&/^(WR|WB)$/.test(o.dev.type)?'Breaker & Recloser':'D/F');
+  const thDT=s=>{const y=+s.slice(0,4)+543;return y+s.slice(4,10)+' '+String(+s.slice(11,13))+':'+s.slice(14,16);};
+  const rows=L.map((o,i)=>[i+1,'ALA','ALA (อ่าวลึก)',o.feeder||'',(o.dev&&o.dev.id)||'',eqT(o),'',thDT(o.off),durMin(o.off,o.on)??'',S.boot.config.office||'',o.known||'',o.weather||'',o.cType||'',o.cData||'',(o.dev&&o.dev.desc)||o.place||'',o.cust||'',o.lvl==='hv'?'แรงสูง':'แรงต่ำ',o.fix==='temp'?'ชั่วคราว':'ถาวร',(o.mats||[]).map(m=>m.n+' x'+m.q).join('; '),o.detail||'',o.by||'']);
+  const q=v=>{v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv='﻿'+[H].concat(rows).map(r=>r.map(q).join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='ไฟดับ-อ่าวลึก-'+key+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+/* ---- ตั้งค่า: รายการอุปกรณ์ที่ใช้แก้ไฟ ---- */
+function renderOutMats(){
+  const el=$('sMats'); if(!el) return; const L=outMatsCfg();
+  el.innerHTML=`<textarea id="sMatsT" rows="8" style="width:100%" aria-label="รายการอุปกรณ์">${esc(L.map(m=>m.n+' | '+m.u).join('\n'))}</textarea>
+    <div class="muted">บรรทัดละ 1 รายการ: ชื่อ | หน่วย · ปุ่มในหน้ากรอกเรียงตามที่ใช้บ่อยให้เอง</div>
+    <div class="grid2" style="margin-top:6px"><input type="password" id="sMatsPin" inputmode="numeric" autocomplete="off" placeholder="PIN ผู้อนุมัติ"><button class="btn" id="sMatsSave">บันทึกรายการ</button></div><div id="sMatsMsg"></div>`;
+  $('sMatsSave').onclick=async()=>{ const mats=$('sMatsT').value.split('\n').map(x=>x.split('|')).filter(x=>x[0].trim()).map(x=>({n:x[0].trim(),u:(x[1]||'ชิ้น').trim()}));
+    try{ const j=await apiPost({action:'saveOutMats',mats,pin:$('sMatsPin').value}); S.boot.config.outMats=JSON.stringify(j.mats); LS.set('boot',S.boot); msg('sMatsMsg','บันทึกแล้ว '+j.mats.length+' รายการ'); }catch(e){ msg('sMatsMsg',e.message,'err'); } };
+}
+
 /* ---------- สภาพอากาศ (ระดับ 1–6) ---------- */
 const WX_LV={1:'ปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
 S.wxPick=null; S.wxDur='6h';
@@ -657,6 +987,7 @@ async function renderReport(){
   if(!$('rDate').value) $('rDate').value=todayIso();
   sel.onchange=()=>{S.rWant=null;drawReport();}; $('rKind').onchange=drawReport; $('rDate').onchange=drawReport;
   $('rItem').onchange=drawReport; $('rDay').onchange=drawReport;
+  $('rAnnex').onchange=()=>drawReport();
   $('rSigner').onchange=()=>{S.signerSel=$('rSigner').value;drawReport();};
   ['rSgName','rSgTitle'].forEach(id=>$(id).oninput=()=>{LS.set('signerCustom',{name:$('rSgName').value,title:$('rSgTitle').value});drawReport();});
   const sc=LS.get('signerCustom')||{}; $('rSgName').value=sc.name||''; $('rSgTitle').value=sc.title||'';
@@ -668,11 +999,11 @@ async function currentReportData(){
   const mo=await loadMonth(v); return {key:v,data:mo.data,status:mo.status};
 }
 async function drawReport(){
-  const k=$('rKind').value, isDoc=['leave','leavelog','sign','insporder'].includes(k);
+  const k=$('rKind').value, isDoc=['leave','leavelog','sign','insporder','outsum'].includes(k);
   document.querySelectorAll('.rRoster').forEach(e=>e.classList.toggle('hide',isDoc));
   document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide'));
   if(isDoc){ if($('rMonth').value==='__preview'){$('printArea').innerHTML='<div class="note warn">เอกสารประกอบใช้กับตารางที่บันทึกแล้วเท่านั้น</div>';return;}
-    $('rHint').textContent=k==='leavelog'?'ตั้งค่าเครื่องพิมพ์: A4 แนวนอน · ขอบ 0 (None)':'ตั้งค่าเครื่องพิมพ์: A4 แนวตั้ง · ขอบ 0 (None)';
+    $('rHint').textContent=(k==='leavelog'||k==='outsum')?'ตั้งค่าเครื่องพิมพ์: A4 แนวนอน · ขอบ 0 (None)':'ตั้งค่าเครื่องพิมพ์: A4 แนวตั้ง · ขอบ 0 (None)';
     return drawDocs(k); }
   $('rHint').textContent='ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"'; S.drawSeq=(S.drawSeq||0)+1;
   const r=await currentReportData(); try{ if(r.key&&r.key!=='__preview') S.mrAll=await monthReqs(r.key); }catch(e){}
@@ -849,8 +1180,16 @@ async function drawDocs(k){
     days.forEach(d=>el.add(new Option(TH_WDF[d.wd]+' '+d.d+' '+TH_MS[parseKey(key).m-1]+(d.off?' · วันหยุด':''),String(d.d))));
     el.value=[...el.options].some(o=>o.value===old)?old:'all';
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
-    const R=await monthReports(key), kk=(d,p)=>key+'-'+String(d).padStart(2,'0')+'|'+p;
-    PA.innerHTML=list.map(d=>signPage(key,mo.data,null,d,cfg,'p1',R[kk(d,'p1')],sg)+signPage(key,mo.data,null,d,cfg,'p3',R[kk(d,'p3')],sg)).join('');
+    const [R,OUT]=await Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]), kk=(d,p)=>key+'-'+String(d).padStart(2,'0')+'|'+p, ax=$('rAnnex').checked;
+    const one=(d,p)=>{const OL=OUT.filter(o=>o.k===kk(d,p)); return signPage(key,mo.data,null,d,cfg,p,R[kk(d,p)],sg,OL)+(ax&&OL.length?outAnnexPage(sheetInfo(key,mo.data,d,p),OL):'');};
+    PA.innerHTML=list.map(d=>one(d,'p1')+one(d,'p3')).join('');
+    return;
+  }
+  if(k==='outsum'){
+    $$('.rOut').forEach(e=>e.classList.remove('hide'));
+    const L=await monthOutages(key,true).catch(()=>monthOutages(key));
+    PA.innerHTML=outSummaryPages(key,L,cfg);
+    $('rCsv').onclick=()=>outCsv(key,L);
     return;
   }
   if(k==='insporder'){
@@ -934,7 +1273,7 @@ function sheetInfo(key,data,d,part){
   return {names,ppl,t0,t1,a,b,day,insp:(data.insp||[])[d-1]||'',k:key+'-'+String(d).padStart(2,'0')+'|'+part};
 }
 const tTh=t=>THD(String(t||'').replace(':','.'));
-function signPage(key,data,next,d,cfg,part,rp,sg){
+function signPage(key,data,next,d,cfg,part,rp,sg,OL){
   sg=sg||{name:cfg.mgrName,title:cfg.mgrTitle};
   const I=sheetInfo(key,data,d,part), r=rp||{}, pa=dParts(I.a), pb=dParts(I.b);
   const v=(x,w)=>x!=null&&x!==''?' '+esc(THD(x))+' ':'.'.repeat(Math.round((w||50)/6));
@@ -945,7 +1284,9 @@ function signPage(key,data,next,d,cfg,part,rp,sg){
     const ar=n?((r.arr||{})[n]||I.t0):'', dp=n?((r.dep||{})[n]||I.t1):'';
     rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td>${n?tTh(ar)+' น.':''}</td><td></td><td>${n?tTh(dp)+' น.':''}</td><td></td><td style="font-size:13.2pt">${n?esc(I.ppl[n]):''}</td></tr>`;}
   const dLongTh=dt=>{const p=dParts(dt);return THD(TH_WDF[p.wd]+' '+p.d+' '+TH_MONTH[p.m]+' '+p.y);};
-  const dots=w=>'.'.repeat(w), hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
+  let hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{};
+  if(OL&&OL.length){ const T=outTotals(OL); hv=T.hv; lv=T.lv; tp={n:T.temp.length,text:T.temp.map(o=>[outWhere(o),outCause(o),o.detail].filter(Boolean).join(' ')).join(' / ')}; }
+  const dots=w=>'.'.repeat(w), cm=r.comm||{}, ins=r.insp||{};
   const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
   const inspD=ins.date?new Date(ins.date+'T00:00:00Z'):I.a, inspT=ins.time||I.t0;
   const ip=(S.boot.inspectors||[]).find(x=>x.short===I.insp), inspName=I.insp?(ip?ip.full:fullName(I.insp)):'';
@@ -961,8 +1302,10 @@ function signPage(key,data,next,d,cfg,part,rp,sg){
       <tr><th>ที่</th><th>ชื่อ-สกุล</th><th>เวลามา</th><th>ลงชื่อ</th><th>เวลากลับ</th><th>ลงชื่อ</th><th>หมายเหตุ</th></tr>${rows}</table>
     <div style="white-space:nowrap;overflow:hidden">๒. เหตุการณ์กระแสไฟฟ้าแรงสูงขัดข้อง${v(hv.n,40)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${v(hv.out,45)}ชม. &nbsp;เวลาปฏิบัติงาน${v(hv.work,50)}ชม.</div>
     <div style="white-space:nowrap;overflow:hidden">๓. เหตุการณ์กระแสไฟฟ้าแรงต่ำขัดข้อง${v(lv.n,40)}ครั้ง &nbsp;รวมระยะเวลาไฟดับ${v(lv.out,45)}ชม. &nbsp;เวลาปฏิบัติงาน${v(lv.work,50)}ชม.</div>
-    <div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${v(tp.n,50)}รายการ &nbsp;ดังนี้${tp.text?T(tp.text):dots(200)}</div>
-    <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>
+    ${tp.text?`<div>๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${v(tp.n,50)}รายการ &nbsp;ดังนี้</div>
+    <div style="padding-left:6mm;line-height:1.2;max-height:2.45em;overflow:hidden">${esc(tp.text)}</div>`
+    :`<div style="white-space:nowrap;overflow:hidden">๔. ดำเนินการแก้ไฟฟ้าขัดข้องไว้ชั่วคราว &nbsp;จำนวน${v(tp.n,50)}รายการ &nbsp;ดังนี้${dots(200)}</div>
+    <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>`}
     <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา ${tTh(cm.time||I.t0)} น. ${bx(cm.ok===true).replace('class="bx','style="margin-left:4px" class="bx')}ติดต่อได้ทุก กฟฟ. ${bx(cm.ok===false)}ติดต่อไม่ได้ &nbsp;คือ${cm.fail?T(cm.fail):dots(100)}</div>
     <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${v(r.att,60)}ฉบับ</div>
     <div style="white-space:nowrap;overflow:hidden">๗. อื่น ๆ${r.other?T(r.other):dots(300)}</div>
@@ -1194,7 +1537,7 @@ function renderSet(){
   $('sHol').querySelectorAll('.tg').forEach(b=>b.onclick=()=>{const h=S.boot.holidays[+b.dataset.i];h.pea=!h.pea;b.classList.toggle('on',h.pea);});
   $('sQuota').innerHTML=S.boot.people.emp.map(p=>`<div class="hrow"><div style="flex:1;font-size:14px">${esc(p.full)}</div><input type="number" min="0" max="31" data-n="${esc(p.short)}" value="${p.quota==null?'':p.quota}" placeholder="อัตโนมัติ" style="width:110px"></div>`).join('');
   $('sAvoid').value=S.boot.config.avoidPairs||'';
-  renderContacts(); S.inspEdit=null; renderInsp();
+  renderContacts(); S.inspEdit=null; renderInsp(); renderOutMats();
   $('sStandby').checked=String(S.boot.config.notifyStandby)==='true';
   $('sLine').innerHTML=[...S.boot.people.emp,...S.boot.people.wk].map(p=>`<div class="lk"><span>${esc(p.full)}</span><span style="font-weight:600;color:${p.line?'#1F5A2A':p.group==='WK'?'#5E5666':'#8A4B00'}">${p.line?'✓ ลงทะเบียนแล้ว':p.group==='WK'?'แจ้งผ่านกลุ่มคนงาน':'ยังไม่ลงทะเบียน'}</span></div>`).join('');
 }
@@ -1224,6 +1567,7 @@ $('sSave').onclick=async()=>{
   if(qs.get('rep')&&qs.get('t')){ const k=qs.get('rep'); S.repAuth={k,u:qs.get('u'),r:qs.get('r'),x:qs.get('x'),t:qs.get('t')};
     const k10=k.slice(0,10); S.dMonthWant=k10.slice(0,7); S.dDayWant=+k10.slice(8,10); S.dGroup='emp';
     if(k.length>10) S.repOpen=k; else S.repOpen=k10+'|p1'; }
+  if(view==='viewDaily'&&qs.get('m')&&qs.get('day')&&!qs.get('rep')){ S.dMonthWant=qs.get('m'); S.dDayWant=+qs.get('day'); }
   if(qs.get('g')==='wk'){ S.dGroup='wk'; document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x.dataset.g==='wk')); }
   const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };
   const cached=LS.get('boot');

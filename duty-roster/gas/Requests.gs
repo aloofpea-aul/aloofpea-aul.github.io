@@ -293,3 +293,189 @@ function deleteRequest_(id, revert, who) {
   log_(who.name, 'ลบคำขอ', r.month, r.text + ' | ' + note);
   return { id: id, reverted: reverted, skipped: skipped, note: note };
 }
+
+/* ======================================================================
+ *  เหตุการณ์ไฟดับ (บันทึกโดยคนอยู่เวร) — ชีต Outages
+ *  id | key (yyyy-MM-dd|p1/p3) | data(JSON) | updatedAt | by | deleted
+ *  สาเหตุใช้ CauseType / CauseData ชุดเดียวกับข้อมูลไฟฟ้าขัดข้องของ กฟภ. (ระบบวิเคราะห์ข้อมูลไฟฟ้า)
+ *  แก้ชั่วคราว → ส่งเป็นจุดที่พบใน Patrol (ชีต SLD อ่าวลึก - ฐานข้อมูล) เพื่อตามแก้ถาวร
+ * ====================================================================== */
+
+const OUT_SHEET_ = 'Outages';
+const SLD_SHEET_ID_DEFAULT_ = '1m7dL33F1JwdK60G640xLjlWntkPrY5ulb4tpkpf04LU';
+const OUT_MATS_DEFAULT_ = [
+  ['ฟิวส์ลิงก์ 6K', 'ชิ้น'], ['ฟิวส์ลิงก์ 10K', 'ชิ้น'], ['ฟิวส์ลิงก์ 15K', 'ชิ้น'], ['ฟิวส์ลิงก์ 25K', 'ชิ้น'],
+  ['ฟิวส์ลิงก์ 40K', 'ชิ้น'], ['ฟิวส์ลิงก์ 50K', 'ชิ้น'], ['ฟิวส์ลิงก์ 65K', 'ชิ้น'],
+  ['ฟิวส์ NH 100A', 'ชิ้น'], ['ฟิวส์ NH 160A', 'ชิ้น'], ['ฟิวส์ NH 200A', 'ชิ้น'], ['ฟิวส์ NH 250A', 'ชิ้น'],
+  ['ลูกถ้วยก้านตรง (Pin)', 'ลูก'], ['ลูกถ้วยแขวน (Suspension)', 'ลูก'], ['ลูกถ้วยไลน์โพสต์', 'ลูก'],
+  ['ล่อฟ้า (LA)', 'ชุด'], ['ดรอปเอาต์ฟิวส์คัตเอาต์', 'ชุด'], ['คอนเนคเตอร์', 'ตัว'], ['ฮอตไลน์แคลมป์', 'ตัว'],
+  ['สายอลูมิเนียม', 'เมตร'], ['เทปพันสาย', 'ม้วน']
+].map(function (x) { return { n: x[0], u: x[1] }; });
+
+function outSheet_() {
+  let sh = sheet_(OUT_SHEET_);
+  if (!sh) {
+    sh = ss_().insertSheet(OUT_SHEET_);
+    sh.getRange(1, 1, 1, 6).setValues([['id', 'key', 'data', 'updatedAt', 'by', 'deleted']]).setFontWeight('bold');
+    sh.setFrozenRows(1); sh.getRange('A:B').setNumberFormat('@');
+  }
+  return sh;
+}
+function outRows_() {
+  const sh = outSheet_(); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues().map(function (r, i) {
+    let d = {}; try { d = JSON.parse(r[2] || '{}'); } catch (e) {}
+    return { row: i + 2, id: String(r[0]), k: String(r[1]).replace(/^'/, ''), d: d, deleted: r[5] === true || r[5] === 'TRUE' };
+  });
+}
+/** รายการไฟดับของเดือน (ไม่รวมที่ลบ) + สถานะใน Patrol */
+function outagesOf_(month) {
+  const list = outRows_().filter(function (x) { return !x.deleted && x.k.indexOf(month) === 0; }).map(function (x) { return x.d; });
+  const ids = list.filter(function (o) { return o.patrol && o.patrol.id; }).map(function (o) { return o.patrol.id; });
+  if (ids.length) {
+    const st = patrolStatus_(ids);
+    list.forEach(function (o) { if (o.patrol && st[o.patrol.id]) o.patrol.status = st[o.patrol.id]; });
+  }
+  return list.sort(function (a, b) { return String(a.off).localeCompare(String(b.off)); });
+}
+
+/** สิทธิ์บันทึก: ลิงก์ LINE ของคนเวรชุดนั้น หรือ PIN ผู้อนุมัติ */
+function outAuth_(b, k) {
+  const who = approverByPin_(b.pin);
+  if (who) return who.short || who.name;
+  if (b.r !== 'duty' || !b.t || Number(b.x) < Date.now() || repToken_(String(b.rk || k), b.u, 'duty', b.x) !== b.t)
+    throw new Error('ไม่มีสิทธิ์บันทึก — ใช้ลิงก์ "ลงรายงานการอยู่เวร" จาก LINE ของเวรชุดนี้ หรือใส่ PIN ผู้อนุมัติ');
+  if (String(b.rk || '') !== k) throw new Error('ลิงก์นี้ใช้บันทึกได้เฉพาะเวรของตัวเอง');
+  return b.u;
+}
+
+const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place'];
+function saveOutage_(b) {
+  const k = String(b.k || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k)) throw new Error('รหัสเวรไม่ถูกต้อง');
+  const by = outAuth_(b, k), o = b.o || {};
+  if (o.lvl !== 'hv' && o.lvl !== 'lv') throw new Error('เลือกระดับแรงดัน');
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(o.off || ''))) throw new Error('ใส่เวลาไฟดับ');
+  if (o.on && String(o.on) < String(o.off)) throw new Error('เวลาไฟมาต้องหลังเวลาไฟดับ');
+  const sh = outSheet_(), rows = outRows_();
+  let cur = null;
+  if (o.id) cur = rows.filter(function (x) { return x.id === String(o.id) && !x.deleted; })[0] || null;
+  if (cur && cur.k !== k) throw new Error('รายการนี้อยู่คนละเวร');
+  const d = cur ? cur.d : { id: 'OUT-' + Utilities.formatDate(new Date(), TZ, 'yyMMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100), k: k, created: new Date().toISOString(), createdBy: by };
+  OUT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
+  if (!Array.isArray(d.mats)) d.mats = [];
+  d.mats = d.mats.filter(function (m) { return m && m.n && Number(m.q) > 0; }).map(function (m) { return { n: String(m.n).slice(0, 80), q: Number(m.q), u: String(m.u || '') }; });
+  d.updated = new Date().toISOString(); d.by = by;
+  const isNew = !cur;
+  // แก้ชั่วคราว + มีพิกัด → ส่งเข้า Patrol ครั้งเดียว
+  if (d.fix === 'temp' && !(d.patrol && d.patrol.id)) {
+    try { d.patrol = patrolPush_(d, by); } catch (e) { d.patrol = { err: String(e.message || e) }; }
+  }
+  const rec = [d.id, "'" + k, JSON.stringify(d), new Date(), by, false];
+  if (cur) sh.getRange(cur.row, 1, 1, 6).setValues([rec]); else sh.appendRow(rec);
+  log_(by, isNew ? 'บันทึกไฟดับ' : 'แก้ไขไฟดับ', k.slice(0, 7), d.id + ' ' + (d.feeder || '') + ' ' + ((d.dev && d.dev.id) || ''));
+  if (isNew && d.lvl === 'hv') { try { notifyOutage_(d, by); } catch (e) { log_('system', 'แจ้งไฟดับไม่สำเร็จ', '', String(e)); } }
+  return d;
+}
+function deleteOutage_(b) {
+  const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
+  if (!x) throw new Error('ไม่พบรายการ');
+  const by = outAuth_(b, x.k);
+  outSheet_().getRange(x.row, 4, 1, 3).setValues([[new Date(), by, true]]);
+  log_(by, 'ลบไฟดับ', x.k.slice(0, 7), id);
+  return { id: id };
+}
+function saveOutMats_(b) {
+  const who = approverByPin_(b.pin); if (!who) throw new Error('PIN ไม่ถูกต้อง');
+  const list = (b.mats || []).filter(function (m) { return m && String(m.n || '').trim(); })
+    .map(function (m) { return { n: String(m.n).trim().slice(0, 80), u: String(m.u || 'ชิ้น').trim().slice(0, 12) }; });
+  setConfigKey_('outMats', JSON.stringify(list));
+  log_(who.short || who.name, 'แก้รายการอุปกรณ์แก้ไฟ', '', list.length + ' รายการ');
+  return list;
+}
+function migrateOut_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('MIG_OUT1')) return;
+  const cfg = getConfig_();
+  if (!cfg.outMats) setConfigKey_('outMats', JSON.stringify(OUT_MATS_DEFAULT_));
+  if (!cfg.outAlert) setConfigKey_('outAlert', 'feeder');
+  if (!cfg.sldSheetId) setConfigKey_('sldSheetId', SLD_SHEET_ID_DEFAULT_);
+  outSheet_();
+  props.setProperty('MIG_OUT1', '1');
+}
+
+/* ---------------- LINE: ไฟดับแรงสูง → หผ./ชผ. ----------------
+ * outAlert = feeder (ค่าเริ่มต้น: เฉพาะเบรกเกอร์/รีโคลสเซอร์/ทั้งฟีดเดอร์ — ประหยัดโควต้าฟรี) | all | off */
+function notifyOutage_(d, by) {
+  const mode = String(getConfig_().outAlert || 'feeder');
+  if (mode === 'off') return;
+  const t = String((d.dev && d.dev.type) || '').toUpperCase();
+  const feederLevel = !d.dev || !d.dev.id || /^(WR|WB|WS|CB|MR|WC)$/.test(t);
+  if (mode === 'feeder' && !feederLevel) return;
+  const hm = function (s) { return s ? String(s).slice(11, 16).replace(':', '.') : ''; };
+  const where = [d.feeder, d.dev && d.dev.id ? d.dev.id + (d.dev.desc ? ' ' + d.dev.desc : '') : 'ทั้งฟีดเดอร์'].filter(String).join(' · ');
+  const lines = [where,
+    'ดับ ' + hm(d.off) + ' น.' + (d.on ? ' · มา ' + hm(d.on) + ' น.' : ' · ยังไม่จ่ายไฟ'),
+    'สาเหตุ: ' + ([d.cType, d.cData].filter(String).join(' / ') || 'ยังไม่ทราบ') + (d.cust ? ' · ผู้ใช้ไฟ ~' + d.cust + ' ราย' : ''),
+    'บันทึกโดย ' + by];
+  const u = webUrl_('viewDaily', { m: d.k.slice(0, 7), day: Number(d.k.slice(8, 10)) });
+  const btn = u ? [{ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูรายละเอียด', uri: u } }] : null;
+  approverList_().forEach(function (a) {
+    const id = lineIdOf_(a.short);
+    if (id) push_(id, [flex_('ไฟดับแรงสูง ' + where, bubble_('แจ้งไฟดับแรงสูง', '#8A2B2B', 'ไฟดับ ' + (d.feeder || 'แรงสูง'), lines, btn))], 'change');
+  });
+}
+
+/* ---------------- Patrol (ชีตเดียวกับระบบ SLD) ---------------- */
+function sldSS_() { return SpreadsheetApp.openById(String(getConfig_().sldSheetId || SLD_SHEET_ID_DEFAULT_)); }
+const OUT_PATROL_TYPE_ = ['OUTAGE', 'แก้ไฟดับชั่วคราว (จากเวร)', 'หน้างาน', 1, 'TRUE'];
+function patrolTypeOf_(d) {
+  const mats = (d.mats || []).map(function (m) { return m.n; }).join(' ');
+  if (d.cType === 'ต้นไม้') return 'TREE';
+  if (d.cType === 'สัตว์') return 'ANIMAL';
+  if (d.cData === 'โหลดเกินพิกัด') return 'OVERLOAD';
+  if (/ลูกถ้วย/.test(mats)) return 'INSUL';
+  if (/ดรอปเอาต์/.test(mats)) return 'DROPOUT';
+  if (/คอนเนคเตอร์|แคลมป์/.test(mats)) return 'HOTSPOT';
+  return OUT_PATROL_TYPE_[0];
+}
+function patrolPush_(d, by) {
+  const lat = Number(d.lat != null && d.lat !== '' ? d.lat : d.dev && d.dev.lat), lon = Number(d.lon != null && d.lon !== '' ? d.lon : d.dev && d.dev.lon);
+  if (!isFinite(lat) || !isFinite(lon) || !lat || !lon) return { err: 'ยังไม่มีพิกัด — เลือกอุปกรณ์จาก SLD หรือกด GPS แล้วบันทึกอีกครั้ง' };
+  const ss = sldSS_();
+  const ts = ss.getSheetByName('PatrolType');
+  if (ts) { const codes = ts.getRange(1, 1, ts.getLastRow(), 1).getValues().map(function (r) { return String(r[0]); }); if (codes.indexOf(OUT_PATROL_TYPE_[0]) < 0) ts.appendRow(OUT_PATROL_TYPE_); }
+  const sh = ss.getSheetByName('PatrolFinding'); if (!sh) return { err: 'ไม่พบชีต PatrolFinding ในระบบ SLD' };
+  const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const now = new Date(), id = 'F-' + Utilities.formatDate(now, 'GMT+7', 'yyMMdd-HHmmss') + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  const hm = function (s) { return s ? String(s).slice(11, 16).replace(':', '.') : ''; };
+  const p = personOf_(by);
+  const ds = String(d.off), dth = Number(ds.slice(8, 10)) + '/' + Number(ds.slice(5, 7)) + '/' + (Number(ds.slice(0, 4)) + 543);
+  const detail = ['แก้ไฟดับชั่วคราวจากเวร ' + dth + ' ' + hm(d.off) + ' น.',
+    'สาเหตุ: ' + ([d.cType, d.cData].filter(String).join(' / ') || 'ไม่ทราบ'),
+    d.detail ? 'สิ่งที่ทำ: ' + d.detail : '',
+    (d.mats || []).length ? 'ใช้ไป: ' + d.mats.map(function (m) { return m.n + ' ×' + m.q; }).join(', ') : '',
+    'อ้างอิง ' + d.id].filter(String).join(' · ');
+  const val = { FindingID: id, CreatedAt: now, CreatedBy: (p && p.full) || by, CreatorRole: 'เวรแก้ไฟ', CreatorOrg: 'กฟส.อ่าวลึก',
+    AnchorType: d.dev && d.dev.id ? 'DEVICE' : 'POINT', AnchorRef: (d.dev && d.dev.id) || '', Lat: lat, Lon: lon, GpsAccuracy: '',
+    FeederID: d.feeder || '', ProblemType: patrolTypeOf_(d), Severity: 1, Detail: detail, Source: 'outage', Status: 'ใหม่',
+    NearPlace: (d.dev && d.dev.desc) || d.place || '' };
+  sh.appendRow(head.map(function (h) { return h in val ? val[h] : ''; }));
+  return { id: id, status: 'ใหม่', at: now.toISOString() };
+}
+/** สถานะจุดที่พบใน Patrol (แคช 10 นาที) */
+function patrolStatus_(ids) {
+  const cache = CacheService.getScriptCache(); let m = null;
+  try { m = JSON.parse(cache.get('patrolSt') || 'null'); } catch (e) {}
+  if (!m) {
+    m = {};
+    try {
+      const sh = sldSS_().getSheetByName('PatrolFinding');
+      if (sh && sh.getLastRow() > 1) {
+        const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String), si = head.indexOf('Status'), oi = head.indexOf('Source');
+        sh.getRange(2, 1, sh.getLastRow() - 1, Math.max(si, oi) + 1).getValues().forEach(function (r) { if (String(r[oi]) === 'outage') m[String(r[0])] = String(r[si] || ''); });
+      }
+      cache.put('patrolSt', JSON.stringify(m), 600);
+    } catch (e) { return {}; }
+  }
+  return m;
+}

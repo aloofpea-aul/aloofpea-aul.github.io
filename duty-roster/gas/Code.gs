@@ -337,7 +337,7 @@ function doGet(e) {
   try {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
-      try { migrateInsp_(); migrateEmp_(); } catch (e) {}
+      try { migrateInsp_(); migrateEmp_(); migrateOut_(); } catch (e) {}
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),
@@ -350,6 +350,7 @@ function doGet(e) {
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
+    if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m) });
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) { return json_({ ok: false, error: String(err.message || err) }); }
 }
@@ -360,11 +361,14 @@ function doPost(e) {
   if (b.events) return lineWebhook_(b);            // มาจาก LINE
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    try { migrate_(); migrateInsp_(); migrateEmp_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
+    try { migrate_(); migrateInsp_(); migrateEmp_(); migrateOut_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
     // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- รายงานเวร: ลิงก์มีลายเซ็นจาก LINE หรือ PIN ผู้อนุมัติ ----
     if (b.action === 'saveReport') return json_({ ok: true, report: saveReport_(b) });
+    if (b.action === 'saveOutage') return json_({ ok: true, outage: saveOutage_(b) });
+    if (b.action === 'deleteOutage') return json_({ ok: true, result: deleteOutage_(b) });
+    if (b.action === 'saveOutMats') return json_({ ok: true, mats: saveOutMats_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'request' && !b.approveNow) {
       return json_({ ok: true, request: createRequest_(b, null) });
