@@ -206,6 +206,19 @@ function migrateEmp_() {
   props.setProperty('MIG_EMP1', '1');
 }
 
+/** คืนตาราง ต.ค. 69 ของพุทธภงค์/นทีธร (คำขอถูกลบแบบไม่คืนตาราง 22 ต.ค.) — ทำเฉพาะเมื่อช่องยังเป็นแบบที่เปลี่ยนค้างไว้ */
+function fixPN2610_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('FIX_PN2610')) return;
+  const mo = getMonth_('2026-10'); if (!mo) return;
+  const P = mo.data.emp['พุทธภงค์'], N = mo.data.emp['นทีธร'];
+  if (P && N && N[2] === '2,3' && P[2] === '' && P[3] === '2,3' && N[3] === '' && N[22] === '2,3' && P[22] === '') {
+    P[2] = '2,3'; N[2] = ''; N[3] = '2,3'; P[3] = ''; P[22] = '2,3'; N[22] = '';
+    saveMonth_('2026-10', mo.status, mo.data, mo.stateAfter, mo.note);
+    log_('system', 'คืนตารางเวร', '2026-10', 'พุทธภงค์ 3,23 ต.ค. / นทีธร 4 ต.ค. กลับเป็นแบบเดิม (คำขอถูกลบโดยไม่คืนตาราง)');
+  }
+  props.setProperty('FIX_PN2610', '1');
+}
 /** ชั่วโมงที่เหลือจนจบเวรพนักงานปัจจุบัน (08:30 / 16:30 / 00:30) */
 function shiftHoursLeft_() {
   const now = new Date(), hm = Utilities.formatDate(now, TZ, 'HH:mm'), ymd = Utilities.formatDate(now, TZ, 'yyyy-MM-dd');
@@ -337,7 +350,7 @@ function doGet(e) {
   try {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
-      try { migrateInsp_(); migrateEmp_(); migrateOut_(); } catch (e) {}
+      try { migrateInsp_(); migrateEmp_(); migrateOut_(); fixPN2610_(); } catch (e) {}
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),
