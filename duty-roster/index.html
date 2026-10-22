@@ -59,6 +59,8 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .dlg h3{margin:0;font-size:17px;color:#8A2B2B}.dlg .tx{font-size:13px;background:var(--bg);border-radius:10px;padding:8px 10px}
 .dlg label.ch{display:flex;gap:8px;align-items:flex-start;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer}
 .dlg label.ch.on{border:2px solid var(--pri)}
+.docbar{width:100%;max-width:210mm;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;box-sizing:border-box}.docbar.draft{background:#FFF1D6;color:#7A4A00}.docbar.ok{background:#E6F4E8;color:#1F5A2A}
+.wmk{position:absolute;top:45%;left:-10%;width:120%;text-align:center;transform:rotate(-30deg);font-size:72pt;font-weight:800;color:rgba(200,40,40,.15);letter-spacing:4px;pointer-events:none;z-index:2;font-family:'THSarabunIT9','Sarabun',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .dlg .btn.danger{background:#A23434;color:#fff;border:0}.dlg .btn.danger:disabled{opacity:.85}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -196,6 +198,7 @@ fieldset:disabled{opacity:.55}
   #printArea{gap:0;display:block}
   .page{box-shadow:none;break-after:page;page-break-after:always}
   .page:last-child{break-after:auto;page-break-after:auto}
+  .docbar{display:none!important}
   html,body,.app,main#viewReport,#printArea{margin:0!important;padding:0!important;min-height:0!important;height:auto!important;border:0!important}
   .page.a4p{height:296.5mm}.page.a4l{height:209.5mm}
 }
@@ -1154,7 +1157,17 @@ async function leaveItems(key){
   const giver=r=>{const p=r.payload||{};return r.type!=='swap'?null:(r.requester===p.b?p.b:p.a);};
   (mo.data.changes||[]).filter(c=>c.g==='emp'&&by[c.req]&&(giver(by[c.req])==null||c.from===giver(by[c.req]))).forEach((c,k)=>segsOf(key,c.day,c.code).forEach(sg=>out.push(Object.assign({req:by[c.req],from:c.from,to:c.to,day:c.day,k},sg))));
   out.sort((x,y)=>x.a-y.a||x.s.localeCompare(y.s)||x.k-y.k);
-  return {mo,reqs,items:out};
+  /* ร่าง: คำขอที่ยังรออนุมัติ — จำลองจากตารางปัจจุบัน (ยังไม่เปลี่ยนตารางจริง) */
+  if(!S.pending){ try{ S.pending=(await apiGet({action:'requests'})).requests.pending; }catch(e){ S.pending=[]; } }
+  const drafts=[];
+  (S.pending||[]).filter(r=>r.month===key&&r.payload&&r.payload.g==='emp'&&(r.type==='leave'||r.type==='swap')).forEach(r=>{
+    const p=r.payload, E=mo.data.emp||{};
+    let from,to,day;
+    if(r.type==='leave'){ from=p.a; to=p.r; day=+p.d; } else if(r.requester===p.b){ from=p.b; to=p.a; day=+p.db; } else { from=p.a; to=p.b; day=+p.da; }
+    const code=(E[from]||[])[day-1]; const rq=Object.assign({},r,{created:(p.docDate)||todayIso(),draft:true});
+    segsOf(key,day,code).forEach(sg=>drafts.push(Object.assign({req:rq,from,to,day,k:0,draft:true},sg)));
+  });
+  return {mo,reqs,items:out,drafts};
 }
 const sgT=t=>'<span style="white-space:nowrap">'+esc(THD(t))+'</span>';
 function signerOf(){
@@ -1204,23 +1217,28 @@ async function drawDocs(k){
   $$('.rLeave').forEach(e=>e.classList.remove('hide'));
   const ap=(L.mo.data.approval)||{}; if(document.activeElement!==$('rApNo')) $('rApNo').value=ap.no||''; if(document.activeElement!==$('rApDate')) $('rApDate').value=ap.date||'';
   fillSigner();
-  const it=$('rItem'), old=want.id||it.value, ids=[...new Set(L.items.map(x=>x.req.id))];
-  it.innerHTML=''; it.add(new Option('ทั้งหมด ('+L.items.length+' ฉบับ)','all'));
+  const it=$('rItem'), old=want.id||it.value, ids=[...new Set(L.items.map(x=>x.req.id))], dids=[...new Set(L.drafts.map(x=>x.req.id))];
+  it.innerHTML=''; it.add(new Option('ทั้งหมดที่อนุมัติแล้ว ('+L.items.length+' ฉบับ)','all'));
   ids.forEach(id=>{const r=L.items.find(x=>x.req.id===id).req;it.add(new Option(r.text,id));});
+  if(dids.length){ const g=document.createElement('optgroup'); g.label='ร่าง — รออนุมัติ (ดูตัวอย่าง)'; dids.forEach(id=>{const r=L.drafts.find(x=>x.req.id===id).req; g.appendChild(new Option('(ร่าง) '+r.text,id));}); it.appendChild(g); }
   it.value=[...it.options].some(o=>o.value===old)?old:'all';
-  const sel=L.items.filter(x=>it.value==='all'||x.req.id===it.value);
-  PA.innerHTML=sel.length?sel.map(x=>memoPage(key,x,ap,cfg,signerOf())).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
+  const isDraft=dids.includes(it.value);
+  const sel=isDraft?L.drafts.filter(x=>x.req.id===it.value):L.items.filter(x=>it.value==='all'||x.req.id===it.value);
+  const one=it.value!=='all'&&sel[0]&&sel[0].req;
+  const bar=isDraft?`<div class="docbar draft"><b>ร่าง — รออนุมัติ</b> · ดูได้อย่างเดียว ยังไม่ใช่เอกสารจริง ตารางเวรยังไม่เปลี่ยน · พิมพ์ได้แต่มีลายน้ำ "ร่าง" · อนุมัติแล้วลายน้ำหายเอง</div>`
+    :one?`<div class="docbar ok"><b>อนุมัติแล้ว</b>${one.decidedBy?' โดย '+esc(one.decidedBy):''}${one.decided?' · '+esc(isoShort(one.decided)):''} · พิมพ์ใช้งานได้</div>`:'';
+  PA.innerHTML=sel.length?bar+sel.map(x=>memoPage(key,x,ap,cfg,signerOf(),isDraft)).join(''):'<div class="note">เดือนนี้ยังไม่มีการลา/แลกเวรของพนักงานที่อนุมัติแล้ว</div>';
 }
 const $$=q=>document.querySelectorAll(q);
 const FL=(v,w)=>`<span class="fl" style="min-width:${w||60}px">${esc(v)||'&nbsp;'}</span>`;
 const ORG=(c,w)=>`<div style="${c?'text-align:center':''}"><img src="pea-logo.png" alt="ตราการไฟฟ้าส่วนภูมิภาค" style="width:${w||44}mm;height:auto;display:inline-block"></div>`;
-function memoPage(key,x,ap,cfg,sgn){
+function memoPage(key,x,ap,cfg,sgn,draft){
   const r=x.req, w=(r.payload&&r.payload.why)||{}, A=pInfo(x.from), B=pInfo(x.to), {y,m}=parseKey(key);
   const via=String(cfg.headTitle).replace(/^(หผ\.ปร\.)\s*/,'$1 ');
   const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
   const V=(v,w)=>`<span class="fv${v?'':' e'}"${w?` style="min-width:${w}mm"`:''}>${esc(v)||'&nbsp;'}</span>`;
   const tm=t=>THD(t.replace(':','.'));
-  return `<div class="page a4p"><div class="doc std m2 nodot">
+  return `<div class="page a4p">${draft?'<div class="wmk">ร่าง · รออนุมัติ</div>':''}<div class="doc std m2 nodot">
     ${ORG()}
     <div class="hd"><div><span class="k">จาก</span>${esc(THD(A.pos))}</div><div><span class="k">ถึง</span>${esc(THD(cfg.mgrTitle))}</div>
       <div><span class="k">เลขที่</span></div><div><span class="k">วันที่</span>${esc(THD(isoLong((r.payload&&r.payload.docDate)||r.created)))}</div></div>
@@ -1452,13 +1470,15 @@ $('qSubmit').onclick=async()=>{
   $('qSubmit').disabled=false;
 };
 async function loadRequests(){
-  const j=await apiGet({action:'requests'}), R=j.requests; setDot(R.pending.length);
+  const j=await apiGet({action:'requests'}), R=j.requests; setDot(R.pending.length); S.pending=R.pending;
   $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq"><div class="tx">${esc(r.text)}</div>
       <div class="muted">ผู้ขอ ${esc(r.requester)} · ${r.payload&&r.payload.docDate?'วันที่เสนอ '+esc(thDate(r.payload.docDate))+' · ':''}ยื่นในระบบ ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
+      ${r.payload&&r.payload.g==='emp'&&(r.type==='leave'||r.type==='swap')?`<button class="btn ghost" style="height:38px;width:100%;margin-bottom:6px" data-prev="${esc(r.id)}" data-pm="${esc(r.month)}">👁 ดูตัวอย่างบันทึกลาเวร (ร่าง)</button>`:''}
       <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div>
       <button class="btn ghost" style="height:34px;font-size:12px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบรายการ</button></div>`).join('')
     :'<div class="muted">ไม่มีคำขอค้าง</div>';
   $('pnList').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
+  $('pnList').querySelectorAll('button[data-prev]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.prev};show('viewReport');});
   setTimeout(()=>$('hsList').querySelectorAll('button[data-pid]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.pid};show('viewReport');}),0);
   $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
       <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note?' · '+esc(r.note):''}</div>
