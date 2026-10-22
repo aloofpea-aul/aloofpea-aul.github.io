@@ -175,6 +175,7 @@ body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 .ev .t{font-weight:700;font-size:13.5px;overflow-wrap:anywhere}.ev .d{font-size:12px;color:var(--mut);margin-top:2px;line-height:1.5}
 .opl{display:inline-block;font-size:11px;line-height:1.5;border-radius:999px;padding:1px 8px;margin:3px 4px 0 0;background:#F1EDF4;color:#4A3A52}.opl.tmp{background:#FFF1D6;color:#7A4A00}.opl.ok{background:#E6F4E8;color:#1F5A2A}.opl.warn{background:#FDE9E4;color:#8A2B2B}
 .osheet{align-items:flex-end;padding:0}@media(min-width:600px){.osheet{align-items:center;padding:16px}}
+.dlg.ofm>*{flex-shrink:0}.ofm textarea{min-height:76px}
 .dlg.ofm{max-width:520px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;gap:4px}@media(min-width:600px){.dlg.ofm{border-radius:18px}}
 .ofm .lb{font-size:12.5px;font-weight:700;margin:10px 0 4px;display:flex;justify-content:space-between}.ofm .lb i{font-style:normal;font-weight:400;color:var(--mut)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;background:#EEE9F2;border-radius:12px;padding:3px}.seg2 button{border:0;background:none;padding:9px 0;border-radius:10px;font-weight:700;font-size:14px;color:#5E5666;font-family:inherit}
@@ -755,6 +756,7 @@ async function outForm(k,I,o,data){
     const picked=new Set(F.mats.map(m=>m.n));
     const offHm=F.off?F.off.slice(11,16):'', onHm=F.on?F.on.slice(11,16):'';
     const dd=durMin(F.off,F.on);
+    const st=(bg.querySelector('.dlg.ofm')||{}).scrollTop||0;
     bg.innerHTML=`<div class="dlg ofm" role="dialog" aria-modal="true" aria-labelledby="ofT">
       <div class="row" style="justify-content:space-between"><h3 id="ofT" style="margin:0;color:var(--ink)">${o?'แก้ไขเหตุการณ์ไฟดับ':'เหตุการณ์ไฟดับ'}</h3><button class="lnk" id="ofX" type="button">ปิด</button></div>
       <div class="lb">1. ระดับแรงดัน</div>
@@ -792,6 +794,7 @@ async function outForm(k,I,o,data){
       <div id="ofMsg"></div>
       <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">ลบรายการนี้</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">บันทึก</button></div>
     </div>`;
+    const nd=bg.querySelector('.dlg.ofm'); if(nd&&st) nd.scrollTop=st;
     bind();
   }
   function keep(){ // เก็บค่าที่พิมพ์ไว้ก่อนวาดใหม่
