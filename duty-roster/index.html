@@ -825,9 +825,10 @@ async function leaveItems(key){
   out.sort((x,y)=>x.a-y.a||x.s.localeCompare(y.s)||x.k-y.k);
   return {mo,reqs,items:out};
 }
+const sgT=t=>esc(THD(t)).replace(/\s+(รักษาการแทน|รักษาการในตำแหน่ง|ปฏิบัติหน้าที่แทน)\s*/,'<br>$1 ');
 function signerOf(){
   const cfg=S.boot.config,v=$('rSigner').value;
-  if(v==='head') return {name:cfg.headName,title:String(cfg.headTitle).replace(/กฟส\..*$/,'').trim()+' รักษาการแทน '+cfg.mgrTitle};
+  if(v==='head') return {name:cfg.headName,title:String(cfg.headTitle).trim()+' รักษาการแทน '+cfg.mgrTitle};
   if(v==='custom') return {name:$('rSgName').value.trim(),title:$('rSgTitle').value.trim()};
   return {name:cfg.mgrName,title:cfg.mgrTitle};
 }
@@ -842,14 +843,14 @@ async function drawDocs(k){
   const seq=S.drawSeq=(S.drawSeq||0)+1; const PA={set innerHTML(h){ if(seq===S.drawSeq) $('printArea').innerHTML=h; }};
   $('printArea').innerHTML='<div class="loading">กำลังเตรียมเอกสาร…</div>';
   if(k==='sign'){
-    $$('.rSign').forEach(e=>e.classList.remove('hide'));
+    $$('.rSign').forEach(e=>e.classList.remove('hide')); $$('.rSg').forEach(e=>e.classList.remove('hide')); fillSigner(); const sg=signerOf();
     const mo=await loadMonth(key), days=mo.data.days, el=$('rDay'), old=want.day?String(want.day):el.value;
     el.innerHTML=''; el.add(new Option('ทั้งเดือน ('+days.length*2+' แผ่น · วันละ 2 ชุด)','all'));
     days.forEach(d=>el.add(new Option(TH_WDF[d.wd]+' '+d.d+' '+TH_MS[parseKey(key).m-1]+(d.off?' · วันหยุด':''),String(d.d))));
     el.value=[...el.options].some(o=>o.value===old)?old:'all';
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
     const R=await monthReports(key), kk=(d,p)=>key+'-'+String(d).padStart(2,'0')+'|'+p;
-    PA.innerHTML=list.map(d=>signPage(key,mo.data,null,d,cfg,'p1',R[kk(d,'p1')])+signPage(key,mo.data,null,d,cfg,'p3',R[kk(d,'p3')])).join('');
+    PA.innerHTML=list.map(d=>signPage(key,mo.data,null,d,cfg,'p1',R[kk(d,'p1')],sg)+signPage(key,mo.data,null,d,cfg,'p3',R[kk(d,'p3')],sg)).join('');
     return;
   }
   if(k==='insporder'){
@@ -896,7 +897,7 @@ function memoPage(key,x,ap,cfg,sgn){
     <p class="ind">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</p>
     <div class="sig" style="margin-left:72mm;margin-top:9mm">(ลงชื่อ) ..............................................<br>( ${esc(A.full)} )<br>${A.pos?esc(THD(A.pos))+'<br>':''}ผู้มอบเวร</div>
     <div class="sig" style="margin-left:72mm;margin-top:6mm">(ลงชื่อ) ..............................................<br>( ${esc(B.full)} )<br>${B.pos?esc(THD(B.pos))+'<br>':''}ผู้อยู่เวรแทน</div>
-    <div class="sig" style="margin-top:2mm"><b>อนุมัติ</b><br><br>(ลงชื่อ) ..............................................<br>( ${esc(sgn.name)||'&nbsp;'.repeat(30)} )<br>${esc(THD(sgn.title))}</div>
+    <div class="sig" style="margin-top:2mm"><b>อนุมัติ</b><br><br>(ลงชื่อ) ..............................................<br>( ${esc(sgn.name)||'&nbsp;'.repeat(30)} )<br>${sgT(sgn.title)}</div>
   </div></div>`;
 }
 function leaveLogPages(key,items,cfg){
@@ -933,7 +934,8 @@ function sheetInfo(key,data,d,part){
   return {names,ppl,t0,t1,a,b,day,insp:(data.insp||[])[d-1]||'',k:key+'-'+String(d).padStart(2,'0')+'|'+part};
 }
 const tTh=t=>THD(String(t||'').replace(':','.'));
-function signPage(key,data,next,d,cfg,part,rp){
+function signPage(key,data,next,d,cfg,part,rp,sg){
+  sg=sg||{name:cfg.mgrName,title:cfg.mgrTitle};
   const I=sheetInfo(key,data,d,part), r=rp||{}, pa=dParts(I.a), pb=dParts(I.b);
   const v=(x,w)=>x!=null&&x!==''?' '+esc(THD(x))+' ':'.'.repeat(Math.round((w||50)/6));
   const T=x=>' '+esc(THD(x))+' ';
@@ -972,7 +974,7 @@ function signPage(key,data,next,d,cfg,part,rp){
     <div>ปรากฏว่า &nbsp;พนักงานอยู่เวรฯ และคนงานอยู่เวรฯ</div>
     <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.complete===true?'on':''}" style="margin-left:0"></span>ครบถ้วน ${bx(ins.complete===false)}ไม่ครบถ้วน${ins.missing?T(ins.missing):dots(40)}</div><div style="width:75mm;text-align:center">ทราบ</div></div>
     <div>และความพร้อมยานพาหนะ,เครื่องมือ/เครื่องใช้แก้ไฟฟ้าขัดข้อง</div>
-    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.ready===true?'on':''}" style="margin-left:0"></span>พร้อม ${bx(ins.ready===false)}ไม่พร้อม${ins.notready?T(ins.notready):dots(40)}</div><div class="sig" style="width:75mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${esc(String(cfg.mgrName||''))||dots(48)} )<br>${esc(cfg.mgrTitle)}</div></div>
+    <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.ready===true?'on':''}" style="margin-left:0"></span>พร้อม ${bx(ins.ready===false)}ไม่พร้อม${ins.notready?T(ins.notready):dots(40)}</div><div class="sig" style="width:75mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${esc(String(sg.name||''))||dots(48)} )<br>${sgT(sg.title||'')}</div></div>
     <div class="sig" style="width:80mm;margin-left:10mm;margin-top:-4mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${inspName?esc(inspName):dots(48)} )<br>ผู้ตรวจสอบเวรฯ</div>
   </div></div>`;
 }
@@ -1005,7 +1007,7 @@ function inspOrderPage(key,data,cfg,sgn){
     <div style="margin-top:3mm">${items}</div>
     <p class="ind" style="margin-top:6mm">ทั้งนี้ ตั้งแต่วันที่ ${THD('1')}–${THD(N)} ${mY}</p>
     <div style="margin-top:1.3em;padding-left:50mm">สั่ง ณ วันที่ ${od.date?THD(isoLong(od.date)):'<span class="fv e" style="min-width:40mm"></span>'}</div>
-    <div style="margin-top:3.9em;padding-left:80mm;line-height:1.25"><div style="display:inline-block;text-align:center">(${esc(sgn.name)})<br>${esc(THD(sgn.title))}</div></div>
+    <div style="margin-top:3.9em;padding-left:80mm;line-height:1.25"><div style="display:inline-block;text-align:center">(${esc(sgn.name)})<br>${sgT(sgn.title)}</div></div>
   </div></div>`;
 }
 $('rIoSave').onclick=async()=>{
