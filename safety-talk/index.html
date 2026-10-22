@@ -7,7 +7,7 @@
 <title>Safety Talk อ่าวลึก</title>
 <script src="/pea-hub.js" data-app="safetytalk" data-gate="off" data-name="Safety Talk"></script>
 <link rel="icon" type="image/png" href="/icon-192.png">
-<script src="sheet.js?v=5" defer></script>
+<script src="sheet.js?v=6" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://script.google.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -82,6 +82,21 @@ nav.tabs .dot{position:absolute;top:6px;right:calc(50% - 20px);background:var(--
 .tile b{font-size:24px;display:block}
 .prog{height:6px;background:#E6ECE3;border-radius:3px;overflow:hidden}.prog>div{height:100%;background:var(--g2);transition:width .2s}
 .warn{background:var(--amb2);border:1px solid #E5C770;border-radius:12px;padding:12px}
+.eslots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.esl{aspect-ratio:1;border-radius:12px;position:relative;overflow:hidden;border:0;padding:0;background:#DDE7DA;cursor:pointer}
+.esl img{width:100%;height:100%;object-fit:cover;display:block}
+.esl .n{position:absolute;left:4px;top:4px;background:var(--g);color:#fff;font-size:12px;font-weight:700;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.esl .t{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:10px;text-align:center;padding:1px 2px;white-space:nowrap;overflow:hidden}
+.esl.empty{background:#F6FBF5;border:2px dashed var(--g);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--g);font-size:11px;font-weight:700}
+.esl.empty big{font-size:24px;line-height:1}
+.esl.empty .n{background:#9DB89A}
+.esl.on{outline:4px solid var(--amb);outline-offset:-4px}
+.esl .up{position:absolute;inset:0;background:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center}
+.pkgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:46vh;overflow-y:auto}
+.pkgrid .thumb{cursor:pointer}
+.pkgrid .thumb.used{outline:4px solid var(--g);outline-offset:-4px}
+.pkgrid .thumb .slot{position:absolute;right:4px;top:4px;background:var(--g);color:#fff;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px}
+.pkgrid .thumb .by{right:auto;left:4px;top:auto;bottom:4px}
 .edhint{font-size:13px;color:#4A5A4D;background:#EEF5EC;border-radius:8px;padding:6px 10px;line-height:1.5}
 .edhint.on{background:var(--amb);color:#1F1A00;font-weight:700}
 .edwrap canvas{touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:pointer}
@@ -410,8 +425,8 @@ function vHome() {
   if ($('#bAbs')) $('#bAbs').onclick = () => absenceSheet(n);
   if ($('#bAbsCancel')) $('#bAbsCancel').onclick = async () => { if (await run(() => api('cancelAbsence', { sessionId: n.id }), 'ยกเลิกแล้ว', 'กำลังยกเลิก…')) { await refreshBoot(); render(); } };
   $('#aAll').onclick = e => { e.preventDefault(); go('album'); };
-  $('#bCam').onclick = () => $('#fileCam').click();
-  $('#bPick').onclick = () => $('#filePick').click();
+  $('#bCam').onclick = () => { ED.upTarget = null; $('#fileCam').click(); };
+  $('#bPick').onclick = () => { ED.upTarget = null; $('#filePick').click(); };
   const as = albumSession();
   $('#albumFor').textContent = as ? 'รูปจะเข้าอัลบั้มกิจกรรม ' + thDate(as.date) : '';
   loadThumbs();
@@ -497,8 +512,9 @@ function absenceSheet(n) {
 const UP = { queue: [], items: [], done: 0, total: 0, active: 0, failed: 0 };
 ['fileCam', 'filePick'].forEach(id => $('#' + id).addEventListener('change', e => {
   const files = Array.from(e.target.files || []); e.target.value = '';
-  const as = albumSession(); if (!as || !files.length) return;
-  files.forEach(f => { const it = { f, sid: as.id, thumb: '', done: false }; UP.queue.push(it); UP.items.push(it); });
+  const tgt = ED.upTarget; ED.upTarget = null;
+  const as = tgt ? { id: tgt.sid } : albumSession(); if (!as || !files.length) return;
+  files.forEach(f => { const it = { f, sid: as.id, thumb: '', done: false, tgt: tgt }; UP.queue.push(it); UP.items.push(it); });
   UP.total += files.length; drawUploads(); pump();
 }));
 function pump() {
@@ -509,6 +525,7 @@ function pump() {
       const res = await api('uploadPhoto', { sessionId: it.sid, base64: r.full, mime: 'image/jpeg', thumb: r.thumb });
       LOCAL_THUMB[res.fileId] = r.thumb;
       if (S.photos && S.photos.id === it.sid) S.photos.list.push({ fileId: res.fileId, uploader: res.uploader, at: '', selected: false, order: 0, tag: '', thumb: r.thumb });
+      if (it.tgt) edUploaded(it.tgt, res, r.full, r.thumb);
     })
       .then(() => { UP.done++; }, e => { UP.failed++; UP.lastErr = e.message; })
       .finally(() => { it.done = true; UP.active--; drawUploads(); drawHomeThumbs(); if (!UP.queue.length && !UP.active) { finishUploads(); } else pump(); });
@@ -568,7 +585,7 @@ async function vAlbum() {
     '<div id="upBox"></div><div class="grid2"><button class="btn pri" id="bCam2">' + 'ถ่ายรูป' + '</button><button class="btn" id="bPick2">เลือกจากคลัง</button></div></div>' +
     '<div class="grid3"><span id="albPend" style="display:contents"></span>' + ph.slice().reverse().map(p => '<button class="thumb' + (p.selected ? ' sel' : '') + '" data-f="' + p.fileId + '">' + imgTag(p) + '<span class="by">' + esc(p.uploader) + '</span>' + (p.selected ? '<span class="tag">★ ' + esc(p.tag || 'เลือก') + '</span>' : '') + '</button>').join('') + '</div>';
   drawUploads(); drawAlbumPending(); backfillThumbs(ph.slice().reverse());
-  $('#bCam2').onclick = () => $('#fileCam').click(); $('#bPick2').onclick = () => $('#filePick').click();
+  $('#bCam2').onclick = () => { ED.upTarget = null; $('#fileCam').click(); }; $('#bPick2').onclick = () => { ED.upTarget = null; $('#filePick').click(); };
   $('#view').querySelectorAll('.pill [data-s]').forEach(b => b.onclick = () => { S.albumSid = b.dataset.s; vAlbum(); });
   $('#view').querySelectorAll('[data-f]').forEach(b => b.onclick = () => photoSheet(ph.find(p => p.fileId === b.dataset.f), isPr, myName));
 }
@@ -645,6 +662,7 @@ function detailsSheet(s, after) {
       const fillPos = (name, box) => {
         const p = personOf(name), sfx = S.boot.orgShort;
         if (!p) { box.value = ''; return; }
+        if (p.newsPos) { box.value = p.newsPos; return; }
         let pos = String(p.position || '').trim();
         if (/^admin$/i.test(pos) || pos === '-') pos = '';
         if (/^ผู้จัดการ$/.test(pos)) pos = 'ผจก.';
@@ -739,11 +757,10 @@ async function vNews() {
       '<div style="font-size:14px;line-height:1.7">หัวข้อ: ' + (esc(s.topic) || '<span style="color:var(--red)">ยังไม่กรอก</span>') + '<br>นำโดย: ' + (esc(s.leadBy) || '-') + '<br>ผู้พูด: ' + (STSheet.speakersOf(s).map(p => esc(p.name || '-')).join(', ') || '-') + '<br>ผู้รับจ้าง: ' + (s.contractorCount || 0) + ' คน ' + esc(s.contractorCompany) + '<br>ผู้เข้าร่วม: พนักงาน ' + d.counts.staff + ' · ลูกจ้าง ' + d.counts.hired + ' · ติดภารกิจ/ลา ' + (d.counts.duty + d.counts.leave) + '</div></div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row"><b class="sp">2. จัดรูปในรายงาน <span id="edCount"></span></b><button class="btn" id="edSaveBtn" style="min-height:40px;display:none">บันทึกการจัดรูป</button></div>' +
       '<div class="grid3" id="nMode">' + [['short', 'สั้น + รูป A4'], ['full', 'เต็ม + รูป A4'], ['one', 'ภาพเดียว']].map(m => '<button class="btn' + (m[0] === mode ? ' pri' : '') + '" data-m="' + m[0] + '" style="padding:0 6px;font-size:14px">' + m[1] + '</button>').join('') + '</div>' +
+      '<div class="eslots" id="edSlots"></div><div id="upBox"></div>' +
       '<div class="edhint" id="edHint"></div>' +
       '<div class="edwrap"><canvas class="prev" id="nCanvas"></canvas></div>' +
-      '<div id="edCtl"></div>' +
-      '<div class="row"><b class="sp" style="font-size:14px">อัลบั้มรวม</b><span class="mut" style="font-size:12px">แตะรูปเพื่อใส่ในช่อง</span></div>' +
-      '<div class="edstrip" id="edStrip"><div class="loading" style="padding:8px"><div class="spin"></div></div></div></div>' +
+      '<div id="edCtl"></div></div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:8px"><b>3. ข้อความข่าว</b><textarea class="in" id="nText" rows="7"></textarea></div>' +
     '<button class="btn" style="min-height:56px;background:#06C755;border-color:#06C755;color:#fff;font-size:16px" id="nShare">แชร์เข้า LINE (จากมือถือ)</button>' +
     '<div class="grid2"><button class="btn" id="nSave">บันทึกรูป</button><button class="btn" id="nCopy">คัดลอกข้อความ</button></div>' +
@@ -831,8 +848,8 @@ function edHint() {
   h.className = 'edhint' + (ED.arm || ED.swap ? ' on' : '');
   h.textContent = ED.swap ? 'แตะช่องที่จะสลับกับช่องที่เลือก' :
     ED.arm ? 'แตะช่องในรายงานที่จะวางรูปนี้' :
-    ED.sel >= 0 ? 'ลากในช่องเพื่อเลื่อนรูป · ถ่าง/บีบ 2 นิ้วเพื่อซูม · แตะรูปในอัลบั้มเพื่อเปลี่ยน' :
-    n ? 'แตะรูปในรายงานเพื่อจัด หรือแตะรูปในอัลบั้มแล้วเลือกช่อง' : 'แตะรูปในอัลบั้มด้านล่างเพื่อใส่ลงรายงาน (สูงสุด ' + edMax() + ' รูป)';
+    ED.sel >= 0 ? 'ลากในช่องเพื่อเลื่อนรูป · ถ่าง/บีบ 2 นิ้วเพื่อซูม' :
+    n ? 'แตะ ＋ เพื่อเพิ่มรูป · แตะรูปเพื่อซูม/เลื่อน/เปลี่ยนรูป' : 'แตะ ＋ เพิ่มรูป ด้านบน เพื่อใส่รูปลงรายงาน (สูงสุด ' + edMax() + ' รูป)';
   const cv = $('#nCanvas'); if (cv) cv.style.touchAction = ED.sel >= 0 ? 'none' : 'pan-y';
 }
 function edCtl() {
@@ -844,6 +861,7 @@ function edCtl() {
     '<div class="edrow"><b>ช่องที่ ' + (ED.sel + 1) + '</b><span class="sp"></span>' + B('done', 'เสร็จ', ' style="min-height:38px"') + '</div>' +
     '<div class="edpad">' + B('zo', '－') + B('up', '▲') + B('zi', '＋') + B('left', '◀') + B('reset', 'พอดี') + B('right', '▶') + '<span></span>' + B('down', '▼') + '<span></span></div>' +
     '<div class="pill" style="flex-wrap:wrap">' + TAGS.map(t => '<button data-et="' + esc(t) + '" class="' + (sl.tag === t ? 'on' : '') + '">' + esc(t) + '</button>').join('') + '</div>' +
+    B('change', '🖼 เปลี่ยนรูปช่องนี้', ' style="width:100%"') +
     '<div class="grid3">' + B('prev', '← ย้ายก่อน') + B('swap', 'สลับช่อง', ED.swap ? ' style="background:var(--amb)"' : '') + B('next', 'ย้ายหลัง →') + '</div>' +
     B('del', 'เอารูปนี้ออกจากรายงาน', ' style="color:var(--red);width:100%"') + '</div>';
   el.querySelectorAll('[data-e]').forEach(b => b.onclick = () => edAction(b.dataset.e));
@@ -866,6 +884,7 @@ function edAction(k) {
   if (k === 'done') { ED.sel = -1; ED.swap = false; edCtl(); edDraw(); return; }
   if (k === 'del') { ED.slots.splice(i, 1); ED.sel = -1; ED.swap = false; edChanged(); edCtl(); edDraw(); edStrip(); return; }
   if (k === 'swap') { ED.swap = !ED.swap; edCtl(); return; }
+  if (k === 'change') return edPicker(i);
   if (k === 'prev' || k === 'next') {
     const j = i + (k === 'prev' ? -1 : 1); if (j < 0 || j >= ED.slots.length) return;
     [ED.slots[i], ED.slots[j]] = [ED.slots[j], ED.slots[i]]; ED.slots[i].crop = ED.slots[j].crop = null; ED.sel = j;
@@ -887,11 +906,11 @@ function edPlace(p, i) {
   if (at === i) return;
   if (at >= 0 && i < ED.slots.length) { [ED.slots[at], ED.slots[i]] = [ED.slots[i], ED.slots[at]]; ED.slots[at].crop = ED.slots[i].crop = null; }
   else {
-    const src = p.thumb || LOCAL_THUMB[p.fileId] || '';
-    const sl = { fileId: p.fileId, tag: (ED.slots[i] && ED.slots[i].tag) || p.tag || TAGS[Math.min(i, TAGS.length - 1)], crop: null, data: src, img: null, loading: true };
+    const src = p._full || p.thumb || LOCAL_THUMB[p.fileId] || '';
+    const sl = { fileId: p.fileId, tag: (ED.slots[i] && ED.slots[i].tag) || p.tag || TAGS[Math.min(i, TAGS.length - 1)], crop: null, data: src, img: null, loading: !p._full };
     if (at >= 0) ED.slots.splice(at, 1);
     if (i >= ED.slots.length) { ED.slots.push(sl); i = ED.slots.length - 1; } else ED.slots[i] = sl;
-    edFull(sl);
+    if (!p._full) edFull(sl);
     STSheet.loadImg(src).then(im => { if (!sl.img) { sl.img = im; edDraw(); } });
   }
   ED.sel = i; ED.arm = null; edChanged(); edCtl(); edDraw(); edStrip();
@@ -916,37 +935,76 @@ function edFull(sl) {
   return ED.chain;
 }
 async function edLoadAlbum(id) {
-  try { ED.photos = await api('photos', { sessionId: id }); } catch (e) { const st = $('#edStrip'); if (st) st.innerHTML = '<span class="mut">' + esc(e.message) + '</span>'; return; }
+  try { ED.photos = await api('photos', { sessionId: id }); } catch (e) { ED.photos = []; toast(e.message, true); }
   edStrip(); backfillThumbs(ED.photos); edHint();
 }
+const edThumb = sl => { const p = (ED.photos || []).find(x => x.fileId === sl.fileId); return (p && p.thumb) || LOCAL_THUMB[sl.fileId] || sl.data || ''; };
+/** ช่องรูป 5 ช่องเหนือภาพตัวอย่าง: ช่องว่าง = ＋ เพิ่มรูป · ช่องมีรูป = แตะเพื่อจัด */
 function edStrip() {
-  const st = $('#edStrip'); if (!st || !ED.photos) return;
-  if (!ED.photos.length) { st.innerHTML = '<span class="mut">ยังไม่มีรูปในอัลบั้ม — ถ่าย/อัปโหลดได้ที่หน้าแรก</span>'; return; }
-  st.innerHTML = ED.photos.map(p => {
-    const k = ED.slots.findIndex(sl => sl.fileId === p.fileId), sl = ED.slots[k];
-    return '<button class="thumb' + (ED.arm === p.fileId ? ' arm' : '') + (k >= 0 ? ' used' : '') + '" data-ef="' + p.fileId + '">' + imgTag(p) +
-      (k >= 0 ? '<span class="no">' + (k + 1) + '</span>' : '') + (sl && sl.loading ? '<span class="up"><span class="spin"></span></span>' : '') + '</button>';
-  }).join('');
-  st.querySelectorAll('[data-ef]').forEach(b => b.onclick = () => {
-    const p = ED.photos.find(x => x.fileId === b.dataset.ef);
-    if (ED.sel >= 0) return edPlace(p, ED.sel);
-    const k = ED.slots.findIndex(sl => sl.fileId === p.fileId);
-    if (k >= 0) { ED.sel = k; ED.arm = null; edCtl(); edDraw(); edStrip(); return; }
-    if (ED.slots.length < edMax() && !ED.slots.length) return edPlace(p, 0);
-    ED.arm = ED.arm === p.fileId ? null : p.fileId; edStrip(); edHint();
-    if (ED.arm && ED.slots.length < edMax()) toast('แตะช่องที่จะวาง หรือแตะ "+ เพิ่มช่อง"');
-    edAddBtn();
-  });
-  edAddBtn();
-}
-function edAddBtn() {
-  const st = $('#edStrip'); if (!st) return;
-  const old = st.querySelector('.edadd'); if (old) old.remove();
-  if (ED.arm && ED.slots.length < edMax()) {
-    const b = document.createElement('button'); b.className = 'thumb edadd'; b.innerHTML = '<span>+ เพิ่มช่อง</span>';
-    b.onclick = () => { const p = ED.photos.find(x => x.fileId === ED.arm); edPlace(p, ED.slots.length); };
-    st.prepend(b);
+  const box = $('#edSlots');
+  if (box) {
+    box.innerHTML = Array.from({ length: edMax() }, (_, i) => {
+      const sl = ED.slots[i];
+      if (!sl) return '<button class="esl empty" data-es="' + i + '"><span class="n">' + (i + 1) + '</span><big>＋</big>เพิ่มรูป</button>';
+      return '<button class="esl' + (ED.sel === i ? ' on' : '') + '" data-es="' + i + '"><img src="' + edThumb(sl) + '" alt=""><span class="n">' + (i + 1) + '</span><span class="t">' + esc(sl.tag) + '</span>' +
+        (sl.loading ? '<span class="up"><span class="spin"></span></span>' : '') + '</button>';
+    }).join('');
+    box.querySelectorAll('[data-es]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.es;
+      if (!ED.slots[i]) return edPicker(ED.slots.length);
+      ED.sel = ED.sel === i ? -1 : i; ED.swap = false; edCtl(); edDraw(); edStrip();
+      if (ED.sel >= 0) $('#nCanvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   }
+  if (ED.pickerRefresh) ED.pickerRefresh();
+}
+/** หน้าต่างเลือกรูปใส่ช่อง: ถ่ายใหม่ / เลือกจากเครื่อง / แตะรูปจากอัลบั้มรวม */
+function edPicker(i) {
+  i = Math.min(i, ED.slots.length, edMax() - 1);
+  let tag = (ED.slots[i] && ED.slots[i].tag) || TAGS[Math.min(i, TAGS.length - 1)];
+  sheet('<div class="row"><b class="sp" style="font-size:18px">' + (ED.slots[i] ? 'เปลี่ยนรูปช่อง ' : 'เลือกรูปใส่ช่อง ') + (i + 1) + '</b><button class="btn" data-x style="min-height:36px">ปิด ✕</button></div>' +
+    '<div class="grid2"><button class="btn pri" data-cam>📷 ถ่ายรูปใหม่</button><button class="btn" data-pick>🖼 เลือกจากเครื่อง</button></div>' +
+    '<div class="mut" style="font-size:13px">ป้ายรูป</div><div class="pill" style="flex-wrap:wrap" id="pkTags"></div>' +
+    '<div class="mut" style="font-size:13px" id="pkCnt">อัลบั้มรวม</div><div class="pkgrid" id="pkGrid"></div>', (el, close) => {
+      const done = () => { ED.pickerRefresh = null; close(); };
+      el.parentNode.addEventListener('click', e => { if (e.target === el.parentNode) ED.pickerRefresh = null; });
+      el.querySelector('[data-x]').onclick = done;
+      const up = id => { ED.upTarget = { sid: S.news.session.id, slot: i, tag: tag }; done(); $('#' + id).click(); };
+      el.querySelector('[data-cam]').onclick = () => up('fileCam');
+      el.querySelector('[data-pick]').onclick = () => up('filePick');
+      const drawTags = () => {
+        el.querySelector('#pkTags').innerHTML = TAGS.map(t => '<button data-t="' + esc(t) + '" class="' + (t === tag ? 'on' : '') + '">' + esc(t) + '</button>').join('');
+        el.querySelectorAll('#pkTags [data-t]').forEach(b => b.onclick = () => { tag = b.dataset.t; drawTags(); });
+      };
+      ED.pickerRefresh = () => {
+        const g = el.querySelector('#pkGrid'); if (!g) return;
+        if (!ED.photos) { g.innerHTML = '<div class="loading"><div class="spin"></div></div>'; return; }
+        el.querySelector('#pkCnt').textContent = 'อัลบั้มรวม (' + ED.photos.length + ' รูป) — แตะรูปเพื่อใส่';
+        if (!ED.photos.length) { g.innerHTML = '<div class="mut" style="grid-column:1/-1">ยังไม่มีรูป — กด "ถ่ายรูปใหม่" หรือ "เลือกจากเครื่อง"</div>'; return; }
+        g.innerHTML = ED.photos.map(p => {
+          const k = ED.slots.findIndex(sl => sl.fileId === p.fileId);
+          return '<button class="thumb' + (k >= 0 ? ' used' : '') + '" data-pf="' + p.fileId + '">' + imgTag(p) + (k >= 0 ? '<span class="slot">ช่อง ' + (k + 1) + '</span>' : '') +
+            (p.uploader ? '<span class="by">' + esc(String(p.uploader).split(/\s+/)[0]) + '</span>' : '') + '</button>';
+        }).join('');
+        g.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => {
+          const p = ED.photos.find(x => x.fileId === b.dataset.pf);
+          done(); edPlace(p, i); if (ED.slots[ED.sel]) { ED.slots[ED.sel].tag = tag; edCtl(); edStrip(); edDraw(); }
+        });
+      };
+      drawTags(); ED.pickerRefresh();
+    });
+}
+/** รูปที่ถ่าย/เลือกจากหน้าต่างเลือกรูป → ใส่ช่องที่กดไว้ทันที (รูปถัดไปเติมช่องว่างต่อ) */
+function edUploaded(tgt, res, full, thumb) {
+  if (!S.news || S.news.session.id !== tgt.sid) return;
+  const p = { fileId: res.fileId, uploader: res.uploader, thumb: thumb, selected: false, tag: '' };
+  if (ED.photos) ED.photos.push(p);
+  const pf = Object.assign({ _full: full }, p);
+  const first = !tgt.used, i = first ? tgt.slot : ED.slots.length; tgt.used = true;
+  if (i >= edMax()) { edStrip(); return; }
+  edPlace(pf, i);
+  const sl = ED.slots[ED.sel]; if (!sl) return;
+  sl.tag = first ? tgt.tag : TAGS[Math.min(ED.sel, TAGS.length - 1)]; edCtl(); edStrip();
 }
 function edHit(e) {
   const cv = $('#nCanvas'), r = cv.getBoundingClientRect(), k = ED.W / r.width;
