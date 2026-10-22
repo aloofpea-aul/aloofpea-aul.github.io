@@ -106,6 +106,8 @@ nav.bot button{position:relative}
 .loading{padding:40px;text-align:center;color:var(--mut)}
 
 /* ===================== รายงาน (พิมพ์) ===================== */
+.fitbar{position:sticky;top:calc(var(--hdrH,86px) + 4px);z-index:4;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-radius:12px;padding:6px 8px 6px 12px;margin:0 0 8px;box-shadow:0 2px 8px rgba(0,0,0,.12);font-size:12.5px;color:var(--mut)}
+.fitbar .btn{height:36px;padding:0 12px;font-size:13px}
 #printArea{display:flex;flex-direction:column;gap:16px;align-items:safe center;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
 /* หน้ารายงาน: คอมเห็นเอกสารเต็มหน้า · มือถือเลื่อนซ้าย-ขวาได้ */
 body.wide .app{max-width:none}
@@ -200,6 +202,8 @@ fieldset:disabled{opacity:.55}
   .app{padding:0;max-width:none}
   main#viewReport{padding:0}
   #printArea{gap:0;display:block}
+  .fitbar{display:none!important}
+  #printArea .page{zoom:1!important}
   .page{box-shadow:none;break-after:page;page-break-after:always}
   .page:last-child{break-after:auto;page-break-after:auto}
   .docbar{display:none!important}
@@ -299,6 +303,7 @@ fieldset:disabled{opacity:.55}
       <div class="muted" style="margin-top:6px" id="rHint">ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"</div>
       <div id="rMsg"></div>
     </div>
+    <div id="fitBar" class="fitbar hide"><span id="fitTx"></span><button class="btn ghost" id="fitBtn" type="button"></button></div>
     <div id="printArea"></div>
   </main>
 
@@ -915,6 +920,21 @@ function renderOutMats(){
     try{ const j=await apiPost({action:'saveOutMats',mats,pin:$('sMatsPin').value}); S.boot.config.outMats=JSON.stringify(j.mats); LS.set('boot',S.boot); msg('sMatsMsg','บันทึกแล้ว '+j.mats.length+' รายการ'); }catch(e){ msg('sMatsMsg',e.message,'err'); } };
 }
 
+/* ---------- มือถือ: ย่อเอกสารพอดีจอ (ค่าเริ่มต้น) · กด "ขยาย" ดูขนาดจริงแล้วเลื่อนซ้าย-ขวา ---------- */
+S.fit=true;
+function fitPages(){
+  const pa=$('printArea'), bar=$('fitBar'); if(!pa||!bar) return;
+  const pages=[...pa.querySelectorAll('.page')], narrow=window.innerWidth<820&&pages.length>0;
+  bar.classList.toggle('hide',!narrow);
+  pages.forEach(p=>p.style.zoom='');
+  if(!narrow) return;
+  if(S.fit){ const w=pa.clientWidth-2; pages.forEach(p=>{ const z=Math.min(1,w/p.offsetWidth); p.style.zoom=z.toFixed(3); }); }
+  $('fitTx').textContent=S.fit?'ย่อพอดีจอ · แตะขยายเพื่ออ่านรายละเอียด':'ขนาดจริง · เลื่อนซ้าย-ขวาดูได้';
+  $('fitBtn').textContent=S.fit?'🔍 ขยาย':'↙ พอดีจอ';
+}
+$('fitBtn').onclick=()=>{ S.fit=!S.fit; fitPages(); };
+new MutationObserver(()=>fitPages()).observe($('printArea'),{childList:true});
+window.addEventListener('resize',()=>{ if(currentView()==='viewReport') fitPages(); });
 /* ---------- สภาพอากาศ (ระดับ 1–6) ---------- */
 const WX_LV={1:'ปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
 S.wxPick=null; S.wxDur='6h';
