@@ -274,6 +274,7 @@ function shiftMessage_(kind, ymd, name, dd) {
   if (name && dd.emp[name] !== 'S') {
     const rl = repLink_(ymd + '|' + (kind === 'emp1' ? 'p1' : 'p3'), name, 'duty');
     if (rl) body.push({ type: 'button', style: 'secondary', height: 'sm', margin: 'md', action: { type: 'uri', label: 'ลงรายงานการอยู่เวร', uri: rl } });
+    if (rl) body.push({ type: 'button', style: 'primary', color: '#A23434', height: 'sm', margin: 'md', action: { type: 'uri', label: '⚡ บันทึกไฟดับ', uri: rl + '&out=1' } });
   }
   const ins = inspOf_(ymd); if (ins) body.push({ type: 'text', text: 'ผู้ตรวจเวรวันนี้: ' + personOf_(ins).full, size: 'xs', color: '#6B6372', margin: 'md', wrap: true });
   const sb = who_(dd.emp, function (c) { return c === 'S'; });
@@ -570,6 +571,13 @@ function handleEvent_(ev) {
       (o.lv >= 5 ? '\nแจ้ง หผ.ปร. / ชผ. แล้ว' : '') + '\nพิมพ์ "อากาศ อัตโนมัติ" เพื่อยกเลิก')]);
   }
   if (/^อากาศ$/.test(t)) { const w = wxNow_(); return reply_(ev.replyToken, [text_(wxLines_().join('\n') + '\n\nตั้งเอง: อากาศ 1–6 (เฉพาะคนอยู่เวร / หผ.ปร. / ชผ.)\n1 ปกติ · 2 ชื้น · 3 ฝนตก · 4 ลมแรง · 5 ฝนตก ลมแรง · 6 ฝนตก ฟ้าคะนอง')]); }
+  if (/^ไฟดับ$/.test(t)) {
+    const blk = myRecentBlock_(me.short);
+    if (!blk) return reply_(ev.replyToken, [text_('ไม่พบเวรของคุณที่กำลังอยู่ หรือเพิ่งจบภายใน 12 ชม.\nผู้อนุมัติบันทึกได้ที่หน้าเวรรายวัน (ใช้ PIN)\n' + (webUrl_('viewDaily') || ''))]);
+    const lab = blk.k.slice(11) === 'p1' ? 'ช่วง 1' : 'ช่วง 3';
+    return reply_(ev.replyToken, [flex_('บันทึกไฟดับ', bubble_('บันทึกเหตุการณ์ไฟดับ', '#A23434', thDateLong_(blk.k.slice(0, 10)) + ' · ' + lab,
+      ['ลิงก์นี้ใช้ได้ 48 ชม. เฉพาะ ' + me.full], [{ type: 'button', style: 'primary', color: '#A23434', height: 'sm', action: { type: 'uri', label: '⚡ บันทึกไฟดับ', uri: repLink_(blk.k, me.short, 'duty') + '&out=1' } }]))]);
+  }
   if (/^รายงานเวร$/.test(t)) {
     const blk = myRecentBlock_(me.short);
     const isAppr = approverList_().some(function (a) { return a.short === me.short; });

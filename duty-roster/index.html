@@ -106,6 +106,7 @@ nav.bot button{position:relative}
 .loading{padding:40px;text-align:center;color:var(--mut)}
 
 /* ===================== รายงาน (พิมพ์) ===================== */
+.outbtn{width:100%;height:auto;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:#A23434;font-size:17px}.outbtn small{font-size:12px;font-weight:500;opacity:.9}
 .fitbar{position:sticky;top:calc(var(--hdrH,86px) + 4px);z-index:4;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-radius:12px;padding:6px 8px 6px 12px;margin:0 0 8px;box-shadow:0 2px 8px rgba(0,0,0,.12);font-size:12.5px;color:var(--mut)}
 .fitbar .btn{height:36px;padding:0 12px;font-size:13px}
 #printArea{display:flex;flex-direction:column;gap:16px;align-items:safe center;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
@@ -234,6 +235,7 @@ fieldset:disabled{opacity:.55}
       <div style="font-size:17px;font-weight:700" id="dTitle"></div>
       <div class="muted" id="dTag" style="font-weight:600"></div>
     </div>
+    <button class="btn outbtn hide" id="dOut" type="button"><span>⚡ บันทึกไฟดับ</span><small id="dOutSub"></small></button>
     <div id="dChg" class="card chg hide"></div>
       <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="card hide" id="dRep"></div>
@@ -532,6 +534,9 @@ async function renderDaily(){
   $('dRows').innerHTML=shiftRows(data,S.dGroup,S.dDay-1).map(r=>`<div class="card duty"><div class="chip" style="background:${r.bg};color:${r.fg}"><small>${r.l}</small><b>${r.n}</b></div><div style="flex:1;min-width:0"><div class="tm">${r.t}</div>${
     typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(n=>personRow(n,NOTE[n])).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
   $('dSign').classList.toggle('hide',S.dGroup!=='emp');
+  { const ck=curBlockKey(), ok=S.dGroup==='emp'&&S.boot.months.some(x=>x.month===ck.slice(0,7)); $('dOut').classList.toggle('hide',!ok);
+    if(ok){ const d=new Date(ck.slice(0,10)+'T00:00:00Z'); const md=(S.months[ck.slice(0,7)]||{}).data, dy=md&&md.days[d.getUTCDate()-1]; $('dOutSub').textContent='เวรตอนนี้: '+(ck.endsWith('p1')?'ช่วง 1':dy&&dy.off?'ช่วง 2+3':'ช่วง 3')+' · '+d.getUTCDate()+' '+TH_MS[d.getUTCMonth()];
+      $('dOut').onclick=()=>{ S.dMonth=ck.slice(0,7); S.dDay=+ck.slice(8,10); $('dMonth').value=S.dMonth; S.repOpen=ck; S.openOut=ck; renderDaily().then(()=>{ const e=$('dRep'); e&&e.scrollIntoView({block:'start'}); }); }; } }
   renderRepCard(data);
   renderWx();
   $('dSign').onclick=()=>{S.rPreset={kind:'sign',m:S.dMonth,day:S.dDay};show('viewReport');};
@@ -620,6 +625,7 @@ function repEditor(data,k,r){
   };
   $('rpPrint').onclick=()=>{ const R=(S.reps&&S.reps[S.dMonth])||{}; S.rPreset={kind:'sign',m:S.dMonth,day:d}; show('viewReport'); };
   bindOutCard(k,I,data);
+  if(S.openOut===k){ S.openOut=null; if($('outAdd')) setTimeout(()=>outForm(k,I,null,data),150); }
 }
 /* ======================================================================
    เหตุการณ์ไฟดับ — บันทึกโดยคนอยู่เวร (การ์ดในรายงานการอยู่เวร)
@@ -689,6 +695,10 @@ function custBelow(id){
 }
 const devObj=d=>({id:d[0],type:d[1],rating:d[2],desc:d[3],lat:d[5],lon:d[6]});
 
+/* เวรพนักงานที่กำลังอยู่ตอนนี้ → 'yyyy-MM-dd|p1' / '|p3' */
+function curBlockKey(){ const t=new Date(Date.now()+7*3600e3), hm=t.toISOString().slice(11,16), today=t.toISOString().slice(0,10);
+  if(hm<'00:30'){ const y=new Date(t.getTime()-864e5).toISOString().slice(0,10); return y+'|p3'; }
+  return today+(hm<'08:30'?'|p1':'|p3'); }
 /* ---- การ์ดในหน้ารายงานการอยู่เวร ---- */
 function outCardHtml(k,canEdit){
   const L=outOf(S.dMonth,k), T=outTotals(L);
@@ -1671,7 +1681,8 @@ $('sSave').onclick=async()=>{
   if(qs.get('kind')&&qs.get('m')) S.rPreset={kind:qs.get('kind'),m:qs.get('m'),id:qs.get('id')||undefined,day:qs.get('day')?+qs.get('day'):undefined};
   if(qs.get('rep')&&qs.get('t')){ const k=qs.get('rep'); S.repAuth={k,u:qs.get('u'),r:qs.get('r'),x:qs.get('x'),t:qs.get('t')};
     const k10=k.slice(0,10); S.dMonthWant=k10.slice(0,7); S.dDayWant=+k10.slice(8,10); S.dGroup='emp';
-    if(k.length>10) S.repOpen=k; else S.repOpen=k10+'|p1'; }
+    if(k.length>10) S.repOpen=k; else S.repOpen=k10+'|p1';
+    if(qs.get('out')==='1'&&k.length>10) S.openOut=k; }
   if(view==='viewDaily'&&qs.get('m')&&qs.get('day')&&!qs.get('rep')){ S.dMonthWant=qs.get('m'); S.dDayWant=+qs.get('day'); }
   if(qs.get('g')==='wk'){ S.dGroup='wk'; document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x.dataset.g==='wk')); }
   const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };
