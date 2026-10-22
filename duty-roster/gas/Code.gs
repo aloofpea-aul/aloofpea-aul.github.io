@@ -351,6 +351,7 @@ function doGet(e) {
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
     if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m) });
+    if (a === 'sldPing') { const x = sldSS_(), f = x.getSheetByName('PatrolFinding'); return json_({ ok: true, sheet: x.getName(), patrol: !!f }); }
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) { return json_({ ok: false, error: String(err.message || err) }); }
 }
