@@ -78,7 +78,7 @@ function listRequests_() {
   const all = reqRows_();
   return {
     pending: all.filter(function (r) { return r.status === 'รออนุมัติ'; }).map(pubReq_),
-    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ลบแล้ว'; }).slice(-30).reverse().map(pubReq_),
+    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ลบแล้ว' && r.status !== 'ล้างแล้ว'; }).slice(-30).reverse().map(pubReq_),
     deleted: all.filter(function (r) { return r.status === 'ลบแล้ว'; }).slice(-20).reverse().map(pubReq_)
   };
 }

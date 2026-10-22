@@ -219,6 +219,25 @@ function fixPN2610_() {
   }
   props.setProperty('FIX_PN2610', '1');
 }
+/** ครั้งเดียว: ล้างรายการแลกเวร 11 ต.ค. (กัมปนาทท์⇄ราชภัฎ ที่หักล้างกันเอง) + รายการลบเก่า — เหลือเฉพาะลาเวร 23 ต.ค. */
+function cleanSwap2610_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('CLEAN_SW2610')) return;
+  const KEEP = 'R261022224744NIT';
+  const IDS = ['R261019182615T0M', 'R261019185510S5C', 'R261022205834TGO', 'R2610222051225H7', 'R261019131545WKI', 'R261019131456JKP'];
+  const mo = getMonth_('2026-10'); if (!mo) return;
+  const K = mo.data.emp['กัมปนาทท์'], R = mo.data.emp['ราชภัฎ'];
+  if (!(K && R && K[10] === '2,3' && R[10] === '1')) { props.setProperty('CLEAN_SW2610', 'skip'); return; }  // ตารางไม่ตรงต้นฉบับ → ไม่แตะ
+  const before = (mo.data.changes || []).length;
+  mo.data.changes = (mo.data.changes || []).filter(function (c) { return IDS.indexOf(c.req) < 0; });
+  const left = {}; mo.data.changes.forEach(function (c) { left[c.req] = 1; });
+  mo.data.rev = Object.keys(left).length;
+  saveMonth_('2026-10', mo.status, mo.data, mo.stateAfter, mo.note);
+  const sh = sheet_(SH.REQ);
+  reqRows_().forEach(function (r) { if (IDS.indexOf(r.id) >= 0) sh.getRange(r.row, 8).setValue('ล้างแล้ว'); });
+  log_('system', 'ล้างรายการเปลี่ยนเวร', '2026-10', 'ล้าง ' + IDS.join(',') + ' (changes ' + before + '→' + mo.data.changes.length + ', rev=' + mo.data.rev + ') ตารางคงเดิม เหลือ ' + KEEP);
+  props.setProperty('CLEAN_SW2610', '1');
+}
 /** ชั่วโมงที่เหลือจนจบเวรพนักงานปัจจุบัน (08:30 / 16:30 / 00:30) */
 function shiftHoursLeft_() {
   const now = new Date(), hm = Utilities.formatDate(now, TZ, 'HH:mm'), ymd = Utilities.formatDate(now, TZ, 'yyyy-MM-dd');
@@ -350,7 +369,7 @@ function doGet(e) {
   try {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
-      try { migrateInsp_(); migrateEmp_(); migrateOut_(); fixPN2610_(); } catch (e) {}
+      try { migrateInsp_(); migrateEmp_(); migrateOut_(); fixPN2610_(); cleanSwap2610_(); } catch (e) {}
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),
