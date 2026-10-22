@@ -657,7 +657,7 @@ async function renderReport(){
   if(!$('rDate').value) $('rDate').value=todayIso();
   sel.onchange=()=>{S.rWant=null;drawReport();}; $('rKind').onchange=drawReport; $('rDate').onchange=drawReport;
   $('rItem').onchange=drawReport; $('rDay').onchange=drawReport;
-  $('rSigner').onchange=()=>{LS.set('signer',$('rSigner').value);drawReport();};
+  $('rSigner').onchange=()=>{S.signerSel=$('rSigner').value;drawReport();};
   ['rSgName','rSgTitle'].forEach(id=>$(id).oninput=()=>{LS.set('signerCustom',{name:$('rSgName').value,title:$('rSgTitle').value});drawReport();});
   const sc=LS.get('signerCustom')||{}; $('rSgName').value=sc.name||''; $('rSgTitle').value=sc.title||'';
   drawReport();
@@ -825,15 +825,15 @@ async function leaveItems(key){
   out.sort((x,y)=>x.a-y.a||x.s.localeCompare(y.s)||x.k-y.k);
   return {mo,reqs,items:out};
 }
-const sgT=t=>esc(THD(t)).replace(/\s+(รักษาการแทน|รักษาการในตำแหน่ง|ปฏิบัติหน้าที่แทน)\s*/,'<br>$1 ');
+const sgT=t=>'<span style="white-space:nowrap">'+esc(THD(t))+'</span>';
 function signerOf(){
   const cfg=S.boot.config,v=$('rSigner').value;
-  if(v==='head') return {name:cfg.headName,title:String(cfg.headTitle).trim()+' รักษาการแทน '+cfg.mgrTitle};
+  if(v==='head') return {name:cfg.headName,title:String(cfg.headTitle).replace(/กฟส\..*$/,'').trim()+' รักษาการแทน '+cfg.mgrTitle};
   if(v==='custom') return {name:$('rSgName').value.trim(),title:$('rSgTitle').value.trim()};
   return {name:cfg.mgrName,title:cfg.mgrTitle};
 }
 function fillSigner(){
-  const cfg=S.boot.config, sg=$('rSigner'), sv=LS.get('signer')||'mgr';
+  const cfg=S.boot.config, sg=$('rSigner'), sv=S.signerSel||'mgr';
   if(!sg.options.length){ sg.add(new Option(cfg.mgrTitle+' ('+String(cfg.mgrName).replace(/^นาย/,'')+')','mgr'));
     sg.add(new Option('หผ.ปร. รักษาการแทน ผจก. ('+String(cfg.headName).replace(/^นาย/,'')+')','head')); sg.add(new Option('อื่น ๆ (กรอกเอง)','custom')); }
   sg.value=sv; $$('.rCustom').forEach(e=>e.classList.toggle('hide',sv!=='custom'));
