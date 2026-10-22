@@ -1133,12 +1133,12 @@ const isoShort=iso=>{if(!iso)return '';const p=dParts(new Date(iso+'T00:00:00Z')
 function rangeLong(a,b){ if(+a===+b) return dLong(a); const p=dParts(a),q=dParts(b);
   if(p.m===q.m&&p.y===q.y) return p.d+'-'+q.d+' '+TH_MONTH[q.m]+' '+q.y;
   return p.d+' '+TH_MONTH[p.m]+(p.y!==q.y?' '+p.y:'')+' - '+q.d+' '+TH_MONTH[q.m]+' '+q.y; }
-/* ช่วงเวลาของเวร 1 ชุด: ช่วง 2+3 = ต่อเนื่อง 08:30 – 00:30 วันรุ่งขึ้น (1 ฉบับ) */
+/* ช่วงเวลาของเวร: ช่วง 2+3 แยกเป็น 2 ฉบับตอนพิมพ์ (08:30–16:30 และ 16:30–00:30) — รวมเวลากันไม่ได้ */
 function segsOf(key,day,code){
   const a=dOf(key,day),b=dOf(key,day+1);
   if(code==='1') return [{a,b:a,s:'00:30',e:'08:30'}];
   if(code==='3') return [{a,b,s:'16:30',e:'00:30'}];
-  if(code==='2,3') return [{a,b,s:'08:30',e:'00:30'}];
+  if(code==='2,3') return [{a,b:a,s:'08:30',e:'16:30'},{a,b,s:'16:30',e:'00:30'}];
   return [];
 }
 const WHY={sick:'ลาป่วย',errand:'ลากิจ',vacation:'ลาพักผ่อน',private:'ธุระส่วนตัว',official:'ปฏิบัติงานราชการ'};
