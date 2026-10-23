@@ -46,8 +46,10 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .card{background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:0 1px 2px rgba(30,26,34,.08)}
 .card h3{margin:0 0 8px;font-size:14px}
 .days{display:flex;gap:4px;overflow-x:auto;padding:4px;scroll-snap-type:x proximity;background:#fff;border-radius:12px;scrollbar-width:none}.days::-webkit-scrollbar{display:none}
-.days button{flex:0 0 42px;height:46px;border-radius:10px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;scroll-snap-align:center;color:var(--ink)}
-.days button.off{color:var(--offf)}.days button.hol{color:#1F3F80;background:#EEF2FA}
+.days button{flex:0 0 42px;height:50px;border-radius:10px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;scroll-snap-align:center;color:var(--ink)}
+.days button.off{background:var(--off);color:var(--offf)}.days button.hol{background:#DCE5F6;color:#1F3F80}
+.days button{position:relative}.days button i.cd{position:absolute;bottom:3px;left:50%;margin-left:-3px;width:6px;height:6px;border-radius:50%;background:#E08A00}
+.days button.on i.cd{background:#FFD27A}
 .days button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 .days small{font-size:10.5px;line-height:1.1}.days b{font-size:16px;line-height:1.15}
 .duty{display:flex;gap:12px;align-items:center}
@@ -535,7 +537,8 @@ async function renderDaily(){
   try{ S.mrAll=await monthReqs(S.dMonth); }catch(e){ S.mrAll=[]; }
   setBadge(mo.status);
   { const {y,m}=parseKey(S.dMonth); $('hMonthT').textContent=TH_MS[m-1]+' '+String(y+543).slice(2); $('hMonthDot').className='mdot'+(mo.status==='อนุมัติแล้ว'?'':' draft'); $('hMonth').title=monthLabel(S.dMonth)+' · '+mo.status; }
-  $('dDays').innerHTML=data.days.map(d=>`<button data-d="${d.d}" class="${d.hol?'hol':d.off?'off':''} ${d.d===S.dDay?'on':''}"><small>${TH_WD[d.wd]}</small><b>${d.d}</b></button>`).join('');
+  const chDays=new Set((data.changes||[]).filter(c=>c.g===S.dGroup).map(c=>c.day));
+  $('dDays').innerHTML=data.days.map(d=>`<button data-d="${d.d}" class="${d.hol?'hol':d.off?'off':''} ${d.d===S.dDay?'on':''}"${chDays.has(d.d)?' aria-label="'+d.d+' มีการเปลี่ยนเวร"':''}><small>${TH_WD[d.wd]}</small><b>${d.d}</b>${chDays.has(d.d)?'<i class="cd"></i>':''}</button>`).join('');
   $('dDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.dDay=+b.dataset.d;renderDaily();});
   { const st=$('dDays'), on=st.querySelector('.on'); if(on) st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2); }   // เลื่อนเฉพาะแถบวันที่ ไม่ให้ทั้งหน้าเลื่อนตาม (iPhone)
   const day=data.days[S.dDay-1],{m}=parseKey(S.dMonth);
