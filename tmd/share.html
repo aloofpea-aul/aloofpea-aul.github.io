@@ -58,7 +58,7 @@ body{margin:0;background:#F3F6F8;color:#17212B;font-family:'IBM Plex Sans Thai',
       return { type: 'text', text: String(t), wrap: true, size: i === 0 ? 'md' : 'sm', weight: i === 0 ? 'bold' : 'regular', color: i === 0 ? '#1E1A22' : '#4A4450' };
     });
     var btn = [];
-    if (d.pdfUrl) btn.push({ type: 'button', style: 'primary', color: color, height: 'sm', action: { type: 'uri', label: 'เปิดประกาศ', uri: d.pdfUrl } });
+    if (d.pdfUrl) btn.push({ type: 'button', style: 'primary', color: color, height: 'sm', action: { type: 'uri', label: 'เปิดประกาศ', uri: PAGE + 'open.html?t=' + encodeURIComponent(d.pdfUrl) + (d.pdfDrive ? '&d=' + encodeURIComponent(d.pdfDrive) : '') } });
     btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ค้นหาทั้งหมด', uri: PAGE } });
     return {
       preview: { color: color, title: d.title, lines: lines },

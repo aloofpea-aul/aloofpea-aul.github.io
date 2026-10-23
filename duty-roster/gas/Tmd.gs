@@ -14,6 +14,10 @@
 function tmdR_(tok, msgs) { reply_(tok, msgs); return true; }
 const TMD_PAGE_ = 'https://aloofpea-aul.github.io/tmd/';
 const TMD_SHARE_ = 'https://liff.line.me/2012182540-CRgflPne';
+/** ลิงก์เปิด PDF: กรมอุตุฯ เป็นหลัก ล่ม/ช้าเกิน 4 วิ → สำเนาใน Google Drive */
+function tmdOpen_(d) {
+  return 'https://aloofpea-aul.github.io/tmd/open.html?t=' + encodeURIComponent(d.pdfUrl || '') + (d.pdfDrive ? '&d=' + encodeURIComponent(d.pdfDrive) : '');
+}
 
 function tmdInstall() {
   ScriptApp.getProjectTriggers()
@@ -74,7 +78,7 @@ function tmdCard_(d) {
     .concat([[d.issueNo, d.announceTime].filter(String).join(' · '), desc.length > 250 ? desc.slice(0, 250) + '…' : desc])
     .filter(String);
   const btn = [];
-  if (d.pdfUrl) btn.push({ type: 'button', style: 'primary', color: color, height: 'sm', action: { type: 'uri', label: 'เปิดประกาศ', uri: d.pdfUrl } });
+  if (d.pdfUrl) btn.push({ type: 'button', style: 'primary', color: color, height: 'sm', action: { type: 'uri', label: 'เปิดประกาศ', uri: tmdOpen_(d) } });
   btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ค้นหาทั้งหมด', uri: TMD_PAGE_ } });
   const b = bubble_('ประกาศกรมอุตุนิยมวิทยา', color, d.title, lines, btn);
   // ปุ่มแชร์ (LIFF shareTargetPicker) — ส่งต่อการ์ดเข้ากลุ่มในนามผู้กด ไม่ใช้โควต้าบอท
