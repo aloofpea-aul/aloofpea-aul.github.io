@@ -116,6 +116,7 @@ mark{background:#FFE69A;color:inherit;border-radius:3px}
         (d.krabiDetail ? '<div class="kd">' + esc(d.krabiDetail).replace(/\n/g, ' · ') + '</div>' : '') +
         '</span></button><div class="bd">' + hl(d.description || '-') +
         '<div class="act">' + (d.pdfUrl ? '<a class="btn pri" target="_blank" rel="noopener" href="' + esc(d.pdfUrl) + '">เปิด PDF</a>' : '') +
+        (d.pdfDrive ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(d.pdfDrive) + '">PDF สำรอง</a>' : '') +
         (d.pageUrl ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(d.pageUrl) + '">หน้าเว็บ</a>' : '') +
         '<button class="btn" data-copy="' + i + '">คัดลอกข้อความ</button></div></div></div>';
     }).join('') + (st.data.length < st.total ? '<button class="btn more" id="more">แสดงเพิ่ม</button>' : '');

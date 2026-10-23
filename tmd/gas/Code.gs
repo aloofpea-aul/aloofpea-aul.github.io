@@ -17,10 +17,12 @@ const CFG = {
   LIST: '/warning-and-events/warning-storm',
   SHEET: 'Warnings',
   FOCUS_WORD: 'กระบี่',
-  PDF_PER_RUN: 12          // แปลง PDF ไม่เกินรอบละกี่ฉบับ (กันเกินเวลา 6 นาที)
+  PDF_PER_RUN: 12,         // แปลง PDF ไม่เกินรอบละกี่ฉบับ (กันเกินเวลา 6 นาที)
+  BACKUP_PER_RUN: 25,      // สำรอง PDF ย้อนหลังรอบละกี่ฉบับ
+  BACKUP_FOLDER: 'ประกาศเตือนภัย TMD (PDF สำรอง)'
 };
 const HEADERS = ['key', 'sortKey', 'announceDate', 'issueNo', 'title', 'focus', 'severity', 'krabiDetail',
-                 'summary', 'pdfUrl', 'pageUrl', 'fullText', 'pdfDone', 'fetchedAt'];
+                 'summary', 'pdfUrl', 'pageUrl', 'fullText', 'pdfDone', 'fetchedAt', 'pdfDrive'];
 const C = {}; HEADERS.forEach(function (h, i) { C[h] = i; });
 const TH_MONTH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -43,7 +45,7 @@ function debugLatest() {
   if (!items[0]) return;
   const d = detail_(items[0].pageUrl);
   Logger.log('PDF: ' + d.pdfUrl);
-  const txt = d.pdfUrl ? pdfText_(d.pdfUrl) : '';
+  const txt = d.pdfUrl ? pdfText_(pdfBlob_(d.pdfUrl)) : '';
   Logger.log('ข้อความ PDF ' + txt.length + ' ตัวอักษร');
   Logger.log(txt.slice(0, 2500));
   Logger.log('กระบี่: ' + JSON.stringify(krabi_(txt)));
@@ -77,6 +79,7 @@ function fetchWarnings(show) {
     if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
     Logger.log('รายการใหม่ ' + rows.length + ' ฉบับ');
     processPdfs_(sh);
+    backupBacklog_(sh);
   } finally {
     lock.releaseLock();
   }
@@ -111,7 +114,9 @@ function processPdfs_(sh) {
     const r = x.r;
     try {
       const d = detail_(r[C.pageUrl]);
-      const txt = d.pdfUrl ? pdfText_(d.pdfUrl) : '';
+      const blob = d.pdfUrl ? pdfBlob_(d.pdfUrl) : null;
+      if (blob && !r[C.pdfDrive]) { try { r[C.pdfDrive] = backupPdf_(blob, d.pdfUrl, r); } catch (e) { Logger.log('สำรอง PDF ไม่ได้: ' + e); } }
+      const txt = blob ? pdfText_(blob) : '';
       const all = [r[C.title], r[C.summary], d.body, txt].join('\n');
       const k = krabi_(txt || d.body);
       r[C.pdfUrl] = d.pdfUrl;
@@ -167,8 +172,12 @@ function detail_(url) {
 }
 
 /* PDF → ข้อความ: แปลงเป็น Google Docs ชั่วคราว (บริการ Drive API v3) → export text → ย้ายลงถังขยะ */
-function pdfText_(pdfUrl) {
-  const blob = UrlFetchApp.fetch(safeUrl_(pdfUrl), { muteHttpExceptions: true }).getBlob().setContentType('application/pdf');
+function pdfBlob_(pdfUrl) {
+  const res = UrlFetchApp.fetch(safeUrl_(pdfUrl), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('โหลด PDF ไม่ได้ HTTP ' + res.getResponseCode());
+  return res.getBlob().setContentType('application/pdf');
+}
+function pdfText_(blob) {
   const f = Drive.Files.create({ name: 'tmp_tmd_warning', mimeType: 'application/vnd.google-apps.document' }, blob, { ocrLanguage: 'th' });
   try {
     const ex = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + f.id + '/export?mimeType=text/plain',
@@ -216,7 +225,7 @@ function doGet(e) {
   let data = rows.map(function (r) {
     return { key: r[C.key], sortKey: String(r[C.sortKey]), announceTime: thaiDate_(r[C.announceDate]), issueNo: r[C.issueNo],
              title: r[C.title], focus: r[C.focus], severity: r[C.severity], krabiDetail: r[C.krabiDetail],
-             description: r[C.summary], pdfUrl: r[C.pdfUrl], pageUrl: r[C.pageUrl], ready: !!r[C.pdfDone], _t: r[C.fullText] };
+             description: r[C.summary], pdfUrl: r[C.pdfUrl], pdfDrive: r[C.pdfDrive] || '', pageUrl: r[C.pageUrl], ready: !!r[C.pdfDone], _t: r[C.fullText] };
   }).sort(function (a, b) { return b.sortKey.localeCompare(a.sortKey); });
 
   if (p.action === 'since') {
@@ -250,9 +259,55 @@ function sheet_() {
     sh = ss.insertSheet(CFG.SHEET);
     sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
     sh.setFrozenRows(1);
+  } else if (sh.getLastColumn() < HEADERS.length) {
+    sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');   // เพิ่มคอลัมน์ใหม่ต่อท้าย
   }
   return sh;
 }
+
+/* ---------- สำรอง PDF ลง Google Drive ----------
+ * โฟลเดอร์: ประกาศเตือนภัย TMD (PDF สำรอง) / 2569 / 10-ตุลาคม / 273-2569 2026-10-23 17น.pdf
+ * แชร์แบบ "ทุกคนที่มีลิงก์ดูได้" (เป็นเอกสารสาธารณะของกรมอุตุฯ อยู่แล้ว) เพื่อให้หน้าค้นหาเปิดได้
+ */
+function folder_(parent, name) {
+  const it = parent ? parent.getFoldersByName(name) : DriveApp.getFoldersByName(name);
+  if (it.hasNext()) return it.next();
+  const f = parent ? parent.createFolder(name) : DriveApp.createFolder(name);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return f;
+}
+function backupPdf_(blob, pdfUrl, r) {
+  const iso = isoOfThai_(r[C.announceDate]) || Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+  const y = +iso.slice(0, 4) + 543, m = +iso.slice(5, 7);
+  const root = folder_(null, CFG.BACKUP_FOLDER);
+  const dir = folder_(folder_(root, String(y)), ('0' + m).slice(-2) + '-' + TH_MONTH[m - 1]);
+  const no = (String(r[C.issueNo]).match(/\((\d+)\s*\/\s*(\d+)\)/) || []);
+  const hr = (String(pdfUrl).match(/_(\d{2})_warning/) || [])[1];
+  const name = (no[1] ? no[1] + '-' + no[2] + ' ' : '') + iso + (hr ? ' ' + hr + 'น.' : '') + '.pdf';
+  const same = dir.getFilesByName(name);
+  const f = same.hasNext() ? same.next() : dir.createFile(blob.copyBlob().setName(name));
+  f.setDescription(String(r[C.title]) + '\n' + pdfUrl);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return 'https://drive.google.com/file/d/' + f.getId() + '/view';
+}
+/* สำรองฉบับเก่าที่แปลงแล้วแต่ยังไม่มีไฟล์สำรอง — ทยอยรอบละ BACKUP_PER_RUN */
+function backupBacklog_(sh) {
+  const n = sh.getLastRow() - 1; if (n < 1) return;
+  const data = sh.getRange(2, 1, n, HEADERS.length).getValues();
+  const t0 = Date.now(); let done = 0;
+  data.forEach(function (r, i) {
+    if (done >= CFG.BACKUP_PER_RUN || Date.now() - t0 > 150000) return;
+    if (r[C.pdfDrive] || !r[C.pdfUrl] || !(r[C.pdfDone] instanceof Date)) return;
+    try {
+      r[C.pdfDrive] = backupPdf_(pdfBlob_(r[C.pdfUrl]), r[C.pdfUrl], r);
+      sh.getRange(i + 2, C.pdfDrive + 1).setValue(r[C.pdfDrive]);
+      done++;
+    } catch (e) { Logger.log('สำรองไม่ได้ ' + r[C.issueNo] + ': ' + e); }
+  });
+  if (done) Logger.log('สำรอง PDF ย้อนหลัง ' + done + ' ฉบับ');
+}
+/* รันเองได้ เพื่อสำรองย้อนหลังทันที */
+function backupNow() { backupBacklog_(sheet_()); }
 function dec_(s) {
   return String(s || '')
     .replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCharCode(parseInt(h, 16)); })
