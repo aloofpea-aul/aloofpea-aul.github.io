@@ -141,27 +141,17 @@ function detail_(url) {
   return { pdfUrl: pdf, hour: h ? h[1] : '', body: clean_(main.replace(/<script[\s\S]*?<\/script>/gi, '')).slice(0, 20000) };
 }
 
-/* PDF → ข้อความ: อัปโหลดแปลงเป็น Google Docs ชั่วคราว → export text → ย้ายลงถังขยะ */
+/* PDF → ข้อความ: แปลงเป็น Google Docs ชั่วคราว (บริการ Drive API v3) → export text → ย้ายลงถังขยะ */
 function pdfText_(pdfUrl) {
-  const blob = UrlFetchApp.fetch(pdfUrl, { muteHttpExceptions: true }).getBlob();
-  const token = ScriptApp.getOAuthToken(), bd = 'tmd' + Date.now();
-  const meta = JSON.stringify({ name: 'tmp_tmd_warning', mimeType: 'application/vnd.google-apps.document' });
-  const payload = Utilities.newBlob(
-    '--' + bd + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta +
-    '\r\n--' + bd + '\r\nContent-Type: application/pdf\r\n\r\n').getBytes()
-    .concat(blob.getBytes())
-    .concat(Utilities.newBlob('\r\n--' + bd + '--').getBytes());
-  const up = UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&ocrLanguage=th', {
-    method: 'post', contentType: 'multipart/related; boundary=' + bd, payload: payload,
-    headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
-  if (up.getResponseCode() !== 200) throw new Error('แปลง PDF ไม่ได้: ' + up.getContentText().slice(0, 200));
-  const id = JSON.parse(up.getContentText()).id;
+  const blob = UrlFetchApp.fetch(pdfUrl, { muteHttpExceptions: true }).getBlob().setContentType('application/pdf');
+  const f = Drive.Files.create({ name: 'tmp_tmd_warning', mimeType: 'application/vnd.google-apps.document' }, blob, { ocrLanguage: 'th' });
   try {
-    const ex = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id + '/export?mimeType=text/plain',
-      { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
-    return ex.getContentText('UTF-8').replace(/﻿/g, '');
+    const ex = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + f.id + '/export?mimeType=text/plain',
+      { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+    if (ex.getResponseCode() === 200) return ex.getContentText('UTF-8').replace(/\uFEFF/g, '');
+    return DocumentApp.openById(f.id).getBody().getText();
   } finally {
-    try { DriveApp.getFileById(id).setTrashed(true); } catch (e) {}
+    try { DriveApp.getFileById(f.id).setTrashed(true); } catch (e) {}
   }
 }
 
