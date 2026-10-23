@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="/pea-hub.js?v=2026102301" data-app="tmd" data-perm="login" data-name="ประกาศเตือนภัยกรมอุตุฯ"></script>
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<title>ประกาศเตือนภัยกรมอุตุฯ กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#0E4A6E">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#0E4A6E;--bg:#F3F6F8;--ink:#17212B;--mut:#5A6670;--line:#DCE3E9;--card:#fff;
+  --hi:#8A2B2B;--hib:#FBE3E1;--mid:#B4570B;--midb:#FCEBD6;--lo:#455A64;--lob:#E6ECEF;
+  --st:env(safe-area-inset-top);--sb:env(safe-area-inset-bottom)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:16px;-webkit-text-size-adjust:100%}
+button,input{font-family:inherit;font-size:16px;color:inherit}
+button{cursor:pointer}
+header.top{position:sticky;top:0;z-index:20;background:var(--pri);color:#fff;
+  padding:calc(10px + var(--st)) calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left))}
+.hrow{display:flex;align-items:center;gap:10px;max-width:860px;margin:0 auto}
+.hback,.refresh{width:40px;height:40px;border-radius:20px;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 40px}
+.htitle{flex:1;min-width:0}.htitle .t1{font-size:12px;opacity:.8}
+.htitle .t2{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.refresh.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.search{max-width:860px;margin:10px auto 0;display:flex;flex-direction:column;gap:8px}
+.search input{width:100%;height:44px;border-radius:12px;border:0;padding:0 14px;background:#fff;color:var(--ink)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:16px;padding:5px 12px;font-size:14px}
+.chip.on{background:#fff;color:var(--pri);border-color:#fff;font-weight:600}
+main{max-width:860px;margin:0 auto;padding:12px 12px calc(24px + var(--sb));display:flex;flex-direction:column;gap:10px}
+.banner{border-radius:14px;padding:12px 14px;background:var(--hib);color:var(--hi);border:1px solid #F1C2BD}
+.banner.mid{background:var(--midb);color:var(--mid);border-color:#F2D1A8}
+.banner .b1{font-size:12px;opacity:.85}.banner .b2{font-weight:700;font-size:16px;line-height:1.35}
+.meta{font-size:13px;color:var(--mut);display:flex;justify-content:space-between;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.card .hd{display:flex;gap:10px;padding:12px 14px;align-items:flex-start;width:100%;background:none;border:0;text-align:left}
+.sev{flex:0 0 6px;align-self:stretch;border-radius:3px;background:var(--lo)}
+.sev.hi{background:var(--hi)}.sev.mid{background:var(--mid)}
+.hd .tt{flex:1;min-width:0}.hd .t{font-weight:600;line-height:1.4}
+.hd .s{font-size:13px;color:var(--mut);margin-top:3px}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:8px;margin-right:4px;background:var(--lob);color:var(--lo)}
+.tag.k{background:#DDEEFB;color:#0B4F80;font-weight:600}.tag.hi{background:var(--hib);color:var(--hi)}.tag.mid{background:var(--midb);color:var(--mid)}
+.bd{display:none;padding:0 14px 14px 30px;font-size:15px;line-height:1.7;white-space:pre-wrap;color:#2C3640}
+.card.open .bd{display:block}
+.bd .act{display:flex;gap:8px;margin-top:10px;white-space:normal}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;text-decoration:none;color:var(--ink);font-size:15px}
+.btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+mark{background:#FFE69A;color:inherit;border-radius:3px}
+.empty{text-align:center;color:var(--mut);padding:40px 16px;line-height:1.7}
+.more{align-self:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="hrow">
+    <a class="hback" href="/index.html" aria-label="กลับศูนย์รวมงาน">‹</a>
+    <div class="htitle"><div class="t1">กฟส.อ่าวลึก · กรมอุตุนิยมวิทยา</div><div class="t2">ประกาศเตือนภัย</div></div>
+    <button class="refresh" id="rf" aria-label="โหลดใหม่">↻</button>
+  </div>
+  <div class="search">
+    <input id="q" type="search" placeholder="ค้นหา เช่น ฝนตกหนัก ต.ค. 2569" autocomplete="off">
+    <div class="chips" id="chips">
+      <button class="chip on" data-f="กระบี่">กระบี่</button>
+      <button class="chip" data-f="ภาคใต้">ภาคใต้</button>
+      <button class="chip" data-f="">ทั้งประเทศ</button>
+      <button class="chip" data-s="สูง">ระดับสูง</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <div id="banner"></div>
+  <div class="meta"><span id="count"></span><span id="upd"></span></div>
+  <div id="list"></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  /* URL ของ Web app ฐานข้อมูลประกาศ (tmd/gas/Code.gs) — ใส่ครั้งเดียวที่นี่ หรือเปิดหน้านี้ด้วย ?api=URL */
+  var DEFAULT_API = '';
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  var p = new URLSearchParams(location.search);
+  if (p.get('api')) { ls('tmd_api', p.get('api')); p.delete('api'); try { history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '')); } catch (e) {} }
+  var API = ls('tmd_api') || DEFAULT_API;
+
+  var st = { focus: ls('tmd_focus') == null ? 'กระบี่' : ls('tmd_focus'), sev: '', q: '', limit: 50, data: [], total: 0 };
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  function hl(s) {
+    var t = esc(s); if (!st.q) return t;
+    st.q.split(/\s+/).filter(Boolean).forEach(function (w) { t = t.split(esc(w)).join('<mark>' + esc(w) + '</mark>'); });
+    return t;
+  }
+  var cls = function (sev) { return sev === 'สูง' ? 'hi' : sev === 'กลาง' ? 'mid' : ''; };
+
+  function chipsUI() {
+    [].forEach.call(document.querySelectorAll('.chip'), function (b) {
+      b.classList.toggle('on', b.dataset.f !== undefined ? b.dataset.f === st.focus : b.dataset.s === st.sev);
+    });
+  }
+  function render() {
+    var L = $('list');
+    if (!API) { L.innerHTML = '<div class="empty">ยังไม่ได้ตั้งค่าแหล่งข้อมูล<br>ผู้ดูแลเปิดหน้านี้ด้วย ?api=ลิงก์ Web app</div>'; return; }
+    $('count').textContent = st.total ? 'พบ ' + st.total.toLocaleString() + ' ฉบับ' : '';
+    if (!st.data.length) { L.innerHTML = '<div class="empty">ไม่พบประกาศตามเงื่อนไขนี้</div>'; return; }
+    L.innerHTML = st.data.map(function (d, i) {
+      var c = cls(d.severity);
+      return '<div class="card" data-i="' + i + '"><button class="hd"><span class="sev ' + c + '"></span><span class="tt">' +
+        '<div class="t">' + hl(d.title) + '</div>' +
+        '<div class="s">' + (d.focus === 'กระบี่' ? '<span class="tag k">กระบี่</span>' : d.focus === 'ภาคใต้' ? '<span class="tag">ภาคใต้</span>' : '') +
+        '<span class="tag ' + c + '">' + esc(d.severity) + '</span>' + esc([d.issueNo, d.announceTime].filter(Boolean).join(' · ')) + '</div>' +
+        '</span></button><div class="bd">' + hl(d.description || '-') +
+        '<div class="act">' + (d.pdfUrl ? '<a class="btn pri" target="_blank" rel="noopener" href="' + esc(d.pdfUrl) + '">เปิดประกาศ</a>' : '') +
+        '<button class="btn" data-copy="' + i + '">คัดลอกข้อความ</button></div></div></div>';
+    }).join('') + (st.data.length < st.total ? '<button class="btn more" id="more">แสดงเพิ่ม</button>' : '');
+    if (st.data[0] && !st.q && st.focus === 'กระบี่' && !st.sev) banner(st.data[0]); else $('banner').innerHTML = '';
+  }
+  function banner(d) {
+    $('banner').innerHTML = '<div class="banner ' + (d.severity === 'สูง' ? '' : 'mid') + '"><div class="b1">ฉบับล่าสุดที่เกี่ยวกับกระบี่ · ' + esc(d.announceTime) + '</div>' +
+      '<div class="b2">' + esc(d.title) + '</div></div>';
+  }
+
+  var seq = 0, cacheKey = function () { return 'tmd_c_' + st.focus + '|' + st.sev; };
+  function load(spin) {
+    if (!API) return render();
+    var my = ++seq, rf = $('rf');
+    if (spin) rf.classList.add('spin');
+    var qs = '?action=list&limit=' + st.limit + '&focus=' + encodeURIComponent(st.focus) + '&sev=' + encodeURIComponent(st.sev) + '&q=' + encodeURIComponent(st.q);
+    fetch(API + qs).then(function (r) { return r.json(); }).then(function (r) {
+      if (my !== seq) return;
+      st.data = r.data || []; st.total = r.total || 0;
+      if (!st.q && st.limit === 50) ls(cacheKey(), JSON.stringify({ data: st.data, total: st.total, at: Date.now() }));
+      $('upd').textContent = 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      render();
+    }).catch(function () {
+      if (my === seq && !st.data.length) $('list').innerHTML = '<div class="empty">โหลดข้อมูลไม่ได้ ตรวจสัญญาณแล้วกด ↻</div>';
+    }).then(function () { rf.classList.remove('spin'); });
+  }
+  function fromCache() {
+    try { var c = JSON.parse(ls(cacheKey()) || 'null'); if (c) { st.data = c.data; st.total = c.total; render(); return true; } } catch (e) {}
+    return false;
+  }
+
+  $('chips').addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    if (b.dataset.f !== undefined) { st.focus = b.dataset.f; ls('tmd_focus', st.focus); } else st.sev = st.sev === b.dataset.s ? '' : b.dataset.s;
+    st.limit = 50; chipsUI(); if (!st.q) fromCache(); load();
+  });
+  var tm;
+  $('q').addEventListener('input', function () {
+    clearTimeout(tm); tm = setTimeout(function () { st.q = $('q').value.trim(); st.limit = 50; load(); }, 350);
+  });
+  $('rf').addEventListener('click', function () { load(true); });
+  $('list').addEventListener('click', function (e) {
+    if (e.target.id === 'more') { st.limit += 50; return load(true); }
+    var cp = e.target.closest('[data-copy]');
+    if (cp) {
+      var d = st.data[+cp.dataset.copy], txt = [d.title, d.issueNo, d.announceTime, '', d.description, d.pdfUrl].filter(function (x) { return x !== undefined; }).join('\n');
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { cp.textContent = 'คัดลอกแล้ว ✓'; }, function () { cp.textContent = 'คัดลอกไม่ได้'; });
+      return;
+    }
+    var h = e.target.closest('.hd'); if (h) h.parentNode.classList.toggle('open');
+  });
+
+  chipsUI();
+  fromCache();
+  load(!st.data.length);
+})();
+</script>
+</body>
+</html>
