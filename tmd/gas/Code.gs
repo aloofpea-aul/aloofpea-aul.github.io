@@ -283,7 +283,7 @@ function backupPdf_(blob, pdfUrl, r) {
   const dir = folder_(folder_(root, String(y)), ('0' + m).slice(-2) + '-' + TH_MONTH[m - 1]);
   const no = (String(r[C.issueNo]).match(/\((\d+)\s*\/\s*(\d+)\)/) || []);
   const hr = (String(pdfUrl).match(/_(\d{2})_warning/) || [])[1];
-  const name = (no[1] ? no[1] + '-' + no[2] + ' ' : '') + iso + (hr ? ' ' + hr + 'น.' : '') + '.pdf';
+  const name = (no[1] ? no[1] + '-' + no[2] + ' ' : '') + iso + (hr ? ' ' + hr + '.00น' : '') + '.pdf';
   const same = dir.getFilesByName(name);
   const f = same.hasNext() ? same.next() : dir.createFile(blob.copyBlob().setName(name));
   f.setDescription(String(r[C.title]) + '\n' + pdfUrl);
