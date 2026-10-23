@@ -24,7 +24,11 @@ function debugApi() {
   const res = UrlFetchApp.fetch(CFG.API_URL, { muteHttpExceptions: true });
   Logger.log('HTTP ' + res.getResponseCode());
   Logger.log(res.getContentText('UTF-8').substring(0, 3000));
-  try { Logger.log('แยกได้ ' + parseItems_(res.getContentText('UTF-8')).length + ' ฉบับ'); } catch (e) { Logger.log('แยก XML ไม่ได้: ' + e); }
+  try {
+    const its = parseItems_(res.getContentText('UTF-8'));
+    Logger.log('แยกได้ ' + its.length + ' ฉบับ');
+    its.slice(-3).forEach(function (it) { Logger.log(JSON.stringify({ fields: it.fields, issue: it.issue, time: it.time, title: it.title, pdf: it.pdf ? 'มี' : 'ไม่มี', desc: it.desc.slice(0, 120) })); });
+  } catch (e) { Logger.log('แยก XML ไม่ได้: ' + e); }
 }
 
 /* ---------- ติดตั้งครั้งเดียว ---------- */
@@ -55,7 +59,7 @@ function fetchWarnings() {
       if (have.has(key)) return;
       have.add(key);
       const text = it.title + ' ' + it.desc;
-      rows.push([key, it.time, issueNo_(text), it.title, focusOf_(text), severityOf_(text),
+      rows.push([key, it.time, it.issue ? 'ฉบับที่ ' + it.issue : issueNo_(text), it.title, focusOf_(text), severityOf_(text),
                  it.desc, it.pdf, new Date()]);
     });
     if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
@@ -77,11 +81,14 @@ function parseItems_(xml) {
     const kids = el.getChildren(), map = {};
     kids.forEach(function (k) { if (!k.getChildren().length) map[k.getName()] = k.getText().trim(); });
     const keys = Object.keys(map);
+    if (/^header$/i.test(el.getName())) return;   // ส่วนหัวของ feed ไม่ใช่ประกาศ
     const tk = keys.filter(function (k) { return /title/i.test(k) && /th/i.test(k); })[0] || keys.filter(function (k) { return /title/i.test(k); })[0];
     if (tk && map[tk]) {
       const pick = function (re) { const k = keys.filter(function (x) { return re.test(x); })[0]; return k ? map[k] : ''; };
       const vals = keys.map(function (k) { return map[k]; });
       out.push({
+        fields: keys,
+        issue: pick(/^issue/i),
         title: map[tk],
         desc: pick(/description.*th/i) || pick(/description|detail|content/i),
         time: pick(/announce.*date|datetime|date/i),
