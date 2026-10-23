@@ -16,6 +16,8 @@
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',sans-serif;-webkit-text-size-adjust:100%}
 button,input,select{font-family:inherit;font-size:14px}
 .app{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:72px}
+html{overflow-x:hidden}.app{overflow-x:clip}
+.days{position:relative;overscroll-behavior-x:contain}
 header.top{background:var(--pri);color:#fff;padding:calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 14px calc(16px + env(safe-area-inset-left));display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:5}
 header.top .t1{display:none}header.top .t2{font-size:17px;font-weight:700}
 header.top{padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));min-height:50px;justify-content:center}
@@ -535,7 +537,7 @@ async function renderDaily(){
   { const {y,m}=parseKey(S.dMonth); $('hMonthT').textContent=TH_MS[m-1]+' '+String(y+543).slice(2); $('hMonthDot').className='mdot'+(mo.status==='อนุมัติแล้ว'?'':' draft'); $('hMonth').title=monthLabel(S.dMonth)+' · '+mo.status; }
   $('dDays').innerHTML=data.days.map(d=>`<button data-d="${d.d}" class="${d.hol?'hol':d.off?'off':''} ${d.d===S.dDay?'on':''}"><small>${TH_WD[d.wd]}</small><b>${d.d}</b></button>`).join('');
   $('dDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.dDay=+b.dataset.d;renderDaily();});
-  const on=$('dDays').querySelector('.on'); on&&on.scrollIntoView({inline:'center',block:'nearest'});
+  { const st=$('dDays'), on=st.querySelector('.on'); if(on) st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2); }   // เลื่อนเฉพาะแถบวันที่ ไม่ให้ทั้งหน้าเลื่อนตาม (iPhone)
   const day=data.days[S.dDay-1],{m}=parseKey(S.dMonth);
   $('dTitle').textContent=TH_WDF[day.wd]+' '+day.d+' '+TH_MS[m-1];
   $('dTag').textContent=day.hol?'วันหยุดพิเศษ':day.off?'วันหยุด':'วันทำการ'; $('dTag').className='dtag'+(day.hol?' hol':day.off?' off':'');
