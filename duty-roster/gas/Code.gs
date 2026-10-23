@@ -401,6 +401,7 @@ function doPost(e) {
     if (b.action === 'saveReport') return json_({ ok: true, report: saveReport_(b) });
     if (b.action === 'saveOutage') return json_({ ok: true, outage: saveOutage_(b) });
     if (b.action === 'deleteOutage') return json_({ ok: true, result: deleteOutage_(b) });
+    if (b.action === 'addOutPhotos') return json_({ ok: true, outage: addOutPhotos_(b) });
     if (b.action === 'saveOutMats') return json_({ ok: true, mats: saveOutMats_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'request' && !b.approveNow) {

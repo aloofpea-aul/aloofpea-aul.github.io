@@ -175,6 +175,7 @@ body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 .ev .tag{font-size:11px;font-weight:700;border-radius:8px;padding:3px 7px;white-space:nowrap;height:fit-content}.tag.hv{background:#FDE4E4;color:#9B1C1C}.tag.lv{background:#E3ECFD;color:#1C3F9B}
 .ev .t{font-weight:700;font-size:13.5px;overflow-wrap:anywhere}.ev .d{font-size:12px;color:var(--mut);margin-top:2px;line-height:1.5}
 .opl{display:inline-block;font-size:11px;line-height:1.5;border-radius:999px;padding:1px 8px;margin:3px 4px 0 0;background:#F1EDF4;color:#4A3A52}.opl.tmp{background:#FFF1D6;color:#7A4A00}.opl.ok{background:#E6F4E8;color:#1F5A2A}.opl.warn{background:#FDE9E4;color:#8A2B2B}
+.ophs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ophs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line,#ddd);background:#eee}
 .osheet{align-items:flex-end;padding:0}@media(min-width:600px){.osheet{align-items:center;padding:16px}}
 .dlg.ofm>*{flex-shrink:0}.ofm textarea{min-height:76px}
 .dlg.ofm{max-width:520px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;gap:4px}@media(min-width:600px){.dlg.ofm{border-radius:18px}}
@@ -708,7 +709,7 @@ function outCardHtml(k,canEdit){
      <div class="t">${esc(outWhere(o)||'ไม่ระบุที่เกิดเหตุ')}</div>
      <div class="d">ดับ ${hmTh(o.off)} – ${o.on?'มา '+hmTh(o.on)+' น.':'ยังไม่จ่ายไฟ'} (${durTxt(durMin(o.off,o.on))})<br>
      ${outCause(o)?`<span class="opl">${CAUSE_IC[o.cType]||''} ${esc(outCause(o))}</span>`:''}${o.cust?`<span class="opl">ผู้ใช้ไฟ ~${o.cust} ราย</span>`:''}<span class="opl ${o.fix==='temp'?'tmp':''}">${o.fix==='temp'?'แก้ชั่วคราว':'แก้ถาวร'}</span>
-     ${(o.mats||[]).length?`<span class="opl">ใช้ ${esc(o.mats.map(m=>m.n+' ×'+m.q).join(', '))}</span>`:''}
+     ${(o.mats||[]).length?`<span class="opl">ใช้ ${esc(o.mats.map(m=>m.n+' ×'+m.q).join(', '))}</span>`:''}${(o.photos||[]).length?`<span class="opl">📷 ${o.photos.length} รูป</span>`:''}
      ${o.fix==='temp'?(o.patrol&&o.patrol.id?`<span class="opl ok">Patrol: ${esc(o.patrol.status||'ส่งแล้ว')}</span>`:`<span class="opl warn">ยังไม่เข้า Patrol${o.patrol&&o.patrol.err?' — '+esc(o.patrol.err):''}</span>`):''}</div></div></div>`;
   return `<div class="rp-sec"><h4>๒–๔. เหตุการณ์ไฟดับในเวรนี้</h4>
     <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hrs(((T.hv.out||0)+(T.lv.out||0))*60)||0}</b><span>ชม. ไฟดับรวม</span></div></div>
@@ -784,8 +785,9 @@ async function outForm(k,I,o,data){
       <div class="chips">${[1,2,3,4,5,6].map(n=>`<button type="button" class="ch sm ${F.weather===WX_PEA[n]?'on':''}" data-wx="${n}">${n} ${esc(WX_PEA[n])}</button>`).join('')}</div>
       <div class="lb">6. การแก้ไข</div>
       <div class="fx"><button type="button" data-fx="perm" class="${F.fix==='perm'?'on':''}">✔ แก้ถาวรแล้ว</button><button type="button" data-fx="temp" class="${F.fix==='temp'?'on tmp':''}">⏳ แก้ชั่วคราว<br><small>ส่งเข้า Patrol ตามแก้ถาวร</small></button></div>
-      ${F.fix==='temp'?`<div class="note warn" style="margin-top:6px">ระบบส่งเข้า Patrol ให้เอง ต้องมีพิกัด (เลือกอุปกรณ์จาก SLD หรือกด GPS)${o&&o.patrol&&o.patrol.id?' · ส่งแล้ว: '+esc(o.patrol.id):''}</div>
-        <label class="tf" style="margin-top:6px">📷 รูปก่อนแก้ (แนบไปกับ Patrol · ไม่บังคับ)<input type="file" id="ofPh" accept="image/*" capture="environment" multiple></label><div class="muted" id="ofPhN">${photos.length?'เลือกแล้ว '+photos.length+' รูป':''}</div>`:''}
+      ${F.fix==='temp'?`<div class="note warn" style="margin-top:6px">ระบบส่งเข้า Patrol ให้เอง ต้องมีพิกัด (เลือกอุปกรณ์จาก SLD หรือกด GPS)${o&&o.patrol&&o.patrol.id?' · ส่งแล้ว: '+esc(o.patrol.id):''}</div>`:''}
+      ${(F.photos||[]).length?`<div class="ophs">${F.photos.map(p=>`<a href="${esc(p.url||'https://drive.google.com/file/d/'+p.fileId+'/view')}" target="_blank" rel="noopener"><img src="https://drive.google.com/thumbnail?id=${esc(p.fileId)}&sz=w240" alt="รูปเหตุการณ์" loading="lazy"></a>`).join('')}</div>`:''}
+      <label class="tf" style="margin-top:6px">📷 ${F.fix==='temp'?'รูปก่อนแก้ (แนบไปกับ Patrol ด้วย)':'รูปประกอบ ก่อน/หลังแก้'} <span class="muted" style="font-weight:400">ไม่บังคับ${(F.photos||[]).length?' · เพิ่มได้อีก':''}</span><input type="file" id="ofPh" accept="image/*" multiple></label><div class="muted" id="ofPhN">${photos.length?'เลือกแล้ว '+photos.length+' รูป':''}</div>
       <div class="lb">7. อุปกรณ์ที่ใช้แก้ไข <i>แตะเพิ่ม · ปรับจำนวน</i></div>
       ${F.mats.map((m,i)=>`<div class="mt"><span>${esc(m.n)}</span><span class="stp"><button type="button" data-mq="${i}" data-d="-1" aria-label="ลด">−</button><b>${m.q}</b><button type="button" data-mq="${i}" data-d="1" aria-label="เพิ่ม">＋</button><small>${esc(m.u||'')}</small></span></div>`).join('')}
       <div class="qa">${MC.filter(m=>!picked.has(m.n)).map(m=>`<button type="button" data-ma="${esc(m.n)}" data-u="${esc(m.u)}">＋ ${esc(m.n)}</button>`).join('')}<button type="button" data-ma="__other">＋ อื่น ๆ (พิมพ์เอง)</button></div>
@@ -844,7 +846,7 @@ async function outForm(k,I,o,data){
       $('ofSave').disabled=true; $('ofSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';
       try{ const j=await apiPost(Object.assign({action:'saveOutage',k,o:body},outAuthBody(auth,F._pin)));
         let note='';
-        if(photos.length&&j.outage.patrol&&j.outage.patrol.id){ note=await patrolPhotos(j.outage.patrol.id,photos); }
+        if(photos.length){ $('ofSave').innerHTML='<span class="spin"></span>กำลังอัปโหลดรูป…'; note=await outPhotosUp(j.outage,photos,F.fix,auth,F._pin); }
         await afterSave(); close();
         toast('บันทึกแล้ว'+(j.outage.patrol&&j.outage.patrol.id&&!(o&&o.patrol&&o.patrol.id)?' · ส่งเข้า Patrol แล้ว':'')+(j.outage.patrol&&j.outage.patrol.err?' · ยังไม่เข้า Patrol: '+j.outage.patrol.err:'')+note);
       }catch(x){ $('ofSave').disabled=false; $('ofSave').textContent='บันทึก'; msg('ofMsg',x.message,'err'); }
@@ -861,12 +863,18 @@ function shrinkPhoto(file){ return new Promise((res,rej)=>{ const im=new Image()
   im.onload=()=>{ const s=Math.min(1,1280/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
     c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res({kind:'before',mimeType:'image/jpeg',base64:c.toDataURL('image/jpeg',.72).split(',')[1],takenAt:new Date().toISOString()}); };
   im.onerror=rej; im.src=u; }); }
-/* แนบรูปเข้า Patrol ด้วยบัญชีศูนย์รวมงานในเครื่องนี้ */
-async function patrolPhotos(fid,photos){
-  const c=hubCreds(); if(!c.user||!c.pass) return ' · รูปยังไม่ได้แนบ (เครื่องนี้ยังไม่ล็อกอินศูนย์รวมงาน — เพิ่มรูปในแอป Patrol ได้)';
+/* อัปโหลดรูปขึ้น Drive ผ่านระบบ SLD (ใช้บัญชีศูนย์รวมงานในเครื่องนี้) แล้วเก็บลิงก์ไว้กับเหตุการณ์ไฟดับ
+   แก้ชั่วคราวที่ส่งเข้า Patrol แล้ว → แนบกับจุดที่พบใน Patrol ด้วย */
+async function outPhotosUp(o,photos,fix,auth,pin){
+  const c=hubCreds(); if(!c.user||!c.pass) return ' · รูปยังไม่ได้แนบ (เครื่องนี้ยังไม่ล็อกอินศูนย์รวมงาน)';
+  const pid=o.patrol&&o.patrol.id, kind=fix==='temp'?'before':'after';
+  photos.forEach(p=>p.kind=kind);
   try{ const url=(()=>{try{return localStorage.getItem('sld_gas_url')||SLD_API;}catch(e){return SLD_API;}})();
-    const j=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'patrolAddPhoto',changedBy:c.user,changedByPassword:c.pass,parentType:'FINDING',parentId:fid,photos})}).then(r=>r.json());
-    return j.ok?' · แนบรูป '+(j.photos||[]).length+' รูป':' · รูปยังไม่ได้แนบ: '+(j.error||'');
+    const j=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'patrolAddPhoto',changedBy:c.user,changedByPassword:c.pass,parentType:pid?'FINDING':'OUTAGE',parentId:pid||o.id,photos})}).then(r=>r.json());
+    if(!j.ok) return ' · รูปยังไม่ได้แนบ: '+(j.error||'');
+    const up=(j.photos||[]).map(p=>({fileId:p.fileId,url:p.url,kind:p.kind}));
+    if(up.length) await apiPost(Object.assign({action:'addOutPhotos',id:o.id,photos:up},outAuthBody(auth,pin)));
+    return ' · แนบรูป '+up.length+' รูป'+((j.photoFailed||[]).length?' (ไม่สำเร็จ '+j.photoFailed.length+')':'');
   }catch(e){ return ' · รูปยังไม่ได้แนบ: '+e.message; }
 }
 
@@ -882,6 +890,7 @@ function outAnnexPage(I,L){
       <tr><th>ที่</th><th>เวลาดับ–มา</th><th>ระดับ</th><th>ฟีดเดอร์ / อุปกรณ์</th><th>สาเหตุ</th><th>การแก้ไข</th><th>อุปกรณ์ที่ใช้</th></tr>${rows}</table>
     ${M.length?`<div style="margin-top:3mm">รวมอุปกรณ์ที่ใช้: ${M.map(m=>esc(m.n)+' ×'+THD(m.q)+(m.u?' '+esc(m.u):'')).join(' · ')}</div>`:''}
     ${L.some(o=>o.detail)?`<div style="margin-top:2mm">รายละเอียด: ${L.map((o,i)=>o.detail?THD(i+1)+') '+esc(o.detail):'').filter(Boolean).join(' · ')}</div>`:''}
+    ${(()=>{ const P=[]; L.forEach((o,i)=>(o.photos||[]).forEach(p=>P.push([i,p]))); return P.length?`<div style="margin-top:3mm">ภาพประกอบ:<div style="display:flex;flex-wrap:wrap;gap:2mm;margin-top:1mm">${P.slice(0,8).map(([i,p])=>`<figure style="margin:0;text-align:center;font-size:11pt"><img src="https://drive.google.com/thumbnail?id=${esc(p.fileId)}&sz=w400" style="width:40mm;height:30mm;object-fit:cover;border:1px solid #999"><figcaption>รายการ ${THD(i+1)}${p.kind==='before'?' (ก่อนแก้)':p.kind==='after'?' (หลังแก้)':''}</figcaption></figure>`).join('')}</div>${P.length>8?'<div style="font-size:11pt">และอีก '+THD(P.length-8)+' รูป ดูในระบบ</div>':''}</div>`:''; })()}
   </div></div>`;
 }
 

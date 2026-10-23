@@ -426,6 +426,20 @@ function saveOutage_(b) {
   if (isNew && d.lvl === 'hv') { try { notifyOutage_(d, by); } catch (e) { log_('system', 'แจ้งไฟดับไม่สำเร็จ', '', String(e)); } }
   return d;
 }
+/** เพิ่มรูปที่อัปโหลดขึ้น Drive (ผ่านระบบ SLD) ให้เหตุการณ์ไฟดับ — เก็บเฉพาะลิงก์ */
+function addOutPhotos_(b) {
+  const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
+  if (!x) throw new Error('ไม่พบรายการ');
+  const by = outAuth_(b, x.k), d = x.d;
+  const add = (b.photos || []).filter(function (p) { return p && p.fileId; }).slice(0, 20).map(function (p) {
+    return { fileId: String(p.fileId), url: String(p.url || ''), kind: String(p.kind || ''), at: new Date().toISOString(), by: by };
+  });
+  if (!add.length) return d;
+  d.photos = (Array.isArray(d.photos) ? d.photos : []).concat(add);
+  outSheet_().getRange(x.row, 3, 1, 3).setValues([[JSON.stringify(d), new Date(), by]]);
+  log_(by, 'แนบรูปไฟดับ', x.k.slice(0, 7), id + ' +' + add.length + ' รูป');
+  return d;
+}
 function deleteOutage_(b) {
   const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
   if (!x) throw new Error('ไม่พบรายการ');
