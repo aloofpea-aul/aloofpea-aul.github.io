@@ -13,6 +13,7 @@
 
 function tmdR_(tok, msgs) { reply_(tok, msgs); return true; }
 const TMD_PAGE_ = 'https://aloofpea-aul.github.io/tmd/';
+const TMD_SHARE_ = 'https://liff.line.me/2012182540-CRgflPne';
 
 function tmdInstall() {
   ScriptApp.getProjectTriggers()
@@ -75,7 +76,13 @@ function tmdCard_(d) {
   const btn = [];
   if (d.pdfUrl) btn.push({ type: 'button', style: 'primary', color: color, height: 'sm', action: { type: 'uri', label: 'เปิดประกาศ', uri: d.pdfUrl } });
   btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ค้นหาทั้งหมด', uri: TMD_PAGE_ } });
-  return flex_('เตือนภัย: ' + d.title, bubble_('ประกาศกรมอุตุนิยมวิทยา', color, d.title, lines, btn));
+  const b = bubble_('ประกาศกรมอุตุนิยมวิทยา', color, d.title, lines, btn);
+  // ปุ่มแชร์ (LIFF shareTargetPicker) — ส่งต่อการ์ดเข้ากลุ่มในนามผู้กด ไม่ใช้โควต้าบอท
+  b.footer = { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
+    { type: 'box', layout: 'horizontal', spacing: 'sm', contents: btn },
+    { type: 'button', style: 'primary', color: '#06C755', height: 'sm',
+      action: { type: 'uri', label: 'แชร์เข้ากลุ่ม LINE', uri: TMD_SHARE_ + '?k=' + encodeURIComponent(d.key || '') } }] };
+  return flex_('เตือนภัย: ' + d.title, b);
 }
 
 /** คำสั่งแชต — คืนค่า reply ถ้าเป็นคำสั่งเตือนภัย, ไม่ใช่คืน null (เรียกจาก handleEvent_) */
