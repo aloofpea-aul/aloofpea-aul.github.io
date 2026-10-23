@@ -44,6 +44,7 @@ main{max-width:860px;margin:0 auto;padding:12px 12px calc(24px + var(--sb));disp
 .hd .s{font-size:13px;color:var(--mut);margin-top:3px}
 .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:8px;margin-right:4px;background:var(--lob);color:var(--lo)}
 .tag.k{background:#DDEEFB;color:#0B4F80;font-weight:600}.tag.hi{background:var(--hib);color:var(--hi)}.tag.mid{background:var(--midb);color:var(--mid)}
+.kd{margin-top:6px;font-size:14px;font-weight:600;color:#0B4F80;background:#EAF4FC;border-radius:8px;padding:4px 8px;display:inline-block}
 .bd{display:none;padding:0 14px 14px 30px;font-size:15px;line-height:1.7;white-space:pre-wrap;color:#2C3640}
 .card.open .bd{display:block}
 .bd .act{display:flex;gap:8px;margin-top:10px;white-space:normal}
@@ -112,15 +113,17 @@ mark{background:#FFE69A;color:inherit;border-radius:3px}
         '<div class="t">' + hl(d.title) + '</div>' +
         '<div class="s">' + (d.focus === 'กระบี่' ? '<span class="tag k">กระบี่</span>' : d.focus === 'ภาคใต้' ? '<span class="tag">ภาคใต้</span>' : '') +
         '<span class="tag ' + c + '">' + esc(d.severity) + '</span>' + esc([d.issueNo, d.announceTime].filter(Boolean).join(' · ')) + '</div>' +
+        (d.krabiDetail ? '<div class="kd">' + esc(d.krabiDetail).replace(/\n/g, ' · ') + '</div>' : '') +
         '</span></button><div class="bd">' + hl(d.description || '-') +
-        '<div class="act">' + (d.pdfUrl ? '<a class="btn pri" target="_blank" rel="noopener" href="' + esc(d.pdfUrl) + '">เปิดประกาศ</a>' : '') +
+        '<div class="act">' + (d.pdfUrl ? '<a class="btn pri" target="_blank" rel="noopener" href="' + esc(d.pdfUrl) + '">เปิด PDF</a>' : '') +
+        (d.pageUrl ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(d.pageUrl) + '">หน้าเว็บ</a>' : '') +
         '<button class="btn" data-copy="' + i + '">คัดลอกข้อความ</button></div></div></div>';
     }).join('') + (st.data.length < st.total ? '<button class="btn more" id="more">แสดงเพิ่ม</button>' : '');
     if (st.data[0] && !st.q && st.focus === 'กระบี่' && !st.sev) banner(st.data[0]); else $('banner').innerHTML = '';
   }
   function banner(d) {
     $('banner').innerHTML = '<div class="banner ' + (d.severity === 'สูง' ? '' : 'mid') + '"><div class="b1">ฉบับล่าสุดที่เกี่ยวกับกระบี่ · ' + esc(d.announceTime) + '</div>' +
-      '<div class="b2">' + esc(d.title) + '</div></div>';
+      '<div class="b2">' + esc(d.title) + '</div>' + (d.krabiDetail ? '<div class="b1" style="margin-top:4px;font-size:14px;opacity:1">' + esc(d.krabiDetail).replace(/\n/g, ' · ') + '</div>' : '') + '</div>';
   }
 
   var seq = 0, cacheKey = function () { return 'tmd_c_' + st.focus + '|' + st.sev; };

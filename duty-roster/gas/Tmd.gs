@@ -34,11 +34,12 @@ function tmdFetch_(qs) {
 /** Trigger ทุกชั่วโมง */
 function tmdPoll() {
   const props = PropertiesService.getScriptProperties();
-  const lastKey = tmdProp_('TMD_LAST_KEY', '');
-  const r = tmdFetch_('action=since&after=' + encodeURIComponent(lastKey));
-  if (!r || !r.ok || !r.data.length) return;
-  props.setProperty('TMD_LAST_KEY', r.data[0].key);   // จำฉบับล่าสุดเสมอ
-  if (!lastKey) return;                                 // รอบแรก ไม่ส่งย้อนหลัง
+  const last = tmdProp_('TMD_LAST_SORT', '');
+  const r = tmdFetch_('action=since&after=' + encodeURIComponent(last));
+  if (!r || !r.ok) return;
+  if (!last) { if (r.latest) props.setProperty('TMD_LAST_SORT', r.latest.sortKey); return; }   // รอบแรก ไม่ส่งย้อนหลัง
+  if (!r.data.length) return;
+  props.setProperty('TMD_LAST_SORT', r.data[0].sortKey);   // จำฉบับล่าสุดเสมอ
 
   const wantKrabiOnly = tmdProp_('TMD_PUSH_FOCUS', 'ภาคใต้') === 'กระบี่';
   const hit = r.data.filter(function (d) { return d.focus === 'กระบี่' || (!wantKrabiOnly && d.focus === 'ภาคใต้'); })[0];
@@ -65,10 +66,12 @@ function tmdPoll() {
 function tmdCard_(d) {
   const color = d.severity === 'สูง' ? '#8A2B2B' : d.severity === 'กลาง' ? '#B4570B' : '#455A64';
   const where = d.focus === 'กระบี่' ? 'กระบี่ อยู่ในพื้นที่ได้รับผลกระทบ'
-              : d.focus === 'ภาคใต้' ? 'ภาคใต้ได้รับผลกระทบ — ตรวจรายจังหวัดในประกาศ' : '';
+              : d.focus === 'ภาคใต้' ? 'ภาคใต้ได้รับผลกระทบ (ไม่ระบุกระบี่)' : '';
   const desc = String(d.description || '');
-  const lines = [where || d.title, [d.issueNo, d.announceTime].filter(String).join(' · '),
-                 desc.length > 350 ? desc.slice(0, 350) + '…' : desc].filter(String);
+  const lines = [where || d.title]
+    .concat(d.krabiDetail ? String(d.krabiDetail).split('\n') : [])
+    .concat([[d.issueNo, d.announceTime].filter(String).join(' · '), desc.length > 250 ? desc.slice(0, 250) + '…' : desc])
+    .filter(String);
   const btn = [];
   if (d.pdfUrl) btn.push({ type: 'button', style: 'primary', color: color, height: 'sm', action: { type: 'uri', label: 'เปิดประกาศ', uri: d.pdfUrl } });
   btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ค้นหาทั้งหมด', uri: TMD_PAGE_ } });

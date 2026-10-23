@@ -85,7 +85,7 @@ function processPdfs_(sh) {
   const n = sh.getLastRow() - 1; if (n < 1) return;
   const data = sh.getRange(2, 1, n, HEADERS.length).getValues();
   const todo = data.map(function (r, i) { return { r: r, i: i }; })
-    .filter(function (x) { return !x.r[C.pdfDone]; })
+    .filter(function (x) { return !x.r[C.pdfDone] || /^error[12]$/.test(x.r[C.pdfDone]); })
     .sort(function (a, b) { return String(b.r[C.sortKey]).localeCompare(String(a.r[C.sortKey])); })
     .slice(0, CFG.PDF_PER_RUN);
   const t0 = Date.now();
@@ -106,15 +106,22 @@ function processPdfs_(sh) {
       r[C.pdfDone] = new Date();
     } catch (e) {
       Logger.log('แปลงไม่ได้ ' + r[C.title] + ': ' + e);
-      r[C.pdfDone] = 'error';   // ไม่วนซ้ำ — ลบช่องนี้ทิ้งถ้าต้องการลองใหม่
+      const tries = Number(String(r[C.pdfDone]).replace('error', '')) || 0;
+      r[C.pdfDone] = 'error' + (tries + 1);   // ลองใหม่ได้ 3 รอบ แล้วหยุด (ลบช่องนี้ทิ้งถ้าต้องการลองอีก)
     }
     sh.getRange(x.i + 2, 1, 1, HEADERS.length).setValues([r]);
   });
 }
 
 /* ---------- อ่านหน้าเว็บ TMD ---------- */
+/* URL ที่ UrlFetchApp รับได้แน่นอน (ถอดแล้วเข้ารหัสใหม่ทั้งเส้น) */
+function safeUrl_(u) {
+  u = dec_(String(u || '')).trim();
+  try { u = decodeURI(u); } catch (e) {}
+  return encodeURI(u).replace(/%25([0-9A-F]{2})/gi, '%$1');
+}
 function get_(url) {
-  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true,
+  const res = UrlFetchApp.fetch(safeUrl_(url), { muteHttpExceptions: true, followRedirects: true,
     headers: { 'User-Agent': 'Mozilla/5.0 (PEA Aoluek warning bot)' } });
   if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode() + ' ' + url);
   return res.getContentText('UTF-8');
@@ -128,14 +135,15 @@ function listItems_(show) {
     const dt = dec_(chunk).match(/วันที่ข้อมูล:\s*<\/div>\s*<div[^>]*>\s*([^<]+)/);
     const date = dt ? dt[1].trim() : '';
     let href = dec_(t[1]);
-    if (href.charAt(0) === '/') href = CFG.BASE + href.split('/').map(encodeURIComponent).join('/').replace(/%2F/g, '/');
+    if (href.charAt(0) === '/') href = CFG.BASE + href;
+    href = safeUrl_(href);
     return { title: clean_(t[2]), summary: ds ? clean_(ds[1]) : '', date: date, dateIso: isoOfThai_(date), pageUrl: href };
   }).filter(Boolean);
 }
 function detail_(url) {
   const html = get_(url);
   const m = html.match(/\/media\/forecast\/[^"'\s<>]+?\.pdf/i);
-  const pdf = m ? CFG.BASE + m[0] : '';
+  const pdf = m ? safeUrl_(CFG.BASE + m[0]) : '';
   const h = pdf.match(/_(\d{2})_warning/);
   const main = (html.match(/<main[\s\S]*?<\/main>/i) || [html])[0];
   return { pdfUrl: pdf, hour: h ? h[1] : '', body: clean_(main.replace(/<script[\s\S]*?<\/script>/gi, '')).slice(0, 20000) };
@@ -143,7 +151,7 @@ function detail_(url) {
 
 /* PDF → ข้อความ: แปลงเป็น Google Docs ชั่วคราว (บริการ Drive API v3) → export text → ย้ายลงถังขยะ */
 function pdfText_(pdfUrl) {
-  const blob = UrlFetchApp.fetch(pdfUrl, { muteHttpExceptions: true }).getBlob().setContentType('application/pdf');
+  const blob = UrlFetchApp.fetch(safeUrl_(pdfUrl), { muteHttpExceptions: true }).getBlob().setContentType('application/pdf');
   const f = Drive.Files.create({ name: 'tmp_tmd_warning', mimeType: 'application/vnd.google-apps.document' }, blob, { ocrLanguage: 'th' });
   try {
     const ex = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + f.id + '/export?mimeType=text/plain',
