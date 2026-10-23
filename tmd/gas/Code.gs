@@ -55,6 +55,8 @@ function fetchWarnings(show) {
   if (!lock.tryLock(20000)) return;
   try {
     const sh = sheet_();
+    sh.getRange('C:C').setNumberFormat('@');
+    repairSortKeys_(sh);
     const items = listItems_(typeof show === 'number' ? show : 20);
     const n0 = sh.getLastRow() - 1;
     const have = new Set(n0 > 0 ? sh.getRange(2, 1, n0, 1).getValues().map(function (r) { return r[0]; }) : []);
@@ -78,6 +80,21 @@ function fetchWarnings(show) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* sortKey ที่เสียจากวันที่ถูกแปลง → คำนวณใหม่ */
+function repairSortKeys_(sh) {
+  const n = sh.getLastRow() - 1; if (n < 1) return;
+  const rg = sh.getRange(2, 1, n, HEADERS.length), v = rg.getValues();
+  let changed = false;
+  v.forEach(function (r) {
+    if (String(r[C.sortKey]).indexOf('0000-00-00') !== 0 && !(r[C.announceDate] instanceof Date)) return;
+    const hour = (String(r[C.pdfUrl]).match(/_(\d{2})_warning/) || [])[1] || '';
+    r[C.announceDate] = thaiDate_(r[C.announceDate]);
+    r[C.sortKey] = sortKey_(isoOfThai_(r[C.announceDate]), hour, r[C.issueNo]);
+    changed = true;
+  });
+  if (changed) rg.setValues(v);
 }
 
 /* แปลง PDF ของแถวที่ยังไม่ได้ทำ — ใหม่ก่อน */
@@ -197,7 +214,7 @@ function doGet(e) {
   const sh = sheet_(), n = sh.getLastRow() - 1;
   const rows = n > 0 ? sh.getRange(2, 1, n, HEADERS.length).getValues() : [];
   let data = rows.map(function (r) {
-    return { key: r[C.key], sortKey: String(r[C.sortKey]), announceTime: String(r[C.announceDate]), issueNo: r[C.issueNo],
+    return { key: r[C.key], sortKey: String(r[C.sortKey]), announceTime: thaiDate_(r[C.announceDate]), issueNo: r[C.issueNo],
              title: r[C.title], focus: r[C.focus], severity: r[C.severity], krabiDetail: r[C.krabiDetail],
              description: r[C.summary], pdfUrl: r[C.pdfUrl], pageUrl: r[C.pageUrl], ready: !!r[C.pdfDone], _t: r[C.fullText] };
   }).sort(function (a, b) { return b.sortKey.localeCompare(a.sortKey); });
@@ -245,8 +262,13 @@ function dec_(s) {
 }
 function clean_(html) { return dec_(String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim(); }
 function issueNo_(t) { const m = String(t).match(/ฉบับที่\s*\d+\s*\(\s*\d+\s*\/\s*\d+\s*\)/); return m ? m[0].replace(/\s+/g, ' ') : ''; }
+/* ชีตอาจแปลง "23 ตุลาคม 2569" เป็นค่าวันที่ (ปี ค.ศ. 2569) — แปลงกลับเป็นข้อความไทย */
+function thaiDate_(v) {
+  if (v instanceof Date) return v.getDate() + ' ' + TH_MONTH[v.getMonth()] + ' ' + v.getFullYear();
+  return String(v || '');
+}
 function isoOfThai_(s) {
-  const m = String(s || '').match(/(\d{1,2})\s*(\S+)\s*(25\d\d)/); if (!m) return '';
+  const m = thaiDate_(s).match(/(\d{1,2})\s*(\S+)\s*(25\d\d)/); if (!m) return '';
   const mo = TH_MONTH.indexOf(m[2]); if (mo < 0) return '';
   return (+m[3] - 543) + '-' + ('0' + (mo + 1)).slice(-2) + '-' + ('0' + m[1]).slice(-2);
 }
