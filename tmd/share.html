@@ -30,6 +30,7 @@ body{margin:0;background:#F3F6F8;color:#17212B;font-family:'IBM Plex Sans Thai',
   <button class="btn" id="share" style="display:none">แชร์เข้ากลุ่ม / แชท LINE</button>
   <button class="btn btn2" id="close" style="display:none">ปิด</button>
   <div class="err" id="err"></div>
+  <div id="dbg" style="font-size:11px;color:#8A949C;text-align:center;word-break:break-all"></div>
 </div>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
@@ -77,10 +78,11 @@ body{margin:0;background:#F3F6F8;color:#17212B;font-family:'IBM Plex Sans Thai',
   }
 
   function share() {
-    if (!liff.isApiAvailable('shareTargetPicker')) return fail('อุปกรณ์นี้แชร์ไม่ได้ กรุณาอัปเดตแอป LINE แล้วลองใหม่');
+    var info = 'inClient=' + liff.isInClient() + ' · OS=' + liff.getOS() + ' · LINE=' + (liff.getLineVersion() || '-') + ' · LIFF=' + liff.getVersion() + ' · stp=' + liff.isApiAvailable('shareTargetPicker');
+    $('dbg').textContent = info;
     liff.shareTargetPicker([msg.flex], { isMultiple: true }).then(function (res) {
       if (res) { $('st').textContent = 'แชร์แล้ว ✓'; $('st').style.display = 'block'; setTimeout(function () { try { liff.closeWindow(); } catch (e) {} }, 800); }
-    }).catch(function (e) { fail('แชร์ไม่สำเร็จ: ' + (e && e.message || e)); });
+    }).catch(function (e) { fail('แชร์ไม่สำเร็จ: ' + (e && (e.code ? e.code + ' — ' : '') + (e.message || e))); });
   }
 
   function load() {
