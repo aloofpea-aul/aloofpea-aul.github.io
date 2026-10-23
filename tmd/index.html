@@ -81,11 +81,11 @@ mark{background:#FFE69A;color:inherit;border-radius:3px}
 (function () {
   'use strict';
   /* URL ของ Web app ฐานข้อมูลประกาศ (tmd/gas/Code.gs) — ใส่ครั้งเดียวที่นี่ หรือเปิดหน้านี้ด้วย ?api=URL */
-  var DEFAULT_API = '';
+  var DEFAULT_API = 'https://script.google.com/macros/s/AKfycbyF7Am81Ut4aUbzTbACUFpJhIQ2q3iKiiTxoLM8IoGvANQ8NQpaM5BvokCeyOWiAqrwNA/exec';
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
   var p = new URLSearchParams(location.search);
   if (p.get('api')) { ls('tmd_api', p.get('api')); p.delete('api'); try { history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '')); } catch (e) {} }
-  var API = ls('tmd_api') || DEFAULT_API;
+  var API = DEFAULT_API || ls('tmd_api');
 
   var st = { focus: ls('tmd_focus') == null ? 'กระบี่' : ls('tmd_focus'), sev: '', q: '', limit: 50, data: [], total: 0 };
   var $ = function (id) { return document.getElementById(id); };
