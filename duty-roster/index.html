@@ -22,6 +22,7 @@ html{overflow-x:hidden}.app{overflow-x:clip}
 .days{position:relative;overscroll-behavior-x:contain}
 header.top{background:var(--pri);color:#fff;padding:calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 14px calc(16px + env(safe-area-inset-left));display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:5}
 header.top .t1{display:none}header.top .t2{font-size:17px;font-weight:700}
+header.top .t2{display:flex;align-items:center;gap:8px}.hlogo{width:28px;height:28px;border-radius:7px;flex:none;box-shadow:0 0 0 1.5px rgba(255,255,255,.35)}
 header.top{padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));min-height:50px;justify-content:center}
 .mpill{position:relative;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 9px;border-radius:16px;background:rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
 .mpill .mdot{width:8px;height:8px;border-radius:50%;background:#7BE08A;flex:0 0 8px}.mpill .mdot.draft{background:#F5C25B}
@@ -241,7 +242,7 @@ fieldset:disabled{opacity:.55}
 <div class="app" id="app">
   <header class="top" id="hdr">
     <div class="row" style="justify-content:space-between">
-      <div><div class="t1">กฟส.อ่าวลึก · ตารางเวร · รายงานเวร · ไฟดับ</div><div class="t2" id="hdrTitle">งานเวรแก้ไฟ</div></div>
+      <div><div class="t1">กฟส.อ่าวลึก · ตารางเวร · รายงานเวร · ไฟดับ</div><div class="t2" id="hdrTitle"><img src="icon.svg?v=1" alt="" class="hlogo" width="28" height="28">งานเวรแก้ไฟ</div></div>
       <span class="badge" id="hdrBadge"></span>
       <label class="mpill" id="hMonth" aria-label="เลือกเดือน"><span class="mdot" id="hMonthDot"></span><span id="hMonthT"></span><span aria-hidden="true">⌄</span><select id="dMonth"></select></label>
     </div>
