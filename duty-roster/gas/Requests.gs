@@ -11,9 +11,16 @@
 const FREE_ = { emp: '', wk: '0' };
 
 function isFree_(g, c) { return g === 'emp' ? (c === '' || c === 'S') : c === '0'; }
+/** รหัสเวรพนักงานอาจรวมหลายช่วงได้เมื่อผู้อนุมัติยอมให้อยู่ต่อเนื่อง: '1,3' · '1,2,3' */
+function cHas_(c, p) { return String(c || '').split(',').indexOf(p) >= 0; }
+function mergeCode_(t, c) {
+  const a = String(t || '').split(',').filter(String), b = String(c || '').split(',').filter(String);
+  if (a.some(function (x) { return b.indexOf(x) >= 0; })) throw new Error('ช่วงเวรซ้อนกัน');
+  return a.concat(b).sort().join(',');
+}
 
 function codeLabel_(g, c) {
-  if (g === 'emp') return ({ '1': 'ช่วง 1', '3': 'ช่วง 3', '2,3': 'ช่วง 2+3', 'S': 'เตรียมพร้อม', '': 'ว่าง' })[c] || c;
+  if (g === 'emp') return ({ '1': 'ช่วง 1', '3': 'ช่วง 3', '2,3': 'ช่วง 2+3', '1,3': 'ช่วง 1 + ช่วง 3', '1,2,3': 'ช่วง 1+2+3 (ต่อเนื่อง)', 'S': 'เตรียมพร้อม', '': 'ว่าง' })[c] || c;
   return c === '0' ? 'พักกะ' : 'กะ ' + c;
 }
 
@@ -29,7 +36,7 @@ function buildOps_(type, p) {
     return [{ op: 'move', g: p.g, from: p.a, to: p.b, day: Number(p.da) },
             { op: 'move', g: p.g, from: p.b, to: p.a, day: Number(p.db) }];
   }
-  if (type === 'leave') return [{ op: 'move', g: p.g, from: p.a, to: p.r, day: Number(p.d) }];
+  if (type === 'leave') return [{ op: 'move', g: p.g, from: p.a, to: p.r, day: Number(p.d), merge: p.g === 'emp' && !!p.cont }];
   throw new Error('ประเภทคำขอไม่ถูกต้อง');
 }
 
@@ -43,7 +50,13 @@ function applyOps_(data, ops) {
       if (!map[o.from] || !map[o.to]) throw new Error('ไม่พบรายชื่อ');
       const c = map[o.from][i], t = map[o.to][i];
       if (isFree_(o.g, c)) throw new Error(o.from + ' ไม่มีเวรวันที่ ' + o.day);
-      if (!isFree_(o.g, t)) throw new Error(o.to + ' มีเวร (' + codeLabel_(o.g, t) + ') วันที่ ' + o.day + ' แล้ว');
+      if (!isFree_(o.g, t)) {
+        if (!o.merge) throw new Error(o.to + ' มีเวร (' + codeLabel_(o.g, t) + ') วันที่ ' + o.day + ' แล้ว');
+        const nc = mergeCode_(t, c);                        // อยู่ต่อเนื่อง (ผู้อนุมัติยอม) — รวมช่วงเวร
+        map[o.to][i] = nc; map[o.from][i] = FREE_[o.g];
+        out.push({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, prevTo: t, toAfter: nc, merged: true });
+        return;
+      }
       map[o.to][i] = c; map[o.from][i] = FREE_[o.g];
       out.push({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, replacedStandby: t === 'S' });
     } else if (o.op === 'xchg') {
@@ -59,7 +72,7 @@ function applyOps_(data, ops) {
 function describe_(month, type, p, data) {
   const lab = function (n, d) { return n + ' (' + thShort_(month, d) + ' ' + codeLabel_(p.g, data[p.g][n][d - 1]) + ')'; };
   if (type === 'swap') return 'แลกเวร: ' + lab(p.a, Number(p.da)) + ' ⇄ ' + lab(p.b, Number(p.db));
-  return 'ลาเวร: ' + lab(p.a, Number(p.d)) + ' → ' + p.r + ' เข้าแทน';
+  return 'ลาเวร: ' + lab(p.a, Number(p.d)) + ' → ' + p.r + ' เข้าแทน' + (p.cont ? ' (อยู่ต่อเนื่อง · ผู้อนุมัติยอม)' : '');
 }
 
 function reqRows_() {
@@ -217,8 +230,8 @@ function myRecentBlock_(short) {
   const now = Date.now(), today = bkkYmd_(), cand = [];
   [addDays_(today, -1), today].forEach(function (d) {
     const c = empCode_(d, short);
-    if (c === '1') cand.push({ k: d + '|p1', s: new Date(d + 'T00:30:00+07:00').getTime(), e: new Date(d + 'T08:30:00+07:00').getTime() });
-    if (c === '3' || c === '2,3') cand.push({ k: d + '|p3', s: new Date(d + 'T' + (c === '3' ? '16:30' : '08:30') + ':00+07:00').getTime(), e: new Date(addDays_(d, 1) + 'T00:30:00+07:00').getTime() });
+    if (cHas_(c, '1')) cand.push({ k: d + '|p1', s: new Date(d + 'T00:30:00+07:00').getTime(), e: new Date(d + 'T08:30:00+07:00').getTime() });
+    if (cHas_(c, '3')) cand.push({ k: d + '|p3', s: new Date(d + 'T' + (cHas_(c, '2') ? '08:30' : '16:30') + ':00+07:00').getTime(), e: new Date(addDays_(d, 1) + 'T00:30:00+07:00').getTime() });
   });
   const ok = cand.filter(function (b) { return now >= b.s - 3600000 && now <= b.e + 12 * 3600000; });
   return ok.length ? ok[ok.length - 1] : null;
@@ -304,8 +317,8 @@ function deleteRequest_(id, revertIgnored, who) {
         }
         return mine.slice().reverse().every(function (c) {
           const map = data[c.g], i = c.day - 1;
-          if (!map[c.to] || map[c.to][i] !== c.code || !isFree_(c.g, map[c.from][i])) return false;
-          map[c.from][i] = c.code; map[c.to][i] = c.replacedStandby ? 'S' : FREE_[c.g]; return true;
+          if (!map[c.to] || map[c.to][i] !== (c.merged ? c.toAfter : c.code) || !isFree_(c.g, map[c.from][i])) return false;
+          map[c.from][i] = c.code; map[c.to][i] = c.merged ? c.prevTo : c.replacedStandby ? 'S' : FREE_[c.g]; return true;
         });
       };
       if (!undo(test)) return { mismatch: true };

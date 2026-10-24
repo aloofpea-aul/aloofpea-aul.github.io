@@ -360,7 +360,8 @@ fieldset:disabled{opacity:.55}
         <label class="f">เวรที่จะเปลี่ยน<select id="qDa"></select></label>
         <label class="f" id="qBWrap">แลกกับ<select id="qB"></select></label>
         <label class="f" id="qDbWrap">รับเวรของคู่วันที่<select id="qDb"></select></label>
-        <label class="f hide" id="qRWrap">คนเข้าแทน (เรียงจากเวรน้อยสุด)<select id="qR"></select></label>
+        <label class="f hide" id="qRWrap">คนเข้าแทน (เรียงจากเวรน้อยสุด)<select id="qR"></select>
+          <span class="ckb hide" id="qContWrap" style="margin-top:6px;font-weight:400"><input type="checkbox" id="qCont"> <span>ยอมให้คนที่มีเวรวันเดียวกันเข้าแทน <b style="color:#9B1C1C">(อยู่ต่อเนื่อง)</b> — ต้องให้ หผ.ปร./ชผ. อนุมัติ</span></span></label>
       </div>
       <div class="grid2" style="margin-top:8px">
         <label class="f">เหตุผล (ใช้ในบันทึกลาเวร)<select id="qWhy"><option value="errand">ลากิจ</option><option value="sick">ลาป่วย</option><option value="vacation">ลาพักผ่อน</option><option value="private">ธุระส่วนตัว</option><option value="official">ปฏิบัติงานราชการตามคำสั่ง</option></select></label>
@@ -516,7 +517,10 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset
 /* ---------- เวรรายวัน ---------- */
 function rankOf(){const o={};[...S.boot.people.emp,...S.boot.people.wk].forEach((p,k)=>o[p.short]=k);return n=>(n in o?o[n]:999);}
 /* การเปลี่ยนเวรของวัน i (อนุมัติแล้ว) — ล่าสุดของแต่ละคน+ช่วง */
-const CODE_TH={'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','S':'เตรียมพร้อม'};
+const CODE_TH={'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','S':'เตรียมพร้อม'};
+/* รหัสเวรพนักงานรวมหลายช่วงได้เมื่อผู้อนุมัติยอมให้อยู่ต่อเนื่อง ('1,3' · '1,2,3') */
+const cHas=(c,p)=>String(c||'').split(',').includes(p);
+const cParts=c=>String(c||'').split(',').filter(x=>x==='1'||x==='2'||x==='3').length;
 function dayChanges(data,group,i){
   const by={}; (S.mrAll||[]).forEach(r=>by[r.id]=r);
   const L=(data.changes||[]).filter(c=>c.g===group&&c.day===i+1);
@@ -530,9 +534,9 @@ function shiftRows(data,group,i){
   if(group==='emp'){
     const e=data.emp;
     return [
-      {l:'ช่วง',n:'1',t:'00.30 – 08.30 น.',v:who(e,c=>c==='1'),bg:'var(--c1)',fg:'var(--c1f)'},
-      {l:'ช่วง',n:'2',t:'08.30 – 16.30 น.',v:day.off?who(e,c=>c==='2,3'):'วันทำการ — ไม่มีเวร',bg:'var(--c2)',fg:'var(--c2f)'},
-      {l:'ช่วง',n:'3',t:'16.30 – 00.30 น.',v:who(e,c=>c==='3'||c==='2,3'),bg:'var(--c3)',fg:'var(--c3f)'},
+      {l:'ช่วง',n:'1',t:'00.30 – 08.30 น.',v:who(e,c=>cHas(c,'1')),bg:'var(--c1)',fg:'var(--c1f)'},
+      {l:'ช่วง',n:'2',t:'08.30 – 16.30 น.',v:day.off?who(e,c=>cHas(c,'2')):'วันทำการ — ไม่มีเวร',bg:'var(--c2)',fg:'var(--c2f)'},
+      {l:'ช่วง',n:'3',t:'16.30 – 00.30 น.',v:who(e,c=>cHas(c,'3')),bg:'var(--c3)',fg:'var(--c3f)'},
       {l:'พร้อม',n:'•',t:'เตรียมพร้อม (ช่วง 1)',v:who(e,c=>c==='S'),bg:'#E4E4E4',fg:'#3A3A3A'}];
   }
   const w=data.wk;
@@ -1122,7 +1126,7 @@ async function renderGen(){
   $('gPairs').innerHTML=opts.map(o=>`<div class="opt ${S.pair===o.k?'on':''}" data-k="${o.k}"><div><div style="font-weight:600">${esc(o.t)}${o.k!=='auto'&&+o.k===best?' · แนะนำ':''}</div>${o.s.avoidHits?`<div class="muted" style="color:#8A2B2B">มีคู่ต้องห้าม ${o.s.avoidHits} วัน</div>`:''}</div><div class="sc">${o.s.overlap}<div class="muted" style="font-weight:400">ครั้งซ้ำ</div></div></div>`).join('');
   $('gPairs').querySelectorAll('.opt').forEach(el=>el.onclick=()=>{S.pair=el.dataset.k;renderGen();});
   // นับครั้ง
-  const cnt=n=>g.emp[n].reduce((s,c)=>s+(c==='1'||c==='3'?1:c==='2,3'?2:0),0);
+  const cnt=n=>g.emp[n].reduce((s,c)=>s+cParts(c),0);
   const names=S.boot.people.emp.map(p=>p.short), mx=Math.max(...names.map(cnt));
   $('gCounts').innerHTML=names.map(n=>`<div style="display:grid;grid-template-columns:96px 1fr 30px;gap:8px;align-items:center;font-size:13px"><div>${esc(n)}${S.boot.people.quotas[n]!=null?' <span class="muted">(≤'+S.boot.people.quotas[n]+')</span>':''}</div><div class="bar"><i style="width:${cnt(n)/mx*100}%"></i></div><b style="text-align:right">${cnt(n)}</b></div>`).join('');
   $('gNotes').innerHTML=g.notes.length?`<div class="note warn" style="margin-top:8px">${g.notes.map(esc).join('<br>')}</div>`:'';
@@ -1195,7 +1199,7 @@ function empPage(r,cfg,docDate,sheet){
   CL.forEach((c,k)=>{CHG[c.to+'|'+c.day]=CHG[c.to+'|'+c.day]||String(k+1);});
   S.boot.people.emp.forEach(p=>{
     const codes=g.emp[p.short]||[];
-    const has=(c,i)=>i===0?c==='1':i===1?c==='2,3':(c==='3'||c==='2,3');
+    const has=(c,i)=>cHas(c,String(i+1));
     const cnt=[0,1,2].map(i=>codes.filter(c=>has(c,i)).length), tot=cnt[0]+cnt[1]+cnt[2];
     [0,1,2].forEach(i=>{
       rows+=`<tr class="${i===0?'g':''}">`;
@@ -1305,10 +1309,11 @@ function rangeLong(a,b){ if(+a===+b) return dLong(a); const p=dParts(a),q=dParts
 /* ช่วงเวลาของเวร: ช่วง 2+3 แยกเป็น 2 ฉบับตอนพิมพ์ (08:30–16:30 และ 16:30–00:30) — รวมเวลากันไม่ได้ */
 function segsOf(key,day,code){
   const a=dOf(key,day),b=dOf(key,day+1);
-  if(code==='1') return [{a,b:a,s:'00:30',e:'08:30'}];
-  if(code==='3') return [{a,b,s:'16:30',e:'00:30'}];
-  if(code==='2,3') return [{a,b:a,s:'08:30',e:'16:30'},{a,b,s:'16:30',e:'00:30'}];
-  return [];
+  const out=[];
+  if(cHas(code,'1')) out.push({a,b:a,s:'00:30',e:'08:30'});
+  if(cHas(code,'2')) out.push({a,b:a,s:'08:30',e:'16:30'});
+  if(cHas(code,'3')) out.push({a,b,s:'16:30',e:'00:30'});
+  return out;
 }
 const WHY={sick:'ลาป่วย',errand:'ลากิจ',vacation:'ลาพักผ่อน',private:'ธุระส่วนตัว',official:'ปฏิบัติงานราชการ'};
 async function monthReqs(key){
@@ -1462,8 +1467,8 @@ function leaveLogPages(key,items,cfg){
 function sheetInfo(key,data,d,part){
   const day=data.days[d-1], rank=rankOf(), e=data.emp, ppl={};
   Object.keys(e).forEach(n=>{const c=e[n][d-1];
-    if(part==='p1'&&c==='1') ppl[n]='ช่วง 1';
-    if(part==='p3'&&(c==='3'||c==='2,3')) ppl[n]=c==='3'?'ช่วง 3':'ช่วง 2+3';});
+    if(part==='p1'&&cHas(c,'1')) ppl[n]='ช่วง 1';
+    if(part==='p3'&&cHas(c,'3')) ppl[n]=cHas(c,'2')?'ช่วง 2+3':'ช่วง 3';});
   const names=Object.keys(ppl).sort((x,y)=>rank(x)-rank(y));
   const t0=part==='p1'?'00:30':day.off?'08:30':'16:30', t1=part==='p1'?'08:30':'00:30';
   const a=dOf(key,d), b=part==='p1'?a:dOf(key,d+1);
@@ -1571,9 +1576,9 @@ $('rSetStatus').onclick=async()=>{
 
 
 /* ---------- เปลี่ยน/ลาเวร ---------- */
-const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','S':'เตรียมพร้อม','':'ว่าง'})[c]||c, wk:c=>c==='0'?'พักกะ':'กะ '+c};
+const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','S':'เตรียมพร้อม','':'ว่าง'})[c]||c, wk:c=>c==='0'?'พักกะ':'กะ '+c};
 const isFree=(g,c)=>g==='emp'?(c===''||c==='S'):c==='0';
-const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?(c==='1'||c==='3'?1:c==='2,3'?2:0):(c==='0'?0:c==='1,3'?2:1)),0);
+const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?cParts(c):(c==='0'?0:c==='1,3'?2:1)),0);
 function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);}
 S.qType='swap';
 async function renderReq(){
@@ -1587,7 +1592,7 @@ async function renderReq(){
       document.querySelectorAll('#qType button').forEach(x=>x.classList.toggle('on',x===b));qForm('type');});
     ['qMonth','qGroup'].forEach(id=>$(id).onchange=()=>qForm('month'));
     $('qA').onchange=()=>qForm('a'); $('qDa').onchange=()=>qForm('da'); $('qB').onchange=()=>qForm('b');
-    $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r');
+    $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r'); $('qCont').onchange=()=>qForm('cont');
     $('qNow').onchange=()=>$('qPinWrap').classList.toggle('hide',!$('qNow').checked);
     $('qDocDate').value=todayIso();
     sgOptions($('qSg')); $('qSg').onchange=()=>$$('.qSgC').forEach(e=>e.classList.toggle('hide',$('qSg').value!=='custom'));
@@ -1618,8 +1623,11 @@ async function qForm(stage){
       fill('qDb',opts,true);
     }
   }else{
-    const free=names.filter(n=>n!==a&&isFree(g,map[n][da-1])).map(n=>({n,c:dutyCount(g,map[n]),sb:map[n][da-1]==='S'})).sort((x,y)=>x.c-y.c);
-    fill('qR',free.map(x=>[x.n,x.n+' — เดือนนี้ '+x.c+' ครั้ง'+(x.sb?' · (เตรียมพร้อมวันนั้น)':'')]),true);
+    const cont=g==='emp'&&$('qCont').checked, ac=map[a]?map[a][da-1]:'';
+    const fit=n=>{ const t=map[n][da-1]; if(isFree(g,t)) return true; if(!cont) return false; const A=String(ac).split(','), T=String(t).split(','); return !A.some(x=>T.includes(x)); };
+    const free=names.filter(n=>n!==a&&fit(n)).map(n=>({n,c:dutyCount(g,map[n]),sb:map[n][da-1]==='S',busy:!isFree(g,map[n][da-1])?map[n][da-1]:''})).sort((x,y)=>(x.busy?1:0)-(y.busy?1:0)||x.c-y.c);
+    $('qContWrap').classList.toggle('hide',g!=='emp');
+    fill('qR',free.map(x=>[x.n,x.n+' — เดือนนี้ '+x.c+' ครั้ง'+(x.sb?' · (เตรียมพร้อมวันนั้น)':'')+(x.busy?' · ⚠️ มี'+CODE_LBL[g](x.busy)+' อยู่แล้ว → ต่อเนื่อง':'')]),true);
   }
   // สรุป
   let txt='';
@@ -1627,13 +1635,15 @@ async function qForm(stage){
   else if(swap){ const b=$('qB').value, db=+$('qDb').value;
     txt=db?`${a} (${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[a][da-1])}) ⇄ ${b} (${data.days[db-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[b][db-1])})`:'ไม่มีวันที่แลกกันได้ — เลือกคู่คนอื่น';
   } else { const r=$('qR').value;
-    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])}) → ${r} เข้าแทน`:'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" แทน'; }
+    const rb=r&&!isFree(g,map[r][da-1])?map[r][da-1]:'';
+    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])}) → ${r} เข้าแทน`+(rb?` · ⚠️ ${r} มี${CODE_LBL[g](rb)} อยู่แล้ว จะอยู่ต่อเนื่องเป็น ${CODE_LBL[g](String(rb).split(',').concat(String(map[a][da-1]).split(',')).sort().join(','))}`:''):'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" หรือติ๊ก "ยอมให้อยู่ต่อเนื่อง"'; }
   $('qPreview').textContent=txt;
   $('qSubmit').disabled=swap?!$('qDb').value:!$('qR').value;
 }
 $('qSubmit').onclick=async()=>{
   const key=$('qMonth').value,g=$('qGroup').value,a=$('qA').value,da=+$('qDa').value;
   const payload=S.qType==='swap'?{g,a,da,b:$('qB').value,db:+$('qDb').value}:{g,a,d:da,r:$('qR').value};
+  if(S.qType!=='swap'&&g==='emp'&&$('qCont').checked){ const mo=S.months[key], t=mo&&mo.data.emp[payload.r]?mo.data.emp[payload.r][da-1]:''; if(t&&t!=='S') payload.cont=true; }
   const wk=$('qWhy').value; payload.why={k:wk}; payload.docDate=$('qDocDate').value||todayIso();
   if(wk==='official'){ payload.why.order=$('qOrder').value.trim(); payload.why.orderDate=$('qOrderDate').value;
     if(!payload.why.order){msg('qMsg','ใส่เลขที่คำสั่งที่ไปปฏิบัติงานราชการ','warn');return;} }

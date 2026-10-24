@@ -53,11 +53,11 @@ function rankMap_() {
 function slotRecipients_(kind, dd, cfg) {
   const e = dd.emp;
   if (kind === 'emp1') {
-    const r = who_(e, function (c) { return c === '1'; });
+    const r = who_(e, function (c) { return cHas_(c, '1'); });
     return String(cfg.notifyStandby) === 'true' ? r.concat(who_(e, function (c) { return c === 'S'; })) : r;
   }
-  if (kind === 'emp2') return dd.day.off ? who_(e, function (c) { return c === '2,3'; }) : [];
-  if (kind === 'emp3') return who_(e, function (c) { return c === '3' || c === '2,3'; });
+  if (kind === 'emp2') return dd.day.off ? who_(e, function (c) { return cHas_(c, '2') && !cHas_(c, '1'); }) : [];   // 1+2+3 อยู่ต่อจากช่วง 1 ไม่ต้องแจ้งซ้ำ
+  if (kind === 'emp3') return who_(e, function (c) { return cHas_(c, '3') && !(cHas_(c, '1') && cHas_(c, '2')); });
   return [];
 }
 
@@ -71,9 +71,9 @@ function summaryLines_(dd) {
   const e = dd.emp, w = dd.wk, j = function (a) { return a.length ? a.join(', ') : '—'; };
   const L = [];
   L.push('พนักงาน');
-  L.push('ช่วง 1: ' + j(who_(e, function (c) { return c === '1'; })));
-  if (dd.day.off) L.push('ช่วง 2: ' + j(who_(e, function (c) { return c === '2,3'; })));
-  L.push('ช่วง 3: ' + j(who_(e, function (c) { return c === '3' || c === '2,3'; })));
+  L.push('ช่วง 1: ' + j(who_(e, function (c) { return cHas_(c, '1'); })));
+  if (dd.day.off) L.push('ช่วง 2: ' + j(who_(e, function (c) { return cHas_(c, '2'); })));
+  L.push('ช่วง 3: ' + j(who_(e, function (c) { return cHas_(c, '3'); })));
   L.push('เตรียมพร้อม: ' + j(who_(e, function (c) { return c === 'S'; })));
   L.push('คนงาน');
   L.push('กะ 1: ' + j(who_(w, function (c) { return c.split(',').indexOf('1') >= 0; })));
@@ -127,25 +127,28 @@ function personOf_(short) {
 
 /* ---- ช่วงเข้า–ออกเวรต่อเนื่องของพนักงาน (ช่วง 3 ต่อช่วง 1 วันรุ่งขึ้น = ออก 08:30) ---- */
 function empCode_(ymd, n) { const dd = dayData_(ymd); return dd && dd.emp[n] != null ? dd.emp[n] : ''; }
-function empBlock_(ymd, n) {
+function empBlock_(ymd, n, kind) {
   const c = empCode_(ymd, n), prev = addDays_(ymd, -1), next = addDays_(ymd, 1);
-  if (c === '1') {
+  if (cHas_(c, '1') && cHas_(c, '2')) {                     // 1+2+3 ต่อเนื่องทั้งวัน
+    const pc = empCode_(prev, n), nc = empCode_(next, n);
+    return { inD: cHas_(pc, '3') ? prev : ymd, inT: cHas_(pc, '3') ? (cHas_(pc, '2') ? '08:30' : '16:30') : '00:30', outD: next, outT: cHas_(nc, '1') ? '08:30' : '00:30' };
+  }
+  if (cHas_(c, '1') && (kind !== 'emp3' || !cHas_(c, '3'))) {
     const pc = empCode_(prev, n);
-    if (pc === '3') return { inD: prev, inT: '16:30', outD: ymd, outT: '08:30' };
-    if (pc === '2,3') return { inD: prev, inT: '08:30', outD: ymd, outT: '08:30' };
+    if (cHas_(pc, '3')) return { inD: prev, inT: cHas_(pc, '2') ? '08:30' : '16:30', outD: ymd, outT: '08:30' };
     return { inD: ymd, inT: '00:30', outD: ymd, outT: '08:30' };
   }
-  if (c === '3' || c === '2,3') {
+  if (cHas_(c, '3')) {
     const nc = empCode_(next, n);
-    return { inD: ymd, inT: c === '3' ? '16:30' : '08:30', outD: next, outT: nc === '1' ? '08:30' : '00:30' };
+    return { inD: ymd, inT: cHas_(c, '2') ? '08:30' : '16:30', outD: next, outT: cHas_(nc, '1') ? '08:30' : '00:30' };
   }
   return null;
 }
 /** ทีมที่อยู่ในการแจ้งรอบนั้น */
 function teamOf_(kind, dd) {
   const e = dd.emp;
-  if (kind === 'emp1') return who_(e, function (c) { return c === '1'; });
-  return who_(e, function (c) { return c === '3' || c === '2,3'; });
+  if (kind === 'emp1') return who_(e, function (c) { return cHas_(c, '1'); });
+  return who_(e, function (c) { return cHas_(c, '3'); });
 }
 
 /* ---- สภาพอากาศ (Open-Meteo ฟรี ไม่ต้องใช้คีย์) + ระดับ 1–6 ---- */
@@ -243,11 +246,11 @@ function onDutyNow_() {
   const dd = dayData_(ymd), py = dayData_(addDays_(ymd, -1));
   if (dd) Object.keys(dd.emp).forEach(function (n) {
     const c = dd.emp[n];
-    if (c === '1' && hm >= '00:00' && hm < '09:00') out[n] = 1;
-    if (c === '2,3' && hm >= '08:00') out[n] = 1;
-    if (c === '3' && hm >= '16:00') out[n] = 1;
+    if (cHas_(c, '1') && hm >= '00:00' && hm < '09:00') out[n] = 1;
+    if (cHas_(c, '2') && hm >= '08:00') out[n] = 1;
+    if (cHas_(c, '3') && hm >= '16:00') out[n] = 1;
   });
-  if (py) Object.keys(py.emp).forEach(function (n) { const c = py.emp[n]; if ((c === '3' || c === '2,3') && hm < '01:00') out[n] = 1; });
+  if (py) Object.keys(py.emp).forEach(function (n) { const c = py.emp[n]; if (cHas_(c, '3') && hm < '01:00') out[n] = 1; });
   if (dd) Object.keys(dd.wk).forEach(function (n) {
     const k = String(dd.wk[n]).split(',');
     if ((k.indexOf('1') >= 0 && hm < '08:30') || (k.indexOf('2') >= 0 && hm >= '07:30' && hm < '16:30') || (k.indexOf('3') >= 0 && hm >= '15:30')) out[n] = 1;
@@ -325,12 +328,13 @@ function shiftMessage_(kind, ymd, name, dd) {
   const def = SLOT_DEF[kind], cfg = getConfig_();
   let title = def.title;
   if (kind === 'emp3' && dd.emp[name] === '2,3') title = 'ช่วง 3 · 16:30 น. (ต่อจากช่วง 2)';
+  if (kind === 'emp1' && cHas_(dd.emp[name], '1') && cHas_(dd.emp[name], '2')) title = 'ช่วง 1+2+3 · 00:30 น. (อยู่ต่อเนื่องถึง 00:30 วันรุ่งขึ้น)';
   if (kind === 'emp1' && dd.emp[name] === 'S') title = 'เตรียมพร้อม ช่วง 1 · 00:30 น.';
   const body = [
     { type: 'text', text: OFFICE_TITLE_, weight: 'bold', size: 'sm', wrap: true, color: '#1E1A22' },
     { type: 'text', text: 'ติดต่อได้ 24 ชม. · ' + thDateLong_(ymd) + (dd.day.off ? ' · วันหยุด' : ''), size: 'xs', color: '#6B6372', wrap: true }];
   teamOf_(kind, dd).forEach(function (n, i) {
-    const p = personOf_(n), bl = empBlock_(ymd, n);
+    const p = personOf_(n), bl = empBlock_(ymd, n, kind);
     body.push({ type: 'separator', margin: 'md' });
     body.push({ type: 'text', text: (i + 1) + '. ' + p.full + (n === name ? '  (คุณ)' : ''), weight: 'bold', size: 'sm', margin: 'md', wrap: true });
     if (bl) body.push({ type: 'text', text: 'เข้า ' + thShortD_(bl.inD) + ' ' + bl.inT + ' → ออก ' + thShortD_(bl.outD) + ' ' + bl.outT + ' น.', size: 'xs', color: '#4A4450', wrap: true });
@@ -375,7 +379,7 @@ function announceText_(kind, ymd) {
   const cfg = getConfig_(), L = [];
   L.push('👷⚡ พนักงานประจำเวรแก้กระแสไฟฟ้าขัดข้อง การไฟฟ้าส่วนภูมิภาคสาขาอำเภออ่าวลึก ติดต่อได้ 24 ช.ม.⚡👷', '', '🛠️ พนักงานช่างประจำเวร แก้กระแสไฟฟ้าขัดข้อง 🛠️');
   teamOf_(kind, dd).forEach(function (n, i) {
-    const p = personOf_(n), bl = empBlock_(ymd, n);
+    const p = personOf_(n), bl = empBlock_(ymd, n, kind);
     L.push('', (i + 1) + '.' + p.full);
     if (p.phone) L.push('', '📞 เบอร์โทร ' + fmtPhone_(p.phone));
     if (bl) L.push('', '📅 ประจำวันที่ ' + thFull_(bl.inD), '⏰ เข้าเวรเวลา: ' + bl.inT + ' น.', '📅 ประจำวันที่ ' + thFull_(bl.outD), '⏰ ออกเวรเวลา: ' + bl.outT + ' น.');
