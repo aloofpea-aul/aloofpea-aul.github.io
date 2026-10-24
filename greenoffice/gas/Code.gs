@@ -28,11 +28,11 @@ function setup() {
   ]);
   summary_(ss, 'สรุปรายกลุ่ม', [
     ['ผลตามกลุ่ม / แผนก'],
-    ['=IFERROR(QUERY(\'' + SH_SESS + '\'!A:L,"select D,E,count(B),sum(H),sum(I),avg(J) where B is not null group by D,E label D \'กลุ่ม\',E \'แผนก\',count(B) \'จำนวนครั้งที่ซ้อม\',sum(H) \'ข้อทั้งหมด\',sum(I) \'ตอบได้\',avg(J) \'ร้อยละเฉลี่ย\'",1),"ยังไม่มีข้อมูล")'],
-    [''],
-    ['จำนวนเครื่องที่เข้ามาซ้อม (ไม่ซ้ำ)'],
-    ['=IFERROR(COUNTUNIQUE(FILTER(\'' + SH_SESS + '\'!C2:C,\'' + SH_SESS + '\'!C2:C<>"")),0)']
+    ['=IFERROR(QUERY(\'' + SH_SESS + '\'!A:L,"select D,E,count(B),sum(H),sum(I),avg(J) where B is not null group by D,E label D \'กลุ่ม\',E \'แผนก\',count(B) \'จำนวนครั้งที่ซ้อม\',sum(H) \'ข้อทั้งหมด\',sum(I) \'ตอบได้\',avg(J) \'ร้อยละเฉลี่ย\'",1),"ยังไม่มีข้อมูล")']
   ]);
+  const sg = ss.getSheetByName('สรุปรายกลุ่ม');
+  sg.getRange('H1').setValue('จำนวนเครื่องที่เข้ามาซ้อม (ไม่ซ้ำ)').setFontWeight('bold').setFontColor('#24553A');
+  sg.getRange('H2').setFormula('=IFERROR(COUNTUNIQUE(FILTER(\'' + SH_SESS + '\'!C2:C,\'' + SH_SESS + '\'!C2:C<>"")),0)');
   const def = ss.getSheetByName('Sheet1') || ss.getSheetByName('แผ่น1') || ss.getSheetByName('ชีต1');
   if (def && ss.getSheets().length > 1 && def.getLastRow() === 0) ss.deleteSheet(def);
   Logger.log('ติดตั้งแล้ว');
