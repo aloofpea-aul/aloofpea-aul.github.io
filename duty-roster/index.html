@@ -785,7 +785,7 @@ const outOf=(key,k)=>((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o
 const tMin=s=>s?Date.parse(s+':00+07:00')/60000:null;
 const durMin=(a,b)=>a&&b?Math.max(0,tMin(b)-tMin(a)):null;
 const hrs=m=>m==null?null:Math.round(m/6)/10;
-const hmH=m=>m==null?null:Math.floor(Math.round(m)/60)+'.'+String(Math.round(m)%60).padStart(2,'0');
+const hmH=m=>m==null?null:(Math.round(m)/60).toFixed(2);
 const hmTh=s=>s?String(s).slice(11,16).replace(':','.'):'';
 const durTxt=m=>m==null?'ยังไม่จ่ายไฟ':(m>=60?Math.floor(m/60)+' ชม. ':'')+(m%60?m%60+' นาที':'');
 function outTotals(L){
