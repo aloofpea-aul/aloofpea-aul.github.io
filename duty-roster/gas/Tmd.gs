@@ -4,6 +4,7 @@
  *  - กันโควต้า: เว้นไว้ให้แจ้งเวร TMD_RESERVE ข้อความ (ค่าเริ่มต้น 80) · ส่งไม่เกิน 2 ครั้ง/วัน · รอบละ 1 การ์ด
  *  - คำสั่งในแชต (ตอบกลับฟรี ไม่นับโควต้า): เตือนภัย / กรมอุตุ
  *  - ตั้งกลุ่ม: ในกลุ่ม LINE แก้ไฟ ให้ หผ.ปร. พิมพ์  ตั้งกลุ่มเตือนภัย รหัส
+ *  - รับส่วนตัว: ในแชตส่วนตัวกับบอท พิมพ์  รับเตือนภัยส่วนตัว รหัส  (ยกเลิก: เลิกรับเตือนภัยส่วนตัว)
  *
  * ตั้งค่า Script properties:
  *   TMD_API_URL  = URL Web app ของฐานข้อมูลประกาศ (tmd/gas/Code.gs)
@@ -50,22 +51,37 @@ function tmdPoll() {
   const hit = r.data.filter(function (d) { return d.focus === 'กระบี่' || (!wantKrabiOnly && d.focus === 'ภาคใต้'); })[0];
   if (!hit) return;
 
-  const gid = tmdProp_('TMD_GROUP_ID'); if (!gid) { log_('system', 'เตือนภัย: ยังไม่ได้ตั้งกลุ่ม', '', hit.title); return; }
+  const gid = tmdProp_('TMD_GROUP_ID'), dms = tmdDms_();
+  if (!gid && !dms.length) { log_('system', 'เตือนภัย: ยังไม่มีผู้รับ', '', hit.title); return; }
 
-  // จำกัดต่อวัน
-  const dayKey = 'TMD_SENT_' + bkkYmd_(), sentToday = Number(tmdProp_(dayKey, 0));
+  const limit = Number(getConfig_().lineMonthlyLimit || 300);
+  const room = function (cost) { return pushCount_() + cost <= limit - Number(tmdProp_('TMD_RESERVE', 80)); };   // กันโควต้าไว้ให้แจ้งเวร
+  const card = tmdCard_(hit), today = bkkYmd_();
+
+  // 1) ส่วนตัว (คนละ 1 ข้อความ) — ไม่เกิน TMD_DM_DAILY_MAX ครั้ง/วัน (ค่าเริ่มต้น 5)
+  const dmKey = 'TMD_DM_SENT_' + today, dmToday = Number(tmdProp_(dmKey, 0));
+  if (dms.length && dmToday < Number(tmdProp_('TMD_DM_DAILY_MAX', 5))) {
+    let n = 0;
+    dms.forEach(function (u) { if (room(1) && push_(u, [card], 'tmd', 1)) n++; });
+    if (n) { props.setProperty(dmKey, String(dmToday + 1)); log_('system', 'ส่งประกาศเตือนภัยส่วนตัว', '', n + ' คน · ' + hit.issueNo + ' ' + hit.title); }
+    else log_('system', 'เตือนภัย: ข้ามส่วนตัวเพื่อเก็บโควต้าแจ้งเวร', '', pushCount_() + '/' + limit);
+  }
+
+  // 2) กลุ่ม (เสียตามจำนวนสมาชิก) — ไม่เกิน TMD_DAILY_MAX ครั้ง/วัน (ค่าเริ่มต้น 2)
+  if (!gid) return;
+  const dayKey = 'TMD_SENT_' + today, sentToday = Number(tmdProp_(dayKey, 0));
   if (sentToday >= Number(tmdProp_('TMD_DAILY_MAX', 2))) { log_('system', 'เตือนภัย: ครบจำนวนต่อวัน', '', hit.title); return; }
-
-  // กันโควต้าไว้ให้แจ้งเวร
-  const cost = groupCount_(gid), limit = Number(getConfig_().lineMonthlyLimit || 300);
-  const reserve = Number(tmdProp_('TMD_RESERVE', 80));
-  if (pushCount_() + cost > limit - reserve) { log_('system', 'เตือนภัย: ข้ามเพื่อเก็บโควต้าแจ้งเวร', '', pushCount_() + '/' + limit + ' ต้องใช้ ' + cost); return; }
-
-  if (push_(gid, [tmdCard_(hit)], 'tmd', cost)) {
+  const cost = groupCount_(gid);
+  if (!room(cost)) { log_('system', 'เตือนภัย: ข้ามเพื่อเก็บโควต้าแจ้งเวร', '', pushCount_() + '/' + limit + ' ต้องใช้ ' + cost); return; }
+  if (push_(gid, [card], 'tmd', cost)) {
     props.setProperty(dayKey, String(sentToday + 1));
     log_('system', 'ส่งประกาศเตือนภัยเข้ากลุ่ม', '', hit.issueNo + ' ' + hit.title);
   }
 }
+
+/** รายชื่อผู้รับส่วนตัว (userId คั่นด้วย ,) */
+function tmdDms_() { return String(tmdProp_('TMD_DM_UIDS', '')).split(',').filter(String); }
+function tmdSetDms_(a) { PropertiesService.getScriptProperties().setProperty('TMD_DM_UIDS', a.join(',')); }
 
 /** การ์ดประกาศ */
 function tmdCard_(d) {
@@ -97,6 +113,21 @@ function tmdHandle_(ev, t, me, uid) {
     PropertiesService.getScriptProperties().setProperty('TMD_GROUP_ID', ev.source.groupId);
     log_(me ? me.short : uid, 'ตั้งกลุ่มเตือนภัย LINE', '', ev.source.groupId);
     return tmdR_(ev.replyToken, [text_('ตั้งกลุ่มนี้รับประกาศเตือนภัยกรมอุตุฯ แล้ว ✓\nระบบส่งเมื่อมีประกาศใหม่ที่เกี่ยวกับกระบี่/ภาคใต้\nพิมพ์ "เตือนภัย" ดูฉบับล่าสุดได้ตลอด (ไม่เสียโควต้า)')]);
+  }
+  m = t.match(/^รับเตือนภัยส่วนตัว\s+(\S+)$/);
+  if (m && ev.source.type === 'user') {
+    if (String(m[1]) !== String(getConfig_().lineRegCode)) return tmdR_(ev.replyToken, [text_('รหัสไม่ถูกต้อง')]);
+    const a = tmdDms_(); if (a.indexOf(uid) < 0) { a.push(uid); tmdSetDms_(a); }
+    log_(me ? me.short : uid, 'รับเตือนภัยส่วนตัว', '', uid);
+    const msgs = [text_('เปิดรับประกาศเตือนภัยกรมอุตุฯ ส่วนตัวแล้ว ✓\nมีประกาศใหม่ที่เกี่ยวกับกระบี่/ภาคใต้ บอทจะส่งมาที่แชตนี้ (ใช้โควต้า 1 ข้อความ/ครั้ง)\nกด "แชร์เข้ากลุ่ม LINE" ในการ์ดเพื่อส่งต่อให้กลุ่มได้ฟรี\nยกเลิก: พิมพ์ เลิกรับเตือนภัยส่วนตัว')];
+    const r = tmdFetch_('action=latest&focus=ภาคใต้');
+    if (r && r.ok && r.data.length) msgs.push(tmdCard_(r.data[0]));
+    return tmdR_(ev.replyToken, msgs);
+  }
+  if (t === 'เลิกรับเตือนภัยส่วนตัว' && ev.source.type === 'user') {
+    tmdSetDms_(tmdDms_().filter(function (u) { return u !== uid; }));
+    log_(me ? me.short : uid, 'เลิกรับเตือนภัยส่วนตัว', '', uid);
+    return tmdR_(ev.replyToken, [text_('ยกเลิกรับประกาศเตือนภัยส่วนตัวแล้ว\nยังพิมพ์ "เตือนภัย" ดูฉบับล่าสุดได้ตลอด')]);
   }
   if (/^(เตือนภัย|กรมอุตุ|ประกาศกรมอุตุ)$/.test(t)) {
     const r = tmdFetch_('action=latest&focus=ภาคใต้');
