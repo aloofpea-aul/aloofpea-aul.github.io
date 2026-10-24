@@ -20,7 +20,7 @@ function mergeCode_(t, c) {
 }
 
 function codeLabel_(g, c) {
-  if (g === 'emp') return ({ '1': 'ช่วง 1', '3': 'ช่วง 3', '2,3': 'ช่วง 2+3', '1,3': 'ช่วง 1 + ช่วง 3', '1,2,3': 'ช่วง 1+2+3 (ต่อเนื่อง)', 'S': 'เตรียมพร้อม', '': 'ว่าง' })[c] || c;
+  if (g === 'emp') return ({ '1': 'ช่วง 1', '3': 'ช่วง 3', '2,3': 'ช่วง 2+3', '1,3': 'ช่วง 1 + ช่วง 3', '1,2,3': 'ช่วง 1+2+3 (ต่อเนื่อง)', '2': 'ช่วง 2', '1,2': 'ช่วง 1+2 (ต่อเนื่อง)', 'S': 'เตรียมพร้อม', '': 'ว่าง' })[c] || c;
   return c === '0' ? 'พักกะ' : 'กะ ' + c;
 }
 
@@ -36,7 +36,7 @@ function buildOps_(type, p) {
     return [{ op: 'move', g: p.g, from: p.a, to: p.b, day: Number(p.da) },
             { op: 'move', g: p.g, from: p.b, to: p.a, day: Number(p.db) }];
   }
-  if (type === 'leave') return [{ op: 'move', g: p.g, from: p.a, to: p.r, day: Number(p.d), merge: p.g === 'emp' && !!p.cont }];
+  if (type === 'leave') return [{ op: 'move', g: p.g, from: p.a, to: p.r, day: Number(p.d), merge: p.g === 'emp' && !!p.cont, part: p.g === 'emp' && (p.part === '2' || p.part === '3') ? p.part : '' }];
   throw new Error('ประเภทคำขอไม่ถูกต้อง');
 }
 
@@ -48,17 +48,23 @@ function applyOps_(data, ops) {
     if (!map) throw new Error('กลุ่มไม่ถูกต้อง');
     if (o.op === 'move') {
       if (!map[o.from] || !map[o.to]) throw new Error('ไม่พบรายชื่อ');
-      const c = map[o.from][i], t = map[o.to][i];
-      if (isFree_(o.g, c)) throw new Error(o.from + ' ไม่มีเวรวันที่ ' + o.day);
+      const full = map[o.from][i], t = map[o.to][i];
+      if (isFree_(o.g, full)) throw new Error(o.from + ' ไม่มีเวรวันที่ ' + o.day);
+      let c = full, rest = FREE_[o.g];                       // ลาบางช่วง (เช่น เฉพาะช่วง 2 ของ 2+3) → ที่เหลือยังเป็นของคนเดิม
+      if (o.part && full !== o.part) {
+        if (!cHas_(full, o.part)) throw new Error(o.from + ' ไม่มีช่วง ' + o.part + ' ในวันที่ ' + o.day);
+        c = o.part; rest = String(full).split(',').filter(function (x) { return x !== o.part; }).join(',');
+      }
+      const restore = c !== full ? { prevFrom: full, fromAfter: rest } : {};
       if (!isFree_(o.g, t)) {
         if (!o.merge) throw new Error(o.to + ' มีเวร (' + codeLabel_(o.g, t) + ') วันที่ ' + o.day + ' แล้ว');
         const nc = mergeCode_(t, c);                        // อยู่ต่อเนื่อง (ผู้อนุมัติยอม) — รวมช่วงเวร
-        map[o.to][i] = nc; map[o.from][i] = FREE_[o.g];
-        out.push({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, prevTo: t, toAfter: nc, merged: true });
+        map[o.to][i] = nc; map[o.from][i] = rest;
+        out.push(Object.assign({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, prevTo: t, toAfter: nc, merged: true }, restore));
         return;
       }
-      map[o.to][i] = c; map[o.from][i] = FREE_[o.g];
-      out.push({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, replacedStandby: t === 'S' });
+      map[o.to][i] = c; map[o.from][i] = rest;
+      out.push(Object.assign({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, replacedStandby: t === 'S' }, restore));
     } else if (o.op === 'xchg') {
       const ca = map[o.a][i], cb = map[o.b][i];
       if (isFree_(o.g, ca) || isFree_(o.g, cb)) throw new Error('วันเดียวกันต้องมีเวรทั้งสองคนจึงจะสลับได้');
@@ -72,7 +78,8 @@ function applyOps_(data, ops) {
 function describe_(month, type, p, data) {
   const lab = function (n, d) { return n + ' (' + thShort_(month, d) + ' ' + codeLabel_(p.g, data[p.g][n][d - 1]) + ')'; };
   if (type === 'swap') return 'แลกเวร: ' + lab(p.a, Number(p.da)) + ' ⇄ ' + lab(p.b, Number(p.db));
-  return 'ลาเวร: ' + lab(p.a, Number(p.d)) + ' → ' + p.r + ' เข้าแทน' + (p.cont ? ' (อยู่ต่อเนื่อง · ผู้อนุมัติยอม)' : '');
+  const pt = p.part === '2' ? ' เฉพาะช่วง 2 (08.30–16.30)' : p.part === '3' ? ' เฉพาะช่วง 3 (16.30–00.30)' : '';
+  return 'ลาเวร: ' + lab(p.a, Number(p.d)) + pt + ' → ' + p.r + ' เข้าแทน' + (p.cont ? ' (อยู่ต่อเนื่อง · ผู้อนุมัติยอม)' : '');
 }
 
 function reqRows_() {
@@ -231,7 +238,7 @@ function myRecentBlock_(short) {
   [addDays_(today, -1), today].forEach(function (d) {
     const c = empCode_(d, short);
     if (cHas_(c, '1')) cand.push({ k: d + '|p1', s: new Date(d + 'T00:30:00+07:00').getTime(), e: new Date(d + 'T08:30:00+07:00').getTime() });
-    if (cHas_(c, '3')) cand.push({ k: d + '|p3', s: new Date(d + 'T' + (cHas_(c, '2') ? '08:30' : '16:30') + ':00+07:00').getTime(), e: new Date(addDays_(d, 1) + 'T00:30:00+07:00').getTime() });
+    if (cHas_(c, '2') || cHas_(c, '3')) cand.push({ k: d + '|p3', s: new Date(d + 'T' + (cHas_(c, '2') ? '08:30' : '16:30') + ':00+07:00').getTime(), e: cHas_(c, '3') ? new Date(addDays_(d, 1) + 'T00:30:00+07:00').getTime() : new Date(d + 'T16:30:00+07:00').getTime() });
   });
   const ok = cand.filter(function (b) { return now >= b.s - 3600000 && now <= b.e + 12 * 3600000; });
   return ok.length ? ok[ok.length - 1] : null;
@@ -280,7 +287,7 @@ function saveReport_(b) {
 /** ลบคำขอ/เอกสาร (ผู้อนุมัติ/แอดมิน) — revert=true คืนตารางเวรให้เหมือนก่อนอนุมัติ (ถ้ายังไม่ถูกแก้ทับ) */
 /** ช่องเวรที่คำขอแตะ (ใช้ตรวจยื่นซ้ำ) */
 function slotKey_(type, p) {
-  const sl = type === 'swap' ? [p.a + '@' + Number(p.da), p.b + '@' + Number(p.db)].sort().join('&') : p.a + '@' + Number(p.d) + '>' + p.r;
+  const sl = type === 'swap' ? [p.a + '@' + Number(p.da), p.b + '@' + Number(p.db)].sort().join('&') : p.a + '@' + Number(p.d) + (p.part ? '#' + p.part : '') + '>' + p.r;
   return type + '|' + p.g + '|' + sl;
 }
 function dupOf_(month, type, p) {
@@ -317,8 +324,9 @@ function deleteRequest_(id, revertIgnored, who) {
         }
         return mine.slice().reverse().every(function (c) {
           const map = data[c.g], i = c.day - 1;
-          if (!map[c.to] || map[c.to][i] !== (c.merged ? c.toAfter : c.code) || !isFree_(c.g, map[c.from][i])) return false;
-          map[c.from][i] = c.code; map[c.to][i] = c.merged ? c.prevTo : c.replacedStandby ? 'S' : FREE_[c.g]; return true;
+          if (!map[c.to] || map[c.to][i] !== (c.merged ? c.toAfter : c.code)) return false;
+          if (c.prevFrom != null ? map[c.from][i] !== c.fromAfter : !isFree_(c.g, map[c.from][i])) return false;
+          map[c.from][i] = c.prevFrom != null ? c.prevFrom : c.code; map[c.to][i] = c.merged ? c.prevTo : c.replacedStandby ? 'S' : FREE_[c.g]; return true;
         });
       };
       if (!undo(test)) return { mismatch: true };

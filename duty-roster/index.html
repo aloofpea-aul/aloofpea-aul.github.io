@@ -122,7 +122,7 @@ main .card,.tkc{scroll-margin-top:62px}.tkc{padding:10px 12px;border-left:4px so
 .mini td.nm{text-align:left;min-width:80px;position:sticky;left:0;background:#fff}
 .mini .off{background:var(--off)}.mini .hol{background:#DCE5F6}
 input[type=text],input[type=date],input[type=number],input[type=password],select{height:42px;border-radius:10px;border:1px solid #CFC6D6;padding:0 10px;background:#fff;color:var(--ink);width:100%}
-label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}
+label.f,div.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}
 .hrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #F0ECF3}
 .hrow:last-child{border-bottom:0}
 .tg{width:52px;height:30px;border-radius:15px;border:0;background:#C9C2CF;position:relative;flex:0 0 52px;cursor:pointer}
@@ -360,6 +360,7 @@ fieldset:disabled{opacity:.55}
         <label class="f">เวรที่จะเปลี่ยน<select id="qDa"></select></label>
         <label class="f" id="qBWrap">แลกกับ<select id="qB"></select></label>
         <label class="f" id="qDbWrap">รับเวรของคู่วันที่<select id="qDb"></select></label>
+        <div class="f hide" id="qPartWrap">ลาช่วงไหน<span class="seg light" id="qPart" style="display:grid;grid-template-columns:1fr 1fr 1fr"><button type="button" data-p="" class="on" style="height:auto;padding:5px 2px;line-height:1.25">ทั้ง 2+3<br><small style="font-weight:400">08.30–00.30</small></button><button type="button" data-p="2" style="height:auto;padding:5px 2px;line-height:1.25">เฉพาะช่วง 2<br><small style="font-weight:400">08.30–16.30</small></button><button type="button" data-p="3" style="height:auto;padding:5px 2px;line-height:1.25">เฉพาะช่วง 3<br><small style="font-weight:400">16.30–00.30</small></button></span></div>
         <label class="f hide" id="qRWrap">คนเข้าแทน (เรียงจากเวรน้อยสุด)<select id="qR"></select>
           <span class="ckb hide" id="qContWrap" style="margin-top:6px;font-weight:400"><input type="checkbox" id="qCont"> <span>ยอมให้คนที่มีเวรวันเดียวกันเข้าแทน <b style="color:#9B1C1C">(อยู่ต่อเนื่อง)</b> — ต้องให้ หผ.ปร./ชผ. อนุมัติ</span></span></label>
       </div>
@@ -517,7 +518,7 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset
 /* ---------- เวรรายวัน ---------- */
 function rankOf(){const o={};[...S.boot.people.emp,...S.boot.people.wk].forEach((p,k)=>o[p.short]=k);return n=>(n in o?o[n]:999);}
 /* การเปลี่ยนเวรของวัน i (อนุมัติแล้ว) — ล่าสุดของแต่ละคน+ช่วง */
-const CODE_TH={'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','S':'เตรียมพร้อม'};
+const CODE_TH={'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','2':'ช่วง 2','1,2':'ช่วง 1+2','S':'เตรียมพร้อม'};
 /* รหัสเวรพนักงานรวมหลายช่วงได้เมื่อผู้อนุมัติยอมให้อยู่ต่อเนื่อง ('1,3' · '1,2,3') */
 const cHas=(c,p)=>String(c||'').split(',').includes(p);
 const cParts=c=>String(c||'').split(',').filter(x=>x==='1'||x==='2'||x==='3').length;
@@ -1468,7 +1469,7 @@ function sheetInfo(key,data,d,part){
   const day=data.days[d-1], rank=rankOf(), e=data.emp, ppl={};
   Object.keys(e).forEach(n=>{const c=e[n][d-1];
     if(part==='p1'&&cHas(c,'1')) ppl[n]='ช่วง 1';
-    if(part==='p3'&&cHas(c,'3')) ppl[n]=cHas(c,'2')?'ช่วง 2+3':'ช่วง 3';});
+    if(part==='p3'&&(cHas(c,'2')||cHas(c,'3'))) ppl[n]=cHas(c,'2')&&cHas(c,'3')?'ช่วง 2+3':cHas(c,'2')?'ช่วง 2':'ช่วง 3';});
   const names=Object.keys(ppl).sort((x,y)=>rank(x)-rank(y));
   const t0=part==='p1'?'00:30':day.off?'08:30':'16:30', t1=part==='p1'?'08:30':'00:30';
   const a=dOf(key,d), b=part==='p1'?a:dOf(key,d+1);
@@ -1576,7 +1577,7 @@ $('rSetStatus').onclick=async()=>{
 
 
 /* ---------- เปลี่ยน/ลาเวร ---------- */
-const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','S':'เตรียมพร้อม','':'ว่าง'})[c]||c, wk:c=>c==='0'?'พักกะ':'กะ '+c};
+const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','2':'ช่วง 2','1,2':'ช่วง 1+2','S':'เตรียมพร้อม','':'ว่าง'})[c]||c, wk:c=>c==='0'?'พักกะ':'กะ '+c};
 const isFree=(g,c)=>g==='emp'?(c===''||c==='S'):c==='0';
 const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?cParts(c):(c==='0'?0:c==='1,3'?2:1)),0);
 function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);}
@@ -1593,6 +1594,7 @@ async function renderReq(){
     ['qMonth','qGroup'].forEach(id=>$(id).onchange=()=>qForm('month'));
     $('qA').onchange=()=>qForm('a'); $('qDa').onchange=()=>qForm('da'); $('qB').onchange=()=>qForm('b');
     $('qDb').onchange=()=>qForm('db'); $('qR').onchange=()=>qForm('r'); $('qCont').onchange=()=>qForm('cont');
+    document.querySelectorAll('#qPart button').forEach(b=>b.onclick=()=>{ S.qPart=b.dataset.p; qForm('part'); });
     $('qNow').onchange=()=>$('qPinWrap').classList.toggle('hide',!$('qNow').checked);
     $('qDocDate').value=todayIso();
     sgOptions($('qSg')); $('qSg').onchange=()=>$$('.qSgC').forEach(e=>e.classList.toggle('hide',$('qSg').value!=='custom'));
@@ -1623,7 +1625,11 @@ async function qForm(stage){
       fill('qDb',opts,true);
     }
   }else{
-    const cont=g==='emp'&&$('qCont').checked, ac=map[a]?map[a][da-1]:'';
+    const full=map[a]?map[a][da-1]:'', canPart=g==='emp'&&cHas(full,'2')&&cHas(full,'3');
+    if(!canPart||!['part','cont','r'].includes(stage)) S.qPart='';
+    $('qPartWrap').classList.toggle('hide',!canPart);
+    document.querySelectorAll('#qPart button').forEach(b=>b.classList.toggle('on',b.dataset.p===(S.qPart||'')));
+    const cont=g==='emp'&&$('qCont').checked, ac=S.qPart||full;
     const fit=n=>{ const t=map[n][da-1]; if(isFree(g,t)) return true; if(!cont) return false; const A=String(ac).split(','), T=String(t).split(','); return !A.some(x=>T.includes(x)); };
     const free=names.filter(n=>n!==a&&fit(n)).map(n=>({n,c:dutyCount(g,map[n]),sb:map[n][da-1]==='S',busy:!isFree(g,map[n][da-1])?map[n][da-1]:''})).sort((x,y)=>(x.busy?1:0)-(y.busy?1:0)||x.c-y.c);
     $('qContWrap').classList.toggle('hide',g!=='emp');
@@ -1635,14 +1641,17 @@ async function qForm(stage){
   else if(swap){ const b=$('qB').value, db=+$('qDb').value;
     txt=db?`${a} (${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[a][da-1])}) ⇄ ${b} (${data.days[db-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[b][db-1])})`:'ไม่มีวันที่แลกกันได้ — เลือกคู่คนอื่น';
   } else { const r=$('qR').value;
-    const rb=r&&!isFree(g,map[r][da-1])?map[r][da-1]:'';
-    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])}) → ${r} เข้าแทน`+(rb?` · ⚠️ ${r} มี${CODE_LBL[g](rb)} อยู่แล้ว จะอยู่ต่อเนื่องเป็น ${CODE_LBL[g](String(rb).split(',').concat(String(map[a][da-1]).split(',')).sort().join(','))}`:''):'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" หรือติ๊ก "ยอมให้อยู่ต่อเนื่อง"'; }
+    const rb=r&&!isFree(g,map[r][da-1])?map[r][da-1]:'', mv=S.qPart||map[a][da-1];
+    const ptxt=S.qPart==='2'?' เฉพาะช่วง 2 (08.30–16.30)':S.qPart==='3'?' เฉพาะช่วง 3 (16.30–00.30)':'';
+    const keep=S.qPart?` · ${a} ยังอยู่${S.qPart==='2'?'ช่วง 3 (16.30–00.30)':'ช่วง 2 (08.30–16.30)'} ตามเดิม`:'';
+    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])})${ptxt} → ${r} เข้าแทน${keep}`+(rb?` · ⚠️ ${r} มี${CODE_LBL[g](rb)} อยู่แล้ว จะอยู่ต่อเนื่องเป็น ${CODE_LBL[g](String(rb).split(',').concat(String(mv).split(',')).sort().join(','))}`:''):'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" หรือติ๊ก "ยอมให้อยู่ต่อเนื่อง"'; }
   $('qPreview').textContent=txt;
   $('qSubmit').disabled=swap?!$('qDb').value:!$('qR').value;
 }
 $('qSubmit').onclick=async()=>{
   const key=$('qMonth').value,g=$('qGroup').value,a=$('qA').value,da=+$('qDa').value;
   const payload=S.qType==='swap'?{g,a,da,b:$('qB').value,db:+$('qDb').value}:{g,a,d:da,r:$('qR').value};
+  if(S.qType!=='swap'&&g==='emp'&&S.qPart) payload.part=S.qPart;
   if(S.qType!=='swap'&&g==='emp'&&$('qCont').checked){ const mo=S.months[key], t=mo&&mo.data.emp[payload.r]?mo.data.emp[payload.r][da-1]:''; if(t&&t!=='S') payload.cont=true; }
   const wk=$('qWhy').value; payload.why={k:wk}; payload.docDate=$('qDocDate').value||todayIso();
   if(wk==='official'){ payload.why.order=$('qOrder').value.trim(); payload.why.orderDate=$('qOrderDate').value;

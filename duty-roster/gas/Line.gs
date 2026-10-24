@@ -128,26 +128,27 @@ function personOf_(short) {
 /* ---- ช่วงเข้า–ออกเวรต่อเนื่องของพนักงาน (ช่วง 3 ต่อช่วง 1 วันรุ่งขึ้น = ออก 08:30) ---- */
 function empCode_(ymd, n) { const dd = dayData_(ymd); return dd && dd.emp[n] != null ? dd.emp[n] : ''; }
 function empBlock_(ymd, n, kind) {
-  const c = empCode_(ymd, n), prev = addDays_(ymd, -1), next = addDays_(ymd, 1);
-  if (cHas_(c, '1') && cHas_(c, '2')) {                     // 1+2+3 ต่อเนื่องทั้งวัน
-    const pc = empCode_(prev, n), nc = empCode_(next, n);
-    return { inD: cHas_(pc, '3') ? prev : ymd, inT: cHas_(pc, '3') ? (cHas_(pc, '2') ? '08:30' : '16:30') : '00:30', outD: next, outT: cHas_(nc, '1') ? '08:30' : '00:30' };
-  }
-  if (cHas_(c, '1') && (kind !== 'emp3' || !cHas_(c, '3'))) {
-    const pc = empCode_(prev, n);
-    if (cHas_(pc, '3')) return { inD: prev, inT: cHas_(pc, '2') ? '08:30' : '16:30', outD: ymd, outT: '08:30' };
-    return { inD: ymd, inT: '00:30', outD: ymd, outT: '08:30' };
-  }
-  if (cHas_(c, '3')) {
-    const nc = empCode_(next, n);
-    return { inD: ymd, inT: cHas_(c, '2') ? '08:30' : '16:30', outD: next, outT: cHas_(nc, '1') ? '08:30' : '00:30' };
-  }
-  return null;
+  // ช่วงของวัน (นาทีนับจาก 00:00 ของวันนั้น): 1 = 00:30–08:30 · 2 = 08:30–16:30 · 3 = 16:30–24:30 → ต่อกันเป็นช่วงเวรยาว
+  const SEG = { '1': [30, 510], '2': [510, 990], '3': [990, 1470] }, iv = [];
+  [-1, 0, 1].forEach(function (off) {
+    const d = addDays_(ymd, off), c = empCode_(d, n);
+    ['1', '2', '3'].forEach(function (p) { if (cHas_(c, p)) iv.push([off * 1440 + SEG[p][0], off * 1440 + SEG[p][1]]); });
+  });
+  if (!iv.length) return null;
+  iv.sort(function (a, b) { return a[0] - b[0]; });
+  const blocks = []; iv.forEach(function (x) { const l = blocks[blocks.length - 1]; if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else blocks.push(x.slice()); });
+  const c = empCode_(ymd, n), want = kind === 'emp1' ? '1' : kind === 'emp2' ? '2' : kind === 'emp3' ? '3' : (['1', '2', '3'].filter(function (p) { return cHas_(c, p); })[0]);
+  if (!want || !cHas_(c, want)) return null;
+  const t0 = SEG[want][0], b = blocks.filter(function (x) { return x[0] <= t0 && t0 < x[1]; })[0]; if (!b) return null;
+  const at = function (m) { const off = Math.floor(m / 1440), mm = m - off * 1440; return { d: addDays_(ymd, off), t: ('0' + Math.floor(mm / 60)).slice(-2) + ':' + ('0' + mm % 60).slice(-2) }; };
+  const a = at(b[0]), z = at(b[1]);
+  return { inD: a.d, inT: a.t, outD: z.d, outT: z.t };
 }
 /** ทีมที่อยู่ในการแจ้งรอบนั้น */
 function teamOf_(kind, dd) {
   const e = dd.emp;
   if (kind === 'emp1') return who_(e, function (c) { return cHas_(c, '1'); });
+  if (kind === 'emp2') return who_(e, function (c) { return cHas_(c, '2'); });
   return who_(e, function (c) { return cHas_(c, '3'); });
 }
 
@@ -247,7 +248,7 @@ function onDutyNow_() {
   if (dd) Object.keys(dd.emp).forEach(function (n) {
     const c = dd.emp[n];
     if (cHas_(c, '1') && hm >= '00:00' && hm < '09:00') out[n] = 1;
-    if (cHas_(c, '2') && hm >= '08:00') out[n] = 1;
+    if (cHas_(c, '2') && hm >= '08:00' && (cHas_(c, '3') || hm < '17:00')) out[n] = 1;
     if (cHas_(c, '3') && hm >= '16:00') out[n] = 1;
   });
   if (py) Object.keys(py.emp).forEach(function (n) { const c = py.emp[n]; if (cHas_(c, '3') && hm < '01:00') out[n] = 1; });
@@ -328,7 +329,8 @@ function shiftMessage_(kind, ymd, name, dd) {
   const def = SLOT_DEF[kind], cfg = getConfig_();
   let title = def.title;
   if (kind === 'emp3' && dd.emp[name] === '2,3') title = 'ช่วง 3 · 16:30 น. (ต่อจากช่วง 2)';
-  if (kind === 'emp1' && cHas_(dd.emp[name], '1') && cHas_(dd.emp[name], '2')) title = 'ช่วง 1+2+3 · 00:30 น. (อยู่ต่อเนื่องถึง 00:30 วันรุ่งขึ้น)';
+  if (kind === 'emp1' && cHas_(dd.emp[name], '1') && cHas_(dd.emp[name], '2')) title = cHas_(dd.emp[name], '3') ? 'ช่วง 1+2+3 · 00:30 น. (อยู่ต่อเนื่องถึง 00:30 วันรุ่งขึ้น)' : 'ช่วง 1+2 · 00:30 น. (อยู่ต่อเนื่องถึง 16:30)';
+  if (kind === 'emp2' && dd.emp[name] === '2') title = 'ช่วง 2 · 08:30–16:30 น.';
   if (kind === 'emp1' && dd.emp[name] === 'S') title = 'เตรียมพร้อม ช่วง 1 · 00:30 น.';
   const body = [
     { type: 'text', text: OFFICE_TITLE_, weight: 'bold', size: 'sm', wrap: true, color: '#1E1A22' },
