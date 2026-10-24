@@ -630,7 +630,13 @@ async function loadTickets(force){
   const body=tkAuthBody(); if(!body){ $('dTk').classList.add('hide'); return; }
   if(!force&&S.tkAt&&Date.now()-S.tkAt<45e3){ paintTickets(); return; }
   S.tkAt=Date.now();
-  try{ const j=await apiPost(Object.assign({action:'tickets'},body)); S.tks=j.tickets||[]; S.tkErr=''; }catch(e){ S.tkErr=e.message; }
+  try{ const j=await apiPost(Object.assign({action:'tickets'},body)); S.tks=j.tickets||[]; S.tkErr=''; S.tkFail=0; }
+  catch(e){ // อ่านอย่างเดียว: ผิดพลาดชั่วคราวไม่ต้องโชว์ ลองใหม่เอง
+    S.tkFail=(S.tkFail||0)+1; S.tkAt=0;
+    if(/PIN|สิทธิ์|ล็อกอิน/.test(e.message||'')) S.tkErr=e.message;
+    else if(!S.tks&&S.tkFail>=3) S.tkErr='โหลดรายการรับแจ้งไม่สำเร็จ — กด รีเฟรช อีกครั้ง';
+    if(S.tkFail<3) setTimeout(()=>loadTickets(true),5000*S.tkFail);
+  }
   paintTickets();
 }
 function paintTickets(){
