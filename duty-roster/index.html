@@ -57,7 +57,9 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .tw span,.tlg span{display:inline-block;width:12px;height:12px;border-radius:50%;background:#F59F00;color:#fff;font:700 9px/12px sans-serif;text-align:center;box-shadow:0 0 0 1.5px #fff}
 .tw span+span,.tlg span+span{margin-left:-4px}.tw span.k,.tlg span.k{background:#E8590C}.tw span.hi,.tlg span.hi{background:#C92A2A}
 .tlg{font-size:11.5px;color:var(--mut);padding:0 4px;margin-top:-4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tlg span{box-shadow:0 0 0 1.5px var(--bg);vertical-align:-1px}
-.tmdw svg{flex:none}.tmdw.s{background:#FFF9DB;border-color:#F2D675}.tmdw.s b,.tmdw.s .go{color:#7A5C00}
+.tmdw svg{flex:none}
+.rs0{color:var(--mut)}.rs1{color:#1F5A2A;font-weight:600}.rs2{color:#26307A;font-weight:600}
+.btn:not(.ghost) .rs0{color:#fff;opacity:.85}.btn:not(.ghost) .rs1{color:#B9F3C4}.btn:not(.ghost) .rs2{color:#C9D4FF}.tmdw.s{background:#FFF9DB;border-color:#F2D675}.tmdw.s b,.tmdw.s .go{color:#7A5C00}
 .tmdw{display:flex;gap:10px;align-items:center;border-radius:12px;background:#FFF4E5;border:1px solid #F3C98B;padding:9px 12px;font-size:13px;text-decoration:none;color:inherit}
 .tmdw b{color:#8A3B00}.tmdw .s{font-size:11.5px;color:#6b5b4b;margin-top:1px}.tmdw .go{margin-left:auto;font-size:12px;font-weight:700;color:#8A3B00;white-space:nowrap}
 .tmdw.hi{background:#FDECEC;border-color:#EBA3A3}.tmdw.hi b,.tmdw.hi .go{color:#9B1C1C}
@@ -628,7 +630,7 @@ async function renderRepCard(data){
   const OD=((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k.slice(0,10)===key+'-'+String(d).padStart(2,'0')), OT=outTotals(OD);
   const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
   const parts=[['p1','ช่วง 1'],['p3',data.days[d-1].off?'ช่วง 2+3':'ช่วง 3']];
-  const st=k=>{const r=R[k]; if(!r) return '<span class="muted">ยังไม่กรอก</span>'; return '<span style="color:#1F5A2A;font-weight:600">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span style="color:#26307A;font-weight:600">ตรวจแล้ว</span>':'');};
+  const st=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
   el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
       <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
     <div class="grid2" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
