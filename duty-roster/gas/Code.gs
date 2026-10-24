@@ -382,6 +382,7 @@ function doGet(e) {
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
+    if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
     if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m) });
     if (a === 'sldPing') { const x = sldSS_(), f = x.getSheetByName('PatrolFinding'); return json_({ ok: true, sheet: x.getName(), patrol: !!f }); }
@@ -396,6 +397,10 @@ function doPost(e) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     try { migrate_(); migrateInsp_(); migrateEmp_(); migrateOut_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
+    // ---- รับแจ้งไฟดับ: ผู้ใช้ไฟแจ้งได้เลย · รายการ/สถานะงานต้องเป็นเจ้าหน้าที่ ----
+    if (b.action === 'ticket') return json_({ ok: true, ticket: createTicket_(b) });
+    if (b.action === 'tickets') return json_({ ok: true, tickets: listTickets_(b) });
+    if (b.action === 'ticketAct') return json_({ ok: true, ticket: ticketAct_(b) });
     // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- รายงานเวร: ลิงก์มีลายเซ็นจาก LINE หรือ PIN ผู้อนุมัติ ----

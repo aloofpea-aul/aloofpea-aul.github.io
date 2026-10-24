@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>แจ้งไฟฟ้าขัดข้อง · กฟส.อ่าวลึก</title>
+<meta name="description" content="แจ้งไฟดับ ไฟตก สายขาด ถึงเจ้าหน้าที่เวรแก้ไฟ กฟส.อ่าวลึก ทันที 24 ชม.">
+<meta property="og:title" content="⚡ แจ้งไฟฟ้าขัดข้อง · กฟส.อ่าวลึก">
+<meta property="og:description" content="กดที่นี่เพื่อแจ้งไฟดับ ถึงเจ้าหน้าที่เวรทันที 24 ชม.">
+<meta property="og:image" content="https://aloofpea-aul.github.io/fire/og.png">
+<meta property="og:url" content="https://aloofpea-aul.github.io/fire/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#74045F">
+<link rel="icon" href="../duty-roster/icon.svg">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#74045F;--red:#A23434;--bg:#F5F3F7;--ink:#1E1A22;--mut:#5E5666;--line:#E2DCE8}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',sans-serif;-webkit-text-size-adjust:100%}
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:30px}
+header{background:var(--pri);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;position:sticky;top:0;z-index:3}
+header b{font-size:17px}header small{display:block;font-size:12px;opacity:.85}
+main{padding:12px}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+h2{font-size:15px;margin:0 0 8px}
+.ty{display:grid;gap:8px}
+.ty button{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:8px 14px;font:700 16px 'IBM Plex Sans Thai',sans-serif;color:var(--ink);text-align:left;cursor:pointer}
+.ty button i{font-style:normal;font-size:22px;width:28px;text-align:center}
+.ty button.on{border-color:var(--red);background:#FDECEC}
+.warn{display:none;margin-top:8px;background:#FDECEC;border:1px solid #EBA3A3;color:#9B1C1C;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600}
+.warn a{color:#9B1C1C}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,textarea{width:100%;font:16px 'IBM Plex Sans Thai',sans-serif;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--ink)}
+textarea{min-height:70px;resize:vertical}
+.gps{width:100%;min-height:48px;border:1.5px solid var(--pri);background:#fff;color:var(--pri);border-radius:12px;font:700 15px 'IBM Plex Sans Thai',sans-serif;cursor:pointer}
+.gpsok{margin-top:6px;font-size:13px;border-radius:8px;padding:7px 10px;background:#E6F4E8;color:#1F5A2A;display:none}
+.gpsok.err{background:#FFF1D6;color:#7A4A00}
+.send{width:100%;min-height:54px;border:0;border-radius:14px;background:var(--red);color:#fff;font:700 18px 'IBM Plex Sans Thai',sans-serif;cursor:pointer;margin-top:4px}
+.send:disabled{opacity:.6}
+.msg{margin-top:8px;font-size:14px;color:#9B1C1C}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+.done{text-align:center}.done .no{font-size:28px;font-weight:700;color:var(--pri);margin:4px 0}
+.steps{display:flex;justify-content:space-between;margin:14px 0 6px;position:relative}
+.steps:before{content:'';position:absolute;left:12%;right:12%;top:13px;height:3px;background:var(--line)}
+.steps div{position:relative;flex:1;text-align:center;font-size:12px;color:var(--mut)}
+.steps div span{display:block;width:28px;height:28px;margin:0 auto 4px;border-radius:50%;background:#fff;border:3px solid var(--line);line-height:22px;font-weight:700}
+.steps div.ok{color:#1F5A2A;font-weight:700}.steps div.ok span{background:#2B8A3E;border-color:#2B8A3E;color:#fff}
+.steps div.now span{border-color:#E8590C;color:#E8590C}
+.lnk{background:none;border:0;color:var(--pri);font:600 14px 'IBM Plex Sans Thai',sans-serif;text-decoration:underline;cursor:pointer;padding:6px}
+.foot{font-size:12px;color:var(--mut);text-align:center;margin-top:6px}
+.prev{font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.prev b{color:var(--pri)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><b>⚡ แจ้งไฟฟ้าขัดข้อง</b><small>กฟส.อ่าวลึก · ถึงเจ้าหน้าที่เวรแก้ไฟทันที 24 ชม.</small></header>
+  <main>
+    <div id="mine"></div>
+    <form id="f" autocomplete="on">
+      <div class="card">
+        <h2>1. ไฟดับแบบไหน</h2>
+        <div class="ty" id="ty">
+          <button type="button" data-t="home"><i>🏠</i>ไฟดับทั้งบ้าน</button>
+          <button type="button" data-t="area"><i>🏘️</i>ไฟดับทั้งซอย / หมู่บ้าน</button>
+          <button type="button" data-t="low"><i>💡</i>ไฟตก / ไฟกระพริบ</button>
+          <button type="button" data-t="danger"><i>⚠️</i>สายขาด / เสาล้ม / ไฟไหม้</button>
+        </div>
+        <div class="warn" id="warn">⚠️ อันตราย อย่าเข้าใกล้สายไฟหรือเสา และโทร <a href="tel:1129">1129</a> ทันที — ส่งแบบฟอร์มนี้ด้วยเพื่อให้เจ้าหน้าที่เวรรู้ตำแหน่ง</div>
+      </div>
+      <div class="card">
+        <h2>2. ที่ไหน</h2>
+        <button type="button" class="gps" id="gps">📍 ใช้ตำแหน่งตอนนี้</button>
+        <div class="gpsok" id="gpsok"></div>
+        <label for="place">บ้านเลขที่ / หมู่บ้าน / จุดสังเกต</label>
+        <input id="place" name="place" maxlength="200" placeholder="เช่น 45 ม.3 ต.อ่าวลึกใต้ ใกล้ร้านค้า…">
+      </div>
+      <div class="card">
+        <h2>3. ติดต่อกลับ</h2>
+        <label for="phone">เบอร์โทร <span style="color:#9B1C1C">*</span></label>
+        <input id="phone" name="tel" type="tel" inputmode="tel" maxlength="15" placeholder="08x-xxx-xxxx" autocomplete="tel">
+        <label for="name">ชื่อ (ไม่บังคับ)</label>
+        <input id="name" name="name" maxlength="60" autocomplete="name">
+        <label for="detail">รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+        <textarea id="detail" maxlength="500" placeholder="เช่น ได้ยินเสียงดังที่เสาหน้าบ้าน / ดับตั้งแต่ 2 ทุ่ม"></textarea>
+        <div class="hp" aria-hidden="true"><input id="hp" tabindex="-1" autocomplete="off"></div>
+      </div>
+      <button class="send" id="send" type="submit">ส่งแจ้งไฟดับ</button>
+      <div class="msg" id="msg" role="alert"></div>
+      <div class="foot">ข้อมูลใช้เพื่อการแก้ไฟฟ้าขัดข้องเท่านั้น · เรื่องด่วน/อันตราย โทร PEA Call Center <a href="tel:1129">1129</a></div>
+    </form>
+  </main>
+</div>
+<script>
+const API='https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec';
+const $=id=>document.getElementById(id);
+const ls={get(k){try{return JSON.parse(localStorage.getItem('fire_'+k));}catch(e){return null;}},set(k,v){try{localStorage.setItem('fire_'+k,JSON.stringify(v));}catch(e){}}};
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let type='', gps=null;
+const me=ls.get('me')||{}; $('phone').value=me.phone||''; $('name').value=me.name||''; $('place').value=me.place||'';
+document.querySelectorAll('#ty button').forEach(b=>b.onclick=()=>{type=b.dataset.t;document.querySelectorAll('#ty button').forEach(x=>x.classList.toggle('on',x===b));$('warn').style.display=type==='danger'?'block':'none';});
+$('gps').onclick=()=>{ const o=$('gpsok'); o.className='gpsok'; o.style.display='block';
+  if(!navigator.geolocation){o.classList.add('err');o.textContent='เครื่องนี้หาตำแหน่งไม่ได้ — พิมพ์ที่อยู่/จุดสังเกตด้านล่างแทน';return;}
+  o.textContent='กำลังหาตำแหน่ง…';
+  navigator.geolocation.getCurrentPosition(p=>{gps={lat:p.coords.latitude,lon:p.coords.longitude};o.textContent='✓ ได้ตำแหน่งแล้ว (แม่นยำประมาณ '+Math.round(p.coords.accuracy)+' ม.)';},
+    e=>{o.classList.add('err');o.textContent='หาตำแหน่งไม่ได้ ('+(e.code===1?'ไม่ได้อนุญาตให้ใช้ตำแหน่ง':'สัญญาณ GPS อ่อน')+') — พิมพ์ที่อยู่/จุดสังเกตด้านล่างแทน';},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+};
+$('f').onsubmit=async ev=>{ ev.preventDefault(); const m=$('msg'); m.textContent='';
+  if(!type){m.textContent='เลือกว่าไฟดับแบบไหน (ข้อ 1)';return;}
+  const phone=$('phone').value.replace(/[^0-9]/g,''); if(!/^0\d{8,9}$/.test(phone)){m.textContent='ใส่เบอร์โทรกลับให้ถูกต้อง';$('phone').focus();return;}
+  const place=$('place').value.trim(); if(!gps&&place.length<3){m.textContent='กด "ใช้ตำแหน่งตอนนี้" หรือพิมพ์ที่อยู่/จุดสังเกต';return;}
+  const b=$('send'); b.disabled=true; b.textContent='กำลังส่ง…';
+  try{
+    const body={action:'ticket',type,phone,name:$('name').value.trim(),place,detail:$('detail').value.trim(),hp:$('hp').value,lat:gps&&gps.lat,lon:gps&&gps.lon};
+    const j=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}).then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'ส่งไม่สำเร็จ');
+    ls.set('me',{phone,name:body.name,place});
+    const L=(ls.get('tk')||[]).filter(t=>Date.now()-t.at<3*864e5); L.unshift({id:j.ticket.id,k:j.ticket.key,at:Date.now(),type}); ls.set('tk',L.slice(0,5));
+    $('detail').value=''; type=''; document.querySelectorAll('#ty button').forEach(x=>x.classList.remove('on')); $('warn').style.display='none';
+    showMine(true); window.scrollTo(0,0);
+  }catch(e){ m.textContent=e.message+' — ถ้าส่งไม่ได้ โทร 1129'; }
+  b.disabled=false; b.textContent='ส่งแจ้งไฟดับ';
+};
+const TY={home:'ไฟดับทั้งบ้าน',area:'ไฟดับทั้งซอย/หมู่บ้าน',low:'ไฟตก/กระพริบ',danger:'สายขาด/เสาล้ม/ไฟไหม้',other:'อื่น ๆ'};
+const hm=iso=>iso?new Date(new Date(iso).getTime()+7*3600e3).toISOString().slice(11,16)+' น.':'';
+async function showMine(fresh){
+  const L=(ls.get('tk')||[]).filter(t=>Date.now()-t.at<3*864e5); if(!L.length){$('mine').innerHTML='';return;}
+  const t=L[0]; let s=t.s||null;
+  try{ const j=await fetch(API+'?action=ticketStatus&id='+encodeURIComponent(t.id)+'&k='+encodeURIComponent(t.k)).then(r=>r.json()); if(j.ok){ s=j.ticket; t.s=s; ls.set('tk',L); } }catch(e){}
+  if(!s){ s={st:'new',stText:'ส่งแล้ว',at:new Date(t.at).toISOString()}; }
+  const step=s.st==='done'||s.st==='dup'?3:s.st==='acc'?2:1, cls=i=>i<=step?(i===step&&step<3?'now':'ok'):'';
+  $('mine').innerHTML=`<div class="card done">${fresh?'<div style="font-size:15px;font-weight:700;color:#1F5A2A">✓ ส่งแจ้งเรียบร้อย ถึงเจ้าหน้าที่เวรแล้ว</div>':'<div style="font-size:13px;color:var(--mut)">รายการที่คุณแจ้งล่าสุด</div>'}
+    <div class="no">#${esc(t.id)}</div><div style="font-size:13px;color:var(--mut)">${esc(TY[t.type]||'')} · แจ้งเมื่อ ${hm(s.at)}</div>
+    <div class="steps"><div class="${cls(1)}"><span>1</span>รับแจ้งแล้ว</div><div class="${cls(2)}"><span>2</span>เจ้าหน้าที่รับงาน${s.accAt?'<br>'+hm(s.accAt):''}</div><div class="${cls(3)}"><span>3</span>แก้ไขเสร็จ${s.doneAt?'<br>'+hm(s.doneAt):''}</div></div>
+    <div style="font-size:14px;font-weight:700;margin-top:4px">${esc(s.stText||'')}</div>
+    <button class="lnk" type="button" id="refresh">อัปเดตสถานะ</button>
+    <div style="font-size:12px;color:var(--mut)">เจ้าหน้าที่อาจโทรกลับเพื่อสอบถามตำแหน่ง · ไม่ต้องแจ้งซ้ำ</div></div>`;
+  $('refresh').onclick=()=>showMine(false);
+}
+showMine(false);
+setInterval(()=>{ if(document.visibilityState==='visible'&&(ls.get('tk')||[]).length) showMine(false); },60000);
+</script>
+</body>
+</html>

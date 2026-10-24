@@ -603,6 +603,25 @@ function handleEvent_(ev) {
       return reply_(ev.replyToken, [text_('บันทึกการรับทราบแล้ว ✓\n' + (who ? who.full : '') + ' · ' + Utilities.formatDate(new Date(), TZ, 'HH:mm') + ' น.')]);
     }
     if (p[0] === 'ann') return reply_(ev.replyToken, [text_(announceText_(p[1], p[2]))]);
+    if (p[0] === 'tk') {
+      const who = peopleRows_().filter(function (r) { return r.lineUserId && r.lineUserId === uid; })[0];
+      if (!who) return reply_(ev.replyToken, [text_('ยังไม่ได้ลงทะเบียน — ใช้ได้เฉพาะเจ้าหน้าที่')]);
+      if (p[1] === 'acc') {
+        const r = tkAccept_(p[2], who.short);
+        if (r.already) return reply_(ev.replyToken, [text_('รายการ ' + p[2] + ' — ' + r.already + ' รับงานไปแล้ว')]);
+        if (r.closed) return reply_(ev.replyToken, [text_('รายการ ' + p[2] + ' ' + r.closed)]);
+        const u = webUrl_('viewDaily', { tk: 1 });
+        return reply_(ev.replyToken, [text_('✋ ' + who.short + ' รับงาน ' + p[2] + ' แล้ว (' + Utilities.formatDate(new Date(), TZ, 'HH:mm') + ' น.)\nแก้เสร็จแล้วกด "แก้เสร็จ → บันทึกไฟดับ" ในแอป' + (u ? '\n' + u : ''))]);
+      }
+      if (p[1] === 'fwd') {
+        const c = CacheService.getScriptCache(), txt = c.get('tkf_' + uid);
+        if (!txt) return reply_(ev.replyToken, [text_('ข้อความหมดอายุแล้ว — ส่งต่อข้อความอีกครั้ง')]);
+        c.remove('tkf_' + uid);
+        const d = tkFromLine_(txt, who.short);
+        return reply_(ev.replyToken, [text_('สร้างรายการรับแจ้ง ' + d.id + ' แล้ว ✓ แจ้งคนเข้าเวรแล้ว' + (d.phone ? '' : '\n(ไม่พบเบอร์โทรในข้อความ)'))]);
+      }
+      return;
+    }
     return;
   }
   if (ev.type !== 'message' || ev.message.type !== 'text') return;
@@ -632,6 +651,12 @@ function handleEvent_(ev) {
       bubble_('เวรแก้ไฟ' + (dd.day.off ? ' · วันหยุด' : ''), '#5B1A63', thDateLong_(ymd), summaryLines_(dd), null))]);
   }
   if (/^เวรของฉัน$/.test(t)) return reply_(ev.replyToken, [text_(myDuties_(me))]);
+  if (!inGroup && /ไฟ\s*(ดับ|ตก|ไม่มา|กระพริบ|ไม่ติด)|ไฟฟ้า\s*ดับ|สาย.*ขาด|เสา.*ล้ม/.test(t) && t.length >= 6) {
+    CacheService.getScriptCache().put('tkf_' + uid, t.slice(0, 500), 1800);
+    return reply_(ev.replyToken, [{ type: 'text', text: 'เป็นข้อความแจ้งไฟดับจากผู้ใช้ไฟใช่ไหม?\n"' + t.slice(0, 120) + (t.length > 120 ? '…' : '') + '"',
+      quickReply: { items: [{ type: 'action', action: { type: 'postback', label: '📥 สร้างรายการรับแจ้ง', data: 'tk|fwd', displayText: 'สร้างรายการรับแจ้ง' } },
+        { type: 'action', action: { type: 'message', label: 'ไม่ใช่', text: 'ไม่ใช่' } }] } }]);
+  }
   m = t.match(/^อากาศ\s*(อัตโนมัติ|[1-6])\s*(.*)$/);
   if (m) {
     const isAppr = approverList_().some(function (a) { return a.short === me.short; });

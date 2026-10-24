@@ -543,3 +543,166 @@ function patrolStatus_(ids) {
   }
   return m;
 }
+
+/* ===================== รับแจ้งไฟดับจากผู้ใช้ไฟ (หน้าเว็บ /fire หรือส่งต่อข้อความให้บอต) =====================
+ * Tickets: id | createdAt | data(JSON) | status | updatedAt
+ * status: new (ยังไม่มีคนรับ) · acc (รับงานแล้ว) · done (แก้เสร็จ → เชื่อมเหตุการณ์ไฟดับ) · dup (ซ้ำ) · cancel */
+const TK_SHEET_ = 'Tickets';
+const TK_TYPES_ = { home: 'ไฟดับทั้งบ้าน', area: 'ไฟดับทั้งซอย/หมู่บ้าน', low: 'ไฟตก / กระพริบ', danger: 'สายขาด / เสาล้ม / ไฟไหม้', other: 'อื่น ๆ' };
+const TK_ST_ = { new: 'ยังไม่มีคนรับ', acc: 'เจ้าหน้าที่รับงานแล้ว', done: 'แก้ไขเสร็จแล้ว', dup: 'รวมกับรายการอื่น', cancel: 'ยกเลิก' };
+function tkSheet_() {
+  let sh = sheet_(TK_SHEET_);
+  if (!sh) {
+    sh = ss_().insertSheet(TK_SHEET_);
+    sh.getRange(1, 1, 1, 5).setValues([['id', 'createdAt', 'data', 'status', 'updatedAt']]).setFontWeight('bold');
+    sh.setFrozenRows(1); sh.getRange('A:A').setNumberFormat('@');
+  }
+  return sh;
+}
+function tkRows_() {
+  const sh = tkSheet_(); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues().map(function (r, i) {
+    let d = {}; try { d = JSON.parse(r[2] || '{}'); } catch (e) {}
+    return { row: i + 2, id: String(r[0]), d: d, st: String(r[3] || 'new') };
+  });
+}
+function tkWrite_(x) { x.d.st = x.st; x.d.upd = new Date().toISOString(); tkSheet_().getRange(x.row, 3, 1, 3).setValues([[JSON.stringify(x.d), x.st, new Date()]]); }
+function tkNextId_() {
+  const props = PropertiesService.getScriptProperties(), n = Number(props.getProperty('TK_SEQ') || 0) + 1;
+  props.setProperty('TK_SEQ', String(n)); return 'A-' + ('000' + n).slice(-4);
+}
+/** อุปกรณ์ใกล้สุดจาก SLD (หม้อแปลงก่อน) — ดึงไม่ได้ = ไม่ระบุ */
+function tkNear_(lat, lon) {
+  try {
+    const url = String(getConfig_().sldApi || 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec');
+    const j = JSON.parse(UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText());
+    const c = Math.cos(lat * Math.PI / 180); let best = null;
+    (j.feeders || []).forEach(function (f) { (f.devices || []).forEach(function (d) {
+      if (!d.lat || !d.lon) return;
+      const km = Math.sqrt(Math.pow((d.lat - lat) * 111, 2) + Math.pow((d.lon - lon) * 111 * c, 2)) * (d.type === 'TRANSFORMER' ? 1 : 1.6);
+      if (!best || km < best.km) best = { km: km, id: d.id, type: d.type, desc: d.desc || '', feeder: f.id };
+    }); });
+    if (best && best.km < 5) { best.km = Math.round(best.km * 100) / 100; return best; }
+  } catch (e) {}
+  return null;
+}
+function tkPublic_(d) {
+  return { id: d.id, type: TK_TYPES_[d.type] || d.type, st: d.st, stText: TK_ST_[d.st] || d.st, at: d.at, accAt: d.accAt || '', doneAt: d.doneAt || '' };
+}
+/** ผู้ใช้ไฟแจ้ง (ไม่ต้องล็อกอิน) — กันแจ้งรัว: เบอร์เดิมไม่เกิน 3 ครั้ง/ชม. ทั้งระบบไม่เกิน 40 ครั้ง/ชม. */
+function createTicket_(b) {
+  if (b.hp) throw new Error('ส่งไม่สำเร็จ');                                // ช่องดักบอต
+  const phone = digits_(b.phone);
+  if (!/^0\d{8,9}$/.test(phone)) throw new Error('ใส่เบอร์โทรกลับให้ถูกต้อง (9–10 หลัก)');
+  const type = TK_TYPES_[b.type] ? b.type : 'other';
+  const lat = Number(b.lat), lon = Number(b.lon), hasGps = isFinite(lat) && isFinite(lon) && lat > 5 && lat < 21 && lon > 97 && lon < 106;
+  const place = String(b.place || '').trim().slice(0, 200);
+  if (!hasGps && place.length < 3) throw new Error('กด "ใช้ตำแหน่งตอนนี้" หรือพิมพ์สถานที่/จุดสังเกต');
+  const cache = CacheService.getScriptCache(), kp = 'tkp_' + phone, ka = 'tk_all_' + Utilities.formatDate(new Date(), TZ, 'yyyyMMddHH');
+  const np = Number(cache.get(kp) || 0), na = Number(cache.get(ka) || 0);
+  if (np >= 3) throw new Error('เบอร์นี้แจ้งไปแล้วหลายครั้ง เจ้าหน้าที่กำลังดำเนินการ — เรื่องด่วนโทร 1129');
+  if (na >= 40) throw new Error('ขณะนี้มีผู้แจ้งจำนวนมาก โปรดโทร 1129');
+  cache.put(kp, String(np + 1), 3600); cache.put(ka, String(na + 1), 3700);
+  const id = tkNextId_(), now = new Date();
+  const d = { id: id, at: now.toISOString(), type: type, phone: phone, name: String(b.name || '').trim().slice(0, 60), place: place,
+    detail: String(b.detail || '').trim().slice(0, 500), lat: hasGps ? Math.round(lat * 1e6) / 1e6 : null, lon: hasGps ? Math.round(lon * 1e6) / 1e6 : null,
+    src: b.src === 'line' ? 'line' : 'web', key: Utilities.getUuid().slice(0, 8), st: 'new', notified: [] };
+  if (hasGps) d.near = tkNear_(lat, lon);
+  tkSheet_().appendRow([id, now, JSON.stringify(d), 'new', now]);
+  log_('ผู้ใช้ไฟ', 'รับแจ้งไฟดับ', bkkYmd_().slice(0, 7), id + ' ' + TK_TYPES_[type] + ' ' + (place || ''));
+  try { tkNotify_(d, false); } catch (e) { log_('system', 'แจ้งเวรไม่สำเร็จ', '', String(e)); }
+  try { tkEnsureTrigger_(); } catch (e) {}
+  return { id: id, key: d.key, st: 'new', stText: TK_ST_.new };
+}
+function tkStatus_(id, key) {
+  const x = tkRows_().filter(function (r) { return r.id === String(id); })[0];
+  if (!x || x.d.key !== String(key)) throw new Error('ไม่พบรายการ');
+  return tkPublic_(Object.assign({}, x.d, { st: x.st }));
+}
+/** การ์ด LINE ถึงคนเข้าเวร (พนักงาน) ตอนนี้ — again=true คือเตือนซ้ำ + แจ้ง หผ.ปร./ชผ. */
+function tkCard_(d, again) {
+  const t = Utilities.formatDate(new Date(d.at), TZ, 'HH:mm'), danger = d.type === 'danger';
+  const lines = [];
+  if (d.place) lines.push('📍 ' + d.place);
+  if (d.near) lines.push('ใกล้ ' + d.near.id + (d.near.desc ? ' (' + d.near.desc + ')' : '') + ' · ' + d.near.feeder);
+  lines.push('☎ ' + fmtPhone_(d.phone) + (d.name ? ' · ' + d.name : ''));
+  if (d.detail) lines.push('"' + d.detail.slice(0, 120) + '"');
+  const btn = [{ type: 'button', style: 'primary', color: '#5B1A63', height: 'sm', action: { type: 'postback', label: '✋ รับงาน', data: 'tk|acc|' + d.id, displayText: 'รับงาน ' + d.id } }];
+  if (d.lat) btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: '🗺 นำทาง', uri: 'https://www.google.com/maps/dir/?api=1&destination=' + d.lat + ',' + d.lon } });
+  const tb = telBtn_('☎ โทรกลับ ' + fmtPhone_(d.phone), d.phone, false); if (tb) btn.push(tb);
+  const u = webUrl_('viewDaily', { tk: 1 }); if (u) btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูรายการในแอป', uri: u } });
+  return flex_((again ? 'ยังไม่มีคนรับ! ' : 'รับแจ้งไฟดับ ') + d.id, bubble_((again ? '⏰ ยังไม่มีคนรับงาน · ' : 'รับแจ้งไฟดับ ') + d.id + ' · ' + t + ' น.',
+    danger || again ? '#C92A2A' : '#A23434', TK_TYPES_[d.type] || 'แจ้งไฟดับ', lines, btn));
+}
+function tkNotify_(d, again) {
+  const td = dayData_(bkkYmd_()), yd = dayData_(addDays_(bkkYmd_(), -1)), empSet = Object.assign({}, yd ? yd.emp : {}, td ? td.emp : {});
+  const duty = Object.keys(onDutyNow_()).filter(function (n) { return n in empSet; });   // เฉพาะพนักงานที่อยู่เวรตอนนี้
+  let to = duty.slice();
+  if (again) approverList_().forEach(function (a) { if (to.indexOf(a.short) < 0) to.push(a.short); });
+  const msg = [tkCard_(d, again)], sent = [];
+  to.forEach(function (n) { const id = lineIdOf_(n); if (id && push_(id, msg, 'ticket')) sent.push(n); });
+  log_('system', again ? 'เตือนซ้ำรับแจ้ง' : 'ส่งรับแจ้งถึงเวร', '', d.id + ' → ' + (sent.join(', ') || 'ไม่มีผู้รับ'));
+  return sent;
+}
+/** ทุก 5 นาที: รายการที่ยังไม่มีคนรับเกิน 10 นาที → เตือนซ้ำครั้งเดียว */
+function tkCheck() {
+  const now = Date.now();
+  tkRows_().forEach(function (x) {
+    if (x.st !== 'new' || x.d.again) return;
+    if (now - new Date(x.d.at).getTime() < 10 * 60000) return;
+    x.d.again = new Date().toISOString(); tkWrite_(x);
+    try { tkNotify_(x.d, true); } catch (e) {}
+  });
+}
+function tkEnsureTrigger_() {
+  const props = PropertiesService.getScriptProperties(); if (props.getProperty('TK_TRIG')) return;
+  if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'tkCheck'; }))
+    ScriptApp.newTrigger('tkCheck').timeBased().everyMinutes(5).create();
+  props.setProperty('TK_TRIG', '1');
+}
+/** สิทธิ์เจ้าหน้าที่: PIN ผู้อนุมัติ · บัญชีศูนย์รวมงาน · ลิงก์เวรจาก LINE ที่ยังไม่หมดอายุ */
+function tkAuth_(b) {
+  const who = approverByPin_(b.pin); if (who) return who.short || who.name;
+  if (b.hubUser && b.hubPass && !b.t) { if (hubAllowed_(String(b.hubUser), String(b.hubPass))) return String(b.hubUser).slice(0, 60); throw new Error('บัญชีนี้ไม่มีสิทธิ์ใช้งานเวรแก้ไฟ'); }
+  if (b.r === 'duty' && b.t && Number(b.x) > Date.now() && repToken_(String(b.rk || ''), b.u, 'duty', b.x) === b.t) return b.u;
+  throw new Error('ต้องล็อกอินศูนย์รวมงาน ใช้ลิงก์จาก LINE หรือใส่ PIN');
+}
+function listTickets_(b) {
+  tkAuth_(b);
+  const since = Date.now() - 36 * 3600000;
+  return tkRows_().filter(function (x) { return x.st === 'new' || x.st === 'acc' || new Date(x.d.upd || x.d.at).getTime() > since; })
+    .map(function (x) { const d = Object.assign({}, x.d, { st: x.st }); delete d.key; return d; }).reverse().slice(0, 60);
+}
+function tkAccept_(id, by) {
+  const x = tkRows_().filter(function (r) { return r.id === String(id); })[0]; if (!x) throw new Error('ไม่พบรายการ ' + id);
+  if (x.st === 'acc' && x.d.accBy !== by) return { already: x.d.accBy, d: x.d };
+  if (x.st !== 'new' && x.st !== 'acc') return { closed: TK_ST_[x.st], d: x.d };
+  x.st = 'acc'; x.d.accBy = by; x.d.accAt = new Date().toISOString(); tkWrite_(x);
+  log_(by, 'รับงานแจ้งไฟดับ', '', id);
+  return { d: x.d };
+}
+/** a: acc (รับงาน) · done (เชื่อมเหตุการณ์ไฟดับ outId) · dup (ซ้ำกับ ref) · cancel · reopen */
+function ticketAct_(b) {
+  const by = tkAuth_(b), a = String(b.a || '');
+  if (a === 'acc') { const r = tkAccept_(b.id, by); if (r.already) throw new Error(r.already + ' รับงานนี้ไปแล้ว'); if (r.closed) throw new Error('รายการนี้' + r.closed); return r.d; }
+  const x = tkRows_().filter(function (r) { return r.id === String(b.id); })[0]; if (!x) throw new Error('ไม่พบรายการ');
+  if (a === 'done') { x.st = 'done'; x.d.doneAt = new Date().toISOString(); x.d.doneBy = by; x.d.outId = String(b.outId || ''); if (!x.d.accBy) { x.d.accBy = by; x.d.accAt = x.d.doneAt; } }
+  else if (a === 'dup') { x.st = 'dup'; x.d.ref = String(b.ref || '').slice(0, 20); x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
+  else if (a === 'cancel') { x.st = 'cancel'; x.d.note = String(b.note || '').slice(0, 120); x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
+  else if (a === 'reopen') { x.st = x.d.accBy ? 'acc' : 'new'; delete x.d.doneAt; delete x.d.outId; }
+  else throw new Error('คำสั่งไม่ถูกต้อง');
+  tkWrite_(x); log_(by, 'รับแจ้งไฟดับ: ' + a, '', x.id + (x.d.outId ? ' → ' + x.d.outId : ''));
+  const d = Object.assign({}, x.d); delete d.key; return d;
+}
+/** เจ้าหน้าที่ส่งต่อข้อความแจ้งไฟดับ (จาก OpenChat ฯลฯ) ให้บอต → สร้างรายการรับแจ้ง */
+function tkFromLine_(text, by) {
+  const t = String(text || '').slice(0, 500), ph = (t.replace(/[\s-]/g, '').match(/0\d{8,9}/) || [''])[0];
+  const id = tkNextId_(), now = new Date();
+  const d = { id: id, at: now.toISOString(), type: /สาย.*ขาด|เสา.*ล้ม|ไฟไหม้|ประกาย|ระเบิด/.test(t) ? 'danger' : /ตก|กระพริบ|หรี่/.test(t) ? 'low' : /ซอย|หมู่บ้าน|ทั้งหมู่|ทั้งตำบล|แถว/.test(t) ? 'area' : 'home',
+    phone: ph, name: '', place: '', detail: t, lat: null, lon: null, src: 'line', fwdBy: by, key: Utilities.getUuid().slice(0, 8), st: 'new' };
+  tkSheet_().appendRow([id, now, JSON.stringify(d), 'new', now]);
+  log_(by, 'รับแจ้งไฟดับ (ส่งต่อจาก LINE)', bkkYmd_().slice(0, 7), id);
+  try { tkNotify_(d, false); } catch (e) {}
+  try { tkEnsureTrigger_(); } catch (e) {}
+  return d;
+}
