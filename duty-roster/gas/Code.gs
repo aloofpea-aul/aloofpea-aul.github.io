@@ -411,18 +411,18 @@ function doPost(e) {
     if (b.action === 'saveOutMats') return json_({ ok: true, mats: saveOutMats_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'request' && !b.approveNow) {
-      const rq = createRequest_(b, null); return json_({ ok: true, request: rq, requests: listRequests_() });
+      const rq = createRequest_(b, null); return json_({ ok: true, request: rq });
     }
     // ---- ต้องเป็นผู้อนุมัติ ----
     const who = approverByPin_(b.pin);
     if (!who) return json_({ ok: false, error: 'PIN ไม่ถูกต้อง' });
 
     // ส่งรายการคำขอล่าสุดกลับไปด้วย หน้าเว็บไม่ต้องโหลดซ้ำอีกรอบ
-    if (b.action === 'request') { const rq = createRequest_(b, who); return json_({ ok: true, request: rq, requests: listRequests_() }); }
-    if (b.action === 'decide') { const rq = decideRequest_(b.id, !!b.approve, who, b.note || ''); return json_({ ok: true, request: rq, requests: listRequests_() }); }
+    if (b.action === 'request') { const rq = createRequest_(b, who); return json_({ ok: true, request: rq }); }
+    if (b.action === 'decide') { const rq = decideRequest_(b.id, !!b.approve, who, b.note || ''); return json_({ ok: true, request: rq }); }
     if (b.action === 'checkPin') return json_({ ok: true, who: who });
-    if (b.action === 'deleteRequest') { const rs = deleteRequest_(b.id, !!b.revert, who); return json_({ ok: true, result: rs, requests: listRequests_() }); }
-    if (b.action === 'editRequest') { const rq = editRequest_(b, who); return json_({ ok: true, request: rq, requests: listRequests_() }); }
+    if (b.action === 'deleteRequest') { const rs = deleteRequest_(b.id, !!b.revert, who); return json_({ ok: true, result: rs }); }
+    if (b.action === 'editRequest') { const rq = editRequest_(b, who); return json_({ ok: true, request: rq }); }
 
     if (b.action === 'generate') {
       const cur = getMonth_(b.m);
