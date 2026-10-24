@@ -615,9 +615,14 @@ function createTicket_(b) {
   return { id: id, key: d.key, st: 'new', stText: TK_ST_.new };
 }
 function tkStatus_(id, key) {
-  const x = tkRows_().filter(function (r) { return r.id === String(id); })[0];
+  const rows = tkRows_(), x = rows.filter(function (r) { return r.id === String(id); })[0];
   if (!x || x.d.key !== String(key)) throw new Error('ไม่พบรายการ');
-  return tkPublic_(Object.assign({}, x.d, { st: x.st }));
+  let cur = x, hop = 0;                                  // แจ้งซ้ำจุดเดียวกัน → แสดงสถานะตามรายการหลัก
+  while (cur.st === 'dup' && cur.d.ref && hop++ < 5) { const nx = rows.filter(function (r) { return r.id === cur.d.ref; })[0]; if (!nx) break; cur = nx; }
+  const out = tkPublic_(Object.assign({}, cur.d, { st: cur.st }));
+  out.id = x.id; out.at = x.d.at; out.type = TK_TYPES_[x.d.type] || x.d.type;
+  if (cur !== x) { out.ref = cur.id; out.refNote = 'มีผู้แจ้งจุดเดียวกันแล้ว เจ้าหน้าที่ดำเนินการรวมเป็นงานเดียว (#' + cur.id + ')'; }
+  return out;
 }
 /** การ์ด LINE ถึงคนเข้าเวร (พนักงาน) ตอนนี้ — again=true คือเตือนซ้ำ + แจ้ง หผ.ปร./ชผ. */
 function tkCard_(d, again) {
@@ -687,7 +692,10 @@ function ticketAct_(b) {
   if (a === 'acc') { const r = tkAccept_(b.id, by); if (r.already) throw new Error(r.already + ' รับงานนี้ไปแล้ว'); if (r.closed) throw new Error('รายการนี้' + r.closed); return r.d; }
   const x = tkRows_().filter(function (r) { return r.id === String(b.id); })[0]; if (!x) throw new Error('ไม่พบรายการ');
   if (a === 'done') { x.st = 'done'; x.d.doneAt = new Date().toISOString(); x.d.doneBy = by; x.d.outId = String(b.outId || ''); if (!x.d.accBy) { x.d.accBy = by; x.d.accAt = x.d.doneAt; } }
-  else if (a === 'dup') { x.st = 'dup'; x.d.ref = String(b.ref || '').slice(0, 20); x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
+  else if (a === 'dup') {
+    const ref = String(b.ref || '').trim().toUpperCase().replace(/^#/, '').replace(/^(\d+)$/, function (m) { return 'A-' + ('000' + m).slice(-4); });
+    if (ref === x.id || !tkRows_().some(function (r) { return r.id === ref; })) throw new Error('ไม่พบรายการหลัก ' + ref);
+    x.st = 'dup'; x.d.ref = ref; x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
   else if (a === 'cancel') { x.st = 'cancel'; x.d.note = String(b.note || '').slice(0, 120); x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
   else if (a === 'reopen') { x.st = x.d.accBy ? 'acc' : 'new'; delete x.d.doneAt; delete x.d.outId; }
   else throw new Error('คำสั่งไม่ถูกต้อง');

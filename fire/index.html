@@ -130,13 +130,17 @@ async function showMine(fresh){
   const t=L[0]; let s=t.s||null;
   try{ const j=await fetch(API+'?action=ticketStatus&id='+encodeURIComponent(t.id)+'&k='+encodeURIComponent(t.k)).then(r=>r.json()); if(j.ok){ s=j.ticket; t.s=s; ls.set('tk',L); } }catch(e){}
   if(!s){ s={st:'new',stText:'ส่งแล้ว',at:new Date(t.at).toISOString()}; }
-  const step=s.st==='done'||s.st==='dup'?3:s.st==='acc'?2:1, cls=i=>i<=step?(i===step&&step<3?'now':'ok'):'';
+  const step=s.st==='done'?3:s.st==='acc'?2:1, cls=i=>i<=step?(i===step&&step<3?'now':'ok'):'';
   $('mine').innerHTML=`<div class="card done">${fresh?'<div style="font-size:15px;font-weight:700;color:#1F5A2A">✓ ส่งแจ้งเรียบร้อย ถึงเจ้าหน้าที่เวรแล้ว</div>':'<div style="font-size:13px;color:var(--mut)">รายการที่คุณแจ้งล่าสุด</div>'}
     <div class="no">#${esc(t.id)}</div><div style="font-size:13px;color:var(--mut)">${esc(TY[t.type]||'')} · แจ้งเมื่อ ${hm(s.at)}</div>
     <div class="steps"><div class="${cls(1)}"><span>1</span>รับแจ้งแล้ว</div><div class="${cls(2)}"><span>2</span>เจ้าหน้าที่รับงาน${s.accAt?'<br>'+hm(s.accAt):''}</div><div class="${cls(3)}"><span>3</span>แก้ไขเสร็จ${s.doneAt?'<br>'+hm(s.doneAt):''}</div></div>
-    <div style="font-size:14px;font-weight:700;margin-top:4px">${esc(s.stText||'')}</div>
+    <div style="font-size:14px;font-weight:700;margin-top:4px">${esc(s.st==='cancel'?'ปิดรายการแล้ว':s.stText||'')}</div>
+    ${s.refNote?`<div style="font-size:13px;color:#7A4A00;background:#FFF1D6;border-radius:8px;padding:6px 8px;margin-top:6px">${esc(s.refNote)}</div>`:''}
     <button class="lnk" type="button" id="refresh">อัปเดตสถานะ</button>
     <div style="font-size:12px;color:var(--mut)">เจ้าหน้าที่อาจโทรกลับเพื่อสอบถามตำแหน่ง · ไม่ต้องแจ้งซ้ำ</div></div>`;
+  if(L.length>1){ const more=await Promise.all(L.slice(1,4).map(async x=>{ try{ const j=await fetch(API+'?action=ticketStatus&id='+encodeURIComponent(x.id)+'&k='+encodeURIComponent(x.k)).then(r=>r.json()); return j.ok?j.ticket:null; }catch(e){ return null; } }));
+    const rows=L.slice(1,4).map((x,i)=>{ const m=more[i]; return `<div class="prev"><span>#${esc(x.id)} · ${esc(TY[x.type]||'')}</span><b>${esc(m?(m.st==='cancel'?'ปิดรายการแล้ว':m.stText):'—')}</b></div>`; }).join('');
+    $('mine').insertAdjacentHTML('beforeend',`<div class="card"><div style="font-size:13px;color:var(--mut);margin-bottom:6px">รายการอื่นที่คุณแจ้ง (3 วันล่าสุด)</div>${rows}</div>`); }
   $('refresh').onclick=()=>showMine(false);
 }
 showMine(false);
