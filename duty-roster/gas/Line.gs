@@ -590,6 +590,7 @@ function handleEvent_(ev) {
     setConfigKey_('wkGroupId', ev.source.groupId); log_(me ? me.short : uid, 'ตั้งกลุ่มคนงาน LINE', '', ev.source.groupId);
     return reply_(ev.replyToken, [text_('ตั้งกลุ่มนี้เป็นกลุ่มคนงานแล้ว ✓\nระบบจะส่งเวรคนงานรายสัปดาห์ทุกวันจันทร์ 07:55\nพิมพ์ "เวรคนงาน" เพื่อดูเวรวันนี้พร้อมปุ่มโทร')]);
   }
+  if (typeof tmdHandle_ === 'function' && tmdHandle_(ev, t, me, uid)) return;   // ประกาศเตือนภัยกรมอุตุ (Tmd.gs)
   if (/^เวรคนงาน$/.test(t)) return reply_(ev.replyToken, [workersToday_(bkkYmd_())]);
   if (inGroup && !/^(เวร|เวรวันนี้|เวรพรุ่งนี้)$/.test(t)) return;   // ในกลุ่ม: ตอบเฉพาะคำสั่ง ไม่รบกวนแชต
 
