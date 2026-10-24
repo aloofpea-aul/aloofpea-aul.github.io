@@ -979,7 +979,7 @@ async function outForm(k,I,o,data,pre){
       if(o) body.id=o.id;
       $('ofSave').disabled=true; $('ofSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';
       try{ const j=await apiPost(Object.assign({action:'saveOutage',k,o:body},outAuthBody(auth,F._pin)));
-        if(F._tk){ try{ await apiPost(Object.assign({action:'ticketAct',id:F._tk,a:'done',outId:j.outage.id},tkAuthBody(F._pin))); loadTickets(true); }catch(e){} }
+        if(F._tk){ try{ await apiPost(Object.assign({action:'ticketAct',id:F._tk,a:'done',outId:j.outage.id,onAt:F.on||''},tkAuthBody(F._pin))); loadTickets(true); }catch(e){} }
         let note='';
         if(photos.length){ $('ofSave').innerHTML='<span class="spin"></span>กำลังอัปโหลดรูป…'; note=await outPhotosUp(j.outage,photos,F.fix,auth,F._pin); }
         await afterSave(); close();

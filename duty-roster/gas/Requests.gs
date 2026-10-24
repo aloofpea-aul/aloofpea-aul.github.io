@@ -611,8 +611,10 @@ function tkNear_(lat, lon) {
   } catch (e) {}
   return null;
 }
-function tkPublic_(d) {
-  return { id: d.id, type: TK_TYPES_[d.type] || d.type, st: d.st, stText: TK_ST_[d.st] || d.st, at: d.at, accAt: d.accAt || '', doneAt: d.doneAt || '' };
+function tkPublic_(d) {   // หน้าผู้ใช้ไฟ: ไม่ส่งชื่อ/เบอร์/ที่อยู่/สาเหตุ
+  const st = { new: 'รอเจ้าหน้าที่รับงาน', acc: 'เจ้าหน้าที่รับงานแล้ว กำลังดำเนินการ', done: 'แก้ไขเสร็จ จ่ายไฟแล้ว', cancel: 'ปิดรายการแล้ว' };
+  return { id: d.id, type: TK_TYPES_[d.type] || d.type, st: d.st, stText: st[d.st] || TK_ST_[d.st] || d.st, at: d.at, accAt: d.accAt || '',
+    doneAt: d.st === 'done' ? (d.onAt || d.doneAt || '') : (d.doneAt || '') };
 }
 /** ผู้ใช้ไฟแจ้ง (ไม่ต้องล็อกอิน) — กันแจ้งรัว: เบอร์เดิมไม่เกิน 3 ครั้ง/ชม. ทั้งระบบไม่เกิน 40 ครั้ง/ชม. */
 function createTicket_(b) {
@@ -639,14 +641,22 @@ function createTicket_(b) {
   try { tkEnsureTrigger_(); } catch (e) {}
   return { id: id, key: d.key, st: 'new', stText: TK_ST_.new };
 }
-function tkStatus_(id, key) {
-  const rows = tkRows_(), x = rows.filter(function (r) { return r.id === String(id); })[0];
-  if (!x || x.d.key !== String(key)) throw new Error('ไม่พบรายการ');
+/** ติดตามสถานะ: ใช้ key จากลิงก์ติดตาม หรือ เบอร์โทรที่ใช้แจ้ง (ผิดเกิน 10 ครั้ง/ชม. ต่อเลขรับแจ้ง = ล็อก) */
+function tkStatus_(id, key, phone) {
+  id = String(id || '').trim().toUpperCase().replace(/^#/, '').replace(/^A?-?(\d{1,4})$/, function (m, n) { return 'A-' + ('000' + n).slice(-4); });
+  const rows = tkRows_(), x = rows.filter(function (r) { return r.id === id; })[0];
+  const cache = CacheService.getScriptCache(), kf = 'tkf_' + id, nf = Number(cache.get(kf) || 0);
+  if (!key && phone && nf >= 10) throw new Error('ลองหลายครั้งเกินไป รอสักครู่แล้วลองใหม่');
+  const okKey = x && key && x.d.key === String(key), okPhone = x && !key && phone && digits_(phone) === x.d.phone;
+  if (!okKey && !okPhone) { if (phone) cache.put(kf, String(nf + 1), 3600); throw new Error(phone ? 'ไม่พบรายการ — ตรวจเบอร์โทรและเลขรับแจ้งอีกครั้ง' : 'ไม่พบรายการ'); }
   let cur = x, hop = 0;                                  // แจ้งซ้ำจุดเดียวกัน → แสดงสถานะตามรายการหลัก
   while (cur.st === 'dup' && cur.d.ref && hop++ < 5) { const nx = rows.filter(function (r) { return r.id === cur.d.ref; })[0]; if (!nx) break; cur = nx; }
   const out = tkPublic_(Object.assign({}, cur.d, { st: cur.st }));
   out.id = x.id; out.at = x.d.at; out.type = TK_TYPES_[x.d.type] || x.d.type;
   if (cur !== x) { out.ref = cur.id; out.refNote = 'มีผู้แจ้งจุดเดียวกันแล้ว เจ้าหน้าที่ดำเนินการรวมเป็นงานเดียว (#' + cur.id + ')'; }
+  else { const n = rows.filter(function (r) { return r.st === 'dup' && r.d.ref === x.id; }).length;
+    if (n) out.refNote = 'มีผู้แจ้งจุดเดียวกันอีก ' + n + ' ราย — เจ้าหน้าที่รวมเป็นงานเดียวแล้ว'; }
+  if (okPhone) out.k = x.d.key;                          // ให้หน้าเว็บจำไว้ในเครื่อง + ทำลิงก์ติดตาม
   return out;
 }
 /** การ์ด LINE ถึงคนเข้าเวร (พนักงาน) ตอนนี้ — again=true คือเตือนซ้ำ + แจ้ง หผ.ปร./ชผ. */
@@ -716,13 +726,13 @@ function ticketAct_(b) {
   const by = tkAuth_(b), a = String(b.a || '');
   if (a === 'acc') { const r = tkAccept_(b.id, by); if (r.already) throw new Error(r.already + ' รับงานนี้ไปแล้ว'); if (r.closed) throw new Error('รายการนี้' + r.closed); return r.d; }
   const x = tkRows_().filter(function (r) { return r.id === String(b.id); })[0]; if (!x) throw new Error('ไม่พบรายการ');
-  if (a === 'done') { x.st = 'done'; x.d.doneAt = new Date().toISOString(); x.d.doneBy = by; x.d.outId = String(b.outId || ''); if (!x.d.accBy) { x.d.accBy = by; x.d.accAt = x.d.doneAt; } }
+  if (a === 'done') { x.st = 'done'; x.d.doneAt = new Date().toISOString(); x.d.doneBy = by; x.d.outId = String(b.outId || ''); if (/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(String(b.onAt || ''))) x.d.onAt = new Date(b.onAt + ':00+07:00').toISOString(); if (!x.d.accBy) { x.d.accBy = by; x.d.accAt = x.d.doneAt; } }
   else if (a === 'dup') {
     const ref = String(b.ref || '').trim().toUpperCase().replace(/^#/, '').replace(/^(\d+)$/, function (m) { return 'A-' + ('000' + m).slice(-4); });
     if (ref === x.id || !tkRows_().some(function (r) { return r.id === ref; })) throw new Error('ไม่พบรายการหลัก ' + ref);
     x.st = 'dup'; x.d.ref = ref; x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
   else if (a === 'cancel') { x.st = 'cancel'; x.d.note = String(b.note || '').slice(0, 120); x.d.doneBy = by; x.d.doneAt = new Date().toISOString(); }
-  else if (a === 'reopen') { x.st = x.d.accBy ? 'acc' : 'new'; delete x.d.doneAt; delete x.d.outId; }
+  else if (a === 'reopen') { x.st = x.d.accBy ? 'acc' : 'new'; delete x.d.doneAt; delete x.d.outId; delete x.d.onAt; }
   else throw new Error('คำสั่งไม่ถูกต้อง');
   tkWrite_(x); log_(by, 'รับแจ้งไฟดับ: ' + a, '', x.id + (x.d.outId ? ' → ' + x.d.outId : ''));
   const d = Object.assign({}, x.d); delete d.key; return d;

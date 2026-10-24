@@ -382,7 +382,7 @@ function doGet(e) {
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
-    if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k) });
+    if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
     if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m) });
     if (a === 'sldPing') { const x = sldSS_(), f = x.getSheetByName('PatrolFinding'); return json_({ ok: true, sheet: x.getName(), patrol: !!f }); }

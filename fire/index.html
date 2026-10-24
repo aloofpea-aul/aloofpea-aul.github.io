@@ -52,12 +52,34 @@ textarea{min-height:70px;resize:vertical}
 .foot{font-size:12px;color:var(--mut);text-align:center;margin-top:6px}
 .prev{font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .prev b{color:var(--pri)}
+.tabs{display:flex;background:#E7E2EC;border-radius:12px;padding:3px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:none;border-radius:9px;padding:9px 0;font:700 15px 'IBM Plex Sans Thai',sans-serif;color:var(--mut);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--pri)}
+.save{background:#FFF8E6;border:1.5px dashed #E0B34A;border-radius:12px;padding:10px 12px;margin-top:10px;text-align:left}
+.save b{font-size:14px}.save .u{font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:6px 0;color:var(--pri);word-break:break-all}
+.brow{display:flex;gap:8px}.brow a,.brow button{flex:1;min-height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 14px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer}
+.b-line{background:#06C755;color:#fff;border:0}.b-gh{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+.note2{font-size:13px;color:#7A4A00;background:#FFF1D6;border-radius:8px;padding:6px 8px;margin-top:6px}
+.find{width:100%;min-height:48px;border:0;border-radius:12px;background:var(--pri);color:#fff;font:700 16px 'IBM Plex Sans Thai',sans-serif;cursor:pointer;margin-top:12px}
+.find:disabled{opacity:.6}
 </style>
 </head>
 <body>
 <div class="app">
   <header><b>⚡ แจ้งไฟฟ้าขัดข้อง</b><small>กฟส.อ่าวลึก · ถึงเจ้าหน้าที่เวรแก้ไฟทันที 24 ชม.</small></header>
   <main>
+    <div class="tabs" id="tabs"><button type="button" data-v="rep" class="on">แจ้งไฟดับ</button><button type="button" data-v="trk">ติดตามเรื่อง</button></div>
+    <div id="trkLink"></div>
+    <div id="vTrk" style="display:none">
+      <div class="card"><h2>ติดตามเรื่องที่แจ้งไว้</h2>
+        <label for="tPhone">เบอร์โทรที่ใช้แจ้ง</label><input id="tPhone" type="tel" inputmode="tel" maxlength="15" placeholder="08x-xxx-xxxx">
+        <label for="tId">เลขรับแจ้ง</label><input id="tId" maxlength="10" placeholder="เช่น A-0153" autocapitalize="characters">
+        <button class="find" id="tGo" type="button">ดูสถานะ</button>
+        <div class="msg" id="tMsg" role="alert"></div>
+        <div class="foot" style="text-align:left">จำเลขรับแจ้งไม่ได้? ถ้าแจ้งจากมือถือเครื่องนี้ ดูได้ที่แท็บ "แจ้งไฟดับ" · หรือโทร <a href="tel:1129">1129</a></div></div>
+      <div id="tRes"></div>
+    </div>
+    <div id="vRep">
     <div id="mine"></div>
     <form id="f" autocomplete="on">
       <div class="card">
@@ -91,6 +113,7 @@ textarea{min-height:70px;resize:vertical}
       <div class="msg" id="msg" role="alert"></div>
       <div class="foot">ข้อมูลใช้เพื่อการแก้ไฟฟ้าขัดข้องเท่านั้น · เรื่องด่วน/อันตราย โทร PEA Call Center <a href="tel:1129">1129</a></div>
     </form>
+    </div>
   </main>
 </div>
 <script>
@@ -125,26 +148,62 @@ $('f').onsubmit=async ev=>{ ev.preventDefault(); const m=$('msg'); m.textContent
 };
 const TY={home:'ไฟดับทั้งบ้าน',area:'ไฟดับทั้งซอย/หมู่บ้าน',low:'ไฟตก/กระพริบ',danger:'สายขาด/เสาล้ม/ไฟไหม้',other:'อื่น ๆ'};
 const hm=iso=>iso?new Date(new Date(iso).getTime()+7*3600e3).toISOString().slice(11,16)+' น.':'';
+const getS=(id,q)=>fetch(API+'?action=ticketStatus&id='+encodeURIComponent(id)+q).then(r=>r.json());
+const trkUrl=t=>location.origin+location.pathname+'?t='+encodeURIComponent(t.id+'-'+t.k);
+function remember(t){ if(!t.k) return; const L=(ls.get('tk')||[]).filter(x=>x.id!==t.id&&Date.now()-x.at<3*864e5); L.unshift(t); ls.set('tk',L.slice(0,5)); }
+function card(t,s,o){ o=o||{};
+  const step=s.st==='done'?3:s.st==='acc'?2:1, cls=i=>i<=step?(i===step&&step<3?'now':'ok'):'';
+  const done=s.st==='done', url=t.k?trkUrl(t):'';
+  return `<div class="card done">${o.head||''}
+    <div class="no">#${esc(t.id)}</div><div style="font-size:13px;color:var(--mut)">${esc(s.type||TY[t.type]||'')} · แจ้งเมื่อ ${hm(s.at)}</div>
+    <div class="steps"><div class="${cls(1)}"><span>1</span>รับแจ้งแล้ว</div><div class="${cls(2)}"><span>2</span>เจ้าหน้าที่รับงาน${s.accAt?'<br>'+hm(s.accAt):''}</div><div class="${cls(3)}"><span>3</span>จ่ายไฟแล้ว${done&&s.doneAt?'<br>'+hm(s.doneAt):''}</div></div>
+    <div style="font-size:15px;font-weight:700;${done?'color:#1F5A2A':''}">${done?'✓ ':''}${esc(s.stText||'')}${done&&s.doneAt?' '+hm(s.doneAt):''}</div>
+    ${s.refNote?`<div class="note2">${esc(s.refNote)}</div>`:''}
+    ${url&&o.save?`<div class="save"><b>📌 เก็บลิงก์นี้ไว้ติดตามเรื่อง</b><div style="font-size:12.5px;color:var(--mut)">เปิดจากมือถือเครื่องไหนก็ดูสถานะได้ · ส่งให้คนในบ้านได้</div>
+      <div class="u">${esc(url)}</div><div class="brow"><a class="b-line" target="_blank" rel="noopener" href="https://line.me/R/share?text=${encodeURIComponent('ติดตามเรื่องแจ้งไฟดับ #'+t.id+' กฟส.อ่าวลึก\n'+url)}">ส่งเข้า LINE</a><button type="button" class="b-gh" data-copy="${esc(url)}">คัดลอกลิงก์</button></div></div>`:''}
+    ${o.foot||''}</div>`; }
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-copy]'); if(!b) return; const u=b.dataset.copy;
+  const ok=()=>{b.textContent='คัดลอกแล้ว ✓';setTimeout(()=>b.textContent='คัดลอกลิงก์',2000);};
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(ok,()=>prompt('คัดลอกลิงก์นี้',u)); else prompt('คัดลอกลิงก์นี้',u); });
 async function showMine(fresh){
   const L=(ls.get('tk')||[]).filter(t=>Date.now()-t.at<3*864e5); if(!L.length){$('mine').innerHTML='';return;}
   const t=L[0]; let s=t.s||null;
-  try{ const j=await fetch(API+'?action=ticketStatus&id='+encodeURIComponent(t.id)+'&k='+encodeURIComponent(t.k)).then(r=>r.json()); if(j.ok){ s=j.ticket; t.s=s; ls.set('tk',L); } }catch(e){}
-  if(!s){ s={st:'new',stText:'ส่งแล้ว',at:new Date(t.at).toISOString()}; }
-  const step=s.st==='done'?3:s.st==='acc'?2:1, cls=i=>i<=step?(i===step&&step<3?'now':'ok'):'';
-  $('mine').innerHTML=`<div class="card done">${fresh?'<div style="font-size:15px;font-weight:700;color:#1F5A2A">✓ ส่งแจ้งเรียบร้อย ถึงเจ้าหน้าที่เวรแล้ว</div>':'<div style="font-size:13px;color:var(--mut)">รายการที่คุณแจ้งล่าสุด</div>'}
-    <div class="no">#${esc(t.id)}</div><div style="font-size:13px;color:var(--mut)">${esc(TY[t.type]||'')} · แจ้งเมื่อ ${hm(s.at)}</div>
-    <div class="steps"><div class="${cls(1)}"><span>1</span>รับแจ้งแล้ว</div><div class="${cls(2)}"><span>2</span>เจ้าหน้าที่รับงาน${s.accAt?'<br>'+hm(s.accAt):''}</div><div class="${cls(3)}"><span>3</span>แก้ไขเสร็จ${s.doneAt?'<br>'+hm(s.doneAt):''}</div></div>
-    <div style="font-size:14px;font-weight:700;margin-top:4px">${esc(s.st==='cancel'?'ปิดรายการแล้ว':s.stText||'')}</div>
-    ${s.refNote?`<div style="font-size:13px;color:#7A4A00;background:#FFF1D6;border-radius:8px;padding:6px 8px;margin-top:6px">${esc(s.refNote)}</div>`:''}
-    <button class="lnk" type="button" id="refresh">อัปเดตสถานะ</button>
-    <div style="font-size:12px;color:var(--mut)">เจ้าหน้าที่อาจโทรกลับเพื่อสอบถามตำแหน่ง · ไม่ต้องแจ้งซ้ำ</div></div>`;
-  if(L.length>1){ const more=await Promise.all(L.slice(1,4).map(async x=>{ try{ const j=await fetch(API+'?action=ticketStatus&id='+encodeURIComponent(x.id)+'&k='+encodeURIComponent(x.k)).then(r=>r.json()); return j.ok?j.ticket:null; }catch(e){ return null; } }));
-    const rows=L.slice(1,4).map((x,i)=>{ const m=more[i]; return `<div class="prev"><span>#${esc(x.id)} · ${esc(TY[x.type]||'')}</span><b>${esc(m?(m.st==='cancel'?'ปิดรายการแล้ว':m.stText):'—')}</b></div>`; }).join('');
+  try{ const j=await getS(t.id,'&k='+encodeURIComponent(t.k)); if(j.ok){ s=j.ticket; t.s=s; ls.set('tk',L); } }catch(e){}
+  if(!s){ s={st:'new',stText:'รอเจ้าหน้าที่รับงาน',at:new Date(t.at).toISOString()}; }
+  $('mine').innerHTML=card(t,s,{save:true,
+    head:fresh?'<div style="font-size:15px;font-weight:700;color:#1F5A2A">✓ ส่งแจ้งเรียบร้อย ถึงเจ้าหน้าที่เวรแล้ว</div>':'<div style="font-size:13px;color:var(--mut)">รายการที่คุณแจ้งล่าสุด</div>',
+    foot:'<button class="lnk" type="button" id="refresh">อัปเดตสถานะ</button><div style="font-size:12px;color:var(--mut)">เจ้าหน้าที่อาจโทรกลับเพื่อสอบถามตำแหน่ง · ไม่ต้องแจ้งซ้ำ</div>'});
+  if(L.length>1){ const more=await Promise.all(L.slice(1,4).map(async x=>{ try{ const j=await getS(x.id,'&k='+encodeURIComponent(x.k)); return j.ok?j.ticket:null; }catch(e){ return null; } }));
+    const rows=L.slice(1,4).map((x,i)=>{ const m=more[i]; return `<div class="prev"><span>#${esc(x.id)} · ${esc(TY[x.type]||'')}</span><b>${esc(m?m.stText:'—')}</b></div>`; }).join('');
     $('mine').insertAdjacentHTML('beforeend',`<div class="card"><div style="font-size:13px;color:var(--mut);margin-bottom:6px">รายการอื่นที่คุณแจ้ง (3 วันล่าสุด)</div>${rows}</div>`); }
   $('refresh').onclick=()=>showMine(false);
 }
-showMine(false);
-setInterval(()=>{ if(document.visibilityState==='visible'&&(ls.get('tk')||[]).length) showMine(false); },60000);
+// แท็บ
+function tab(v){ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); $('vRep').style.display=v==='rep'?'':'none'; $('vTrk').style.display=v==='trk'?'':'none'; }
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ if(trk){ trk=null; history.replaceState(null,'',location.pathname); } $('trkLink').innerHTML=''; tab(b.dataset.v); if(b.dataset.v==='rep') showMine(false); });
+$('tPhone').value=me.phone||'';
+$('tGo').onclick=async()=>{ const m=$('tMsg'), b=$('tGo'); m.textContent=''; $('tRes').innerHTML='';
+  const phone=$('tPhone').value.replace(/[^0-9]/g,''), id=$('tId').value.trim();
+  if(!/^0\d{8,9}$/.test(phone)){m.textContent='ใส่เบอร์โทรที่ใช้แจ้ง';return;} if(!id){m.textContent='ใส่เลขรับแจ้ง';return;}
+  b.disabled=true; b.textContent='กำลังค้นหา…';
+  try{ const j=await getS(id,'&p='+encodeURIComponent(phone)); if(!j.ok) throw new Error(j.error||'ไม่พบรายการ');
+    const s=j.ticket, t={id:s.id,k:s.k,at:Date.now(),type:''}; remember(t);
+    $('tRes').innerHTML=card(t,s,{save:true});
+  }catch(e){ m.textContent=e.message; }
+  b.disabled=false; b.textContent='ดูสถานะ'; };
+// เปิดจากลิงก์ติดตาม ?t=A-0153-xxxxxxxx
+let trk=null; (function(){ const q=new URLSearchParams(location.search).get('t'); if(!q) return; const i=q.lastIndexOf('-'); if(i<3) return; trk={id:q.slice(0,i),k:q.slice(i+1)}; })();
+async function showTrk(){ if(!trk) return;
+  try{ const j=await getS(trk.id,'&k='+encodeURIComponent(trk.k)); if(!j.ok) throw new Error(j.error);
+    remember({id:trk.id,k:trk.k,at:Date.now(),type:''});
+    $('trkLink').innerHTML=card(trk,j.ticket,{head:'<div style="font-size:13px;color:var(--mut)">ติดตามเรื่องแจ้งไฟดับ</div>',
+      foot:'<div style="font-size:12px;color:var(--mut);margin-top:6px">อัปเดตเองทุก 1 นาที</div><button class="send" type="button" id="newRep" style="margin-top:10px">แจ้งไฟดับเรื่องใหม่</button>'});
+  }catch(e){ $('trkLink').innerHTML='<div class="card"><div class="msg">ไม่พบรายการจากลิงก์นี้ — ลองค้นด้วยเบอร์โทรในแท็บ "ติดตามเรื่อง"</div></div>'; }
+  const n=$('newRep'); if(n) n.onclick=()=>{ trk=null; history.replaceState(null,'',location.pathname); $('trkLink').innerHTML=''; tab('rep'); window.scrollTo(0,0); };
+}
+if(trk){ $('vRep').style.display='none'; document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('on')); $('trkLink').innerHTML='<div class="card" style="text-align:center;color:var(--mut)">กำลังโหลดสถานะ…</div>'; showTrk(); }
+else showMine(false);
+setInterval(()=>{ if(document.visibilityState!=='visible') return; if(trk) showTrk(); else if($('vRep').style.display!=='none'&&(ls.get('tk')||[]).length) showMine(false); },60000);
 </script>
 </body>
 </html>
