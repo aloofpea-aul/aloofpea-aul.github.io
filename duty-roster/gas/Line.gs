@@ -257,37 +257,65 @@ function onDutyNow_() {
 
 /** การ์ดแจ้งก่อนเข้าเวร (พนักงาน) — แบบประกาศ กฟส.อ่าวลึก + ปุ่มโทร */
 /* ===================== ประกาศเตือนภัยกรมอุตุฯ (จากระบบ tmd ในศูนย์รวมงาน) =====================
- * ใช้เฉพาะประกาศที่ระบุผลกระทบรายวันในจังหวัดกระบี่ (krabiDetail) · แคช 30 นาที */
+ * k = ประกาศที่ระบุผลรายวันในกระบี่ (krabiDetail) · s = ประกาศภาคใต้ที่ไม่ได้ระบุกระบี่ (อ่านช่วงวันที่จากเนื้อความ) · แคช 30 นาที */
 const TMD_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbyF7Am81Ut4aUbzTbACUFpJhIQ2q3iKiiTxoLM8IoGvANQ8NQpaM5BvokCeyOWiAqrwNA/exec';
 const TMD_OPEN_ = 'https://aloofpea-aul.github.io/tmd/open.html';
 function tmdItems_() {
-  const cache = CacheService.getScriptCache(), hit = cache.get('tmd_k1');
+  const cache = CacheService.getScriptCache(), hit = cache.get('tmd_k2');
   if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   let list = [];
   try {
-    const url = String(getConfig_().tmdApi || TMD_API_DEFAULT) + '?action=list&limit=60&focus=' + encodeURIComponent('กระบี่');
+    const url = String(getConfig_().tmdApi || TMD_API_DEFAULT) + '?action=list&limit=80&focus=' + encodeURIComponent('ภาคใต้');
     const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
     const j = JSON.parse(res.getContentText());
-    list = (j && j.data || []).filter(function (d) { return d && d.krabiDetail; }).map(function (d) {
-      return { k: d.key, s: String(d.sortKey || ''), t: d.title, no: d.issueNo, sev: d.severity, kd: d.krabiDetail, pdf: d.pdfUrl || '', drv: d.pdfDrive || '' };
+    list = (j && j.data || []).filter(function (d) { return d && (d.krabiDetail || d.focus === 'ภาคใต้' || d.focus === 'กระบี่'); }).map(function (d) {
+      return { s: String(d.sortKey || ''), t: d.title || '', no: d.issueNo || '', sev: d.severity || '', kd: d.krabiDetail || '',
+        ds: String(d.description || '').slice(0, 600), pdf: d.pdfUrl || '', drv: d.pdfDrive || '' };
     });
   } catch (e) { return []; }                               // ดึงไม่ได้ = ไม่แสดง (ไม่จำผล)
-  try { cache.put('tmd_k1', JSON.stringify(list), 1800); } catch (e) {}
+  try { cache.put('tmd_k2', JSON.stringify(list), 1800); } catch (e) {}
   return list;
 }
-/** วันในเดือน key ('YYYY-MM') ที่กระบี่มีประกาศเตือน → { d: {w, sev, no, t, url} } (ฉบับใหม่กว่าทับฉบับเก่า) */
+function tmdMon_(w) { let i = TH_MS_.indexOf(w); if (i < 0) i = TH_MONTH_FULL_.indexOf(w); return i + 1; }
+/** ช่วงวันที่ของประกาศภาคใต้ → ['YYYY-MM-DD', ...] (อ่านจากเนื้อความ · ไม่พบใช้วันที่ออกประกาศ) */
+function tmdSpan_(it) {
+  const ay = +it.s.slice(0, 4), am = +it.s.slice(5, 7), ad = +it.s.slice(8, 10); if (!ay) return [];
+  const M = '([ก-๙]+\\.[ก-๙]+\\.|' + TH_MONTH_FULL_.join('|') + ')';
+  const yOf = function (mi) { return mi < am - 6 ? ay + 1 : mi > am + 6 ? ay - 1 : ay; };
+  const iso = function (y, m, d) { return y + '-' + ('0' + m).slice(-2) + '-' + ('0' + d).slice(-2); };
+  const txt = it.ds + ' ' + it.t;
+  let a = null, b = null, m;
+  if ((m = txt.match(new RegExp('วันที่\\s*(\\d{1,2})\\s*' + M + '?\\s*[-–]\\s*(\\d{1,2})\\s*' + M)))) {
+    const m2 = tmdMon_(m[4]), m1 = m[2] ? tmdMon_(m[2]) : m2; a = [yOf(m1), m1, +m[1]]; b = [yOf(m2), m2, +m[3]];
+  } else if ((m = txt.match(new RegExp('ในวันที่\\s*(\\d{1,2})\\s*' + M)))) {
+    const m1 = tmdMon_(m[2]); a = b = [yOf(m1), m1, +m[1]];
+  } else if ((m = txt.match(new RegExp('จนถึงวันที่\\s*(\\d{1,2})\\s*' + M)))) {
+    const m2 = tmdMon_(m[2]); a = [ay, am, ad]; b = [yOf(m2), m2, +m[1]];
+  } else a = b = [ay, am, ad];
+  const out = [], d = new Date(Date.UTC(a[0], a[1] - 1, a[2])), e = new Date(Date.UTC(b[0], b[1] - 1, b[2]));
+  for (let i = 0; d <= e && i < 15; i++, d.setUTCDate(d.getUTCDate() + 1)) out.push(iso(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
+  return out;
+}
+function tmdLink_(it) { return it.pdf ? TMD_OPEN_ + '?t=' + encodeURIComponent(it.pdf) + (it.drv ? '&d=' + encodeURIComponent(it.drv) : '') : 'https://aloofpea-aul.github.io/tmd/'; }
+function tmdShortTitle_(t) { return String(t || '').replace(/\s*\(มีผลกระทบ.*$/, '').replace(/\s*ฉบับที่.*$/, '').slice(0, 60) || 'มีประกาศเตือนภัย'; }
+/** วันในเดือน key ('YYYY-MM') → { d: { k: {...}|null, s: {...}|null } } (ฉบับใหม่กว่าทับฉบับเก่า) */
 function tmdDays_(key) {
   const y0 = +key.slice(0, 4), m0 = +key.slice(5, 7), out = {};
+  if (!y0 || !m0) return out;
+  const put = function (d, kind, v) { (out[d] = out[d] || { k: null, s: null })[kind] = v; };
   tmdItems_().slice().sort(function (a, b) { return a.s < b.s ? -1 : a.s > b.s ? 1 : 0; }).forEach(function (it) {
     const ay = +it.s.slice(0, 4) || y0, am = +it.s.slice(5, 7) || m0;
-    String(it.kd).split(/\n+/).forEach(function (ln) {
-      const m = String(ln).trim().match(/^(\d{1,2})\s*([ก-๙]+\.[ก-๙]+\.)\s*(.*)$/); if (!m) return;
-      const mi = TH_MS_.indexOf(m[2]) + 1; if (!mi) return;
-      let yy = ay; if (mi < am - 6) yy++; else if (mi > am + 6) yy--;
-      if (yy !== y0 || mi !== m0) return;
-      out[+m[1]] = { w: m[3] || 'มีประกาศเตือนภัย', sev: it.sev || '', no: it.no || '', t: it.t || '',
-        url: it.pdf ? TMD_OPEN_ + '?t=' + encodeURIComponent(it.pdf) + (it.drv ? '&d=' + encodeURIComponent(it.drv) : '') : 'https://aloofpea-aul.github.io/tmd/' };
-    });
+    const info = function (w) { return { w: w, sev: it.sev, no: it.no, url: tmdLink_(it) }; };
+    if (it.kd) {
+      String(it.kd).split(/\n+/).forEach(function (ln) {
+        const m = String(ln).trim().match(/^(\d{1,2})\s*([ก-๙]+\.[ก-๙]+\.)\s*(.*)$/); if (!m) return;
+        const mi = TH_MS_.indexOf(m[2]) + 1; if (!mi) return;
+        let yy = ay; if (mi < am - 6) yy++; else if (mi > am + 6) yy--;
+        if (yy === y0 && mi === m0) put(+m[1], 'k', info(m[3] || tmdShortTitle_(it.t)));
+      });
+    } else {
+      tmdSpan_(it).forEach(function (ymd) { if (+ymd.slice(0, 4) === y0 && +ymd.slice(5, 7) === m0) put(+ymd.slice(8, 10), 's', info(tmdShortTitle_(it.t))); });
+    }
   });
   return out;
 }
@@ -322,10 +350,10 @@ function shiftMessage_(kind, ymd, name, dd) {
   const wl = wxLines_();
   if (wl.length) { body.push({ type: 'separator', margin: 'md' }); body.push({ type: 'text', text: wl[0], size: 'sm', weight: 'bold', color: '#1E1A22', wrap: true, margin: 'md' });
     if (wl[1]) body.push({ type: 'text', text: wl[1], size: 'xs', color: '#4A4450', wrap: true }); }
-  const tw = tmdOn_(ymd);
+  const twd = tmdOn_(ymd), tw = twd && (twd.k || twd.s);
   if (tw) { body.push({ type: 'separator', margin: 'md' });
-    body.push({ type: 'text', text: '⚠️ กรมอุตุฯ เตือน: ' + tw.w + ' (กระบี่)', size: 'sm', weight: 'bold', color: tw.sev === 'สูง' ? '#C92A2A' : '#C2410C', wrap: true, margin: 'md' });
-    if (tw.no) body.push({ type: 'text', text: tw.no, size: 'xs', color: '#6B6372', wrap: true });
+    body.push({ type: 'text', text: '⚠️ กรมอุตุฯ เตือน (' + (twd.k ? 'ภาคใต้ + กระบี่' : 'ภาคใต้') + '): ' + tw.w, size: 'sm', weight: 'bold', color: tw.sev === 'สูง' ? '#C92A2A' : twd.k ? '#C2410C' : '#8A6A00', wrap: true, margin: 'md' });
+    if (tw.no) body.push({ type: 'text', text: tw.no + (twd.k ? '' : ' · ไม่ได้ระบุกระบี่'), size: 'xs', color: '#6B6372', wrap: true });
     body.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูประกาศกรมอุตุฯ', uri: tw.url } }); }
   body.forEach(function (x) { if (x.type === 'button') x.margin = 'sm'; });
   const foot = [
