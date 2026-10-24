@@ -785,12 +785,13 @@ const outOf=(key,k)=>((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o
 const tMin=s=>s?Date.parse(s+':00+07:00')/60000:null;
 const durMin=(a,b)=>a&&b?Math.max(0,tMin(b)-tMin(a)):null;
 const hrs=m=>m==null?null:Math.round(m/6)/10;
+const hmH=m=>m==null?null:Math.floor(Math.round(m)/60)+'.'+String(Math.round(m)%60).padStart(2,'0');
 const hmTh=s=>s?String(s).slice(11,16).replace(':','.'):'';
 const durTxt=m=>m==null?'ยังไม่จ่ายไฟ':(m>=60?Math.floor(m/60)+' ชม. ':'')+(m%60?m%60+' นาที':'');
 function outTotals(L){
   const t={hv:{n:0,out:0,work:0},lv:{n:0,out:0,work:0},temp:[]};
   L.forEach(o=>{const g=t[o.lvl]; if(!g) return; g.n++; g.out+=durMin(o.off,o.on)||0; g.work+=durMin(o.ws||o.off,o.we||o.on)||0; if(o.fix==='temp') t.temp.push(o);});
-  ['hv','lv'].forEach(x=>{t[x].out=hrs(t[x].out);t[x].work=hrs(t[x].work);});
+  ['hv','lv'].forEach(x=>{t[x].outM=t[x].out;t[x].workM=t[x].work;t[x].out=hmH(t[x].out);t[x].work=hmH(t[x].work);});
   return t;
 }
 const outWhere=o=>[o.feeder,o.dev&&o.dev.id?((DEV_TH[o.dev.type]&&o.dev.type!=='TRANSFORMER'?DEV_TH[o.dev.type]+' ':o.dev.type==='TRANSFORMER'?'หม้อแปลง ':'')+o.dev.id+(o.dev.desc?' '+o.dev.desc:'')):(o.place||'')].filter(Boolean).join(' · ');
@@ -835,7 +836,7 @@ function outCardHtml(k,canEdit){
      ${(o.mats||[]).length?`<span class="opl">ใช้ ${esc(o.mats.map(m=>m.n+' ×'+m.q).join(', '))}</span>`:''}${(o.photos||[]).length?`<span class="opl">📷 ${o.photos.length} รูป</span>`:''}
      ${o.fix==='temp'?(o.patrol&&o.patrol.id?`<span class="opl ok">Patrol: ${esc(o.patrol.status||'ส่งแล้ว')}</span>`:`<span class="opl warn">ยังไม่เข้า Patrol${o.patrol&&o.patrol.err?' — '+esc(o.patrol.err):''}</span>`):''}</div></div></div>`;
   return `<div class="rp-sec"><h4>๒–๔. เหตุการณ์ไฟดับในเวรนี้</h4>
-    <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hrs(((T.hv.out||0)+(T.lv.out||0))*60)||0}</b><span>ชม. ไฟดับรวม</span></div></div>
+    <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hmH((T.hv.outM||0)+(T.lv.outM||0))}</b><span>ชม. ไฟดับรวม</span></div></div>
     <div class="evl">${L.map(row).join('')||'<div class="muted" style="padding:8px 0">ยังไม่มีเหตุการณ์ไฟดับ</div>'}</div>
     ${canEdit?'<button class="btn" type="button" id="outAdd" style="width:100%;margin-top:6px">＋ เพิ่มเหตุการณ์ไฟดับ</button>':''}
     <div class="muted" style="margin-top:4px">ข้อ ๒–๔ ในบัญชีลงนามคำนวณจากรายการนี้ให้เอง</div></div>`;
@@ -1035,7 +1036,7 @@ function outSummaryPages(key,L,cfg){
   const p1=`<div class="page a4l"><div class="doc m2" style="padding:12mm 14mm;font-size:15pt">${head}
     <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:8mm">
       <div><b>แยกตามฟีดเดอร์</b><table class="an"><tr><th>ฟีดเดอร์</th><th>แรงสูง (ครั้ง)</th><th>ชม.</th><th>แรงต่ำ (ครั้ง)</th><th>ชม.</th><th>ผู้ใช้ไฟ~</th></tr>
-        ${Object.keys(byF).sort().map(f=>{const x=byF[f];return `<tr><td>${esc(f)}</td><td>${THD(x.hv)}</td><td>${THD(hrs(x.hvm))}</td><td>${THD(x.lv)}</td><td>${THD(hrs(x.lvm))}</td><td>${x.cust?THD(x.cust):'-'}</td></tr>`;}).join('')}
+        ${Object.keys(byF).sort().map(f=>{const x=byF[f];return `<tr><td>${esc(f)}</td><td>${THD(x.hv)}</td><td>${THD(hmH(x.hvm))}</td><td>${THD(x.lv)}</td><td>${THD(hmH(x.lvm))}</td><td>${x.cust?THD(x.cust):'-'}</td></tr>`;}).join('')}
         <tr><th>รวม</th><th>${THD(T.hv.n)}</th><th>${THD(T.hv.out)}</th><th>${THD(T.lv.n)}</th><th>${THD(T.lv.out)}</th><th></th></tr></table>
         <div style="margin-top:3mm"><b>แยกตามสาเหตุ</b> (ตามกลุ่มสาเหตุของ กฟภ.)</div>
         <table class="an">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<tr><td style="text-align:left">${esc(c)}</td><td style="width:22%">${THD(n)} ครั้ง</td></tr>`).join('')}</table></div>
