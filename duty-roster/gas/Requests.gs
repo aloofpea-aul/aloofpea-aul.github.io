@@ -82,12 +82,16 @@ function describe_(month, type, p, data) {
   return 'ลาเวร: ' + lab(p.a, Number(p.d)) + pt + ' → ' + p.r + ' เข้าแทน' + (p.cont ? ' (อยู่ต่อเนื่อง · ผู้อนุมัติยอม)' : '');
 }
 
+/** อ่านชีตคำขอครั้งเดียวต่อการเรียก 1 ครั้ง (เขียนเมื่อไรล้างแคช) — เดิมอ่านซ้ำ 4–6 รอบต่อการอนุมัติ */
+var REQ_ROWS_CACHE_ = null;
+function reqDirty_() { REQ_ROWS_CACHE_ = null; }
 function reqRows_() {
-  const sh = sheet_(SH.REQ); if (sh.getLastRow() < 2) return [];
-  return sh.getRange(2, 1, sh.getLastRow() - 1, 12).getValues().map(function (r, i) {
+  if (REQ_ROWS_CACHE_) return REQ_ROWS_CACHE_;
+  const sh = sheet_(SH.REQ); if (sh.getLastRow() < 2) return (REQ_ROWS_CACHE_ = []);
+  return (REQ_ROWS_CACHE_ = sh.getRange(2, 1, sh.getLastRow() - 1, 12).getValues().map(function (r, i) {
     return { row: i + 2, id: String(r[0]), createdAt: r[1], month: mkey_(r[2]), type: r[3], payload: JSON.parse(r[4] || '{}'),
       requester: r[5], reason: r[6], status: r[7], decidedBy: r[8], decidedAt: r[9], note: r[10], text: r[11] };
-  });
+  }));
 }
 function fmtTime_(v) { return v instanceof Date ? Utilities.formatDate(v, TZ, 'd/M/yyyy HH:mm') : String(v || ''); }
 function pubReq_(r) {
@@ -125,7 +129,7 @@ function createRequest_(b, who) {
   applyOps_(test, ops);                                     // ตรวจก่อนบันทึก
   const text = describe_(b.month, b.type, b.payload, mo.data);
   const id = 'R' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss') + Math.random().toString(36).slice(2, 5).toUpperCase();
-  sheet_(SH.REQ).appendRow([id, new Date(), "'" + b.month, b.type, JSON.stringify(b.payload), b.requester || (who && who.name) || '',
+  reqDirty_(); sheet_(SH.REQ).appendRow([id, new Date(), "'" + b.month, b.type, JSON.stringify(b.payload), b.requester || (who && who.name) || '',
     b.reason || '', 'รออนุมัติ', '', '', '', text]);
   log_(b.requester || (who && who.name) || '-', 'ยื่นคำขอ', b.month, text);
   if (who && b.approveNow) return decideRequest_(id, true, who, 'แก้ไขโดยผู้อนุมัติ');
@@ -148,7 +152,7 @@ function decideRequest_(id, approve, who, note) {
     saveMonth_(r.month, mo.status, mo.data, mo.stateAfter, mo.note);
   }
   const st = approve ? 'อนุมัติ' : 'ไม่อนุมัติ';
-  sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([[st, who.name + ' (' + who.role + ')', new Date(), note || '']]);
+  reqDirty_(); sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([[st, who.name + ' (' + who.role + ')', new Date(), note || '']]);
   log_(who.name, st, r.month, r.text);
   try {
     const names = {};
@@ -337,7 +341,7 @@ function deleteRequest_(id, revertIgnored, who) {
     }
     note = 'ลบโดย ' + who.name + (reverted ? ' · คืนตารางแล้ว' : ' · ไม่มีข้อมูลการเปลี่ยนในตาราง');
   } else note = 'ลบโดย ' + who.name + (r.status === 'รออนุมัติ' ? ' · ยังไม่อนุมัติ ตารางไม่เปลี่ยน' : '');
-  sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([['ลบแล้ว', who.name + ' (' + who.role + ')', new Date(), note]]);
+  reqDirty_(); sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([['ลบแล้ว', who.name + ' (' + who.role + ')', new Date(), note]]);
   log_(who.name, 'ลบคำขอ', r.month, r.text + ' | ' + note);
   return { id: id, reverted: reverted, note: note };
 }
@@ -355,7 +359,7 @@ function editRequest_(b, who) {
   if (b.signer && b.signer.name) p.signer = { k: String(b.signer.k || 'custom').slice(0, 10), name: String(b.signer.name).slice(0, 80), title: String(b.signer.title || '').slice(0, 120) };
   if (b.docDate !== undefined) p.docDate = /^\d{4}-\d{2}-\d{2}$/.test(String(b.docDate)) ? b.docDate : '';
   const reason = KS[p.why.k] ? KS[p.why.k] + (p.why.k === 'official' && p.why.order ? ' คำสั่ง ' + p.why.order : '') : r.reason;
-  sheet_(SH.REQ).getRange(r.row, 5).setValue(JSON.stringify(p));
+  reqDirty_(); sheet_(SH.REQ).getRange(r.row, 5).setValue(JSON.stringify(p));
   sheet_(SH.REQ).getRange(r.row, 7).setValue(reason);
   log_(who.name, 'แก้เอกสารคำขอ', r.month, r.text + ' | ' + reason + (p.docDate ? ' | เสนอ ' + p.docDate : ''));
   return pubReq_(reqRows_().filter(function (x) { return x.id === r.id; })[0]);

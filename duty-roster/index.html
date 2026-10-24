@@ -475,8 +475,14 @@ async function apiGet(params){
 }
 async function apiPost(body){
   if(window.__MOCK__) return window.__MOCK__.post(body);
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
-  const j=await r.json(); if(!j.ok) throw new Error(j.error); return j;
+  const ac=window.AbortController?new AbortController():null, tm=ac&&setTimeout(()=>ac.abort(),90e3);
+  try{
+    const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),signal:ac?ac.signal:undefined});
+    const j=await r.json(); if(!j.ok) throw new Error(j.error); return j;
+  }catch(e){
+    if(e.name==='AbortError') throw new Error('ระบบ Google ตอบช้าผิดปกติ (เกิน 90 วินาที) — ดูในประวัติด้านล่างว่าบันทึกแล้วหรือยัง ก่อนส่งซ้ำ');
+    throw e;
+  }finally{ if(tm) clearTimeout(tm); }
 }
 /* ---------- แคชในเครื่อง: เปิดปุ๊บเห็นปั๊บ แล้วค่อยอัปเดตเบื้องหลัง ---------- */
 const LS={get(k){try{return JSON.parse(localStorage.getItem('dr_'+k));}catch(e){return null;}},
@@ -1601,7 +1607,7 @@ async function renderReq(){
     $('qWhy').onchange=()=>$$('.qOrd').forEach(e=>e.classList.toggle('hide',$('qWhy').value!=='official'));
   }
   $('pnApprovers').textContent='ผู้อนุมัติ: '+(S.boot.approvers||[]).map(a=>a.role).join(' / ');
-  await qForm('month'); await loadRequests();
+  await Promise.all([qForm('month'),loadRequests().catch(e=>msg('pnMsg',e.message,'err'))]);
 }
 async function qForm(stage){
   const key=$('qMonth').value; if(!key) return;
@@ -1663,15 +1669,21 @@ $('qSubmit').onclick=async()=>{
   const body={action:'request',month:key,type:S.qType,payload,requester:a,reason};
   if($('qNow').checked){body.approveNow=true;body.pin=$('qPin').value;}
   $('qSubmit').disabled=true; msg('qMsg','กำลังส่ง…');
-  try{ const j=await apiPost(body); forgetMonth(key);
+  const t0=Date.now(), tick=setInterval(()=>msg('qMsg','กำลังส่ง… '+Math.round((Date.now()-t0)/1000)+' วินาที'+(Date.now()-t0>20e3?' (Google ตอบช้ากว่าปกติ รอสักครู่)':'')),1000);
+  try{ const j=await apiPost(body); clearInterval(tick); forgetMonth(key);
     msg('qMsg',j.request.status==='อนุมัติ'?'แก้ไขตารางแล้ว และแจ้ง LINE ผู้เกี่ยวข้อง':'ส่งคำขอแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ');
     $('qReason').value=''; $('qOrder').value=''; $('qOrderDate').value=''; LS.del('mr_'+key); if(S.mr) delete S.mr[key];
-    await qForm('month'); await loadRequests();
-  }catch(e){msg('qMsg',e.message,'err');}
+    loadRequests(j.requests).catch(()=>{}); qForm('month').catch(()=>{});
+  }catch(e){ clearInterval(tick); msg('qMsg',e.message,'err'); loadRequests().catch(()=>{}); }
   $('qSubmit').disabled=false;
 };
-async function loadRequests(){
-  const j=await apiGet({action:'requests'}), R=j.requests; setDot(R.pending.length); S.pending=R.pending;
+async function loadRequests(pre){
+  if(pre){ LS.set('reqs',pre); paintRequests(pre); return; }
+  const c=LS.get('reqs'); if(c) paintRequests(c);                // แสดงจากในเครื่องก่อน แล้วอัปเดตเบื้องหลัง
+  const j=await apiGet({action:'requests'}); LS.set('reqs',j.requests); paintRequests(j.requests);
+}
+function paintRequests(R){
+  setDot(R.pending.length); S.pending=R.pending;
   $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq"><div class="tx">${esc(r.text)}</div>
       <div class="muted">ผู้ขอ ${esc(r.requester)} · ${r.payload&&r.payload.docDate?'วันที่เสนอ '+esc(thDate(r.payload.docDate))+' · ':''}ยื่นในระบบ ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
       ${r.payload&&r.payload.g==='emp'&&(r.type==='leave'||r.type==='swap')?`<button class="btn ghost" style="height:38px;width:100%;margin-bottom:6px" data-prev="${esc(r.id)}" data-pm="${esc(r.month)}">👁 ดูตัวอย่างบันทึกลาเวร (ร่าง)</button>`:''}
@@ -1731,7 +1743,7 @@ async function delReq(id,st,btn){
       forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
       if(card) card.remove(); close();
       toast(ok?(x.reverted?'ลบแล้ว · ตารางเวรกลับเป็นแบบเดิม':'ลบแล้ว'):'ลบแล้ว');
-      loadRequests().catch(()=>{}); qForm('month').catch(()=>{});
+      loadRequests(j.requests).catch(()=>{}); qForm('month').catch(()=>{});
     }catch(e){ bg.busy=false; $('dYes').disabled=$('dNo').disabled=false; $('dYes').textContent=ok?'ลบ และคืนตาราง':'ลบรายการ'; msg('dMsg',e.message,'err'); }
   };
 }
@@ -1756,9 +1768,9 @@ function editReq(r){
     $('eNo').onclick=()=>bg.remove();
     $('eYes').onclick=async()=>{ const pin=$('ePin').value.trim(); if(!pin){msg('eMsg','ใส่ PIN ก่อน','warn');return;}
       $('eYes').disabled=true; $('eYes').innerHTML='<span class="spin"></span>กำลังบันทึก…';
-      try{ await apiPost({action:'editRequest',id:r.id,pin,why:{k,order:($('eO')||{}).value||'',orderDate:($('eOD')||{}).value||''},docDate:$('eD').value,signer:sgnOf(sgk,$('eSgN').value,$('eSgT').value)});
+      try{ const j=await apiPost({action:'editRequest',id:r.id,pin,why:{k,order:($('eO')||{}).value||'',orderDate:($('eOD')||{}).value||''},docDate:$('eD').value,signer:sgnOf(sgk,$('eSgN').value,$('eSgT').value)});
         if(!$('pnPin').value) $('pnPin').value=pin; S.mr={}; Object.keys(localStorage).filter(x=>x.startsWith('dr_mr_')).forEach(x=>localStorage.removeItem(x));
-        bg.remove(); toast('แก้ไขเอกสารแล้ว · ตารางเวรไม่เปลี่ยน'); loadRequests().catch(()=>{});
+        bg.remove(); toast('แก้ไขเอกสารแล้ว · ตารางเวรไม่เปลี่ยน'); loadRequests(j.requests).catch(()=>{});
       }catch(e){ $('eYes').disabled=false; $('eYes').textContent='บันทึก'; msg('eMsg',e.message,'err'); } };
   };
   bg.onclick=e=>{if(e.target===bg)bg.remove();}; draw();
@@ -1768,8 +1780,8 @@ async function decide(id,ok){
   let note=''; if(!ok){note=prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)')||'';}
   msg('pnMsg','กำลังบันทึก…');
   try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('dr_mr_')).forEach(k=>localStorage.removeItem(k));
-    msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); await loadRequests(); if(ok) await qForm('month');
-  }catch(e){msg('pnMsg',e.message,'err');}
+    msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); loadRequests(j.requests).catch(()=>{}); if(ok) qForm('month').catch(()=>{});
+  }catch(e){msg('pnMsg',e.message,'err'); loadRequests().catch(()=>{});}
 }
 
 /* ---------- ตั้งค่า ---------- */
