@@ -33,6 +33,12 @@ function setup() {
   const sg = ss.getSheetByName('สรุปรายกลุ่ม');
   sg.getRange('H1').setValue('จำนวนเครื่องที่เข้ามาซ้อม (ไม่ซ้ำ)').setFontWeight('bold').setFontColor('#24553A');
   sg.getRange('H2').setFormula('=IFERROR(COUNTUNIQUE(FILTER(\'' + SH_SESS + '\'!C2:C,\'' + SH_SESS + '\'!C2:C<>"")),0)');
+  // ล้างแถวทดสอบ (รหัสชุดขึ้นต้น TEST-)
+  [[SH_SESS, 2], [SH_ITEM, 2]].forEach(function (x) {
+    const sh = ss.getSheetByName(x[0]); if (!sh || sh.getLastRow() < 2) return;
+    const v = sh.getRange(2, x[1], sh.getLastRow() - 1, 1).getValues();
+    for (let i = v.length - 1; i >= 0; i--) if (String(v[i][0]).indexOf('TEST-') === 0) sh.deleteRow(i + 2);
+  });
   const def = ss.getSheetByName('Sheet1') || ss.getSheetByName('แผ่น1') || ss.getSheetByName('ชีต1');
   if (def && ss.getSheets().length > 1 && def.getLastRow() === 0) ss.deleteSheet(def);
   Logger.log('ติดตั้งแล้ว');
