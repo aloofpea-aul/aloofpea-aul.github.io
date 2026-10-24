@@ -256,6 +256,43 @@ function onDutyNow_() {
 }
 
 /** การ์ดแจ้งก่อนเข้าเวร (พนักงาน) — แบบประกาศ กฟส.อ่าวลึก + ปุ่มโทร */
+/* ===================== ประกาศเตือนภัยกรมอุตุฯ (จากระบบ tmd ในศูนย์รวมงาน) =====================
+ * ใช้เฉพาะประกาศที่ระบุผลกระทบรายวันในจังหวัดกระบี่ (krabiDetail) · แคช 30 นาที */
+const TMD_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbyF7Am81Ut4aUbzTbACUFpJhIQ2q3iKiiTxoLM8IoGvANQ8NQpaM5BvokCeyOWiAqrwNA/exec';
+const TMD_OPEN_ = 'https://aloofpea-aul.github.io/tmd/open.html';
+function tmdItems_() {
+  const cache = CacheService.getScriptCache(), hit = cache.get('tmd_k1');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  let list = [];
+  try {
+    const url = String(getConfig_().tmdApi || TMD_API_DEFAULT) + '?action=list&limit=60&focus=' + encodeURIComponent('กระบี่');
+    const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    const j = JSON.parse(res.getContentText());
+    list = (j && j.data || []).filter(function (d) { return d && d.krabiDetail; }).map(function (d) {
+      return { k: d.key, s: String(d.sortKey || ''), t: d.title, no: d.issueNo, sev: d.severity, kd: d.krabiDetail, pdf: d.pdfUrl || '', drv: d.pdfDrive || '' };
+    });
+  } catch (e) { return []; }                               // ดึงไม่ได้ = ไม่แสดง (ไม่จำผล)
+  try { cache.put('tmd_k1', JSON.stringify(list), 1800); } catch (e) {}
+  return list;
+}
+/** วันในเดือน key ('YYYY-MM') ที่กระบี่มีประกาศเตือน → { d: {w, sev, no, t, url} } (ฉบับใหม่กว่าทับฉบับเก่า) */
+function tmdDays_(key) {
+  const y0 = +key.slice(0, 4), m0 = +key.slice(5, 7), out = {};
+  tmdItems_().slice().sort(function (a, b) { return a.s < b.s ? -1 : a.s > b.s ? 1 : 0; }).forEach(function (it) {
+    const ay = +it.s.slice(0, 4) || y0, am = +it.s.slice(5, 7) || m0;
+    String(it.kd).split(/\n+/).forEach(function (ln) {
+      const m = String(ln).trim().match(/^(\d{1,2})\s*([ก-๙]+\.[ก-๙]+\.)\s*(.*)$/); if (!m) return;
+      const mi = TH_MS_.indexOf(m[2]) + 1; if (!mi) return;
+      let yy = ay; if (mi < am - 6) yy++; else if (mi > am + 6) yy--;
+      if (yy !== y0 || mi !== m0) return;
+      out[+m[1]] = { w: m[3] || 'มีประกาศเตือนภัย', sev: it.sev || '', no: it.no || '', t: it.t || '',
+        url: it.pdf ? TMD_OPEN_ + '?t=' + encodeURIComponent(it.pdf) + (it.drv ? '&d=' + encodeURIComponent(it.drv) : '') : 'https://aloofpea-aul.github.io/tmd/' };
+    });
+  });
+  return out;
+}
+function tmdOn_(ymd) { try { return tmdDays_(ymd.slice(0, 7))[+ymd.slice(8, 10)] || null; } catch (e) { return null; } }
+
 function shiftMessage_(kind, ymd, name, dd) {
   const def = SLOT_DEF[kind], cfg = getConfig_();
   let title = def.title;
@@ -285,6 +322,11 @@ function shiftMessage_(kind, ymd, name, dd) {
   const wl = wxLines_();
   if (wl.length) { body.push({ type: 'separator', margin: 'md' }); body.push({ type: 'text', text: wl[0], size: 'sm', weight: 'bold', color: '#1E1A22', wrap: true, margin: 'md' });
     if (wl[1]) body.push({ type: 'text', text: wl[1], size: 'xs', color: '#4A4450', wrap: true }); }
+  const tw = tmdOn_(ymd);
+  if (tw) { body.push({ type: 'separator', margin: 'md' });
+    body.push({ type: 'text', text: '⚠️ กรมอุตุฯ เตือน: ' + tw.w + ' (กระบี่)', size: 'sm', weight: 'bold', color: tw.sev === 'สูง' ? '#C92A2A' : '#C2410C', wrap: true, margin: 'md' });
+    if (tw.no) body.push({ type: 'text', text: tw.no, size: 'xs', color: '#6B6372', wrap: true });
+    body.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูประกาศกรมอุตุฯ', uri: tw.url } }); }
   body.forEach(function (x) { if (x.type === 'button') x.margin = 'sm'; });
   const foot = [
     { type: 'button', style: 'primary', color: '#5B1A63', height: 'sm', action: { type: 'postback', label: 'รับทราบ', data: 'ack|' + kind + '|' + ymd + '|' + name, displayText: 'รับทราบ / เข้าเวรแล้ว' } },
@@ -548,7 +590,6 @@ function handleEvent_(ev) {
     setConfigKey_('wkGroupId', ev.source.groupId); log_(me ? me.short : uid, 'ตั้งกลุ่มคนงาน LINE', '', ev.source.groupId);
     return reply_(ev.replyToken, [text_('ตั้งกลุ่มนี้เป็นกลุ่มคนงานแล้ว ✓\nระบบจะส่งเวรคนงานรายสัปดาห์ทุกวันจันทร์ 07:55\nพิมพ์ "เวรคนงาน" เพื่อดูเวรวันนี้พร้อมปุ่มโทร')]);
   }
-  if (typeof tmdHandle_ === 'function' && tmdHandle_(ev, t, me, uid)) return;   // ประกาศเตือนภัยกรมอุตุ (Tmd.gs)
   if (/^เวรคนงาน$/.test(t)) return reply_(ev.replyToken, [workersToday_(bkkYmd_())]);
   if (inGroup && !/^(เวร|เวรวันนี้|เวรพรุ่งนี้)$/.test(t)) return;   // ในกลุ่ม: ตอบเฉพาะคำสั่ง ไม่รบกวนแชต
 
