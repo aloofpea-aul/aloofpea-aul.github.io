@@ -32,7 +32,7 @@ function setup() {
   ]);
   const sg = ss.getSheetByName('สรุปรายกลุ่ม');
   sg.getRange('H1').setValue('จำนวนเครื่องที่เข้ามาซ้อม (ไม่ซ้ำ)').setFontWeight('bold').setFontColor('#24553A');
-  sg.getRange('H2').setFormula('=IFERROR(COUNTUNIQUE(FILTER(\'' + SH_SESS + '\'!C2:C,\'' + SH_SESS + '\'!C2:C<>"")),0)');
+  sg.getRange('H2').setFormula('=IFERROR(ROWS(UNIQUE(FILTER(\'' + SH_SESS + '\'!C2:C,\'' + SH_SESS + '\'!C2:C<>""))),0)');
   // ล้างแถวทดสอบ (รหัสชุดขึ้นต้น TEST-)
   [[SH_SESS, 2], [SH_ITEM, 2]].forEach(function (x) {
     const sh = ss.getSheetByName(x[0]); if (!sh || sh.getLastRow() < 2) return;
