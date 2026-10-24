@@ -144,7 +144,7 @@ let P = {seen: {}, f: null};
 try { const raw = localStorage.getItem(SKEY); if (raw) P = Object.assign(P, JSON.parse(raw)); } catch (e) {}
 function persist() { try { localStorage.setItem(SKEY, JSON.stringify(P)); } catch (e) {} }
 /* ---- ส่งผลไปเก็บใน Google Sheet (ไม่ระบุชื่อ) ---- */
-const API = "/*API_URL*/";
+const API = "https://script.google.com/macros/s/AKfycbz9CdlRSzdAJ15EL0jdpeJ1bJO1fdPLEEb_pTLAQjoFswQv8irFYAfx7VSA6tA3d-QW/exec";
 const GROUPS = ["พนักงาน","ลูกจ้าง/ผู้รับจ้าง","รปภ.","แม่บ้าน","คณะทำงาน","ผู้บริหาร"];
 const DEPTS = ["ไม่ระบุ","แผนกปฏิบัติการระบบไฟฟ้า","แผนกบริการลูกค้า","งานบัญชี-การเงิน","งานธุรการ/บริหารทั่วไป","งานก่อสร้าง/มิเตอร์","อื่นๆ"];
 const PKEY = "go2569-prof", QKEY = "go2569-outbox";
