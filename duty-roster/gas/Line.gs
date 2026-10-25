@@ -310,16 +310,17 @@ function tmdDays_(key) {
   tmdItems_().slice().sort(function (a, b) { return a.s < b.s ? -1 : a.s > b.s ? 1 : 0; }).forEach(function (it) {
     const ay = +it.s.slice(0, 4) || y0, am = +it.s.slice(5, 7) || m0;
     const info = function (w) { return { w: w, sev: it.sev, no: it.no, url: tmdLink_(it) }; };
+    const kDays = {};
     if (it.kd) {
       String(it.kd).split(/\n+/).forEach(function (ln) {
         const m = String(ln).trim().match(/^(\d{1,2})\s*([ก-๙]+\.[ก-๙]+\.)\s*(.*)$/); if (!m) return;
         const mi = TH_MS_.indexOf(m[2]) + 1; if (!mi) return;
         let yy = ay; if (mi < am - 6) yy++; else if (mi > am + 6) yy--;
-        if (yy === y0 && mi === m0) put(+m[1], 'k', info(m[3] || tmdShortTitle_(it.t)));
+        if (yy === y0 && mi === m0) { kDays[+m[1]] = 1; put(+m[1], 'k', info(m[3] || tmdShortTitle_(it.t))); }
       });
-    } else {
-      tmdSpan_(it).forEach(function (ymd) { if (+ymd.slice(0, 4) === y0 && +ymd.slice(5, 7) === m0) put(+ymd.slice(8, 10), 's', info(tmdShortTitle_(it.t))); });
     }
+    // ช่วงที่ประกาศครอบคลุมภาคใต้ (วันที่ไม่มีรายละเอียดกระบี่ = เฉพาะภาคใต้)
+    tmdSpan_(it).forEach(function (ymd) { if (+ymd.slice(0, 4) === y0 && +ymd.slice(5, 7) === m0 && !kDays[+ymd.slice(8, 10)]) put(+ymd.slice(8, 10), 's', info(tmdShortTitle_(it.t))); });
   });
   return out;
 }
