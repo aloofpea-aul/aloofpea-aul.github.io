@@ -1172,10 +1172,11 @@ async function renderReport(){
   const sel=$('rMonth'); sel.innerHTML='';
   S.boot.months.slice().sort((a,b)=>a.month<b.month?1:-1).forEach(x=>sel.add(new Option(monthLabel(x.month)+' · '+x.status,x.month)));
   if(S.preview) sel.add(new Option(monthLabel(S.preview.month)+' · ตัวอย่าง (ยังไม่บันทึก)','__preview'),0);
-  if(S.rUsePreview&&S.preview) sel.value='__preview'; S.rUsePreview=false;
-  const pr=S.rPreset; S.rPreset=null;
+  const usePv=S.rUsePreview&&S.preview; S.rUsePreview=false;
+  const pr=S.rPreset, cur=todayIso().slice(0,7); S.rPreset=null;
   if(pr){ sel.value=pr.m; $('rKind').value=pr.kind; S.rWant=pr; }
-  else if(!sel.value) sel.value=todayIso().slice(0,7);
+  else if(usePv) sel.value='__preview';
+  else if([...sel.options].some(o=>o.value===cur)) sel.value=cur;   // ค่าเริ่มต้น = เดือนปัจจุบันเสมอ
   if(!$('rDate').value) $('rDate').value=todayIso();
   sel.onchange=()=>{S.rWant=null;drawReport();}; $('rKind').onchange=drawReport; $('rDate').onchange=drawReport;
   $('rItem').onchange=drawReport; $('rDay').onchange=drawReport;
