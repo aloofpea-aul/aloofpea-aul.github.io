@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="th">
+<head>
+<script src="/pea-hub.js" data-app="medical" data-gate="off" data-user-key="budget_user_v1" data-user-field="name" data-name="ใบเบิกค่ารักษาพยาบาล"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ใบเบิกค่ารักษาพยาบาล สก.๕ · กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#74045f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f4f2f5; --panel:#ffffff; --fg:#231c26; --muted:#6c6370; --line:#e3dde6;
+  --accent:#74045f; --accent-soft:#f3e6f0; --ok:#1f7a4d; --ok-soft:#e3f3ea; --warn:#9a5b00; --warn-soft:#fff4e0; --bad:#b42318; --bad-soft:#fdecea;
+  --hl:#fff3b0; --paper:#ffffff; --ink:#000000;
+  --ui:"IBM Plex Sans Thai",system-ui,sans-serif; --doc:"Sarabun","TH Sarabun New","TH SarabunPSK",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#17131a; --panel:#221d25; --fg:#eee8f0; --muted:#a59cab; --line:#3a323e;
+  --accent:#e08acb; --accent-soft:#3a2436; --ok:#6fd39f; --ok-soft:#1d3329; --warn:#f0b35a; --warn-soft:#3a2c14; --bad:#ff8a80; --bad-soft:#3d1c1a; --hl:#5a4d10; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:env(safe-area-inset-top,0px) 32px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding-block:14px 10px}
+header.top a.back{color:var(--muted);text-decoration:none;font-size:20px;line-height:1}
+header.top h1{font-size:19px;margin:0;font-weight:600}
+header.top .code{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+.who{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px}
+.who .av{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;overflow:hidden}
+.who .av img{width:100%;height:100%;object-fit:cover}
+.who small{display:block;color:var(--muted);font-size:11px}
+.linkbtn{border:0;background:none;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:4px}
+.tabs{display:none;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:7px;font:inherit;color:var(--muted);cursor:pointer}
+.tabs button.on{background:var(--accent);color:#fff}
+main{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:20px;align-items:start}
+.form{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px;font-weight:600}
+.card h2 .n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px;flex:none}
+.card h2 .hint{margin-left:auto;font-weight:400;font-size:12px;color:var(--muted)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+@media (min-width:700px){input,select,textarea{font-size:14px}}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--fg)}
+.seg input{display:none}
+.seg label:has(input:checked){background:var(--accent);border-color:var(--accent);color:#fff}
+.radios{display:flex;flex-direction:column;gap:6px}
+.radios label{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer}
+.radios input{width:auto;margin-top:3px}
+.emp{display:flex;gap:10px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
+.emp .av{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;overflow:hidden;flex:none}
+.emp .av img{width:100%;height:100%;object-fit:cover}
+.emp small{color:var(--muted);display:block}
+.money{font-size:22px!important;font-weight:600;text-align:right}
+.words{font-size:13px;color:var(--ok);background:var(--ok-soft);border-radius:8px;padding:6px 10px}
+.budget .row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.budget .row:last-child{border:0}
+.budget .row span:first-child{color:var(--muted);flex:none}
+.budget .row b{text-align:right}
+.chip{font-size:11px;border-radius:99px;padding:2px 8px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.wait{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.acct{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.acct label{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;background:var(--bg)}
+.acct label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.acct label.dis{opacity:.5;cursor:not-allowed}
+.acct input{width:auto}
+.acct code{font-family:var(--ui);font-weight:600;font-variant-numeric:tabular-nums}
+.tagauto{font-size:11px;color:var(--ok);margin-left:auto;white-space:nowrap}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin:4px 0 2px}
+.bar i{display:block;height:100%;background:var(--ok)}
+.bar i.over{background:var(--bad)}
+.alert{font-size:12px;border-radius:8px;padding:8px 10px;margin-top:8px}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.ok{background:var(--ok-soft);color:var(--ok)}
+.toggles{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.toggles label{display:flex;gap:8px;align-items:center;cursor:pointer}
+.toggles input{width:auto}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:10px 14px;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;flex:1}
+.btn.danger{color:var(--bad)}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.editbar{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;z-index:50;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast.err{background:var(--bad);color:#fff}
+.preview{position:sticky;top:12px;min-width:0}
+.pbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.pbar .btn{padding:6px 12px;font-size:13px;margin-left:auto}
+.scaler{width:100%;overflow:hidden}
+
+
+.pbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;color:var(--muted)}
+
+.sheet{width:210mm;height:297mm;background:var(--paper);color:var(--ink);transform-origin:top left;
+  box-shadow:0 2px 18px rgba(40,10,40,.18);padding:7.5mm 7.5mm 5mm;font-family:var(--doc);font-size:10.4pt;line-height:1.42}
+.box{border:1.2px solid var(--ink);display:flex;flex-direction:column}
+.hd{text-align:center;border-bottom:1.2px solid var(--ink);padding:2mm 0 1.5mm}
+.hd img{width:15mm;height:auto;display:block;margin:0 auto 1mm}
+.hd b{display:block;font-size:14pt;line-height:1.35}
+.sec1{padding:1.6mm 3mm 1mm;border-bottom:1.2px solid var(--ink)}
+.ln{display:flex;align-items:baseline;gap:1.2mm;white-space:nowrap;min-height:6mm}
+.ln.ind{padding-left:9mm}
+.ln.ind2{padding-left:11mm}
+.ln.r{justify-content:flex-end}
+.v{flex-shrink:0;border-bottom:1px dotted var(--ink);text-align:center;min-height:5.4mm;padding:0 1mm;overflow:hidden;text-overflow:clip;display:inline-block}
+.v.fl{flex:1 1 0;min-width:8mm}
+.v.l{text-align:left}
+.hl .v.has{background:var(--hl)}
+.v.has{cursor:pointer}
+.ck{display:inline-block;min-width:6mm;text-align:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1.2px solid var(--ink)}
+.grid2>div{padding:1.4mm 3mm 1.6mm;position:relative}
+.grid2>div:first-child{border-right:1.2px solid var(--ink)}
+.ttl{text-align:center;font-weight:700}
+.sig{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:7mm;text-align:center}
+.sig .line{border-bottom:1px dotted var(--ink);height:5mm}
+.sig .dt{display:flex;justify-content:center;gap:1mm;margin-top:.5mm}
+.sig .dt span{border-bottom:1px dotted var(--ink);width:9mm}
+.cross{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.appr{display:flex;flex-direction:column;align-items:center}
+.appr .line{border-bottom:1px dotted var(--ink);width:52mm;height:5mm;margin-top:13mm}
+.rcv{display:grid;grid-template-columns:1fr 38mm;border-bottom:1.2px solid var(--ink)}
+.rcv>div:first-child{padding:1.4mm 3mm}
+.amt{border-left:1.2px solid var(--ink);display:grid;grid-template-columns:1fr 9mm;grid-template-rows:auto 1fr;text-align:center}
+.amt .h{grid-column:1/-1;border-bottom:1.2px solid var(--ink)}
+.amt .s{border-left:1.2px solid var(--ink)}
+.amt div{display:flex;align-items:center;justify-content:center}
+.sig3{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;padding:7mm 8mm 2.5mm;text-align:center}
+.sig3 .line{border-bottom:1px dotted var(--ink);height:5mm}
+.sig3 .dt{display:flex;justify-content:center;gap:1mm;margin-top:.5mm}
+.sig3 .dt span{border-bottom:1px dotted var(--ink);width:10mm}
+.foot{font-size:10.5pt;margin-top:1.2mm;display:flex;justify-content:space-between}
+.ref{font-size:9pt}
+
+
+.views{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.views button{border:0;background:none;font:inherit;font-size:14px;padding:10px 14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.views button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.views .cnt{font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:1px 7px;margin-left:4px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.stat small{color:var(--muted);display:block;font-size:12px}
+.stat b{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .sub{font-size:12px;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}
+.filters input{flex:1 1 240px;width:auto}.filters select{flex:0 1 200px;width:auto}
+.tblw{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+table.h{border-collapse:collapse;width:100%;min-width:900px;font-size:13px}
+table.h th{font-weight:500;color:var(--muted);font-size:12px;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.h td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.h tr:last-child td{border-bottom:0}
+table.h td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+table.h small{color:var(--muted);display:block}
+.mini{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+.mini.danger{color:var(--bad)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+/* login */
+.login{max-width:380px;margin:8vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+.login h2{margin:0 0 4px;font-size:18px}
+.login form{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.err{color:var(--bad);font-size:13px;min-height:1em}
+.loading{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+.spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-width:900px){
+  main{grid-template-columns:minmax(0,1fr)}
+  .tabs{display:flex}
+  main[data-view="form"] .preview{display:none}
+  main[data-view="paper"] .form{display:none}
+  .preview{position:static}
+}
+@media (max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.g{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4;margin:0}
+  body{background:#fff!important;padding:0!important}
+  body>*:not(#app){display:none!important}
+  header.top,.tabs,.form,.pbar,.views,#hist,#loginView,.toast{display:none!important}
+  #app,#newView{display:block!important}
+  main{display:block!important}
+  .preview{display:block!important;position:static}
+  .scaler{height:auto!important;overflow:visible}
+  .sheet{transform:none!important;box-shadow:none!important}
+  .hl .v.has{background:none!important}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<section class="login" id="loginView" hidden>
+  <h2>ใบเบิกค่ารักษาพยาบาล</h2>
+  <div class="note">เข้าระบบด้วย Username / รหัสผ่านเดียวกับ <b>ระบบตัดงบทำการ</b></div>
+  <form id="loginForm">
+    <label class="f">Username<input id="liUser" autocomplete="username" required></label>
+    <label class="f">รหัสผ่าน<input id="liPass" type="password" autocomplete="current-password"></label>
+    <div class="err" id="liErr"></div>
+    <button class="btn pri" id="liBtn" type="submit">เข้าสู่ระบบ</button>
+  </form>
+  <p class="note">ยังไม่มีบัญชี หรือยังไม่ได้ตั้งรหัสผ่านใหม่ ให้เข้า <a href="../budget/index.html">ระบบตัดงบทำการ</a> ก่อน 1 ครั้ง แล้วกลับมาหน้านี้จะเข้าได้เลย</p>
+</section>
+
+<div id="app" hidden>
+<header class="top">
+  <a class="back" href="/index.html" title="กลับศูนย์รวมงาน">‹</a>
+  <h1>ใบเบิกค่ารักษาพยาบาล</h1>
+  <span class="code">แบบ สก.๕</span>
+  <div class="who"><div class="av" id="meAv"></div><div><b id="meName"></b><small id="meSub"></small></div><button class="linkbtn" id="logoutBtn" type="button">ออกจากระบบ</button></div>
+</header>
+
+<nav class="views">
+  <button type="button" id="vNew" class="on">ใบเบิกใหม่</button>
+  <button type="button" id="vHist">ประวัติการเบิก <span class="cnt" id="hCnt">0</span></button>
+</nav>
+
+<div id="newView">
+<div class="tabs">
+  <button id="tabForm" class="on" type="button">① กรอกข้อมูล</button>
+  <button id="tabPaper" type="button">② ดูใบ / พิมพ์</button>
+</div>
+
+<main id="main" data-view="form">
+<form class="form" id="frm" autocomplete="off">
+  <div class="editbar" id="editBar" hidden>กำลังแก้ไขใบเบิก <b id="editId"></b><button type="button" class="mini" id="cancelEdit">ยกเลิก เริ่มใบใหม่</button></div>
+
+  <section class="card">
+    <h2><span class="n">1</span>ผู้ขอเบิก <span class="hint">พิมพ์ชื่อแล้วเลือก</span></h2>
+    <label class="f">ค้นหาชื่อพนักงาน
+      <input id="empSearch" list="empList" placeholder="พิมพ์ชื่อ เช่น มานศักดิ์">
+      <datalist id="empList"></datalist>
+    </label>
+    <div class="emp" id="empCard" hidden><div class="av" id="empAv"></div><div><b id="empName"></b><small id="empSub"></small></div></div>
+    <details id="empMore" style="margin-top:10px">
+      <summary class="note" style="cursor:pointer">ข้อมูลผู้ขอเบิก (ครั้งแรกกรอกครั้งเดียว ครั้งต่อไประบบจำให้)</summary>
+      <div class="g" style="margin-top:10px">
+        <label class="f full">ชื่อ-สกุล (มีคำนำหน้า)<input id="name"></label>
+        <label class="f">เลขประจำตัว<input id="empId" inputmode="numeric"></label>
+        <label class="f">ตำแหน่ง<input id="pos"></label>
+        <label class="f">กฟฟ.<input id="office"></label>
+        <label class="f">หมวด/แผนก<input id="dept"></label>
+        <label class="f">กอง/เขต<input id="div"></label>
+        <label class="f">สำนัก/ฝ่าย<input id="bureau"></label>
+        <label class="f">เบอร์ภายใน<input id="tel"></label>
+        <label class="f">บรรจุเมื่อ<input id="hired" placeholder="เช่น 1 ก.พ.2551"></label>
+        <label class="f full">เรียน (ผู้บังคับบัญชาชั้นต้น)<input id="to"></label>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">2</span>ผู้ป่วย และการรักษา</h2>
+    <div class="seg" style="margin-bottom:10px">
+      <label><input type="radio" name="pat" value="ตนเอง" checked>ตนเอง</label>
+      <label><input type="radio" name="pat" value="คู่สมรส">คู่สมรส</label>
+      <label><input type="radio" name="pat" value="บุตร">บุตร</label>
+      <label><input type="radio" name="pat" value="บิดา">บิดา</label>
+      <label><input type="radio" name="pat" value="มารดา">มารดา</label>
+    </div>
+    <div class="g" id="famBox" hidden style="margin-bottom:10px">
+      <label class="f full">ชื่อผู้ป่วย<input id="patName"></label>
+      <label class="f">อาชีพ<input id="occ"></label>
+      <label class="f">สังกัด (ถ้าเป็นข้าราชการ)<input id="gov"></label>
+      <label class="f full">สถานที่ทำงาน<input id="work"></label>
+    </div>
+    <div class="g">
+      <div class="full seg">
+        <label><input type="radio" name="hos" value="gov">สถานพยาบาลราชการ</label>
+        <label><input type="radio" name="hos" value="pri" checked>เอกชน</label>
+      </div>
+      <label class="f full">ชื่อสถานพยาบาล<input id="hosName" list="hosList"><datalist id="hosList"></datalist></label>
+      <label class="f">จังหวัด<input id="prov"></label>
+      <label class="f">ด้วยโรค<input id="dis" list="disList"><datalist id="disList"></datalist></label>
+      <label class="f">ตั้งแต่วันที่<input type="date" id="dFrom"></label>
+      <label class="f">ถึงวันที่<input type="date" id="dTo"></label>
+      <label class="f">รวม (วัน)<input id="days" inputmode="numeric"></label>
+      <label class="f">หลักฐานแนบ (ฉบับ)<input id="docs" inputmode="numeric"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">3</span>จำนวนเงิน และสิทธิ</h2>
+    <div class="g">
+      <label class="f full">รวมเป็นเงินทั้งสิ้น (บาท)<input id="amount" class="money" inputmode="decimal" placeholder="0.00"></label>
+      <div class="full words" id="wordsBox"></div>
+      <div class="full toggles"><label><input type="checkbox" id="vat">ใบเสร็จมี VAT 7% (แยกยอดให้อัตโนมัติ)</label></div>
+      <div class="full radios">
+        <label><input type="radio" name="right" value="1" checked>เต็มจำนวนเงินที่ได้จ่ายไปจริง</label>
+        <label><input type="radio" name="right" value="2">ครึ่งหนึ่งของจำนวนที่จ่ายจริง</label>
+        <label><input type="radio" name="right" value="3">เฉพาะส่วนที่ขาด (สิทธิจากต้นสังกัดต่ำกว่า)</label>
+        <label><input type="radio" name="right" value="4">เฉพาะส่วนที่ขาด (ค่าสินไหมจากบุคคลภายนอกต่ำกว่า)</label>
+      </div>
+      <label class="f full">วันที่ยื่นเบิก<input type="date" id="sDate"></label>
+    </div>
+  </section>
+
+  <section class="card budget">
+    <h2><span class="n">4</span>ตัดงบทำการ <span class="chip" id="bChip">—</span></h2>
+    <div id="bSent" hidden></div>
+    <div id="bEdit">
+      <div class="seg" style="margin-bottom:10px">
+        <label><input type="radio" name="bmode" value="new" checked>ส่งตัดงบอัตโนมัติ</label>
+        <label><input type="radio" name="bmode" value="old">ผูกกับเรื่องที่ส่งไว้แล้ว</label>
+        <label><input type="radio" name="bmode" value="none">ไม่ตัดงบ</label>
+      </div>
+      <div id="bNew">
+        <label class="f" style="margin-bottom:8px">แผนกที่ตัดงบ<select id="bDept"></select></label>
+        <div class="acct" id="acctBox"></div>
+        <div id="bLeft"></div>
+        <div class="row"><span>รายละเอียด</span><b id="bDetail"></b></div>
+        <label class="f" style="margin-top:6px">ผู้เสนอ<select id="bReq"></select></label>
+        <div id="bWarn"></div>
+      </div>
+      <label class="f" id="bOld" hidden>เลือกเรื่องในระบบตัดงบ (รหัสค่ารักษา ที่ยังไม่อนุมัติ)
+        <select id="bOldSel"></select>
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toggles" style="margin-bottom:12px">
+      <label><input type="checkbox" id="cross" checked>ขีดฆ่าช่อง "ความเห็นของผู้ตรวจสอบ"</label>
+      <label><input type="checkbox" id="showRef">พิมพ์เลขที่ใบเบิกไว้มุมล่างขวา</label>
+      <label><input type="checkbox" id="hlOn" checked>ไฮไลต์ช่องที่กรอก (บนจอเท่านั้น ไม่ออกตอนพิมพ์)</label>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn pri" id="saveBtn">บันทึก</button>
+      <button type="button" class="btn" id="printBtn">พิมพ์</button>
+      <button type="button" class="btn" id="resetBtn">ใบใหม่</button>
+    </div>
+    <p class="note" id="saveNote" style="margin:8px 0 0"></p>
+  </section>
+</form>
+
+<section class="preview" aria-label="ใบที่จะพิมพ์">
+  <div class="pbar"><span>ใบจริงขนาด A4 · แตะช่องสีเหลืองเพื่อแก้</span><button type="button" class="btn" id="printBtn2">พิมพ์</button></div>
+  <div class="scaler" id="scaler">
+  <div class="sheet" id="sheet">
+   <div class="box" id="paper">
+    <div class="hd">
+      <img alt="ตรา กฟภ." src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADmAQAAAADDoTW5AAAMCElEQVR42s2ZT2wc93XHP++3Y+7aZbSjWGkZR9KMm6A1erAF51ClZbhjQ2hvdVGkQIEczMCHoIfCcpEWgitrf4wMS0ENmECBwpfWBHrpUUCL2kFta2g5lQ5xJKMI4ACJOZQCm0Bdayiy0az429/r4TezO0upDnoLLyT37Xu/93vv+/7+RPmsH8OvClnEfAZ5BXQfXac/JQD91icqrXtLzXBv4dv0VbUgvrdwK+1f4WdKdgxUVbWqf+8jF51GSv9eZJs0F5B7kH3rr+Hd5Ko7+SxP7iYX089a35zce215cte5O1NL1TbS+1zL9mr3maVqm3p6UCN861jLkgvlfpsXWYs8t7vf5m1Dq9p9F/PdGXIxnCVXyQy5TGZVq9IZCM2Xs2fnM8zTs2ru9VkAyvOz3LOaTaUF7nGvzbsKx2ybe1bx9ekHgbtahqnuX2MtKtvchaqfQkSHVxtlmIhrSb96Q8+2hb8DPw4hKIB/9EG71Bbe1bf3VLUAuqqqty8WLW7tse5gnAKjDIU0tlNul7jBbdWCjuZ0VfX27WowVa0aXNebqnRUNUd1Y2fPJVPhVfbvxIw4DSySkWJMORVe+JFebIIs7+vtHVdfHFXV9fHeNMgqUd32G2en5LOjPT8NMoZ+U59dn5K7e3ujaejkia7qY8WE7Pvv75ydYr/qa3GmW0409/Gt8cvTIJvb5dWcngWIAFLKY6z4BkkvcPxSHOUN2WVvuXg8N/F3ZtNLX6Bo7l2qaNICTJls6j/4fnN2yTsUW2kL5UcxKzTCN49EUOTTVFipkPWaCDXeuTbS5XmxpK45+9zt/1TfmUV5srHenG2rfy39fANxILU5ZdoI79ErXVynXYCF/LFPnNbCffLuwaQchHw6DOi53t8sh0G45w//Ji1zgK1a9dLvrvVqbjf4jUWt/Vfny255EjcIHquGc+MA++tNwJ4d+UA2AGPPiwAfNjdf6qy8ZIpgtWp4xXWaCI4cQNLJurYMFxMsfqaAENv0/vX63qX2Kjebeno5qT0VyNc9F8hmyFERFxOrRdgKgInTTAluMdz73O33frfGJdSe6e/c/K9L9cWqnWpzIrZOg701fzQIPw+l2VcdT49PfdBK2O9OKbcAlnahDxi0X1xK7ZR80wJpdKdJ92K/NOhNKvAdcqA/f3O+Z8FAmhc2GM0ClwO+z76cBU29/vUpP7VXRgL06ByMwkWyJTOe2HQcMBHlNiGHCCe48cSmuxAQfDitzeAjP2NwD5hi7u2NAtBSP/6Xssb3JN34/oUjZ5IaLd+o+WoNLAhbCGAQpzW8201F9UiZl2AoudMr6ltNyfbLo6Kx+bKZcZcF3MKb5SkwmKi7ms+oboEsejQwFFuHiujuXss38f3rRXo39ShRloEh0jw/f6/ubNVBBD2O3c3dFwkMefRXz84GQVB0SAoG4h8uz3IWAOM3Sw+G3i2xs+QtoGevpIDBxu8tzaruAELXaECO2btVi0xWxWCguLgvwjzA+qceMMRq3L1a1PMoGLCnZ9iaeOnkgNGmwWx0AoNiMN8Mqi0FH7XPdlAgvZAdqqr+QtV84Q4gEWBIjwP7dN8N2LEYOFDSbg3AsIWgnw9npxsC5X6nlJsJYDxXDgELM1BcBS5kgfvEhyXMtw2qaZO7Dfj3GovUkOv5UK4iMGT2PNCdgqk45rLGFAbkcSCyTXpIkguVBf5sOQ8MiwbIt2hYihKodg+QT8BpikaxZfJNgMf/pz7OAlI6oAbdOwCSh9QTMmLlJyFkwxlPB+6cAjjdak0jgCLEtw+EJZ2MFyG80j/IgusrALUWir4FvzuNQePMdyqANJ9iJga4eS2o9sZHAHGRQxpPc8yrayG3rOVjEcn4iYgdWV0/XgvRoPm866jqFbqq9rZlcIGHRcTGtUPPV8FbZchNtuA1VbXHAUxE9N3gmwpinp5o+JXG34tjEemhItko5XouKyJi7zQOPd5R1RFj1Su/TXrUmqGq2vtrsj3vAazfF2RvlzVAEisSwYrEI7E36IhE37L8oATc8K2bN/bqJtEN9KPT9FWdnru58uZADRQNyCxAyCTjOgEZ+DnjzrbI2sK2pNvyp58gXXleLMM8w8DjiD6luhpd1Z8+pXkvfWyk39HeeC5wxx9AAT1TUEGHDPhn7PVQx3I8nJzOmeVqBqvY6rGAlhSV4yKHdv9C7KbIM9kTX+scFB7CgUFiDupDqrfmf1//+DXVF/PB67/oK43HjrlQbesYvyIUVUboJY2RV1F55Lmf3Xfw5RfzdYm+92T0/fIJiSMD4AdvXS7VDa7qxT21qjrY0WRdfeL2KlVD8XAPzLUKDAKaRcqT4IMlfbKxcUq1e0PVaUfVqbqjXfVHznyzUsUneqRCOg/bkwe+3bF8zi4cjubh60udUhVN9K1qqCuFqvqO6p5qdSxRt7g0V6oaKLEwCHG3RgRVmYIJlZiSQbQia9e2RQ4wls+JlEUGfDgWMOBgoKvFVdUyekZ3VAu+JVHmCGByDuiVBeBsSHqJVjzylwD6yusn/UAdfVXXSVRVEdXqzPrHm6oGvthjXR6gahKbYqCyvxkbMFTlHRIdsSeS+vdFJCYSiYVeAOFvISVYVf3pXl9VP6WnWn56KPSK2Rd+AJDppLITw3b42+D8mn1OJOUJydgUkeMcFEl7FBEYiGK6qjDQN0hU9QJPqb7jdDUHQ6pxnkFMTskaUNS584MARXqMRBain0nGf4tEOSsiJ5w/1QN086PhK+uqrtvXkr6qdkRVz31yMumrGuLPEwr5qTop/poBzpeTipejIG4xVAwfRwDm79NQgaOCWMQM/3Hld7gtcvjEfSISF72LAFqNO39bDVUvVXrDdlUrn6j65O2v+9BxDfNv1C1RlAEjUvApmQ+thfm3PFoRWX7gueO4FfnFARGJ8GeCatH6nCdR/dHoapEy1K3yomqZ7TqykDayw2E6WSMGroVALksHGEyRqZQQ1d1cYYDSFqGuqE90ewh07RmOd2y37APi834ZBo/+5o6e08kMqqqql7RIyro/f/CPWGyK66RCR+l23d1XMsiBvGPnmkrcHefJptY1Kc5SBRxD2dO658w2rh+FCBb3duz2bG+i8d60wes9eLInIiJirN8UETF8T9J3w9mbe393sxkzXZiZykF+YtCtNZfzcdNqdmqcZV/9kzBKqpb+S+r7k+k6rCmKx33ScL9gZTscHrEpIvIwxRONaj0L1FuKPRJV1e8yeNmHZpAo72YszZSRF+vxJMyCiWrRXg35vtedahj+9cmGG9ZNUWcnB0jc8GZZf9v31Q1mFjLloBoEsgEBV0TtnqrMqiLenozIuv3KzDIo16KvlxpVLumNRNv9YEeLbphMI8BzI62zQxB4P3MupCEDpPxHRpq1G/sHjnF+uhqoqmHVEp64k3vT1QB2FOXRdHy3y+6HX6kHV1WtBjf8oLWAQ6skcYOGOyoOA8PJ3qqDlIXLJvNRom6oxXQuUH1Fy6kL+lptazXZiA50cLn2kQE4xUiZm3RkmXK4btMIIXOjGqpt1q2dKtnR1jJnXS9XRyeHH+iUr+y0V0GFajU/DFtax+Lt8mqDTVRVy6FWbyZhDWXFXSy/rfUaqt5S6fs+0YKu5vTdEf+M1kusKAzrXHjUcpiRwEmTcI0qm2ru+3pWB2GS7Ko6/WoDzQhAdplXxmYJpILin3psJq0R7AwnyfB/ruqBW+OIJ9sT2tPgX3Cm3oi88Q4atcmxxbn3PVwDfv57TavakHs5I3JyxsDRdDN3x9rk6BqGB8K8cRVStrL2ZtB3dWf04Mfn9Irqj764c3HfylOehzvpxgIxd9af9dlkrVS37wOi3V2vcYpmJ0r0pVlymvX24Aznty3VwkTxhrxQ4LfGX84tEbzEbjy744i2iOlBHnHq8jbXlme5O45+HAMPmFQgt/uW1C9A8TrksGxzPbtvgcJyllOSL8Ciy74/v3/FvXANyIjgkGcr3s8d7cKQVe6sP6JFaxOv7Wz52svVUKujcvfuPl8D0iciiB6au/vNouyqqm6oqie5m3t+NO0ml+/x4vHZjxK/7EnjlzyIqO181nNK3XcUM285LbIHzsy+/ej/4yEIAcT/n69Mfj8V+dV9PvtfLuXZ/FMEkMYAAAAASUVORK5CYII=">
+      <b>แบบคำร้องและใบสำคัญจ่ายเงิน</b><b>ค่ารักษาพยาบาล</b>
+    </div>
+    <div class="sec1">
+      <div class="ln">เรียน<span class="v" style="width:36mm" data-k="to"></span>( ผู้บังคับบัญชาชั้นต้น )</div>
+      <div class="ln ind">๑.&nbsp; ข้าพเจ้า<span class="v fl" data-k="name"></span>เลขประจำตัว<span class="v" style="width:22mm" data-k="empId"></span>ตำแหน่ง<span class="v" style="width:22mm" data-k="pos"></span>กฟฟ.<span class="v" style="width:22mm" data-k="office"></span></div>
+      <div class="ln">หมวด/แผนก<span class="v fl" data-k="dept"></span>กอง/เขต<span class="v" style="width:14mm" data-k="div"></span>สำนัก/ฝ่าย<span class="v" style="width:22mm" data-k="bureau"></span>เบอร์ภายใน<span class="v" style="width:14mm" data-k="tel"></span>บรรจุเมื่อ<span class="v" style="width:24mm" data-k="hired"></span></div>
+      <div class="ln">ข้าพเจ้าขอเบิกค่ารักษาของ<span class="v" style="width:28mm" data-k="patOf"></span>เกี่ยวข้องเป็น<span class="v" style="width:18mm" data-k="rel"></span>ของข้าพเจ้า ซึ่งมีรายละเอียดดังนี้ อาชีพ<span class="v fl" data-k="occ"></span></div>
+      <div class="ln">สถานที่ทำงาน<span class="v fl" data-k="work"></span>เป็นข้าราชการประจำ/บำนาญ สังกัด<span class="v" style="width:34mm" data-k="gov"></span></div>
+      <div class="ln">ได้รับการรักษาพยาบาล ณ สถานพยาบาล (<span class="ck" data-k="ckGov"></span>) ราชการ (<span class="ck" data-k="ckPri"></span>) เอกชน ชื่อ<span class="v fl" data-k="hosName"></span>จังหวัด<span class="v" style="width:18mm" data-k="prov"></span></div>
+      <div class="ln">ด้วยโรค<span class="v fl" data-k="dis"></span>ตั้งแต่วันที่<span class="v" style="width:26mm" data-k="dFrom"></span>ถึงวันที่<span class="v" style="width:26mm" data-k="dTo"></span>รวม<span class="v" style="width:12mm" data-k="days"></span>วัน</div>
+      <div class="ln">และได้แนบหลักฐานประกอบการเบิกเงินมาพร้อมนี้ จำนวน<span class="v" style="width:14mm" data-k="docs"></span>ฉบับ</div>
+      <div class="ln">รวมเป็นเงินทั้งสิ้น<span class="v" style="width:22mm" data-k="amount"></span>บาท จำนวนเงินไม่รวมภาษีมูลค่าเพิ่ม<span class="v fl" data-k="exVat"></span>บาท จำนวนเงินภาษีมูลค่าเพิ่ม<span class="v" style="width:15mm" data-k="vatAmt"></span>บาท</div>
+      <div class="ln ind">๒. ข้าพเจ้าขอเบิกค่ารักษาพยาบาลตามสิทธิ (<span class="ck" data-k="r1"></span>) เต็มจำนวนเงินที่ได้จ่ายไปจริง (<span class="ck" data-k="r2"></span>) ครึ่งหนึ่งของจำนวนที่จ่ายจริง</div>
+      <div class="ln ind2">(<span class="ck" data-k="r3"></span>) เฉพาะส่วนที่ขาดเนื่องจากสิทธิที่ได้รับจากต้นสังกัดต่ำกว่า</div>
+      <div class="ln ind2">(<span class="ck" data-k="r4"></span>) เฉพาะส่วนที่ขาดเนื่องจากค่าสินไหมทดแทนสำหรับค่ารักษาพยาบาลที่ได้รับจากบุคคลภายนอกต่ำกว่า</div>
+      <div class="ln ind2">กรณีภายหลังได้รับค่าสินไหมทดแทนสำหรับค่ารักษาพยาบาลจากบุคคลภายนอก ข้าพเจ้าจะนำส่งคืน กฟภ. ทันทีตามระเบียบ</div>
+      <div class="ln ind">๓. ข้าพเจ้าขอรับรองว่า&nbsp; ๓.๑ ผู้ป่วยเป็นผู้มีสิทธิได้รับการช่วยเหลือตามระเบียบนี้</div>
+      <div class="ln" style="padding-left:30.5mm">๓.๒ ผู้ป่วยไม่มีสิทธิได้รับเงินค่ารักษาพยาบาลจากทางราชการหรือหน่วยงานอื่นหรือได้รับบางส่วน</div>
+      <div class="ln" style="padding-left:30.5mm">๓.๓ ข้อความทั้งหมดซึ่งได้ให้ไว้ข้างต้นถูกต้องตามความเป็นจริงทุกประการ</div>
+      <div class="ln r" style="margin-top:2.5mm">(ลงชื่อ)<span class="v" style="width:58mm"></span>ผู้ขอเบิก</div>
+      <div class="ln r">วันที่<span class="v" style="width:12mm" data-k="sD"></span>เดือน<span class="v" style="width:28mm" data-k="sM"></span>พ.ศ.<span class="v" style="width:16mm" data-k="sY"></span></div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="ttl">ความเห็นของหน่วยงานที่สังกัด</div>
+        <div>เรียน&nbsp; อฝ./อก./ผจก.กฟส.อล.</div>
+        <div style="padding-left:9mm">เห็นควรให้เบิกได้ตามระเบียบ</div>
+        <div class="sig">
+          <div><div class="line"></div>หผ.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+          <div><div class="line"></div>อฝ./อก./ผจก.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="ttl">ความเห็นของผู้ตรวจสอบ</div>
+        <div>เรียน&nbsp; อฝ./อก./ผจก.</div>
+        <div class="ln" style="padding-left:9mm">ได้ตรวจสอบแล้วมีสิทธิเบิกได้เป็นเงิน<span class="v fl"></span>บาท</div>
+        <div class="ln">(<span class="v fl"></span>)</div>
+        <div class="sig" style="margin-top:4mm">
+          <div><div class="line"></div>หผ.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+          <div><div class="line"></div>อฝ./อก./ผจก.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+        </div>
+        <svg class="cross" id="crossSvg" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="2" y1="97" x2="98" y2="4" stroke="#000" stroke-width="0.6" vector-effect="non-scaling-stroke" fill="none"/></svg>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="ttl">ความเห็นของผู้ตรวจจ่าย</div>
+        <div>เรียน&nbsp; อฝ./อก./ผจก.</div>
+        <div class="ln" style="padding-left:9mm">ได้ตรวจสอบแล้วมีสิทธิเบิกได้ทั้งสิ้นเป็นเงิน<span class="v" style="width:22mm" data-k="amount"></span>บาท</div>
+        <div class="ln">(<span class="v fl" data-k="words"></span>)</div>
+        <div class="sig" style="margin-top:6mm">
+          <div><div class="line"></div>ผู้ตรวจ<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+          <div><div class="line"></div>หผ.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+        </div>
+      </div>
+      <div class="appr">
+        <div class="ttl" style="margin-top:3mm">อนุมัติจ่ายเงินได้</div>
+        <div class="line"></div>
+        <div class="ln" style="margin-top:1mm">ตำแหน่ง<span class="v" style="width:40mm"></span></div>
+        <div class="sig3" style="padding:0;display:block"><div class="dt"><span></span>/<span></span>/<span></span></div></div>
+      </div>
+    </div>
+
+    <div class="rcv">
+      <div>
+        <div class="ln">ได้รับเงินไว้ถูกต้องแล้วเมื่อวันที่<span class="v" style="width:12mm"></span>เดือน<span class="v fl"></span>พ.ศ.<span class="v" style="width:20mm"></span></div>
+        <div class="ln">เป็นเงิน (<span class="v fl l" data-k="words"></span>)</div>
+      </div>
+      <div class="amt">
+        <div class="h">จำนวนเงิน (บาท)</div>
+        <div data-k="baht" style="font-size:13pt"></div>
+        <div class="s" data-k="satang" style="font-size:13pt"></div>
+      </div>
+    </div>
+
+    <div class="sig3">
+      <div><div class="line"></div>หผ.กง./หผ.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+      <div><div class="line"></div>ผู้จ่ายเงิน<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+      <div><div class="line"></div>ผู้รับเงิน<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+    </div>
+   </div>
+   <div class="foot"><span>สก.๕- ป.59</span><span class="ref" id="refTxt" hidden></span></div>
+  </div>
+  </div>
+
+</section>
+</main>
+</div>
+
+<section id="hist" hidden aria-label="ประวัติการเบิก">
+  <div class="stats">
+    <div class="stat"><small>จำนวนใบเบิก <span id="fyLbl"></span></small><b id="sCount">0</b> <span class="sub">รายการ</span></div>
+    <div class="stat"><small>รวมทั้งหมด</small><b id="sTotal">0.00</b> <span class="sub">บาท</span></div>
+    <div class="stat"><small>52021010 · พนักงาน</small><b id="sEmp">0.00</b> <span class="sub">บาท</span></div>
+    <div class="stat"><small>52021020 · ครอบครัว</small><b id="sFam">0.00</b> <span class="sub">บาท</span></div>
+  </div>
+  <div class="filters">
+    <input id="hq" placeholder="ค้นหาชื่อ ผู้ป่วย สถานพยาบาล โรค หรือเลขที่ใบเบิก">
+    <select id="hfy"></select>
+    <select id="hacct"><option value="">ทุกรหัสบัญชี</option><option value="52021010">52021010 พนักงาน</option><option value="52021020">52021020 ครอบครัว</option></select>
+    <select id="hdept"><option value="">ทุกแผนก</option></select>
+  </div>
+  <div class="tblw"><table class="h">
+    <thead><tr><th>เลขที่ / วันที่ยื่น</th><th>ผู้ขอเบิก</th><th>ผู้ป่วย</th><th>สถานพยาบาล / โรค</th><th>รหัสบัญชี</th><th style="text-align:right">จำนวนเงิน</th><th>ตัดงบ</th><th></th></tr></thead>
+    <tbody id="hBody"></tbody>
+  </table></div>
+  <p class="note" id="hNote"></p>
+</section>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+/* ====== ตั้งค่า ====== */
+const BUDGET_API = 'https://script.google.com/macros/s/AKfycbygECo4LkNmO4KLt2CXCrX25vwXE0armUUsdajOWF1CL3djNXaELZX8gwb8zU1GFdsWwQ/exec';
+const MED_API_DEFAULT = '';   // ใส่ URL Web app ของหลังบ้านใบเบิกค่ารักษาพยาบาลหลัง Deploy
+const K = { token: 'budget_token_v1', user: 'budget_user_v1', boot: 'budget_boot_v1', people: 'budget_people_v1', list: 'med_list_v1', draft: 'med_draft_v1', medApi: 'med_api_url' };
+const DEF = { to: 'ผจก.กฟส.อล.', office: 'กฟส.อล.', div: '2', bureau: 'ภาคใต้', tel: '-', prov: 'กระบี่', docs: '1' };
+const SELF = { occ: 'รัฐวิสาหกิจ', work: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', gov: '-' };
+const ACCT = { emp: '52021010', fam: '52021020' };
+const ACCT_NAME = { '52021010': 'ค่ารักษาพยาบาล-พนักงาน', '52021020': 'ค่ารักษา-ครอบครัว' };
+
+const $ = id => document.getElementById(id);
+const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const lsJ = k => { try { return JSON.parse(ls(k) || 'null'); } catch (e) { return null; } };
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => s ? String(s).replace(/ /g, ' ').trim() : '';
+const normName = s => String(s || '').replace(/ /g, ' ').replace(/^\s*(นางสาว|น\.ส\.|นาย|นาง|ว่าที่\s*ร\.ต\.)\s*/, '').replace(/\s+/g, ' ').trim();
+const MED_API = () => MED_API_DEFAULT;
+
+let token = ls(K.token), me = lsJ(K.user);
+let boot = (lsJ(K.boot) || {}).d || null;
+let people = ((lsJ(K.people) || {}).list) || [];
+let claims = lsJ(K.list) || [];
+let editing = null;   // ใบเบิกที่กำลังแก้ไข
+
+/* ====== เรียก API ====== */
+function post(url, fn, args, ms) {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), ms || 60000);
+  return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args: args || [], token }), redirect: 'follow', signal: ctrl.signal })
+    .then(r => r.text()).then(txt => {
+      let j; try { j = JSON.parse(txt); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้ง'); }
+      if (!j.ok) throw new Error(j.error || 'ไม่ทราบสาเหตุ');
+      return j.data;
+    }).catch(e => {
+      if (e.name === 'AbortError') throw new Error('เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง');
+      if (e.name === 'TypeError') throw new Error('เชื่อมต่อเครือข่ายไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่');
+      if (String(e.message).indexOf('AUTH_REQUIRED') !== -1) { sessionExpired(); }
+      throw e;
+    }).finally(() => clearTimeout(t));
+}
+const budget = (fn, args, ms) => post(BUDGET_API, fn, args, ms);
+const med = (fn, args) => { if (!MED_API()) return Promise.reject(new Error('ยังไม่ได้ตั้งค่าหลังบ้านของระบบใบเบิก (MED_API)')); return post(MED_API(), fn, args, 90000); };
+
+let toastT;
+function toast(msg, err) { const t = $('toast'); t.textContent = msg; t.className = 'toast' + (err ? ' err' : ''); t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, err ? 6000 : 3500); }
+
+/* ====== เข้า/ออกระบบ ====== */
+function showLogin() { $('app').hidden = true; $('loginView').hidden = false; setTimeout(() => $('liUser').focus(), 50); }
+function sessionExpired() { token = null; ls(K.token, null); showLogin(); $('liErr').textContent = 'หมดเวลาการเข้าระบบ กรุณาเข้าระบบใหม่'; }
+$('loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const u = $('liUser').value.trim(), p = $('liPass').value, btn = $('liBtn');
+  btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...'; $('liErr').textContent = '';
+  budget('apiLogin', [u, p]).then(res => {
+    if (res && res.status === 'setup') { $('liErr').innerHTML = 'บัญชีนี้ต้องตั้งรหัสผ่านใหม่ก่อน — เข้า <a href="../budget/index.html">ระบบตัดงบทำการ</a> 1 ครั้งเพื่อตั้งรหัส'; return; }
+    if (!res || res.status !== 'success') { $('liErr').textContent = (res && res.message) || 'เข้าสู่ระบบไม่สำเร็จ'; return; }
+    const changed = !me || me.username !== res.user.username;
+    token = res.token; me = res.user; if (res.expires) me.expires = res.expires;
+    ls(K.token, token); ls(K.user, JSON.stringify(me)); if (changed) { ls(K.boot, null); boot = null; }
+    $('liPass').value = ''; start();
+  }).catch(e2 => { $('liErr').textContent = e2.message; })
+    .finally(() => { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; });
+});
+$('logoutBtn').onclick = () => { ls(K.token, null); ls(K.user, null); ls(K.boot, null); token = null; me = null; showLogin(); };
+
+/* ====== ข้อมูลพื้นฐาน ====== */
+const MS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const ML = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const TXT = ['name', 'empId', 'pos', 'office', 'dept', 'div', 'bureau', 'tel', 'hired', 'to', 'patName', 'occ', 'gov', 'work', 'hosName', 'prov', 'dis', 'dFrom', 'dTo', 'days', 'docs', 'amount', 'sDate'];
+const EMP_FIELDS = ['name', 'empId', 'pos', 'office', 'dept', 'div', 'bureau', 'tel', 'hired', 'to'];
+const todayYmd = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fyOf = v => { if (!v) return ''; const [y, m] = String(v).split('-').map(Number); return String(y + 543 + (m >= 10 ? 1 : 0)); };
+
+function bahtWords(num) {
+  const D = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'], P = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน'];
+  function grp(s) { let o = '', L = s.length; for (let i = 0; i < L; i++) { const d = +s[i], p = L - i - 1; if (!d) continue;
+    if (p === 1 && d === 1) o += 'สิบ'; else if (p === 1 && d === 2) o += 'ยี่สิบ'; else if (p === 0 && d === 1 && L > 1 && /[1-9]/.test(s.slice(0, -1))) o += 'เอ็ด'; else o += D[d] + P[p]; } return o; }
+  function conv(s) { s = s.replace(/^0+/, ''); if (!s) return ''; if (s.length > 6) return conv(s.slice(0, -6)) + 'ล้าน' + grp(s.slice(-6).replace(/^0+/, '') || ''); return grp(s); }
+  if (!isFinite(num)) return ''; const [b, st] = Math.abs(num).toFixed(2).split('.');
+  const w = conv(b); if (!w && st === '00') return 'ศูนย์บาทถ้วน';
+  return (w ? w + 'บาท' : '') + (st === '00' ? 'ถ้วน' : grp(st.replace(/^0/, '')) + 'สตางค์');
+}
+const num = s => parseFloat(String(s == null ? '' : s).replace(/[^\d.]/g, ''));
+const fmt = n => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const sd = v => { if (!v) return ''; const [y, m, d] = String(v).split('-').map(Number); if (!y) return ''; return d + ' ' + MS[m - 1] + ' ' + String(y + 543).slice(-2); };
+const radio = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
+const setRadio = (n, v) => { const el = document.querySelector(`input[name="${n}"][value="${v}"]`); if (el) el.checked = true; };
+const initials = n => { const p = normName(n).split(' '); const f = w => (String(w || '').match(/[^เแโใไ\s]/) || [''])[0]; return (f(p[0]) + f(p[1])) || '?'; };
+const person = n => people.find(p => normName(p.name) === normName(n));
+const avatarHtml = n => { const p = person(n); return p && p.photo ? `<img src="${esc(p.photo)}" alt="">` : esc(initials(n)); };
+
+/* ====== ฟอร์ม ====== */
+function collect() {
+  const o = {}; TXT.forEach(k => o[k] = $(k).value.trim());
+  o.pat = radio('pat'); o.hos = radio('hos'); o.right = radio('right'); o.vat = $('vat').checked;
+  o.cross = $('cross').checked; o.acct = radio('acct') || ''; o.budgetDept = $('bDept').value;
+  return o;
+}
+function fill(o) {
+  TXT.forEach(k => { if (o[k] !== undefined) $(k).value = o[k]; });
+  if (o.pat) setRadio('pat', o.pat); if (o.hos) setRadio('hos', o.hos); if (o.right) setRadio('right', o.right);
+  if (o.vat !== undefined) $('vat').checked = !!o.vat; if (o.cross !== undefined) $('cross').checked = !!o.cross;
+}
+function blankClaim() {
+  return Object.assign({ name: '', empId: '', pos: '', dept: '', hired: '', patName: '', occ: '', gov: '', work: '', hosName: '', dis: '', dFrom: '', dTo: '', days: '', amount: '', pat: 'ตนเอง', hos: 'pri', right: '1', vat: false, cross: true, sDate: todayYmd() }, DEF);
+}
+
+// ข้อมูลผู้ขอเบิกล่าสุดของแต่ละคน (จากประวัติ) — ครั้งต่อไปไม่ต้องกรอกใหม่
+function profileOf(name) {
+  const k = normName(name);
+  const last = claims.filter(c => normName(c.name) === k).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+  const prof = {};
+  if (last && last.data) EMP_FIELDS.forEach(f => { if (last.data[f]) prof[f] = last.data[f]; });
+  return prof;
+}
+function pickEmployee(raw) {
+  const p = people.find(x => normName(x.name) === normName(raw));
+  const nm = p ? p.name : raw;
+  const prof = profileOf(nm);
+  const base = Object.assign({}, DEF, { name: nm, pos: '', empId: '', dept: '', hired: '' });
+  if (p) { base.pos = p.position || p.role || ''; if (p.dept) base.dept = p.dept; }
+  const u = boot && (boot.allUsers || []).find(x => normName(x.name) === normName(nm));
+  if (u && u.dept && !base.dept) base.dept = norm(u.dept);
+  fill(Object.assign(base, prof));
+  const missing = ['empId', 'pos', 'dept', 'hired'].some(f => !$(f).value);
+  if (missing) $('empMore').open = true;
+  budgetDeptAuto = true;
+  render();
+}
+
+/* ====== ตัดงบ ====== */
+let acctManual = false, budgetDeptAuto = true;
+const accounts = () => (boot && boot.budgetData) || [];
+const usageKey = (b, d, c) => norm(b) + '|' + norm(d) + '|' + norm(c);
+function usageMap() { const m = {}; Object.keys((boot && boot.usage) || {}).forEach(k => { const p = k.split('|'); m[usageKey(p[0], p[1], p.slice(2).join('|'))] = boot.usage[k]; }); return m; }
+function budgetInfo(acc) {
+  const used = usageMap()[usageKey(acc.branch, acc.dept, acc.code)] || 0;
+  const y = Number(acc.yearlyBudget) || 0, month = new Date().getMonth() + 1;
+  return { used, remainingYear: y - used, remainingAccumulated: y / 12 * month - used };
+}
+const branchOf = () => { const mine = me && accounts().find(i => norm(i.dept) === norm(me.dept)); const brs = [...new Set(accounts().map(i => norm(i.branch)))]; return mine ? norm(mine.branch) : (brs.indexOf('กฟส.อล.') !== -1 ? 'กฟส.อล.' : brs[0] || ''); };
+const medAccounts = dept => accounts().filter(a => norm(a.branch) === branchOf() && norm(a.dept) === dept && (norm(a.code) === ACCT.emp || norm(a.code) === ACCT.fam));
+function requesters(dept) {
+  const ok = u => norm(u.status) === 'อนุมัติ' && u.name && u.name.trim(), seen = {}, out = [];
+  const add = u => { const k = normName(u.name); if (!seen[k]) { seen[k] = 1; out.push(u.name.trim()); } };
+  ((boot && boot.allUsers) || []).filter(u => ok(u) && norm(u.dept) === dept).forEach(add);
+  ((boot && boot.allUsers) || []).filter(u => ok(u) && norm(u.dept) === (dept === 'ประจำ กฟฟ.' ? 'ผบง.' : 'ประจำ กฟฟ.')).forEach(add);
+  if (me && me.name && !seen[normName(me.name)]) out.unshift(me.name);
+  return out;
+}
+function pendingMed() { return ((boot && boot.pending) || []).filter(p => norm(p.accountCode) === ACCT.emp || norm(p.accountCode) === ACCT.fam); }
+function budgetDetailText(v) {
+  const who = v.pat === 'ตนเอง' ? 'ตนเอง' : (v.pat + (v.patName ? ' ' + v.patName : ''));
+  return `${ACCT_NAME[v.acct] || 'ค่ารักษาพยาบาล'} ${v.name} (${who})${v.hosName ? ' ' + v.hosName : ''}${v.id ? ' [' + v.id + ']' : ''}`;
+}
+
+function renderBudget(v, ok, a) {
+  const sentInfo = editing && (editing.budgetStatus === 'sent' || editing.budgetStatus === 'linked');
+  $('bSent').hidden = !sentInfo; $('bEdit').hidden = !!sentInfo;
+  if (sentInfo) {
+    $('bChip').textContent = 'ส่งตัดงบแล้ว'; $('bChip').className = 'chip ok';
+    const pend = pendingMed().find(p => String(p.detail || '').indexOf('[' + editing.id + ']') !== -1);
+    $('bSent').innerHTML = `<div class="row"><span>รหัสบัญชี</span><b>${esc(editing.acct)} : ${esc(ACCT_NAME[editing.acct] || '')}</b></div>
+      <div class="row"><span>แผนก</span><b>${esc(editing.budgetDept)}</b></div><div class="row"><span>รายละเอียด</span><b>${esc(editing.budgetDetail)}</b></div>
+      <div class="row"><span>สถานะในระบบตัดงบ</span><b>${pend ? esc(pend.status) : 'ส่งแล้ว'}</b></div>
+      <div class="alert warn">ใบนี้ส่งตัดงบไปแล้ว การบันทึกแก้ไขที่นี่จะไม่แก้ยอดในระบบตัดงบ ถ้ายอดเงินเปลี่ยน ให้แก้ในระบบตัดงบด้วย</div>`;
+    return;
+  }
+  const bm = radio('bmode');
+  $('bNew').hidden = bm !== 'new'; $('bOld').hidden = bm !== 'old';
+  if (!boot) { $('bChip').textContent = 'กำลังโหลดงบ...'; $('bChip').className = 'chip wait'; return; }
+  // แผนก
+  const depts = [...new Set(accounts().filter(x => norm(x.branch) === branchOf() && (norm(x.code) === ACCT.emp || norm(x.code) === ACCT.fam)).map(x => norm(x.dept)))].sort();
+  const sel = $('bDept'), cur = sel.value;
+  const optHtml = depts.map(d => `<option${d === cur ? ' selected' : ''}>${esc(d)}</option>`).join('');
+  if (sel.dataset.h !== optHtml) { sel.innerHTML = optHtml; sel.dataset.h = optHtml; }
+  if (budgetDeptAuto) { const want = depts.indexOf(norm(v.dept)) !== -1 ? norm(v.dept) : (me && depts.indexOf(norm(me.dept)) !== -1 ? norm(me.dept) : depts[0]); if (want) sel.value = want; }
+  const dept = sel.value;
+  // รหัสบัญชี
+  const accs = medAccounts(dept);
+  const autoCode = v.pat === 'ตนเอง' ? ACCT.emp : ACCT.fam;
+  const curCode = radio('acct');
+  const pick = acctManual && accs.some(x => norm(x.code) === curCode) ? curCode : autoCode;
+  $('acctBox').innerHTML = [ACCT.emp, ACCT.fam].map(code => {
+    const has = accs.some(x => norm(x.code) === code);
+    return `<label class="${has ? '' : 'dis'}"><input type="radio" name="acct" value="${code}" ${code === pick && has ? 'checked' : ''} ${has ? '' : 'disabled'}><span><code>${code}</code> : ${ACCT_NAME[code]}${has ? '' : ' <small>(แผนกนี้ไม่มีรหัสนี้)</small>'}</span>${code === autoCode && !acctManual && has ? '<span class="tagauto">✓ เลือกให้อัตโนมัติ</span>' : ''}</label>`;
+  }).join('');
+  const acc = accs.find(x => norm(x.code) === radio('acct'));
+  let warn = '';
+  if (acc) {
+    const info = budgetInfo(acc), net = info.remainingAccumulated - (ok ? a : 0);
+    const pct = acc.yearlyBudget > 0 ? Math.min(100, info.used / acc.yearlyBudget * 100) : 0;
+    $('bLeft').innerHTML = `<div class="row"><span>งบต่อปี</span><b>${fmt(acc.yearlyBudget)}</b></div><div class="bar"><i class="${pct >= 100 ? 'over' : ''}" style="width:${pct}%"></i></div>
+      <div class="row"><span>ใช้ไปแล้ว</span><b>${fmt(info.used)}</b></div><div class="row"><span>คงเหลือสะสมหลังตัดใบนี้</span><b style="color:var(${net < 0 ? '--bad' : '--ok'})">${fmt(net)}</b></div>`;
+    if (net < 0) warn = `<div class="alert bad">งบสะสมจะติดลบ ${fmt(Math.abs(net))} บาท (ยังส่งได้ ระบบตัดงบจะแจ้งเป็นงบติดลบ)</div>`;
+  } else { $('bLeft').innerHTML = ''; warn = '<div class="alert warn">แผนกนี้ยังไม่มีรหัสบัญชีค่ารักษาในระบบตัดงบ</div>'; }
+  $('bDetail').textContent = budgetDetailText(Object.assign({}, v, { acct: radio('acct'), id: editing ? editing.id : '' })) + (editing ? '' : ' [เลขที่ใบเบิก]');
+  const rq = requesters(dept), rs = $('bReq'), rcur = rs.value || (me && me.name);
+  const rh = rq.map(n => `<option${normName(n) === normName(rcur) ? ' selected' : ''}>${esc(n)}</option>`).join('');
+  if (rs.dataset.h !== rh) { rs.innerHTML = rh; rs.dataset.h = rh; }
+  $('bWarn').innerHTML = warn;
+  // เรื่องที่ส่งไว้แล้ว
+  const pend = pendingMed();
+  const oh = pend.length ? pend.map(p => `<option value="${esc(p.rowIndex)}">${esc(p.accountCode)} · ${esc(p.dept)} · ${esc(p.detail)} · ${fmt(p.amount)} · ${esc(p.status)}</option>`).join('') : '<option value="">ไม่มีเรื่องค่ารักษาที่รอดำเนินการ</option>';
+  if ($('bOldSel').dataset.h !== oh) { $('bOldSel').innerHTML = oh; $('bOldSel').dataset.h = oh; }
+  const label = bm === 'none' ? ['ไม่ตัดงบ', 'chip'] : bm === 'old' ? ['ผูกเรื่องเดิม', 'chip ok'] : acc ? ['พร้อมส่ง', 'chip ok'] : ['ไม่มีรหัสบัญชี', 'chip bad'];
+  $('bChip').textContent = label[0]; $('bChip').className = label[1];
+}
+
+/* ====== วาดใบ ====== */
+function render() {
+  const g = k => $(k).value.trim();
+  const self = radio('pat') === 'ตนเอง'; $('famBox').hidden = self;
+  const a = num(g('amount')), ok = isFinite(a) && a > 0;
+  const words = ok ? bahtWords(a) : '';
+  $('wordsBox').textContent = words || 'กรอกจำนวนเงิน ระบบจะเขียนเป็นตัวอักษรให้';
+  let exVat = '-', vatAmt = '-';
+  if ($('vat').checked && ok) { const ex = Math.round(a / 1.07 * 100) / 100; exVat = fmt(ex); vatAmt = fmt(Math.round((a - ex) * 100) / 100); }
+  const [bh, st] = ok ? fmt(a).split('.') : ['', ''];
+  const dt = g('sDate') ? g('sDate').split('-').map(Number) : null, r = radio('right');
+  const V = { to: g('to'), name: g('name'), empId: g('empId'), pos: g('pos'), office: g('office'), dept: g('dept'), div: g('div'), bureau: g('bureau'), tel: g('tel'), hired: g('hired'),
+    patOf: self ? 'ตนเอง' : g('patName'), rel: self ? '-' : radio('pat'), occ: self ? SELF.occ : g('occ'), work: self ? SELF.work : g('work'), gov: self ? SELF.gov : (g('gov') || '-'),
+    ckGov: radio('hos') === 'gov' ? '✓' : '', ckPri: radio('hos') === 'pri' ? '✓' : '', hosName: g('hosName'), prov: g('prov'), dis: g('dis'), dFrom: sd(g('dFrom')), dTo: sd(g('dTo')), days: g('days'), docs: g('docs'),
+    amount: ok ? fmt(a) : '', exVat, vatAmt, words, baht: bh, satang: st, r1: r === '1' ? '✓' : '', r2: r === '2' ? '✓' : '', r3: r === '3' ? '✓' : '', r4: r === '4' ? '✓' : '',
+    sD: dt ? dt[2] : '', sM: dt ? ML[dt[1] - 1] : '', sY: dt ? dt[0] + 543 : '' };
+  document.querySelectorAll('#paper [data-k]').forEach(el => { const v = V[el.dataset.k] ?? ''; el.textContent = v; el.classList.toggle('has', !!v && el.classList.contains('v')); });
+  $('empCard').hidden = !V.name;
+  $('empAv').innerHTML = avatarHtml(V.name); $('empName').textContent = V.name;
+  $('empSub').textContent = [V.pos, V.dept, V.empId && ('เลขประจำตัว ' + V.empId), V.hired && ('บรรจุ ' + V.hired)].filter(Boolean).join(' · ');
+  $('crossSvg').style.display = $('cross').checked ? '' : 'none';
+  $('refTxt').hidden = !$('showRef').checked || !editing;
+  $('refTxt').textContent = editing ? 'เลขที่ใบเบิก ' + editing.id : '';
+  $('newView').classList.toggle('hl', $('hlOn').checked);
+  renderBudget(Object.assign({}, collect(), { name: V.name }), ok, a);
+  $('saveBtn').textContent = editing ? 'บันทึกการแก้ไข' : (radio('bmode') === 'new' ? 'บันทึก + ส่งตัดงบ' : 'บันทึก');
+  if (!editing) ls(K.draft, JSON.stringify(collect()));
+}
+function fit() { const sc = $('scaler'), sh = $('sheet'); if (!sc.clientWidth) return; const s = Math.min(1, sc.clientWidth / sh.offsetWidth); sh.style.transform = `scale(${s})`; sc.style.height = (sh.offsetHeight * s) + 'px'; }
+
+/* ====== บันทึก ====== */
+function validate(c) {
+  const need = [['name', 'ชื่อผู้ขอเบิก'], ['empId', 'เลขประจำตัว'], ['pos', 'ตำแหน่ง'], ['hosName', 'ชื่อสถานพยาบาล'], ['dis', 'ด้วยโรค'], ['dFrom', 'วันที่เริ่มรักษา'], ['amount', 'จำนวนเงิน'], ['sDate', 'วันที่ยื่นเบิก']];
+  if (c.pat !== 'ตนเอง') need.push(['patName', 'ชื่อผู้ป่วย']);
+  document.querySelectorAll('.req-miss').forEach(x => x.classList.remove('req-miss'));
+  const miss = need.filter(([k]) => !String(c[k] || '').trim() || (k === 'amount' && !(num(c.amount) > 0)));
+  miss.forEach(([k]) => $(k).classList.add('req-miss'));
+  if (miss.length) { const el = $(miss[0][0]); el.closest('details') && (el.closest('details').open = true); setView('form'); el.focus(); return 'กรุณากรอก: ' + miss.map(x => x[1]).join(', '); }
+  return '';
+}
+async function save() {
+  const c = collect();
+  const err = validate(c); if (err) return toast(err, true);
+  const bm = editing && (editing.budgetStatus === 'sent' || editing.budgetStatus === 'linked') ? 'keep' : radio('bmode');
+  let acc = null;
+  if (bm === 'new') { acc = medAccounts($('bDept').value).find(x => norm(x.code) === radio('acct')); if (!acc) return toast('เลือกแผนก/รหัสบัญชีที่จะตัดงบก่อน หรือเลือก "ไม่ตัดงบ"', true); }
+  if (bm === 'old' && !$('bOldSel').value) return toast('ยังไม่มีเรื่องในระบบตัดงบให้ผูก', true);
+  c.amount = fmt(num(c.amount)); c.id = editing ? editing.id : '';
+  const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  try {
+    let rec = await med('save', [c]);
+    if (bm === 'new') {
+      btn.textContent = 'กำลังส่งตัดงบ...';
+      const amt = num(c.amount), info = budgetInfo(acc);
+      const detail = budgetDetailText(Object.assign({}, c, { acct: norm(acc.code), id: rec.id }));
+      try {
+        const res = await budget('submitRequest', [{ isUpdate: false, rowIndex: '', branch: acc.branch, dept: acc.dept, accountCode: acc.code, expenseDetail: detail, amount: amt,
+          requester: $('bReq').value || (me && me.name), yearlyBudget: acc.yearlyBudget, remainingYear: info.remainingYear - amt, accumulatedMonthBudget: info.remainingAccumulated, remainingMonthNet: info.remainingAccumulated - amt }], 120000);
+        if (!res || res.status !== 'success') throw new Error((res && res.message) || 'ระบบตัดงบไม่รับรายการ');
+        rec = await med('setBudget', [rec.id, { status: 'sent', detail, message: res.message || '', dept: norm(acc.dept), acct: norm(acc.code) }]);
+        toast('บันทึก ' + rec.id + ' และส่งตัดงบเรียบร้อย' + (res.isNegative ? ' (งบติดลบ)' : ''));
+      } catch (be) {
+        rec = await med('setBudget', [rec.id, { status: 'failed', message: be.message, dept: norm(acc.dept), acct: norm(acc.code) }]).catch(() => rec);
+        toast('บันทึกใบเบิก ' + rec.id + ' แล้ว แต่ส่งตัดงบไม่สำเร็จ: ' + be.message + ' — เปิดใบจากประวัติแล้วกดบันทึกเพื่อส่งใหม่', true);
+      }
+    } else if (bm === 'old') {
+      const p = pendingMed().find(x => String(x.rowIndex) === $('bOldSel').value);
+      rec = await med('setBudget', [rec.id, { status: 'linked', detail: p ? p.detail : '', message: p ? p.status : '', dept: p ? norm(p.dept) : '', acct: p ? norm(p.accountCode) : '' }]);
+      toast('บันทึก ' + rec.id + ' และผูกกับเรื่องในระบบตัดงบแล้ว');
+    } else {
+      toast('บันทึก ' + rec.id + ' เรียบร้อย');
+    }
+    const i = claims.findIndex(x => x.id === rec.id); if (i >= 0) claims[i] = rec; else claims.push(rec);
+    ls(K.list, JSON.stringify(claims));
+    editing = rec; ls(K.draft, null);
+    $('editBar').hidden = false; $('editId').textContent = rec.id;
+    refreshBoot(); render(); renderHist(); buildLists();
+    $('saveNote').textContent = 'บันทึกแล้ว · กด "พิมพ์" เพื่อพิมพ์ใบนี้ได้เลย';
+  } catch (e) { toast(e.message, true); }
+  finally { btn.disabled = false; render(); }
+}
+
+/* ====== ประวัติ ====== */
+function budgetCell(h) {
+  if (h.budgetStatus === 'sent' || h.budgetStatus === 'linked') {
+    const p = pendingMed().find(x => String(x.detail || '').indexOf('[' + h.id + ']') !== -1 || (h.budgetDetail && x.detail === h.budgetDetail));
+    const st = p ? p.status : (h.budgetStatus === 'linked' ? 'ผูกเรื่องเดิม' : 'ส่งแล้ว');
+    const cls = /ตีกลับ|ไม่อนุมัติ/.test(st) ? 'bad' : p ? 'wait' : 'ok';
+    return `<span class="chip ${cls}">${esc(st)}</span><small>${esc(h.budgetDept || '')}</small>`;
+  }
+  if (h.budgetStatus === 'failed') return `<span class="chip bad">ส่งไม่สำเร็จ</span>`;
+  return '<small>ไม่ตัดงบ</small>';
+}
+function renderHist() {
+  const fys = [...new Set(claims.map(c => String(c.fy || fyOf(c.sDate))).filter(Boolean))].sort().reverse();
+  const cur = fyOf(todayYmd()); if (fys.indexOf(cur) === -1) fys.unshift(cur);
+  const fsel = $('hfy'), fv = fsel.value || fys[0];
+  const fh = fys.map(y => `<option value="${y}">ปีงบประมาณ ${y}</option>`).join('') + '<option value="*">ทุกปีงบ</option>';
+  if (fsel.dataset.h !== fh) { fsel.innerHTML = fh; fsel.dataset.h = fh; fsel.value = fv; }
+  const ds = [...new Set(claims.map(c => c.dept).filter(Boolean))].sort(), dsel = $('hdept'), dv = dsel.value;
+  const dh = '<option value="">ทุกแผนก</option>' + ds.map(d => `<option>${esc(d)}</option>`).join('');
+  if (dsel.dataset.h !== dh) { dsel.innerHTML = dh; dsel.dataset.h = dh; dsel.value = dv; }
+  const q = $('hq').value.trim(), f = fsel.value, ac = $('hacct').value, dp = dsel.value;
+  const rows = claims.filter(h => (f === '*' || String(h.fy || fyOf(h.sDate)) === f) && (!ac || h.acct === ac) && (!dp || h.dept === dp) &&
+    (!q || [h.id, h.name, h.patName, h.hosName, h.dis].join(' ').indexOf(q) !== -1))
+    .sort((a, b) => String(b.sDate).localeCompare(String(a.sDate)) || String(b.id).localeCompare(String(a.id)));
+  let tot = 0, e = 0, fm = 0; rows.forEach(h => { const a = Number(h.amount) || 0; tot += a; if (h.acct === ACCT.fam) fm += a; else if (h.acct === ACCT.emp) e += a; });
+  $('fyLbl').textContent = f === '*' ? 'ทุกปีงบ' : 'ปีงบ ' + f; $('sCount').textContent = rows.length; $('sTotal').textContent = fmt(tot); $('sEmp').textContent = fmt(e); $('sFam').textContent = fmt(fm);
+  $('hCnt').textContent = claims.length;
+  const canEdit = h => me && (me.role === 'ผู้ดูแลระบบ' || normName(h.createdBy) === normName(me.name));
+  $('hBody').innerHTML = rows.length ? rows.map(h => `<tr>
+    <td><b>${esc(h.id)}</b><small>${esc(sd(h.sDate))}</small></td>
+    <td>${esc(h.name)}<small>${esc((h.data && h.data.pos) || '')} · ${esc(h.dept)}</small></td>
+    <td>${h.pat === 'ตนเอง' ? 'ตนเอง' : esc(h.patName)}<small>${h.pat === 'ตนเอง' ? '' : esc(h.pat)}</small></td>
+    <td>${esc(h.hosName)}<small>${esc(h.dis)}</small></td>
+    <td>${esc(h.acct || '-')}<small>${h.acct === ACCT.fam ? 'ครอบครัว' : h.acct === ACCT.emp ? 'พนักงาน' : ''}</small></td>
+    <td class="num">${fmt(h.amount)}</td><td>${budgetCell(h)}</td>
+    <td><button class="mini" data-open="${esc(h.id)}">เปิด / พิมพ์</button> <button class="mini" data-copy="${esc(h.id)}">ใช้เป็นต้นแบบ</button>${canEdit(h) ? ` <button class="mini danger" data-del="${esc(h.id)}">ลบ</button>` : ''}</td></tr>`).join('')
+    : `<tr><td colspan="8" class="empty">${claims.length ? 'ไม่พบรายการที่ตรงกับตัวกรอง' : 'ยังไม่มีใบเบิก — กด "ใบเบิกใหม่" เพื่อเริ่มใบแรก'}</td></tr>`;
+}
+['hq', 'hfy', 'hacct', 'hdept'].forEach(id => $(id).addEventListener('input', renderHist));
+let delArm = null;
+$('hBody').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.del) {
+    if (delArm !== b.dataset.del) { delArm = b.dataset.del; b.textContent = 'กดอีกครั้งเพื่อยืนยันลบ'; setTimeout(() => { if (delArm === b.dataset.del) { delArm = null; b.textContent = 'ลบ'; } }, 4000); return; }
+    delArm = null; b.disabled = true; b.textContent = 'กำลังลบ...';
+    try { await med('remove', [b.dataset.del]); const h = claims.find(x => x.id === b.dataset.del); claims = claims.filter(x => x.id !== b.dataset.del); ls(K.list, JSON.stringify(claims)); renderHist();
+      toast('ลบ ' + b.dataset.del + ' แล้ว' + (h && h.budgetStatus === 'sent' ? ' — เรื่องในระบบตัดงบยังอยู่ ให้ลบที่ระบบตัดงบด้วยถ้าต้องการ' : '')); }
+    catch (er) { toast(er.message, true); b.disabled = false; b.textContent = 'ลบ'; }
+    return;
+  }
+  const id = b.dataset.open || b.dataset.copy; const h = claims.find(x => x.id === id); if (!h) return;
+  if (b.dataset.open) { editing = h; fill(Object.assign(blankClaim(), h.data || {})); acctManual = !!h.acct; budgetDeptAuto = false; $('editBar').hidden = false; $('editId').textContent = h.id; showView('new'); render(); setView('paper'); }
+  else { startNew(); const d = Object.assign({}, h.data || {}); ['amount', 'dis', 'dFrom', 'dTo', 'days'].forEach(k => d[k] = ''); d.sDate = todayYmd(); fill(d); render(); showView('new'); toast('คัดลอกข้อมูลจาก ' + h.id + ' แล้ว กรอกจำนวนเงิน โรค และวันที่ใหม่'); $('amount').focus(); }
+});
+
+/* ====== มุมมอง ====== */
+function setView(v) { $('main').dataset.view = v; $('tabForm').classList.toggle('on', v === 'form'); $('tabPaper').classList.toggle('on', v === 'paper'); requestAnimationFrame(fit); }
+function showView(v) { $('newView').hidden = v !== 'new'; $('hist').hidden = v !== 'hist'; $('vNew').classList.toggle('on', v === 'new'); $('vHist').classList.toggle('on', v === 'hist'); if (v === 'hist') { renderHist(); loadClaims(); } else requestAnimationFrame(fit); }
+function startNew() { editing = null; acctManual = false; budgetDeptAuto = true; $('editBar').hidden = true; $('saveNote').textContent = ''; setRadio('bmode', 'new'); fill(blankClaim()); $('empSearch').value = ''; render(); }
+$('tabForm').onclick = () => setView('form'); $('tabPaper').onclick = () => setView('paper');
+$('vNew').onclick = () => showView('new'); $('vHist').onclick = () => showView('hist');
+$('cancelEdit').onclick = () => startNew();
+$('resetBtn').onclick = () => startNew();
+const doPrint = () => { if (!editing) toast('พิมพ์ได้ แต่ใบนี้ยังไม่ได้บันทึกลงประวัติ'); setView('paper'); setTimeout(() => window.print(), 120); };
+$('printBtn').onclick = doPrint; $('printBtn2').onclick = doPrint;
+$('saveBtn').onclick = save;
+$('frm').addEventListener('submit', e => e.preventDefault());
+$('frm').addEventListener('input', e => { if (e.target.id === 'empSearch') return; e.target.classList.remove('req-miss'); render(); });
+$('frm').addEventListener('change', e => {
+  if (e.target.name === 'pat') acctManual = false;
+  if (e.target.name === 'acct') acctManual = true;
+  if (e.target.id === 'bDept') { budgetDeptAuto = false; acctManual = false; }
+  if (e.target.id === 'empSearch') { if (e.target.value.trim()) pickEmployee(e.target.value.trim()); return; }
+  render();
+});
+$('amount').addEventListener('blur', () => { const a = num($('amount').value); if (isFinite(a) && a > 0) $('amount').value = fmt(a); render(); });
+$('dFrom').addEventListener('change', () => { if (!$('dTo').value || $('dTo').value < $('dFrom').value) $('dTo').value = $('dFrom').value; render(); });
+const MAP = { patOf: 'patName', words: 'amount', sD: 'sDate', sM: 'sDate', sY: 'sDate' };
+$('paper').addEventListener('click', e => { const el = e.target.closest('[data-k]'); if (!el) return; const id = MAP[el.dataset.k] || el.dataset.k; const inp = $(id); if (!inp || inp.tagName !== 'INPUT') return;
+  setView('form'); const d = inp.closest('details'); if (d) d.open = true; inp.focus(); inp.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+window.addEventListener('resize', fit);
+window.addEventListener('beforeprint', () => { $('sheet').style.transform = 'none'; });
+window.addEventListener('afterprint', fit);
+
+function buildLists() {
+  const pNames = [...new Set(people.map(p => p.name).concat(claims.map(c => c.name)).filter(Boolean))];
+  $('empList').innerHTML = pNames.map(n => { const p = person(n); return `<option value="${esc(n)}">${esc((p && (p.position || p.role)) || '')}</option>`; }).join('');
+  const uniq = k => [...new Set(claims.map(c => c[k]).filter(Boolean))];
+  $('hosList').innerHTML = uniq('hosName').map(n => `<option value="${esc(n)}">`).join('');
+  $('disList').innerHTML = uniq('dis').map(n => `<option value="${esc(n)}">`).join('');
+}
+
+/* ====== โหลดข้อมูล ====== */
+function refreshBoot() {
+  return budget('getBootData', []).then(d => {
+    if (d && d.me) { me = Object.assign({}, me || {}, d.me); ls(K.user, JSON.stringify(me)); renderMe(); }
+    boot = d; try { ls(K.boot, JSON.stringify({ t: Date.now(), d })); } catch (e) {}
+    render(); if (!$('hist').hidden) renderHist();
+  }).catch(e => { if (!boot) toast('โหลดข้อมูลงบไม่สำเร็จ: ' + e.message, true); });
+}
+function loadPeople() {
+  const c = lsJ(K.people); if (c && c.list && Date.now() - (c.ts || 0) < 12 * 3600 * 1000) return;
+  budget('getPeople', []).then(res => { const list = (res && res.people) || []; if (!list.length) return; people = list; buildLists(); render(); }).catch(() => {});
+}
+function loadClaims() {
+  if (!MED_API()) { $('hNote').textContent = 'ยังไม่ได้ตั้งค่าหลังบ้านของระบบใบเบิก (MED_API) — แจ้งผู้ดูแลระบบ'; return; }
+  return med('list', []).then(list => { claims = list || []; ls(K.list, JSON.stringify(claims)); buildLists(); renderHist(); $('hNote').textContent = 'อัปเดตล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); })
+    .catch(e => { $('hNote').textContent = 'โหลดประวัติไม่สำเร็จ: ' + e.message; });
+}
+function renderMe() { if (!me) return; $('meName').textContent = me.name || me.username; $('meSub').textContent = [me.dept, me.role].filter(Boolean).join(' · '); $('meAv').innerHTML = avatarHtml(me.name || me.username || '?'); }
+
+function start() {
+  $('loginView').hidden = true; $('app').hidden = false; renderMe();
+  const dr = lsJ(K.draft);
+  fill(Object.assign(blankClaim(), dr || {}));
+  if (dr && dr.name) $('empSearch').value = dr.name;
+  buildLists(); render(); renderHist(); fit();
+  if (document.fonts) document.fonts.ready.then(fit);
+  refreshBoot(); loadPeople(); loadClaims();
+}
+
+if (token && me) start(); else showLogin();
+</script>
+</body>
+</html>
