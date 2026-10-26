@@ -564,7 +564,7 @@ const avatarHtml = n => { const p = person(n); return p && p.photo ? `<img src="
 function collect() {
   const o = {}; TXT.forEach(k => o[k] = $(k).value.trim());
   o.pat = radio('pat'); o.hos = radio('hos'); o.right = radio('right'); o.vat = $('vat').checked;
-  o.cross = $('cross').checked; o.acct = radio('acct') || ''; o.budgetDept = $('bDept').value;
+  o.cross = $('cross').checked; o.acct = radio('acct') || ''; o.budgetDept = keyLabel($('bDept').value || '|');
   return o;
 }
 function fill(o) {
@@ -610,7 +610,10 @@ function budgetInfo(acc) {
   return { used, remainingYear: y - used, remainingAccumulated: y / 12 * month - used };
 }
 const branchOf = () => { const mine = me && accounts().find(i => norm(i.dept) === norm(me.dept)); const brs = [...new Set(accounts().map(i => norm(i.branch)))]; return mine ? norm(mine.branch) : (brs.indexOf('กฟส.อล.') !== -1 ? 'กฟส.อล.' : brs[0] || ''); };
-const medAccounts = dept => accounts().filter(a => norm(a.branch) === branchOf() && norm(a.dept) === dept && (norm(a.code) === ACCT.emp || norm(a.code) === ACCT.fam));
+const isMed = a => norm(a.code) === ACCT.emp || norm(a.code) === ACCT.fam;
+// แผนกที่ตัดงบ = "สาขา|แผนก" (รองรับ กฟส.อล. และ กฟส.ปพย.)
+const medAccounts = key => { const [b, d] = String(key || '').split('|'); return accounts().filter(a => norm(a.branch) === b && norm(a.dept) === d && isMed(a)); };
+const keyLabel = k => { const [b, d] = k.split('|'); return b === d ? b : b === branchOf() ? d : d + ' (' + b + ')'; };
 function requesters(dept) {
   const ok = u => norm(u.status) === 'อนุมัติ' && u.name && u.name.trim(), seen = {}, out = [];
   const add = u => { const k = normName(u.name); if (!seen[k]) { seen[k] = 1; out.push(u.name.trim()); } };
@@ -641,14 +644,23 @@ function renderBudget(v, ok, a) {
   $('bNew').hidden = bm !== 'new'; $('bOld').hidden = bm !== 'old';
   if (!boot) { $('bChip').textContent = 'กำลังโหลดงบ...'; $('bChip').className = 'chip wait'; return; }
   // แผนก
-  const depts = [...new Set(accounts().filter(x => norm(x.branch) === branchOf() && (norm(x.code) === ACCT.emp || norm(x.code) === ACCT.fam)).map(x => norm(x.dept)))].sort();
+  const myB = branchOf();
+  const keys = [...new Set(accounts().filter(isMed).map(x => norm(x.branch) + '|' + norm(x.dept)))]
+    .sort((a, b) => (a.split('|')[0] === myB ? 0 : 1) - (b.split('|')[0] === myB ? 0 : 1) || a.localeCompare(b, 'th'));
   const sel = $('bDept'), cur = sel.value;
-  const optHtml = depts.map(d => `<option${d === cur ? ' selected' : ''}>${esc(d)}</option>`).join('');
+  const optHtml = keys.map(k => `<option value="${esc(k)}"${k === cur ? ' selected' : ''}>${esc(keyLabel(k))}</option>`).join('');
   if (sel.dataset.h !== optHtml) { sel.innerHTML = optHtml; sel.dataset.h = optHtml; }
-  if (budgetDeptAuto) { const want = depts.indexOf(norm(v.dept)) !== -1 ? norm(v.dept) : (me && depts.indexOf(norm(me.dept)) !== -1 ? norm(me.dept) : depts[0]); if (want) sel.value = want; }
-  const dept = sel.value;
+  if (budgetDeptAuto) {
+    const off = norm(v.office), vd = norm(v.dept);
+    const want = keys.find(k => k === off + '|' + vd)
+      || (off && off !== myB && keys.find(k => k.split('|')[0] === off))
+      || keys.find(k => k === myB + '|' + vd)
+      || (me && keys.find(k => k === myB + '|' + norm(me.dept))) || keys[0];
+    if (want) sel.value = want;
+  }
+  const bKey = sel.value, dept = bKey.split('|')[1] || '';
   // รหัสบัญชี
-  const accs = medAccounts(dept);
+  const accs = medAccounts(bKey);
   const autoCode = v.pat === 'ตนเอง' ? ACCT.emp : ACCT.fam;
   const curCode = radio('acct');
   const pick = acctManual && accs.some(x => norm(x.code) === curCode) ? curCode : autoCode;
