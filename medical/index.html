@@ -1005,7 +1005,7 @@ function loadPeople() {
   budget('getPeople', []).then(res => { const list = (res && res.people) || []; if (!list.length) return; people = list; buildLists(); render(); }).catch(() => {});
 }
 function loadStaff() {
-  const c = lsJ('med_staff_v1'); if (c && c.list && c.list.length && Date.now() - (c.ts || 0) < 6 * 3600 * 1000) return;
+  const c = lsJ('med_staff_v1'); if (c && c.list && c.list.length && Date.now() - (c.ts || 0) < 20 * 60 * 1000) return;
   const auth = { name: ls('pea_aoluek_username') || '', pass: ls('pea_aoluek_password') || '' };
   if (!auth.name) return;
   fetch(ST_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: 'st', args: [{ action: 'people', auth }] }) })
