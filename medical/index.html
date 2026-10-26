@@ -113,13 +113,14 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 
 .pbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;color:var(--muted)}
 
-.sheet{width:210mm;height:297mm;background:var(--paper);color:var(--ink);transform-origin:top left;
+.sheet{width:210mm;height:296mm;overflow:hidden;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);transform-origin:top left;
   box-shadow:0 2px 18px rgba(40,10,40,.18);padding:7.5mm 7.5mm 5mm;font-family:var(--doc);font-size:10.4pt;line-height:1.42}
-.box{border:1.2px solid var(--ink);display:flex;flex-direction:column}
+.box{border:1.2px solid var(--ink);display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
+.box>*{flex-shrink:0}
 .hd{text-align:center;border-bottom:1.2px solid var(--ink);padding:2mm 0 1.5mm}
 .hd img{width:15mm;height:auto;display:block;margin:0 auto 1mm}
 .hd b{display:block;font-size:14pt;line-height:1.35}
-.sec1{padding:1.6mm 3mm 1mm;border-bottom:1.2px solid var(--ink)}
+.sec1{padding:1.6mm 3mm 1mm;border-bottom:1.2px solid var(--ink);flex-grow:1;display:flex;flex-direction:column;justify-content:space-around}
 .ln{display:flex;align-items:baseline;gap:1.2mm;white-space:nowrap;min-height:6mm}
 .ln.ind{padding-left:9mm}
 .ln.ind2{padding-left:11mm}
@@ -154,7 +155,7 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 .sig3 .line{border-bottom:1px dotted var(--ink);height:5mm}
 .sig3 .dt{display:flex;justify-content:center;gap:1mm;margin-top:.5mm}
 .sig3 .dt span{border-bottom:1px dotted var(--ink);width:10mm}
-.foot{font-size:10.5pt;margin-top:1.2mm;display:flex;justify-content:space-between}
+.foot{flex-shrink:0;font-size:10.5pt;margin-top:1.2mm;display:flex;justify-content:space-between}
 .ref{font-size:9pt}
 
 
@@ -197,15 +198,16 @@ table.h small{color:var(--muted);display:block}
 @media (max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:420px){.g{grid-template-columns:1fr}}
 @media print{
-  @page{size:A4;margin:0}
-  body{background:#fff!important;padding:0!important}
+  @page{size:A4 portrait;margin:0}
+  html,body{width:210mm;height:296mm;margin:0!important;padding:0!important;overflow:hidden!important;background:#fff!important}
   body>*:not(#app){display:none!important}
   header.top,.tabs,.form,.pbar,.views,#hist,#loginView,.toast{display:none!important}
   #app,#newView{display:block!important}
   main{display:block!important}
   .preview{display:block!important;position:static}
   .scaler{height:auto!important;overflow:visible}
-  .sheet{transform:none!important;box-shadow:none!important}
+  #app,#newView,main,.preview,.scaler{margin:0!important;padding:0!important;border:0!important}
+  .sheet{transform:none!important;box-shadow:none!important;page-break-after:avoid;break-after:avoid;break-inside:avoid}
   .hl .v.has{background:none!important}
 }
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
@@ -824,10 +826,11 @@ function fitText() {
   const paper = $('paper'), sheet = $('sheet'); if (!paper || !paper.offsetWidth) return;
   // ความสูง: ถ้าเนื้อหายาวเกิน 1 หน้า A4 ค่อยๆ ย่อทั้งใบ
   sheet.style.fontSize = '';
-  const foot = sheet.querySelector('.foot'), cs = getComputedStyle(sheet);
-  const room = () => sheet.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (foot ? foot.offsetHeight + 4 : 0);
-  let fs = parseFloat(cs.fontSize), fmin = fs * 0.88;
-  while (paper.offsetHeight > room() && fs > fmin) { fs -= 0.25; sheet.style.fontSize = fs + 'px'; }
+  const cs = getComputedStyle(sheet), sec = paper.querySelector('.sec1');
+  // ความสูงจริงของเนื้อหา (ไม่นับช่องว่างที่ยืดให้เต็มหน้า)
+  const need = () => { sec.style.flexGrow = '0'; const h = [...paper.children].reduce((t, c) => t + c.offsetHeight, 0); sec.style.flexGrow = ''; return h; };
+  let fs = parseFloat(cs.fontSize), fmin = fs * 0.85;
+  while (need() > paper.clientHeight - 2 && fs > fmin) { fs -= 0.25; sheet.style.fontSize = fs + 'px'; }
   paper.querySelectorAll('.v, .sig .nm, .sig [data-k], .ln').forEach(el => { el.style.fontSize = ''; });
   paper.querySelectorAll('.v, .sig .nm, .sig [data-k]').forEach(el => {
     let f = parseFloat(getComputedStyle(el).fontSize), min = f * 0.62;
