@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<script src="contractor-shim.js?v=1"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Contractor Portal — PEA CCL</title>
+<meta name="theme-color" content="#0D2B5E">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+* { font-family: 'Sarabun', sans-serif; box-sizing: border-box; }
+:root { --pea-navy:#0D2B5E; --pea-gold:#F5A623; --pea-teal:#00897B; --pea-red:#E53935; --bg:#F0F4F8; }
+html, body { overflow-x: hidden; overscroll-behavior-y: none; max-width: 100%; touch-action: pan-y; }
+body { background: var(--bg); }
+#loginScreen { background: linear-gradient(135deg,#0D2B5E 0%,#1A4A8A 50%,#0D6E6E 100%); min-height:100vh; }
+.login-card { background:rgba(255,255,255,0.97); border-radius:24px; box-shadow:0 32px 80px rgba(0,0,0,0.3); }
+.pea-logo-ring { width:80px;height:80px;background:linear-gradient(135deg,var(--pea-navy),#1A4A8A);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(13,43,94,0.4);margin:0 auto 16px; }
+.input-field { width:100%;border:2px solid #E2E8F0;border-radius:12px;padding:12px 16px 12px 44px;font-size:15px;transition:all 0.2s;background:#FAFBFC;color:#1A202C; }
+.input-field:focus { outline:none;border-color:var(--pea-navy);background:white;box-shadow:0 0 0 4px rgba(13,43,94,0.1); }
+.btn-login { background:linear-gradient(135deg,var(--pea-navy),#1A4A8A);color:white;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;width:100%;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 16px rgba(13,43,94,0.3); }
+.btn-login:hover { transform:translateY(-1px); }
+#appScreen { display:none; }
+.app-header { background:linear-gradient(135deg,var(--pea-navy) 0%,#1A4A8A 100%);color:white;padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(13,43,94,0.3); }
+.status-badge { display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600; }
+.status-รับเรื่อง { background:#DBEAFE;color:#1E40AF; }
+.status-สำรวจงาน { background:#FEF3C7;color:#92400E; }
+.status-ดำเนินงาน { background:#D1FAE5;color:#065F46; }
+.status-ตรวจรับงาน { background:#EDE9FE;color:#5B21B6; }
+.status-ยกเลิก { background:#FEE2E2;color:#991B1B; }
+.job-card { background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:16px;margin-bottom:12px;cursor:pointer;border:2px solid transparent;transition:all 0.2s; }
+.job-card:hover { border-color:var(--pea-navy);transform:translateY(-1px); }
+#detailPanel { position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+#detailPanel.open { transform:translateX(0); }
+.progress-track { background:#E2E8F0;border-radius:99px;height:8px;overflow:hidden; }
+.progress-fill { height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pea-teal),#26A69A);transition:width 0.5s ease; }
+.update-card { border-left:3px solid var(--pea-teal);background:white;border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:10px; }
+.update-card.problem { border-color:var(--pea-red); }
+.update-card.delivery { border-color:var(--pea-gold); }
+#updateSheet { position:fixed;bottom:0;left:0;right:0;z-index:300;background:white;border-radius:24px 24px 0 0;padding:24px 20px 40px;box-shadow:0 -8px 40px rgba(0,0,0,0.15);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);max-height:90vh;overflow-y:auto; }
+#updateSheet.open { transform:translateY(0); }
+#sheetOverlay { position:fixed;inset:0;z-index:290;background:rgba(0,0,0,0.4);display:none; }
+#sheetOverlay.open { display:block; }
+textarea.input-field { padding-left:16px;resize:none;min-height:90px; }
+.tab-btn { padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#64748B;transition:all 0.2s; }
+.tab-btn.active { background:var(--pea-navy);color:white; }
+.spinner { width:20px;height:20px;border:3px solid #E2E8F0;border-top-color:var(--pea-navy);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.empty-state { text-align:center;padding:60px 20px;color:#94A3B8; }
+.empty-state i { font-size:56px;margin-bottom:16px;display:block; }
+select.input-field { padding-left:16px; }
+@keyframes slideFadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.job-card { animation:slideFadeIn 0.3s ease both; }
+/* matPanel states */
+#matPanel { transform: translateY(100%); }
+#matPanel.mat-open { transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="flex items-center justify-center min-h-screen px-4">
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white opacity-5"></div>
+    <div class="absolute bottom-10 -left-20 w-96 h-96 rounded-full bg-white opacity-5"></div>
+  </div>
+  <div class="login-card w-full max-w-sm p-8 relative">
+    <div class="pea-logo-ring"><i class="fa-solid fa-bolt text-yellow-400 text-2xl"></i></div>
+    <div class="text-center mb-8">
+      <h1 class="text-2xl text-gray-800" style="font-weight:800;">Contractor Portal</h1>
+      <p class="text-sm text-gray-400 mt-1">ระบบติดตามงานผู้รับจ้าง · PEA CCL</p>
+    </div>
+    <div class="space-y-4">
+      <div class="relative">
+        <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input id="loginUser" type="text" class="input-field" placeholder="ชื่อผู้ใช้">
+      </div>
+      <div class="relative">
+        <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input id="loginPass" type="password" class="input-field" placeholder="รหัสผ่าน">
+      </div>
+      <button class="btn-login mt-2" onclick="doLogin()">
+        <span id="loginBtnText">เข้าสู่ระบบ</span>
+      </button>
+    </div>
+    <p class="text-center text-xs text-gray-400 mt-6">ติดต่อผู้ดูแลระบบ PEA เพื่อขอบัญชีผู้ใช้</p>
+  </div>
+</div>
+
+<div id="appScreen">
+  <div class="app-header">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center">
+        <i class="fa-solid fa-bolt text-blue-900 text-sm"></i>
+      </div>
+      <div>
+        <div class="text-sm" style="font-weight:700;line-height:1.2">Contractor Portal</div>
+        <div class="text-xs opacity-60" id="headerCompany">—</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="loadJobs()" class="text-white opacity-70 hover:opacity-100 transition text-sm relative">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+      <button onclick="showNotifications()" class="text-white opacity-70 hover:opacity-100 transition text-sm relative">
+        <i class="fa-solid fa-bell"></i>
+        <span id="notifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center" style="font-size:9px;">0</span>
+      </button>
+      <button onclick="doLogout()" class="text-white opacity-70 hover:opacity-100 transition text-sm"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </div>
+
+  <div class="bg-white border-b border-gray-100 px-4 py-2 sticky top-[60px] z-50">
+    <div class="relative mb-2">
+      <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      <input id="searchInput" type="text" placeholder="ค้นหาชื่องาน, เลขที่รับ, หมายเลขงาน..."
+        class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 transition"
+        oninput="renderJobs()">
+    </div>
+    <div class="flex gap-1 overflow-x-auto pb-1">
+      <button class="tab-btn active shrink-0" id="tabDashboard" onclick="switchMainTab('dashboard')">
+        <i class="fa-solid fa-chart-pie mr-1"></i>ภาพรวม
+      </button>
+      <button class="tab-btn shrink-0" id="tabAll" onclick="switchMainTab('all')">
+        ทั้งหมด <span id="badgeAll" class="ml-1 text-xs bg-gray-200 text-gray-600 px-1.5 rounded-full"></span>
+      </button>
+      <button class="tab-btn shrink-0" id="tabActive" onclick="switchMainTab('active')">
+        ดำเนินการ <span id="badgeActive" class="ml-1 text-xs bg-blue-100 text-blue-600 px-1.5 rounded-full"></span>
+      </button>
+      <button class="tab-btn shrink-0" id="tabInspect" onclick="switchMainTab('inspect')">
+        ตรวจรับงาน <span id="badgeInspect" class="ml-1 text-xs bg-purple-100 text-purple-600 px-1.5 rounded-full"></span>
+      </button>
+      <button class="tab-btn shrink-0" id="tabDone" onclick="switchMainTab('done')">
+        เสร็จสิ้น <span id="badgeDone" class="ml-1 text-xs bg-green-100 text-green-600 px-1.5 rounded-full"></span>
+      </button>
+      <button class="tab-btn shrink-0" id="tabOld" onclick="switchMainTab('old')">
+  <i class="fa-solid fa-box-archive mr-1"></i>งานเก่า
+</button>
+    </div>
+  </div>
+
+  <div id="dashboardPanel" class="p-4 pb-24 hidden"></div>
+  <div id="oldJobPanel" class="p-4 pb-24 hidden"></div>
+  <div class="p-4 pb-24" id="jobList">
+    <div class="empty-state"><div class="spinner mx-auto mb-4"></div><p class="text-sm">กำลังโหลดข้อมูล...</p></div>
+  </div>
+</div>
+
+<div id="detailPanel">
+  <div class="app-header">
+    <button onclick="closeDetail()" class="text-white text-lg w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition"><i class="fa-solid fa-arrow-left"></i></button>
+    <div class="flex-1 px-3"><div class="text-sm font-600 truncate" id="detailTitle">รายละเอียดงาน</div></div>
+    <div class="w-10">
+      <button onclick="printJobReport()" class="text-white opacity-70 hover:opacity-100 transition">
+        <i class="fa-solid fa-file-pdf"></i>
+      </button>
+    </div>
+  </div>
+  <div class="p-4 pb-32" id="detailContent"></div>
+</div>
+
+<!-- MATERIAL PANEL -->
+<div id="matOverlay" onclick="closeMatPanel()" style="position:fixed;inset:0;z-index:310;background:rgba(0,0,0,0.4);display:none;"></div>
+<div id="matPanel" style="position:fixed;bottom:0;left:0;right:0;z-index:320;background:white;border-radius:24px 24px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,0.15);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);max-height:92vh;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;">
+  <div style="padding:20px 20px 0;flex-shrink:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <h3 id="matPanelTitle" style="font-size:16px;font-weight:700;">🏗️ บันทึกข้อมูลวัสดุ</h3>
+      <button onclick="closeMatPanel()" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;border:none;cursor:pointer;"><i class="fa-solid fa-xmark text-gray-500"></i></button>
+    </div>
+  </div>
+  <div id="matPanelBody" style="padding:12px 20px 40px;overflow-y:auto;overflow-x:hidden;width:100%;"></div>
+</div>
+
+<div id="sheetOverlay" onclick="closeSheet()"></div>
+<div id="updateSheet">
+  <div class="flex justify-between items-center mb-5">
+    <h3 class="text-lg" style="font-weight:700;" id="sheetTitle">อัปเดตความคืบหน้า</h3>
+    <button onclick="closeSheet()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"><i class="fa-solid fa-xmark text-sm"></i></button>
+  </div>
+  <div id="sheetBody"></div>
+</div>
+
+<script>
+var _user = null;
+var _jobs = [];
+var _curJob = null;
+var _curTab = 'all';
+var _attachCounter = 0;
+var _loadingEl = null;
+
+function doLogin() {
+  var u = document.getElementById('loginUser').value.trim();
+  var p = document.getElementById('loginPass').value.trim();
+  if (!u || !p) { showToast('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน', 'error'); return; }
+  var btn = document.getElementById('loginBtnText');
+  btn.innerHTML = 'กำลังเข้าสู่ระบบ...';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = 'เข้าสู่ระบบ';
+      if (res.success) {
+        _user = res.user;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appScreen').style.display = 'block';
+        document.getElementById('headerCompany').textContent = _user.company;
+        loadJobs();
+      } else {
+        showToast(res.error || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.textContent = 'เข้าสู่ระบบ';
+      showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+    })
+    .loginContractor(u, p);
+}
+
+document.getElementById('loginPass').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  Swal.fire({
+    title: 'ออกจากระบบ?', icon: 'question',
+    showCancelButton: true, confirmButtonText: 'ออก', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0D2B5E', returnFocus: false
+  }).then(function(r) {
+    if (!r.isConfirmed) return;
+    _user = null; _jobs = [];
+    stopNotificationPolling();
+    document.getElementById('appScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  });
+}
+
+function loadJobs() {
+  document.getElementById('jobList').innerHTML = '<div class="empty-state"><div class="spinner mx-auto mb-4"></div><p class="text-sm">กำลังโหลดข้อมูล...</p></div>';
+  google.script.run
+    .withSuccessHandler(function(jobs) {
+      _jobs = jobs || [];
+      _lastCheckTime = new Date().toISOString();
+      // sync _curJob ถ้ากำลังดูงานอยู่
+      if (_curJob) {
+        var updated = _jobs.find(function(j) { return j.id === _curJob.id; });
+        if (updated) _curJob = updated;
+      }
+      renderJobs();
+      updateBadges();
+      startNotificationPolling();
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById('jobList').innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation text-red-400"></i><p class="text-sm text-red-400">โหลดข้อมูลไม่สำเร็จ</p><button onclick="loadJobs()" class="mt-3 text-sm text-blue-500 underline">ลองใหม่</button></div>';
+    })
+    .getContractorJobs(_user.company);
+}
+
+function updateBadges() {
+  var active  = _jobs.filter(function(j) { return !['ตรวจรับงาน','อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ','ยกเลิก'].includes(j.status); });
+  var inspect = _jobs.filter(function(j) { return j.status === 'ตรวจรับงาน'; });
+  var done    = _jobs.filter(function(j) { return ['อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ'].includes(j.status); });
+  document.getElementById('badgeAll').textContent     = _jobs.length;
+  document.getElementById('badgeActive').textContent  = active.length;
+  document.getElementById('badgeInspect').textContent = inspect.length;
+  document.getElementById('badgeDone').textContent    = done.length;
+}
+
+function switchMainTab(tab) {
+  _curTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  var tabMap = { dashboard:'Dashboard', all:'All', active:'Active', inspect:'Inspect', done:'Done', old:'Old' };
+  var el = document.getElementById('tab' + tabMap[tab]);
+  if (el) el.classList.add('active');
+  var dashPanel = document.getElementById('dashboardPanel');
+  var jobPanel  = document.getElementById('jobList');
+  var oldPanel = document.getElementById('oldJobPanel');
+  if (tab === 'dashboard') {
+    dashPanel.classList.remove('hidden');
+    jobPanel.classList.add('hidden');
+    oldPanel.classList.add('hidden');
+    renderDashboard();
+  } else if (tab === 'old') {
+    dashPanel.classList.add('hidden');
+    jobPanel.classList.add('hidden');
+    oldPanel.classList.remove('hidden');
+    renderOldJobs();
+  } else {
+    dashPanel.classList.add('hidden');
+    jobPanel.classList.remove('hidden');
+    oldPanel.classList.add('hidden');
+    _curTab = tab;
+    renderJobs();
+  }
+}
+
+function renderDashboard() {
+  var total    = _jobs.length;
+  var active   = _jobs.filter(function(j) { return !['ตรวจรับงาน','อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ','ยกเลิก'].includes(j.status); });
+  var inspect  = _jobs.filter(function(j) { return j.status === 'ตรวจรับงาน'; });
+  var done     = _jobs.filter(function(j) { return ['อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ'].includes(j.status); });
+  var cancelled = _jobs.filter(function(j) { return j.status === 'ยกเลิก'; });
+  var today = new Date();
+  var near = _jobs.filter(function(j) {
+    if (!j.payDate || ['อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ','ยกเลิก'].includes(j.status)) return false;
+    var d = new Date(j.payDate);
+    if (isNaN(d.getTime())) return false;
+    var diff = Math.ceil((d - today) / 86400000);
+    return diff >= 0 && diff <= 30;
+  }).sort(function(a,b) { return new Date(a.payDate) - new Date(b.payDate); });
+
+  var totalProgress = 0;
+  _jobs.forEach(function(j) {
+    var updates = Array.isArray(j.updates) ? j.updates : [];
+    var lastUpd = updates.length ? updates[updates.length-1] : null;
+    totalProgress += lastUpd && lastUpd.progress ? parseInt(lastUpd.progress) : 0;
+  });
+  var avgProgress = total > 0 ? Math.round(totalProgress / total) : 0;
+
+  var nearHtml = near.length === 0
+    ? '<div class="text-center py-4 text-gray-400 text-sm"><i class="fa-solid fa-circle-check text-green-400 text-2xl mb-2 block"></i>ไม่มีงานใกล้กำหนดส่ง</div>'
+    : near.map(function(j) {
+        var d = new Date(j.payDate);
+        var diff = Math.ceil((d - today) / 86400000);
+        var color = diff <= 7 ? 'text-red-500 bg-red-50 border-red-200' : diff <= 14 ? 'text-orange-500 bg-orange-50 border-orange-200' : 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return '<div class="flex items-center justify-between p-3 rounded-xl border mb-2 ' + color + ' cursor-pointer" onclick="switchMainTab(\'all\')">' +
+          '<div class="flex-1"><div class="text-sm font-600">' + (j.jobName||'-') + '</div><div class="text-xs opacity-70 mt-0.5">' + (j.receiveNo||'-') + ' · ' + formatDateThai(j.payDate) + '</div></div>' +
+          '<div class="text-center shrink-0 ml-3"><div class="text-lg" style="font-weight:800;">' + diff + '</div><div class="text-xs">วัน</div></div></div>';
+      }).join('');
+
+  var progressPerJob = _jobs.filter(function(j) { return !['ปิดงานแล้วเสร็จ','ยกเลิก'].includes(j.status); }).map(function(j) {
+    var updates = Array.isArray(j.updates) ? j.updates : [];
+    var lastUpd = updates.length ? updates[updates.length-1] : null;
+    var prog = lastUpd && lastUpd.progress ? parseInt(lastUpd.progress) : 0;
+    return '<div><div class="flex justify-between text-xs text-gray-500 mb-1"><span class="truncate flex-1 pr-2">' + (j.jobName||'-') + '</span><span class="text-teal-600 shrink-0">' + prog + '%</span></div><div class="progress-track" style="height:5px;"><div class="progress-fill" style="width:' + prog + '%"></div></div></div>';
+  }).join('');
+
+  var statusBars = [
+    { label:'กำลังดำเนินการ', count:active.length,    color:'bg-teal-500'   },
+    { label:'รอตรวจรับ',      count:inspect.length,   color:'bg-purple-500' },
+    { label:'เสร็จสิ้น',      count:done.length,      color:'bg-green-500'  },
+    { label:'ยกเลิก',         count:cancelled.length, color:'bg-red-400'    },
+  ].map(function(s) {
+    var pct = total > 0 ? Math.round(s.count / total * 100) : 0;
+    return '<div class="mb-3"><div class="flex justify-between text-xs text-gray-500 mb-1"><span>' + s.label + '</span><span style="font-weight:600">' + s.count + ' งาน (' + pct + '%)</span></div><div class="progress-track"><div class="' + s.color + ' h-full rounded-full transition-all" style="width:' + pct + '%"></div></div></div>';
+  }).join('');
+
+  document.getElementById('dashboardPanel').innerHTML =
+    '<div class="grid grid-cols-2 gap-3 mb-4">' +
+      '<div class="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-blue-500"><div class="text-2xl text-blue-600" style="font-weight:800;">' + total + '</div><div class="text-xs text-gray-500 mt-1">งานทั้งหมด</div></div>' +
+      '<div class="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-teal-500"><div class="text-2xl text-teal-600" style="font-weight:800;">' + active.length + '</div><div class="text-xs text-gray-500 mt-1">กำลังดำเนินการ</div></div>' +
+      '<div class="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-purple-500"><div class="text-2xl text-purple-600" style="font-weight:800;">' + inspect.length + '</div><div class="text-xs text-gray-500 mt-1">รอตรวจรับ</div></div>' +
+      '<div class="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-500"><div class="text-2xl text-green-600" style="font-weight:800;">' + done.length + '</div><div class="text-xs text-gray-500 mt-1">เสร็จสิ้น</div></div>' +
+    '</div>' +
+    '<div class="bg-white rounded-2xl p-4 mb-4 shadow-sm">' +
+      '<div class="flex justify-between items-center mb-3"><h3 class="text-sm text-gray-700" style="font-weight:700;"><i class="fa-solid fa-chart-line text-teal-500 mr-2"></i>ความคืบหน้าเฉลี่ย</h3><span class="text-xl text-teal-600" style="font-weight:800;">' + avgProgress + '%</span></div>' +
+      '<div class="progress-track mb-3"><div class="progress-fill" style="width:' + avgProgress + '%"></div></div>' +
+      '<div class="space-y-2 mt-3">' + progressPerJob + '</div>' +
+    '</div>' +
+    '<div class="bg-white rounded-2xl p-4 mb-4 shadow-sm">' +
+      '<h3 class="text-sm text-gray-700 mb-3" style="font-weight:700;"><i class="fa-solid fa-clock text-orange-500 mr-2"></i>งานใกล้กำหนดส่ง (30 วัน)<span class="ml-2 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">' + near.length + ' งาน</span></h3>' +
+      nearHtml +
+    '</div>' +
+    '<div class="bg-white rounded-2xl p-4 mb-4 shadow-sm" id="aptSection">' +
+      '<h3 class="text-sm text-gray-700 mb-3" style="font-weight:700;"><i class="fa-solid fa-calendar-check text-purple-500 mr-2"></i>นัดหมายตรวจงาน</h3>' +
+      '<div id="aptList"><div class="text-center text-gray-400 text-sm py-3">กำลังโหลด...</div></div>' +
+    '</div>' +
+    '<div class="bg-white rounded-2xl p-4 shadow-sm">' +
+      '<h3 class="text-sm text-gray-700 mb-3" style="font-weight:700;"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i>สัดส่วนงานตามสถานะ</h3>' +
+      statusBars +
+    '</div>';
+
+  google.script.run
+    .withSuccessHandler(function(apts) {
+      var aptEl = document.getElementById('aptList');
+      if (!aptEl) return;
+      var now = new Date();
+      var upcoming = (apts || []).filter(function(a) {
+        var d = new Date(a.appointDate);
+        return !isNaN(d.getTime()) && d >= now;
+      }).sort(function(a,b) { return new Date(a.appointDate) - new Date(b.appointDate); });
+      if (upcoming.length === 0) {
+        aptEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-3"><i class="fa-solid fa-calendar-xmark text-2xl mb-1 block"></i>ไม่มีนัดหมาย</div>';
+        return;
+      }
+      aptEl.innerHTML = upcoming.map(function(a) {
+        var d = new Date(a.appointDate);
+        var diff = Math.ceil((d - now) / 86400000);
+        var color = diff <= 1 ? 'border-red-300 bg-red-50' : diff <= 3 ? 'border-orange-300 bg-orange-50' : 'border-purple-200 bg-purple-50';
+        var badge = diff === 0 ? '<span class="text-xs font-bold text-red-600">วันนี้!</span>' : diff === 1 ? '<span class="text-xs font-bold text-red-500">พรุ่งนี้</span>' : '<span class="text-xs text-purple-600" style="font-weight:600">อีก ' + diff + ' วัน</span>';
+        return '<div class="flex items-center justify-between p-3 rounded-xl border mb-2 ' + color + '">' +
+          '<div class="flex-1"><div class="text-sm" style="font-weight:600">' + (a.jobName||'-') + '</div>' +
+          '<div class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-calendar mr-1"></i>' + formatAptDate(a.appointDate) + ' <i class="fa-solid fa-clock ml-1 mr-1"></i>' + a.appointTime + ' น.</div>' +
+          (a.note ? '<div class="text-xs text-gray-400 mt-0.5">' + a.note + '</div>' : '') +
+          '</div><div class="ml-3 shrink-0">' + badge + '</div></div>';
+      }).join('');
+    })
+    .withFailureHandler(function() {})
+    .getAppointments(_user.company);
+}
+
+function renderJobs() {
+  var keyword = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').trim().toLowerCase();
+  var filtered = _jobs;
+  if (_curTab === 'active')  filtered = _jobs.filter(function(j) { return !['ตรวจรับงาน','อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ','ยกเลิก'].includes(j.status); });
+  if (_curTab === 'inspect') filtered = _jobs.filter(function(j) { return j.status === 'ตรวจรับงาน'; });
+  if (_curTab === 'done')    filtered = _jobs.filter(function(j) { return ['อนุมัติ/เสร็จสิ้น','ปิดงานแล้วเสร็จ'].includes(j.status); });
+  if (keyword) {
+    filtered = filtered.filter(function(j) {
+      return (j.jobName||'').toLowerCase().includes(keyword) ||
+             (j.receiveNo||'').toLowerCase().includes(keyword) ||
+             (j.jobIds||'').toLowerCase().includes(keyword) ||
+             (j.location||'').toLowerCase().includes(keyword);
+    });
+  }
+  if (!filtered.length) {
+    document.getElementById('jobList').innerHTML = '<div class="empty-state"><i class="fa-solid fa-clipboard-list"></i><p style="font-weight:600">' + (keyword ? 'ไม่พบรายการที่ค้นหา' : 'ไม่พบรายการงาน') + '</p><p class="text-sm mt-1">' + (keyword ? 'ลองค้นหาด้วยคำอื่น' : 'ยังไม่มีงานที่ได้รับมอบหมาย') + '</p></div>';
+    return;
+  }
+  document.getElementById('jobList').innerHTML = filtered.map(function(job, idx) {
+    var updates  = Array.isArray(job.updates) ? job.updates : [];
+    var lastUpd  = updates.length ? updates[updates.length-1] : null;
+    var progress = lastUpd && lastUpd.progress ? parseInt(lastUpd.progress) : 0;
+    var sc = 'status-' + (job.status||'').replace('/','\/');
+    var isInspect = job.status === 'ตรวจรับงาน';
+    return '<div class="job-card' + (isInspect ? ' border-purple-300' : '') + '" style="animation-delay:' + (idx*0.05) + 's" onclick="openDetail(' + job.id + ')">' +
+      '<div class="flex justify-between items-start gap-2 mb-3">' +
+        '<div class="flex-1"><div style="font-weight:700;" class="text-gray-800 text-sm leading-snug">' + (job.jobName||'-') + '</div>' +
+        '<div class="text-xs text-gray-400 mt-0.5 font-mono">' + (job.receiveNo||'-') + '</div>' +
+        (job.jobIds ? '<div class="text-xs text-gray-400 font-mono"><i class="fa-solid fa-hashtag text-gray-300 mr-1"></i>' + job.jobIds + '</div>' : '') + '</div>' +
+        '<span class="status-badge ' + sc + ' shrink-0">' + (job.status||'-') + '</span>' +
+      '</div>' +
+      '<div class="flex flex-wrap gap-2 text-xs text-gray-500 mb-3">' +
+        '<span><i class="fa-solid fa-map-marker-alt text-red-400 mr-1"></i>' + (job.location||'-') + '</span>' +
+        '<span><i class="fa-solid fa-calendar text-blue-400 mr-1"></i>' + formatDateThai(job.receiveDate) + '</span>' +
+      '</div>' +
+      (isInspect ? '<div class="bg-purple-100 text-purple-700 text-xs rounded-lg px-3 py-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i><span>งานอยู่ระหว่างการตรวจรับ</span></div>' : '') +
+      (progress > 0 ? '<div class="mb-2"><div class="flex justify-between text-xs text-gray-400 mb-1"><span>ความคืบหน้า</span><span class="text-teal-600" style="font-weight:600">' + progress + '%</span></div><div class="progress-track"><div class="progress-fill" style="width:' + progress + '%"></div></div></div>' : '') +
+      '<div class="flex justify-between items-center mt-2">' +
+        '<span class="text-xs text-gray-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i>' + (lastUpd ? formatDate(lastUpd.timestamp) : 'ยังไม่มีการอัปเดต') + '</span>' +
+        '<span class="text-xs text-blue-600" style="font-weight:600">' + updates.length + ' การอัปเดต <i class="fa-solid fa-chevron-right ml-1"></i></span>' +
+      '</div></div>';
+  }).join('');
+}
+
+function openDetail(jobId) {
+  _curJob = _jobs.find(function(j) { return j.id === jobId; });
+  if (!_curJob) return;
+  document.getElementById('detailTitle').textContent = _curJob.receiveNo || 'รายละเอียดงาน';
+  renderDetail();
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  _curJob = null;
+}
+
+function renderDetail() {
+  var job = _curJob;
+  var updates = Array.isArray(job.updates) ? job.updates : [];
+  var lastUpd = updates.length ? updates[updates.length-1] : null;
+  var progress = lastUpd && lastUpd.progress ? parseInt(lastUpd.progress) : 0;
+  var sc = 'status-' + (job.status||'').replace('/','\/');
+
+  var histHtml = updates.length === 0
+    ? '<div class="text-center py-6 text-gray-400 text-sm"><i class="fa-solid fa-inbox text-3xl mb-2 block"></i>ยังไม่มีการอัปเดต</div>'
+    : [].concat(updates).reverse().map(function(u) {
+        if (u.updateType === 'pea_reply') {
+          return '<div class="update-card" style="border-left-color:#0D2B5E;background:#EFF6FF;">' +
+            '<div class="flex justify-between items-start mb-1"><span class="text-xs" style="font-weight:700;color:#0D2B5E;">💬 PEA ตอบกลับ</span><span class="text-xs text-gray-400">' + formatDate(u.timestamp) + '</span></div>' +
+            '<div class="text-sm" style="color:#1e3a5f;font-weight:600;">' + (u.message||'-') + '</div>' +
+            '<div class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-user-tie mr-1"></i>' + (u.peaName||'-') + '</div></div>';
+        }
+        var typeLabel = u.updateType==='progress' ? '📊 ความคืบหน้า' : u.updateType==='delivery' ? '🚚 แจ้งส่งมอบ' : u.updateType==='problem' ? '⚠️ แจ้งปัญหา' : '📝 บันทึก';
+        var typeColor = u.updateType==='problem' ? 'text-red-500' : u.updateType==='delivery' ? 'text-yellow-600' : u.updateType==='progress' ? 'text-teal-600' : 'text-gray-500';
+        var attachHtml = (u.attachments && u.attachments.length) ? '<div class="flex flex-wrap gap-2 mt-2">' + u.attachments.map(function(a) { return '<a href="' + a.fileUrl + '" target="_blank" class="flex items-center gap-1 text-xs bg-blue-50 text-blue-500 px-2 py-1 rounded-lg hover:bg-blue-100 transition"><i class="fa-solid fa-paperclip"></i> ' + a.fileName + '</a>'; }).join('') + '</div>' : '';
+        return '<div class="update-card ' + (u.updateType==='problem'?'problem':u.updateType==='delivery'?'delivery':'') + '">' +
+          '<div class="flex justify-between items-start mb-1"><span class="text-xs ' + typeColor + '" style="font-weight:600">' + typeLabel + (u.progress ? ' · ' + u.progress + '%' : '') + '</span><span class="text-xs text-gray-400">' + formatDate(u.timestamp) + '</span></div>' +
+          '<div class="text-sm text-gray-700">' + (u.note||'-') + '</div>' +
+          attachHtml +
+          (u.deliveryDate ? '<div class="text-xs text-yellow-600 mt-1"><i class="fa-solid fa-calendar-check mr-1"></i>วันส่งมอบ: ' + u.deliveryDate + '</div>' : '') +
+          '</div>';
+      }).join('');
+
+  // ===== MATERIALS SECTION =====
+  var materialsHtml = (function() {
+    var mats = Array.isArray(job.contractorMaterials) ? job.contractorMaterials : [];
+    var allPoles = [];
+    var allTransformers = [];
+    mats.forEach(function(entry) {
+      (entry.poles || []).forEach(function(p) { allPoles.push(p); });
+      if (entry.transformer) allTransformers.push(entry.transformer);
+    });
+    var hasMats = allPoles.length > 0 || allTransformers.length > 0;
+
+    var html = '<div class="mt-3 pt-3 border-t border-gray-100">' +
+      '<div class="text-xs text-gray-400 mb-2"><i class="fa-solid fa-wrench text-gray-400 mr-1"></i>วัสดุ</div>';
+    var hasAny = false;
+
+    // สายไฟจาก baseMat แยกบรรทัด กรองเสา+หม้อแปลงออกถ้ามีจาก contractorMats
+    if (job.materials && job.materials !== '-') {
+      var parts = [];
+      var temp = ''; var depth = 0; var str = job.materials;
+      for (var i = 0; i < str.length; i++) {
+        if (str[i] === '(') depth++;
+        else if (str[i] === ')') depth--;
+        if (str[i] === ',' && depth === 0 && str[i+1] === ' ') { parts.push(temp.trim()); temp = ''; i++; }
+        else temp += str[i];
+      }
+      if (temp.trim()) parts.push(temp.trim());
+      parts.forEach(function(item) {
+        if (item.indexOf('เสา:') === 0 && hasMats) return;
+        if (item.indexOf('หม้อแปลง:') === 0 && allTransformers.length > 0) return;
+        html += '<div class="flex items-start gap-2 py-1.5 border-b border-gray-50">' +
+          '<i class="fa-solid fa-circle-dot text-blue-400 text-xs mt-1 flex-shrink-0"></i>' +
+          '<span class="text-sm text-gray-700">' + item + '</span></div>';
+        hasAny = true;
+      });
+    }
+
+    // เสาแยกตามขนาด — แต่ละขนาดแยกบรรทัด
+    var poleByType = {};
+    allPoles.forEach(function(p) {
+      var t = p.type || 'ไม่ระบุขนาด';
+      if (!poleByType[t]) poleByType[t] = [];
+      poleByType[t].push(p);
+    });
+    Object.keys(poleByType).forEach(function(type) {
+      var poles = poleByType[type];
+      html += '<div class="py-2 border-b border-gray-50">' +
+        '<div class="flex items-center gap-2 mb-1.5">' +
+          '<i class="fa-solid fa-circle-dot text-amber-400 text-xs flex-shrink-0"></i>' +
+          '<span class="text-sm font-bold text-gray-700">' + type + '</span>' +
+          '<span class="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">' + poles.length + ' ต้น</span>' +
+        '</div>' +
+        '<div class="pl-5 flex flex-wrap gap-1.5" style="max-width:100%;overflow-x:hidden;">' +
+        poles.map(function(p) {
+          return '<span class="inline-flex items-center gap-1 text-xs bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-lg font-mono">' +
+            '<i class="fa-solid fa-hashtag text-amber-400 text-[10px]"></i>' +
+            (p.no || '—') +
+            (p.location ? '<span class="text-amber-400 mx-1">·</span><span class="font-sans text-amber-600">' + p.location + '</span>' : '') +
+            (p.lat && p.lng ? '<a href="https://maps.google.com/?q=' + p.lat + ',' + p.lng + '" target="_blank" class="text-blue-400 ml-1"><i class="fa-solid fa-location-dot text-[10px]"></i></a>' : '') +
+          '</span>';
+        }).join('') +
+        '</div></div>';
+      hasAny = true;
+    });
+
+    // หม้อแปลง + PEA# — แต่ละเครื่องแยกบรรทัด
+    allTransformers.forEach(function(tr) {
+      html += '<div class="py-2 border-b border-gray-50 last:border-0">' +
+        '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+          '<i class="fa-solid fa-bolt text-yellow-500 flex-shrink-0"></i>' +
+          '<span class="text-sm font-bold text-gray-700">หม้อแปลง ' + (tr.kva||'-') + ' KVA</span>' +
+          (tr.peaNo ? '<span class="text-xs bg-yellow-50 border border-yellow-300 text-yellow-800 px-2 py-0.5 rounded-lg font-mono"><i class="fa-solid fa-tag text-yellow-400 mr-1"></i>PEA# ' + tr.peaNo + '</span>' : '') +
+        '</div>' +
+        (tr.location ? '<div class="pl-5 text-xs text-gray-500"><i class="fa-solid fa-warehouse mr-1 text-amber-400"></i>' + tr.location + '</div>' : '') +
+        (tr.lat && tr.lng ? '<a href="https://maps.google.com/?q=' + tr.lat + ',' + tr.lng + '" target="_blank" class="pl-5 text-xs text-blue-500 mt-0.5 inline-block"><i class="fa-solid fa-map-location-dot mr-1"></i>ดูพิกัด</a>' : '') +
+      '</div>';
+      hasAny = true;
+    });
+
+    if (!hasAny) return '';
+    html += '</div>';
+    return html;
+  })();
+
+  document.getElementById('detailContent').innerHTML =
+    '<div class="bg-white rounded-2xl p-4 mb-4 shadow-sm">' +
+      '<div class="flex justify-between items-start mb-3"><h2 class="text-base text-gray-800 flex-1 pr-2" style="font-weight:700;">' + (job.jobName||'-') + '</h2><span class="status-badge ' + sc + ' shrink-0">' + (job.status||'-') + '</span></div>' +
+      '<div class="grid grid-cols-2 gap-3 text-sm">' +
+        '<div><div class="text-xs text-gray-400 mb-0.5">เลขที่รับ</div><div class="font-mono text-xs text-gray-700" style="font-weight:600">' + (job.receiveNo||'-') + '</div></div>' +
+        '<div><div class="text-xs text-gray-400 mb-0.5">ประเภทงบ</div><div class="text-gray-700" style="font-weight:600">' + (job.budgetType||'-') + '</div></div>' +
+        '<div><div class="text-xs text-gray-400 mb-0.5">วันที่รับ</div><div class="text-gray-700" style="font-weight:600">' + formatDateThai(job.receiveDate) + '</div></div>' +
+        '<div><div class="text-xs text-gray-400 mb-0.5">ผู้ควบคุมงาน</div><div class="text-gray-700" style="font-weight:600">' + (job.assignee||'-') + '</div></div>' +
+      '</div>' +
+      (job.jobIds ? '<div class="mt-3 pt-3 border-t border-gray-100"><div class="text-xs text-gray-400 mb-1"><i class="fa-solid fa-hashtag text-gray-400 mr-1"></i>หมายเลขงาน</div><div class="text-sm text-gray-700 font-mono">' + job.jobIds + '</div></div>' : '') +
+      (job.location ? '<div class="mt-3 pt-3 border-t border-gray-100"><div class="text-xs text-gray-400 mb-1"><i class="fa-solid fa-map-marker-alt text-red-400 mr-1"></i>สถานที่</div><div class="text-sm text-gray-700">' + job.location + '</div>' + (job.coordinates ? '<a href="https://maps.google.com/?q=' + job.coordinates + '" target="_blank" class="text-xs text-blue-500 mt-1 inline-block"><i class="fa-solid fa-map mr-1"></i>เปิดใน Google Maps</a>' : '') + '</div>' : '') +
+      materialsHtml +
+    '</div>' +
+    '<div class="bg-white rounded-2xl p-4 mb-4 shadow-sm">' +
+      '<div class="flex justify-between items-center mb-3"><h3 class="text-gray-700 text-sm" style="font-weight:700;"><i class="fa-solid fa-chart-line text-teal-500 mr-2"></i>ความคืบหน้า</h3><span class="text-lg text-teal-600" style="font-weight:800;">' + progress + '%</span></div>' +
+      '<div class="progress-track mb-1"><div class="progress-fill" style="width:' + progress + '%"></div></div>' +
+      '<div class="flex justify-between text-xs text-gray-400 mt-1"><span>0%</span><span>50%</span><span>100%</span></div>' +
+    '</div>' +
+    '<div class="grid grid-cols-2 gap-3 mb-4">' +
+      '<button onclick="openUpdateSheet(\'progress\')" class="bg-teal-500 hover:bg-teal-600 text-white rounded-xl p-3 text-sm transition flex items-center justify-center gap-2" style="font-weight:600"><i class="fa-solid fa-chart-bar"></i> อัปเดตความคืบหน้า</button>' +
+      '<button onclick="openUpdateSheet(\'delivery\')" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-3 text-sm transition flex items-center justify-center gap-2" style="font-weight:600"><i class="fa-solid fa-truck"></i> แจ้งส่งมอบงาน</button>' +
+      '<button onclick="openUpdateSheet(\'problem\')" class="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-3 text-sm transition flex items-center justify-center gap-2" style="font-weight:600"><i class="fa-solid fa-triangle-exclamation"></i> แจ้งปัญหา</button>' +
+      '<button onclick="openUpdateSheet(\'note\')" class="bg-slate-500 hover:bg-slate-600 text-white rounded-xl p-3 text-sm transition flex items-center justify-center gap-2" style="font-weight:600"><i class="fa-solid fa-note-sticky"></i> บันทึกทั่วไป</button>' +
+      '<button onclick="openMaterialForm()" class="col-span-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl p-3 text-sm transition flex items-center justify-center gap-2" style="font-weight:600"><i class="fa-solid fa-hard-hat"></i> บันทึกข้อมูลวัสดุ (เสา/หม้อแปลง)</button>' +
+    '</div>' +
+    '<div class="bg-white rounded-2xl p-4 shadow-sm">' +
+      '<h3 class="text-gray-700 text-sm mb-3" style="font-weight:700;"><i class="fa-solid fa-clock-rotate-left text-blue-400 mr-2"></i>ประวัติการอัปเดต (' + updates.length + ')</h3>' +
+      histHtml +
+    '</div>';
+}
+
+function openUpdateSheet(type) {
+  var titles = { progress:'📊 อัปเดตความคืบหน้า', delivery:'🚚 แจ้งส่งมอบงาน', problem:'⚠️ แจ้งปัญหา/ขอขยายเวลา', note:'📝 บันทึกทั่วไป' };
+  document.getElementById('sheetTitle').textContent = titles[type] || 'อัปเดต';
+  var body = '';
+  if (type === 'progress') {
+    body = '<div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">ความคืบหน้า (%)</label><select id="su_progress" class="input-field" style="padding-left:16px"><option value="">-- เลือกความคืบหน้า --</option>' + [10,20,25,30,40,50,60,70,75,80,90,95,100].map(function(v){return '<option value="'+v+'">'+v+'%</option>';}).join('') + '</select></div><div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">รายละเอียด</label><textarea id="su_note" class="input-field" placeholder="อธิบายความคืบหน้าของงาน..."></textarea></div>';
+  } else if (type === 'delivery') {
+    body = '<div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">วันที่ส่งมอบงาน</label><div class="relative"><i class="fa-solid fa-calendar absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i><input id="su_deliveryDate" type="date" class="input-field"></div></div><div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">ความคืบหน้า (%)</label><select id="su_progress" class="input-field" style="padding-left:16px"><option value="100">100% — เสร็จสิ้น</option><option value="95">95%</option><option value="90">90%</option></select></div><div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">หมายเหตุการส่งมอบ</label><textarea id="su_note" class="input-field" placeholder="รายละเอียดการส่งมอบงาน..."></textarea></div>';
+  } else if (type === 'problem') {
+    body = '<div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">ประเภทปัญหา</label><select id="su_problemType" class="input-field" style="padding-left:16px"><option value="วัสดุขาด">วัสดุขาด</option><option value="สภาพอากาศ">สภาพอากาศ</option><option value="เข้าพื้นที่ไม่ได้">เข้าพื้นที่ไม่ได้</option><option value="ขอขยายเวลา">ขอขยายเวลา</option><option value="ปัญหาอื่นๆ">ปัญหาอื่นๆ</option></select></div><div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">รายละเอียดปัญหา</label><textarea id="su_note" class="input-field" placeholder="อธิบายปัญหาที่พบ และแนวทางแก้ไข..."></textarea></div>';
+  } else {
+    body = '<div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600">บันทึก</label><textarea id="su_note" class="input-field" placeholder="บันทึกข้อความ..."></textarea></div>';
+  }
+  body += '<div class="mb-4"><label class="text-sm text-gray-600 block mb-2" style="font-weight:600"><i class="fa-solid fa-paperclip mr-1"></i>แนบไฟล์/รูปภาพ</label><div id="attachList" class="space-y-2 mb-2"></div><button type="button" onclick="addAttachRow()" class="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-sm text-gray-400 hover:border-teal-400 hover:text-teal-500 transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> เพิ่มไฟล์</button></div>';
+  body += '<button onclick="submitUpdate(\'' + type + '\')" class="w-full bg-teal-500 hover:bg-teal-600 text-white rounded-xl py-3.5 text-sm transition" style="font-weight:700"><i class="fa-solid fa-paper-plane mr-2"></i>ส่งข้อมูล</button>';
+  document.getElementById('sheetBody').innerHTML = body;
+  document.getElementById('updateSheet').classList.add('open');
+  document.getElementById('sheetOverlay').classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('updateSheet').classList.remove('open');
+  document.getElementById('sheetOverlay').classList.remove('open');
+}
+
+function addAttachRow() {
+  _attachCounter++;
+  var id = 'attach_' + _attachCounter;
+  var div = document.createElement('div');
+  div.id = id;
+  div.className = 'flex items-center gap-2 bg-gray-50 rounded-xl p-2 border border-gray-200';
+  div.innerHTML = '<label class="flex-1 cursor-pointer"><div class="flex items-center gap-2 text-sm text-gray-500" id="' + id + '_label"><i class="fa-solid fa-image text-teal-400"></i><span>เลือกไฟล์หรือรูปภาพ</span></div><input type="file" class="hidden" accept="image/*,application/pdf" onchange="previewAttach(\'' + id + '\', this)"></label><button type="button" onclick="document.getElementById(\'' + id + '\').remove()" class="w-7 h-7 rounded-full bg-red-100 text-red-400 flex items-center justify-center hover:bg-red-200 transition flex-shrink-0"><i class="fa-solid fa-xmark text-xs"></i></button>';
+  document.getElementById('attachList').appendChild(div);
+}
+
+function previewAttach(id, input) {
+  if (!input.files.length) return;
+  var file = input.files[0];
+  var label = document.getElementById(id + '_label');
+  if (file.type.startsWith('image/')) {
+    var reader = new FileReader();
+    reader.onload = function(e) { label.innerHTML = '<img src="' + e.target.result + '" class="w-12 h-12 object-cover rounded-lg"><div><div class="text-xs text-gray-700" style="font-weight:600">' + file.name + '</div><div class="text-xs text-gray-400">' + (file.size/1024).toFixed(1) + ' KB</div></div>'; };
+    reader.readAsDataURL(file);
+  } else {
+    label.innerHTML = '<i class="fa-solid fa-file-pdf text-red-400 text-2xl"></i><div><div class="text-xs text-gray-700" style="font-weight:600">' + file.name + '</div><div class="text-xs text-gray-400">' + (file.size/1024).toFixed(1) + ' KB</div></div>';
+  }
+}
+
+function submitUpdate(type) {
+  var note = document.getElementById('su_note') ? document.getElementById('su_note').value.trim() : '';
+  if (!note) { showToast('กรุณากรอกรายละเอียด', 'error'); return; }
+  var update = {
+    updateType: type, contractorName: _user.name, contractorCo: _user.company, note: note,
+    progress: document.getElementById('su_progress') ? document.getElementById('su_progress').value : '',
+    deliveryDate: document.getElementById('su_deliveryDate') ? document.getElementById('su_deliveryDate').value : '',
+    problemType: document.getElementById('su_problemType') ? document.getElementById('su_problemType').value : '',
+    attachments: []
+  };
+  closeSheet();
+  showLoading('กำลังส่งข้อมูล...');
+  var attachRows = document.querySelectorAll('#attachList > div');
+  var filePromises = [];
+  attachRows.forEach(function(row) {
+    var input = row.querySelector('input[type=file]');
+    if (input && input.files.length) {
+      var file = input.files[0];
+      filePromises.push(new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) { resolve({ fileName: file.name, base64: e.target.result.split(',')[1], mimeType: file.type }); };
+        reader.readAsDataURL(file);
+      }));
+    }
+  });
+  Promise.all(filePromises).then(function(files) {
+    if (files.length === 0) { sendUpdate(update); return; }
+    var uploaded = 0;
+    files.forEach(function(f) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res.success) update.attachments.push({ fileName: res.fileName, fileUrl: res.fileUrl });
+          uploaded++;
+          if (uploaded === files.length) sendUpdate(update);
+        })
+        .withFailureHandler(function() { uploaded++; if (uploaded === files.length) sendUpdate(update); })
+        .uploadContractorAttachment(_curJob.id, f.fileName, f.base64, f.mimeType);
+    });
+  });
+}
+
+function sendUpdate(update) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hideLoading();
+      if (res.success) {
+        showToast('ส่งข้อมูลสำเร็จ', 'success');
+        if (!Array.isArray(_curJob.updates)) _curJob.updates = [];
+        update.timestamp = new Date().toISOString();
+        _curJob.updates.push(update);
+        renderDetail();
+        var idx = _jobs.findIndex(function(j) { return j.id === _curJob.id; });
+        if (idx >= 0) _jobs[idx].updates = _curJob.updates;
+      } else { showToast('เกิดข้อผิดพลาด', 'error'); }
+    })
+    .withFailureHandler(function(err) { hideLoading(); showToast('เกิดข้อผิดพลาด: ' + err.message, 'error'); })
+    .addContractorUpdate(_curJob.id, update);
+}
+
+function formatDate(ts) {
+  if (!ts) return '-';
+  try {
+    var d = new Date(ts);
+    return d.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+  } catch(e) { return ts; }
+}
+
+function formatDateThai(val) {
+  if (!val) return '-';
+  try {
+    var d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
+  } catch(e) { return val; }
+}
+
+function formatAptDate(val) {
+  if (!val) return '-';
+  try {
+    var d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toLocaleDateString('th-TH', { weekday:'short', day:'numeric', month:'long', year:'numeric' });
+  } catch(e) { return val; }
+}
+
+function showToast(msg, type) {
+  Swal.fire({ toast:true, position:'top-end', icon:type, title:msg, showConfirmButton:false, timer:2500, timerProgressBar:true });
+}
+
+function showLoading(msg) {
+  _loadingEl = document.createElement('div');
+  _loadingEl.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+  _loadingEl.innerHTML = '<div style="background:white;border-radius:16px;padding:24px 32px;text-align:center;"><div class="spinner" style="margin:0 auto 12px;"></div><p style="font-size:14px;color:#374151;">' + (msg||'กำลังดำเนินการ...') + '</p></div>';
+  document.body.appendChild(_loadingEl);
+}
+
+function hideLoading() {
+  if (_loadingEl) { _loadingEl.remove(); _loadingEl = null; }
+}
+
+function printJobReport() {
+  if (!_curJob) return;
+  var job = _curJob;
+  var updates = Array.isArray(job.updates) ? job.updates : [];
+  var lastUpd = updates.length ? updates[updates.length-1] : null;
+  var progress = lastUpd && lastUpd.progress ? lastUpd.progress : '0';
+  var updatesHtml = updates.length === 0 ? '<p style="color:#94a3b8;text-align:center;padding:12px;">ยังไม่มีการอัปเดต</p>' :
+    updates.map(function(u) {
+      var typeLabel = u.updateType==='progress'?'📊 ความคืบหน้า':u.updateType==='delivery'?'🚚 ส่งมอบ':u.updateType==='problem'?'⚠️ ปัญหา':u.updateType==='pea_reply'?'💬 PEA ตอบ':'📝 บันทึก';
+      var color = u.updateType==='problem'?'#ef4444':u.updateType==='delivery'?'#f59e0b':u.updateType==='pea_reply'?'#0D2B5E':'#14b8a6';
+      var ts = u.timestamp ? new Date(u.timestamp).toLocaleString('th-TH') : '';
+      return '<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e2e8f0;border-left:3px solid ' + color + ';padding-left:8px;">' +
+        '<div style="display:flex;justify-content:space-between;"><span style="font-size:11px;font-weight:700;color:' + color + '">' + typeLabel + (u.progress?' · '+u.progress+'%':'') + '</span><span style="font-size:10px;color:#94a3b8;">' + ts + '</span></div>' +
+        '<div style="font-size:12px;color:#374151;margin-top:3px;">' + (u.note||u.message||'-') + '</div>' +
+        (u.deliveryDate ? '<div style="font-size:10px;color:#f59e0b;margin-top:2px;">📅 วันส่งมอบ: ' + u.deliveryDate + '</div>' : '') +
+        '<div style="font-size:10px;color:#94a3b8;margin-top:3px;">👤 ' + (u.contractorName||u.peaName||'-') + '</div></div>';
+    }).join('');
+  var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานงาน ' + (job.receiveNo||'') + '</title>' +
+    '<style>* { font-family: Sarabun, sans-serif; margin:0; padding:0; } body { padding:20px; font-size:13px; color:#1a202c; } .header { text-align:center; border-bottom:3px solid #0D2B5E; padding-bottom:16px; margin-bottom:20px; } .header h1 { font-size:18px; font-weight:800; color:#0D2B5E; } table { width:100%; border-collapse:collapse; margin-bottom:16px; } th { background:#0D2B5E; color:white; padding:8px 10px; text-align:left; font-size:11px; } td { padding:7px 10px; border-bottom:1px solid #e2e8f0; font-size:11px; } .progress-bar { background:#e2e8f0; border-radius:99px; height:10px; overflow:hidden; } .progress-fill { height:100%; background:linear-gradient(90deg,#00897B,#26A69A); border-radius:99px; } .footer { text-align:center; font-size:10px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:12px; margin-top:20px; } @media print { .no-print { display:none; } }</style></head><body>' +
+    '<div class="header"><h1>รายงานความคืบหน้างาน</h1><p style="font-size:12px;color:#64748b;margin-top:4px;">' + (job.jobName||'-') + '</p><p style="font-size:11px;color:#94a3b8;margin-top:4px;">พิมพ์เมื่อ: ' + new Date().toLocaleString('th-TH') + '</p></div>' +
+    '<h3 style="font-size:13px;font-weight:700;color:#0D2B5E;margin-bottom:8px;border-left:4px solid #0D2B5E;padding-left:8px;">ข้อมูลงาน</h3>' +
+    '<table><tr><th colspan="2">รายละเอียด</th></tr><tr><td style="width:140px;color:#64748b">เลขที่รับ</td><td style="font-weight:700">' + (job.receiveNo||'-') + '</td></tr><tr><td style="color:#64748b">ชื่องาน</td><td>' + (job.jobName||'-') + '</td></tr><tr><td style="color:#64748b">สถานะ</td><td style="font-weight:700">' + (job.status||'-') + '</td></tr></table>' +
+    '<h3 style="font-size:13px;font-weight:700;color:#0D2B5E;margin-bottom:8px;border-left:4px solid #00897B;padding-left:8px;">ความคืบหน้า</h3>' +
+    '<div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12px;">ความคืบหน้าล่าสุด</span><span style="font-size:18px;font-weight:800;color:#00897B;">' + progress + '%</span></div><div class="progress-bar"><div class="progress-fill" style="width:' + progress + '%"></div></div></div>' +
+    '<h3 style="font-size:13px;font-weight:700;color:#0D2B5E;margin-bottom:8px;border-left:4px solid #3b82f6;padding-left:8px;">ประวัติการอัปเดต (' + updates.length + ' รายการ)</h3>' +
+    '<div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;">' + updatesHtml + '</div>' +
+    '<div class="footer">รายงานโดย: ' + (_user?_user.company:'-') + ' · ระบบ Contractor Portal · PEA CCL</div>' +
+    '<div class="no-print" style="text-align:center;margin-top:20px;"><button onclick="window.print()" style="background:#0D2B5E;color:white;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ พิมพ์ / บันทึก PDF</button></div>' +
+    '<script>setTimeout(function(){window.print();},800);<\/script></body></html>';
+  var win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+}
+
+// ============================================================
+//  NOTIFICATION SYSTEM
+// ============================================================
+var _lastCheckTime = new Date().toISOString();
+var _notifications = [];
+var _notifInterval = null;
+
+function startNotificationPolling() {
+  if (_notifInterval) clearInterval(_notifInterval);
+  _notifInterval = setInterval(checkNotifications, 30000);
+}
+
+function stopNotificationPolling() {
+  if (_notifInterval) { clearInterval(_notifInterval); _notifInterval = null; }
+}
+
+function checkNotifications() {
+  if (!_user) return;
+  google.script.run
+    .withSuccessHandler(function(jobs) {
+      if (!jobs) return;
+      var newNotifs = [];
+      jobs.forEach(function(job) {
+        var updates = Array.isArray(job.updates) ? job.updates : [];
+        updates.forEach(function(u) {
+          if (!u.timestamp || u.timestamp <= _lastCheckTime) return;
+          if (u.updateType === 'pea_reply') newNotifs.push({ type:'reply', jobName:job.jobName, message:u.message, from:u.peaName||'PEA', time:u.timestamp });
+        });
+        var cached = _jobs.find(function(j) { return j.id === job.id; });
+        if (cached && cached.status !== job.status) newNotifs.push({ type:'status', jobName:job.jobName, message:'สถานะเปลี่ยนเป็น: ' + job.status, from:'PEA', time:new Date().toISOString() });
+      });
+      if (newNotifs.length > 0) {
+        _notifications = newNotifs.concat(_notifications);
+        _lastCheckTime = new Date().toISOString();
+        _jobs = jobs;
+        updateNotifBadge();
+        showNotifPopup(newNotifs);
+        renderJobs(); updateBadges();
+      }
+    })
+    .withFailureHandler(function() {})
+    .getContractorJobs(_user.company);
+}
+
+function updateNotifBadge() {
+  var badge = document.getElementById('notifBadge');
+  if (!badge) return;
+  var unread = _notifications.filter(function(n) { return !n.read; }).length;
+  if (unread > 0) { badge.textContent = unread > 9 ? '9+' : unread; badge.classList.remove('hidden'); }
+  else badge.classList.add('hidden');
+}
+
+function showNotifPopup(notifs) {
+  notifs.forEach(function(n, idx) {
+    setTimeout(function() {
+      Swal.fire({ toast:true, position:'top', icon:n.type==='reply'?'info':'success',
+        title: n.type==='reply' ? '💬 PEA ตอบกลับ' : '🔄 สถานะงานเปลี่ยน',
+        html: '<div class="text-sm"><div class="font-600 text-gray-700">' + (n.jobName||'-') + '</div><div class="text-gray-500 mt-0.5">' + (n.message||'') + '</div></div>',
+        showConfirmButton:false, timer:5000, timerProgressBar:true, returnFocus:false });
+    }, idx * 1500);
+  });
+}
+
+function showNotifications() {
+  if (_notifications.length === 0) {
+    Swal.fire({ title:'การแจ้งเตือน', html:'<div class="text-center py-6 text-gray-400"><i class="fa-solid fa-bell-slash text-3xl mb-2 block"></i>ยังไม่มีการแจ้งเตือน</div>', showConfirmButton:false, showCloseButton:true, returnFocus:false });
+    return;
+  }
+  _notifications.forEach(function(n) { n.read = true; });
+  updateNotifBadge();
+  var html = '<div class="text-left space-y-2 max-h-80 overflow-y-auto">' +
+    _notifications.slice(0,20).map(function(n) {
+      var icon = n.type==='reply' ? '💬' : '🔄';
+      var ts = n.time ? new Date(n.time).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      return '<div class="border rounded-xl p-3 bg-gray-50"><div class="flex justify-between items-start mb-1"><span class="text-xs font-600 text-gray-700">' + icon + ' ' + (n.type==='reply'?'PEA ตอบกลับ':'สถานะเปลี่ยน') + '</span><span class="text-xs text-gray-400">' + ts + '</span></div><div class="text-xs text-gray-600 font-600">' + (n.jobName||'-') + '</div><div class="text-xs text-gray-500 mt-0.5">' + (n.message||'') + '</div></div>';
+    }).join('') + '</div>';
+  Swal.fire({ title:'<i class="fa-solid fa-bell text-blue-500 mr-2"></i>การแจ้งเตือน', html:html, showConfirmButton:false, showCloseButton:true, returnFocus:false, footer:'<button onclick="clearNotifications()" class="text-xs text-red-400 hover:text-red-600">ลบทั้งหมด</button>' });
+}
+
+function clearNotifications() { _notifications = []; updateNotifBadge(); Swal.close(); }
+
+// ============================================================
+//  MATERIAL FORM
+// ============================================================
+var _matAttachments = [];
+var _matAttachCounter = 0;
+var _gongmonOptions = [];
+
+function loadGongMonOptions(callback) {
+  if (_gongmonOptions.length > 0) { callback(); return; }
+  google.script.run
+    .withSuccessHandler(function(opts) {
+      _gongmonOptions = (opts || []).map(function(o) {
+        return typeof o === 'string' ? o : (o.name || '');
+      }).filter(Boolean);
+      callback();
+    })
+    .withFailureHandler(function() { callback(); })
+    .getOptions('กองหมอน');
+}
+
+// ===== MATERIAL PANEL FUNCTIONS =====
+function openMatPanel() {
+  document.getElementById('matOverlay').style.display = 'block';
+  document.getElementById('matPanel').style.transform = 'translateY(0)';
+}
+function closeMatPanel() {
+  document.getElementById('matOverlay').style.display = 'none';
+  document.getElementById('matPanel').style.transform = 'translateY(100%)';
+}
+
+function openMaterialForm() {
+  _matAttachments = [];
+  _matAttachCounter = 0;
+  var existing = Array.isArray(_curJob.contractorMaterials) ? _curJob.contractorMaterials : [];
+  loadGongMonOptions(function() { _openMaterialFormInner(existing); });
+}
+
+function _openMaterialFormInner(existing) {
+
+  var existingHtml = '';
+  if (existing.length > 0) {
+    existingHtml = '<div class="mb-3 pb-3 border-b border-dashed border-gray-300">' +
+      '<div class="text-xs font-bold text-gray-600 mb-2"><i class="fa-solid fa-clock-rotate-left text-blue-400 mr-1"></i>ข้อมูลที่บันทึกไว้แล้ว (' + existing.length + ' รายการ)</div>' +
+      existing.map(function(m, idx) {
+        var date = m.timestamp ? new Date(m.timestamp).toLocaleString('th-TH', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        var poleByType = {};
+        (m.poles || []).forEach(function(p) {
+          var t = p.type || 'ไม่ระบุขนาด';
+          if (!poleByType[t]) poleByType[t] = [];
+          poleByType[t].push(p);
+        });
+        var poleHtml = Object.keys(poleByType).map(function(type) {
+          var poles = poleByType[type];
+          return '<div class="mb-1.5">' +
+            '<div class="flex items-center gap-1 mb-1"><i class="fa-solid fa-circle-dot text-amber-400 text-[10px]"></i><span class="text-xs font-bold text-amber-700">' + type + '</span><span class="text-[10px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">' + poles.length + ' ต้น</span></div>' +
+            '<div class="flex flex-wrap gap-1 pl-3">' +
+            poles.map(function(p) {
+              return '<span class="text-[11px] bg-white border border-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-mono">' +
+                (p.no ? '#' + p.no : '—') +
+                (p.location ? ' <span class="text-amber-400 font-sans">· ' + p.location + '</span>' : '') +
+                (p.lat && p.lng ? ' <a href="https://maps.google.com/?q=' + p.lat + ',' + p.lng + '" target="_blank" class="text-blue-400"><i class="fa-solid fa-location-dot text-[10px]"></i></a>' : '') +
+              '</span>';
+            }).join('') + '</div></div>';
+        }).join('');
+        var trHtml = '';
+        if (m.transformer) {
+          var tr = m.transformer;
+          trHtml = '<div class="mt-1.5 pt-1.5 border-t border-amber-100 flex items-center gap-2 flex-wrap">' +
+            '<i class="fa-solid fa-bolt text-yellow-500 text-xs"></i>' +
+            '<span class="text-xs font-bold text-gray-700">หม้อแปลง ' + (tr.kva||'-') + ' KVA</span>' +
+            (tr.peaNo ? '<span class="text-[11px] bg-yellow-50 border border-yellow-300 text-yellow-800 px-2 py-0.5 rounded font-mono">PEA# ' + tr.peaNo + '</span>' : '') +
+            (tr.location ? '<span class="text-[11px] text-gray-500"><i class="fa-solid fa-warehouse mr-1"></i>' + tr.location + '</span>' : '') +
+            (tr.lat && tr.lng ? '<a href="https://maps.google.com/?q=' + tr.lat + ',' + tr.lng + '" target="_blank" class="text-[11px] text-blue-400"><i class="fa-solid fa-map-location-dot mr-1"></i>พิกัด</a>' : '') +
+          '</div>';
+        }
+        var attachHtml = (m.attachments && m.attachments.length)
+          ? '<div class="mt-1.5 flex flex-wrap gap-1">' + m.attachments.map(function(a) { return '<a href="' + a.fileUrl + '" target="_blank" class="text-[11px] bg-blue-50 border border-blue-200 text-blue-600 px-2 py-0.5 rounded hover:bg-blue-100 transition"><i class="fa-solid fa-paperclip mr-1"></i>' + a.fileName + '</a>'; }).join('') + '</div>' : '';
+
+        return '<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2">' +
+          '<div class="flex justify-between items-start gap-2 mb-2">' +
+            '<div class="text-[10px] text-gray-400"><i class="fa-solid fa-user mr-1"></i>' + (m.contractorName||'-') + (date ? ' · ' + date : '') + '</div>' +
+            '<div class="flex gap-1">' +
+              '<button onclick="editMaterialEntry(' + idx + ')" style="width:24px;height:24px;border-radius:50%;background:#DBEAFE;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-pen" style="font-size:10px;color:#3B82F6;"></i></button>' +
+              '<button onclick="deleteMaterialEntry(' + idx + ')" style="width:24px;height:24px;border-radius:50%;background:#FEE2E2;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-trash-can" style="font-size:10px;color:#EF4444;"></i></button>' +
+            '</div>' +
+          '</div>' +
+          (poleHtml || '<div class="text-xs text-gray-400">ไม่มีข้อมูลเสา</div>') +
+          trHtml + attachHtml +
+        '</div>';
+      }).join('') +
+    '</div>' +
+    '<div class="text-xs font-bold text-gray-600 mb-3"><i class="fa-solid fa-plus text-green-500 mr-1"></i>เพิ่มข้อมูลใหม่</div>';
+  }
+
+  // แสดงฟอร์มเพิ่มใหม่ใน panel
+  document.getElementById('matPanelTitle').textContent = '🏗️ บันทึกข้อมูลวัสดุ';
+  document.getElementById('matPanelBody').innerHTML = existingHtml + _buildMatFormHTML();
+  openMatPanel();
+  addPoleRow();
+}
+
+function _buildMatFormHTML() {
+  return '<div style="display:flex;flex-direction:column;gap:16px;width:100%;max-width:100%;">' +
+    '<div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<label style="font-size:14px;font-weight:700;color:#374151;"><i class="fa-solid fa-circle-dot" style="color:#F59E0B;margin-right:4px;"></i>ข้อมูลเสา</label>' +
+        '<button onclick="addPoleRow()" style="font-size:12px;background:#F59E0B;color:white;border:none;padding:4px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-plus" style="margin-right:4px;"></i>เพิ่มกลุ่มเสา</button>' +
+      '</div>' +
+      '<div id="poleList" style="display:flex;flex-direction:column;gap:8px;width:100%;"></div>' +
+    '</div>' +
+    '<div style="border-top:1px solid #E2E8F0;padding-top:12px;width:100%;overflow:hidden;">' +
+      '<label style="font-size:14px;font-weight:700;color:#374151;display:block;margin-bottom:8px;"><i class="fa-solid fa-bolt" style="color:#EAB308;margin-right:4px;"></i>ข้อมูลหม้อแปลง (ถ้ามี)</label>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;width:100%;">' +
+        '<div style="display:flex;gap:8px;width:100%;">' +
+          '<div style="flex:1;min-width:0;overflow:hidden;"><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px;">ขนาด (KVA)</label><input id="mat_tr_kva" type="number" placeholder="เช่น 50" style="width:100%;border:1px solid #D1D5DB;border-radius:8px;padding:8px 10px;font-size:14px;box-sizing:border-box;"></div>' +
+          '<div style="flex:1;min-width:0;overflow:hidden;"><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px;">หมายเลข PEA</label><input id="mat_tr_pea" type="text" placeholder="PEA-12345" style="width:100%;border:1px solid #D1D5DB;border-radius:8px;padding:8px 10px;font-size:14px;box-sizing:border-box;"></div>' +
+        '</div>' +
+        '<div style="width:100%;"><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px;"><i class="fa-solid fa-warehouse" style="color:#F59E0B;margin-right:4px;"></i>กองหมอน</label><input id="mat_tr_loc" type="text" placeholder="ระบุกองหมอน..." style="width:100%;border:1px solid #D1D5DB;border-radius:8px;padding:8px 12px;font-size:14px;box-sizing:border-box;display:block;"></div>' +
+        '<div style="width:100%;"><label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px;"><i class="fa-solid fa-map-marker-alt" style="color:#EF4444;margin-right:4px;"></i>พิกัดหม้อแปลง</label>' +
+          '<div style="display:flex;gap:4px;width:100%;">' +
+            '<input id="mat_tr_lat" type="text" placeholder="Lat" style="flex:1;border:1px solid #D1D5DB;border-radius:8px;padding:8px 6px;font-size:13px;min-width:0;box-sizing:border-box;">' +
+            '<input id="mat_tr_lng" type="text" placeholder="Lng" style="flex:1;border:1px solid #D1D5DB;border-radius:8px;padding:8px 6px;font-size:13px;min-width:0;box-sizing:border-box;">' +
+            '<button onclick="getGPSTransformer()" style="background:#22C55E;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;"><i class="fa-solid fa-location-crosshairs"></i></button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="border-top:1px solid #E2E8F0;padding-top:12px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<label style="font-size:14px;font-weight:700;color:#374151;"><i class="fa-solid fa-paperclip" style="color:#3B82F6;margin-right:4px;"></i>รูปภาพ/ไฟล์แนบ</label>' +
+        '<button onclick="addMatAttach()" style="font-size:12px;background:#3B82F6;color:white;border:none;padding:4px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-plus" style="margin-right:4px;"></i>เพิ่มไฟล์</button>' +
+      '</div>' +
+      '<div id="matAttachList" style="display:flex;flex-direction:column;gap:8px;"></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;padding-top:4px;">' +
+      '<button onclick="closeMatPanel()" style="flex:1;padding:12px;border:1px solid #D1D5DB;border-radius:12px;background:white;font-size:14px;cursor:pointer;color:#6B7280;">ยกเลิก</button>' +
+      '<button onclick="submitMatForm(null)" style="flex:2;padding:12px;border:none;border-radius:12px;background:#F59E0B;color:white;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-save" style="margin-right:6px;"></i>บันทึกข้อมูล</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function submitMatForm(editIdx) {
+  var poles = [];
+  document.querySelectorAll('#poleList .pole-item').forEach(function(group) {
+    var type     = group.querySelector('.pole-type').value;
+    var location = getGroupLocation(group);
+    group.querySelectorAll('.pole-no-row').forEach(function(row) {
+      var no  = row.querySelector('.pole-no')  ? row.querySelector('.pole-no').value.trim()  : '';
+      var lat = row.querySelector('.pole-lat') ? row.querySelector('.pole-lat').value.trim() : '';
+      var lng = row.querySelector('.pole-lng') ? row.querySelector('.pole-lng').value.trim() : '';
+      if (no || type) poles.push({ no:no, type:type, location:location, lat:lat, lng:lng });
+    });
+  });
+  var trKva = document.getElementById('mat_tr_kva') ? document.getElementById('mat_tr_kva').value.trim() : '';
+  var trPea = document.getElementById('mat_tr_pea') ? document.getElementById('mat_tr_pea').value.trim() : '';
+  var trLat = document.getElementById('mat_tr_lat') ? document.getElementById('mat_tr_lat').value.trim() : '';
+  var trLng = document.getElementById('mat_tr_lng') ? document.getElementById('mat_tr_lng').value.trim() : '';
+  var trLoc = document.getElementById('mat_tr_loc') ? document.getElementById('mat_tr_loc').value.trim() : '';
+  var newData = {
+    poles: poles,
+    transformer: trKva ? { kva:trKva, peaNo:trPea, lat:trLat, lng:trLng, location:trLoc } : null,
+    contractorName: _user.name, contractorCo: _user.company, attachments: []
+  };
+
+  var attachRows = document.querySelectorAll('#matAttachList > div');
+  var filePromises = [];
+  attachRows.forEach(function(row) {
+    var input = row.querySelector('input[type=file]');
+    if (input && input.files.length) {
+      var file = input.files[0];
+      filePromises.push(new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) { resolve({ fileName:file.name, base64:e.target.result.split(',')[1], mimeType:file.type }); };
+        reader.readAsDataURL(file);
+      }));
+    }
+  });
+
+  closeMatPanel();
+
+  Promise.all(filePromises).then(function(files) {
+    var doSave = function() {
+      if (files.length === 0) { submitMaterialData(newData); return; }
+      showLoading('กำลังอัปโหลดรูปภาพ...');
+      var uploaded = 0;
+      files.forEach(function(f) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res.success) newData.attachments.push({ fileName:res.fileName, fileUrl:res.fileUrl });
+            uploaded++;
+            if (uploaded === files.length) { hideLoading(); submitMaterialData(newData); }
+          })
+          .withFailureHandler(function() { uploaded++; if (uploaded === files.length) { hideLoading(); submitMaterialData(newData); } })
+          .uploadContractorAttachment(_curJob.id, f.fileName, f.base64, f.mimeType);
+      });
+    };
+
+    if (editIdx !== null && editIdx !== undefined) {
+      // แก้ไข: ลบเก่าก่อน แล้วบันทึกใหม่
+      showLoading('กำลังบันทึกการแก้ไข...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hideLoading();
+          if (!res.success) { showToast('เกิดข้อผิดพลาด', 'error'); return; }
+          doSave();
+        })
+        .withFailureHandler(function(err) { hideLoading(); showToast('เกิดข้อผิดพลาด', 'error'); })
+        .deleteContractorMaterial(_curJob.id, editIdx);
+    } else {
+      doSave();
+    }
+  });
+}
+
+function deleteMaterialEntry(idx) {
+  if (!confirm('ลบข้อมูลนี้?')) return;
+  showLoading('กำลังลบ...');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hideLoading();
+      if (res.success) {
+        if (Array.isArray(_curJob.contractorMaterials)) _curJob.contractorMaterials.splice(idx, 1);
+        var jobIdx = _jobs.findIndex(function(j) { return j.id === _curJob.id; });
+        if (jobIdx >= 0) _jobs[jobIdx].contractorMaterials = _curJob.contractorMaterials;
+        showToast('ลบข้อมูลสำเร็จ', 'success');
+        openMaterialForm();
+      } else showToast('เกิดข้อผิดพลาด', 'error');
+    })
+    .withFailureHandler(function(err) { hideLoading(); showToast('เกิดข้อผิดพลาด: ' + err.message, 'error'); })
+    .deleteContractorMaterial(_curJob.id, idx);
+}
+
+function editMaterialEntry(idx) {
+  var existing = Array.isArray(_curJob.contractorMaterials) ? _curJob.contractorMaterials : [];
+  var entry = existing[idx];
+  if (!entry) return;
+  _matAttachCounter = 0;
+  loadGongMonOptions(function() { _editMaterialEntryInner(idx, entry); });
+}
+
+function _editMaterialEntryInner(idx, entry) {
+
+  document.getElementById('matPanelTitle').textContent = '✏️ แก้ไขข้อมูลวัสดุ';
+  var saveBtn = '<div style="display:flex;gap:8px;padding-top:4px;">' +
+    '<button onclick="closeMatPanel()" style="flex:1;padding:12px;border:1px solid #D1D5DB;border-radius:12px;background:white;font-size:14px;cursor:pointer;color:#6B7280;">ยกเลิก</button>' +
+    '<button onclick="submitMatForm(' + idx + ')" style="flex:2;padding:12px;border:none;border-radius:12px;background:#3B82F6;color:white;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-save" style="margin-right:6px;"></i>บันทึกการแก้ไข</button>' +
+  '</div>';
+
+  var formHtml = _buildMatFormHTML().replace(
+    '<button onclick="submitMatForm(null)"',
+    '<button onclick="submitMatForm(' + idx + ')"'
+  ).replace('background:#F59E0B', 'background:#3B82F6');
+
+  document.getElementById('matPanelBody').innerHTML =
+    '<div class="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-xs text-blue-700 mb-4">' +
+      '<i class="fa-solid fa-circle-info mr-1"></i>แก้ไขแล้วกดบันทึก จะอัปเดตรายการนี้' +
+    '</div>' + formHtml;
+
+  openMatPanel();
+
+  // โหลดข้อมูลเสาเดิม
+  var polesByType = {};
+  (entry.poles || []).forEach(function(p) {
+    var t = p.type || '';
+    if (!polesByType[t]) polesByType[t] = [];
+    polesByType[t].push(p);
+  });
+  var types = Object.keys(polesByType);
+  if (types.length === 0) {
+    addPoleRow();
+  } else {
+    types.forEach(function(type) {
+      addPoleRow();
+      var groups = document.querySelectorAll('#poleList .pole-item');
+      var grp = groups[groups.length - 1];
+      var typeEl = grp.querySelector('.pole-type');
+      if (typeEl) typeEl.value = type;
+      grp.querySelector('.pole-no-list').innerHTML = '';
+      // เซต กองหมอน ที่ระดับกลุ่ม (จากต้นแรก)
+      var firstLoc = polesByType[type].length > 0 ? (polesByType[type][0].location || '') : '';
+      var selEl = grp.querySelector('.pole-loc-sel');
+      var otherEl = grp.querySelector('.gongmon-other');
+      if (selEl) {
+        var isKnown = (_gongmonOptions || []).some(function(g) { return (typeof g==='string'?g:g.name) === firstLoc; });
+        if (firstLoc && !isKnown) {
+          selEl.value = 'อื่นๆ';
+          if (otherEl) { otherEl.style.display = 'block'; otherEl.value = firstLoc; }
+        } else {
+          selEl.value = firstLoc;
+        }
+      }
+      polesByType[type].forEach(function(p) {
+        var addBtn = grp.querySelector('button[onclick^="addPoleNoRow"]');
+        addPoleNoRow(addBtn);
+        var rows = grp.querySelectorAll('.pole-no-row');
+        var row = rows[rows.length - 1];
+        if (row.querySelector('.pole-no'))  row.querySelector('.pole-no').value  = p.no  || '';
+        if (row.querySelector('.pole-lat')) row.querySelector('.pole-lat').value = p.lat || '';
+        if (row.querySelector('.pole-lng')) row.querySelector('.pole-lng').value = p.lng || '';
+      });
+    });
+  }
+
+  // โหลดข้อมูลหม้อแปลงเดิม
+  if (entry.transformer) {
+    var tr = entry.transformer;
+    var setVal = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('mat_tr_kva', tr.kva);
+    setVal('mat_tr_pea', tr.peaNo);
+    setVal('mat_tr_lat', tr.lat);
+    setVal('mat_tr_lng', tr.lng);
+    setVal('mat_tr_loc', tr.location);
+  }
+}
+
+function getGPSTransformer() {
+  if (!navigator.geolocation) { showToast('อุปกรณ์ไม่รองรับ GPS', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var lat = document.getElementById('mat_tr_lat');
+      var lng = document.getElementById('mat_tr_lng');
+      if (lat) lat.value = pos.coords.latitude.toFixed(6);
+      if (lng) lng.value = pos.coords.longitude.toFixed(6);
+      showToast('จับพิกัดสำเร็จ', 'success');
+    },
+    function() { showToast('ไม่สามารถระบุพิกัดได้', 'error'); },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+}
+
+var _savedGongMon = [];
+try { _savedGongMon = JSON.parse(localStorage.getItem('gongmon') || '[]'); } catch(e) {}
+
+function saveGongMon(val) {
+  if (!val || _savedGongMon.includes(val)) return;
+  _savedGongMon.unshift(val);
+  if (_savedGongMon.length > 20) _savedGongMon.pop();
+  try { localStorage.setItem('gongmon', JSON.stringify(_savedGongMon)); } catch(e) {}
+}
+
+function deleteGongMon(val) {
+  _savedGongMon = _savedGongMon.filter(function(v) { return v !== val; });
+  try { localStorage.setItem('gongmon', JSON.stringify(_savedGongMon)); } catch(e) {}
+  renderGongMonList();
+}
+
+function renderGongMonList() {
+  document.querySelectorAll('.gongmon-list').forEach(function(el) {
+    el.innerHTML = _savedGongMon.length === 0 ? '' :
+      '<div class="mt-1 border border-gray-200 rounded-lg bg-white shadow-sm max-h-32 overflow-y-auto">' +
+      _savedGongMon.map(function(v) {
+        return '<div class="flex items-center justify-between px-2 py-1.5 hover:bg-gray-50 cursor-pointer text-xs">' +
+          '<span onclick="setGongMon(this, \'' + v.replace(/'/g,"\\'") + '\')" class="flex-1">' + v + '</span>' +
+          '<button type="button" onclick="deleteGongMon(\'' + v.replace(/'/g,"\\'") + '\')" class="text-red-400 hover:text-red-600 ml-2"><i class="fa-solid fa-xmark"></i></button>' +
+        '</div>';
+      }).join('') + '</div>';
+  });
+}
+
+function setGongMon(el, val) {
+  var poleItem = el.closest('.pole-item');
+  poleItem.querySelector('.pole-loc').value = val;
+  poleItem.querySelector('.gongmon-list').innerHTML = '';
+}
+
+function _buildGongMonOptions(selected) {
+  var opts = '<option value="">-- เลือกกองหมอน --</option>';
+  (_gongmonOptions || []).forEach(function(g) {
+    var v = typeof g === 'string' ? g : (g.name || '');
+    if (!v) return;
+    opts += '<option value="' + v + '"' + (selected === v ? ' selected' : '') + '>' + v + '</option>';
+  });
+  opts += '<option value="อื่นๆ"' + (selected === 'อื่นๆ' || (selected && !(_gongmonOptions||[]).some(function(g){ return (typeof g==='string'?g:g.name)===selected; })) ? ' selected' : '') + '>อื่นๆ (ระบุเอง)</option>';
+  return opts;
+}
+
+function onGongMonChange(sel) {
+  var grp = sel.closest('.pole-item');
+  var otherEl = grp.querySelector('.gongmon-other');
+  if (sel.value === 'อื่นๆ') {
+    otherEl.style.display = 'block';
+    otherEl.focus();
+  } else {
+    otherEl.style.display = 'none';
+    otherEl.value = '';
+  }
+}
+
+function getGroupLocation(group) {
+  var sel = group.querySelector('.pole-loc-sel');
+  if (!sel) return '';
+  if (sel.value === 'อื่นๆ') {
+    var other = group.querySelector('.gongmon-other');
+    return other ? other.value.trim() : '';
+  }
+  return sel.value;
+}
+
+function addPoleRow() {
+  var div = document.createElement('div');
+  div.className = 'pole-item border border-amber-200 rounded-xl p-3 bg-amber-50 space-y-2';
+  div.innerHTML =
+    '<div class="flex justify-between items-center">' +
+      '<span class="text-xs font-bold text-amber-600"><i class="fa-solid fa-layer-group mr-1"></i>กลุ่มเสา</span>' +
+      '<button type="button" onclick="this.closest(\'.pole-item\').remove()" class="w-6 h-6 rounded-full bg-red-100 text-red-400 flex items-center justify-center hover:bg-red-200 text-xs"><i class="fa-solid fa-xmark"></i></button>' +
+    '</div>' +
+    '<div><label class="text-xs text-gray-500 block mb-1">ขนาดเสา</label>' +
+      '<select class="pole-type w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-amber-400 bg-white">' +
+        '<option value="">-- เลือกขนาดเสา --</option>' +
+        '<option value="เสาคอนกรีต 8 ม.">เสาคอนกรีต 8 ม.</option>' +
+        '<option value="เสาคอนกรีต 9 ม.">เสาคอนกรีต 9 ม.</option>' +
+        '<option value="เสาคอนกรีต 12 ม.">เสาคอนกรีต 12 ม.</option>' +
+        '<option value="เสาคอนกรีต 12.20 ม.">เสาคอนกรีต 12.20 ม.</option>' +
+        '<option value="เสาคอนกรีต 14 ม.">เสาคอนกรีต 14 ม.</option>' +
+        '<option value="เสาคอนกรีต 14.30 ม.">เสาคอนกรีต 14.30 ม.</option>' +
+        '<option value="เสาคอนกรีต 22 ม.">เสาคอนกรีต 22 ม.</option>' +
+        '<option value="อื่นๆ">อื่นๆ</option>' +
+      '</select></div>' +
+    '<div><label class="text-xs text-gray-500 block mb-1"><i class="fa-solid fa-warehouse text-amber-400 mr-1"></i>กองหมอน (ทั้งกลุ่ม)</label>' +
+      '<select class="pole-loc-sel w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-amber-400 bg-white" onchange="onGongMonChange(this)">' +
+        _buildGongMonOptions('') +
+      '</select>' +
+      '<input type="text" class="gongmon-other w-full border border-amber-400 rounded-lg px-3 py-2 text-sm focus:outline-none mt-1" placeholder="ระบุกองหมอนอื่นๆ..." style="display:none;">' +
+    '</div>' +
+    '<div class="pole-no-list space-y-2"></div>' +
+    '<button type="button" onclick="addPoleNoRow(this)" class="w-full border border-dashed border-amber-400 text-amber-600 rounded-lg py-1.5 text-xs hover:bg-amber-100 transition"><i class="fa-solid fa-plus mr-1"></i>เพิ่มหมายเลขเสาในกลุ่มนี้</button>';
+  document.getElementById('poleList').appendChild(div);
+  addPoleNoRow(div.querySelector('button[onclick^="addPoleNoRow"]'));
+}
+
+function addPoleNoRow(btn) {
+  var group = btn.closest('.pole-item');
+  var list  = group.querySelector('.pole-no-list');
+  var num   = list.querySelectorAll('.pole-no-row').length + 1;
+  var row   = document.createElement('div');
+  row.className = 'pole-no-row bg-white border border-gray-200 rounded-lg p-2 space-y-2';
+  row.innerHTML =
+    '<div class="flex justify-between items-center">' +
+      '<span class="text-[11px] font-semibold text-gray-500">ต้นที่ ' + num + '</span>' +
+      '<button type="button" onclick="this.closest(\'.pole-no-row\').remove()" class="w-5 h-5 rounded-full bg-red-100 text-red-400 flex items-center justify-center hover:bg-red-200 text-[10px]"><i class="fa-solid fa-xmark"></i></button>' +
+    '</div>' +
+    '<div>' +
+      '<label class="text-[11px] text-gray-400 block mb-0.5">หมายเลขเสา (ตัวเลข/ตัวหนังสือ)</label>' +
+      '<input type="text" inputmode="text" class="pole-no w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400" placeholder="เช่น 12345 หรือ A-001">' +
+    '</div>' +
+    '<div>' +
+      '<label class="text-[11px] text-gray-400 block mb-0.5"><i class="fa-solid fa-map-marker-alt text-red-400 mr-1"></i>พิกัดเสา</label>' +
+      '<div class="flex gap-1">' +
+        '<input type="text" class="pole-lat flex-1 border rounded-lg px-2 py-2 text-sm focus:outline-none min-w-0" placeholder="Lat">' +
+        '<input type="text" class="pole-lng flex-1 border rounded-lg px-2 py-2 text-sm focus:outline-none min-w-0" placeholder="Lng">' +
+        '<button type="button" onclick="getGPS(this)" class="bg-green-500 text-white px-3 py-2 rounded-lg text-xs hover:bg-green-600 transition shrink-0"><i class="fa-solid fa-location-crosshairs"></i></button>' +
+      '</div>' +
+    '</div>';
+  list.appendChild(row);
+}
+
+function getGPS(btn) {
+  var row = btn.closest('.pole-no-row');
+  var latEl = row.querySelector('.pole-lat');
+  var lngEl = row.querySelector('.pole-lng');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      latEl.value = pos.coords.latitude.toFixed(6);
+      lngEl.value = pos.coords.longitude.toFixed(6);
+      btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+      btn.className = 'bg-teal-500 text-white px-3 py-1.5 rounded-lg text-xs shrink-0';
+    },
+    function() { btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>'; showToast('ไม่สามารถระบุพิกัดได้', 'error'); },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+}
+
+function addMatAttach() {
+  _matAttachCounter++;
+  var id = 'matattach_' + _matAttachCounter;
+  var div = document.createElement('div');
+  div.id = id;
+  div.className = 'flex items-center gap-2 bg-white rounded-xl p-2 border border-gray-200';
+  div.innerHTML = '<label class="flex-1 cursor-pointer"><div class="flex items-center gap-2 text-sm text-gray-500" id="' + id + '_label"><i class="fa-solid fa-image text-blue-400"></i><span>เลือกรูปภาพ/ไฟล์</span></div><input type="file" class="hidden" accept="image/*,application/pdf" onchange="previewMatAttach(\'' + id + '\', this)"></label><button type="button" onclick="document.getElementById(\'' + id + '\').remove()" class="w-7 h-7 rounded-full bg-red-100 text-red-400 flex items-center justify-center hover:bg-red-200 transition flex-shrink-0"><i class="fa-solid fa-xmark text-xs"></i></button>';
+  document.getElementById('matAttachList').appendChild(div);
+}
+
+function previewMatAttach(id, input) {
+  if (!input.files.length) return;
+  var file = input.files[0];
+  var label = document.getElementById(id + '_label');
+  if (file.type.startsWith('image/')) {
+    var reader = new FileReader();
+    reader.onload = function(e) { label.innerHTML = '<img src="' + e.target.result + '" class="w-10 h-10 object-cover rounded-lg"><div><div class="text-xs text-gray-700" style="font-weight:600">' + file.name + '</div><div class="text-xs text-gray-400">' + (file.size/1024).toFixed(1) + ' KB</div></div>'; };
+    reader.readAsDataURL(file);
+  } else {
+    label.innerHTML = '<i class="fa-solid fa-file-pdf text-red-400 text-xl"></i><div><div class="text-xs text-gray-700" style="font-weight:600">' + file.name + '</div></div>';
+  }
+}
+
+function submitMaterialData(materialData) {
+  showLoading('กำลังบันทึกข้อมูลวัสดุ...');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hideLoading();
+      if (res.success) {
+        showToast('บันทึกข้อมูลวัสดุสำเร็จ', 'success');
+        // อัปเดต _curJob ทันทีไม่ต้องรอ loadJobs
+        if (!Array.isArray(_curJob.contractorMaterials)) _curJob.contractorMaterials = [];
+        materialData.timestamp = materialData.timestamp || new Date().toISOString();
+        _curJob.contractorMaterials.push(materialData);
+        var jIdx = _jobs.findIndex(function(j) { return j.id === _curJob.id; });
+        if (jIdx >= 0) _jobs[jIdx].contractorMaterials = _curJob.contractorMaterials;
+        renderDetail();
+        loadJobs();
+      } else {
+        showToast('เกิดข้อผิดพลาด', 'error');
+      }
+    })
+    .withFailureHandler(function(err) {
+      hideLoading();
+      showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+    })
+    .saveMaterialData(_curJob.id, materialData);
+}
+
+// ============================================================
+//  SWIPE GESTURE
+// ============================================================
+(function() {
+  var _tabOrder = ['dashboard', 'all', 'active', 'inspect', 'done'];
+  var _touchStartX = 0;
+  var _touchStartY = 0;
+  var _touchStartTime = 0;
+
+  function getCurrentTabIndex() {
+    return _tabOrder.indexOf(_curTab);
+  }
+
+  document.addEventListener('touchstart', function(e) {
+    _touchStartX    = e.touches[0].clientX;
+    _touchStartY    = e.touches[0].clientY;
+    _touchStartTime = Date.now();
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    var dx       = e.changedTouches[0].clientX - _touchStartX;
+    var dy       = e.changedTouches[0].clientY - _touchStartY;
+    var dt       = Date.now() - _touchStartTime;
+    var absDx    = Math.abs(dx);
+    var absDy    = Math.abs(dy);
+
+    // เงื่อนไข: แนวนอนมากกว่าแนวตั้ง, เร็ว (<400ms), ระยะ > 50px
+    if (absDx < 50 || absDy > absDx || dt > 400) return;
+
+    var detailOpen = document.getElementById('detailPanel').classList.contains('open');
+    var matOpen    = document.getElementById('matPanel').style.transform === 'translateY(0)';
+    var sheetOpen  = document.getElementById('updateSheet').classList.contains('open');
+
+    // ถ้า panel ย่อยเปิดอยู่ → ไม่รับ swipe tab
+    if (matOpen || sheetOpen) return;
+
+    // === หน้ารายละเอียด ===
+    if (detailOpen) {
+      if (dx > 0) {
+        // ปัดขวา → ย้อนกลับ
+        closeDetail();
+        showSwipeHint('← ย้อนกลับ');
+      }
+      return;
+    }
+
+    // === หน้ารายการหลัก → เปลี่ยน tab ===
+    var idx = getCurrentTabIndex();
+    if (dx < 0 && idx < _tabOrder.length - 1) {
+      // ปัดซ้าย → tab ถัดไป
+      switchMainTab(_tabOrder[idx + 1]);
+      showSwipeHint(_getTabLabel(_tabOrder[idx + 1]));
+    } else if (dx > 0 && idx > 0) {
+      // ปัดขวา → tab ก่อนหน้า
+      switchMainTab(_tabOrder[idx - 1]);
+      showSwipeHint(_getTabLabel(_tabOrder[idx - 1]));
+    }
+  }, { passive: true });
+
+  function _getTabLabel(tab) {
+    var labels = { dashboard:'📊 ภาพรวม', all:'📋 ทั้งหมด', active:'🔄 ดำเนินการ', inspect:'🔎 ตรวจรับงาน', done:'✅ เสร็จสิ้น' };
+    return labels[tab] || tab;
+  }
+
+  var _hintTimer = null;
+  function showSwipeHint(text) {
+    var el = document.getElementById('swipeHint');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'swipeHint';
+      el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+        'background:rgba(0,0,0,0.65);color:white;padding:10px 22px;border-radius:99px;' +
+        'font-size:15px;font-weight:600;z-index:9999;pointer-events:none;' +
+        'transition:opacity 0.3s;white-space:nowrap;';
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.style.opacity = '1';
+    clearTimeout(_hintTimer);
+    _hintTimer = setTimeout(function() { el.style.opacity = '0'; }, 800);
+  }
+})();
+
+// ============================================================
+//  OLD JOB TRACKING SYSTEM
+// ============================================================
+var _oldJobs = [];
+var _oldLoaded = false;
+
+function renderOldJobs() {
+  var panel = document.getElementById('oldJobPanel');
+  if (!_oldLoaded) {
+    panel.innerHTML = '<div class="empty-state"><div class="spinner mx-auto mb-4"></div><p class="text-sm">กำลังโหลดงานเก่า...</p></div>';
+    google.script.run
+      .withSuccessHandler(function(jobs) {
+        _oldJobs = jobs || [];
+        _oldLoaded = true;
+        _renderOldJobsUI();
+      })
+      .withFailureHandler(function() {
+        panel.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation text-red-400"></i><p class="text-sm text-red-400">โหลดไม่สำเร็จ</p><button onclick="_oldLoaded=false;renderOldJobs()" class="mt-3 text-sm text-blue-500 underline">ลองใหม่</button></div>';
+      })
+      .getOldContractorJobs(_user.company);
+    return;
+  }
+  _renderOldJobsUI();
+}
+
+function _renderOldJobsUI() {
+  var jobs = _oldJobs;
+  var total     = jobs.length;
+  var pending   = jobs.filter(function(j) { return j.oldStatus === 'ยังไม่ดำเนินการ'; }).length;
+  var inprog    = jobs.filter(function(j) { return j.oldStatus === 'กำลังดำเนินการ'; }).length;
+  var done      = jobs.filter(function(j) { return j.oldStatus === 'เสร็จสิ้นแล้ว'; }).length;
+  var waiting   = jobs.filter(function(j) { return j.oldStatus === 'รอเอกสาร'; }).length;
+
+  // summary cards
+  var summaryHtml =
+    '<div class="mb-4">' +
+      '<div class="flex items-center justify-between mb-3">' +
+        '<h2 class="text-base font-bold text-gray-800"><i class="fa-solid fa-box-archive text-amber-500 mr-2"></i>ติดตามงานเก่า (ก่อนปี 2569)</h2>' +
+        '<button onclick="_oldLoaded=false;renderOldJobs()" class="text-gray-400 hover:text-gray-600 text-sm"><i class="fa-solid fa-rotate-right"></i></button>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 mb-4">' +
+        '<div class="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-gray-400 col-span-2 flex justify-between items-center">' +
+          '<span class="text-sm text-gray-500">งานทั้งหมด</span>' +
+          '<span class="text-2xl font-bold text-gray-700">' + total + ' งาน</span>' +
+        '</div>' +
+        '<div class="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-red-400">' +
+          '<div class="text-xl font-bold text-red-500">' + pending + '</div>' +
+          '<div class="text-xs text-gray-500 mt-0.5">ยังไม่ดำเนินการ</div>' +
+        '</div>' +
+        '<div class="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-blue-400">' +
+          '<div class="text-xl font-bold text-blue-500">' + inprog + '</div>' +
+          '<div class="text-xs text-gray-500 mt-0.5">กำลังดำเนินการ</div>' +
+        '</div>' +
+        '<div class="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-green-500">' +
+          '<div class="text-xl font-bold text-green-600">' + done + '</div>' +
+          '<div class="text-xs text-gray-500 mt-0.5">เสร็จสิ้นแล้ว</div>' +
+        '</div>' +
+        '<div class="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-yellow-400">' +
+          '<div class="text-xl font-bold text-yellow-600">' + waiting + '</div>' +
+          '<div class="text-xs text-gray-500 mt-0.5">รอเอกสาร</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  if (total === 0) {
+    document.getElementById('oldJobPanel').innerHTML = summaryHtml +
+      '<div class="empty-state"><i class="fa-solid fa-box-open"></i><p class="font-semibold">ไม่พบงานเก่า</p><p class="text-sm mt-1">ไม่มีงานก่อนปี 2569</p></div>';
+    return;
+  }
+
+  // job cards
+  var cardsHtml = jobs.map(function(job) {
+    var statusColor = {
+      'ยังไม่ดำเนินการ': 'bg-red-100 text-red-700',
+      'กำลังดำเนินการ':  'bg-blue-100 text-blue-700',
+      'เสร็จสิ้นแล้ว':   'bg-green-100 text-green-700',
+      'รอเอกสาร':        'bg-yellow-100 text-yellow-700'
+    }[job.oldStatus] || 'bg-gray-100 text-gray-600';
+
+    var lastUpdate = job.oldUpdates && job.oldUpdates.length
+      ? job.oldUpdates[job.oldUpdates.length - 1]
+      : null;
+
+    return '<div class="bg-white rounded-2xl shadow-sm p-4 mb-3 border border-gray-100">' +
+      '<div class="flex justify-between items-start mb-2">' +
+        '<div class="flex-1 pr-2">' +
+          '<div class="font-bold text-sm text-gray-800 leading-snug">' + (job.jobName || '-') + '</div>' +
+          '<div class="text-xs text-gray-400 font-mono mt-0.5">' + (job.receiveNo || '-') + '</div>' +
+        '</div>' +
+        '<span class="text-xs px-2 py-1 rounded-full font-semibold shrink-0 ' + statusColor + '">' + job.oldStatus + '</span>' +
+      '</div>' +
+      '<div class="text-xs text-gray-500 mb-2 space-y-0.5">' +
+        '<div><i class="fa-solid fa-map-marker-alt text-red-400 mr-1"></i>' + (job.location || '-') + '</div>' +
+        '<div><i class="fa-solid fa-user text-blue-400 mr-1"></i>' + (job.assignee || '-') + '</div>' +
+        (job.materials && job.materials !== '-' ? '<div><i class="fa-solid fa-wrench text-amber-400 mr-1"></i>' + job.materials + '</div>' : '') +
+        (job.oldNote ? '<div class="bg-gray-50 rounded-lg px-2 py-1 mt-1 text-gray-600"><i class="fa-solid fa-note-sticky text-gray-400 mr-1"></i>' + job.oldNote + '</div>' : '') +
+      '</div>' +
+      (lastUpdate ? '<div class="text-[11px] text-gray-400 mb-2"><i class="fa-solid fa-clock-rotate-left mr-1"></i>อัปเดตล่าสุด: ' + formatDate(lastUpdate.timestamp) + ' โดย ' + lastUpdate.by + '</div>' : '') +
+      '<button onclick="openOldJobUpdate(' + job.id + ')" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl py-2 text-sm font-semibold transition">' +
+        '<i class="fa-solid fa-pen-to-square mr-1"></i>อัปเดตสถานะ' +
+      '</button>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('oldJobPanel').innerHTML = summaryHtml + cardsHtml;
+}
+
+function openOldJobUpdate(jobId) {
+  var job = _oldJobs.find(function(j) { return j.id === jobId; });
+  if (!job) return;
+
+  // สร้าง history html
+  var histHtml = (job.oldUpdates && job.oldUpdates.length)
+    ? [].concat(job.oldUpdates).reverse().slice(0, 5).map(function(u) {
+        return '<div class="text-xs bg-gray-50 rounded-lg p-2 mb-1">' +
+          '<div class="flex justify-between mb-0.5">' +
+            '<span class="font-semibold text-gray-700">' + u.status + '</span>' +
+            '<span class="text-gray-400">' + formatDate(u.timestamp) + '</span>' +
+          '</div>' +
+          (u.note ? '<div class="text-gray-500">' + u.note + '</div>' : '') +
+        '</div>';
+      }).join('')
+    : '<div class="text-xs text-gray-400 text-center py-2">ยังไม่มีประวัติการอัปเดต</div>';
+
+  Swal.fire({
+    title: '📋 ' + (job.jobName || '-'),
+    html:
+      '<div class="text-left space-y-3">' +
+        '<div class="text-xs text-gray-500 bg-gray-50 rounded-xl p-3">' +
+          '<div class="font-mono">' + (job.receiveNo || '-') + '</div>' +
+          '<div class="mt-0.5">' + (job.location || '-') + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-sm font-bold text-gray-700 block mb-1">สถานะปัจจุบัน</label>' +
+          '<select id="old_status" class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400">' +
+            '<option value="ยังไม่ดำเนินการ"' + (job.oldStatus==='ยังไม่ดำเนินการ'?' selected':'') + '>⏳ ยังไม่ดำเนินการ</option>' +
+            '<option value="กำลังดำเนินการ"'  + (job.oldStatus==='กำลังดำเนินการ' ?' selected':'') + '>🔄 กำลังดำเนินการ</option>' +
+            '<option value="รอเอกสาร"'        + (job.oldStatus==='รอเอกสาร'       ?' selected':'') + '>📄 รอเอกสาร</option>' +
+            '<option value="เสร็จสิ้นแล้ว"'   + (job.oldStatus==='เสร็จสิ้นแล้ว'  ?' selected':'') + '>✅ เสร็จสิ้นแล้ว</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-sm font-bold text-gray-700 block mb-1">บันทึกเพิ่มเติม</label>' +
+          '<textarea id="old_note" class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400 resize-none" rows="3" placeholder="ระบุรายละเอียด...">' + (job.oldNote || '') + '</textarea>' +
+        '</div>' +
+        '<div>' +
+          '<div class="text-xs font-bold text-gray-500 mb-1"><i class="fa-solid fa-clock-rotate-left mr-1"></i>ประวัติ (5 รายการล่าสุด)</div>' +
+          histHtml +
+        '</div>' +
+      '</div>',
+    showCancelButton: true,
+    confirmButtonText: '<i class="fa-solid fa-save mr-1"></i>บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#F59E0B',
+    returnFocus: false,
+    preConfirm: function() {
+      return {
+        status: document.getElementById('old_status').value,
+        note:   document.getElementById('old_note').value.trim()
+      };
+    }
+  }).then(function(result) {
+    if (!result.isConfirmed) return;
+    showLoading('กำลังบันทึก...');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        hideLoading();
+        if (res.success) {
+          // อัปเดต local
+          var idx = _oldJobs.findIndex(function(j) { return j.id === jobId; });
+          if (idx >= 0) {
+            _oldJobs[idx].oldStatus = result.value.status;
+            _oldJobs[idx].oldNote   = result.value.note;
+            if (!Array.isArray(_oldJobs[idx].oldUpdates)) _oldJobs[idx].oldUpdates = [];
+            _oldJobs[idx].oldUpdates.push({
+              timestamp: new Date().toISOString(),
+              status:    result.value.status,
+              note:      result.value.note,
+              by:        _user.name
+            });
+          }
+          showToast('บันทึกสำเร็จ', 'success');
+          _renderOldJobsUI();
+        } else {
+          showToast('เกิดข้อผิดพลาด', 'error');
+        }
+      })
+      .withFailureHandler(function(err) {
+        hideLoading();
+        showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+      })
+      .updateOldJobStatus(jobId, result.value.status, result.value.note, _user.name);
+  });
+}
+
+</script>
+<script src="contractor-extra.js?v=1"></script>
+</body>
+</html>

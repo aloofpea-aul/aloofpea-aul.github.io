@@ -96,6 +96,7 @@ function doPost(e) {
     if (fn === 'ping') return cclJson_({ ok: true, data: 'pong' });
     if (fn === 'listBranches') return cclJson_({ ok: true, data: cclListBranchesPublic_() });
     if (fn === 'loginUser') return cclJson_({ ok: true, data: cclApiLogin_(args[0], args[1], args[2]) });
+    if (fn === 'loginContractor') return cclJson_({ ok: true, data: cclCtLogin_(args[0], args[1], args[2]) });
     if (fn === 'registerUser') {
       cclUseBranch_(args[4] || CCL_HOME_BRANCH);
       return cclJson_({ ok: true, data: registerUser(args[0], args[1], args[2], args[3]) });
@@ -103,6 +104,7 @@ function doPost(e) {
 
     var sess = cclSession_(b.token);
     if (!sess) return cclJson_({ ok: false, error: 'AUTH_REQUIRED' });
+    if (sess.type === 'contractor') return cclJson_(cclCtDispatch_(sess, b.token, fn, args));
     sess = cclRefreshSess_(sess, b.token);
     if (!sess) return cclJson_({ ok: false, error: 'AUTH_REQUIRED' });
     cclUseBranch_(sess.branchId || CCL_HOME_BRANCH, !!sess.superAdmin);
@@ -375,6 +377,106 @@ function cclResetUserPassword_(sess, row, username, newPass) {
   sh.getRange(row, 2).setValue(newPass);
   try { CacheService.getScriptCache().remove('ccl_fail_' + (sess.branchId || CCL_HOME_BRANCH) + ':' + String(username).toLowerCase()); } catch (e) {}
   return { success: true };
+}
+
+// ===================================================================
+//  Contractor Portal (ผู้รับจ้าง) — token แยกประเภท เห็นเฉพาะงานของบริษัทตัวเอง
+// ===================================================================
+// ฟังก์ชันที่ผู้รับจ้างเรียกได้ — ชื่อเดียวกับที่หน้า Portal เดิมเรียก แต่หลังบ้านบังคับบริษัท/ตรวจว่างานเป็นของบริษัทนั้นเสมอ
+var CCL_CT_FNS = {
+  getContractorJobs:          function (s, a) { return getContractorJobs(s.company); },
+  getOldContractorJobs:       function (s, a) { return getOldContractorJobs(s.company); },
+  getAppointments:            function (s, a) { return getAppointments(s.company); },
+  getOptions:                 function (s, a) { if (a[0] !== 'กองหมอน') throw new Error('ไม่อนุญาต'); return getOptions('กองหมอน'); },
+  addContractorUpdate:        function (s, a) { cclCtOwn_(s, a[0]); var u = cclCtClean_(a[1]); u.contractorName = s.name; u.contractorCo = s.company;
+                                                if (u.updateType === 'pea_reply') u.updateType = 'note'; return addContractorUpdate(a[0], u); },
+  uploadContractorAttachment: function (s, a) { cclCtOwn_(s, a[0]); if (String(a[2] || '').length > 14000000) throw new Error('ไฟล์ใหญ่เกินไป (เกิน 10 MB)');
+                                                return uploadContractorAttachment(a[0], String(a[1] || 'file').slice(0, 120), a[2], a[3]); },
+  getMaterialData:            function (s, a) { cclCtOwn_(s, a[0]); return getMaterialData(a[0]); },
+  saveMaterialData:           function (s, a) { cclCtOwn_(s, a[0]); var m = cclCtClean_(a[1]); m.contractorName = s.name; return saveMaterialData(a[0], m); },
+  deleteContractorMaterial:   function (s, a) { cclCtOwn_(s, a[0]); return deleteContractorMaterial(a[0], Number(a[1])); },
+  updateOldJobStatus:         function (s, a) { cclCtOwn_(s, a[0]); return updateOldJobStatus(a[0], String(a[1] || ''), String(a[2] || ''), s.name); },
+  ctChangePassword:           function (s, a) { return cclCtChangePassword_(s, a[0], a[1]); },
+  ctWhoAmI:                   function (s, a) { return s; }
+};
+
+function cclCtLogin_(u, p, branchId) {
+  var br;
+  try { br = cclUseBranch_(branchId || CCL_HOME_BRANCH); } catch (e) { return { success: false, error: e.message }; }
+  var cache = CacheService.getScriptCache();
+  var failKey = 'ccl_ctfail_' + br.id + ':' + String(u || '').trim().toLowerCase();
+  var fails = Number(cache.get(failKey) || 0);
+  if (fails >= CCL_MAX_FAIL) return { success: false, error: 'ใส่รหัสผ่านผิดหลายครั้ง บัญชีนี้ถูกล็อกชั่วคราว ' + Math.round(CCL_LOCK_SEC / 60) + ' นาที ลองใหม่ภายหลัง หรือติดต่อ PEA' };
+  var sh = cclSS_().getSheetByName('ContractorUsers');
+  if (sh && String(u || '').trim()) {
+    var d = sh.getDataRange().getValues();
+    for (var i = 1; i < d.length; i++) {
+      if (String(d[i][0]).trim() === String(u).trim() && String(d[i][1]).trim() === String(p || '').trim()) {
+        if (String(d[i][5]).trim() === 'Inactive') return { success: false, error: 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อ PEA' };
+        if (!String(d[i][3]).trim()) return { success: false, error: 'บัญชีนี้ยังไม่ได้ผูกกับบริษัท กรุณาติดต่อ PEA' };
+        cache.remove(failKey);
+        var user = { type: 'contractor', username: String(d[i][0]).trim(), name: String(d[i][2]), company: String(d[i][3]).trim(),
+                     phone: String(d[i][4] || ''), branchId: br.id, branchName: br.name };
+        return { success: true, user: user, token: cclNewToken_(user) };
+      }
+    }
+  }
+  fails++;
+  cache.put(failKey, String(fails), CCL_LOCK_SEC);
+  var left = CCL_MAX_FAIL - fails;
+  return { success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' + (left > 0 && left <= 2 ? ' (เหลืออีก ' + left + ' ครั้งก่อนถูกล็อก)' : (left <= 0 ? ' — ถูกล็อก ' + Math.round(CCL_LOCK_SEC / 60) + ' นาที' : '')) };
+}
+
+function cclCtDispatch_(sess, token, fn, args) {
+  try {
+    cclUseBranch_(sess.branchId || CCL_HOME_BRANCH);
+    // ตรวจบัญชีล่าสุดทุกครั้ง: ถูกระงับ / ย้ายบริษัท → ต้องเข้าใหม่
+    var sh = cclSS_().getSheetByName('ContractorUsers');
+    var d = sh ? sh.getDataRange().getValues() : [], row = null;
+    for (var i = 1; i < d.length; i++) if (String(d[i][0]).trim() === sess.username) { row = d[i]; break; }
+    if (!row || String(row[5]).trim() === 'Inactive' || String(row[3]).trim() !== sess.company) {
+      try { CacheService.getScriptCache().remove('ccl_tok_' + token); } catch (e) {}
+      return { ok: false, error: 'AUTH_REQUIRED' };
+    }
+    var h = CCL_CT_FNS[fn];
+    if (!h) return { ok: false, error: 'ไม่รองรับคำสั่ง ' + fn };
+    var out = h(sess, Array.isArray(args) ? args : []);
+    return { ok: true, data: out === undefined ? null : out };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+}
+
+// งานต้องเป็นของบริษัทผู้รับจ้างคนนี้เท่านั้น
+function cclCtOwn_(sess, jobId) {
+  var id = parseInt(jobId, 10);
+  var sh = cclSS_().getSheetByName(SHEET_DATA_NAME);
+  if (!sh || !(id >= 2) || id > sh.getLastRow()) throw new Error('ไม่พบงานนี้');
+  var ent = String(sh.getRange(id, 18).getValue() || '').trim();
+  if (!ent || ent !== sess.company) throw new Error('งานนี้ไม่ใช่งานของบริษัทท่าน');
+  return id;
+}
+
+function cclCtClean_(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('ข้อมูลไม่ถูกต้อง');
+  var s = JSON.stringify(o);
+  if (s.length > 200000) throw new Error('ข้อมูลยาวเกินไป');
+  return JSON.parse(s);
+}
+
+function cclCtChangePassword_(sess, oldP, newP) {
+  newP = String(newP || '');
+  if (newP.length < 4) throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัว');
+  var sh = cclSS_().getSheetByName('ContractorUsers');
+  var d = sh.getDataRange().getValues();
+  for (var i = 1; i < d.length; i++) {
+    if (String(d[i][0]).trim() === sess.username) {
+      if (String(d[i][1]).trim() !== String(oldP || '').trim()) throw new Error('รหัสผ่านเดิมไม่ถูกต้อง');
+      sh.getRange(i + 1, 2).setValue(newP);
+      return { success: true };
+    }
+  }
+  throw new Error('ไม่พบบัญชี');
 }
 
 function cclJson_(obj) {

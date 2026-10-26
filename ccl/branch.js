@@ -133,6 +133,24 @@
     if (btn) btn.classList.toggle('hidden', !u.superAdmin);
     ensurePage();
     ensureUsersCard();
+    ensureContractorLink();
+  }
+
+  // ลิงก์ Contractor Portal สำหรับส่งให้ผู้รับจ้าง (อยู่เหนือรายชื่อบัญชีผู้รับจ้างในหน้า Admin)
+  function ensureContractorLink() {
+    var list = $('contractorUserList'); if (!list || $('cbCtLink')) return;
+    var url = location.origin + location.pathname.replace(/[^\/]*$/, '') + 'contractor.html';
+    var d = document.createElement('div'); d.id = 'cbCtLink';
+    d.setAttribute('style', 'background:#E0F2F1;border:1px solid #B2DFDB;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#004D40');
+    d.innerHTML = '<b><i class="fa-solid fa-link"></i> ลิงก์สำหรับผู้รับจ้าง</b> — ส่งลิงก์นี้พร้อมชื่อผู้ใช้/รหัสผ่าน ผู้รับจ้างเลือกหน่วยงาน "' + esc(user().branchName || 'กฟส.อ่าวลึก') + '" ตอนเข้าสู่ระบบ' +
+      '<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><code style="flex:1;background:#fff;border-radius:8px;padding:6px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(url) + '</code>' +
+      '<button type="button" class="cb-btn cb-ghost" style="padding:6px 10px;font-size:12px" id="cbCtCopy"><i class="fa-solid fa-copy"></i> คัดลอก</button></div>';
+    list.parentNode.insertBefore(d, list);
+    $('cbCtCopy').onclick = function () {
+      var done = function () { toast('success', 'คัดลอกลิงก์แล้ว'); };
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, function () { prompt('คัดลอกลิงก์นี้', url); });
+      else prompt('คัดลอกลิงก์นี้', url);
+    };
   }
 
   function ensurePage() {
