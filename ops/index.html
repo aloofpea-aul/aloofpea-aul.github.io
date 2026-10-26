@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/pea-hub.js?v=2026102601" data-app="ops" data-perm="login" data-name="ห้องควบคุมรถแก้ไฟ"></script>
+<title>ห้องควบคุมรถแก้ไฟ · กฟส.อ่าวลึก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#F3F1EC;--ink:#17142A;--sub:#57536B;--line:#E3DFD6;--card:#FFFFFF;--pur:#4B1FA8;--purL:#ECE6FA;--org:#E2520C;--orgD:#C2410C;--grn:#188A4A;--amb:#95600E;--mono:'IBM Plex Mono',ui-monospace,monospace;--disp:'Space Grotesk','IBM Plex Sans Thai',sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--pur)}
+header.top{background:var(--ink);color:#fff;padding:12px 24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--pur);display:flex;align-items:center;justify-content:center}
+.brand .t1{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:.06em}
+.brand .t2{font-size:13px;color:#C9C4DB}
+.hright{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.chip{padding:7px 12px;border-radius:10px;background:#2A2541;font-size:13px;color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px}
+.chip b{color:#F5B347}
+.clock{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:.04em;padding-left:4px}
+.back{color:#C9C4DB;font-size:13px;text-decoration:none;border:1px solid #4A4466;border-radius:10px;padding:7px 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:16px 24px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.kpi .l{font-size:13px;color:var(--sub);font-weight:600}
+.kpi .v{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.kpi .n{font-family:var(--disp);font-size:44px;font-weight:700;line-height:1}
+.kpi .s{font-size:13px;color:var(--sub)}
+.bar{height:6px;border-radius:3px;background:#ECE8DF;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%}
+.wrap{display:flex;flex-wrap:wrap;gap:16px;padding:16px 24px 28px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.colL{flex:1 1 300px;max-width:360px}.colM{flex:999 1 560px}.colR{flex:1 1 280px;max-width:330px}
+@media (max-width:900px){.colL,.colR{max-width:none}}
+h2{margin:0;font-size:17px;font-weight:700}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hd span{font-size:12px;color:var(--sub)}
+.tk{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;gap:12px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.tk.new{border:2px solid var(--org);box-shadow:0 10px 24px rgba(226,82,12,.12)}
+.tk.sel{outline:3px solid var(--pur);outline-offset:1px}
+.ring{position:relative;width:60px;height:60px;flex-shrink:0}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .c b{font-family:var(--mono);font-size:14px}
+.ring .c small{font-size:10px;color:var(--sub)}
+.tg{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tg.new{background:var(--org);color:#fff}.tg.acc{background:var(--purL);color:#36157A}.tg.done{background:#E3F2E8;color:#14532D}
+.tk .tt{font-weight:700;font-size:15px}
+.tk .ds{font-size:13px;color:#4A4660;overflow-wrap:anywhere}
+.empty{background:#FBFAF7;border:1px dashed #D9D4C8;border-radius:16px;padding:14px;font-size:13px;color:var(--sub)}
+.mapbox{position:relative;height:600px;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#ECEFE6}
+#map{position:absolute;inset:0}
+.legend{position:absolute;top:12px;left:12px;z-index:500;display:flex;flex-wrap:wrap;gap:6px}
+.legend span{background:#fff;border:1px solid var(--line);padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.rec{position:absolute;left:12px;right:12px;bottom:12px;z-index:600;background:var(--ink);color:#fff;border-radius:16px;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;box-shadow:0 14px 30px rgba(23,20,42,.3)}
+.rec .k{font-size:12px;color:#C9C4DB;font-weight:600}
+.rec .h{font-size:17px;font-weight:700}
+.rec .d{font-size:13px;color:#C9C4DB}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid #D9D4C8;background:#fff;color:var(--ink);font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;cursor:pointer}
+.btn.dk{background:transparent;color:#fff;border-color:#4A4466}
+.btn.pr{background:#fff;color:var(--ink);border:0;font-weight:700}
+.btn.sm{min-height:40px;padding:0 12px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.steps{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.steps li{display:flex;flex-direction:column;gap:6px}
+.steps i{height:6px;border-radius:3px;background:#E6E1F4}
+.steps i.on{background:var(--pur)}
+.steps b{font-size:13px}.steps em{font-style:normal;font-family:var(--mono);font-size:13px;color:#4A4660}
+.crew{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.crew.off{border-style:dashed}
+.crew .r1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.crew .nm{font-weight:700;font-size:15px}
+.crew .ps{font-size:12px;color:var(--sub)}
+.crew .meta{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#4A4660}
+.crew .acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.st{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.st.on{background:var(--grn);color:#fff}.st.go{background:var(--pur);color:#fff}.st.stale{background:#F6EAD3;color:#6E4508}.st.off{background:#EEECE6;color:#57536B}
+.feed{background:var(--ink);color:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.feed .row{display:flex;gap:10px;font-size:13px}.feed .row span:first-child{font-family:var(--mono);color:#8C86A6}
+.err{background:#FFF1E6;border:1px solid #F3C4A4;color:#7A2E0C;border-radius:12px;padding:10px 12px;font-size:13px}
+.leaflet-div-icon{background:none;border:0}
+.mk{display:flex;flex-direction:column;align-items:center}
+.mk .p{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.mk .lb{margin-top:4px;background:#fff;border:2px solid;border-radius:10px;padding:3px 9px;text-align:center;white-space:nowrap;box-shadow:0 3px 8px rgba(23,20,42,.15);font-family:'IBM Plex Sans Thai',sans-serif}
+.mk .lb b{display:block;font-size:12px;color:var(--ink)}.mk .lb small{font-size:11px;color:#4A4660}
+.pin .t{background:var(--ink);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;white-space:nowrap;font-family:'IBM Plex Sans Thai',sans-serif}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+    <div><div class="t1">AOLUEK GRID OPS</div><div class="t2">ห้องควบคุมรถแก้ไฟ · กฟส.อ่าวลึก</div></div>
+  </div>
+  <div class="hright">
+    <a class="chip" id="tmdChip" href="/tmd/index.html" hidden></a>
+    <span class="chip" id="wxChip" hidden></span>
+    <span class="chip" id="shiftChip">กำลังโหลดเวร…</span>
+    <span class="clock" id="clock">--:--:--</span>
+    <a class="back" href="/index.html">ศูนย์รวมงาน</a>
+  </div>
+</header>
+
+<section class="kpis" aria-label="ภาพรวมขณะนี้">
+  <div class="kpi"><div class="l">งานแจ้งไฟดับค้างอยู่</div><div class="v"><span class="n" id="kOpen" style="color:var(--orgD)">–</span><span class="s" id="kOpenS"></span></div></div>
+  <div class="kpi"><div class="l">เวลารับงานเฉลี่ยวันนี้</div><div class="v"><span class="n" id="kAcc">–</span><span class="s">นาที · เป้า 10</span></div><div class="bar"><i id="kAccBar" style="width:0"></i></div></div>
+  <div class="kpi"><div class="l">ปิดงานแล้ววันนี้</div><div class="v"><span class="n" id="kDone">–</span><span class="s" id="kDoneS"></span></div></div>
+  <div class="kpi"><div class="l">พนักงานเวรที่เปิด GPS</div><div class="v"><span class="n" id="kGps">–</span><span class="s" id="kGpsS"></span></div><div class="bar"><i id="kGpsBar" style="width:0;background:var(--grn)"></i></div></div>
+</section>
+
+<div class="wrap">
+  <section class="col colL" aria-label="คิวแจ้งไฟดับ">
+    <div class="hd"><h2>คิวแจ้งไฟดับ</h2><span>ฟอร์มแจ้ง + ส่งต่อจาก LINE</span></div>
+    <div id="tkErr"></div>
+    <div id="tkList" class="col"><div class="empty">กำลังโหลด…</div></div>
+    <a class="btn" href="/duty-roster/index.html?from=hub">เปิดงานเวรแก้ไฟ (รับงาน/ปิดงาน)</a>
+  </section>
+
+  <section class="col colM" aria-label="แผนที่สด">
+    <div class="mapbox">
+      <div id="map"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--grn)"></i>เวร · ออนไลน์</span>
+        <span><i class="dot" style="background:var(--amb)"></i>สัญญาณขาด</span>
+        <span><i class="dot" style="background:var(--org);border-radius:2px"></i>จุดแจ้งไฟดับ</span>
+      </div>
+      <div class="rec" id="rec" hidden></div>
+    </div>
+    <div class="card" id="tl" hidden></div>
+  </section>
+
+  <section class="col colR" aria-label="ชุดเวรตอนนี้">
+    <div class="hd"><h2>เวรตอนนี้</h2><span>จากงานเวรแก้ไฟ</span></div>
+    <div id="crewList" class="col"><div class="empty">กำลังโหลด…</div></div>
+    <a class="btn" href="crew.html">หน้ามือถือชุดแก้ไฟ (เปิด GPS)</a>
+    <div class="feed" id="feed"><div style="font-size:13px;font-weight:700;color:#C9C4DB">ความเคลื่อนไหวล่าสุด</div></div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const DUTY_API = 'https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec';
+const TRACK_API = 'https://script.google.com/macros/s/AKfycbytt3h9GVgqqQbuOwrxJGQTOn5pe-fKOOW7H_t6wNWlHCbYGZVY8YtIE-Mcj4kVbkcx/exec';
+const CENTER = [8.3, 98.80];
+const ACC_TARGET = 10;          // นาที — ตรงกับเตือนซ้ำของงานเวรแก้ไฟ
+const ONLINE_MIN = 1.5, STALE_MAX_MIN = 30;
+const TK_TY = {home:'ไฟดับทั้งบ้าน',area:'ไฟดับทั้งซอย/หมู่บ้าน',low:'ไฟตก / กระพริบ',danger:'สายขาด / เสาล้ม / ไฟไหม้',other:'แจ้งไฟดับ'};
+const WX = {1:'สภาพปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = { get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+function creds(){ try{ return { user: localStorage.getItem('pea_aoluek_username')||'', pass: localStorage.getItem('pea_aoluek_password')||'' }; }catch(e){ return {user:'',pass:''}; } }
+function bkk(d){ return new Date((d ? new Date(d) : new Date()).getTime() + 7*3600e3); }
+const ymd = d => bkk(d).toISOString().slice(0,10);
+const hm = d => bkk(d).toISOString().slice(11,16);
+function addDays(s, n){ const d = new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+const minsSince = iso => (Date.now() - new Date(iso).getTime())/60000;
+function ago(iso){ const m = Math.round(minsSince(iso)); return m < 1 ? 'เมื่อสักครู่' : m < 60 ? m+' นาที' : Math.floor(m/60)+' ชม. '+(m%60)+' นาที'; }
+function km(a, b){ const R=6371, t=x=>x*Math.PI/180, dl=t(b[0]-a[0]), dn=t(b[1]-a[1]); const h=Math.sin(dl/2)**2+Math.cos(t(a[0]))*Math.cos(t(b[0]))*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+async function getJ(base, params){ const u = base + '?' + new URLSearchParams(params); const r = await fetch(u); return r.json(); }
+async function postJ(base, body){ const r = await fetch(base, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) }); return r.json(); }
+const cHas = (c, p) => String(c||'').split(',').indexOf(p) >= 0;
+
+const S = { boot:null, months:{}, contacts:{}, tickets:[], pos:[], wx:null, tmd:null, sel:null, tkErr:'' };
+
+/* ---------- นาฬิกา ---------- */
+setInterval(() => { $('clock').textContent = bkk().toISOString().slice(11,19); }, 1000);
+
+/* ---------- แผนที่ ---------- */
+const map = L.map('map', { zoomControl: true, attributionControl: true }).setView(CENTER, 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }).addTo(map);
+const layer = L.layerGroup().addTo(map);
+let fitted = false;
+
+/* ---------- เวร: คำนวณแบบเดียวกับ onDutyNow_ ของงานเวรแก้ไฟ ---------- */
+async function month(key){
+  const c = S.months[key];
+  if (c && Date.now() - c.at < 30*60e3) return c.m;
+  try { const j = await getJ(DUTY_API, { action:'month', m:key }); if (j.ok){ S.months[key] = { at:Date.now(), m:j.month }; LS.set('ops_mo_'+key, j.month); return j.month; } } catch(e){}
+  return (c && c.m) || LS.get('ops_mo_'+key);
+}
+function dayOf(mo, ymdStr){
+  if (!mo || !mo.data) return null;
+  const i = +ymdStr.slice(8,10) - 1, d = mo.data, e = {}, w = {};
+  Object.keys(d.emp||{}).forEach(n => e[n] = d.emp[n][i]);
+  Object.keys(d.wk||{}).forEach(n => w[n] = d.wk[n][i]);
+  return { day: (d.days||[])[i] || {}, emp:e, wk:w };
+}
+async function onDuty(){
+  const today = ymd(), yest = addDays(today, -1), t = hm();
+  const [mt, my] = await Promise.all([month(today.slice(0,7)), month(yest.slice(0,7))]);
+  const dd = dayOf(mt, today), py = dayOf(my, yest), emp = {}, wk = {};
+  if (dd) Object.keys(dd.emp).forEach(n => { const c = dd.emp[n];
+    if (cHas(c,'1') && t < '09:00') emp[n] = '1';
+    if (cHas(c,'2') && t >= '08:00' && (cHas(c,'3') || t < '17:00')) emp[n] = '2';
+    if (cHas(c,'3') && t >= '16:00') emp[n] = '3'; });
+  if (py) Object.keys(py.emp).forEach(n => { if (cHas(py.emp[n],'3') && t < '01:00') emp[n] = '3'; });
+  if (dd) Object.keys(dd.wk).forEach(n => { const k = String(dd.wk[n]||'').split(',');
+    if ((k.indexOf('1')>=0 && t < '08:30') || (k.indexOf('2')>=0 && t >= '07:30' && t < '16:30') || (k.indexOf('3')>=0 && t >= '15:30')) wk[n] = 1; });
+  return { emp, wk, off: !!(dd && dd.day && dd.day.off) };
+}
+function shiftLabel(){ const t = hm(); return t < '08:30' ? 'ช่วง 1 · 00:30–08:30' : t < '16:30' ? 'ช่วง 2 · 08:30–16:30' : 'ช่วง 3 · 16:30–00:30'; }
+function fullName(short){ const p = S.boot && [...(S.boot.people.emp||[]), ...(S.boot.people.wk||[])].find(x => x.short === short); return p ? p.full : short; }
+
+/* ---------- โหลดข้อมูล ---------- */
+async function loadBoot(){
+  try { const j = await getJ(DUTY_API, { action:'bootstrap' }); if (j.ok){ S.boot = j; LS.set('ops_boot', { people:j.people }); } }
+  catch(e){ const c = LS.get('ops_boot'); if (c) S.boot = c; }
+  const c = creds();
+  if (c.user && c.pass) try { const r = await postJ(DUTY_API, { action:'contacts', user:c.user, pass:c.pass }); if (r.ok) S.contacts = r.contacts || {}; } catch(e){}
+}
+async function loadTickets(){
+  const c = creds();
+  try {
+    const r = await postJ(DUTY_API, { action:'tickets', hubUser:c.user, hubPass:c.pass });
+    if (r.ok){ S.tickets = r.tickets || []; S.tkErr = ''; } else S.tkErr = r.error || 'โหลดรายการแจ้งไฟดับไม่ได้';
+  } catch(e){ S.tkErr = 'เชื่อมต่องานเวรแก้ไฟไม่ได้ กำลังลองใหม่'; }
+}
+async function loadPos(){
+  try { const d = await getJ(TRACK_API, { action:'positions' }); if (Array.isArray(d)) S.pos = d.filter(v => String(v.vehicleId).indexOf('D-') === 0); } catch(e){}
+}
+async function loadWx(){
+  try { const j = await getJ(DUTY_API, { action:'wx' }); if (j.ok) S.wx = j.wx; } catch(e){}
+  try { const key = ymd().slice(0,7), j = await getJ(DUTY_API, { action:'tmd', m:key }); if (j.ok) S.tmd = (j.days||{})[+ymd().slice(8,10)] || null; } catch(e){}
+}
+
+/* ---------- สถานะรถ (GPS จากมือถือ) ---------- */
+function posOf(short){ return S.pos.find(p => p.driverName === short); }
+function gpsState(p){
+  if (!p) return 'none';
+  if (p.trackingStatus === 'stopped') return 'off';
+  const m = minsSince(p.lastUpdate);
+  if (m > STALE_MAX_MIN) return 'off';
+  return m < ONLINE_MIN ? 'on' : 'stale';
+}
+function busyWith(short){ return S.tickets.find(t => t.st === 'acc' && t.accBy === short); }
+
+/* ---------- วาด ---------- */
+function ringSvg(frac, col, bg){
+  const r = 25, C = 2*Math.PI*r, off = C * (1 - Math.max(0, Math.min(1, frac)));
+  return `<svg width="60" height="60" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="${r}" fill="none" stroke="${bg}" stroke-width="7"/><circle cx="30" cy="30" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 30 30)"/></svg>`;
+}
+function renderTickets(){
+  $('tkErr').innerHTML = S.tkErr ? `<div class="err">${esc(S.tkErr)}</div>` : '';
+  const open = S.tickets.filter(t => t.st === 'new' || t.st === 'acc').sort((a,b) => (a.st === 'new' ? 0 : 1) - (b.st === 'new' ? 0 : 1) || new Date(a.at) - new Date(b.at));
+  if (!S.sel || !open.some(t => t.id === S.sel)) S.sel = open[0] ? open[0].id : null;
+  if (!open.length){ $('tkList').innerHTML = S.tkErr ? '' : '<div class="empty">ไม่มีงานแจ้งไฟดับค้างอยู่</div>'; return; }
+  $('tkList').innerHTML = open.map(t => {
+    const isNew = t.st === 'new', m = minsSince(t.at);
+    const ring = isNew ? ringSvg(1 - m/ACC_TARGET, '#E2520C', '#F6E2D6') : ringSvg(1, '#4B1FA8', '#ECE6FA');
+    const big = isNew ? (m >= ACC_TARGET ? 'เกิน' : Math.max(0, Math.ceil(ACC_TARGET - m))+'′') : Math.round(minsSince(t.accAt||t.at))+'′';
+    const small = isNew ? (m >= ACC_TARGET ? Math.round(m - ACC_TARGET)+' นาที' : 'ให้รับงาน') : 'หลังรับงาน';
+    const where = t.place || (t.lat ? 'ปักหมุด GPS' : (t.detail||'').slice(0,60));
+    return `<button type="button" class="tk ${isNew?'new':''} ${t.id===S.sel?'sel':''}" data-id="${esc(t.id)}">
+      <span class="ring">${ring}<span class="c"><b style="color:${isNew?'#C2410C':'#4B1FA8'}">${esc(big)}</b><small>${esc(small)}</small></span></span>
+      <span class="col" style="gap:3px">
+        <span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><span class="tg ${isNew?'new':'acc'}">${isNew?'รอรับงาน':'รับแล้ว · '+esc(t.accBy||'')}</span><span style="font-size:12px;color:#57536B">#${esc(t.id)} · ${esc(hm(t.at))} น.</span></span>
+        <span class="tt">${esc(TK_TY[t.type]||'แจ้งไฟดับ')}</span>
+        <span class="ds">${esc(where)}</span>
+        ${t.near ? `<span class="ds">ใกล้ ${esc(t.near.id)} · ${esc(t.near.feeder)}</span>` : ''}
+      </span></button>`;
+  }).join('');
+  $('tkList').querySelectorAll('.tk').forEach(b => b.onclick = () => { S.sel = b.dataset.id; renderAll(); const t = S.tickets.find(x => x.id === S.sel); if (t && t.lat) map.setView([t.lat, t.lon], 14, { animate:true }); });
+}
+function renderKpis(duty){
+  const open = S.tickets.filter(t => t.st === 'new' || t.st === 'acc');
+  $('kOpen').textContent = open.length;
+  $('kOpenS').textContent = 'รอรับ ' + open.filter(t => t.st === 'new').length;
+  const today = ymd(), td = S.tickets.filter(t => ymd(t.at) === today);
+  const accs = td.filter(t => t.accAt).map(t => (new Date(t.accAt) - new Date(t.at))/60000);
+  if (accs.length){ const avg = accs.reduce((a,b)=>a+b,0)/accs.length; $('kAcc').textContent = Math.round(avg); $('kAcc').style.color = avg <= ACC_TARGET ? 'var(--grn)' : 'var(--orgD)';
+    $('kAccBar').style.width = Math.min(100, avg/ACC_TARGET*100)+'%'; $('kAccBar').style.background = avg <= ACC_TARGET ? 'var(--grn)' : 'var(--org)'; }
+  else { $('kAcc').textContent = '–'; $('kAccBar').style.width = '0'; }
+  const done = S.tickets.filter(t => t.st === 'done' && t.doneAt && ymd(t.doneAt) === today);
+  $('kDone').textContent = done.length;
+  const res = done.map(t => (new Date(t.onAt || t.doneAt) - new Date(t.at))/60000).filter(x => x > 0);
+  $('kDoneS').textContent = res.length ? 'แจ้ง→ไฟกลับ เฉลี่ย ' + Math.round(res.reduce((a,b)=>a+b,0)/res.length) + ' นาที' : '';
+  const emps = Object.keys(duty.emp), on = emps.filter(n => gpsState(posOf(n)) === 'on').length;
+  $('kGps').innerHTML = on + `<span style="font-size:24px;color:#8A859E">/${emps.length}</span>`;
+  $('kGpsS').textContent = 'คน';
+  $('kGpsBar').style.width = emps.length ? (on/emps.length*100)+'%' : '0';
+}
+function crewCard(short, kind, duty){
+  const p = posOf(short), g = gpsState(p), busy = busyWith(short), ct = S.contacts[short] || {};
+  let st = 'off', stT = 'ยังไม่เปิด GPS';
+  if (g === 'on'){ st = busy ? 'go' : 'on'; stT = busy ? 'ไปงาน #' + busy.id : 'ว่าง'; }
+  else if (g === 'stale'){ st = 'stale'; stT = 'สัญญาณขาด'; }
+  const meta = [];
+  if (p && g !== 'off' && g !== 'none'){ meta.push('อัปเดต ' + ago(p.lastUpdate)); if (p.accuracy != null) meta.push('แม่นยำ ' + Math.round(p.accuracy) + ' ม.'); if (p.speed) meta.push(Math.round(p.speed) + ' กม./ชม.'); if (p.licensePlate) meta.push(p.licensePlate); }
+  const acts = [];
+  if (ct.phone) acts.push(`<a class="btn sm" href="tel:${esc(ct.phone)}">โทร</a>`);
+  if (ct.lineId) acts.push(`<a class="btn sm" href="https://line.me/ti/p/~${encodeURIComponent(ct.lineId)}" target="_blank" rel="noopener">LINE</a>`);
+  return `<article class="crew ${st==='off'?'off':''}">
+    <div class="r1"><div><div class="nm">${esc(fullName(short))}</div><div class="ps">${kind==='emp' ? 'พนักงาน · ช่วง '+esc(duty.emp[short]) : 'คนงาน'}</div></div><span class="st ${st}">${esc(stT)}</span></div>
+    ${meta.length ? `<div class="meta">${meta.map(esc).map(x=>'<span>'+x+'</span>').join('')}</div>` : ''}
+    ${acts.length ? `<div class="acts">${acts.join('')}</div>` : ''}
+  </article>`;
+}
+function renderCrew(duty){
+  const emps = Object.keys(duty.emp), wks = Object.keys(duty.wk);
+  if (!emps.length && !wks.length){ $('crewList').innerHTML = '<div class="empty">ไม่พบรายชื่อเวรตอนนี้ (ตารางเดือนนี้อาจยังไม่ออก)</div>'; return; }
+  $('crewList').innerHTML = emps.map(n => crewCard(n, 'emp', duty)).join('') + wks.map(n => crewCard(n, 'wk', duty)).join('');
+}
+function recommend(duty){
+  const t = S.tickets.find(x => x.id === S.sel);
+  if (!t || t.st !== 'new' || !t.lat) return null;
+  const cands = Object.keys(duty.emp).map(n => ({ n, p: posOf(n) })).filter(x => gpsState(x.p) === 'on' && !busyWith(x.n));
+  if (!cands.length) return { t, none:true };
+  cands.forEach(x => x.km = km([x.p.lat, x.p.lng], [t.lat, t.lon]));
+  cands.sort((a,b) => a.km - b.km);
+  return { t, c: cands[0] };
+}
+function renderRec(duty){
+  const r = recommend(duty), el = $('rec');
+  if (!r){ el.hidden = true; return null; }
+  const t = r.t, nav = `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}`;
+  if (r.none){
+    el.innerHTML = `<div style="flex:1 1 260px;min-width:0"><div class="k">งานรอรับ #${esc(t.id)}</div><div class="h">ยังไม่มีพนักงานเวรเปิด GPS</div><div class="d">ระบบแนะนำชุดที่ใกล้ที่สุดไม่ได้ ให้ติดต่อเวรทางโทรศัพท์</div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px"><a class="btn dk" href="${nav}" target="_blank" rel="noopener">นำทางไปจุดแจ้ง</a></div>`;
+    el.hidden = false; return null;
+  }
+  const c = r.c, ct = S.contacts[c.n] || {}, eta = Math.max(1, Math.round(c.km * 1.35 / 40 * 60));
+  el.innerHTML = `<div style="flex:1 1 280px;min-width:0"><div class="k">ระบบแนะนำ · อยู่เวร + ว่าง + ใกล้ที่สุด</div>
+      <div class="h">ให้ ${esc(fullName(c.n))} รับงาน #${esc(t.id)}</div>
+      <div class="d">ห่างจุดแจ้ง ${c.km.toFixed(1)} กม. (เส้นตรง) · ประมาณ ${eta} นาที</div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${ct.phone ? `<a class="btn pr" href="tel:${esc(ct.phone)}">โทรสั่งงาน</a>` : ''}
+      ${ct.lineId ? `<a class="btn dk" href="https://line.me/ti/p/~${encodeURIComponent(ct.lineId)}" target="_blank" rel="noopener">LINE</a>` : ''}
+      <a class="btn dk" href="${nav}" target="_blank" rel="noopener">จุดแจ้งบนแผนที่</a>
+    </div>`;
+  el.hidden = false;
+  return r;
+}
+function renderTimeline(){
+  const t = S.tickets.find(x => x.id === S.sel), el = $('tl');
+  if (!t){ el.hidden = true; return; }
+  const steps = [['แจ้งเหตุ', t.at], ['รับงาน', t.accAt], ['ไฟกลับมา', t.onAt], ['ปิดงาน', t.st === 'done' ? t.doneAt : null]];
+  el.innerHTML = `<div class="hd"><h2>เส้นทางงาน #${esc(t.id)} · ${esc(TK_TY[t.type]||'')}</h2><span>เวลาจากงานเวรแก้ไฟ</span></div>
+    <ol class="steps">${steps.map(s => `<li><i class="${s[1]?'on':''}"></i><b style="${s[1]?'':'color:#57536B'}">${s[0]}</b><em>${s[1] ? esc(hm(s[1])) + ' น.' : '–'}</em></li>`).join('')}</ol>
+    ${t.detail ? `<p style="margin:12px 0 0;font-size:13px;color:#4A4660;overflow-wrap:anywhere">“${esc(t.detail.slice(0,200))}”</p>` : ''}`;
+  el.hidden = false;
+}
+function renderMap(duty, rec){
+  layer.clearLayers();
+  const pts = [];
+  S.tickets.filter(t => (t.st === 'new' || t.st === 'acc') && t.lat).forEach(t => {
+    const col = t.st === 'new' ? '#E2520C' : '#4B1FA8';
+    const ic = L.divIcon({ className:'', iconSize:[0,0], iconAnchor:[0,0], html:
+      `<div class="pin" style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center"><div class="t">#${esc(t.id)} ${esc(TK_TY[t.type]||'')}</div><svg width="34" height="40" viewBox="0 0 24 28" aria-hidden="true"><path d="M12 27s9-9.2 9-15.5A9 9 0 0 0 3 11.5C3 17.8 12 27 12 27z" fill="${col}" stroke="#fff" stroke-width="2"/><path d="M13 5.5 8.5 13h3.5l-1 5.5 4.5-7.5H12z" fill="#fff"/></svg></div>` });
+    L.marker([t.lat, t.lon], { icon: ic }).on('click', () => { S.sel = t.id; renderAll(); }).addTo(layer);
+    if (t.id === S.sel) L.circle([t.lat, t.lon], { radius: 600, color: col, weight: 1, fillOpacity: .08 }).addTo(layer);
+    pts.push([t.lat, t.lon]);
+  });
+  const names = new Set([...Object.keys(duty.emp), ...Object.keys(duty.wk)]);
+  S.pos.forEach(p => {
+    const g = gpsState(p); if (g === 'off' || g === 'none' || !p.lat) return;
+    const busy = busyWith(p.driverName), col = g === 'stale' ? '#95600E' : busy ? '#4B1FA8' : '#188A4A';
+    const sub = g === 'stale' ? 'สัญญาณขาด ' + ago(p.lastUpdate) : busy ? 'ไปงาน #' + busy.id : (names.has(p.driverName) ? 'อยู่เวร · ว่าง' : 'ไม่อยู่เวร');
+    const ic = L.divIcon({ className:'', iconSize:[0,0], iconAnchor:[0,0], html:
+      `<div class="mk" style="transform:translate(-50%,-14px)"><div class="p" style="background:${col}"></div><div class="lb" style="border-color:${col}"><b>${esc(fullName(p.driverName))}</b><small>${esc(sub)}</small></div></div>` });
+    L.marker([p.lat, p.lng], { icon: ic }).addTo(layer);
+    pts.push([p.lat, p.lng]);
+  });
+  if (rec && rec.c) L.polyline([[rec.c.p.lat, rec.c.p.lng], [rec.t.lat, rec.t.lon]], { color:'#E2520C', weight:4, dashArray:'10 8' }).addTo(layer);
+  if (!fitted && pts.length){ map.fitBounds(L.latLngBounds(pts).pad(0.3), { maxZoom: 14 }); fitted = true; }
+}
+function renderFeed(){
+  const ev = [];
+  S.tickets.forEach(t => {
+    ev.push([t.at, 'แจ้งใหม่ #' + t.id + ' ' + (TK_TY[t.type]||'')]);
+    if (t.accAt) ev.push([t.accAt, (t.accBy||'') + ' รับงาน #' + t.id]);
+    if (t.st === 'done' && t.doneAt) ev.push([t.doneAt, 'ปิดงาน #' + t.id]);
+  });
+  ev.sort((a,b) => new Date(b[0]) - new Date(a[0]));
+  $('feed').innerHTML = '<div style="font-size:13px;font-weight:700;color:#C9C4DB">ความเคลื่อนไหวล่าสุด</div>' +
+    (ev.length ? ev.slice(0,6).map(e => `<div class="row"><span>${esc(hm(e[0]))}</span><span>${esc(e[1])}</span></div>`).join('') : '<div class="row"><span></span><span>ยังไม่มีความเคลื่อนไหวใน 36 ชม.</span></div>');
+}
+function renderHead(){
+  $('shiftChip').textContent = 'เวร ' + shiftLabel();
+  if (S.wx && S.wx.lv != null){ $('wxChip').hidden = false; $('wxChip').textContent = 'อากาศ: ' + (S.wx.label || WX[S.wx.lv] || S.wx.lv); }
+  const k = S.tmd && (S.tmd.k || S.tmd.s);
+  if (k){ $('tmdChip').hidden = false; $('tmdChip').innerHTML = '<b>ประกาศกรมอุตุฯ</b> ' + esc(String(k.w||'').slice(0,60)); if (k.url) $('tmdChip').href = k.url; }
+  else $('tmdChip').hidden = true;
+}
+let DUTY = { emp:{}, wk:{} };
+function renderAll(){
+  renderHead(); renderTickets(); renderKpis(DUTY); renderCrew(DUTY);
+  const r = renderRec(DUTY); renderTimeline(); renderMap(DUTY, r); renderFeed();
+}
+
+/* ---------- รอบอัปเดต ---------- */
+async function tickDuty(){ DUTY = await onDuty(); renderAll(); }
+async function tickFast(){ await loadPos(); renderAll(); }
+async function tickTk(){ await loadTickets(); renderAll(); }
+(async function start(){
+  await loadBoot();
+  await Promise.all([loadTickets(), loadPos(), loadWx()]);
+  await tickDuty();
+  setInterval(tickFast, 10000);
+  setInterval(tickTk, 30000);
+  setInterval(tickDuty, 5*60000);
+  setInterval(() => loadWx().then(renderAll), 15*60000);
+})();
+</script>
+</body>
+</html>

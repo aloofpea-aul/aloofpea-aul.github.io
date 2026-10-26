@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="/pea-hub.js?v=2026102601" data-app="ops" data-perm="login" data-name="ห้องควบคุมรถแก้ไฟ"></script>
+<title>ชุดแก้ไฟ · เปิด GPS</title>
+<meta name="theme-color" content="#17142A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3F1EC;--ink:#17142A;--sub:#57536B;--line:#E3DFD6;--pur:#4B1FA8;--org:#E2520C;--grn:#188A4A;--red:#B42318}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;display:flex;flex-direction:column;min-height:100vh;-webkit-text-size-adjust:100%}
+header{background:var(--ink);color:#fff;padding:16px 18px calc(18px);display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between}
+.top a{color:#C9C4DB;font-size:13px;text-decoration:none;border:1px solid #4A4466;border-radius:10px;padding:6px 10px}
+.state{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.04em;font-size:14px}
+.led{width:12px;height:12px;border-radius:50%;background:#6C6785}
+.led.on{background:#3DDC84;box-shadow:0 0 0 0 rgba(61,220,132,.6);animation:p 1.6s infinite}
+@keyframes p{70%{box-shadow:0 0 0 10px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+.big{font-size:24px;font-weight:700}
+.subw{font-size:13px;color:#C9C4DB}
+main{flex:1 1 auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+.card h2{margin:0 0 8px;font-size:15px}
+label{display:block;font-size:13px;color:var(--sub);margin-bottom:10px}
+select,input[type=text]{display:block;width:100%;height:48px;margin-top:4px;border:1px solid #D9D4C8;border-radius:10px;padding:0 12px;font:inherit;font-size:16px;background:#fff;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.m{background:#F7F5F0;border-radius:10px;padding:8px}
+.m small{display:block;font-size:11px;color:var(--sub)}
+.m b{font-family:'IBM Plex Mono',monospace;font-size:15px}
+.tk{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.tk.new{border:2px solid var(--org)}
+.tk .h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--sub)}
+.tk .t{font-weight:700}
+.tk .d{font-size:13px;color:#4A4660;overflow-wrap:anywhere}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.btn{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #D9D4C8;background:#fff;color:var(--ink);font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.go{position:sticky;bottom:0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 70%,rgba(243,241,236,0))}
+.go button{width:100%;min-height:62px;border:0;border-radius:999px;font:inherit;font-size:18px;font-weight:700;color:#fff;background:var(--grn)}
+.go button.stop{background:var(--red)}
+.go button:disabled{background:#B9B5C6}
+.note{font-size:12px;color:var(--sub);line-height:1.6}
+.msg{font-size:12px;color:var(--sub);text-align:center;margin-top:6px;font-family:'IBM Plex Mono',monospace}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="state"><span class="led" id="led"></span><span id="stTxt">ยังไม่เปิด GPS</span></div><a href="/ops/index.html">ห้องควบคุม</a></div>
+  <div><div class="big" id="who">เลือกชื่อด้านล่าง</div><div class="subw" id="whoSub">ชุดแก้ไฟ · กฟส.อ่าวลึก</div></div>
+</header>
+
+<main>
+  <section class="card" id="setup">
+    <h2>ตั้งค่าครั้งแรก (จำไว้ในเครื่อง)</h2>
+    <label>ชื่อในตารางเวร<select id="selName"><option value="">กำลังโหลดรายชื่อ…</option></select></label>
+    <label>รถที่ใช้วันนี้ (ทะเบียน/ชื่อรถ)<input type="text" id="car" list="carList" placeholder="เช่น รถกระเช้า 1 หรือ ทะเบียน" autocomplete="off"><datalist id="carList"></datalist></label>
+    <p class="note">เปิดหน้านี้ค้างไว้ระหว่างอยู่เวร ระบบส่งตำแหน่งทุก 15 วินาทีให้ห้องควบคุมเห็นบนแผนที่ และพยายามไม่ให้จอดับเอง แนะนำตั้งมือถือไม่ให้ล็อกจอระหว่างเวรด้วย</p>
+  </section>
+
+  <section class="card">
+    <h2>สถานะการส่งตำแหน่ง</h2>
+    <div class="grid">
+      <div class="m"><small>ความแม่นยำ</small><b id="mAcc">–</b></div>
+      <div class="m"><small>ความเร็ว</small><b id="mSpd">–</b></div>
+      <div class="m"><small>ส่งล่าสุด</small><b id="mLast">–</b></div>
+    </div>
+    <div class="msg" id="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>งานแจ้งไฟดับตอนนี้</h2>
+    <div id="tks" class="note">กำลังโหลด…</div>
+    <div class="row"><a class="btn" href="/duty-roster/index.html?from=hub">รับงาน/ปิดงานในงานเวรแก้ไฟ</a></div>
+  </section>
+</main>
+
+<div class="go"><button type="button" id="goBtn" disabled>เริ่มส่งตำแหน่ง</button></div>
+
+<script>
+'use strict';
+const DUTY_API = 'https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec';
+const TRACK_API = 'https://script.google.com/macros/s/AKfycbytt3h9GVgqqQbuOwrxJGQTOn5pe-fKOOW7H_t6wNWlHCbYGZVY8YtIE-Mcj4kVbkcx/exec';
+const SEND_MS = 15000;
+const TK_TY = {home:'ไฟดับทั้งบ้าน',area:'ไฟดับทั้งซอย/หมู่บ้าน',low:'ไฟตก / กระพริบ',danger:'สายขาด / เสาล้ม / ไฟไหม้',other:'แจ้งไฟดับ'};
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = { get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+function creds(){ try{ return { user: localStorage.getItem('pea_aoluek_username')||'', pass: localStorage.getItem('pea_aoluek_password')||'' }; }catch(e){ return {user:'',pass:''}; } }
+const hm = iso => new Date(new Date(iso).getTime() + 7*3600e3).toISOString().slice(11,16);
+async function postJ(base, body){ const r = await fetch(base, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) }); return r.json(); }
+
+let people = [], me = LS.get('ops_me') || { short:'', car:'' }, cars = LS.get('ops_cars') || [];
+let tracking = false, watchId = null, timer = null, last = null, wake = null;
+
+function fullOf(s){ const p = people.find(x => x.short === s); return p ? p.full : s; }
+function paintWho(){
+  $('who').textContent = me.short ? fullOf(me.short) : 'เลือกชื่อด้านล่าง';
+  $('whoSub').textContent = me.car ? 'รถ: ' + me.car : 'ชุดแก้ไฟ · กฟส.อ่าวลึก';
+  $('goBtn').disabled = !me.short;
+}
+async function loadPeople(){
+  try {
+    const r = await fetch(DUTY_API + '?action=bootstrap'), j = await r.json();
+    if (j.ok){ people = [...(j.people.emp||[]), ...(j.people.wk||[])]; LS.set('ops_people', people); }
+  } catch(e){ people = LS.get('ops_people') || []; }
+  $('selName').innerHTML = '<option value="">— เลือกชื่อ —</option>' + people.map(p => `<option value="${esc(p.short)}" ${p.short===me.short?'selected':''}>${esc(p.full)}${p.group==='WK'?' (คนงาน)':''}</option>`).join('');
+  paintWho();
+}
+$('selName').onchange = e => { me.short = e.target.value; LS.set('ops_me', me); paintWho(); };
+$('car').value = me.car || '';
+$('carList').innerHTML = cars.map(c => `<option value="${esc(c)}">`).join('');
+$('car').onchange = e => { me.car = e.target.value.trim(); LS.set('ops_me', me); if (me.car && cars.indexOf(me.car) < 0){ cars.unshift(me.car); cars = cars.slice(0,6); LS.set('ops_cars', cars); } paintWho(); };
+
+function log(t){ $('log').textContent = t; }
+function payload(type){
+  const b = { type, vehicleId: 'D-' + me.short };
+  if (type === 'position' && last){
+    Object.assign(b, { licensePlate: me.car || '', driverName: me.short, lat: last.coords.latitude, lng: last.coords.longitude,
+      speed: last.coords.speed != null ? last.coords.speed * 3.6 : null, heading: last.coords.heading, accuracy: last.coords.accuracy,
+      passengerCount: 0, timestamp: new Date().toISOString() });
+  }
+  return b;
+}
+async function send(){
+  if (!last || !me.short) return;
+  log('กำลังส่ง…');
+  try { await postJ(TRACK_API, payload('position')); $('mLast').textContent = hm(new Date().toISOString()); log('ส่งแล้ว'); }
+  catch(e){ log('ส่งไม่สำเร็จ จะลองใหม่รอบถัดไป'); }
+}
+function stopSignal(){
+  const b = JSON.stringify(payload('stop'));
+  try { if (!navigator.sendBeacon(TRACK_API, new Blob([b], { type:'text/plain;charset=utf-8' }))) throw 0; }
+  catch(e){ fetch(TRACK_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:b, keepalive:true }).catch(()=>{}); }
+}
+async function lockScreen(){ try { if ('wakeLock' in navigator) wake = await navigator.wakeLock.request('screen'); } catch(e){} }
+document.addEventListener('visibilitychange', () => { if (tracking && document.visibilityState === 'visible') { lockScreen(); send(); } });
+window.addEventListener('pagehide', () => { if (tracking) stopSignal(); });
+
+function start(){
+  if (!navigator.geolocation){ log('เครื่องนี้ไม่รองรับ GPS'); return; }
+  tracking = true; lockScreen();
+  watchId = navigator.geolocation.watchPosition(p => {
+    const first = !last; last = p;
+    $('mAcc').textContent = Math.round(p.coords.accuracy) + ' ม.';
+    $('mSpd').textContent = p.coords.speed != null ? Math.round(p.coords.speed * 3.6) + ' กม./ชม.' : '–';
+    if (first) send();
+  }, e => log('GPS: ' + e.message), { enableHighAccuracy:true, maximumAge:5000, timeout:20000 });
+  timer = setInterval(send, SEND_MS);
+  $('led').classList.add('on'); $('stTxt').textContent = 'กำลังส่งตำแหน่ง';
+  $('goBtn').textContent = 'หยุดส่งตำแหน่ง (ลงเวร)'; $('goBtn').classList.add('stop');
+  $('setup').hidden = true;
+}
+function stop(){
+  tracking = false;
+  if (watchId != null) navigator.geolocation.clearWatch(watchId);
+  clearInterval(timer); stopSignal();
+  if (wake){ wake.release().catch(()=>{}); wake = null; }
+  $('led').classList.remove('on'); $('stTxt').textContent = 'ยังไม่เปิด GPS';
+  $('goBtn').textContent = 'เริ่มส่งตำแหน่ง'; $('goBtn').classList.remove('stop');
+  $('setup').hidden = false; log('หยุดแล้ว');
+}
+$('goBtn').onclick = () => tracking ? stop() : start();
+
+async function loadTk(){
+  const c = creds();
+  try {
+    const r = await postJ(DUTY_API, { action:'tickets', hubUser:c.user, hubPass:c.pass });
+    if (!r.ok){ $('tks').textContent = r.error || 'ดูรายการไม่ได้'; return; }
+    const open = (r.tickets||[]).filter(t => t.st === 'new' || t.st === 'acc');
+    if (!open.length){ $('tks').textContent = 'ไม่มีงานค้าง'; return; }
+    $('tks').innerHTML = open.map(t => `<div class="tk ${t.st==='new'?'new':''}">
+      <div class="h"><span>#${esc(t.id)} · ${esc(hm(t.at))} น.</span><span>${t.st==='new'?'รอรับงาน':'รับแล้ว · '+esc(t.accBy||'')}</span></div>
+      <div class="t">${esc(TK_TY[t.type]||'แจ้งไฟดับ')}</div>
+      <div class="d">${esc(t.place || (t.detail||'').slice(0,100))}</div>
+      <div class="row">
+        ${t.lat ? `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lon}" target="_blank" rel="noopener">นำทาง</a>` : ''}
+        ${t.phone ? `<a class="btn" href="tel:${esc(t.phone)}">โทรผู้แจ้ง</a>` : ''}
+      </div></div>`).join('');
+  } catch(e){ $('tks').textContent = 'เชื่อมต่อไม่ได้ กำลังลองใหม่'; }
+}
+loadPeople(); loadTk(); setInterval(loadTk, 30000);
+</script>
+</body>
+</html>
