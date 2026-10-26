@@ -25,10 +25,10 @@
   }
   function gasUrl() { return ls('sld_gas_url') || DEFAULT_GAS_URL; }
   function creds() { return { name: ls(K_USER) || '', pass: ls(K_PASS) || '' }; }
-  function api(payload) {
+  function api(payload, keepalive) {
     var c = creds();
     var body = Object.assign({ changedBy: c.name, changedByPassword: c.pass }, payload);
-    return fetch(gasUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+    return fetch(gasUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), keepalive: !!keepalive })
       .then(function (r) { return r.json(); });
   }
   function readCache() { try { return JSON.parse(ls(K_AUTH) || 'null'); } catch (e) { return null; } }
@@ -50,7 +50,7 @@
   function userHint() {
     var key = me && me.dataset.userKey, field = me && me.dataset.userField, v = key ? ls(key) : '';
     if (v && field) { try { v = (JSON.parse(v) || {})[field] || ''; } catch (e) { v = ''; } }
-    return String(v || creds().name || '').slice(0, 60);
+    return String(v || creds().name || '').replace(/\s+/g, ' ').trim().slice(0, 60);   // ชื่อจากชีตบางคนมีเว้นวรรคซ้ำ — รวมให้เป็นคนเดียวกัน
   }
 
   var counted = false;
@@ -60,6 +60,18 @@
     var key = 'pea_hub_seen_' + APP, now = Date.now(), last = 0;
     try { last = parseInt(sessionStorage.getItem(key), 10) || 0; sessionStorage.setItem(key, String(now)); } catch (e) {}
     if (!fromHub && last && now - last < IDLE_MS) return;      // ยังอยู่ในการเปิดครั้งเดิม
+    // ยังไม่รู้ชื่อเลย (เครื่องใหม่ ยังไม่ได้เข้าระบบ) แต่โปรแกรมจำชื่อเองได้ → รอให้เข้าระบบก่อนค่อยนับ จะได้มีชื่อ
+    // รอได้ไม่เกิน 5 นาที หรือจนปิด/ออกจากหน้า (ส่งแบบ keepalive) — นับ 1 ครั้งเท่าเดิม
+    if (!creds().name && !userHint() && me && me.dataset.userKey) {
+      var sent = false, t0 = Date.now();
+      var send = function (ka) {
+        if (sent) return; sent = true; clearInterval(iv);
+        api({ action: 'appOpen', app: APP, src: SRC, page: location.pathname, userHint: userHint() }, ka).catch(function () {});
+      };
+      var iv = setInterval(function () { if (userHint() || creds().name || Date.now() - t0 > 5 * 60000) send(false); }, 2000);
+      window.addEventListener('pagehide', function () { send(true); });
+      return;
+    }
     // มีบัญชีศูนย์รวมงาน = นับพร้อมชื่อที่ยืนยันแล้ว · ไม่มี = หลังบ้านนับแบบ "ไม่ได้ยืนยันตัวตน" ด้วยชื่อจาก userHint
     api({ action: 'appOpen', app: APP, src: SRC, page: location.pathname, userHint: userHint() }).catch(function () {});
   }
