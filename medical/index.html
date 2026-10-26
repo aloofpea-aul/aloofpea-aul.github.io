@@ -131,6 +131,8 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 .ttl{text-align:center;font-weight:700}
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:7mm;text-align:center}
 .sig .line{border-bottom:1px dotted var(--ink);height:5mm}
+.sig .nm:empty{display:none}
+.sig .nm,.sig [data-k]{white-space:nowrap;overflow:hidden}
 .sig .dt{display:flex;justify-content:center;gap:1mm;margin-top:.5mm}
 .sig .dt span{border-bottom:1px dotted var(--ink);width:9mm}
 .cross{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -310,8 +312,19 @@ table.h small{color:var(--muted);display:block}
     </div>
   </section>
 
+  <section class="card">
+    <h2><span class="n">4</span>ผู้ลงนามความเห็นหน่วยงาน <span class="hint">พิมพ์ชื่อและตำแหน่งลงใบ</span></h2>
+    <div class="g">
+      <label class="f">ชื่อหัวหน้าแผนก<input id="s1n" list="empList" placeholder="ว่างได้ (เซ็นมือ)"></label>
+      <label class="f">ตำแหน่ง<input id="s1p" placeholder="เช่น หผ.ปร.กฟส.อล."></label>
+      <label class="f">ชื่อผู้อนุมัติ (อฝ./อก./ผจก.)<input id="s2n" list="empList" placeholder="ว่างได้ (เซ็นมือ)"></label>
+      <label class="f">ตำแหน่ง<input id="s2p" placeholder="เช่น ผจก.กฟส.อล."></label>
+    </div>
+    <p class="note" style="margin:8px 0 0">ระบบจำผู้ลงนามล่าสุดของแต่ละแผนกไว้ให้ ครั้งต่อไปไม่ต้องกรอกใหม่</p>
+  </section>
+
   <section class="card budget">
-    <h2><span class="n">4</span>ตัดงบทำการ <span class="chip" id="bChip">—</span></h2>
+    <h2><span class="n">5</span>ตัดงบทำการ <span class="chip" id="bChip">—</span></h2>
     <div id="bSent" hidden></div>
     <div id="bEdit">
       <div class="seg" style="margin-bottom:10px">
@@ -384,8 +397,8 @@ table.h small{color:var(--muted);display:block}
         <div>เรียน&nbsp; อฝ./อก./ผจก.กฟส.อล.</div>
         <div style="padding-left:9mm">เห็นควรให้เบิกได้ตามระเบียบ</div>
         <div class="sig">
-          <div><div class="line"></div>หผ.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
-          <div><div class="line"></div>อฝ./อก./ผจก.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
+          <div><div class="line"></div><div class="nm" data-k="s1nP"></div><div data-k="s1p">หผ.</div><div class="dt"><span></span>/<span></span>/<span></span></div></div>
+          <div><div class="line"></div><div class="nm" data-k="s2nP"></div><div data-k="s2p">อฝ./อก./ผจก.</div><div class="dt"><span></span>/<span></span>/<span></span></div></div>
         </div>
       </div>
       <div>
@@ -475,7 +488,7 @@ table.h small{color:var(--muted);display:block}
 const BUDGET_API = 'https://script.google.com/macros/s/AKfycbygECo4LkNmO4KLt2CXCrX25vwXE0armUUsdajOWF1CL3djNXaELZX8gwb8zU1GFdsWwQ/exec';
 const MED_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbxmaYK7DcdHmgz0iOfRrUKipzzsRkh8Da1DaBuTcZAPiDejE60tkvyed4V1tgW82CNy/exec';   // ใส่ URL Web app ของหลังบ้านใบเบิกค่ารักษาพยาบาลหลัง Deploy
 const K = { token: 'budget_token_v1', user: 'budget_user_v1', boot: 'budget_boot_v1', people: 'budget_people_v1', list: 'med_list_v1', draft: 'med_draft_v1', medApi: 'med_api_url' };
-const DEF = { to: 'ผจก.กฟส.อล.', office: 'กฟส.อล.', div: '2', bureau: 'ภาคใต้', tel: '-', prov: 'กระบี่', docs: '1' };
+const DEF = { s1p: 'หผ.', s2p: 'ผจก.กฟส.อล.', to: 'ผจก.กฟส.อล.', office: 'กฟส.อล.', div: '2', bureau: 'ภาคใต้', tel: '-', prov: 'กระบี่', docs: '1' };
 const SELF = { occ: 'รัฐวิสาหกิจ', work: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', gov: '-' };
 const ACCT = { emp: '52021010', fam: '52021020' };
 const ACCT_NAME = { '52021010': 'ค่ารักษาพยาบาล-พนักงาน', '52021020': 'ค่ารักษา-ครอบครัว' };
@@ -537,7 +550,7 @@ $('logoutBtn').onclick = () => { ls(K.token, null); ls(K.user, null); ls(K.boot,
 /* ====== ข้อมูลพื้นฐาน ====== */
 const MS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const ML = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-const TXT = ['name', 'empId', 'pos', 'office', 'dept', 'div', 'bureau', 'tel', 'hired', 'to', 'patName', 'occ', 'gov', 'work', 'hosName', 'prov', 'dis', 'dFrom', 'dTo', 'days', 'docs', 'amount', 'sDate'];
+const TXT = ['name', 'empId', 'pos', 'office', 'dept', 'div', 'bureau', 'tel', 'hired', 'to', 'patName', 'occ', 'gov', 'work', 'hosName', 'prov', 'dis', 'dFrom', 'dTo', 'days', 'docs', 'amount', 'sDate', 's1n', 's1p', 's2n', 's2p'];
 const EMP_FIELDS = ['name', 'empId', 'pos', 'office', 'dept', 'div', 'bureau', 'tel', 'hired', 'to'];
 const todayYmd = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const fyOf = v => { if (!v) return ''; const [y, m] = String(v).split('-').map(Number); return String(y + 543 + (m >= 10 ? 1 : 0)); };
@@ -584,6 +597,13 @@ function profileOf(name) {
   if (last && last.data) EMP_FIELDS.forEach(f => { if (last.data[f]) prof[f] = last.data[f]; });
   return prof;
 }
+// ผู้ลงนามล่าสุดของแผนกเดียวกัน
+function signersFor(dept) {
+  const d = norm(dept); if (!d) return {};
+  const last = claims.filter(c => norm(c.dept) === d && c.data && (c.data.s1n || c.data.s2n)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+  if (!last) return {};
+  const o = {}; ['s1n', 's1p', 's2n', 's2p'].forEach(k => { if (last.data[k]) o[k] = last.data[k]; }); return o;
+}
 function pickEmployee(raw) {
   const p = people.find(x => normName(x.name) === normName(raw));
   const nm = p ? p.name : raw;
@@ -592,7 +612,7 @@ function pickEmployee(raw) {
   if (p) { base.pos = p.position || p.role || ''; if (p.dept) base.dept = p.dept; }
   const u = boot && (boot.allUsers || []).find(x => normName(x.name) === normName(nm));
   if (u && u.dept && !base.dept) base.dept = norm(u.dept);
-  fill(Object.assign(base, prof));
+  fill(Object.assign(base, prof, signersFor(prof.dept || base.dept)));
   const missing = ['empId', 'pos', 'dept', 'hired'].some(f => !$(f).value);
   if (missing) $('empMore').open = true;
   budgetDeptAuto = true;
@@ -705,6 +725,7 @@ function render() {
     patOf: self ? 'ตนเอง' : g('patName'), rel: self ? '-' : radio('pat'), occ: self ? SELF.occ : g('occ'), work: self ? SELF.work : g('work'), gov: self ? SELF.gov : (g('gov') || '-'),
     ckGov: radio('hos') === 'gov' ? '✓' : '', ckPri: radio('hos') === 'pri' ? '✓' : '', hosName: g('hosName'), prov: g('prov'), dis: g('dis'), dFrom: sd(g('dFrom')), dTo: sd(g('dTo')), days: g('days'), docs: g('docs'),
     amount: ok ? fmt(a) : '', exVat, vatAmt, words, baht: bh, satang: st, r1: r === '1' ? '✓' : '', r2: r === '2' ? '✓' : '', r3: r === '3' ? '✓' : '', r4: r === '4' ? '✓' : '',
+    s1nP: g('s1n') ? '( ' + g('s1n') + ' )' : '', s1p: g('s1p') || 'หผ.', s2nP: g('s2n') ? '( ' + g('s2n') + ' )' : '', s2p: g('s2p') || 'อฝ./อก./ผจก.',
     sD: dt ? dt[2] : '', sM: dt ? ML[dt[1] - 1] : '', sY: dt ? dt[0] + 543 : '' };
   document.querySelectorAll('#paper [data-k]').forEach(el => { const v = V[el.dataset.k] ?? ''; el.textContent = v; el.classList.toggle('has', !!v && el.classList.contains('v')); });
   $('empCard').hidden = !V.name;
@@ -845,11 +866,12 @@ $('frm').addEventListener('change', e => {
   if (e.target.name === 'acct') acctManual = true;
   if (e.target.id === 'bDept') { budgetDeptAuto = false; acctManual = false; }
   if (e.target.id === 'empSearch') { if (e.target.value.trim()) pickEmployee(e.target.value.trim()); return; }
+  if (e.target.id === 's1n' || e.target.id === 's2n') { const p = person(e.target.value); const pf = $(e.target.id === 's1n' ? 's1p' : 's2p'); const auto = p && (p.position || p.role); if (auto && (!pf.value || pf.value === pf.dataset.auto || pf.value === DEF[pf.id])) { pf.value = auto; pf.dataset.auto = auto; } }
   render();
 });
 $('amount').addEventListener('blur', () => { const a = num($('amount').value); if (isFinite(a) && a > 0) $('amount').value = fmt(a); render(); });
 $('dFrom').addEventListener('change', () => { if (!$('dTo').value || $('dTo').value < $('dFrom').value) $('dTo').value = $('dFrom').value; render(); });
-const MAP = { patOf: 'patName', words: 'amount', sD: 'sDate', sM: 'sDate', sY: 'sDate' };
+const MAP = { s1nP: 's1n', s2nP: 's2n', patOf: 'patName', words: 'amount', sD: 'sDate', sM: 'sDate', sY: 'sDate' };
 $('paper').addEventListener('click', e => { const el = e.target.closest('[data-k]'); if (!el) return; const id = MAP[el.dataset.k] || el.dataset.k; const inp = $(id); if (!inp || inp.tagName !== 'INPUT') return;
   setView('form'); const d = inp.closest('details'); if (d) d.open = true; inp.focus(); inp.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
 window.addEventListener('resize', fit);
