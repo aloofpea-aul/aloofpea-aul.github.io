@@ -45,6 +45,11 @@ main{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:20px;a
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
 .card h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:8px;font-weight:600}
 .card h2 .n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px;flex:none}
+.sgn{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:1px dashed var(--line)}
+.sgn:first-of-type{border-top:0;padding-top:0}
+.sgt{font-size:12px;font-weight:600;color:var(--muted)}
+.pn{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px}
+.prefix-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--bad)}
 .card h2 .hint{margin-left:auto;font-weight:400;font-size:12px;color:var(--muted)}
 .g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .full{grid-column:1/-1}
@@ -132,6 +137,7 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:7mm;text-align:center}
 .sig .line{border-bottom:1px dotted var(--ink);height:5mm}
 .sig .nm:empty{display:none}
+.sec1,.grid2>div,.rcv>div,.sig>div,.sig3>div,.appr{overflow:hidden;min-width:0}
 .sig .nm,.sig [data-k]{white-space:nowrap;overflow:hidden}
 .sig .dt{display:flex;justify-content:center;gap:1mm;margin-top:.5mm}
 .sig .dt span{border-bottom:1px dotted var(--ink);width:9mm}
@@ -248,6 +254,8 @@ table.h small{color:var(--muted);display:block}
       <input id="empSearch" list="empList" placeholder="พิมพ์ชื่อ เช่น มานศักดิ์">
       <datalist id="empList"></datalist>
     </label>
+    <div class="prefix-row" id="namePreRow" hidden>ฐานข้อมูลไม่มีคำนำหน้าของคนนี้ เลือก:
+      <button type="button" class="mini" data-pre="นาย">นาย</button><button type="button" class="mini" data-pre="นาง">นาง</button><button type="button" class="mini" data-pre="นางสาว">นางสาว</button></div>
     <div class="emp" id="empCard" hidden><div class="av" id="empAv"></div><div><b id="empName"></b><small id="empSub"></small></div></div>
     <details id="empMore" style="margin-top:10px">
       <summary class="note" style="cursor:pointer">ข้อมูลผู้ขอเบิก (ครั้งแรกกรอกครั้งเดียว ครั้งต่อไประบบจำให้)</summary>
@@ -313,14 +321,22 @@ table.h small{color:var(--muted);display:block}
   </section>
 
   <section class="card">
-    <h2><span class="n">4</span>ผู้ลงนามความเห็นหน่วยงาน <span class="hint">พิมพ์ชื่อและตำแหน่งลงใบ</span></h2>
-    <div class="g">
-      <label class="f">ชื่อหัวหน้าแผนก<input id="s1n" list="empList" placeholder="ว่างได้ (เซ็นมือ)"></label>
-      <label class="f">ตำแหน่ง<input id="s1p" placeholder="เช่น หผ.ปร.กฟส.อล."></label>
-      <label class="f">ชื่อผู้อนุมัติ (อฝ./อก./ผจก.)<input id="s2n" list="empList" placeholder="ว่างได้ (เซ็นมือ)"></label>
-      <label class="f">ตำแหน่ง<input id="s2p" placeholder="เช่น ผจก.กฟส.อล."></label>
+    <h2><span class="n">4</span>ผู้ลงนามความเห็นหน่วยงาน <span class="hint">ชื่อจากฐานข้อมูลพนักงาน</span></h2>
+    <div class="sgn">
+      <div class="sgt">ช่องซ้าย · หัวหน้าแผนก</div>
+      <div class="seg"><label><input type="radio" name="s1m" value="head" checked>หผ. / ชผ.</label><label><input type="radio" name="s1m" value="act">รักษาการแทน</label></div>
+      <div class="pn"><select id="s1pre" aria-label="คำนำหน้า"></select><select id="s1sel" aria-label="ชื่อ"></select></div>
+      <label class="f">ตำแหน่งที่พิมพ์ลงใบ<input id="s1p"></label>
+      <input type="hidden" id="s1n">
     </div>
-    <p class="note" style="margin:8px 0 0">ระบบจำผู้ลงนามล่าสุดของแต่ละแผนกไว้ให้ ครั้งต่อไปไม่ต้องกรอกใหม่</p>
+    <div class="sgn">
+      <div class="sgt">ช่องขวา · ผู้จัดการ</div>
+      <div class="seg"><label><input type="radio" name="s2m" value="mgr" checked>ผจก.</label><label><input type="radio" name="s2m" value="act">ผจก. ไม่อยู่ · รักษาการแทน</label></div>
+      <div class="pn"><select id="s2pre" aria-label="คำนำหน้า"></select><select id="s2sel" aria-label="ชื่อ"></select></div>
+      <label class="f">ตำแหน่งที่พิมพ์ลงใบ<input id="s2p"></label>
+      <input type="hidden" id="s2n">
+    </div>
+    <p class="note" style="margin:8px 0 0">เลือก "เว้นว่าง" ถ้าจะเซ็นและเขียนชื่อเอง · ระบบจำผู้ลงนามล่าสุดของแต่ละแผนกไว้ให้</p>
   </section>
 
   <section class="card budget">
@@ -418,9 +434,10 @@ table.h small{color:var(--muted);display:block}
       <div>
         <div class="ttl">ความเห็นของผู้ตรวจจ่าย</div>
         <div>เรียน&nbsp; อฝ./อก./ผจก.</div>
-        <div class="ln" style="padding-left:9mm">ได้ตรวจสอบแล้วมีสิทธิเบิกได้ทั้งสิ้นเป็นเงิน<span class="v" style="width:22mm" data-k="amount"></span>บาท</div>
+        <div class="ln" style="padding-left:9mm">ได้ตรวจสอบแล้วมีสิทธิเบิกได้ทั้งสิ้นเป็นเงิน</div>
+        <div class="ln"><span class="v" style="width:32mm" data-k="amount"></span>บาท</div>
         <div class="ln">(<span class="v fl" data-k="words"></span>)</div>
-        <div class="sig" style="margin-top:6mm">
+        <div class="sig" style="margin-top:3mm">
           <div><div class="line"></div>ผู้ตรวจ<div class="dt"><span></span>/<span></span>/<span></span></div></div>
           <div><div class="line"></div>หผ.<div class="dt"><span></span>/<span></span>/<span></span></div></div>
         </div>
@@ -488,7 +505,7 @@ table.h small{color:var(--muted);display:block}
 const BUDGET_API = 'https://script.google.com/macros/s/AKfycbygECo4LkNmO4KLt2CXCrX25vwXE0armUUsdajOWF1CL3djNXaELZX8gwb8zU1GFdsWwQ/exec';
 const MED_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbxmaYK7DcdHmgz0iOfRrUKipzzsRkh8Da1DaBuTcZAPiDejE60tkvyed4V1tgW82CNy/exec';   // ใส่ URL Web app ของหลังบ้านใบเบิกค่ารักษาพยาบาลหลัง Deploy
 const K = { token: 'budget_token_v1', user: 'budget_user_v1', boot: 'budget_boot_v1', people: 'budget_people_v1', list: 'med_list_v1', draft: 'med_draft_v1', medApi: 'med_api_url' };
-const DEF = { s1p: 'หผ.', s2p: 'ผจก.กฟส.อล.', to: 'ผจก.กฟส.อล.', office: 'กฟส.อล.', div: '2', bureau: 'ภาคใต้', tel: '-', prov: 'กระบี่', docs: '1' };
+const DEF = { s1n: '', s1p: '', s2n: '', s2p: '', to: 'ผจก.กฟส.อล.', office: 'กฟส.อล.', div: '2', bureau: 'ภาคใต้', tel: '-', prov: 'กระบี่', docs: '1' };
 const SELF = { occ: 'รัฐวิสาหกิจ', work: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', gov: '-' };
 const ACCT = { emp: '52021010', fam: '52021020' };
 const ACCT_NAME = { '52021010': 'ค่ารักษาพยาบาล-พนักงาน', '52021020': 'ค่ารักษา-ครอบครัว' };
@@ -570,20 +587,40 @@ const sd = v => { if (!v) return ''; const [y, m, d] = String(v).split('-').map(
 const radio = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
 const setRadio = (n, v) => { const el = document.querySelector(`input[name="${n}"][value="${v}"]`); if (el) el.checked = true; };
 const initials = n => { const p = normName(n).split(' '); const f = w => (String(w || '').match(/[^เแโใไ\s]/) || [''])[0]; return (f(p[0]) + f(p[1])) || '?'; };
-const person = n => people.find(p => normName(p.name) === normName(n));
-const avatarHtml = n => { const p = person(n); return p && p.photo ? `<img src="${esc(p.photo)}" alt="">` : esc(initials(n)); };
+/* ---- ฐานข้อมูลพนักงาน (Safety Talk) + คำนำหน้า ---- */
+const ST_API = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';
+const PRE_RE = /^\s*(นางสาว|นาง|นาย|ว่าที่\s*ร\.ต\.)\s*/;
+const DEPT_ABBR = { 'แผนกปฏิบัติการระบบไฟฟ้า': 'ผปร.', 'แผนกบริการลูกค้า': 'ผบค.', 'แผนกบัญชีและการเงิน': 'ผบง.', 'กฟส.อ่าวลึก': 'ประจำ กฟฟ.' };
+const shortBranch = s => String(s || '').replace(/กฟส\.อ่าวลึก/g, 'กฟส.อล.');
+let staff = ((lsJ('med_staff_v1') || {}).list) || [];
+const preOf = s => ((String(s || '').match(PRE_RE) || [])[1] || '').replace(/\s+/g, '');
+const person = n => staff.find(p => normName(p.name) === normName(n)) || people.find(p => normName(p.name) === normName(n));
+const isHead = p => (/^หัวหน้าแผนก|^หผ\./.test(p.position) || /^หผ\./.test(p.newsPos)) && !/ผู้ช่วย/.test(p.position);
+const isAsst = p => /ผู้ช่วยหัวหน้าแผนก|^ชผ\./.test(p.position) || /^ชผ\./.test(p.newsPos);
+const isMgr = p => /ผู้จัดการ/.test(p.position) || /^ผจก\./.test(p.newsPos);
+// คำนำหน้า: จากฐานข้อมูลก่อน ถ้าไม่มีใช้ที่เคยเลือกไว้ในใบเบิกเก่า
+function prefixOf(n) {
+  const p = person(n); if (p && p.prefix) return p.prefix;
+  const k = normName(n);
+  for (const c of claims) { const d = c.data || {}; for (const f of ['name', 's1n', 's2n']) if (d[f] && normName(d[f]) === k && preOf(d[f])) return preOf(d[f]); }
+  const m = lsJ('med_prefix_v1') || {}; return m[k] || '';
+}
+function rememberPrefix(full) { const pre = preOf(full); if (!pre) return; const m = lsJ('med_prefix_v1') || {}; m[normName(full)] = pre; ls('med_prefix_v1', JSON.stringify(m)); }
+const withPre = n => { if (!n) return ''; const b = normName(n), pre = prefixOf(b); return pre ? pre + b : b; };
+const shortPos = p => p ? shortBranch(p.newsPos || p.position || '') : '';
+const avatarHtml = n => { const p = person(n) || people.find(x => normName(x.name) === normName(n)); return p && p.photo ? `<img src="${esc(p.photo)}" alt="">` : esc(initials(n)); };
 
 /* ====== ฟอร์ม ====== */
 function collect() {
   const o = {}; TXT.forEach(k => o[k] = $(k).value.trim());
   o.pat = radio('pat'); o.hos = radio('hos'); o.right = radio('right'); o.vat = $('vat').checked;
-  o.cross = $('cross').checked; o.acct = radio('acct') || ''; o.budgetDept = keyLabel($('bDept').value || '|');
+  o.cross = $('cross').checked; o.s1m = radio('s1m'); o.s2m = radio('s2m'); o.acct = radio('acct') || ''; o.budgetDept = keyLabel($('bDept').value || '|');
   return o;
 }
 function fill(o) {
   TXT.forEach(k => { if (o[k] !== undefined) $(k).value = o[k]; });
   if (o.pat) setRadio('pat', o.pat); if (o.hos) setRadio('hos', o.hos); if (o.right) setRadio('right', o.right);
-  if (o.vat !== undefined) $('vat').checked = !!o.vat; if (o.cross !== undefined) $('cross').checked = !!o.cross;
+  if (o.vat !== undefined) $('vat').checked = !!o.vat; setRadio('s1m', o.s1m || 'head'); setRadio('s2m', o.s2m || 'mgr'); if (o.cross !== undefined) $('cross').checked = !!o.cross;
 }
 function blankClaim() {
   return Object.assign({ name: '', empId: '', pos: '', dept: '', hired: '', patName: '', occ: '', gov: '', work: '', hosName: '', dis: '', dFrom: '', dTo: '', days: '', amount: '', pat: 'ตนเอง', hos: 'pri', right: '1', vat: false, cross: true, sDate: todayYmd() }, DEF);
@@ -597,22 +634,62 @@ function profileOf(name) {
   if (last && last.data) EMP_FIELDS.forEach(f => { if (last.data[f]) prof[f] = last.data[f]; });
   return prof;
 }
+/* ---- ผู้ลงนาม ---- */
+const PRES = ['', 'นาย', 'นาง', 'นางสาว'];
+function signerOpts(slot) {
+  const m = radio(slot === 1 ? 's1m' : 's2m'), d = norm($('dept').value);
+  let list;
+  if (slot === 1) list = m === 'head' ? staff.filter(p => isHead(p) || isAsst(p)) : staff.slice();
+  else list = m === 'mgr' ? staff.filter(isMgr) : staff.filter(p => !isMgr(p));
+  const rank = p => (slot === 1 && (DEPT_ABBR[p.dept] || p.dept) === d ? 0 : 1) * 10 + (isHead(p) ? 0 : isAsst(p) ? 1 : isMgr(p) ? 0 : 2);
+  return list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'th'));
+}
+function autoPos(slot, p) {
+  const d = norm($('dept').value), code = { 'ผปร.': 'ปร.', 'ผบค.': 'บค.', 'ผบง.': 'บง.' }[d] || '';
+  if (slot === 1) return radio('s1m') === 'head' ? shortPos(p) : 'รักษาการแทน หผ.' + code + 'กฟส.อล.';
+  return radio('s2m') === 'mgr' ? (shortPos(p) || 'ผจก.กฟส.อล.') : 'รักษาการแทน ผจก.กฟส.อล.';
+}
+function renderSigners() {
+  [1, 2].forEach(slot => {
+    const sel = $('s' + slot + 'sel'), pre = $('s' + slot + 'pre'), nmEl = $('s' + slot + 'n');
+    if (nmEl.value && !preOf(nmEl.value) && prefixOf(nmEl.value)) nmEl.value = withPre(nmEl.value);
+    const cur = normName(nmEl.value), opts = signerOpts(slot);
+    if (cur && !opts.some(p => normName(p.name) === cur)) opts.unshift({ name: cur, position: '', newsPos: '' });
+    const h = '<option value="">— เว้นว่าง (เซ็นมือ) —</option>' + opts.map(p => `<option value="${esc(normName(p.name))}">${esc(normName(p.name))}${shortPos(p) ? ' · ' + esc(shortPos(p)) : ''}</option>`).join('');
+    if (sel.dataset.h !== h) { sel.innerHTML = h; sel.dataset.h = h; }
+    sel.value = cur;
+    if (!pre.options.length) pre.innerHTML = PRES.map(x => `<option value="${x}">${x || 'คำนำหน้า'}</option>`).join('');
+    pre.value = preOf(nmEl.value);
+    pre.classList.toggle('req-miss', !!cur && !pre.value);
+  });
+}
+function setSigner(slot, bare, keepPos) {
+  const nmEl = $('s' + slot + 'n'), posEl = $('s' + slot + 'p');
+  nmEl.value = bare ? withPre(bare) : '';
+  const auto = bare || slot === 2 ? autoPos(slot, person(bare)) : '';
+  if (!keepPos && (!posEl.value || posEl.value === posEl.dataset.auto)) { posEl.value = bare ? auto : ''; }
+  posEl.dataset.auto = posEl.value;
+}
 // ผู้ลงนามล่าสุดของแผนกเดียวกัน
 function signersFor(dept) {
   const d = norm(dept); if (!d) return {};
   const last = claims.filter(c => norm(c.dept) === d && c.data && (c.data.s1n || c.data.s2n)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
   if (!last) return {};
-  const o = {}; ['s1n', 's1p', 's2n', 's2p'].forEach(k => { if (last.data[k]) o[k] = last.data[k]; }); return o;
+  const o = {}; ['s1n', 's1p', 's2n', 's2p', 's1m', 's2m'].forEach(k => { if (last.data[k]) o[k] = last.data[k]; }); return o;
 }
 function pickEmployee(raw) {
-  const p = people.find(x => normName(x.name) === normName(raw));
-  const nm = p ? p.name : raw;
+  const p = person(raw);
+  const nm = withPre(p ? p.name : raw);
   const prof = profileOf(nm);
   const base = Object.assign({}, DEF, { name: nm, pos: '', empId: '', dept: '', hired: '' });
-  if (p) { base.pos = p.position || p.role || ''; if (p.dept) base.dept = p.dept; }
+  if (p) { base.pos = p.position && !/^admin$/i.test(p.position) ? (isHead(p) || isAsst(p) ? String(p.newsPos || p.position).split(/กฟส/)[0].trim() : p.position) : (p.newsPos ? String(p.newsPos).split(/กฟส/)[0].trim() : (p.role || '')); if (p.dept) base.dept = DEPT_ABBR[p.dept] || p.dept; }
+  if (prof.name && !preOf(prof.name) && preOf(nm)) prof.name = nm;
   const u = boot && (boot.allUsers || []).find(x => normName(x.name) === normName(nm));
   if (u && u.dept && !base.dept) base.dept = norm(u.dept);
   fill(Object.assign(base, prof, signersFor(prof.dept || base.dept)));
+  // ยังไม่เคยมีผู้ลงนามของแผนกนี้ → ใส่ หผ. ของแผนก และ ผจก. ให้อัตโนมัติ
+  if (!$('s1n').value) { const d = norm($('dept').value), h = staff.find(x => isHead(x) && (DEPT_ABBR[x.dept] || x.dept) === d) || staff.find(x => isAsst(x) && (DEPT_ABBR[x.dept] || x.dept) === d); if (h) { setRadio('s1m', 'head'); setSigner(1, h.name); } }
+  if (!$('s2n').value) { const m = staff.find(isMgr); if (m) { setRadio('s2m', 'mgr'); setSigner(2, m.name); } }
   const missing = ['empId', 'pos', 'dept', 'hired'].some(f => !$(f).value);
   if (missing) $('empMore').open = true;
   budgetDeptAuto = true;
@@ -729,6 +806,8 @@ function render() {
     sD: dt ? dt[2] : '', sM: dt ? ML[dt[1] - 1] : '', sY: dt ? dt[0] + 543 : '' };
   document.querySelectorAll('#paper [data-k]').forEach(el => { const v = V[el.dataset.k] ?? ''; el.textContent = v; el.classList.toggle('has', !!v && el.classList.contains('v')); });
   $('empCard').hidden = !V.name;
+  $('namePreRow').hidden = !V.name || !!preOf(V.name);
+  renderSigners();
   $('empAv').innerHTML = avatarHtml(V.name); $('empName').textContent = V.name;
   $('empSub').textContent = [V.pos, V.dept, V.empId && ('เลขประจำตัว ' + V.empId), V.hired && ('บรรจุ ' + V.hired)].filter(Boolean).join(' · ');
   $('crossSvg').style.display = $('cross').checked ? '' : 'none';
@@ -738,6 +817,26 @@ function render() {
   renderBudget(Object.assign({}, collect(), { name: V.name }), ok, a);
   $('saveBtn').textContent = editing ? 'บันทึกการแก้ไข' : (radio('bmode') === 'new' ? 'บันทึก + ส่งตัดงบ' : 'บันทึก');
   if (!editing) ls(K.draft, JSON.stringify(collect()));
+  requestAnimationFrame(fitText);
+}
+// ย่อตัวอักษรเฉพาะช่องที่ข้อความยาวเกิน ไม่ให้ล้นไปช่องอื่น
+function fitText() {
+  const paper = $('paper'), sheet = $('sheet'); if (!paper || !paper.offsetWidth) return;
+  // ความสูง: ถ้าเนื้อหายาวเกิน 1 หน้า A4 ค่อยๆ ย่อทั้งใบ
+  sheet.style.fontSize = '';
+  const foot = sheet.querySelector('.foot'), cs = getComputedStyle(sheet);
+  const room = () => sheet.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (foot ? foot.offsetHeight + 4 : 0);
+  let fs = parseFloat(cs.fontSize), fmin = fs * 0.88;
+  while (paper.offsetHeight > room() && fs > fmin) { fs -= 0.25; sheet.style.fontSize = fs + 'px'; }
+  paper.querySelectorAll('.v, .sig .nm, .sig [data-k], .ln').forEach(el => { el.style.fontSize = ''; });
+  paper.querySelectorAll('.v, .sig .nm, .sig [data-k]').forEach(el => {
+    let f = parseFloat(getComputedStyle(el).fontSize), min = f * 0.62;
+    while (el.scrollWidth > el.clientWidth + 1 && f > min) { f -= 0.5; el.style.fontSize = f + 'px'; }
+  });
+  paper.querySelectorAll('.ln').forEach(el => {
+    const box = el.parentElement; let f = parseFloat(getComputedStyle(el).fontSize), min = f * 0.8;
+    while ((el.scrollWidth > el.clientWidth + 1 || el.scrollWidth > box.clientWidth) && f > min) { f -= 0.25; el.style.fontSize = f + 'px'; }
+  });
 }
 function fit() { const sc = $('scaler'), sh = $('sheet'); if (!sc.clientWidth) return; const s = Math.min(1, sc.clientWidth / sh.offsetWidth); sh.style.transform = `scale(${s})`; sc.style.height = (sh.offsetHeight * s) + 'px'; }
 
@@ -749,6 +848,8 @@ function validate(c) {
   const miss = need.filter(([k]) => !String(c[k] || '').trim() || (k === 'amount' && !(num(c.amount) > 0)));
   miss.forEach(([k]) => $(k).classList.add('req-miss'));
   if (miss.length) { const el = $(miss[0][0]); el.closest('details') && (el.closest('details').open = true); setView('form'); el.focus(); return 'กรุณากรอก: ' + miss.map(x => x[1]).join(', '); }
+  if (c.name && !preOf(c.name)) { $('namePreRow').hidden = false; setView('form'); return 'กรุณาเลือกคำนำหน้าชื่อผู้ขอเบิก (นาย/นาง/นางสาว)'; }
+  for (const k of ['s1n', 's2n']) if (c[k] && !preOf(c[k])) { setView('form'); $(k.replace('n', 'pre')).focus(); return 'กรุณาเลือกคำนำหน้าชื่อผู้ลงนาม'; }
   return '';
 }
 async function save() {
@@ -759,6 +860,7 @@ async function save() {
   if (bm === 'new') { acc = medAccounts($('bDept').value).find(x => norm(x.code) === radio('acct')); if (!acc) return toast('เลือกแผนก/รหัสบัญชีที่จะตัดงบก่อน หรือเลือก "ไม่ตัดงบ"', true); }
   if (bm === 'old' && !$('bOldSel').value) return toast('ยังไม่มีเรื่องในระบบตัดงบให้ผูก', true);
   c.amount = fmt(num(c.amount)); c.id = editing ? editing.id : '';
+  [c.name, c.s1n, c.s2n].forEach(rememberPrefix);
   const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
   try {
     let rec = await med('save', [c]);
@@ -849,38 +951,42 @@ $('hBody').addEventListener('click', async e => {
 });
 
 /* ====== มุมมอง ====== */
-function setView(v) { $('main').dataset.view = v; $('tabForm').classList.toggle('on', v === 'form'); $('tabPaper').classList.toggle('on', v === 'paper'); requestAnimationFrame(fit); }
+function setView(v) { $('main').dataset.view = v; requestAnimationFrame(fitText); $('tabForm').classList.toggle('on', v === 'form'); $('tabPaper').classList.toggle('on', v === 'paper'); requestAnimationFrame(fit); }
 function showView(v) { $('newView').hidden = v !== 'new'; $('hist').hidden = v !== 'hist'; $('vNew').classList.toggle('on', v === 'new'); $('vHist').classList.toggle('on', v === 'hist'); if (v === 'hist') { renderHist(); loadClaims(); } else requestAnimationFrame(fit); }
 function startNew() { editing = null; acctManual = false; budgetDeptAuto = true; $('editBar').hidden = true; $('saveNote').textContent = ''; setRadio('bmode', 'new'); fill(blankClaim()); $('empSearch').value = ''; render(); }
 $('tabForm').onclick = () => setView('form'); $('tabPaper').onclick = () => setView('paper');
 $('vNew').onclick = () => showView('new'); $('vHist').onclick = () => showView('hist');
 $('cancelEdit').onclick = () => startNew();
+$('namePreRow').addEventListener('click', e => { const b = e.target.closest('[data-pre]'); if (!b) return; $('name').value = b.dataset.pre + normName($('name').value); rememberPrefix($('name').value); $('empSearch').value = $('name').value; render(); });
 $('resetBtn').onclick = () => startNew();
 const doPrint = () => { if (!editing) toast('พิมพ์ได้ แต่ใบนี้ยังไม่ได้บันทึกลงประวัติ'); setView('paper'); setTimeout(() => window.print(), 120); };
 $('printBtn').onclick = doPrint; $('printBtn2').onclick = doPrint;
 $('saveBtn').onclick = save;
 $('frm').addEventListener('submit', e => e.preventDefault());
-$('frm').addEventListener('input', e => { if (e.target.id === 'empSearch') return; e.target.classList.remove('req-miss'); render(); });
+$('frm').addEventListener('input', e => { if (/^(empSearch|s[12](sel|pre))$/.test(e.target.id)) return; e.target.classList.remove('req-miss'); render(); });
 $('frm').addEventListener('change', e => {
   if (e.target.name === 'pat') acctManual = false;
   if (e.target.name === 'acct') acctManual = true;
   if (e.target.id === 'bDept') { budgetDeptAuto = false; acctManual = false; }
   if (e.target.id === 'empSearch') { if (e.target.value.trim()) pickEmployee(e.target.value.trim()); return; }
-  if (e.target.id === 's1n' || e.target.id === 's2n') { const p = person(e.target.value); const pf = $(e.target.id === 's1n' ? 's1p' : 's2p'); const auto = p && (p.position || p.role); if (auto && (!pf.value || pf.value === pf.dataset.auto || pf.value === DEF[pf.id])) { pf.value = auto; pf.dataset.auto = auto; } }
+  if (e.target.id === 's1sel' || e.target.id === 's2sel') { setSigner(e.target.id === 's1sel' ? 1 : 2, e.target.value); }
+  if (e.target.id === 's1pre' || e.target.id === 's2pre') { const slot = e.target.id === 's1pre' ? 1 : 2, nmEl = $('s' + slot + 'n'); if (nmEl.value) { nmEl.value = e.target.value + normName(nmEl.value); rememberPrefix(nmEl.value); } }
+  if (e.target.name === 's1m' || e.target.name === 's2m') { const slot = e.target.name === 's1m' ? 1 : 2; $('s' + slot + 'p').dataset.auto = $('s' + slot + 'p').value; const sel = $('s' + slot + 'sel'); renderSigners(); const cur = normName($('s' + slot + 'n').value); if (!signerOpts(slot).some(p => normName(p.name) === cur)) setSigner(slot, '', false); else setSigner(slot, cur, false); if (slot === 2 && !$('s2n').value) { const m = staff.find(isMgr); if (radio('s2m') === 'mgr' && m) setSigner(2, normName(m.name)); else { $('s2p').value = autoPos(2); $('s2p').dataset.auto = $('s2p').value; } } }
+  if (e.target.id === 'dept' && $('s1n').value && radio('s1m') === 'act') setSigner(1, normName($('s1n').value));
   render();
 });
 $('amount').addEventListener('blur', () => { const a = num($('amount').value); if (isFinite(a) && a > 0) $('amount').value = fmt(a); render(); });
 $('dFrom').addEventListener('change', () => { if (!$('dTo').value || $('dTo').value < $('dFrom').value) $('dTo').value = $('dFrom').value; render(); });
-const MAP = { s1nP: 's1n', s2nP: 's2n', patOf: 'patName', words: 'amount', sD: 'sDate', sM: 'sDate', sY: 'sDate' };
-$('paper').addEventListener('click', e => { const el = e.target.closest('[data-k]'); if (!el) return; const id = MAP[el.dataset.k] || el.dataset.k; const inp = $(id); if (!inp || inp.tagName !== 'INPUT') return;
+const MAP = { s1nP: 's1sel', s2nP: 's2sel', s1p: 's1p', s2p: 's2p', patOf: 'patName', words: 'amount', sD: 'sDate', sM: 'sDate', sY: 'sDate' };
+$('paper').addEventListener('click', e => { const el = e.target.closest('[data-k]'); if (!el) return; const id = MAP[el.dataset.k] || el.dataset.k; const inp = $(id); if (!inp || !/^(INPUT|SELECT)$/.test(inp.tagName) || inp.type === 'hidden') return;
   setView('form'); const d = inp.closest('details'); if (d) d.open = true; inp.focus(); inp.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
 window.addEventListener('resize', fit);
-window.addEventListener('beforeprint', () => { $('sheet').style.transform = 'none'; });
+window.addEventListener('beforeprint', () => { $('sheet').style.transform = 'none'; fitText(); });
 window.addEventListener('afterprint', fit);
 
 function buildLists() {
-  const pNames = [...new Set(people.map(p => p.name).concat(claims.map(c => c.name)).filter(Boolean))];
-  $('empList').innerHTML = pNames.map(n => { const p = person(n); return `<option value="${esc(n)}">${esc((p && (p.position || p.role)) || '')}</option>`; }).join('');
+  const pNames = [...new Set(staff.map(p => withPre(p.name)).concat(people.map(p => withPre(p.name)), claims.map(c => c.name)).filter(Boolean).map(n => n.replace(/\s+/g, ' ')))].filter((n, i, a) => a.findIndex(x => normName(x) === normName(n)) === i);
+  $('empList').innerHTML = pNames.map(n => { const p = person(n); return `<option value="${esc(n)}">${esc(p ? shortPos(p) || p.position || p.role || '' : '')}</option>`; }).join('');
   const uniq = k => [...new Set(claims.map(c => c[k]).filter(Boolean))];
   $('hosList').innerHTML = uniq('hosName').map(n => `<option value="${esc(n)}">`).join('');
   $('disList').innerHTML = uniq('dis').map(n => `<option value="${esc(n)}">`).join('');
@@ -898,6 +1004,18 @@ function loadPeople() {
   const c = lsJ(K.people); if (c && c.list && Date.now() - (c.ts || 0) < 12 * 3600 * 1000) return;
   budget('getPeople', []).then(res => { const list = (res && res.people) || []; if (!list.length) return; people = list; buildLists(); render(); }).catch(() => {});
 }
+function loadStaff() {
+  const c = lsJ('med_staff_v1'); if (c && c.list && c.list.length && Date.now() - (c.ts || 0) < 6 * 3600 * 1000) return;
+  const auth = { name: ls('pea_aoluek_username') || '', pass: ls('pea_aoluek_password') || '' };
+  if (!auth.name) return;
+  fetch(ST_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: 'st', args: [{ action: 'people', auth }] }) })
+    .then(r => r.json()).then(j => {
+      const arr = (j && (j.result || j.data)) || []; if (!Array.isArray(arr) || !arr.length) return;
+      staff = arr.map(p => ({ name: normName(p.name), prefix: preOf(p.name), position: String(p.position || '').trim(), newsPos: String(p.newsPos || '').trim(), dept: String(p.dept || '').trim(), photo: /^(https?:|data:image)/.test(String(p.photo || '')) ? p.photo : '' }));
+      try { ls('med_staff_v1', JSON.stringify({ ts: Date.now(), list: staff.map(p => Object.assign({}, p, { photo: '' })) })); } catch (e) {}
+      buildLists(); render();
+    }).catch(() => {});
+}
 function loadClaims() {
   if (!MED_API()) { $('hNote').textContent = 'ยังไม่ได้ตั้งค่าหลังบ้านของระบบใบเบิก (MED_API) — แจ้งผู้ดูแลระบบ'; return; }
   return med('list', []).then(list => { claims = list || []; ls(K.list, JSON.stringify(claims)); buildLists(); renderHist(); $('hNote').textContent = 'อัปเดตล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); })
@@ -912,7 +1030,7 @@ function start() {
   if (dr && dr.name) $('empSearch').value = dr.name;
   buildLists(); render(); renderHist(); fit();
   if (document.fonts) document.fonts.ready.then(fit);
-  refreshBoot(); loadPeople(); loadClaims();
+  refreshBoot(); loadPeople(); loadStaff(); loadClaims();
 }
 
 if (token && me) start(); else showLogin();
