@@ -352,7 +352,7 @@ fieldset:disabled{opacity:.55}
   <main id="viewReq" class="hide">
     <div class="card">
       <h3>ยื่นคำขอ</h3>
-      <div class="seg light" id="qType"><button data-t="swap" class="on">แลกเวร</button><button data-t="leave">ลาเวร · หาคนแทน</button></div>
+      <div class="seg light" id="qType"><button data-t="leave" class="on">ลาเวร · หาคนแทน</button><button data-t="swap">แลกเวร</button></div>
       <div class="grid2" style="margin-top:10px">
         <label class="f">เดือน<select id="qMonth"></select></label>
         <label class="f">กลุ่ม<select id="qGroup"><option value="emp">พนักงาน</option><option value="wk">คนงาน</option></select></label>
@@ -1597,7 +1597,7 @@ const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่
 const isFree=(g,c)=>g==='emp'?(c===''||c==='S'):c==='0';
 const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?cParts(c):(c==='0'?0:c==='1,3'?2:1)),0);
 function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);}
-S.qType='swap';
+S.qType='leave';   // ค่าเริ่มต้น: ลาเวร-หาคนแทน (ใช้บ่อยกว่า)
 async function renderReq(){
   setBadge('');
   const ms=$('qMonth');
