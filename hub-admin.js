@@ -126,6 +126,22 @@
   function closeModal() { if (ov) { ov.remove(); ov = null; } }
   function setTabLabel(id, label) { if (!ov) return; var b = ov.querySelector('.hm-tabs [data-t="' + id + '"]'); if (b) b.textContent = label; }
   function loading(body) { body.innerHTML = '<div class="hm-empty">กำลังโหลด…</div>'; }
+  /* อ่านข้อมูล: หมดเวลา 25 วิ + ลองใหม่อัตโนมัติ 1 ครั้ง (ใช้กับคำสั่งอ่านเท่านั้น) */
+  function api(p, tries) {
+    tries = tries == null ? 1 : tries;
+    var once = Promise.race([callApi(p), new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 25000); })]);
+    return once.then(function (r) {
+      if (r && r.busy && tries > 0) return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return api(p, tries - 1); });
+      return r;
+    }, function (e) {
+      if (tries > 0) return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return api(p, tries - 1); });
+      throw e;
+    });
+  }
+  function failed(body, retry) {
+    body.innerHTML = '<div class="hm-empty">โหลดไม่สำเร็จ (ระบบ Google ตอบช้า)<br><button class="hm-btn pri" type="button" style="margin-top:10px">ลองใหม่</button></div>';
+    body.querySelector('button').onclick = retry;
+  }
 
   /* ---------------- สมัครใหม่ ---------------- */
   function openRegister() {
@@ -204,11 +220,12 @@
     if (!isAdmin()) { adminBtn.classList.remove('show'); return Promise.resolve(); }
     adminBtn.classList.add('show');
     return Promise.all([
-      callApi({ action: 'getPendingList' }).catch(function () { return null; }),
-      callApi({ action: 'appRequests' }).catch(function () { return null; }),
-      callApi({ action: 'bookDlList' }).catch(function () { return null; })
+      api({ action: 'getPendingList' }).catch(function () { return null; }),
+      api({ action: 'appRequests' }).catch(function () { return null; }),
+      api({ action: 'bookDlList' }).catch(function () { return null; })
     ]).then(function (rs) {
       ADM.books = (rs[2] && rs[2].pending) || []; ADM.booksRecent = (rs[2] && rs[2].recent) || [];
+      ADM.err = !(rs[0] && rs[0].ok) || !(rs[1] && rs[1].ok);
       ADM.pending = (rs[0] && rs[0].pending) || [];
       ADM.requests = (rs[1] && rs[1].requests) || [];
       if (rs[1] && rs[1].appList) APP_LIST = rs[1].appList;
@@ -226,7 +243,7 @@
   }
 
   function loadUsers() {
-    return callApi({ action: 'patrolListUsers' }).then(function (r) {
+    return api({ action: 'patrolListUsers' }).then(function (r) {
       if (r && r.ok) { ADM.users = r.users || []; if (r.appList) APP_LIST = r.appList; }
       return ADM.users;
     });
@@ -236,6 +253,7 @@
   function tabReq(body) {
     loading(body);
     Promise.all([refreshAdminCount(), loadUsers()]).then(function () {
+      if (ADM.err) { failed(body, function () { tabReq(body); }); return; }
       setTabLabel('req', 'คำขอใหม่ (' + (ADM.pending.length + ADM.requests.length) + ')');
       var h = '';
       if (!ADM.pending.length && !ADM.requests.length) { body.innerHTML = '<div class="hm-empty">ไม่มีคำขอค้าง</div>'; return; }
@@ -286,7 +304,7 @@
           }).catch(function () { card.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
         };
       });
-    });
+    }).catch(function () { failed(body, function () { tabReq(body); }); });
   }
 
   /* คำขอดาวน์โหลดหนังสือ (จากหน้าอ่านหนังสือ pea-drawings/reader.html) */
@@ -318,7 +336,7 @@
           }).catch(function () { c.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
         };
       });
-    });
+    }).catch(function () { failed(body, function () { tabBooks(body); }); });
   }
 
   function tabUsers(body) {
@@ -356,7 +374,7 @@
       }
       $('hmQ').oninput = draw;
       draw();
-    }).catch(function () { body.innerHTML = '<div class="hm-empty">โหลดรายชื่อไม่ได้</div>'; });
+    }).catch(function () { failed(body, function () { tabUsers(body); }); });
   }
 
   function tabStats(body) {
@@ -394,7 +412,7 @@
       var key = days <= 7 ? 7 : days;
       if (cache[key]) { render(cache[key]); return; }
       body.querySelector('#hmStatOut').innerHTML = '<div class="hm-empty">กำลังโหลด…</div>';
-      callApi({ action: 'appVisits', days: key }).then(function (r) {
+      api({ action: 'appVisits', days: key }).then(function (r) {
         cache[key] = (r && r.visits) || []; render(cache[key]);
       }).catch(function () { body.querySelector('#hmStatOut').innerHTML = '<div class="hm-empty">โหลดสถิติไม่ได้</div>'; });
     }
