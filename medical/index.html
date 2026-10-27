@@ -559,7 +559,34 @@ function prefixOf(n) {
 function rememberPrefix(full) { const pre = preOf(full); if (!pre) return; const m = lsJ('med_prefix_v1') || {}; m[normName(full)] = pre; ls('med_prefix_v1', JSON.stringify(m)); }
 const withPre = n => { if (!n) return ''; const b = normName(n), pre = prefixOf(b); return pre ? pre + b : b; };
 const shortPos = p => p ? shortBranch(p.newsPos || p.position || '') : '';
-const avatarHtml = n => { const p = person(n) || people.find(x => normName(x.name) === normName(n)); return p && p.photo ? `<img src="${esc(p.photo)}" alt="">` : esc(initials(n)); };
+/* รูปพนักงาน: ใช้ชุดเดียวกับ Safety Talk (ย่อเก็บในเครื่อง แสดงได้ทุกเครื่องรวม iPhone) */
+let FACES = lsJ('st_faces') || {};
+function faceOf(n) { const k = normName(n); for (const f in FACES) if (normName(f) === k) return FACES[f]; return ''; }
+function avatarHtml(n) {
+  const bp = people.find(x => normName(x.name) === normName(n));
+  const src = faceOf(n) || (bp && /^data:image/.test(bp.photo || '') ? bp.photo : '');
+  return src ? `<img src="${esc(src)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(initials(n))}'))">` : esc(initials(n));
+}
+function shrinkSrc(src, S) {
+  return new Promise(res => { const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = () => { try { const c = document.createElement('canvas'); c.width = S; c.height = S; const k = Math.max(S / img.width, S / img.height), w = img.width * k, h = img.height * k;
+      c.getContext('2d').drawImage(img, (S - w) / 2, (S - h) / 2, w, h); res(c.toDataURL('image/jpeg', 0.75)); } catch (e) { res(''); } };
+    img.onerror = () => res(''); img.src = src; });
+}
+async function loadFaces() {
+  const at = Number(ls('st_faces_at') || 0);
+  if (Date.now() - at < 864e5 && Object.keys(FACES).length) return;
+  const auth = { name: ls('pea_aoluek_username') || '', pass: ls('pea_aoluek_password') || '' };
+  if (!auth.name) return;
+  try {
+    const j = await fetch(ST_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: 'st', args: [{ action: 'faces', auth }] }) }).then(r => r.json());
+    const f = j && (j.result || j.data); if (!f || typeof f !== 'object') return;
+    for (const k of Object.keys(f)) { const t = await shrinkSrc(f[k], 120); if (t) f[k] = t; else if (!/^data:image/.test(f[k])) delete f[k]; }
+    FACES = f;
+    try { ls('st_faces', JSON.stringify(f)); ls('st_faces_at', String(Date.now())); } catch (e) {}
+    renderMe(); render();
+  } catch (e) {}
+}
 
 /* ====== ฟอร์ม ====== */
 function collect() {
@@ -973,7 +1000,7 @@ function start() {
   if (dr && dr.name) $('empSearch').value = dr.name;
   buildLists(); render(); renderHist(); fit();
   if (document.fonts) document.fonts.ready.then(fit);
-  refreshBoot(); loadPeople(); loadStaff(); loadClaims();
+  refreshBoot(); loadPeople(); loadStaff(); loadFaces(); loadClaims();
 }
 
 if (token && me) start(); else showLogin();
