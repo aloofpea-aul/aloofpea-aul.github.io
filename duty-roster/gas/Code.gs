@@ -220,6 +220,17 @@ function fixPN2610_() {
   props.setProperty('FIX_PN2610', '1');
 }
 /** ครั้งเดียว: ล้างรายการแลกเวร 11 ต.ค. (กัมปนาทท์⇄ราชภัฎ ที่หักล้างกันเอง) + รายการลบเก่า — เหลือเฉพาะลาเวร 23 ต.ค. */
+/** ครั้งเดียว: ปรับตาราง ต.ค. 69 ย้อนหลังตามกฎเตรียมพร้อมคู่กับช่วง 3 (ผู้ใช้สั่ง 27 ต.ค. 69) */
+function sbPairFix2610_() {
+  const props = PropertiesService.getScriptProperties(); if (props.getProperty('SBPAIR2610')) return;
+  const mo = getMonth_('2026-10'), nx = getMonth_('2026-11'); if (!mo) return;
+  const nb = nx ? JSON.stringify(nx.data.changes || []) : '';
+  const r = sbPairRetro_('2026-10', mo.data, nx && nx.data);
+  if (r.done.length) { mo.data.rev = (mo.data.rev || 0) + 1; saveMonth_('2026-10', mo.status, mo.data, mo.stateAfter, mo.note); }
+  if (nx && JSON.stringify(nx.data.changes || []) !== nb) { nx.data.rev = (nx.data.rev || 0) + 1; saveMonth_('2026-11', nx.status, nx.data, nx.stateAfter, nx.note); }
+  log_('system', 'ปรับเตรียมพร้อมคู่ช่วง 3 (ย้อนหลัง)', '2026-10', r.done.join(' | ') + (r.skip.length ? ' || ข้าม: ' + r.skip.join(' | ') : ''));
+  props.setProperty('SBPAIR2610', JSON.stringify({ at: new Date().toISOString(), done: r.done, skip: r.skip }).slice(0, 8000));
+}
 function cleanSwap2610_() {
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('CLEAN_SW2610')) return;
@@ -370,6 +381,7 @@ function doGet(e) {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
       try { migrateInsp_(); migrateEmp_(); migrateOut_(); fixPN2610_(); cleanSwap2610_(); } catch (e) {}
+      try { sbPairFix2610_(); } catch (e) { log_('system', 'ปรับเตรียมพร้อมย้อนหลังไม่สำเร็จ', '2026-10', String(e)); }
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),

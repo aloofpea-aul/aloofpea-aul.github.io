@@ -531,6 +531,8 @@ function rankOf(){const o={};[...S.boot.people.emp,...S.boot.people.wk].forEach(
 const CODE_TH={'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','2':'ช่วง 2','1,2':'ช่วง 1+2','S':'เตรียมพร้อม'};
 /* รหัสเวรพนักงานรวมหลายช่วงได้เมื่อผู้อนุมัติยอมให้อยู่ต่อเนื่อง ('1,3' · '1,2,3') */
 const cHas=(c,p)=>String(c||'').split(',').includes(p);
+const noSb=c=>String(c||'').split(',').filter(x=>x&&x!=='S').join(',');
+Object.keys(CODE_TH).forEach(k=>{ if(k!=='S') CODE_TH[k+',S']=CODE_TH[k]+' + เตรียมพร้อม'; });   // เตรียมพร้อม + เวรของตัวเอง (คู่กับช่วง 3 ของเมื่อวาน)
 const cParts=c=>String(c||'').split(',').filter(x=>x==='1'||x==='2'||x==='3').length;
 function dayChanges(data,group,i){
   const by={}; (S.mrAll||[]).forEach(r=>by[r.id]=r);
@@ -548,7 +550,7 @@ function shiftRows(data,group,i){
       {l:'ช่วง',n:'1',t:'00.30 – 08.30 น.',v:who(e,c=>cHas(c,'1')),bg:'var(--c1)',fg:'var(--c1f)'},
       {l:'ช่วง',n:'2',t:'08.30 – 16.30 น.',v:day.off?who(e,c=>cHas(c,'2')):'วันทำการ — ไม่มีเวร',bg:'var(--c2)',fg:'var(--c2f)'},
       {l:'ช่วง',n:'3',t:'16.30 – 00.30 น.',v:who(e,c=>cHas(c,'3')),bg:'var(--c3)',fg:'var(--c3f)'},
-      {l:'พร้อม',n:'•',t:'เตรียมพร้อม (ช่วง 1)',v:who(e,c=>c==='S'),bg:'#E4E4E4',fg:'#3A3A3A'}];
+      {l:'พร้อม',n:'•',t:'เตรียมพร้อม (ช่วง 1)',v:who(e,c=>cHas(c,'S')),bg:'#E4E4E4',fg:'#3A3A3A'}];
   }
   const w=data.wk;
   return [
@@ -1150,7 +1152,7 @@ async function renderGen(){
   $('gNotes').innerHTML=g.notes.length?`<div class="note warn" style="margin-top:8px">${g.notes.map(esc).join('<br>')}</div>`:'';
   // ตาราง mini
   const head='<tr><th></th>'+g.days.map(d=>`<th class="${d.hol?'hol':d.off?'off':''}">${d.d}<br>${TH_WD[d.wd]}</th>`).join('')+'</tr>';
-  const row=(map,n)=>`<tr><td class="nm">${esc(n)}</td>`+map[n].map((c,i)=>`<td class="${g.days[i].hol?'hol':g.days[i].off?'off':''}">${c==='S'?'<span style="color:#888">พ</span>':esc(c)}</td>`).join('')+'</tr>';
+  const row=(map,n)=>`<tr><td class="nm">${esc(n)}</td>`+map[n].map((c,i)=>`<td class="${g.days[i].hol?'hol':g.days[i].off?'off':''}">${c==='S'?'<span style="color:#888">พ</span>':cHas(c,'S')?esc(noSb(c))+'<span style="color:#888">+พ</span>':esc(c)}</td>`).join('')+'</tr>';
   $('gMini').innerHTML='<table>'+head+names.map(n=>row(g.emp,n)).join('')+'<tr><td class="nm" colspan="'+(g.days.length+1)+'" style="background:#F5F3F7;font-weight:600">คนงาน</td></tr>'+S.boot.people.wk.map(p=>row(g.wk,p.short)).join('')+'</table><div class="muted" style="margin-top:4px">พ = เตรียมพร้อม · 2,3 = ช่วง 2 และ 3</div>';
   const ex=S.boot.months.find(x=>x.month===key);
   $('gSave').textContent=ex?'บันทึกทับ ('+ex.status+')':'บันทึกเป็นร่าง';
@@ -1224,8 +1226,8 @@ function empPage(r,cfg,docDate,sheet){
       rows+=`<tr class="${i===0?'g':''}">`;
       if(i===0) rows+=`<td rowspan="3" style="white-space:nowrap;padding:0 3px">${esc(p.full)}</td>`;
       rows+=`<td style="text-align:left;padding-left:4px;white-space:nowrap">ช่วงที่ ${i+1}</td>`;
-      codes.forEach((c,di)=>{const on=has(c,i);const sb=i===0&&c==='S';
-        const ch=on&&CHG[p.short+'|'+(di+1)];
+      codes.forEach((c,di)=>{const on=has(c,i);const sb=i===0&&cHas(c,'S')&&!on;
+        const ch=(on||sb)&&CHG[p.short+'|'+(di+1)];
         rows+=`<td style="background:${on?'#FFFF00':sb?'#BFBFBF':colBg(g.days[di])};${ch?'box-shadow:inset 0 0 0 1.6px #D00000;position:relative':''}">${on?(i+1):''}${ch?`<sup style="position:absolute;top:-1px;right:1px;font-size:7px;color:#D00000;font-weight:700">${ch}</sup>`:''}</td>`;});
       rows+=`<td>${cnt[i]||''}</td>`;
       if(i===0) rows+=`<td rowspan="3">${tot}</td>`;
@@ -1332,6 +1334,7 @@ function segsOf(key,day,code){
   if(cHas(code,'1')) out.push({a,b:a,s:'00:30',e:'08:30'});
   if(cHas(code,'2')) out.push({a,b:a,s:'08:30',e:'16:30'});
   if(cHas(code,'3')) out.push({a,b,s:'16:30',e:'00:30'});
+  if(code==='S') out.push({a,b:a,s:'00:30',e:'08:30',sb:true});   // เตรียมพร้อมที่ย้ายตามช่วง 3 (ใบคู่)
   return out;
 }
 const WHY={sick:'ลาป่วย',errand:'ลากิจ',vacation:'ลาพักผ่อน',private:'ธุระส่วนตัว',official:'ปฏิบัติงานราชการ'};
@@ -1349,6 +1352,11 @@ async function leaveItems(key){
   /* แลกเวร: ออกเอกสารเฉพาะฝั่งผู้ยื่นคำขอ (ผู้มอบเวร → ผู้อยู่เวรแทน) ส่วนเวรที่รับคืนไม่ใช่การลา */
   const giver=r=>{const p=r.payload||{};return r.type!=='swap'?null:(r.requester===p.b?p.b:p.a);};
   (mo.data.changes||[]).filter(c=>c.g==='emp'&&by[c.req]&&(giver(by[c.req])==null||c.from===giver(by[c.req]))).forEach((c,k)=>segsOf(key,c.day,c.code).forEach(sg=>out.push(Object.assign({req:by[c.req],from:c.from,to:c.to,day:c.day,k},sg))));
+  /* เตรียมพร้อมวันที่ 1 ของเดือนถัดไป ที่ย้ายตามช่วง 3 วันสุดท้ายของเดือนนี้ (เก็บไว้ในเดือนถัดไป) */
+  const nk=(()=>{const {y,m}=parseKey(key);return m===12?(y+1)+'-01':y+'-'+String(m+1).padStart(2,'0');})();
+  if((S.boot.months||[]).some(x=>x.month===nk)){ try{ const nm=await loadMonth(nk);
+    (nm.data.changes||[]).filter(c=>c.g==='emp'&&c.srcMonth===key&&by[c.req]&&(giver(by[c.req])==null||c.from===giver(by[c.req]))).forEach((c,k)=>segsOf(nk,c.day,c.code).forEach(sg=>out.push(Object.assign({req:by[c.req],from:c.from,to:c.to,day:c.day,k:900+k},sg))));
+  }catch(e){} }
   out.sort((x,y)=>x.a-y.a||x.s.localeCompare(y.s)||x.k-y.k);
   /* ร่าง: คำขอที่ยังรออนุมัติ — จำลองจากตารางปัจจุบัน (ยังไม่เปลี่ยนตารางจริง) */
   if(!S.pending){ try{ S.pending=(await apiGet({action:'requests'})).requests.pending; }catch(e){ S.pending=[]; } }
@@ -1357,7 +1365,7 @@ async function leaveItems(key){
     const p=r.payload, E=mo.data.emp||{};
     let from,to,day;
     if(r.type==='leave'){ from=p.a; to=p.r; day=+p.d; } else if(r.requester===p.b){ from=p.b; to=p.a; day=+p.db; } else { from=p.a; to=p.b; day=+p.da; }
-    const code=(E[from]||[])[day-1]; const rq=Object.assign({},r,{created:(p.docDate)||todayIso(),draft:true});
+    const code=noSb((E[from]||[])[day-1]); const rq=Object.assign({},r,{created:(p.docDate)||todayIso(),draft:true});
     segsOf(key,day,code).forEach(sg=>drafts.push(Object.assign({req:rq,from,to,day,k:0,draft:true},sg)));
   });
   return {mo,reqs,items:out,drafts};
@@ -1453,7 +1461,7 @@ function memoPage(key,x,ap,cfg,sgn,draft){
     <div class="ck">${bx(w.k==='official')}ปฏิบัติงานราชการตามคำสั่งที่ ${w.k==='official'?V(THD(w.order))+' ลงวันที่ '+V(THD(isoLong(w.orderDate))):V('',40)+' ลงวันที่ '+V('',35)}</div>
     <div>ทำให้ไม่มีพนักงานปฏิบัติงานในช่วงเวลาดังกล่าว</div>
     <p class="ind">ดังนั้น เพื่อให้งานปฏิบัติการระบบไฟฟ้าเป็นไปด้วยความเรียบร้อย แผนกปฏิบัติการและบำรุงรักษามีความประสงค์ให้พนักงานปฏิบัติงานแทนเวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามรายชื่อดังต่อไปนี้ โดยมีสิทธิ์เบิกค่าตอบแทนการอยู่เวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามระเบียบของ กฟภ.</p>
-    <div class="it"><span class="no">๑.</span><div>ชื่อ-สกุล ${V(B.full)} &nbsp;เลขประจำตัว ${V(THD(B.id),18)}<br>ตำแหน่ง ${V(THD(B.pos),45)}<br>ปฏิบัติงานแทน ในวันที่ ${V(THD(rangeLong(x.a,x.b)))} &nbsp;ระหว่างเวลา ${V(tm(x.s)+' – '+tm(x.e)+' น.')}</div></div>
+    <div class="it"><span class="no">๑.</span><div>ชื่อ-สกุล ${V(B.full)} &nbsp;เลขประจำตัว ${V(THD(B.id),18)}<br>ตำแหน่ง ${V(THD(B.pos),45)}<br>ปฏิบัติงานแทน${x.sb?' <b>เวรเตรียมพร้อม</b> (ต่อจากช่วง ๓)':''} ในวันที่ ${V(THD(rangeLong(x.a,x.b)))} &nbsp;ระหว่างเวลา ${V(tm(x.s)+' – '+tm(x.e)+' น.')}</div></div>
     <p class="ind">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</p>
     <div class="sig" style="margin-left:72mm;margin-top:9mm">(ลงชื่อ) ..............................................<br>( ${esc(A.full)} )<br>${A.pos?esc(THD(A.pos))+'<br>':''}ผู้มอบเวร</div>
     <div class="sig" style="margin-left:72mm;margin-top:6mm">(ลงชื่อ) ..............................................<br>( ${esc(B.full)} )<br>${B.pos?esc(THD(B.pos))+'<br>':''}ผู้อยู่เวรแทน</div>
@@ -1601,7 +1609,7 @@ $('rSetStatus').onclick=async()=>{
 
 
 /* ---------- เปลี่ยน/ลาเวร ---------- */
-const CODE_LBL={emp:c=>({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3','1,3':'ช่วง 1 + ช่วง 3','1,2,3':'ช่วง 1+2+3','2':'ช่วง 2','1,2':'ช่วง 1+2','S':'เตรียมพร้อม','':'ว่าง'})[c]||c, wk:c=>c==='0'?'พักกะ':'กะ '+c};
+const CODE_LBL={emp:c=>c===''?'ว่าง':(CODE_TH[c]||c), wk:c=>c==='0'?'พักกะ':'กะ '+c};
 const isFree=(g,c)=>g==='emp'?(c===''||c==='S'):c==='0';
 const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?cParts(c):(c==='0'?0:c==='1,3'?2:1)),0);
 function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);}
@@ -1637,6 +1645,12 @@ async function qForm(stage){
   const a=$('qA').value;
   if(['month','type','a'].includes(stage)) fill('qDa',map[a].map((c,i)=>[i+1,c]).filter(x=>!isFree(g,x[1])).map(x=>[x[0],dlab(x[0]-1)+' · '+CODE_LBL[g](x[1])]),true);
   const da=+$('qDa').value, swap=S.qType==='swap';
+  /* เตรียมพร้อมวันรุ่งขึ้นเป็นคู่กับช่วง 3 — ย้ายช่วง 3 ไปใคร เตรียมพร้อมย้ายตามไปด้วย */
+  const nd=data.days.length, nk=(()=>{const {y,m}=parseKey(key);return m===12?(y+1)+'-01':y+'-'+String(m+1).padStart(2,'0');})();
+  let nmo=null; if(g==='emp'&&(S.boot.months||[]).some(x=>x.month===nk)&&[da,+$('qDb').value].includes(nd)){ try{ nmo=await loadMonth(nk); }catch(e){} }
+  const nxt=(n,d)=>d<nd?map[n][d]:(nmo&&nmo.data[g][n]?nmo.data[g][n][0]:'');
+  const dTxt=d=>d<nd?data.days[d].d+' '+TH_MS[parseKey(key).m-1]:'1 '+TH_MS[parseKey(nk).m-1];
+  const pairTxt=(who,d,code,to)=>g==='emp'&&cHas(code,'3')&&cHas(nxt(who,d),'S')&&!cHas(nxt(to,d),'S')?` · เตรียมพร้อม ${dTxt(d)} ของ ${who} ย้ายไปให้ ${to} ด้วย (คู่กับช่วง 3)`:'';
   $('qBWrap').classList.toggle('hide',!swap); $('qDbWrap').classList.toggle('hide',!swap); $('qRWrap').classList.toggle('hide',swap);
   if(swap){
     if(stage!=='b'&&stage!=='db') fill('qB',names.filter(n=>n!==a).map(n=>[n,n+' ('+CODE_LBL[g](map[n][da-1])+' วันนั้น)']),true);
@@ -1653,9 +1667,10 @@ async function qForm(stage){
     if(!canPart||!['part','cont','r'].includes(stage)) S.qPart='';
     $('qPartWrap').classList.toggle('hide',!canPart);
     document.querySelectorAll('#qPart button').forEach(b=>b.classList.toggle('on',b.dataset.p===(S.qPart||'')));
-    const cont=g==='emp'&&$('qCont').checked, ac=S.qPart||full;
-    const fit=n=>{ const t=map[n][da-1]; if(isFree(g,t)) return true; if(!cont) return false; const A=String(ac).split(','), T=String(t).split(','); return !A.some(x=>T.includes(x)); };
-    const free=names.filter(n=>n!==a&&fit(n)).map(n=>({n,c:dutyCount(g,map[n]),sb:map[n][da-1]==='S',busy:!isFree(g,map[n][da-1])?map[n][da-1]:''})).sort((x,y)=>(x.busy?1:0)-(y.busy?1:0)||x.c-y.c);
+    const cont=g==='emp'&&$('qCont').checked, ac=S.qPart||noSb(full);
+    const pairOn=g==='emp'&&cHas(ac,'3')&&cHas(nxt(a,da),'S');
+    const fit=n=>{ if(pairOn&&cHas(nxt(n,da),'1')) return false; const t=map[n][da-1]; if(isFree(g,t)) return true; if(!cont) return false; const A=String(ac).split(','), T=String(t).split(','); return !A.some(x=>T.includes(x)); };
+    const free=names.filter(n=>n!==a&&fit(n)).map(n=>({n,c:dutyCount(g,map[n]),sb:cHas(map[n][da-1],'S'),busy:!isFree(g,map[n][da-1])?map[n][da-1]:''})).sort((x,y)=>(x.busy?1:0)-(y.busy?1:0)||x.c-y.c);
     $('qContWrap').classList.toggle('hide',g!=='emp');
     fill('qR',free.map(x=>[x.n,x.n+' — เดือนนี้ '+x.c+' ครั้ง'+(x.sb?' · (เตรียมพร้อมวันนั้น)':'')+(x.busy?' · ⚠️ มี'+CODE_LBL[g](x.busy)+' อยู่แล้ว → ต่อเนื่อง':'')]),true);
   }
@@ -1663,12 +1678,12 @@ async function qForm(stage){
   let txt='';
   if(!a||!da) txt='ผู้ขอยังไม่มีเวรในเดือนนี้';
   else if(swap){ const b=$('qB').value, db=+$('qDb').value;
-    txt=db?`${a} (${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[a][da-1])}) ⇄ ${b} (${data.days[db-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[b][db-1])})`:'ไม่มีวันที่แลกกันได้ — เลือกคู่คนอื่น';
+    txt=db?`${a} (${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[a][da-1])}) ⇄ ${b} (${data.days[db-1].d} ${TH_MS[parseKey(key).m-1]} ${CODE_LBL[g](map[b][db-1])})`+(da!==db?pairTxt(a,da,noSb(map[a][da-1]),b)+pairTxt(b,db,noSb(map[b][db-1]),a):''):'ไม่มีวันที่แลกกันได้ — เลือกคู่คนอื่น';
   } else { const r=$('qR').value;
-    const rb=r&&!isFree(g,map[r][da-1])?map[r][da-1]:'', mv=S.qPart||map[a][da-1];
+    const rb=r&&!isFree(g,map[r][da-1])?map[r][da-1]:'', mv=S.qPart||noSb(map[a][da-1]);
     const ptxt=S.qPart==='2'?' เฉพาะช่วง 2 (08.30–16.30)':S.qPart==='3'?' เฉพาะช่วง 3 (16.30–00.30)':'';
     const keep=S.qPart?` · ${a} ยังอยู่${S.qPart==='2'?'ช่วง 3 (16.30–00.30)':'ช่วง 2 (08.30–16.30)'} ตามเดิม`:'';
-    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])})${ptxt} → ${r} เข้าแทน${keep}`+(rb?` · ⚠️ ${r} มี${CODE_LBL[g](rb)} อยู่แล้ว จะอยู่ต่อเนื่องเป็น ${CODE_LBL[g](String(rb).split(',').concat(String(mv).split(',')).sort().join(','))}`:''):'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" หรือติ๊ก "ยอมให้อยู่ต่อเนื่อง"'; }
+    txt=r?`${a} ลาเวร ${data.days[da-1].d} ${TH_MS[parseKey(key).m-1]} (${CODE_LBL[g](map[a][da-1])})${ptxt} → ${r} เข้าแทน${keep}${pairTxt(a,da,mv,r)}`+(rb?` · ⚠️ ${r} มี${CODE_LBL[g](rb)} อยู่แล้ว จะอยู่ต่อเนื่องเป็น ${CODE_LBL[g](String(rb).split(',').concat(String(mv).split(',')).sort().join(','))}`:''):'วันนั้นไม่มีคนว่างเข้าแทน — ใช้ "แลกเวร" หรือติ๊ก "ยอมให้อยู่ต่อเนื่อง"'; }
   $('qPreview').textContent=txt;
   $('qSubmit').disabled=swap?!$('qDb').value:!$('qR').value;
 }
@@ -1676,7 +1691,7 @@ $('qSubmit').onclick=async()=>{
   const key=$('qMonth').value,g=$('qGroup').value,a=$('qA').value,da=+$('qDa').value;
   const payload=S.qType==='swap'?{g,a,da,b:$('qB').value,db:+$('qDb').value}:{g,a,d:da,r:$('qR').value};
   if(S.qType!=='swap'&&g==='emp'&&S.qPart) payload.part=S.qPart;
-  if(S.qType!=='swap'&&g==='emp'&&$('qCont').checked){ const mo=S.months[key], t=mo&&mo.data.emp[payload.r]?mo.data.emp[payload.r][da-1]:''; if(t&&t!=='S') payload.cont=true; }
+  if(S.qType!=='swap'&&g==='emp'&&$('qCont').checked){ const mo=S.months[key], t=mo&&mo.data.emp[payload.r]?mo.data.emp[payload.r][da-1]:''; if(noSb(t)) payload.cont=true; }
   const wk=$('qWhy').value; payload.why={k:wk}; payload.docDate=$('qDocDate').value||todayIso();
   if(wk==='official'){ payload.why.order=$('qOrder').value.trim(); payload.why.orderDate=$('qOrderDate').value;
     if(!payload.why.order){msg('qMsg','ใส่เลขที่คำสั่งที่ไปปฏิบัติงานราชการ','warn');return;} }
@@ -1739,7 +1754,7 @@ async function delReq(id,st,btn){
   const r=(S.reqAll||{})[id]||{}, ok=st==='อนุมัติ', bg=document.createElement('div'); bg.className='dlgBg';
   let rows='';
   if(ok&&r.month){ try{ const mo=await loadMonth(r.month), ch=(mo.data.changes||[]).filter(c=>c.req===id), {m}=parseKey(r.month);
-      rows=ch.map(c=>`<tr><td>${c.day} ${TH_MS[m-1]} ${esc(c.g==='emp'?({'1':'ช่วง 1','3':'ช่วง 3','2,3':'ช่วง 2+3'}[c.code]||c.code):'กะ '+c.code)}</td><td>${esc(c.to)} → <b>${esc(c.from)}</b></td></tr>`).join(''); }catch(e){} }
+      rows=ch.map(c=>`<tr><td>${c.day} ${TH_MS[m-1]} ${esc(c.g==='emp'?(CODE_TH[c.code]||c.code):'กะ '+c.code)}</td><td>${esc(c.to)} → <b>${esc(c.from)}</b></td></tr>`).join(''); }catch(e){} }
   bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
     <h3 id="dlgT">ลบรายการนี้?</h3><div class="tx">${esc(txt)}</div>
     ${ok?`<div style="font-size:13px;font-weight:700">ตารางเวรจะกลับเป็นแบบก่อนแลก/ลาเวร</div>${rows?`<table class="dtb">${rows}</table>`:''}

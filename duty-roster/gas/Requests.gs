@@ -11,8 +11,10 @@
 const FREE_ = { emp: '', wk: '0' };
 
 function isFree_(g, c) { return g === 'emp' ? (c === '' || c === 'S') : c === '0'; }
-/** รหัสเวรพนักงานอาจรวมหลายช่วงได้เมื่อผู้อนุมัติยอมให้อยู่ต่อเนื่อง: '1,3' · '1,2,3' */
+/** รหัสเวรพนักงานอาจรวมหลายช่วงได้เมื่อผู้อนุมัติยอมให้อยู่ต่อเนื่อง: '1,3' · '1,2,3'
+ *  และอาจมีเตรียมพร้อมรวมอยู่ด้วย: '3,S' · '2,3,S' (เตรียมพร้อม 00.30–08.30 + เวรของตัวเองช่วงบ่าย/เย็น) */
 function cHas_(c, p) { return String(c || '').split(',').indexOf(p) >= 0; }
+function noSb_(c) { return String(c || '').split(',').filter(function (x) { return x && x !== 'S'; }).join(','); }
 function mergeCode_(t, c) {
   const a = String(t || '').split(',').filter(String), b = String(c || '').split(',').filter(String);
   if (a.some(function (x) { return b.indexOf(x) >= 0; })) throw new Error('ช่วงเวรซ้อนกัน');
@@ -20,7 +22,12 @@ function mergeCode_(t, c) {
 }
 
 function codeLabel_(g, c) {
-  if (g === 'emp') return ({ '1': 'ช่วง 1', '3': 'ช่วง 3', '2,3': 'ช่วง 2+3', '1,3': 'ช่วง 1 + ช่วง 3', '1,2,3': 'ช่วง 1+2+3 (ต่อเนื่อง)', '2': 'ช่วง 2', '1,2': 'ช่วง 1+2 (ต่อเนื่อง)', 'S': 'เตรียมพร้อม', '': 'ว่าง' })[c] || c;
+  if (g === 'emp') {
+    const L = { '1': 'ช่วง 1', '3': 'ช่วง 3', '2,3': 'ช่วง 2+3', '1,3': 'ช่วง 1 + ช่วง 3', '1,2,3': 'ช่วง 1+2+3 (ต่อเนื่อง)', '2': 'ช่วง 2', '1,2': 'ช่วง 1+2 (ต่อเนื่อง)', 'S': 'เตรียมพร้อม', '': 'ว่าง' };
+    if (L[c] != null) return L[c];
+    const d = noSb_(c); if (cHas_(c, 'S') && d) return (L[d] || d) + ' + เตรียมพร้อม';
+    return c;
+  }
   return c === '0' ? 'พักกะ' : 'กะ ' + c;
 }
 
@@ -28,6 +35,7 @@ function thShort_(key, d) {
   const ms = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return d + ' ' + ms[Number(key.slice(5, 7)) - 1];
 }
+function nextKey_(key) { const y = +key.slice(0, 4), m = +key.slice(5, 7); return m === 12 ? (y + 1) + '-01' : y + '-' + ('0' + (m + 1)).slice(-2); }
 
 /** แปลงคำขอเป็นคำสั่งย้ายช่อง */
 function buildOps_(type, p) {
@@ -40,8 +48,54 @@ function buildOps_(type, p) {
   throw new Error('ประเภทคำขอไม่ถูกต้อง');
 }
 
+/** เวรเตรียมพร้อมวันถัดไปเป็นคู่กับช่วง 3 — ช่วง 3 ย้ายไปใคร เตรียมพร้อมวันรุ่งขึ้นย้ายตามไปด้วย
+ *  nextData = ข้อมูลเดือนถัดไป (กรณีช่วง 3 วันสุดท้ายของเดือน) ไม่มีก็ข้าม */
+function sbPair_(data, nextData, g, from, to, day, out) {
+  const map = data[g], nd = map[from].length, cross = day >= nd;
+  const m2 = cross ? (nextData && nextData[g]) : map; if (!m2 || !m2[from] || !m2[to]) return;
+  const i2 = cross ? 0 : day, a2 = m2[from][i2], b2 = m2[to][i2];
+  if (!cHas_(a2, 'S') || cHas_(b2, 'S')) return;
+  const d2 = cross ? 1 : day + 1;
+  if (cHas_(b2, '1')) throw new Error(to + ' มีช่วง 1 วันที่ ' + d2 + (cross ? ' (เดือนถัดไป)' : '') + ' ซึ่งตรงกับเวรเตรียมพร้อมที่ต้องย้ายตามช่วง 3 — เลือกคนอื่น');
+  const na = noSb_(a2) || FREE_[g], nb = mergeCode_(b2, 'S');
+  m2[from][i2] = na; m2[to][i2] = nb;
+  out.push({ day: d2, g: g, from: from, to: to, code: 'S', pair: true, nm: cross || undefined, prevFrom: a2, fromAfter: na, prevTo: b2, toAfter: nb, merged: true });
+}
+
+/** ปรับย้อนหลังตามกฎ "เตรียมพร้อมคู่กับช่วง 3" (ใช้ครั้งเดียวกับเดือนที่อนุมัติไปแล้ว)
+ *  1) คนเตรียมพร้อมที่ถูกใช้ไปเข้าช่วง 3 แทน → คืนเตรียมพร้อมให้ (ถือทั้งสองอย่าง)
+ *  2) ช่วง 3 ที่ย้ายไปแล้ว แต่เตรียมพร้อมวันรุ่งขึ้นยังอยู่กับคนเดิม → ย้ายตาม ผูกกับคำขอเดิม (ออกใบคู่ได้)
+ *  คืน { done:[ข้อความ], skip:[ข้อความ] } — แก้ data / nextData โดยตรง */
+function sbPairRetro_(key, data, nextData) {
+  const by = 'ระบบ: ปรับตามกฎเตรียมพร้อมคู่ช่วง 3', at = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), done = [], skip = [];
+  const ch = data.changes || [], map = data.emp;
+  ch.forEach(function (c, k) {                                       // 1) คืนเตรียมพร้อม
+    if (c.g !== 'emp' || !c.replacedStandby || cHas_(c.code, '1')) return;
+    const i = c.day - 1, later = ch.slice(k + 1).some(function (x) { return x.g === 'emp' && x.day === c.day && (x.from === c.to || x.to === c.to); });
+    if (later || map[c.to][i] !== c.code) { skip.push(thShort_(key, c.day) + ' ' + c.to + ' (ตารางถูกเปลี่ยนต่อแล้ว)'); return; }
+    const nc = mergeCode_('S', c.code); map[c.to][i] = nc;
+    delete c.replacedStandby; c.prevTo = 'S'; c.toAfter = nc; c.merged = true; c.keepSb = true;
+    done.push(thShort_(key, c.day) + ' ' + c.to + ' ถือเตรียมพร้อม + ' + codeLabel_('emp', c.code));
+  });
+  const outCh = [];                                                  // 2) ย้ายเตรียมพร้อมตามช่วง 3 — แทรกต่อจากรายการต้นทาง
+  ch.forEach(function (c) {
+    outCh.push(c);
+    if (c.g !== 'emp' || c.pair || c.xpart || !cHas_(c.code, '3')) return;
+    const add = [];
+    try { sbPair_(data, nextData, 'emp', c.from, c.to, c.day, add); }
+    catch (e) { skip.push(thShort_(key, c.day) + ' ' + c.from + ' → ' + c.to + ': ' + e.message); return; }
+    add.forEach(function (x) {
+      const rec = Object.assign({ req: c.req, by: by, at: at, retro: true }, x);
+      if (x.nm) { rec.srcMonth = key; nextData.changes = (nextData.changes || []).concat([rec]); } else outCh.push(rec);
+      done.push(thShort_(x.nm ? nextKey_(key) : key, x.day) + ' เตรียมพร้อม ' + x.from + ' → ' + x.to + ' (คู่กับช่วง 3 ' + thShort_(key, c.day) + ')');
+    });
+  });
+  data.changes = outCh;
+  return { done: done, skip: skip };
+}
+
 /** ใช้คำสั่งกับข้อมูลเดือน (แก้ data โดยตรง) — ผิดเงื่อนไขจะ throw */
-function applyOps_(data, ops) {
+function applyOps_(data, ops, nextData) {
   const out = [];
   ops.forEach(function (o) {
     const map = data[o.g]; const i = o.day - 1;
@@ -50,31 +104,52 @@ function applyOps_(data, ops) {
       if (!map[o.from] || !map[o.to]) throw new Error('ไม่พบรายชื่อ');
       const full = map[o.from][i], t = map[o.to][i];
       if (isFree_(o.g, full)) throw new Error(o.from + ' ไม่มีเวรวันที่ ' + o.day);
-      let c = full, rest = FREE_[o.g];                       // ลาบางช่วง (เช่น เฉพาะช่วง 2 ของ 2+3) → ที่เหลือยังเป็นของคนเดิม
-      if (o.part && full !== o.part) {
-        if (!cHas_(full, o.part)) throw new Error(o.from + ' ไม่มีช่วง ' + o.part + ' ในวันที่ ' + o.day);
-        c = o.part; rest = String(full).split(',').filter(function (x) { return x !== o.part; }).join(',');
+      const duty = o.g === 'emp' ? noSb_(full) : full;       // เตรียมพร้อมของวันนั้นยังเป็นของคนเดิม (คู่กับช่วง 3 ของเมื่อวาน)
+      let c = duty;
+      if (o.part && duty !== o.part) {                        // ลาบางช่วง (เช่น เฉพาะช่วง 2 ของ 2+3) → ที่เหลือยังเป็นของคนเดิม
+        if (!cHas_(duty, o.part)) throw new Error(o.from + ' ไม่มีช่วง ' + o.part + ' ในวันที่ ' + o.day);
+        c = o.part;
       }
-      const restore = c !== full ? { prevFrom: full, fromAfter: rest } : {};
-      if (!isFree_(o.g, t)) {
+      const rest = c !== full ? String(full).split(',').filter(function (x) { return x && c.split(',').indexOf(x) < 0; }).join(',') || FREE_[o.g] : FREE_[o.g];
+      const restore = rest !== FREE_[o.g] ? { prevFrom: full, fromAfter: rest } : {};
+      if (o.g === 'emp' && t === 'S' && !cHas_(c, '1')) {     // คนเตรียมพร้อมมาเข้าแทน → ยังถือเตรียมพร้อมไว้ด้วย
+        const nc = mergeCode_('S', c);
+        map[o.to][i] = nc; map[o.from][i] = rest;
+        out.push(Object.assign({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, prevTo: t, toAfter: nc, merged: true, keepSb: true }, restore));
+      } else if (!isFree_(o.g, t)) {
         if (!o.merge) throw new Error(o.to + ' มีเวร (' + codeLabel_(o.g, t) + ') วันที่ ' + o.day + ' แล้ว');
         const nc = mergeCode_(t, c);                        // อยู่ต่อเนื่อง (ผู้อนุมัติยอม) — รวมช่วงเวร
         map[o.to][i] = nc; map[o.from][i] = rest;
         out.push(Object.assign({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, prevTo: t, toAfter: nc, merged: true }, restore));
-        return;
+      } else {
+        map[o.to][i] = c; map[o.from][i] = rest;
+        out.push(Object.assign({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, replacedStandby: t === 'S' }, restore));
       }
-      map[o.to][i] = c; map[o.from][i] = rest;
-      out.push(Object.assign({ day: o.day, g: o.g, from: o.from, to: o.to, code: c, replacedStandby: t === 'S' }, restore));
+      if (o.g === 'emp' && cHas_(c, '3')) sbPair_(data, nextData, o.g, o.from, o.to, o.day, out);
     } else if (o.op === 'xchg') {
       const ca = map[o.a][i], cb = map[o.b][i];
       if (isFree_(o.g, ca) || isFree_(o.g, cb)) throw new Error('วันเดียวกันต้องมีเวรทั้งสองคนจึงจะสลับได้');
-      map[o.a][i] = cb; map[o.b][i] = ca;
-      out.push({ day: o.day, g: o.g, from: o.a, to: o.b, code: ca }, { day: o.day, g: o.g, from: o.b, to: o.a, code: cb });
+      if (o.g !== 'emp') {
+        map[o.a][i] = cb; map[o.b][i] = ca;
+        out.push({ day: o.day, g: o.g, from: o.a, to: o.b, code: ca }, { day: o.day, g: o.g, from: o.b, to: o.a, code: cb });
+        return;
+      }
+      const da = noSb_(ca), db = noSb_(cb);                  // สลับเฉพาะช่วงเวร เตรียมพร้อมอยู่กับเจ้าของเดิม
+      const na = cHas_(ca, 'S') ? mergeCode_(db, 'S') : db, nb = cHas_(cb, 'S') ? mergeCode_(da, 'S') : da;
+      map[o.a][i] = na; map[o.b][i] = nb;
+      out.push({ day: o.day, g: o.g, from: o.a, to: o.b, code: da, xchg: true, prevA: ca, prevB: cb, afterA: na, afterB: nb },
+               { day: o.day, g: o.g, from: o.b, to: o.a, code: db, xpart: true });
+      if (cHas_(da, '3') && !cHas_(db, '3')) sbPair_(data, nextData, o.g, o.a, o.b, o.day, out);
+      if (cHas_(db, '3') && !cHas_(da, '3')) sbPair_(data, nextData, o.g, o.b, o.a, o.day, out);
     }
   });
   return out;
 }
 
+function sbNote_(month, ch) {
+  const ps = (ch || []).filter(function (c) { return c.pair; });
+  return ps.length ? ' · เตรียมพร้อมย้ายตามช่วง 3: ' + ps.map(function (c) { return thShort_(c.nm ? nextKey_(month) : month, c.day) + ' ' + c.from + ' → ' + c.to; }).join(', ') : '';
+}
 function describe_(month, type, p, data) {
   const lab = function (n, d) { return n + ' (' + thShort_(month, d) + ' ' + codeLabel_(p.g, data[p.g][n][d - 1]) + ')'; };
   if (type === 'swap') return 'แลกเวร: ' + lab(p.a, Number(p.da)) + ' ⇄ ' + lab(p.b, Number(p.db));
@@ -126,8 +201,9 @@ function createRequest_(b, who) {
   const test = JSON.parse(JSON.stringify(mo.data));
   const dup = dupOf_(b.month, b.type, b.payload);
   if (dup) throw new Error('มีรายการนี้อยู่แล้ว: ' + dup.text + ' — ' + (dup.status === 'อนุมัติ' ? 'อนุมัติเมื่อ ' + fmtTime_(dup.decidedAt) : 'รออนุมัติอยู่') + ' · ไม่ต้องยื่นซ้ำ (ถ้าต้องการยกเลิก ให้ลบรายการนั้น)');
-  applyOps_(test, ops);                                     // ตรวจก่อนบันทึก
-  const text = describe_(b.month, b.type, b.payload, mo.data);
+  const nx = b.payload.g === 'emp' ? getMonth_(nextKey_(b.month)) : null;
+  const tch = applyOps_(test, ops, nx && JSON.parse(JSON.stringify(nx.data)));   // ตรวจก่อนบันทึก
+  const text = describe_(b.month, b.type, b.payload, mo.data) + sbNote_(b.month, tch);
   const id = 'R' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss') + Math.random().toString(36).slice(2, 5).toUpperCase();
   reqDirty_(); sheet_(SH.REQ).appendRow([id, new Date(), "'" + b.month, b.type, JSON.stringify(b.payload), b.requester || (who && who.name) || '',
     b.reason || '', 'รออนุมัติ', '', '', '', text]);
@@ -143,13 +219,15 @@ function decideRequest_(id, approve, who, note) {
   if (r.status !== 'รออนุมัติ') throw new Error('คำขอนี้' + r.status + 'ไปแล้ว');
   let changes = [];
   if (approve) {
-    const mo = getMonth_(r.month);
-    changes = applyOps_(mo.data, buildOps_(r.type, r.payload));   // ตรวจซ้ำกับตารางล่าสุด
+    const mo = getMonth_(r.month), nk = nextKey_(r.month), nx = r.payload.g === 'emp' ? getMonth_(nk) : null;
+    changes = applyOps_(mo.data, buildOps_(r.type, r.payload), nx && nx.data);   // ตรวจซ้ำกับตารางล่าสุด
+    const stamp = function (c) { return Object.assign({ req: id, by: who.name, at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') }, c); };
     mo.data.rev = (mo.data.rev || 0) + 1;
-    mo.data.changes = (mo.data.changes || []).concat(changes.map(function (c) {
-      return Object.assign({ req: id, by: who.name, at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') }, c);
-    }));
+    mo.data.changes = (mo.data.changes || []).concat(changes.filter(function (c) { return !c.nm; }).map(stamp));
     saveMonth_(r.month, mo.status, mo.data, mo.stateAfter, mo.note);
+    const cx = changes.filter(function (c) { return c.nm; });   // เตรียมพร้อมวันที่ 1 ของเดือนถัดไป
+    if (cx.length && nx) { nx.data.rev = (nx.data.rev || 0) + 1; nx.data.changes = (nx.data.changes || []).concat(cx.map(function (c) { return Object.assign(stamp(c), { srcMonth: r.month }); }));
+      saveMonth_(nk, nx.status, nx.data, nx.stateAfter, nx.note); }
   }
   const st = approve ? 'อนุมัติ' : 'ไม่อนุมัติ';
   reqDirty_(); sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([[st, who.name + ' (' + who.role + ')', new Date(), note || '']]);
@@ -160,9 +238,11 @@ function decideRequest_(id, approve, who, note) {
     const fullOf = {}; readTable_(SH.PEOPLE).forEach(function (p) { fullOf[p.short] = String(p.full || p.short).replace(/\s+/g, ' '); });
     let lines, title, btn = [];
     if (approve) {
-      title = changes.map(function (c) { return thShort_(r.month, c.day) + ' ' + codeLabel_(c.g, c.code); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' · ');
+      const vis = changes.filter(function (c) { return !c.xpart || r.type === 'swap'; });
+      const mk = function (c) { return c.nm ? nextKey_(r.month) : r.month; };
+      title = vis.map(function (c) { return thShort_(mk(c), c.day) + ' ' + codeLabel_(c.g, c.code); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' · ');
       lines = [];
-      changes.forEach(function (c) { lines.push(thShort_(r.month, c.day) + ' ' + codeLabel_(c.g, c.code)); lines.push('ผู้มอบเวร: ' + (fullOf[c.from] || c.from)); lines.push('ผู้อยู่เวรแทน: ' + (fullOf[c.to] || c.to)); });
+      vis.forEach(function (c) { lines.push(thShort_(mk(c), c.day) + ' ' + codeLabel_(c.g, c.code) + (c.pair ? ' (คู่กับช่วง 3)' : '')); lines.push('ผู้มอบเวร: ' + (fullOf[c.from] || c.from)); lines.push('ผู้อยู่เวรแทน: ' + (fullOf[c.to] || c.to)); });
       if (r.reason) lines.push('เหตุผล: ' + r.reason);
       lines.push('อนุมัติโดย ' + who.name + (note ? ' · ' + note : ''));
       const u1 = webUrl_(''); if (u1) btn.push({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ตารางเวร', uri: u1 } });
@@ -308,36 +388,57 @@ function deleteRequest_(id, revertIgnored, who) {
   let reverted = 0, note;
   const mo = r.status === 'อนุมัติ' ? getMonth_(r.month) : null;
   if (mo) {
-    const ch = mo.data.changes || [], idx = [];
-    ch.forEach(function (c, i) { if (c.req === id) idx.push(i); });
-    if (idx.length) {
-      const last = idx[idx.length - 1], mine = idx.map(function (i) { return ch[i]; });
-      const people = {}; mine.forEach(function (c) { people[c.from] = 1; people[c.to] = 1; });
-      const blk = {};
-      ch.forEach(function (c, i) { if (i > last && c.req !== id && mine.some(function (m) { return m.g === c.g && m.day === c.day && (people[c.from] || people[c.to]); })) blk[c.req] = 1; });
+    // เดือนของคำขอ + เดือนถัดไป (เตรียมพร้อมวันที่ 1 ที่ย้ายตามช่วง 3 วันสุดท้ายของเดือน)
+    const nk = nextKey_(r.month), nx = getMonth_(nk);
+    const parts = [{ key: r.month, mo: mo }];
+    if (nx && (nx.data.changes || []).some(function (c) { return c.req === id; })) parts.push({ key: nk, mo: nx });
+    const blk = {};
+    parts.forEach(function (P) {
+      const ch = P.mo.data.changes || [], idx = [];
+      ch.forEach(function (c, i) { if (c.req === id) idx.push(i); });
+      P.mine = idx.map(function (i) { return ch[i]; });
+      if (!idx.length) return;
+      const last = idx[idx.length - 1], people = {};
+      P.mine.forEach(function (c) { people[c.from] = 1; people[c.to] = 1; });
+      ch.forEach(function (c, i) { if (i > last && c.req !== id && P.mine.some(function (m) { return m.g === c.g && m.day === c.day && (people[c.from] || people[c.to]); })) blk[c.req] = 1; });
+    });
+    const total = parts.reduce(function (n, P) { return n + P.mine.length; }, 0);
+    if (total) {
       const ids = Object.keys(blk);
       if (ids.length) return { blocked: ids.map(function (x) { const q = all.filter(function (y) { return y.id === x; })[0]; return { id: x, text: q ? q.text : x, at: q ? fmtTime_(q.decidedAt) : '' }; }) };
       // ตรวจทุกช่องก่อน แล้วค่อยคืนพร้อมกัน (ไม่คืนครึ่ง ๆ กลาง ๆ)
-      const test = JSON.parse(JSON.stringify(mo.data));
-      const sameDaySwap = r.type === 'swap' && Number(r.payload.da) === Number(r.payload.db);
-      const undo = function (data) {
-        if (sameDaySwap) {
-          const c = mine[0], map = data[c.g], i = c.day - 1;
-          if (map[c.from][i] !== mine[1].code || map[c.to][i] !== c.code) return false;
-          map[c.from][i] = c.code; map[c.to][i] = mine[1].code; return true;
+      const oldSameDay = r.type === 'swap' && Number(r.payload.da) === Number(r.payload.db) && !parts[0].mine.some(function (c) { return c.xchg; });
+      const undoOne = function (data, c) {
+        const map = data[c.g], i = c.day - 1;
+        if (c.xpart) return true;
+        if (c.xchg) {
+          if (map[c.from][i] !== c.afterA || map[c.to][i] !== c.afterB) return false;
+          map[c.from][i] = c.prevA; map[c.to][i] = c.prevB; return true;
         }
-        return mine.slice().reverse().every(function (c) {
-          const map = data[c.g], i = c.day - 1;
-          if (!map[c.to] || map[c.to][i] !== (c.merged ? c.toAfter : c.code)) return false;
-          if (c.prevFrom != null ? map[c.from][i] !== c.fromAfter : !isFree_(c.g, map[c.from][i])) return false;
-          map[c.from][i] = c.prevFrom != null ? c.prevFrom : c.code; map[c.to][i] = c.merged ? c.prevTo : c.replacedStandby ? 'S' : FREE_[c.g]; return true;
-        });
+        if (!map[c.to] || map[c.to][i] !== (c.merged ? c.toAfter : c.code)) return false;
+        if (c.prevFrom != null ? map[c.from][i] !== c.fromAfter : !isFree_(c.g, map[c.from][i])) return false;
+        map[c.from][i] = c.prevFrom != null ? c.prevFrom : c.code; map[c.to][i] = c.merged ? c.prevTo : c.replacedStandby ? 'S' : FREE_[c.g]; return true;
       };
-      if (!undo(test)) return { mismatch: true };
-      undo(mo.data); reverted = mine.length;
-      mo.data.rev = (mo.data.rev || 0) + 1;
-      mo.data.changes = ch.filter(function (c) { return c.req !== id; });
-      saveMonth_(r.month, mo.status, mo.data, mo.stateAfter, mo.note);
+      const undo = function (datas) {                         // datas[k] = data ของแต่ละเดือน — ย้อนจากรายการล่าสุด
+        for (let k = parts.length - 1; k >= 0; k--) {
+          const data = datas[k], mine = parts[k].mine;
+          if (k === 0 && oldSameDay) {
+            const c = mine[0], map = data[c.g], i = c.day - 1;
+            if (map[c.from][i] !== mine[1].code || map[c.to][i] !== c.code) return false;
+            map[c.from][i] = c.code; map[c.to][i] = mine[1].code; continue;
+          }
+          if (!mine.slice().reverse().every(function (c) { return undoOne(data, c); })) return false;
+        }
+        return true;
+      };
+      if (!undo(parts.map(function (P) { return JSON.parse(JSON.stringify(P.mo.data)); }))) return { mismatch: true };
+      undo(parts.map(function (P) { return P.mo.data; })); reverted = total;
+      parts.forEach(function (P) {
+        if (!P.mine.length) return;
+        P.mo.data.rev = (P.mo.data.rev || 0) + 1;
+        P.mo.data.changes = (P.mo.data.changes || []).filter(function (c) { return c.req !== id; });
+        saveMonth_(P.key, P.mo.status, P.mo.data, P.mo.stateAfter, P.mo.note);
+      });
     }
     note = 'ลบโดย ' + who.name + (reverted ? ' · คืนตารางแล้ว' : ' · ไม่มีข้อมูลการเปลี่ยนในตาราง');
   } else note = 'ลบโดย ' + who.name + (r.status === 'รออนุมัติ' ? ' · ยังไม่อนุมัติ ตารางไม่เปลี่ยน' : '');

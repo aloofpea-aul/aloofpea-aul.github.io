@@ -54,7 +54,7 @@ function slotRecipients_(kind, dd, cfg) {
   const e = dd.emp;
   if (kind === 'emp1') {
     const r = who_(e, function (c) { return cHas_(c, '1'); });
-    return String(cfg.notifyStandby) === 'true' ? r.concat(who_(e, function (c) { return c === 'S'; })) : r;
+    return String(cfg.notifyStandby) === 'true' ? r.concat(who_(e, function (c) { return cHas_(c, 'S') && !cHas_(c, '1'); })) : r;
   }
   if (kind === 'emp2') return dd.day.off ? who_(e, function (c) { return cHas_(c, '2') && !cHas_(c, '1'); }) : [];   // 1+2+3 อยู่ต่อจากช่วง 1 ไม่ต้องแจ้งซ้ำ
   if (kind === 'emp3') return who_(e, function (c) { return cHas_(c, '3') && !(cHas_(c, '1') && cHas_(c, '2')); });
@@ -74,7 +74,7 @@ function summaryLines_(dd) {
   L.push('ช่วง 1: ' + j(who_(e, function (c) { return cHas_(c, '1'); })));
   if (dd.day.off) L.push('ช่วง 2: ' + j(who_(e, function (c) { return cHas_(c, '2'); })));
   L.push('ช่วง 3: ' + j(who_(e, function (c) { return cHas_(c, '3'); })));
-  L.push('เตรียมพร้อม: ' + j(who_(e, function (c) { return c === 'S'; })));
+  L.push('เตรียมพร้อม: ' + j(who_(e, function (c) { return cHas_(c, 'S'); })));
   L.push('คนงาน');
   L.push('กะ 1: ' + j(who_(w, function (c) { return c.split(',').indexOf('1') >= 0; })));
   L.push('กะ 2: ' + j(who_(w, function (c) { return c === '2'; })));
@@ -329,10 +329,10 @@ function tmdOn_(ymd) { try { return tmdDays_(ymd.slice(0, 7))[+ymd.slice(8, 10)]
 function shiftMessage_(kind, ymd, name, dd) {
   const def = SLOT_DEF[kind], cfg = getConfig_();
   let title = def.title;
-  if (kind === 'emp3' && dd.emp[name] === '2,3') title = 'ช่วง 3 · 16:30 น. (ต่อจากช่วง 2)';
+  if (kind === 'emp3' && noSb_(dd.emp[name]) === '2,3') title = 'ช่วง 3 · 16:30 น. (ต่อจากช่วง 2)';
   if (kind === 'emp1' && cHas_(dd.emp[name], '1') && cHas_(dd.emp[name], '2')) title = cHas_(dd.emp[name], '3') ? 'ช่วง 1+2+3 · 00:30 น. (อยู่ต่อเนื่องถึง 00:30 วันรุ่งขึ้น)' : 'ช่วง 1+2 · 00:30 น. (อยู่ต่อเนื่องถึง 16:30)';
-  if (kind === 'emp2' && dd.emp[name] === '2') title = 'ช่วง 2 · 08:30–16:30 น.';
-  if (kind === 'emp1' && dd.emp[name] === 'S') title = 'เตรียมพร้อม ช่วง 1 · 00:30 น.';
+  if (kind === 'emp2' && noSb_(dd.emp[name]) === '2') title = 'ช่วง 2 · 08:30–16:30 น.';
+  if (kind === 'emp1' && cHas_(dd.emp[name], 'S') && !cHas_(dd.emp[name], '1')) title = 'เตรียมพร้อม ช่วง 1 · 00:30 น.';
   const body = [
     { type: 'text', text: OFFICE_TITLE_, weight: 'bold', size: 'sm', wrap: true, color: '#1E1A22' },
     { type: 'text', text: 'ติดต่อได้ 24 ชม. · ' + thDateLong_(ymd) + (dd.day.off ? ' · วันหยุด' : ''), size: 'xs', color: '#6B6372', wrap: true }];
@@ -343,13 +343,13 @@ function shiftMessage_(kind, ymd, name, dd) {
     if (bl) body.push({ type: 'text', text: 'เข้า ' + thShortD_(bl.inD) + ' ' + bl.inT + ' → ออก ' + thShortD_(bl.outD) + ' ' + bl.outT + ' น.', size: 'xs', color: '#4A4450', wrap: true });
     const tb = telBtn_('โทร ' + fmtPhone_(p.phone), p.phone, false); if (tb) body.push(tb);
   });
-  if (name && dd.emp[name] !== 'S') {
+  if (name && noSb_(dd.emp[name]) !== '' && !(kind === 'emp1' && !cHas_(dd.emp[name], '1'))) {
     const rl = repLink_(ymd + '|' + (kind === 'emp1' ? 'p1' : 'p3'), name, 'duty');
     if (rl) body.push({ type: 'button', style: 'secondary', height: 'sm', margin: 'md', action: { type: 'uri', label: 'ลงรายงานการอยู่เวร', uri: rl } });
     if (rl) body.push({ type: 'button', style: 'primary', color: '#A23434', height: 'sm', margin: 'md', action: { type: 'uri', label: '⚡ บันทึกไฟดับ', uri: rl + '&out=1' } });
   }
   const ins = inspOf_(ymd); if (ins) body.push({ type: 'text', text: 'ผู้ตรวจเวรวันนี้: ' + personOf_(ins).full, size: 'xs', color: '#6B6372', margin: 'md', wrap: true });
-  const sb = who_(dd.emp, function (c) { return c === 'S'; });
+  const sb = who_(dd.emp, function (c) { return cHas_(c, 'S'); });
   if (kind === 'emp1' && sb.length) body.push({ type: 'text', text: 'เตรียมพร้อม: ' + sb.join(', '), size: 'xs', color: '#6B6372', margin: 'md', wrap: true });
   body.push({ type: 'separator', margin: 'md' });
   const room = telBtn_('ห้องเวรแก้ไฟ ' + fmtPhone_(cfg.roomPhone), cfg.roomPhone, true); if (room) body.push(room);
