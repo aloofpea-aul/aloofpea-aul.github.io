@@ -322,7 +322,7 @@ function showLogin(note) {
   $('#tabs').classList.add('hidden');
   header('Safety Talk', 'เข้าสู่ระบบ');
   const c = creds();
-  $('#view').innerHTML = '<form class="card" id="lf" style="display:flex;flex-direction:column;gap:12px" autocomplete="on">' +
+  $('#view').innerHTML = '<div id="quickBox"></div><form class="card" id="lf" style="display:flex;flex-direction:column;gap:12px" autocomplete="on">' +
     '<div class="mut">' + esc(note || 'ใช้ชื่อและรหัสผ่านเดียวกับศูนย์รวมงาน กฟส.อ่าวลึก เข้าครั้งเดียว ระบบจำไว้ในเครื่องนี้') + '</div>' +
     '<label class="f">ชื่อ<input class="in" name="u" autocomplete="username" required value="' + esc(c.name) + '"></label>' +
     '<label class="f">รหัสผ่าน<input class="in" name="p" type="password" autocomplete="current-password" required></label>' +
@@ -335,6 +335,7 @@ function showLogin(note) {
     const ok = await run(() => api('hubLogin'), '', 'กำลังตรวจสอบชื่อและรหัสผ่าน…');
     if (ok) start(true);
   };
+  loadQuick();
 }
 
 async function start(force) {
@@ -452,7 +453,8 @@ function vHome() {
       '<div style="display:flex;flex-direction:column;gap:3px;font-size:14px;color:#33433A">' +
         '<div>เวลา ' + esc(n.time) + ' น. · ' + esc(n.place) + '</div>' +
         '<div>ผู้นำออกกำลังกาย: <b>' + esc(n.leaderDept) + '</b></div>' +
-        (n.topic ? '<div>หัวข้อ: ' + esc(n.topic) + '</div>' : '') + '</div>' + moved +
+        (n.topic ? '<div>เรื่องที่ผู้นำพูด: ' + esc(n.topic) + '</div>' : '') + '</div>' + moved +
+      (du === 1 && (me.roles.pr || me.roles.manager || me.roles.admin) && n.status !== 'cancelled' ? '<button class="btn" id="bAnn" style="min-height:50px;background:#FFF8E6;border:2px solid var(--amb);color:#5C4300;margin-top:4px">📣 ประกาศกิจกรรมพรุ่งนี้</button><div class="mut" style="font-size:12px;text-align:center">' + annStatus(b) + '</div>' : '') +
     '</section>' + bigBtn +
     '<div class="row" style="margin-top:-4px">' + sub + '<span class="sp"></span>' + absence + '</div>' +
     '<section class="card" style="display:flex;flex-direction:column;gap:10px" id="albumCard"><div class="row"><span class="h">รูปกิจกรรมรวม</span><span class="sp"></span><a href="#" id="aAll" style="font-size:13px">ดูทั้งหมด</a></div><div class="grid4" id="hThumbs"><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div></div>' +
@@ -462,6 +464,7 @@ function vHome() {
     (hist ? '<section class="card"><div class="h" style="margin-bottom:10px">ของฉัน ' + (b.history.length) + ' ครั้งล่าสุด</div><div class="grid4">' + hist + '</div></section>' : '');
   if ($('#bCheck')) { $('#bCheck').onclick = doCheckIn; drawGps(); startGps(); }
   if ($('#bAbs')) $('#bAbs').onclick = () => absenceSheet(n);
+  if ($('#bAnn')) $('#bAnn').onclick = () => announceSheet(n);
   if ($('#bAbsCancel')) $('#bAbsCancel').onclick = async () => { if (await run(() => api('cancelAbsence', { sessionId: n.id }), 'ยกเลิกแล้ว', 'กำลังยกเลิก…')) { await refreshBoot(); render(); } };
   $('#aAll').onclick = e => { e.preventDefault(); go('album'); };
   $('#bCam').onclick = () => { ED.upTarget = null; $('#fileCam').click(); };
@@ -1211,6 +1214,151 @@ async function sendBot() {
     const img = await api('saveReportImage', { sessionId: S.news.session.id, base64: b64, kind: mode === 'one' ? 'news' : 'report' });
     await api('sendNews', { sessionId: S.news.session.id, text: text, imageFileId: img.fileId });
   }, 'ส่งเข้า LINE แล้ว', 'กำลังส่งเข้า LINE…');
+}
+
+const QR_NEW = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPgAAAD4AQAAAADpqhamAAABhElEQVR4nOWZS3LEIAxEX09x/yt3FhKyK6maHYjYMwtjekGjv2SZr7/Pd/jf4wPFwhBLI1O73fzW3x8DCFklA3nudvPbcH90074sO1bgfn7bcVn4C776/DbcIAR4Ov/e83vwAVPd8fD0fW85vxsvW/evf+5281uNq3w9jD4DYe1281uPx73D8bGEjCWQdAK/tfhIdVsOtUcYNMI6gN8O3ETez9RnbObjBH7LcUsmQr8kMhHqGH6L8bixhUkDANITTuC3Ei+r/9MHhTS6+W3If6l33VKfmGLp5rdB/zBNXrUKoViP1/+t2jMR+LGxbbAff//If5HrIutV8WP0/Pg3Zt8fryopZGjo5rcBr25PlydoWsQB/Jbi6f2ehd+t9TUv6P9GCWCmPGcWiJqwm9++/r/8Pk2BV8T/a/6bBq8yAKPn+/+HbPSp8X8Yf7ZAJ/DbhwtkKSOhXlD/jmt5fQfJQfAb7P82/xV2FQHhC8+v/7P/ieFHtP85Eo3vYd38NvS/red34z8cdLy8kyVwmgAAAABJRU5ErkJggg==';
+const QR_OLD = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPgAAAD4AQAAAADpqhamAAABcElEQVR4nOWZS3LDMAxD8TK+/5XRBUkpzSI7iWplJ46HWBiU+AEdrK/H6zv853GV/7as/MjD2s1vNf7kCiAkC0kyuKzd/HbggGIZsCoM0noCv404liIIep7fiGOQYJaEvc/vwR+Vv5aFGbvvI/jtq/8fZ1q7+a3G8ect8pu1m996nDxlIIofigsn8FuLV6zb42uPmxvif3a7VABps7gg/0vv+K3rOe2W/73/LwlrdL231m8u0b8RAWYUgFL/8hH8VuOIMfJgEZNg9oED+C3Fa9zNiXcOvlEVLsh/Z6bnIkQDFNENDuC3HLeMjNBvASSuyH8k2UT9Mxp7b1+R/yX/phAcEvCC/H9C8dXEYzQ0oW/of080gFS74X0kALfo3/yt8j8EsXyB//P9b439EQc5A7Tz2+B/+J7Xan2KAfCG/c/DTOXvev3Rzm8fPt98UvLngvjH0fmo/35yFcrYzW9f/VdW/5RE2Q66+a3f/97nd+M/K5rXhFzrVrwAAAAASUVORK5CYII=';
+/* ================= ประกาศกิจกรรมล่วงหน้า 1 วัน ================= */
+const LINK_NEW = 'https://aloofpea-aul.github.io/st', LINK_OLD = 'https://aloofpea-aul.github.io/st-old';
+function annText(n) {
+  return '📣 SAFETY TALK พรุ่งนี้\n📅 ' + thDateLong(n.date) + ' · ' + n.time + ' น.\n📍 ' + n.place + '\n🤸 ผู้นำออกกำลังกาย: ' + n.leaderDept +
+    '\nขอเชิญพนักงาน ลูกจ้าง ทุกท่านเข้าร่วม\n\n✅ ลงชื่อ (ระบบใหม่) 👉 ' + LINK_NEW + '\n📋 ระบบเดิม (ไม่ต้องลงทะเบียน) 👉 ' + LINK_OLD +
+    '\n\nยังไม่มีบัญชีศูนย์รวมงาน กด "ลงชื่อด่วน" ได้เลย\n“' + (S.boot.slogan || 'PEA Safety For All').replace(/^.*:\s*/, '') + '”';
+}
+function annImg(src) { return new Promise(r => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = src; }); }
+async function drawAnnounce(cv, n) {
+  const W = 1080, G = '#1B5E20', c = cv.getContext('2d'); cv.width = W; cv.height = W;
+  try { await Promise.all(['400 30px Sarabun', '700 30px Sarabun', '800 30px Sarabun'].map(x => document.fonts.load(x))); } catch (e) {}
+  const [qn, qo] = await Promise.all([annImg(QR_NEW), annImg(QR_OLD)]);
+  const F = (w, s) => w + ' ' + s + 'px Sarabun, "Noto Sans Thai", sans-serif';
+  const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  c.fillStyle = '#fff'; c.fillRect(0, 0, W, W); c.fillStyle = G; c.fillRect(0, 0, W, 300);
+  c.fillStyle = '#F2A900'; rr(70, 56, 330, 62, 31); c.fill(); c.fillStyle = '#1F1A00'; c.font = F(700, 34); c.fillText('ประกาศ · พรุ่งนี้', 104, 99);
+  c.fillStyle = '#fff'; c.font = F(800, 120); c.fillText('SAFETY TALK', 64, 232);
+  c.fillStyle = '#D7EAD3'; c.font = F(400, 34); c.fillText((S.boot.orgShort || '') + ' · กฟต.2', 70, 280);
+  [[thDateLong(n.date) + ' · ' + n.time + ' น.', 800, 42], ['สถานที่: ' + n.place, 600, 36], ['ผู้นำออกกำลังกาย: ' + n.leaderDept, 600, 36]].forEach((r, i) => {
+    const y = 340 + i * 96; c.fillStyle = '#EEF5EC'; rr(70, y, W - 140, 80, 20); c.fill();
+    c.fillStyle = '#17251A'; c.font = F(r[1], r[2]); c.fillText(r[0], 100, y + 54, W - 200);
+  });
+  [[qn, 'ลงชื่อ ระบบใหม่', 'aloofpea-aul.github.io/st', 70], [qo, 'ระบบเดิม', 'ไม่ต้องลงทะเบียน', 560]].forEach(q => {
+    c.fillStyle = '#F6FBF5'; rr(q[3], 650, 450, 320, 24); c.fill(); c.strokeStyle = '#C9D6C5'; c.lineWidth = 2; c.stroke();
+    if (q[0]) { c.imageSmoothingEnabled = false; c.drawImage(q[0], q[3] + 24, 674, 200, 200); c.imageSmoothingEnabled = true; }
+    c.fillStyle = G; c.font = F(700, 34); c.fillText(q[1], q[3] + 240, 742, 200);
+    c.fillStyle = '#4A5A4D'; c.font = F(400, 26); c.fillText('สแกนเพื่อเข้า', q[3] + 240, 786);
+    c.font = F(400, 24); c.fillText(q[2], q[3] + 24, 930, 400);
+  });
+  c.fillStyle = '#F2A900'; c.fillRect(0, 1000, W, 80); c.fillStyle = '#1F1A00'; c.font = F(700, 34); c.textAlign = 'center';
+  c.fillText('“' + (S.boot.slogan || 'PEA Safety For All') + '”', W / 2, 1052, W - 80); c.textAlign = 'left';
+}
+function annStatus(b) {
+  const a = b.announced;
+  return a ? '✓ ประกาศแล้ว ' + esc(a.at) + ' น. โดย ' + esc(a.by) + (a.mode === 'bot' ? ' (บอท)' : '') + ' · กดเพื่อประกาศซ้ำได้'
+    : 'ยังไม่ได้ประกาศ · ถ้าไม่มีใครกด ระบบจะเตือนอัตโนมัติ 16:00 น.';
+}
+function announceSheet(n) {
+  let blob = null;
+  sheet('<div class="row"><b class="sp" style="font-size:18px">📣 ประกาศกิจกรรมพรุ่งนี้</b><button class="btn" data-x style="min-height:36px">ปิด ✕</button></div>' +
+    '<label class="row" style="gap:8px;font-size:14px"><input type="checkbox" id="anImg" checked style="width:20px;height:20px">แนบรูปประกาศ (มี QR ทั้ง 2 ระบบ)</label>' +
+    '<canvas id="anCv" style="width:62%;align-self:center;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.2)"></canvas>' +
+    '<textarea class="in" id="anTx" rows="10" style="font-size:13px;line-height:1.5"></textarea>' +
+    '<button class="btn" id="anShare" style="min-height:52px;background:#06C755;border-color:#06C755;color:#fff">แชร์เข้า LINE (จากมือถือ)</button>' +
+    '<div class="grid2"><button class="btn" id="anCopy">คัดลอกข้อความ</button><button class="btn" id="anBot">🤖 ส่งผ่านบอท (การ์ดปุ่ม)</button></div>' +
+    '<div class="mut" style="font-size:12px">"แชร์เข้า LINE" ไม่ใช้โควตาบอท · "ส่งผ่านบอท" ส่งการ์ดที่มีปุ่มกดเข้ากลุ่มทันที (ใช้โควตาบอท)</div>', (el, close) => {
+      el.querySelector('[data-x]').onclick = close;
+      const tx = el.querySelector('#anTx'), cv = el.querySelector('#anCv'), img = el.querySelector('#anImg');
+      tx.value = annText(n);
+      drawAnnounce(cv, n).then(() => new Promise(r => cv.toBlob(r, 'image/jpeg', 0.9))).then(b => { blob = b; });
+      img.onchange = () => { cv.style.display = img.checked ? '' : 'none'; };
+      const mark = mode => api('announce', { sessionId: n.id, mode: mode }).then(r => { if (r && r.announced) { S.boot.announced = r.announced; lsJ(K_BOOT, S.boot); if (S.tab === 'home') render(); } }).catch(() => {});
+      el.querySelector('#anCopy').onclick = async () => { await copyText(tx.value); mark('share'); };
+      el.querySelector('#anShare').onclick = async () => {
+        const text = tx.value, files = img.checked && blob ? [new File([blob], 'SafetyTalk_ประกาศ_' + n.date + '.jpg', { type: 'image/jpeg' })] : [];
+        try {
+          await copyText(text);
+          if (navigator.share && (!files.length || (navigator.canShare && navigator.canShare({ files: files })))) { await navigator.share(files.length ? { files: files, text: text } : { text: text }); mark('share'); close(); return; }
+        } catch (e) { if (e.name === 'AbortError') return; }
+        if (files.length) downloadBlob(blob, files[0].name);
+        mark('share');
+        toast('เครื่องนี้แชร์ตรงไม่ได้ — คัดลอกข้อความ' + (files.length ? 'และบันทึกรูป' : '') + 'ให้แล้ว นำไปวางใน LINE ได้เลย');
+      };
+      el.querySelector('#anBot').onclick = async () => {
+        if (!(await confirmBox('ส่งผ่านบอท LINE', 'ส่งการ์ดประกาศ (มีปุ่มลงชื่อระบบใหม่/ระบบเดิม) เข้ากลุ่ม LINE ที่ตั้งไว้', 'ส่ง'))) return;
+        const r = await run(() => api('announce', { sessionId: n.id, mode: 'bot' }), 'ส่งประกาศเข้ากลุ่มแล้ว', 'กำลังส่งประกาศ…');
+        if (r && r.announced) { S.boot.announced = r.announced; lsJ(K_BOOT, S.boot); close(); render(); }
+      };
+    });
+}
+
+/* ================= ลงชื่อด่วน (ยังไม่มีบัญชีศูนย์รวมงาน) ================= */
+const K_QNAME = 'st_quick_name';
+function quickDevice() { let d = ls('st_quick_dev'); if (!d) { d = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); ls('st_quick_dev', d); } return d; }
+async function loadQuick() {
+  const box = $('#quickBox'); if (!box) return;
+  let q; try { q = await api('quickInfo'); } catch (e) { return; }
+  if (!$('#quickBox') || !q || !q.session) return;
+  S.quick = q;
+  const nm = ls(K_QNAME);
+  box.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--g)"><b style="font-size:17px">วันนี้มีกิจกรรม ' + esc(q.session.time) + ' น.</b><div class="mut">' + esc(q.session.place) + '</div>' +
+    (q.open ? (nm ? '<button class="btn pri" id="qMe" style="min-height:60px;font-size:17px">⚡ ลงชื่อ — ' + esc(nm) + '</button><button class="btn" id="qGo">ไม่ใช่ฉัน / เลือกชื่ออื่น</button>'
+      : '<button class="btn pri" id="qGo" style="min-height:60px;font-size:17px">⚡ ลงชื่อด่วน</button><div class="mut" style="text-align:center">ไม่ต้องมีบัญชี · เลือกชื่อตัวเองแล้วกดยืนยัน</div>')
+      : '<button class="btn" disabled style="min-height:56px">ลงชื่อด่วนเปิด ' + esc(q.from) + '–' + esc(q.to) + ' น.</button>') + '</div>' +
+    '<div class="row" style="gap:8px;color:var(--mut);font-size:12px;margin:6px 0"><span style="flex:1;height:1px;background:#C9D6C5"></span>หรือเข้าสู่ระบบศูนย์รวมงาน<span style="flex:1;height:1px;background:#C9D6C5"></span></div>';
+  if ($('#qGo')) $('#qGo').onclick = () => quickPick(q);
+  if ($('#qMe')) $('#qMe').onclick = () => quickConfirm(q, nm);
+}
+function quickPick(q) {
+  header('ลงชื่อด่วน', thDate(q.session.date));
+  $('#view').innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:10px"><b style="font-size:18px">คุณชื่ออะไร?</b><input class="in" id="qq" placeholder="พิมพ์ชื่อ เช่น สมชาย" style="font-size:16px"><div id="ql" class="list" style="display:flex;flex-direction:column;gap:6px"></div></div>' +
+    '<button class="btn" id="qBack">← กลับ</button>';
+  const draw = () => {
+    const k = $('#qq').value.trim();
+    const list = q.people.filter(p => !k || p.name.indexOf(k) >= 0).slice(0, 30);
+    $('#ql').innerHTML = list.map(p => '<button class="row" data-qn="' + esc(p.name) + '" style="width:100%;border:1px solid #E3EAE0;border-radius:12px;background:#fff;padding:8px;text-align:left;gap:10px">' + avatar(p.name) +
+      '<span class="sp"><b>' + esc(p.name) + '</b><br><span class="mut">' + esc(p.pos || p.dept) + '</span></span></button>').join('') || '<div class="mut">ไม่พบชื่อ — ลองพิมพ์ส่วนอื่นของชื่อ</div>';
+    $('#ql').querySelectorAll('[data-qn]').forEach(b => b.onclick = () => quickConfirm(q, b.dataset.qn));
+  };
+  $('#qq').oninput = draw; draw(); setTimeout(() => $('#qq').focus(), 100);
+  $('#qBack').onclick = () => showLogin();
+}
+function quickConfirm(q, name) {
+  const p = q.people.find(x => x.name === name) || { name: name };
+  header('ลงชื่อด่วน', thDate(q.session.date));
+  $('#view').innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row" style="gap:10px;border:3px solid var(--g);border-radius:12px;padding:8px">' + avatar(name) +
+    '<span class="sp"><b>' + esc(name) + '</b><br><span class="mut">' + esc(p.pos || p.dept || '') + '</span></span><b style="color:var(--g)">✓</b></div>' +
+    '<div id="qGps" class="warn" style="font-size:13px">📍 กำลังหาตำแหน่ง…</div>' +
+    '<button class="btn pri" id="qOk" style="min-height:60px;font-size:17px">ยืนยันลงชื่อ — ' + esc(name.split(/\s+/)[0]) + '</button>' +
+    '<div class="mut" style="text-align:center">ลงชื่อแทนคนอื่นไม่ได้ · 1 เครื่องลงได้ 1 ชื่อต่อครั้ง</div></div><button class="btn" id="qBack">← เลือกชื่ออื่น</button>';
+  $('#qBack').onclick = () => quickPick(q);
+  let pos = null, done = false;
+  const show = () => {
+    const g = $('#qGps'); if (!g) return;
+    if (!done) { g.className = 'warn'; g.innerHTML = '📍 กำลังหาตำแหน่ง…'; return; }
+    if (pos && pos.acc <= 1000) {
+      const R = 6371000, t = x => x * Math.PI / 180, o = S.quick && q.office ? q.office : { lat: 8.36481, lng: 98.74857 };
+      const a = Math.sin(t(o.lat - pos.lat) / 2) ** 2 + Math.cos(t(pos.lat)) * Math.cos(t(o.lat)) * Math.sin(t(o.lng - pos.lng) / 2) ** 2, d = Math.round(2 * R * Math.asin(Math.sqrt(a)));
+      g.className = d <= q.radius ? 'gps' : 'warn';
+      g.innerHTML = d <= q.radius ? '📍 อยู่ในสำนักงาน (ห่าง ' + d + ' ม.)' : '📍 อยู่นอกสำนักงาน (ห่าง ' + d + ' ม.) — ต้องอยู่ในรัศมี ' + q.radius + ' ม.';
+    } else {
+      g.className = 'warn';
+      g.innerHTML = '💻 <b>เครื่องนี้หาตำแหน่งไม่ได้</b> (คอมพิวเตอร์มักไม่มี GPS)<br>ยังลงชื่อได้ — ระบบจะติดป้าย <b>"ลงจากคอม · รอหัวหน้ายืนยัน"</b>';
+    }
+  };
+  if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p2 => { pos = { lat: p2.coords.latitude, lng: p2.coords.longitude, acc: p2.coords.accuracy }; done = true; show(); }, () => { done = true; show(); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+  else { done = true; show(); }
+  $('#qOk').onclick = async () => {
+    if (!done) { await new Promise(r => { const t = setInterval(() => { if (done) { clearInterval(t); r(); } }, 300); setTimeout(() => { clearInterval(t); done = true; r(); }, 11000); }); show(); }
+    const r = await run(() => api('quickCheckIn', { name: name, lat: pos ? pos.lat : '', lng: pos ? pos.lng : '', acc: pos ? pos.acc : '', device: quickDevice() }), '', 'กำลังลงชื่อ…');
+    if (!r) return;
+    ls(K_QNAME, name);
+    header('ลงชื่อด่วน', 'เรียบร้อย');
+    $('#view').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 0 8px"><div style="width:96px;height:96px;border-radius:50%;background:#E3F0E0;color:var(--g);font-size:56px;display:flex;align-items:center;justify-content:center">✓</div>' +
+      '<b style="font-size:21px">' + (r.already ? 'ลงชื่อไว้แล้ว' : 'ลงชื่อแล้ว ' + esc(r.time) + ' น.') + '</b><div class="mut">' + esc(r.name) + ' · ' + (r.pc ? 'ลงจากคอม · รอหัวหน้ายืนยัน' : 'ในสำนักงาน') + '</div></div>' +
+      '<div class="card"><b>เครื่องนี้จำชื่อคุณไว้แล้ว</b><div class="mut">ครั้งหน้าเปิดลิงก์เดิม จะมีปุ่ม "ลงชื่อ — ' + esc(r.name.split(/\s+/)[0]) + '" ให้กดปุ่มเดียว</div></div>' +
+      '<div class="card" style="display:flex;flex-direction:column;gap:8px"><b>อยากใช้ครบทุกเมนู?</b><div class="mut">สมัครบัญชีศูนย์รวมงาน เพื่อแจ้งลาล่วงหน้า ดูประวัติ และถ่ายรูปกิจกรรม</div><a class="btn" href="/index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center">ขอบัญชีศูนย์รวมงาน</a></div>' +
+      '<button class="btn" id="qHome">กลับหน้าแรก</button>';
+    $('#qHome').onclick = () => showLogin();
+  };
 }
 
 /* ================= สรุปรายเดือน ================= */
