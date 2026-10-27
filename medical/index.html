@@ -114,18 +114,19 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 .pbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;color:var(--muted)}
 
 .sheet{width:210mm;height:296mm;overflow:hidden;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);transform-origin:top left;
-  box-shadow:0 2px 18px rgba(40,10,40,.18);padding:7.5mm 7.5mm 5mm;font-family:var(--doc);font-size:10.4pt;line-height:1.42}
+  box-shadow:0 2px 18px rgba(40,10,40,.18);padding:6mm 5mm 4mm;font-family:var(--doc);font-size:12.5pt;line-height:1.3}
 .box{border:1.2px solid var(--ink);display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
 .box>*{flex-shrink:0}
-.hd{text-align:center;border-bottom:1.2px solid var(--ink);padding:2mm 0 1.5mm}
-.hd img{width:15mm;height:auto;display:block;margin:0 auto 1mm}
-.hd b{display:block;font-size:14pt;line-height:1.35}
+.hd{text-align:center;border-bottom:1.2px solid var(--ink);padding:1.5mm 0 1mm}
+.hd img{width:13mm;height:auto;display:block;margin:0 auto 1mm}
+.hd b{display:block;font-size:1.32em;line-height:1.35}
 .sec1{padding:1.6mm 3mm 1mm;border-bottom:1.2px solid var(--ink);flex-grow:1;display:flex;flex-direction:column;justify-content:space-around}
-.ln{display:flex;align-items:baseline;gap:1.2mm;white-space:nowrap;min-height:6mm}
+.ln{display:flex;align-items:baseline;gap:1.2mm;white-space:nowrap;min-height:1.3em}
 .ln.ind{padding-left:9mm}
 .ln.ind2{padding-left:11mm}
 .ln.r{justify-content:flex-end}
-.v{flex-shrink:0;border-bottom:1px dotted var(--ink);text-align:center;min-height:5.4mm;padding:0 1mm;overflow:hidden;text-overflow:clip;display:inline-block}
+.ln.wrap{display:block;white-space:normal}
+.v{flex-shrink:0;border-bottom:1px dotted var(--ink);text-align:center;min-height:1.2em;padding:0 1mm;overflow:hidden;text-overflow:clip;display:inline-block}
 .v.fl{flex:1 1 0;min-width:8mm}
 .v.l{text-align:left}
 .hl .v.has{background:var(--hl)}
@@ -135,7 +136,7 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 .grid2>div{padding:1.4mm 3mm 1.6mm;position:relative}
 .grid2>div:first-child{border-right:1.2px solid var(--ink)}
 .ttl{text-align:center;font-weight:700}
-.sig{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:7mm;text-align:center}
+.sig{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:5mm;text-align:center}
 .sig .line{border-bottom:1px dotted var(--ink);height:5mm}
 .sig .nm:empty{display:none}
 .sec1,.grid2>div,.rcv>div,.sig>div,.sig3>div,.appr{overflow:hidden;min-width:0}
@@ -144,18 +145,18 @@ input.req-miss{border-color:var(--bad);background:var(--bad-soft)}
 .sig .dt span{border-bottom:1px dotted var(--ink);width:9mm}
 .cross{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .appr{display:flex;flex-direction:column;align-items:center}
-.appr .line{border-bottom:1px dotted var(--ink);width:52mm;height:5mm;margin-top:13mm}
+.appr .line{border-bottom:1px dotted var(--ink);width:52mm;height:5mm;margin-top:9mm}
 .rcv{display:grid;grid-template-columns:1fr 38mm;border-bottom:1.2px solid var(--ink)}
 .rcv>div:first-child{padding:1.4mm 3mm}
 .amt{border-left:1.2px solid var(--ink);display:grid;grid-template-columns:1fr 9mm;grid-template-rows:auto 1fr;text-align:center}
 .amt .h{grid-column:1/-1;border-bottom:1.2px solid var(--ink)}
 .amt .s{border-left:1.2px solid var(--ink)}
 .amt div{display:flex;align-items:center;justify-content:center}
-.sig3{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;padding:7mm 8mm 2.5mm;text-align:center}
+.sig3{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;padding:5mm 8mm 2mm;text-align:center}
 .sig3 .line{border-bottom:1px dotted var(--ink);height:5mm}
 .sig3 .dt{display:flex;justify-content:center;gap:1mm;margin-top:.5mm}
 .sig3 .dt span{border-bottom:1px dotted var(--ink);width:10mm}
-.foot{flex-shrink:0;font-size:10.5pt;margin-top:1.2mm;display:flex;justify-content:space-between}
+.foot{flex-shrink:0;font-size:.9em;margin-top:1.2mm;display:flex;justify-content:space-between}
 .ref{font-size:9pt}
 
 
@@ -392,19 +393,21 @@ table.h small{color:var(--muted);display:block}
       <div class="ln">เรียน<span class="v" style="width:36mm" data-k="to"></span>( ผู้บังคับบัญชาชั้นต้น )</div>
       <div class="ln ind">๑.&nbsp; ข้าพเจ้า<span class="v fl" data-k="name"></span>เลขประจำตัว<span class="v" style="width:22mm" data-k="empId"></span>ตำแหน่ง<span class="v" style="width:22mm" data-k="pos"></span>กฟฟ.<span class="v" style="width:22mm" data-k="office"></span></div>
       <div class="ln">หมวด/แผนก<span class="v fl" data-k="dept"></span>กอง/เขต<span class="v" style="width:14mm" data-k="div"></span>สำนัก/ฝ่าย<span class="v" style="width:22mm" data-k="bureau"></span>เบอร์ภายใน<span class="v" style="width:14mm" data-k="tel"></span>บรรจุเมื่อ<span class="v" style="width:24mm" data-k="hired"></span></div>
-      <div class="ln">ข้าพเจ้าขอเบิกค่ารักษาของ<span class="v" style="width:28mm" data-k="patOf"></span>เกี่ยวข้องเป็น<span class="v" style="width:18mm" data-k="rel"></span>ของข้าพเจ้า ซึ่งมีรายละเอียดดังนี้ อาชีพ<span class="v fl" data-k="occ"></span></div>
-      <div class="ln">สถานที่ทำงาน<span class="v fl" data-k="work"></span>เป็นข้าราชการประจำ/บำนาญ สังกัด<span class="v" style="width:34mm" data-k="gov"></span></div>
+      <div class="ln">ข้าพเจ้าขอเบิกค่ารักษาของ<span class="v" style="width:28mm" data-k="patOf"></span>เกี่ยวข้องเป็น<span class="v" style="width:18mm" data-k="rel"></span>ของข้าพเจ้า ซึ่งมีรายละเอียดดังนี้</div>
+      <div class="ln">อาชีพ<span class="v" style="width:34mm" data-k="occ"></span>สถานที่ทำงาน<span class="v fl" data-k="work"></span></div>
+      <div class="ln">เป็นข้าราชการประจำ/บำนาญ สังกัด<span class="v fl" data-k="gov"></span></div>
       <div class="ln">ได้รับการรักษาพยาบาล ณ สถานพยาบาล (<span class="ck" data-k="ckGov"></span>) ราชการ (<span class="ck" data-k="ckPri"></span>) เอกชน ชื่อ<span class="v fl" data-k="hosName"></span>จังหวัด<span class="v" style="width:18mm" data-k="prov"></span></div>
       <div class="ln">ด้วยโรค<span class="v fl" data-k="dis"></span>ตั้งแต่วันที่<span class="v" style="width:26mm" data-k="dFrom"></span>ถึงวันที่<span class="v" style="width:26mm" data-k="dTo"></span>รวม<span class="v" style="width:12mm" data-k="days"></span>วัน</div>
-      <div class="ln">และได้แนบหลักฐานประกอบการเบิกเงินมาพร้อมนี้ จำนวน<span class="v" style="width:14mm" data-k="docs"></span>ฉบับ</div>
-      <div class="ln">รวมเป็นเงินทั้งสิ้น<span class="v" style="width:22mm" data-k="amount"></span>บาท จำนวนเงินไม่รวมภาษีมูลค่าเพิ่ม<span class="v fl" data-k="exVat"></span>บาท จำนวนเงินภาษีมูลค่าเพิ่ม<span class="v" style="width:15mm" data-k="vatAmt"></span>บาท</div>
-      <div class="ln ind">๒. ข้าพเจ้าขอเบิกค่ารักษาพยาบาลตามสิทธิ (<span class="ck" data-k="r1"></span>) เต็มจำนวนเงินที่ได้จ่ายไปจริง (<span class="ck" data-k="r2"></span>) ครึ่งหนึ่งของจำนวนที่จ่ายจริง</div>
+      <div class="ln">และได้แนบหลักฐานประกอบการเบิกเงินมาพร้อมนี้ จำนวน<span class="v" style="width:12mm" data-k="docs"></span>ฉบับ รวมเป็นเงินทั้งสิ้น<span class="v fl" data-k="amount"></span>บาท</div>
+      <div class="ln">จำนวนเงินไม่รวมภาษีมูลค่าเพิ่ม<span class="v fl" data-k="exVat"></span>บาท จำนวนเงินภาษีมูลค่าเพิ่ม<span class="v fl" data-k="vatAmt"></span>บาท</div>
+      <div class="ln ind">๒. ข้าพเจ้าขอเบิกค่ารักษาพยาบาลตามสิทธิ (<span class="ck" data-k="r1"></span>) เต็มจำนวนเงินที่ได้จ่ายไปจริง</div>
+      <div class="ln ind2">(<span class="ck" data-k="r2"></span>) ครึ่งหนึ่งของจำนวนที่จ่ายจริง</div>
       <div class="ln ind2">(<span class="ck" data-k="r3"></span>) เฉพาะส่วนที่ขาดเนื่องจากสิทธิที่ได้รับจากต้นสังกัดต่ำกว่า</div>
-      <div class="ln ind2">(<span class="ck" data-k="r4"></span>) เฉพาะส่วนที่ขาดเนื่องจากค่าสินไหมทดแทนสำหรับค่ารักษาพยาบาลที่ได้รับจากบุคคลภายนอกต่ำกว่า</div>
-      <div class="ln ind2">กรณีภายหลังได้รับค่าสินไหมทดแทนสำหรับค่ารักษาพยาบาลจากบุคคลภายนอก ข้าพเจ้าจะนำส่งคืน กฟภ. ทันทีตามระเบียบ</div>
+      <div class="ln ind2 wrap">(<span class="ck" data-k="r4"></span>) เฉพาะส่วนที่ขาดเนื่องจากค่าสินไหมทดแทนสำหรับค่ารักษาพยาบาลที่ได้รับจากบุคคลภายนอกต่ำกว่า</div>
+      <div class="ln ind2 wrap">กรณีภายหลังได้รับค่าสินไหมทดแทนสำหรับค่ารักษาพยาบาลจากบุคคลภายนอก ข้าพเจ้าจะนำส่งคืน กฟภ. ทันทีตามระเบียบ</div>
       <div class="ln ind">๓. ข้าพเจ้าขอรับรองว่า&nbsp; ๓.๑ ผู้ป่วยเป็นผู้มีสิทธิได้รับการช่วยเหลือตามระเบียบนี้</div>
-      <div class="ln" style="padding-left:30.5mm">๓.๒ ผู้ป่วยไม่มีสิทธิได้รับเงินค่ารักษาพยาบาลจากทางราชการหรือหน่วยงานอื่นหรือได้รับบางส่วน</div>
-      <div class="ln" style="padding-left:30.5mm">๓.๓ ข้อความทั้งหมดซึ่งได้ให้ไว้ข้างต้นถูกต้องตามความเป็นจริงทุกประการ</div>
+      <div class="ln wrap" style="padding-left:30.5mm">๓.๒ ผู้ป่วยไม่มีสิทธิได้รับเงินค่ารักษาพยาบาลจากทางราชการหรือหน่วยงานอื่นหรือได้รับบางส่วน</div>
+      <div class="ln wrap" style="padding-left:30.5mm">๓.๓ ข้อความทั้งหมดซึ่งได้ให้ไว้ข้างต้นถูกต้องตามความเป็นจริงทุกประการ</div>
       <div class="ln r" style="margin-top:2.5mm">(ลงชื่อ)<span class="v" style="width:58mm"></span>ผู้ขอเบิก</div>
       <div class="ln r">วันที่<span class="v" style="width:12mm" data-k="sD"></span>เดือน<span class="v" style="width:28mm" data-k="sM"></span>พ.ศ.<span class="v" style="width:16mm" data-k="sY"></span></div>
     </div>
@@ -829,9 +832,12 @@ function fitText() {
   const cs = getComputedStyle(sheet), sec = paper.querySelector('.sec1');
   // ความสูงจริงของเนื้อหา (ไม่นับช่องว่างที่ยืดให้เต็มหน้า)
   const need = () => { sec.style.flexGrow = '0'; const h = [...paper.children].reduce((t, c) => t + c.offsetHeight, 0); sec.style.flexGrow = ''; return h; };
-  let fs = parseFloat(cs.fontSize), fmin = fs * 0.85;
-  while (need() > paper.clientHeight - 2 && fs > fmin) { fs -= 0.25; sheet.style.fontSize = fs + 'px'; }
   paper.querySelectorAll('.v, .sig .nm, .sig [data-k], .ln').forEach(el => { el.style.fontSize = ''; });
+  // ใช้ตัวอักษรใหญ่ที่สุดที่ทุกบรรทัดยังไม่ล้นความกว้าง และทั้งใบยังพอดี 1 หน้า (ขนาดเดียวกันทั้งใบ)
+  const lines = [...paper.querySelectorAll('.ln')];
+  const wide = () => lines.some(el => el.scrollWidth > el.clientWidth + 1 || el.scrollWidth > el.parentElement.clientWidth);
+  let fs = parseFloat(cs.fontSize), fmin = fs * 0.7;
+  while ((wide() || need() > paper.clientHeight - 2) && fs > fmin) { fs -= 0.25; sheet.style.fontSize = fs + 'px'; }
   paper.querySelectorAll('.v, .sig .nm, .sig [data-k]').forEach(el => {
     let f = parseFloat(getComputedStyle(el).fontSize), min = f * 0.62;
     while (el.scrollWidth > el.clientWidth + 1 && f > min) { f -= 0.5; el.style.fontSize = f + 'px'; }
