@@ -73,7 +73,8 @@
   .app-tile:active{background:#f7f5f1;}
   .app-tile.disabled{opacity:.58;cursor:default;pointer-events:none;}
   .app-tile .icon{width:36px;height:36px;flex:0 0 auto;border-radius:10px;background:#f2eff8;color:var(--pea-purple);
-    display:flex;align-items:center;justify-content:center;}
+    display:flex;align-items:center;justify-content:center;font-size:1.25rem;line-height:1;}
+  .fav-grid .app-tile .icon{width:40px;height:40px;font-size:1.4rem;}
   /* name/desc เป็น span — ต้องสั่ง block ไม่งั้น overflow:hidden ไม่ทำงาน ข้อความจะล้นไปทับป้ายด้านขวา */
   .app-txt{flex:1 1 auto;min-width:0;display:block;}
   .app-tile .name{display:block;font-weight:600;font-size:.94rem;line-height:1.3;
@@ -206,7 +207,7 @@
 
           <a class="app-tile" href="sld-ala/index.html?from=hub" data-app="sld" data-track="self"
              data-short="SLD" data-kw="single line diagram ซิงเกิ้ลไลน์ ไดอะแกรม สถานีไฟฟ้า อุปกรณ์ สวิตช์ ดรอปเอาท์">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 3v18M6 7h12M6 7l-2 5h4zM18 7l-2 5h4z"></path></svg></span>
+            <span class="icon">🗺</span>
             <span class="app-txt">
               <span class="name">Single Line Diagram</span>
               <span class="desc">ผังสถานีไฟฟ้าอ่าวลึก · อุปกรณ์และการเชื่อมต่อ</span>
@@ -216,7 +217,7 @@
 
           <a class="app-tile" href="sld-ala/transformer-survey/index.html?from=hub" data-app="tx-survey" data-track="self"
              data-short="หม้อแปลง" data-kw="สำรวจหม้อแปลง transformer วัดโหลด กระแส มิเตอร์ แอมป์">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M8 8V5M16 8V5M9 13h6"></path></svg></span>
+            <span class="icon">🔌</span>
             <span class="app-txt">
               <span class="name">สำรวจหม้อแปลง</span>
               <span class="desc">ตรวจตำแหน่งจริงเทียบฐานข้อมูล · วัดโหลด</span>
@@ -226,7 +227,7 @@
 
           <a class="app-tile" href="sld-ala/patrol-index.html?from=hub" data-app="patrol" data-track="self"
              data-short="Patrol" data-kw="patrol พาโทรล ป้องกันไฟดับ จุดเสี่ยง ตรวจสาย เดินตรวจ">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 21s7-4.4 7-10a7 7 0 1 0-14 0c0 5.6 7 10 7 10z"></path><circle cx="12" cy="11" r="2.4"></circle></svg></span>
+            <span class="icon">🚶</span>
             <span class="app-txt">
               <span class="name">Patrol ระบบจำหน่าย</span>
               <span class="desc">บันทึกจุดเสี่ยงพร้อมรูป · ใช้ได้แม้ไม่มีสัญญาณ</span>
@@ -236,7 +237,7 @@
 
           <a class="app-tile" href="tree-ala/index.html?from=hub" data-app="tree" data-track="self"
              data-short="ตัดต้นไม้" data-kw="ตัดต้นไม้ ริดกิ่ง zpm4 งวดเงิน ผู้รับจ้าง แผนงาน">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 3L7 11h3l-4 6h12l-4-6h3z"></path><path d="M12 17v4M9.5 21h5"></path></svg></span>
+            <span class="icon">🌳</span>
             <span class="app-txt">
               <span class="name">งานตัดต้นไม้</span>
               <span class="desc">แผนงาน ใบสั่ง ZPM4 งวดเงิน · ช่วงสายบนแผนที่</span>
@@ -246,7 +247,7 @@
 
           <a class="app-tile" href="pea-analytics-data/index.html?from=hub" data-app="analytics" data-track="self"
              data-short="สถิติไฟดับ" data-kw="analytics saifi saidi ความเชื่อถือได้ ไฟดับ สถิติ แดชบอร์ด">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 19V5M4 19h16M8 16V11M12 16V7M16 16v-6"></path></svg></span>
+            <span class="icon">📊</span>
             <span class="app-txt">
               <span class="name">Distribution Analytics</span>
               <span class="desc">SAIFI/SAIDI · อุปกรณ์วิกฤต · แผนที่จุดเกิดเหตุ</span>
@@ -263,7 +264,7 @@
 
           <a class="app-tile" href="ccl/index.html?from=hub" data-app="ccl" data-track="self"
              data-short="CCL" data-kw="ccl ควบคุมงานก่อสร้าง สมุดคุม แฟ้มงาน ตัดงบ 0030 0040 0060 ตรวจรับ">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 20h16M6 20V9l6-4 6 4v11M10 20v-5h4v5"></path></svg></span>
+            <span class="icon">🏗️</span>
             <span class="app-txt">
               <span class="name">CCL ควบคุมงานก่อสร้าง</span>
               <span class="desc">สมุดคุมแฟ้มงาน · ตัดงบ · ตรวจรับ 3 ขั้นตอน</span>
@@ -273,7 +274,7 @@
 
           <a class="app-tile disabled" href="#" data-app="construction"
              data-short="สำรวจก่อสร้าง" data-kw="สำรวจงานก่อสร้าง ปักเสา พาดสาย ประมาณราคา">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg></span>
+            <span class="icon">📏</span>
             <span class="app-txt">
               <span class="name">สำรวจงานก่อสร้าง</span>
               <span class="desc">ปักเสา พาดสาย ประมาณราคา</span>
@@ -290,7 +291,7 @@
 
           <a class="app-tile" href="duty-roster/index.html?from=hub" data-app="dutyroster" data-track="self"
              data-short="งานเวร" data-kw="เวรแก้ไฟ ตารางเวร แลกเวร ลาเวร ผู้ตรวจเวร บันทึกไฟดับ">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M8 3v4M16 3v4M4 10h16"></path></svg></span>
+            <span class="icon">🗓️</span>
             <span class="app-txt">
               <span class="name">งานเวรแก้ไฟ</span>
               <span class="desc">ตารางเวร แลก-ลาเวร · แจ้งเตือน LINE</span>
@@ -300,7 +301,7 @@
 
           <a class="app-tile" href="ops/index.html?from=hub" data-app="ops" data-track="self"
              data-short="ห้องควบคุม" data-kw="ห้องควบคุม รถแก้ไฟ ops แผนที่สด gps คิวแจ้งไฟดับ">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M3 16h2l2-6h7l3 6h4"></path><circle cx="8" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle></svg></span>
+            <span class="icon">🛰️</span>
             <span class="app-txt">
               <span class="name">ห้องควบคุมรถแก้ไฟ</span>
               <span class="desc">แผนที่สดเวรแก้ไฟ · คิวแจ้งไฟดับ</span>
@@ -310,7 +311,7 @@
 
           <a class="app-tile" href="tmd/index.html?from=hub" data-app="tmd" data-track="self"
              data-short="เตือนภัย" data-kw="ประกาศเตือนภัย กรมอุตุ อุตุนิยมวิทยา พายุ ฝน ลมแรง tmd">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4"></path><circle cx="12" cy="12" r="3.3"></circle></svg></span>
+            <span class="icon">⛈️</span>
             <span class="app-txt">
               <span class="name">ประกาศเตือนภัยกรมอุตุฯ</span>
               <span class="desc">ค้นหาประกาศทุกฉบับ · แจ้งกลุ่มแก้ไฟ</span>
@@ -327,7 +328,7 @@
 
           <a class="app-tile" href="booknum/index.html?from=hub" data-app="booknum" data-track="self"
              data-short="ออกเลข" data-kw="ออกเลขหนังสือ เลขที่หนังสือ สัญญาจ้าง คำสั่ง ใบสำคัญจ่าย ธุรการ">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4M9 13h6M9 17h4"></path></svg></span>
+            <span class="icon">📄</span>
             <span class="app-txt">
               <span class="name">ระบบออกเลขหนังสือ</span>
               <span class="desc">หนังสือทั่วไป สัญญาจ้าง คำสั่ง ใบสำคัญจ่าย</span>
@@ -337,7 +338,7 @@
 
           <a class="app-tile" href="budget/index.html?from=hub" data-app="budget" data-track="self"
              data-short="ตัดงบ" data-kw="ตัดงบทำการ งบประมาณ อนุมัติ งบคงเหลือ บัญชี เสนอเรื่อง">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v8M9.5 10h4a1.8 1.8 0 0 1 0 3.6h-3a1.8 1.8 0 0 0 0 3.6h4"></path></svg></span>
+            <span class="icon">💰</span>
             <span class="app-txt">
               <span class="name">ระบบตัดงบทำการ</span>
               <span class="desc">เสนอเรื่อง ตรวจสอบ อนุมัติ · งบคงเหลือ</span>
@@ -347,7 +348,7 @@
 
           <a class="app-tile" href="medical/index.html?from=hub" data-app="medical" data-track="self"
              data-short="ค่ารักษา" data-kw="ใบเบิกค่ารักษาพยาบาล สก.5 สก.๕ เบิกค่ารักษา สวัสดิการ">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M12 8v8M8 12h8"></path></svg></span>
+            <span class="icon">🩺</span>
             <span class="app-txt">
               <span class="name">ใบเบิกค่ารักษาพยาบาล</span>
               <span class="desc">กรอกแบบ สก.๕ พิมพ์ได้ทันที · ส่งตัดงบให้</span>
@@ -357,7 +358,7 @@
 
           <a class="app-tile" href="vehicle/index.html?from=hub" data-app="vehicle" data-track="self"
              data-short="ยานพาหนะ" data-kw="ยานพาหนะ จองรถ เบิกรถ คืนรถ เลขไมล์ ซ่อมบำรุง น้ำมัน">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 15h16M6 15l1.6-5h8.8L18 15M6 15v2M18 15v2"></path><circle cx="8" cy="15" r="1.6"></circle><circle cx="16" cy="15" r="1.6"></circle></svg></span>
+            <span class="icon">🚗</span>
             <span class="app-txt">
               <span class="name">ระบบยานพาหนะ</span>
               <span class="desc">เบิก-คืน จองรถ · ซ่อมบำรุงตามระยะทาง</span>
@@ -374,7 +375,7 @@
 
           <a class="app-tile" href="safety-talk/index.html?from=hub" data-app="safetytalk" data-track="self"
              data-short="Safety Talk" data-kw="safety talk ความปลอดภัย ลงชื่อ อัลบั้มรูป รายงาน ข่าว">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"></path><path d="M9.5 12l1.8 1.8 3.4-3.6"></path></svg></span>
+            <span class="icon">⛑️</span>
             <span class="app-txt">
               <span class="name">Safety Talk</span>
               <span class="desc">ลงชื่อปุ่มเดียว อัลบั้มรูป · รายงานและข่าว</span>
@@ -384,7 +385,7 @@
 
           <a class="app-tile" href="pea-drawings/index.html?from=hub" data-app="drawings" data-track="self"
              data-short="แบบมาตรฐาน" data-kw="แบบมาตรฐาน แบบก่อสร้าง แบบประกอบ 2d 3d drawing วัสดุ pdf">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 6h16v13H4z"></path><path d="M4 10h16M9 10v9"></path></svg></span>
+            <span class="icon">📐</span>
             <span class="app-txt">
               <span class="name">คลังแบบมาตรฐาน กฟภ.</span>
               <span class="desc">แบบก่อสร้าง 561 แบบ · ดู 2D/3D พร้อม PDF</span>
@@ -394,7 +395,7 @@
 
           <a class="app-tile" href="pea-drawings/books.html?from=hub" data-app="drawings" data-track="self"
              data-short="หนังสือ" data-kw="หนังสือ คู่มือ ระเบียบ ข้อกำหนด อุปกรณ์ ค้นในเนื้อหา">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M5 5a2 2 0 0 1 2-2h11v18H7a2 2 0 0 0-2 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span>
+            <span class="icon">📚</span>
             <span class="app-txt">
               <span class="name">หนังสือ คู่มือ ระเบียบ</span>
               <span class="desc">77 เล่ม ค้นในเนื้อหาได้ · อุปกรณ์ 1,539 รายการ</span>
@@ -576,13 +577,23 @@ function buildFavRow(){
   const sec = document.getElementById('favSec'), box = document.getElementById('favGrid');
   if(!sec || !box) return;
   const f = lsGet(K_FAV) || {};
-  // เอาเฉพาะที่เปิดจริงตั้งแต่ 2 ครั้งขึ้นไป และต้องมีอย่างน้อย 2 โปรแกรม ไม่งั้นแถวนี้ยังไม่มีประโยชน์
-  const rows = Array.from(document.querySelectorAll('.app-grid .grp .app-tile[data-app]'));
-  const hits = rows
+  const rows = Array.from(document.querySelectorAll('.app-grid .grp .app-tile[data-app]'))
+    .filter(t=> !t.classList.contains('disabled'));
+  // 1) ของคนที่ถือเครื่องนี้เองก่อน — เปิดจากศูนย์รวมกี่ครั้ง
+  let hits = rows
     .map(t=>({ t:t, n: f[t.dataset.app + '|' + t.getAttribute('href')] || 0 }))
-    .filter(x=> x.n >= 2 && !x.t.classList.contains('disabled'))
-    .sort((a,b)=> b.n - a.n)
-    .slice(0, 4);
+    .filter(x=> x.n > 0)
+    .sort((a,b)=> b.n - a.n);
+  // 2) เครื่องใหม่ยังไม่มีประวัติ — ใช้ยอดรวมของหน่วยงานที่โหลดมาอยู่แล้วไปก่อน ไม่เรียกหลังบ้านเพิ่ม
+  if(hits.length < 2){
+    const st = (lsGet(K_STATS) || {}).stats || {};
+    const seen = {};
+    hits = rows
+      .map(t=>({ t:t, n: (st[t.dataset.app] || {}).count || 0 }))
+      .filter(x=>{ if(x.n <= 0) return false; if(seen[x.t.dataset.app]) return false; seen[x.t.dataset.app] = 1; return true; })
+      .sort((a,b)=> b.n - a.n);
+  }
+  hits = hits.slice(0, 4);
   if(hits.length < 2){ sec.classList.add('hide'); box.innerHTML = ''; return; }
   box.innerHTML = '';
   hits.forEach(x=>{
@@ -731,6 +742,8 @@ function applyStats(stats, appList){
   });
 
   // ไม่เรียงใหม่ตามเวลาแล้ว — จัดกลุ่มตามลักษณะงานแทน ตำแหน่งของแต่ละงานจะอยู่ที่เดิมทุกครั้งที่เปิด
+  // สร้างแถวใช้บ่อยอีกรอบ เผื่อเครื่องใหม่ที่ยังไม่มีประวัติ จะได้ใช้ยอดรวมหน่วยงานที่เพิ่งมาถึง
+  buildFavRow();
   if(window.hubAfterStats) try{ hubAfterStats(stats, appList); }catch(e){}   // แถบที่มาการเข้าใช้ + สิทธิ์ (hub-admin.js)
 }
 setTimeout(showGrid, 1500);   // กันค้าง
