@@ -1,5 +1,5 @@
 // Service Worker สำหรับหน้าศูนย์รวมงาน กฟส.อ่าวลึก
-const CACHE_NAME = 'pea-aoluek-hub-v2';
+const CACHE_NAME = 'pea-aoluek-hub-v3';
 const CORE_ASSETS = ['./', './index.html', './hub-admin.js', './pea-hub.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {

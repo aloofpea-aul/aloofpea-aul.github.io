@@ -31,32 +31,86 @@
     font-family:"Noto Sans Thai","TH Sarabun New","Segoe UI",sans-serif;overflow-x:hidden;}
   #app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
 
-  header{background:var(--pea-purple);color:#fff;padding:16px 20px;padding-top:calc(16px + env(safe-area-inset-top));
-    padding-left:calc(20px + env(safe-area-inset-left));padding-right:calc(20px + env(safe-area-inset-right));
-    display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-  header h1{font-size:1.15rem;margin:0;font-weight:700;flex:1 1 auto;}
-  header .sub{font-size:.8rem;opacity:.85;flex:1 1 100%;}
-  #userBadge{font-size:.75rem;padding:5px 12px;border-radius:14px;background:rgba(255,255,255,.15);
-    color:#fff;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;}
+  header{background:var(--pea-purple);color:#fff;padding:13px 16px 14px;padding-top:calc(13px + env(safe-area-inset-top));
+    padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));
+    position:sticky;top:0;z-index:600;box-shadow:0 2px 10px rgba(0,0,0,.14);}
+  .head-row{display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto;width:100%;}
+  .head-ttl{flex:1 1 auto;min-width:0;line-height:1.3;}
+  header h1{font-size:1.08rem;margin:0;font-weight:700;}
+  header .sub{font-size:.76rem;opacity:.82;margin-top:2px;}
+  .head-right{display:flex;align-items:center;gap:7px;flex:0 0 auto;}
+  #userBadge{font-size:.75rem;min-height:44px;padding:0 13px;border-radius:22px;background:rgba(255,255,255,.16);
+    color:#fff;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw;
+    display:inline-flex;align-items:center;}
   #userBadge.unauth{background:#e35d5d;font-weight:700;}
 
-  main{flex:1;padding:24px 20px calc(24px + env(safe-area-inset-bottom));max-width:960px;margin:0 auto;width:100%;}
-  #welcomeNote{font-size:.92rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
-  #welcomeNote b{color:var(--ink);}
+  /* ช่องค้นหา — ติดอยู่กับหัวจอ เลื่อนหน้าไปก็ยังอยู่ */
+  .search-wrap{max-width:960px;margin:11px auto 0;width:100%;position:relative;}
+  #appSearch{width:100%;height:44px;border:0;border-radius:11px;background:rgba(255,255,255,.15);
+    color:#fff;font:inherit;font-size:.92rem;padding:0 40px 0 38px;}
+  #appSearch::placeholder{color:rgba(255,255,255,.72);}
+  #appSearch:focus{outline:2px solid rgba(255,255,255,.5);outline-offset:0;background:rgba(255,255,255,.22);}
+  .search-wrap .s-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.8;pointer-events:none;}
+  #searchClear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;
+    border:0;background:none;color:#fff;opacity:.8;cursor:pointer;display:none;align-items:center;justify-content:center;
+    border-radius:50%;font-size:1.1rem;line-height:1;}
+  #searchClear.show{display:inline-flex;}
 
-  .app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
-  .app-tile{background:#fff;border-radius:14px;padding:22px 18px;text-decoration:none;color:var(--ink);
-    box-shadow:0 2px 10px rgba(0,0,0,.08);border:1px solid var(--line);transition:transform .15s, box-shadow .15s;
-    display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;}
-  .app-tile:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.14);}
-  .app-tile.disabled{opacity:.6;cursor:default;pointer-events:none;}
-  .app-tile .icon{font-size:2.2rem;}
-  .app-tile .name{font-weight:700;font-size:1.02rem;}
-  .app-tile .desc{font-size:.8rem;color:var(--muted);line-height:1.5;}
-  .app-tile .status-badge{position:absolute;top:12px;right:12px;font-size:.68rem;font-weight:700;
-    padding:3px 9px;border-radius:10px;}
+  main{flex:1;padding:0 12px calc(18px + env(safe-area-inset-bottom));max-width:960px;margin:0 auto;width:100%;}
+  #welcomeNote{font-size:.85rem;color:var(--muted);margin:14px 4px 0;line-height:1.6;}
+  #welcomeNote b{color:var(--ink);}
+  #welcomeNote.hide{display:none;}
+
+  .grp-h{font-size:.74rem;font-weight:700;color:#6b5a8a;letter-spacing:.03em;padding:16px 4px 7px;}
+  .grp-box{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;
+    box-shadow:0 1px 6px rgba(0,0,0,.05);}
+  .grp.hide,.fav-sec.hide{display:none;}
+
+  /* ===== แถวโปรแกรม — กระชับ แตะง่าย ===== */
+  .app-tile{display:flex;align-items:center;gap:12px;padding:10px 13px;min-height:66px;
+    text-decoration:none;color:var(--ink);position:relative;background:#fff;}
+  .app-tile + .app-tile{border-top:1px solid #f1eee7;}
+  .app-tile:active{background:#f7f5f1;}
+  .app-tile.disabled{opacity:.58;cursor:default;pointer-events:none;}
+  .app-tile .icon{width:36px;height:36px;flex:0 0 auto;border-radius:10px;background:#f2eff8;color:var(--pea-purple);
+    display:flex;align-items:center;justify-content:center;}
+  /* name/desc เป็น span — ต้องสั่ง block ไม่งั้น overflow:hidden ไม่ทำงาน ข้อความจะล้นไปทับป้ายด้านขวา */
+  .app-txt{flex:1 1 auto;min-width:0;display:block;}
+  .app-tile .name{display:block;font-weight:600;font-size:.94rem;line-height:1.3;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .app-tile .desc{display:block;font-size:.74rem;color:var(--muted);line-height:1.4;margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .app-tile .status-badge{flex:0 0 auto;font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:9px;white-space:nowrap;}
   .app-tile .status-badge.live{background:#e8f5e9;color:var(--good);}
-  .app-tile .status-badge.soon{background:#f0f0f0;color:var(--muted);}
+  .app-tile .status-badge.soon{background:#fff3e2;color:#8a5200;}
+  .chev{width:7px;height:7px;flex:0 0 auto;margin-right:3px;
+    border-right:2px solid #c0bacb;border-bottom:2px solid #c0bacb;transform:rotate(-45deg);}
+
+  /* สถิติการใช้ — บรรทัดสั้นบรรทัดเดียวในแถว ส่วนแถบที่มาการเข้าใช้แสดงเฉพาะผู้ดูแลระบบ */
+  .tile-stat{font-size:.7rem;color:#8d8878;line-height:1.4;margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tile-stat b{color:var(--pea-purple);font-weight:600;}
+  /* แถบที่มาการเข้าใช้ (ศูนย์รวม/ลิงก์ตรง/ไอคอน) จาก hub-admin.js ซ้ำกับตารางใน
+     จัดการผู้ใช้ → สถิติการเข้าใช้ ซึ่งละเอียดกว่า จึงไม่แสดงบนแถว ให้แถวเตี้ยและอ่านง่าย */
+  .app-grid .src-wrap{display:none;}
+  .tile-fresh{flex:0 0 auto;font-size:.62rem;font-weight:700;background:#efeaf7;
+    color:var(--pea-purple);padding:2px 7px;border-radius:9px;white-space:nowrap;}
+
+  /* ป้าย "ยังไม่ได้รับสิทธิ์" จาก hub-admin.js เดิมวางลอยมุมขวาบน (ออกแบบมาสำหรับการ์ดใหญ่)
+     ในแถบแบบใหม่ต้องให้มันอยู่ในแถวแทน ไม่ให้ไปทับคำอธิบาย */
+  .app-grid .app-tile .perm-badge{position:static;flex:0 0 auto;font-size:.6rem;padding:3px 7px;
+    max-width:92px;white-space:normal;line-height:1.25;text-align:center;}
+  .app-grid .app-tile.no-perm .chev{display:none;}
+
+  /* ===== แถวใช้บ่อย — นับจากการใช้งานบนเครื่องนี้ ไม่ต้องตั้งค่า ไม่ต้องโหลดเพิ่ม ===== */
+  .fav-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+  .fav-grid .app-tile{flex-direction:column;gap:7px;padding:11px 5px 10px;min-height:84px;
+    border:1px solid var(--line);border-radius:13px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.05);}
+  .fav-grid .app-tile + .app-tile{border-top:1px solid var(--line);}
+  .fav-name{display:block;font-size:.71rem;font-weight:600;line-height:1.25;}
+  .fav-grid .perm-badge{display:none;}
+  /* ปุ่มจัดการผู้ใช้ของ hub-admin.js สูงแค่ 29 จุด — ดันให้ถึง 44 ตามเกณฑ์นิ้วแตะ */
+  .head-right #hubAdminBtn{min-height:44px;border-radius:22px;padding:0 13px;}
 
   #userPickOverlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;
     align-items:center;justify-content:center;z-index:7000;padding:20px;}
@@ -78,180 +132,286 @@
   .modal-actions .btn-primary{background:var(--pea-purple);color:#fff;border-color:var(--pea-purple);}
   button:disabled{opacity:.6;cursor:not-allowed !important;}
 
-  .app-grid.loading-grid .app-tile{opacity:.35;pointer-events:none;}
-  #gridLoader{display:flex;flex-direction:column;align-items:center;gap:12px;padding:34px 16px;color:var(--muted);font-size:.86rem;}
-  #gridLoader .spin{width:38px;height:38px;border-radius:50%;border:4px solid var(--line);
-    border-top-color:var(--pea-purple);animation:spin .85s linear infinite;}
+  #gridLoader{padding:16px 0 0;}
+  #gridLoader .ld-note{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.82rem;padding:0 4px 12px;}
+  #gridLoader .spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--line);
+    border-top-color:var(--pea-purple);animation:spin .85s linear infinite;flex:0 0 auto;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  .skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;width:100%;}
-  .skel-tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 18px;
-    box-shadow:0 2px 10px rgba(0,0,0,.05);}
-  .sk{height:12px;border-radius:6px;background:linear-gradient(90deg,#eeece8 25%,#f7f6f4 37%,#eeece8 63%);
+  .skel-box{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;}
+  .skel-row{display:flex;align-items:center;gap:12px;padding:15px 13px;}
+  .skel-row + .skel-row{border-top:1px solid #f1eee7;}
+  .sk{height:11px;border-radius:6px;background:linear-gradient(90deg,#eeece8 25%,#f7f6f4 37%,#eeece8 63%);
     background-size:400% 100%;animation:shimmer 1.3s ease infinite;}
   @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
-  .tile-stat{margin-top:auto;padding-top:9px;border-top:1px dashed var(--line);font-size:.72rem;color:var(--muted);line-height:1.6;}
-  .tile-stat b{color:var(--pea-purple);}
-  .tile-fresh{position:absolute;top:12px;left:12px;font-size:.62rem;font-weight:700;background:#efeaf7;
-    color:var(--pea-purple);padding:2px 7px;border-radius:9px;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  #noMatch{display:none;text-align:center;color:var(--muted);font-size:.88rem;padding:34px 10px;line-height:1.7;}
+  #noMatch.show{display:block;}
   footer{padding:16px 20px calc(16px + env(safe-area-inset-bottom));text-align:center;font-size:.72rem;color:var(--muted);}
+
+  @media (min-width:700px){
+    .app-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start;}
+    .fav-sec{grid-column:1 / -1;}
+    .fav-grid{grid-template-columns:repeat(8,minmax(0,1fr));}
+  }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>🏢 ศูนย์รวมงาน กฟส.อ่าวลึก</h1>
-    <span class="sub">กฟต.2 · การไฟฟ้าส่วนภูมิภาค</span>
-    <span id="userBadge">👤 ยังไม่ได้เข้าสู่ระบบ</span>
+    <div class="head-row">
+      <div class="head-ttl">
+        <h1>ศูนย์รวมงาน กฟส.อ่าวลึก</h1>
+        <div class="sub">กฟต.2 · การไฟฟ้าส่วนภูมิภาค</div>
+      </div>
+      <div class="head-right">
+        <span id="userBadge">เข้าสู่ระบบ</span>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg class="s-ic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="6.3"></circle><path d="M15.6 15.6L20 20"></path></svg>
+      <input type="search" id="appSearch" placeholder="พิมพ์ชื่องานที่ต้องการ…" autocomplete="off" enterkeyhint="search" aria-label="ค้นหาโปรแกรม">
+      <button type="button" id="searchClear" aria-label="ล้างคำค้น">✕</button>
+    </div>
   </header>
 
   <main>
-    <p id="welcomeNote">รวมระบบงานทั้งหมดของแผนกปฏิบัติการระบบไฟฟ้าไว้ในที่เดียว — <b>เข้าสู่ระบบครั้งเดียว ใช้ได้กับทุกแอปในนี้ทันที</b> (จำไว้ในเครื่องนี้ ไม่ต้องล็อกอินซ้ำ)</p>
+    <p id="welcomeNote">รวมระบบงานของแผนกปฏิบัติการระบบไฟฟ้าไว้ในที่เดียว — <b>เข้าสู่ระบบครั้งเดียว ใช้ได้ทุกแอปในนี้</b> (จำไว้ในเครื่องนี้ ไม่ต้องล็อกอินซ้ำ)</p>
 
     <div id="gridLoader">
-      <div class="spin"></div>
-      <div>กำลังโหลดข้อมูลการใช้งาน แล้วจัดเรียงโปรแกรม ...</div>
-      <div class="skel-grid">
-        <div class="skel-tile"><div class="sk" style="width:38px;height:38px;border-radius:9px;"></div>
-          <div class="sk" style="width:65%;margin-top:14px;"></div>
-          <div class="sk" style="width:90%;margin-top:9px;height:10px;"></div>
-          <div class="sk" style="width:50%;margin-top:9px;height:10px;"></div></div>
-        <div class="skel-tile"><div class="sk" style="width:38px;height:38px;border-radius:9px;"></div>
-          <div class="sk" style="width:55%;margin-top:14px;"></div>
-          <div class="sk" style="width:85%;margin-top:9px;height:10px;"></div>
-          <div class="sk" style="width:60%;margin-top:9px;height:10px;"></div></div>
-        <div class="skel-tile"><div class="sk" style="width:38px;height:38px;border-radius:9px;"></div>
-          <div class="sk" style="width:70%;margin-top:14px;"></div>
-          <div class="sk" style="width:80%;margin-top:9px;height:10px;"></div>
-          <div class="sk" style="width:45%;margin-top:9px;height:10px;"></div></div>
+      <div class="ld-note"><div class="spin"></div><div>กำลังโหลดข้อมูลการใช้งาน ...</div></div>
+      <div class="skel-box">
+        <div class="skel-row"><div class="sk" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;"></div>
+          <div style="flex:1"><div class="sk" style="width:52%;"></div><div class="sk" style="width:78%;height:9px;margin-top:7px;"></div></div></div>
+        <div class="skel-row"><div class="sk" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;"></div>
+          <div style="flex:1"><div class="sk" style="width:42%;"></div><div class="sk" style="width:66%;height:9px;margin-top:7px;"></div></div></div>
+        <div class="skel-row"><div class="sk" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;"></div>
+          <div style="flex:1"><div class="sk" style="width:60%;"></div><div class="sk" style="width:72%;height:9px;margin-top:7px;"></div></div></div>
+        <div class="skel-row"><div class="sk" style="width:36px;height:36px;border-radius:10px;flex:0 0 auto;"></div>
+          <div style="flex:1"><div class="sk" style="width:48%;"></div><div class="sk" style="width:80%;height:9px;margin-top:7px;"></div></div></div>
       </div>
     </div>
 
     <div class="app-grid" style="display:none;">
-      <a class="app-tile" href="sld-ala/index.html?from=hub" data-app="sld" data-track="self">
-        <span class="status-badge live">พร้อมใช้งาน</span>
-        <div class="icon">🗺</div>
-        <div class="name">Single Line Diagram</div>
-        <div class="desc">ผังซิงเกิ้ลไลน์ไดอะแกรม สถานีไฟฟ้าอ่าวลึก ตรวจสอบ/แก้ไขข้อมูลอุปกรณ์ ยืนยันลำดับการเชื่อมต่อ</div>
-      </a>
 
-      <a class="app-tile" href="sld-ala/transformer-survey/index.html?from=hub" data-app="tx-survey" data-track="self">
-        <span class="status-badge live">พร้อมใช้งาน</span>
-        <div class="icon">🔌</div>
-        <div class="name">สำรวจหม้อแปลง</div>
-        <div class="desc">ตรวจสอบตำแหน่งหม้อแปลงจริงเทียบกับฐานข้อมูล ใช้ฐานข้อมูลเดียวกับ Single Line Diagram</div>
-      </a>
+      <!-- ใช้บ่อย — สร้างอัตโนมัติจากการใช้งานบนเครื่องนี้ -->
+      <section class="fav-sec hide" id="favSec">
+        <div class="grp-h">ใช้บ่อย</div>
+        <div class="fav-grid" id="favGrid"></div>
+      </section>
 
-      <a class="app-tile disabled" href="#" data-app="construction">
-        <span class="status-badge soon">กำลังพัฒนา</span>
-        <div class="icon">🏗</div>
-        <div class="name">สำรวจงานก่อสร้าง</div>
-        <div class="desc">ปักเสา พาดสาย ประมาณราคางานก่อสร้างระบบจำหน่าย</div>
-      </a>
+      <section class="grp">
+        <div class="grp-h">งานระบบจำหน่าย</div>
+        <div class="grp-box">
 
-      <a class="app-tile" href="ccl/index.html?from=hub" data-app="ccl" data-track="self">
-        <span class="status-badge live">พร้อมใช้งาน</span>
-        <div class="icon">🏗️</div>
-        <div class="name">CCL ควบคุมงานก่อสร้าง</div>
-        <div class="desc">สมุดคุมแฟ้มงานก่อสร้าง ติดตามงาน ตัดงบ 0030/0040/0060 ตรวจรับ 3 ขั้นตอน แผนที่ตรวจรับหลายจุด และติดตามงานเก่า ใช้ข้อมูลชุดเดียวกับระบบเดิม</div>
-      </a>
+          <a class="app-tile" href="sld-ala/index.html?from=hub" data-app="sld" data-track="self"
+             data-short="SLD" data-kw="single line diagram ซิงเกิ้ลไลน์ ไดอะแกรม สถานีไฟฟ้า อุปกรณ์ สวิตช์ ดรอปเอาท์">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 3v18M6 7h12M6 7l-2 5h4zM18 7l-2 5h4z"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">Single Line Diagram</span>
+              <span class="desc">ผังสถานีไฟฟ้าอ่าวลึก · อุปกรณ์และการเชื่อมต่อ</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-      <a class="app-tile" href="sld-ala/patrol-index.html?from=hub" data-app="patrol" data-track="self">
-        <span class="status-badge live">พร้อมใช้งาน</span>
-        <div class="icon">🚶</div>
-        <div class="name">Patrol ระบบจำหน่าย</div>
-        <div class="desc">งานป้องกันไฟดับ — บันทึกจุดเสี่ยงพร้อมรูปถ่าย ผูกกับเสา ช่วงสาย หรืออุปกรณ์ ใช้งานได้แม้ไม่มีสัญญาณ</div>
-      </a>
+          <a class="app-tile" href="sld-ala/transformer-survey/index.html?from=hub" data-app="tx-survey" data-track="self"
+             data-short="หม้อแปลง" data-kw="สำรวจหม้อแปลง transformer วัดโหลด กระแส มิเตอร์ แอมป์">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M8 8V5M16 8V5M9 13h6"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">สำรวจหม้อแปลง</span>
+              <span class="desc">ตรวจตำแหน่งจริงเทียบฐานข้อมูล · วัดโหลด</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-  <a class="app-tile" href="tree-ala/index.html?from=hub" data-app="tree" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">🌳</div>
-    <div class="name">งานตัดต้นไม้</div>
-    <div class="desc">แผนงานตัดต้นไม้รายปีและเฉพาะคราว ติดตามรอบตรวจรับ ใบสั่ง ZPM4 งวดเงิน และดูช่วงสายบนแผนที่</div>
-  </a>
+          <a class="app-tile" href="sld-ala/patrol-index.html?from=hub" data-app="patrol" data-track="self"
+             data-short="Patrol" data-kw="patrol พาโทรล ป้องกันไฟดับ จุดเสี่ยง ตรวจสาย เดินตรวจ">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 21s7-4.4 7-10a7 7 0 1 0-14 0c0 5.6 7 10 7 10z"></path><circle cx="12" cy="11" r="2.4"></circle></svg></span>
+            <span class="app-txt">
+              <span class="name">Patrol ระบบจำหน่าย</span>
+              <span class="desc">บันทึกจุดเสี่ยงพร้อมรูป · ใช้ได้แม้ไม่มีสัญญาณ</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-  <a class="app-tile" href="booknum/index.html?from=hub" data-app="booknum" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">📄</div>
-    <div class="name">ระบบออกเลขหนังสือ</div>
-    <div class="desc">ออกเลขหนังสือทั่วไป สัญญาจ้าง คำสั่ง (พ.) และใบสำคัญจ่าย แนบไฟล์สัญญาและเอกสาร ใช้ได้ทั้งคอม มือถือ และไอแพด</div>
-  </a>
+          <a class="app-tile" href="tree-ala/index.html?from=hub" data-app="tree" data-track="self"
+             data-short="ตัดต้นไม้" data-kw="ตัดต้นไม้ ริดกิ่ง zpm4 งวดเงิน ผู้รับจ้าง แผนงาน">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 3L7 11h3l-4 6h12l-4-6h3z"></path><path d="M12 17v4M9.5 21h5"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">งานตัดต้นไม้</span>
+              <span class="desc">แผนงาน ใบสั่ง ZPM4 งวดเงิน · ช่วงสายบนแผนที่</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-  <a class="app-tile" href="budget/index.html?from=hub" data-app="budget" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">💰</div>
-    <div class="name">ระบบตัดงบทำการ</div>
-    <div class="desc">เสนอเรื่องตัดงบ ตรวจสอบและอนุมัติพร้อมรูปผู้เสนอ ดูงบคงเหลือรายบัญชี สรุปการใช้งบรายแผนก ใช้ได้ทั้งมือถือ ไอแพด และคอม</div>
-  </a>
+          <a class="app-tile" href="pea-analytics-data/index.html?from=hub" data-app="analytics" data-track="self"
+             data-short="สถิติไฟดับ" data-kw="analytics saifi saidi ความเชื่อถือได้ ไฟดับ สถิติ แดชบอร์ด">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 19V5M4 19h16M8 16V11M12 16V7M16 16v-6"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">Distribution Analytics</span>
+              <span class="desc">SAIFI/SAIDI · อุปกรณ์วิกฤต · แผนที่จุดเกิดเหตุ</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-  <a class="app-tile" href="medical/index.html?from=hub" data-app="medical" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">🩺</div>
-    <div class="name">ใบเบิกค่ารักษาพยาบาล</div>
-    <div class="desc">กรอกแบบ สก.๕ แล้วพิมพ์ได้ทันที ข้อมูลผู้ขอเบิกจำให้ ส่งตัดงบรหัส 52021010/52021020 อัตโนมัติ พร้อมประวัติการเบิก</div>
-  </a>
+        </div>
+      </section>
 
-  <a class="app-tile" href="safety-talk/index.html?from=hub" data-app="safetytalk" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">⛑️</div>
-    <div class="name">Safety Talk</div>
-    <div class="desc">กดลงชื่อปุ่มเดียว แจ้งติดภารกิจล่วงหน้า อัลบั้มรูปรวมถ่ายได้ทุกคน หัวหน้าส่ง ผู้จัดการอนุมัติรายแผนก ทำรายงาน A4 และข่าวส่ง LINE อัตโนมัติ</div>
-  </a>
+      <section class="grp">
+        <div class="grp-h">งานก่อสร้าง</div>
+        <div class="grp-box">
 
-  <a class="app-tile" href="duty-roster/index.html?from=hub" data-app="dutyroster" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">🗓️</div>
-    <div class="name">งานเวรแก้ไฟ</div>
-    <div class="desc">ตารางเวรพนักงาน/คนงาน · แลก-ลาเวรพร้อมเอกสาร · รายงานการอยู่เวรและผู้ตรวจเวร · บันทึกไฟดับ · แจ้งเตือน LINE</div>
-  </a>
+          <a class="app-tile" href="ccl/index.html?from=hub" data-app="ccl" data-track="self"
+             data-short="CCL" data-kw="ccl ควบคุมงานก่อสร้าง สมุดคุม แฟ้มงาน ตัดงบ 0030 0040 0060 ตรวจรับ">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 20h16M6 20V9l6-4 6 4v11M10 20v-5h4v5"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">CCL ควบคุมงานก่อสร้าง</span>
+              <span class="desc">สมุดคุมแฟ้มงาน · ตัดงบ · ตรวจรับ 3 ขั้นตอน</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-  <a class="app-tile" href="ops/index.html?from=hub" data-app="ops" data-track="self">
-    <span class="status-badge live">ทดลองใช้</span>
-    <div class="icon">🛰️</div>
-    <div class="name">ห้องควบคุมรถแก้ไฟ</div>
-    <div class="desc">แผนที่สดตำแหน่งเวรแก้ไฟจาก GPS มือถือ · คิวแจ้งไฟดับพร้อมนับเวลารับงาน · แนะนำคนเวรที่ใกล้ที่สุด · โทร/LINE ได้ทันที</div>
-  </a>
+          <a class="app-tile disabled" href="#" data-app="construction"
+             data-short="สำรวจก่อสร้าง" data-kw="สำรวจงานก่อสร้าง ปักเสา พาดสาย ประมาณราคา">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">สำรวจงานก่อสร้าง</span>
+              <span class="desc">ปักเสา พาดสาย ประมาณราคา</span>
+            </span>
+            <span class="status-badge soon">กำลังพัฒนา</span>
+          </a>
 
-  <a class="app-tile" href="tmd/index.html?from=hub" data-app="tmd" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">⛈️</div>
-    <div class="name">ประกาศเตือนภัยกรมอุตุฯ</div>
-    <div class="desc">รวมประกาศเตือนภัยกรมอุตุนิยมวิทยาทุกฉบับ ค้นหาได้ กรองเฉพาะกระบี่ และแจ้งเตือนเข้ากลุ่ม LINE แก้ไฟเมื่อมีฉบับใหม่</div>
-  </a>
+        </div>
+      </section>
 
-  <a class="app-tile" href="vehicle/index.html?from=hub" data-app="vehicle" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">🚗</div>
-    <div class="name">ระบบยานพาหนะ</div>
-    <div class="desc">เบิก-คืนรถพร้อมเลขไมล์ จองรถล่วงหน้าบนปฏิทินและอนุมัติ บันทึกค่าซ่อม และแผนบำรุงรักษาตามระยะทาง ใช้ได้ทั้งมือถือและคอม</div>
-  </a>
+      <section class="grp">
+        <div class="grp-h">งานเวรและเหตุการณ์</div>
+        <div class="grp-box">
 
-  <a class="app-tile" href="pea-analytics-data/index.html?from=hub" data-app="analytics" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">📊</div>
-    <div class="name">Distribution Analytics</div>
-    <div class="desc">แดชบอร์ดวิเคราะห์ความเชื่อถือได้ของระบบจำหน่าย SAIFI/SAIDI อันดับอุปกรณ์วิกฤต และแผนที่จุดเกิดเหตุ</div>
-  </a>
+          <a class="app-tile" href="duty-roster/index.html?from=hub" data-app="dutyroster" data-track="self"
+             data-short="งานเวร" data-kw="เวรแก้ไฟ ตารางเวร แลกเวร ลาเวร ผู้ตรวจเวร บันทึกไฟดับ">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M8 3v4M16 3v4M4 10h16"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">งานเวรแก้ไฟ</span>
+              <span class="desc">ตารางเวร แลก-ลาเวร · แจ้งเตือน LINE</span>
+            </span>
+            <i class="chev"></i>
+          </a>
 
-  <a class="app-tile" href="pea-drawings/index.html?from=hub" data-app="drawings" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">📐</div>
-    <div class="name">คลังแบบมาตรฐาน กฟภ.</div>
-    <div class="desc">แบบก่อสร้างมาตรฐาน 561 แบบ แรงต่ำ 22–33 kV และ 115 kV ดูแบบ 2D/3D กดหมายเลขดูวัสดุ จำนวน และตำแหน่งในโมเดล 3 มิติ พร้อม PDF ต้นฉบับ</div>
-  </a>
+          <a class="app-tile" href="ops/index.html?from=hub" data-app="ops" data-track="self"
+             data-short="ห้องควบคุม" data-kw="ห้องควบคุม รถแก้ไฟ ops แผนที่สด gps คิวแจ้งไฟดับ">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M3 16h2l2-6h7l3 6h4"></path><circle cx="8" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle></svg></span>
+            <span class="app-txt">
+              <span class="name">ห้องควบคุมรถแก้ไฟ</span>
+              <span class="desc">แผนที่สดเวรแก้ไฟ · คิวแจ้งไฟดับ</span>
+            </span>
+            <span class="status-badge live">ทดลองใช้</span>
+          </a>
 
-  <a class="app-tile" href="pea-drawings/books.html?from=hub" data-app="drawings" data-track="self">
-    <span class="status-badge live">พร้อมใช้งาน</span>
-    <div class="icon">📚</div>
-    <div class="name">หนังสือ คู่มือ ระเบียบ</div>
-    <div class="desc">หนังสือ กฟภ. 77 เล่ม ค้นชื่อเล่มและค้นในเนื้อหาทุกหน้า รายการอุปกรณ์จากคู่มือ 1,539 รายการ พร้อมรูปหน้าคู่มือและลิงก์ไปแบบที่ใช้</div>
-  </a>
+          <a class="app-tile" href="tmd/index.html?from=hub" data-app="tmd" data-track="self"
+             data-short="เตือนภัย" data-kw="ประกาศเตือนภัย กรมอุตุ อุตุนิยมวิทยา พายุ ฝน ลมแรง tmd">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4"></path><circle cx="12" cy="12" r="3.3"></circle></svg></span>
+            <span class="app-txt">
+              <span class="name">ประกาศเตือนภัยกรมอุตุฯ</span>
+              <span class="desc">ค้นหาประกาศทุกฉบับ · แจ้งกลุ่มแก้ไฟ</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+        </div>
+      </section>
+
+      <section class="grp">
+        <div class="grp-h">ธุรการและการเงิน</div>
+        <div class="grp-box">
+
+          <a class="app-tile" href="booknum/index.html?from=hub" data-app="booknum" data-track="self"
+             data-short="ออกเลข" data-kw="ออกเลขหนังสือ เลขที่หนังสือ สัญญาจ้าง คำสั่ง ใบสำคัญจ่าย ธุรการ">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4M9 13h6M9 17h4"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">ระบบออกเลขหนังสือ</span>
+              <span class="desc">หนังสือทั่วไป สัญญาจ้าง คำสั่ง ใบสำคัญจ่าย</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+          <a class="app-tile" href="budget/index.html?from=hub" data-app="budget" data-track="self"
+             data-short="ตัดงบ" data-kw="ตัดงบทำการ งบประมาณ อนุมัติ งบคงเหลือ บัญชี เสนอเรื่อง">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v8M9.5 10h4a1.8 1.8 0 0 1 0 3.6h-3a1.8 1.8 0 0 0 0 3.6h4"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">ระบบตัดงบทำการ</span>
+              <span class="desc">เสนอเรื่อง ตรวจสอบ อนุมัติ · งบคงเหลือ</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+          <a class="app-tile" href="medical/index.html?from=hub" data-app="medical" data-track="self"
+             data-short="ค่ารักษา" data-kw="ใบเบิกค่ารักษาพยาบาล สก.5 สก.๕ เบิกค่ารักษา สวัสดิการ">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M12 8v8M8 12h8"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">ใบเบิกค่ารักษาพยาบาล</span>
+              <span class="desc">กรอกแบบ สก.๕ พิมพ์ได้ทันที · ส่งตัดงบให้</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+          <a class="app-tile" href="vehicle/index.html?from=hub" data-app="vehicle" data-track="self"
+             data-short="ยานพาหนะ" data-kw="ยานพาหนะ จองรถ เบิกรถ คืนรถ เลขไมล์ ซ่อมบำรุง น้ำมัน">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 15h16M6 15l1.6-5h8.8L18 15M6 15v2M18 15v2"></path><circle cx="8" cy="15" r="1.6"></circle><circle cx="16" cy="15" r="1.6"></circle></svg></span>
+            <span class="app-txt">
+              <span class="name">ระบบยานพาหนะ</span>
+              <span class="desc">เบิก-คืน จองรถ · ซ่อมบำรุงตามระยะทาง</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+        </div>
+      </section>
+
+      <section class="grp">
+        <div class="grp-h">ความปลอดภัยและคลังความรู้</div>
+        <div class="grp-box">
+
+          <a class="app-tile" href="safety-talk/index.html?from=hub" data-app="safetytalk" data-track="self"
+             data-short="Safety Talk" data-kw="safety talk ความปลอดภัย ลงชื่อ อัลบั้มรูป รายงาน ข่าว">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"></path><path d="M9.5 12l1.8 1.8 3.4-3.6"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">Safety Talk</span>
+              <span class="desc">ลงชื่อปุ่มเดียว อัลบั้มรูป · รายงานและข่าว</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+          <a class="app-tile" href="pea-drawings/index.html?from=hub" data-app="drawings" data-track="self"
+             data-short="แบบมาตรฐาน" data-kw="แบบมาตรฐาน แบบก่อสร้าง แบบประกอบ 2d 3d drawing วัสดุ pdf">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 6h16v13H4z"></path><path d="M4 10h16M9 10v9"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">คลังแบบมาตรฐาน กฟภ.</span>
+              <span class="desc">แบบก่อสร้าง 561 แบบ · ดู 2D/3D พร้อม PDF</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+          <a class="app-tile" href="pea-drawings/books.html?from=hub" data-app="drawings" data-track="self"
+             data-short="หนังสือ" data-kw="หนังสือ คู่มือ ระเบียบ ข้อกำหนด อุปกรณ์ ค้นในเนื้อหา">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M5 5a2 2 0 0 1 2-2h11v18H7a2 2 0 0 0-2 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span>
+            <span class="app-txt">
+              <span class="name">หนังสือ คู่มือ ระเบียบ</span>
+              <span class="desc">77 เล่ม ค้นในเนื้อหาได้ · อุปกรณ์ 1,539 รายการ</span>
+            </span>
+            <i class="chev"></i>
+          </a>
+
+        </div>
+      </section>
+
+      <div id="noMatch">ไม่พบโปรแกรมที่ตรงกับคำค้น<br><span style="font-size:.8rem;">ลองพิมพ์คำสั้นลง เช่น "เวร" "งบ" "รถ"</span></div>
 
     </div>
   </main>
 
   <footer>กฟส.อ่าวลึก · กฟต.2 · ระบบภายในหน่วยงาน<br>
-    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.10.23-01</span></span>
+    <span style="font-size:.66rem;opacity:.7;">เวอร์ชัน <span id="appVer">2026.10.27-02</span></span>
   </footer>
 </div>
 
@@ -285,7 +445,7 @@ let CURRENT_USER = {
 };
 
 /* ===== เปิดเร็ว: ใช้สิทธิ์และสถิติที่จำไว้ในเครื่องแสดงก่อนทันที แล้วค่อยตรวจกับหลังบ้านเบื้องหลัง ===== */
-const K_AUTH = 'pea_hub_auth', K_STATS = 'pea_hub_stats';
+const K_AUTH = 'pea_hub_auth', K_STATS = 'pea_hub_stats', K_FAV = 'pea_hub_fav';
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k) || 'null'); }catch(e){ return null; } }
 function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 (function(){
@@ -324,16 +484,22 @@ async function verifyCredentials(name, password){
 }
 function updateUserBadge(){
   const badge = document.getElementById('userBadge');
+  const note = document.getElementById('welcomeNote');
   if(CURRENT_USER.name && CURRENT_USER.role){
-    badge.textContent = `👤 ${CURRENT_USER.name} (${CURRENT_USER.role==='admin'?'ผู้ดูแลระบบ':'สมาชิก'})`;
+    badge.textContent = CURRENT_USER.name;
+    badge.title = CURRENT_USER.name + (CURRENT_USER.role==='admin'?' (ผู้ดูแลระบบ)':' (สมาชิก)');
     badge.classList.remove('unauth');
   } else if(CURRENT_USER.name){
-    badge.textContent = `⚠ ${CURRENT_USER.name} — ชื่อหรือรหัสผ่านไม่ถูกต้อง`;
+    badge.textContent = '⚠ ชื่อหรือรหัสผ่านไม่ถูกต้อง';
+    badge.title = CURRENT_USER.name;
     badge.classList.add('unauth');
   } else {
-    badge.textContent = '👤 ยังไม่ได้เข้าสู่ระบบ';
+    badge.textContent = 'เข้าสู่ระบบ';
+    badge.title = 'ยังไม่ได้เข้าสู่ระบบ';
     badge.classList.add('unauth');
   }
+  // คำอธิบายต้อนรับมีประโยชน์เฉพาะคนที่ยังไม่ได้เข้าระบบ — เข้าแล้วเอาออกให้เห็นรายการงานเร็วขึ้น
+  if(note) note.classList.toggle('hide', !!(CURRENT_USER.name && CURRENT_USER.role));
   if(window.hubOnLogin) try{ hubOnLogin(); }catch(e){}   // สิทธิ์รายโปรแกรม + ปุ่มผู้ดูแล (hub-admin.js)
 }
 document.getElementById('userBadge').addEventListener('click', showUserPicker);
@@ -396,11 +562,94 @@ function showUserPicker(){
   });
 }
 
-/* เริ่มทำงาน: แสดงการ์ดทันที (ใช้สถิติที่จำไว้) → ตรวจสิทธิ์ + ดึงสถิติใหม่ พร้อมกันเบื้องหลัง */
+/* =====================================================================
+   ใช้บ่อย — นับการเปิดใช้บนเครื่องนี้เก็บใน localStorage
+   ไม่แตะหลังบ้าน ไม่เพิ่มการอ่านข้อมูล และเป็นของคนที่ถือเครื่องนี้จริง
+   ===================================================================== */
+function favBump(app){
+  if(!app) return;
+  const f = lsGet(K_FAV) || {};
+  f[app] = (f[app] || 0) + 1;
+  lsSet(K_FAV, f);
+}
+function buildFavRow(){
+  const sec = document.getElementById('favSec'), box = document.getElementById('favGrid');
+  if(!sec || !box) return;
+  const f = lsGet(K_FAV) || {};
+  // เอาเฉพาะที่เปิดจริงตั้งแต่ 2 ครั้งขึ้นไป และต้องมีอย่างน้อย 2 โปรแกรม ไม่งั้นแถวนี้ยังไม่มีประโยชน์
+  const rows = Array.from(document.querySelectorAll('.app-grid .grp .app-tile[data-app]'));
+  const hits = rows
+    .map(t=>({ t:t, n: f[t.dataset.app + '|' + t.getAttribute('href')] || 0 }))
+    .filter(x=> x.n >= 2 && !x.t.classList.contains('disabled'))
+    .sort((a,b)=> b.n - a.n)
+    .slice(0, 4);
+  if(hits.length < 2){ sec.classList.add('hide'); box.innerHTML = ''; return; }
+  box.innerHTML = '';
+  hits.forEach(x=>{
+    const a = document.createElement('a');
+    a.className = 'app-tile fav-tile';
+    a.href = x.t.getAttribute('href');
+    a.dataset.app = x.t.dataset.app;
+    a.dataset.track = x.t.dataset.track || '';
+    const ic = x.t.querySelector('.icon');
+    a.innerHTML = (ic ? ic.outerHTML : '') +
+      '<span class="fav-name">' + (x.t.dataset.short || x.t.querySelector('.name').textContent) + '</span>';
+    box.appendChild(a);
+  });
+  sec.classList.remove('hide');
+}
+
+/* ===================== ค้นหา — กรองทันทีในเครื่อง ไม่ต้องรอเน็ต ===================== */
+function setupSearch(){
+  const inp = document.getElementById('appSearch');
+  const clr = document.getElementById('searchClear');
+  const favSec = document.getElementById('favSec');
+  const noMatch = document.getElementById('noMatch');
+  if(!inp) return;
+  let favWasShown = false;
+  function norm(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
+  function run(){
+    const q = norm(inp.value);
+    clr.classList.toggle('show', !!inp.value);
+    if(!q){
+      document.querySelectorAll('.app-grid .grp').forEach(g=>{
+        g.classList.remove('hide');
+        g.querySelectorAll('.app-tile').forEach(t=> t.style.display = '');
+      });
+      if(favSec && favWasShown) favSec.classList.remove('hide');
+      noMatch.classList.remove('show');
+      return;
+    }
+    if(favSec){
+      if(!favSec.classList.contains('hide')) favWasShown = true;
+      favSec.classList.add('hide');
+    }
+    let total = 0;
+    document.querySelectorAll('.app-grid .grp').forEach(g=>{
+      let shown = 0;
+      g.querySelectorAll('.app-tile').forEach(t=>{
+        const hay = norm((t.querySelector('.name')||{}).textContent) + norm((t.querySelector('.desc')||{}).textContent) + norm(t.dataset.kw) + norm(t.dataset.short);
+        const hit = hay.indexOf(q) >= 0;
+        t.style.display = hit ? '' : 'none';
+        if(hit) shown++;
+      });
+      g.classList.toggle('hide', shown === 0);
+      total += shown;
+    });
+    noMatch.classList.toggle('show', total === 0);
+  }
+  inp.addEventListener('input', run);
+  clr.addEventListener('click', ()=>{ inp.value = ''; run(); inp.focus(); });
+  inp.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ inp.value = ''; run(); } });
+}
+
+/* เริ่มทำงาน: แสดงรายการทันที (ใช้สถิติที่จำไว้) → ตรวจสิทธิ์ + ดึงสถิติใหม่ พร้อมกันเบื้องหลัง */
 function boot(){
   const has = CURRENT_USER.name && CURRENT_USER.password;
   const who = has ? verifyCredentials(CURRENT_USER.name, CURRENT_USER.password) : null;
   window.HUB_WHO_P = who;
+  buildFavRow();            // ต้องสร้างก่อน เพื่อให้ applyStats/hub-admin เห็นเป็นแถวปกติ
+  setupSearch();
   updateUserBadge();
   const cached = lsGet(K_STATS);
   if(cached && cached.stats && CURRENT_USER.role) applyStats(cached.stats, cached.appList);
@@ -414,7 +663,7 @@ function boot(){
   });
 }
 
-/* ===== ตัวนับการใช้งาน — เรียงการ์ดตามการเข้าใช้ล่าสุด และบอกว่าใครเข้าล่าสุด ===== */
+/* ===== ตัวนับการใช้งานฝั่งหน่วยงาน — บอกว่าเปิดไปกี่ครั้งและใครเข้าล่าสุด ===== */
 async function callApi(payload){
   const res = await fetch(GAS_URL, {
     method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -442,60 +691,64 @@ async function loadAppStats(){
   }catch(e){}
 }
 function applyStats(stats, appList){
-
   const grid = document.querySelector('.app-grid');
-  const tiles = Array.from(grid.querySelectorAll('.app-tile'));
+  if(!grid) return;
+  // แถวใช้บ่อยไม่ต้องมีสถิติ — มันเป็นทางลัด ไม่ใช่รายการหลัก
+  const tiles = Array.from(grid.querySelectorAll('.app-tile[data-app]:not(.fav-tile)'));
   const newest = Math.max.apply(null, [0].concat(tiles.map(t=> (stats[t.dataset.app] || {}).lastTs || 0)));
+  let freshDone = false;   // บางโปรแกรมใช้รหัสเดียวกันสองแถว (คลังแบบ/หนังสือ) ติดป้าย "ใช้ล่าสุด" แค่แถวแรก
 
   tiles.forEach(t=>{
     const st = stats[t.dataset.app];
-    const old = t.querySelector('.tile-stat');
+    const txt = t.querySelector('.app-txt') || t;
+    const old = txt.querySelector('.tile-stat');
     if(old) old.remove();
     const fresh = t.querySelector('.tile-fresh');
     if(fresh) fresh.remove();
+    if(!st){
+      if(!t.classList.contains('disabled')){
+        const d0 = document.createElement('div');
+        d0.className = 'tile-stat';
+        d0.textContent = 'ยังไม่มีสถิติการใช้งาน';
+        txt.appendChild(d0);
+      }
+      return;
+    }
     const div = document.createElement('div');
     div.className = 'tile-stat';
-    div.innerHTML = st
-      ? `เปิดใช้ <b>${st.count.toLocaleString()}</b> ครั้ง` +
-        (st.today ? ` · วันนี้ <b>${st.today}</b>` : '') +
-        (st.lastUser ? `<br>ล่าสุด ${st.lastUser} · ${st.lastAt}` : '')
-      : (t.classList.contains('disabled') ? 'ยังไม่เปิดให้ใช้งาน' : 'ยังไม่มีสถิติการใช้งาน');
-    t.appendChild(div);
-    if(!st) return;
-    if(st.lastTs && st.lastTs === newest){
+    div.innerHTML = `เปิดใช้ <b>${st.count.toLocaleString()}</b> ครั้ง` +
+      (st.today ? ` · วันนี้ <b>${st.today}</b>` : '') +
+      (st.lastUser ? ` · ล่าสุด ${st.lastUser}` : '');
+    txt.appendChild(div);
+    if(st.lastTs && st.lastTs === newest && !freshDone){
+      freshDone = true;
       const f = document.createElement('span');
       f.className = 'tile-fresh';
       f.textContent = 'ใช้ล่าสุด';
-      t.appendChild(f);
+      const chev = t.querySelector('.chev');
+      if(chev) t.insertBefore(f, chev); else t.appendChild(f);
     }
   });
 
-  // เรียงใหม่ — ใช้ล่าสุดขึ้นก่อน · ที่ยังไม่เคยใช้ต่อท้าย · ที่กำลังพัฒนาอยู่ท้ายสุดเสมอ
-  tiles.sort((a, b)=>{
-    const da = a.classList.contains('disabled') ? 1 : 0;
-    const db = b.classList.contains('disabled') ? 1 : 0;
-    if(da !== db) return da - db;
-    const ta = (stats[a.dataset.app] || {}).lastTs || 0;
-    const tb = (stats[b.dataset.app] || {}).lastTs || 0;
-    return tb - ta;
-  }).forEach(t=> grid.appendChild(t));
-
+  // ไม่เรียงใหม่ตามเวลาแล้ว — จัดกลุ่มตามลักษณะงานแทน ตำแหน่งของแต่ละงานจะอยู่ที่เดิมทุกครั้งที่เปิด
   if(window.hubAfterStats) try{ hubAfterStats(stats, appList); }catch(e){}   // แถบที่มาการเข้าใช้ + สิทธิ์ (hub-admin.js)
 }
 setTimeout(showGrid, 1500);   // กันค้าง
 
-/* บันทึกการเข้าใช้ก่อนเปิดโปรแกรม แล้วค่อยพาไป */
-document.querySelectorAll('.app-tile[data-app]').forEach(tile=>{
-  tile.addEventListener('click', e=>{
-    if(tile.classList.contains('disabled')) return;
-    const app = tile.dataset.app, href = tile.getAttribute('href');
-    if(!CURRENT_USER.name || !CURRENT_USER.role) return;   // ยังไม่ล็อกอิน ปล่อยให้ไปตามปกติ
-    if(tile.dataset.track === 'self') return;              // โปรแกรมนี้นับเองตอนเปิด (pea-hub.js) ไม่ต้องนับซ้ำที่นี่
-    e.preventDefault();
-    const go = ()=>{ location.href = href; };
-    const t = setTimeout(go, 1200);            // ถ้าเครือข่ายช้า ไม่ต้องรอ
-    callApi({ action:'appOpen', app:app }).then(()=>{ clearTimeout(t); go(); }).catch(()=>{ clearTimeout(t); go(); });
-  });
+/* บันทึกการเข้าใช้ก่อนเปิดโปรแกรม แล้วค่อยพาไป — ใช้ delegation เพื่อให้แถวใช้บ่อยที่สร้างทีหลังทำงานด้วย */
+document.addEventListener('click', e=>{
+  const tile = e.target.closest && e.target.closest('.app-tile[data-app]');
+  if(!tile) return;
+  if(tile.classList.contains('disabled')) return;
+  if(tile.classList.contains('no-perm')) return;          // hub-admin.js จัดการเอง (กล่องขอสิทธิ์)
+  favBump(tile.dataset.app + '|' + tile.getAttribute('href'));
+  const app = tile.dataset.app, href = tile.getAttribute('href');
+  if(!CURRENT_USER.name || !CURRENT_USER.role) return;    // ยังไม่ล็อกอิน ปล่อยให้ไปตามปกติ
+  if(tile.dataset.track === 'self') return;               // โปรแกรมนี้นับเองตอนเปิด (pea-hub.js) ไม่ต้องนับซ้ำที่นี่
+  e.preventDefault();
+  const go = ()=>{ location.href = href; };
+  const t = setTimeout(go, 1200);            // ถ้าเครือข่ายช้า ไม่ต้องรอ
+  callApi({ action:'appOpen', app:app }).then(()=>{ clearTimeout(t); go(); }).catch(()=>{ clearTimeout(t); go(); });
 });
 /* Service Worker เก็บหน้าเว็บไว้ในเครื่อง ถ้าไม่สั่งตรวจเวอร์ชันจะเห็นของเก่าตลอด
    จึงสั่งตรวจทุกครั้งที่เปิด และเมื่อมีตัวใหม่พร้อมใช้ให้โหลดหน้าซ้ำอัตโนมัติ 1 ครั้ง */
