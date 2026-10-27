@@ -178,6 +178,7 @@ body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 /* เอกสารราชการ: TH SarabunIT๙ 16 พอยต์ · ขอบบน 2.5 ซม. ซ้าย 3 ซม. ขวา 2 ซม. · ย่อหน้า 2.5 ซม. */
 .doc{font-family:'THSarabunIT9','Sarabun',sans-serif;color:#000;font-size:16pt;line-height:1.08;height:100%}
 .doc.std{padding:15mm 20mm 20mm 30mm}
+.doc.std.memo{padding:8mm 20mm 10mm 30mm}   /* บันทึกลาเวร: ขยับขึ้นให้ช่องอนุมัติไม่ตกขอบล่าง (ตัวอักษร 16pt คงเดิม) */
 .doc .ind{text-indent:25mm}
 .doc .fl{display:inline-block;border-bottom:1px dotted #000;padding:0 8px;min-width:40px;text-align:center;line-height:0.95;vertical-align:baseline}
 .doc .bx{display:inline-block;width:15px;height:15px;border:1.3px solid #000;vertical-align:-2px;margin:0 5px 0 10px;position:relative}
@@ -1449,8 +1450,8 @@ function memoPage(key,x,ap,cfg,sgn,draft){
   const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
   const V=(v,w)=>`<span class="fv${v?'':' e'}"${w?` style="min-width:${w}mm"`:''}>${esc(v)||'&nbsp;'}</span>`;
   const tm=t=>THD(t.replace(':','.'));
-  return `<div class="page a4p">${draft?'<div class="wmk">ร่าง · รออนุมัติ</div>':''}<div class="doc std m2 nodot">
-    ${ORG()}
+  return `<div class="page a4p">${draft?'<div class="wmk">ร่าง · รออนุมัติ</div>':''}<div class="doc std m2 nodot memo">
+    ${ORG(false,34)}
     <div class="hd"><div><span class="k">จาก</span>${esc(THD(A.pos))}</div><div><span class="k">ถึง</span>${esc(THD(cfg.mgrTitle))}</div>
       <div><span class="k">เลขที่</span></div><div><span class="k">วันที่</span>${esc(THD(isoLong((r.payload&&r.payload.docDate)||r.created)))}</div></div>
     <div><span class="k">เรื่อง</span>ขออนุมัติลาเวร และจัดเวรแทนชุดปฏิบัติการระบบไฟฟ้า รูปแบบ Standby</div>
@@ -1463,8 +1464,8 @@ function memoPage(key,x,ap,cfg,sgn,draft){
     <p class="ind">ดังนั้น เพื่อให้งานปฏิบัติการระบบไฟฟ้าเป็นไปด้วยความเรียบร้อย แผนกปฏิบัติการและบำรุงรักษามีความประสงค์ให้พนักงานปฏิบัติงานแทนเวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามรายชื่อดังต่อไปนี้ โดยมีสิทธิ์เบิกค่าตอบแทนการอยู่เวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามระเบียบของ กฟภ.</p>
     <div class="it"><span class="no">๑.</span><div>ชื่อ-สกุล ${V(B.full)} &nbsp;เลขประจำตัว ${V(THD(B.id),18)}<br>ตำแหน่ง ${V(THD(B.pos),45)}<br>ปฏิบัติงานแทน${x.sb?' <b>เวรเตรียมพร้อม</b> (ต่อจากช่วง ๓)':''} ในวันที่ ${V(THD(rangeLong(x.a,x.b)))} &nbsp;ระหว่างเวลา ${V(tm(x.s)+' – '+tm(x.e)+' น.')}</div></div>
     <p class="ind">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</p>
-    <div class="sig" style="margin-left:72mm;margin-top:9mm">(ลงชื่อ) ..............................................<br>( ${esc(A.full)} )<br>${A.pos?esc(THD(A.pos))+'<br>':''}ผู้มอบเวร</div>
-    <div class="sig" style="margin-left:72mm;margin-top:6mm">(ลงชื่อ) ..............................................<br>( ${esc(B.full)} )<br>${B.pos?esc(THD(B.pos))+'<br>':''}ผู้อยู่เวรแทน</div>
+    <div class="sig" style="margin-left:72mm;margin-top:7mm">(ลงชื่อ) ..............................................<br>( ${esc(A.full)} )<br>${A.pos?esc(THD(A.pos))+'<br>':''}ผู้มอบเวร</div>
+    <div class="sig" style="margin-left:72mm;margin-top:4mm">(ลงชื่อ) ..............................................<br>( ${esc(B.full)} )<br>${B.pos?esc(THD(B.pos))+'<br>':''}ผู้อยู่เวรแทน</div>
     <div class="sig" style="margin-top:2mm"><b>อนุมัติ</b><br><br>(ลงชื่อ) ..............................................<br>( ${esc(sgn.name)||'&nbsp;'.repeat(30)} )<br>${sgT(sgn.title)}</div>
   </div></div>`;
 }
