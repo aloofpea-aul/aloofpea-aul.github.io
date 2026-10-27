@@ -367,7 +367,7 @@ fieldset:disabled{opacity:.55}
           <span class="ckb hide" id="qContWrap" style="margin-top:6px;font-weight:400"><input type="checkbox" id="qCont"> <span>ยอมให้คนที่มีเวรวันเดียวกันเข้าแทน <b style="color:#9B1C1C">(อยู่ต่อเนื่อง)</b> — ต้องให้ หผ.ปร./ชผ. อนุมัติ</span></span></label>
       </div>
       <div class="grid2" style="margin-top:8px">
-        <label class="f">เหตุผล (ใช้ในบันทึกลาเวร)<select id="qWhy"><option value="errand">ลากิจ</option><option value="sick">ลาป่วย</option><option value="vacation">ลาพักผ่อน</option><option value="private">ธุระส่วนตัว</option><option value="official">ปฏิบัติงานราชการตามคำสั่ง</option></select></label>
+        <label class="f">เหตุผล (ใช้ในบันทึกลาเวร)<select id="qWhy"><option value="errand">ลากิจ</option><option value="sick">ลาป่วย</option><option value="vacation">ลาพักผ่อน</option><option value="private" selected>ธุระส่วนตัว</option><option value="official">ปฏิบัติงานราชการตามคำสั่ง</option></select></label>
         <label class="f">รายละเอียดเพิ่มเติม (ไม่บังคับ)<input type="text" id="qReason" placeholder="เช่น พาบุตรไปโรงพยาบาล"></label>
         <label class="f">วันที่ขอเสนอ (ลงในบันทึก/ใบลา)<input type="date" id="qDocDate"></label>
         <label class="f hide qOrd">คำสั่งที่<input type="text" id="qOrder" placeholder="กพค.(ก.)2425/2568"></label>
@@ -1448,7 +1448,7 @@ function memoPage(key,x,ap,cfg,sgn,draft){
     <div><span class="k">เรื่อง</span>ขออนุมัติลาเวร และจัดเวรแทนชุดปฏิบัติการระบบไฟฟ้า รูปแบบ Standby</div>
     <div class="rule"><span class="k">เรียน</span>${esc(THD(cfg.mgrTitle))} ผ่าน ${esc(THD(via))}</div>
     <p class="ind">ตามอนุมัติ ${esc(THD(cfg.mgrTitle))} ที่ ${V(THD(ap.no),30)} ลว. ${V(THD(isoShort(ap.date)),22)} เรื่อง อนุมัติจัดตารางการอยู่เวรของชุดปฏิบัติการระบบไฟฟ้า ประจำเดือน ${V(THD(TH_MONTH[m-1]+' '+(y+543)))}</p>
-    <div>เนื่องจากข้าพเจ้า ${V(A.full)}</div>
+    <div>เนื่องจากข้าพเจ้า ${V(A.full)} &nbsp;เลขประจำตัว ${V(THD(A.id),18)} &nbsp;ตำแหน่ง ${V(THD(A.pos),40)}</div>
     <div class="ck">${bx(w.k==='sick')}ลาป่วย ${bx(w.k==='errand')}ลากิจ ${bx(w.k==='vacation')}ลาพักผ่อน ${bx(w.k==='private')}ธุระส่วนตัว</div>
     <div class="ck">${bx(w.k==='official')}ปฏิบัติงานราชการตามคำสั่งที่ ${w.k==='official'?V(THD(w.order))+' ลงวันที่ '+V(THD(isoLong(w.orderDate))):V('',40)+' ลงวันที่ '+V('',35)}</div>
     <div>ทำให้ไม่มีพนักงานปฏิบัติงานในช่วงเวลาดังกล่าว</div>
@@ -1584,7 +1584,13 @@ $('rApSave').onclick=async()=>{
   try{ const j=await apiPost({action:'setApproval',m:key,no:$('rApNo').value,date:$('rApDate').value,pin});
     S.months[key]=j.month; LS.set('m_'+key,j.month); msg('rMsg','บันทึกเลขที่หนังสืออนุมัติแล้ว'); drawReport(); }catch(e){msg('rMsg',e.message,'err');}
 };
-$('rPrint').onclick=()=>window.print();
+// ขนาดกระดาษตามเอกสารที่แสดง — Safari/iPhone ไม่รองรับ @page แบบตั้งชื่อ ถ้าไม่ตั้งตรงนี้จะย่อ A4 แนวตั้งลงกระดาษแนวนอน (ตัวหนังสือเล็ก)
+function setPageSize(){ const ps=[...document.querySelectorAll('#printArea .page')]; if(!ps.length) return;
+  const k=ps.every(p=>p.classList.contains('a4p'))?'A4 portrait':ps.every(p=>p.classList.contains('a4l'))?'A4 landscape':'letter landscape';
+  let st=$('pgSize'); if(!st){ st=document.createElement('style'); st.id='pgSize'; document.head.appendChild(st); } st.textContent='@page{size:'+k+';margin:0}'; }
+window.addEventListener('beforeprint',setPageSize);
+try{ new MutationObserver(setPageSize).observe($('printArea'),{childList:true}); }catch(e){}
+$('rPrint').onclick=()=>{ setPageSize(); window.print(); };
 $('rSetStatus').onclick=async()=>{
   const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
   const pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
