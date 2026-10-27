@@ -99,6 +99,7 @@ main .card,.tkc{scroll-margin-top:62px}.tkc{padding:10px 12px;border-left:4px so
 .dlg label.ch{display:flex;gap:8px;align-items:flex-start;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer}
 .dlg label.ch.on{border:2px solid var(--pri)}
 .docbar{width:100%;max-width:210mm;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.5;box-sizing:border-box}.docbar.draft{background:#FFF1D6;color:#7A4A00}.docbar.ok{background:#E6F4E8;color:#1F5A2A}
+.page,.page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .wmk{position:absolute;top:45%;left:-10%;width:120%;text-align:center;transform:rotate(-30deg);font-size:72pt;font-weight:800;color:rgba(200,40,40,.15);letter-spacing:4px;pointer-events:none;z-index:2;font-family:'THSarabunIT9','Sarabun',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .dlg table.dtb{border-collapse:collapse;width:100%;font-size:13px}.dlg table.dtb td{border-top:1px solid var(--line);padding:5px 4px}
 .rq.hl{outline:3px solid #E08A00;outline-offset:2px;transition:outline .3s}
@@ -240,6 +241,7 @@ fieldset{border:0;padding:0;margin:0;min-width:0}
 fieldset:disabled{opacity:.55}
 @media print{
   body{background:#fff}
+  #printArea,#printArea *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   .app>*:not(#viewReport),nav.bot,#viewReport>.card{display:none!important}
   .app{padding:0;max-width:none}
   main#viewReport{padding:0}
