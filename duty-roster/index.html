@@ -57,6 +57,7 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .days button{position:relative}.days button i.cd{position:absolute;bottom:3px;left:50%;margin-left:-3px;width:6px;height:6px;border-radius:50%;background:#E08A00}
 .days button.on i.cd{background:#FFD27A}
 .days button i.rqb{position:absolute;bottom:2px;left:50%;margin-left:-9px;width:18px;height:3px;border-radius:2px;background:#C92A2A}.days button.on i.rqb{background:#fff}.days button.rqd i.cd{bottom:7px}
+.oiss{border-radius:8px;padding:5px 8px;margin-top:5px;font-size:12.5px;line-height:1.35}.oiss.r{background:#FDECEC;color:#9B1C1C}.oiss.y{background:#FFF1D6;color:#7A4A00}.oiss.g{background:#E6F4E8;color:#1F5A2A;margin-top:8px}
 .rqp{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}.rqp.o{background:#FFF1D6;color:#7A4A00}.rqp.r{background:#FDECEC;color:#9B1C1C}.rqp.b{background:#E3E6FA;color:#26307A}.rqp.g{background:#E6F4E8;color:#1F5A2A}.rqp.n{background:#EEE;color:#555}
 .rqov{position:fixed;inset:0;background:rgba(20,10,25,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:10px}
 .rqsh{background:#fff;border-radius:18px;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -929,6 +930,26 @@ function outTotals(L){
   ['hv','lv'].forEach(x=>{t[x].outM=t[x].out;t[x].workM=t[x].work;t[x].out=hmH(t[x].out);t[x].work=hmH(t[x].work);});
   return t;
 }
+/* สถานที่ไฟดับสำหรับข้อ ๗ บัญชีลงนาม: หมู่บ้าน/จุดสังเกต → ชื่อพื้นที่อุปกรณ์ (SLD) → รหัสอุปกรณ์ · ต่อท้ายฟีดเดอร์ */
+const outPlace=o=>{ const d=o.dev||{}, pl=String(o.place||'').trim(), ds=String(d.desc||'').trim();
+  const base=pl||ds||(d.id?((d.type==='TRANSFORMER'?'หม้อแปลง ':DEV_TH[d.type]?DEV_TH[d.type]+' ':'')+d.id):'')||'ไม่ระบุสถานที่';
+  return base+(o.feeder&&base.indexOf(o.feeder)<0?' ('+o.feeder+')':''); };
+/* ตรวจความถูกต้องของเหตุการณ์ไฟดับก่อนพิมพ์ (ข้อ ๒–๓) */
+function outIssues(o,k,L){
+  const out=[], tm=x=>x?Date.parse(x+':00+07:00'):NaN, off=tm(o.off), on=tm(o.on);
+  if(o.lvl!=='hv'&&o.lvl!=='lv') out.push(['r','ยังไม่เลือกแรงสูง/แรงต่ำ — ไม่ถูกนับในข้อ ๒–๓']);
+  if(!o.on) out.push(['r','ยังไม่บันทึกเวลาจ่ายไฟ — ไม่ถูกนับชั่วโมงในข้อ ๒–๓']);
+  else if(on<off) out.push(['r','เวลาจ่ายไฟก่อนเวลาไฟดับ']);
+  if(o.ws&&o.we&&tm(o.we)<tm(o.ws)) out.push(['r','เวลาเสร็จงานก่อนเวลาเริ่มปฏิบัติงาน']);
+  const d=k.slice(0,10), p=k.slice(-2), mo=S.months[d.slice(0,7)], dy=mo&&mo.data.days[+d.slice(8,10)-1];
+  const nx=new Date(Date.parse(d+'T00:00:00Z')+864e5).toISOString().slice(0,10);
+  const st=Date.parse(d+'T'+(p==='p1'?'00:30':dy&&dy.off?'08:30':'16:30')+':00+07:00'), en=p==='p1'?Date.parse(d+'T08:30:00+07:00'):Date.parse(nx+'T00:30:00+07:00');
+  if(!isNaN(off)&&(off<st-15*6e4||off>en)) out.push(['y','เวลาไฟดับ '+hmTh(o.off)+' น. อยู่นอกช่วงเวรนี้ ('+new Date(st+7*36e5).toISOString().slice(11,16).replace(':','.')+'–'+new Date(en+7*36e5).toISOString().slice(11,16).replace(':','.')+' น.) — ตรวจว่าบันทึกถูกเวรหรือไม่']);
+  if(!o.cType) out.push(['y','ยังไม่ระบุสาเหตุ']);
+  const dup=(L||[]).find(x=>x.id!==o.id&&x.feeder===o.feeder&&((x.dev&&x.dev.id)||'')===((o.dev&&o.dev.id)||'')&&Math.abs(tm(x.off)-off)<=15*6e4);
+  if(dup) out.push(['y','อาจซ้ำกับรายการ '+hmTh(dup.off)+' น. (ฟีดเดอร์/อุปกรณ์เดียวกัน) — นับเป็น 2 ครั้ง']);
+  return out;
+}
 const outWhere=o=>[o.feeder,o.dev&&o.dev.id?((DEV_TH[o.dev.type]&&o.dev.type!=='TRANSFORMER'?DEV_TH[o.dev.type]+' ':o.dev.type==='TRANSFORMER'?'หม้อแปลง ':'')+o.dev.id+(o.dev.desc?' '+o.dev.desc:'')):(o.place||'')].filter(Boolean).join(' · ');
 const outCause=o=>[o.cType,o.cData].filter(Boolean).join(' / ')||(o.cBtn==='unk'?'ไม่ทราบสาเหตุ':'');
 const outMatsTxt=L=>{const m={};L.forEach(o=>(o.mats||[]).forEach(x=>{const k=x.n+'|'+(x.u||'');m[k]=(m[k]||0)+Number(x.q||0);}));return Object.keys(m).map(k=>{const [n,u]=k.split('|');return {n,u,q:m[k]};});};
@@ -969,11 +990,13 @@ function outCardHtml(k,canEdit){
      <div class="d">ดับ ${hmTh(o.off)} – ${o.on?'มา '+hmTh(o.on)+' น.':'ยังไม่จ่ายไฟ'} (${durTxt(durMin(o.off,o.on))})<br>
      ${outCause(o)?`<span class="opl">${CAUSE_IC[o.cType]||''} ${esc(outCause(o))}</span>`:''}${o.cust?`<span class="opl">ผู้ใช้ไฟ ~${o.cust} ราย</span>`:''}<span class="opl ${o.fix==='temp'?'tmp':''}">${o.fix==='temp'?'แก้ชั่วคราว':'แก้ถาวร'}</span>
      ${(o.mats||[]).length?`<span class="opl">ใช้ ${esc(o.mats.map(m=>m.n+' ×'+m.q).join(', '))}</span>`:''}${(o.photos||[]).length?`<span class="opl">📷 ${o.photos.length} รูป</span>`:''}
+     ${outIssues(o,k,L).map(([c,t])=>`<div class="oiss ${c}">${c==='r'?'❗':'⚠'} ${esc(t)}</div>`).join('')}
      ${o.fix==='temp'?(o.patrol&&o.patrol.id?`<span class="opl ok">Patrol: ${esc(o.patrol.status||'ส่งแล้ว')}</span>`:`<span class="opl warn">ยังไม่เข้า Patrol${o.patrol&&o.patrol.err?' — '+esc(o.patrol.err):''}</span>`):''}</div></div></div>`;
   return `<div class="rp-sec"><h4>๒–๔. เหตุการณ์ไฟดับในเวรนี้</h4>
     <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hmH((T.hv.outM||0)+(T.lv.outM||0))}</b><span>ชม. ไฟดับรวม</span></div></div>
     <div class="evl">${L.map(row).join('')||'<div class="muted" style="padding:8px 0">ยังไม่มีเหตุการณ์ไฟดับ</div>'}</div>
     ${canEdit?'<button class="btn" type="button" id="outAdd" style="width:100%;margin-top:6px">＋ เพิ่มเหตุการณ์ไฟดับ</button>':''}
+    ${L.length?`<div class="oiss g">ในบัญชีลงนาม: ข้อ ๒ แรงสูง ${T.hv.n} ครั้ง ${T.hv.out} ชม. · ข้อ ๓ แรงต่ำ ${T.lv.n} ครั้ง ${T.lv.out} ชม.${L.some(o=>outIssues(o,k,L).length)?' · <b>มีรายการที่ควรตรวจ</b>':' ✓'}</div>`:''}
     <div class="muted" style="margin-top:4px">ข้อ ๒–๔ ในบัญชีลงนามคำนวณจากรายการนี้ให้เอง</div></div>`;
 }
 function bindOutCard(k,I,data){
@@ -1630,6 +1653,21 @@ function sheetInfo(key,data,d,part){
   return {names,ppl,t0,t1,a,b,day,insp:(data.insp||[])[d-1]||'',k:key+'-'+String(d).padStart(2,'0')+'|'+part};
 }
 const tTh=t=>THD(String(t||'').replace(':','.'));
+/* ข้อ ๗: สถานที่ไฟดับเป็นข้อ ๆ — จัดคอลัมน์และย่อตัวอักษรให้อยู่ในพื้นที่ 4 บรรทัดเสมอ (หน้าเดียว) */
+function item7(OL,other){
+  const dots='.'.repeat(300);
+  if(!OL.length) return `<div style="white-space:nowrap;overflow:hidden">๗. อื่น ๆ${other?' '+esc(THD(other))+' ':dots}</div>`;
+  const cnt={}, order=[]; OL.slice().sort((a,b)=>String(a.off).localeCompare(String(b.off))).forEach(o=>{ const p=outPlace(o); if(!(p in cnt)){cnt[p]=0;order.push(p);} cnt[p]++; });
+  let items=order.map(p=>p+(cnt[p]>1?' ×'+cnt[p]:''));
+  // พื้นที่ข้อ ๗ ≈ 3.8 บรรทัดที่ 15pt (24 มม.) — เหลือขอบล่างอย่างน้อย ~1 ซม. · ย่อได้ถึง 11pt (ได้ 5 บรรทัด)
+  const m=items.length, cols=m<=2?1:m<=6?2:m<=12?3:4, LIM=cols*(5-1-(other?1:0));
+  if(m>LIM){ const rest=m-(LIM-1); items=items.slice(0,LIM-1).concat(['และอีก '+rest+' จุด']); }
+  const rows=Math.ceil(items.length/cols)+1+(other?1:0);           // หัวข้อ + แถวรายการ + ข้อความเพิ่มเติม
+  const fs=Math.max(11,Math.min(15,Math.floor(15*3.8/rows*2)/2));
+  return `<div style="font-size:${fs}pt;line-height:1.2">๗. อื่น ๆ &nbsp;ไฟดับ ${THD(OL.length)} ครั้ง
+    <div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));column-gap:4mm;padding-left:6mm">${items.map((t,i)=>`<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">(${THD(i+1)}) ${esc(t)}</div>`).join('')}</div>
+    ${other?`<div style="padding-left:6mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">เพิ่มเติม: ${esc(other)}</div>`:''}</div>`;
+}
 function signPage(key,data,next,d,cfg,part,rp,sg,OL){
   sg=sg||{name:cfg.mgrName,title:cfg.mgrTitle};
   const I=sheetInfo(key,data,d,part), r=rp||{}, pa=dParts(I.a), pb=dParts(I.b);
@@ -1642,7 +1680,7 @@ function signPage(key,data,next,d,cfg,part,rp,sg,OL){
     rows+=`<tr><td>${n?THD(i+1):''}</td><td style="text-align:left">${n?esc(fullName(n)):''}</td><td>${n?tTh(ar)+' น.':''}</td><td></td><td>${n?tTh(dp)+' น.':''}</td><td></td><td style="font-size:13.2pt">${n?esc(I.ppl[n]):''}</td></tr>`;}
   const dLongTh=dt=>{const p=dParts(dt);return THD(TH_WDF[p.wd]+' '+p.d+' '+TH_MONTH[p.m]+' '+p.y);};
   let hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{};
-  if(OL&&OL.length){ const T=outTotals(OL); hv=T.hv; lv=T.lv; tp={n:T.temp.length,text:T.temp.map(o=>[outWhere(o),outCause(o),o.detail].filter(Boolean).join(' ')).join(' / ')}; }
+  if((OL&&OL.length)||rp){ const T=outTotals(OL||[]); hv=T.hv; lv=T.lv; tp={n:T.temp.length,text:T.temp.map(o=>[outWhere(o),outCause(o),o.detail].filter(Boolean).join(' ')).join(' / ')}; }
   const dots=w=>'.'.repeat(w), cm=r.comm||{}, ins=r.insp||{};
   const bx=on=>`<span class="bx ${on?'on':''}"></span>`;
   const inspD=ins.date?new Date(ins.date+'T00:00:00Z'):I.a, inspT=ins.time||I.t0;
@@ -1665,7 +1703,7 @@ function signPage(key,data,next,d,cfg,part,rp,sg,OL){
     <div style="white-space:nowrap;overflow:hidden">${dots(300)}</div>`}
     <div style="white-space:nowrap;overflow:hidden">๕. ได้ตรวจสอบระบบสื่อสารแล้ว &nbsp;เวลา ${tTh(cm.time||I.t0)} น. ${bx(cm.ok===true).replace('class="bx','style="margin-left:4px" class="bx')}ติดต่อได้ทุก กฟฟ. ${bx(cm.ok===false)}ติดต่อไม่ได้ &nbsp;คือ${cm.fail?T(cm.fail):dots(100)}</div>
     <div>๖. ได้แนบบันทึก / ใบสั่งงานมาด้วย${v(r.att,60)}ฉบับ</div>
-    <div style="white-space:nowrap;overflow:hidden">๗. อื่น ๆ${r.other?T(r.other):dots(300)}</div>
+    ${item7(OL||[],r.other)}
     <div style="padding-left:20mm">จึงเรียนมาเพื่อโปรดทราบ</div>
     <div class="sig" style="margin-left:80mm;margin-top:3mm;width:80mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${esc(I.names[0]?fullName(I.names[0]):dots(50))} )<br>หัวหน้าเวรฯ</div>
     <div style="margin-top:2mm">เรียน &nbsp;${esc(cfg.mgrTitle)}</div>
