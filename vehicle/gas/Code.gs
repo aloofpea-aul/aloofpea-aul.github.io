@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '17.0';
+const VERSION = '17.1';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -72,6 +72,7 @@ function doPost(e) {
     if (!me) return json_({ ok: false, error: 'unauthorized', message: 'รหัสพนักงาน/ชื่อ หรือรหัสผ่านไม่ถูกต้อง' });
     if (b.action === 'bootstrap') return json_(bootstrap_(me));
     if (b.action === 'photo') return json_({ ok: true, data: photo_(String(b.fileId || '')) });
+    if (b.action === 'checks') return json_({ ok: true, rows: checksMonth_(String(b.carId || ''), String(b.ym || '')) });
 
     const fn = ACTIONS[b.action];
     if (!fn) return json_({ ok: false, error: 'unknown action' });
@@ -119,6 +120,15 @@ const ACTIONS = {
       if ((np_(bp) === np_(plate) || bp === '-' || bp === '') && s2 && e2 && s2 <= soon && e2 >= now) { set_(B, i, { Status: 'used', CarPlate: plate }); break; }
     }
     return 'เบิกรถ ' + plate + ' แล้ว' + (chk && chk.fails ? ' · แจ้งข้อบกพร่อง ' + chk.fails + ' ข้อ' : '');
+  },
+
+  /** ตรวจรถอย่างเดียว ไม่เบิก (เช่นตรวจเช้าทุกคัน) */
+  check: function (b, me) {
+    const t = table_(SH.CARS), r = findRow_(t, 'ID', b.carId);
+    if (r == null) throw new Error('ไม่พบรถคันนี้');
+    if (!b.check) throw new Error('ไม่มีผลตรวจ');
+    const res = saveCheck_(b.check, get_(t, r, 'ID'), String(get_(t, r, 'Plate')), Number(get_(t, r, 'Mile')) || 0, me);
+    return 'บันทึกผลตรวจ ' + get_(t, r, 'Plate') + ' แล้ว' + (res.fails ? ' · ข้อบกพร่อง ' + res.fails + ' ข้อ' : '');
   },
 
   returnCar: function (b, me) {
@@ -273,6 +283,18 @@ function saveCheck_(chk, carId, plate, mile, me) {
   const C = table_(SH.CHECK);
   append_(C, { ID: nextId_(C), Date: new Date(), CarId: carId, Plate: plate, Form: '6103', Results: res, Fails: fails.join(' | '), By: me.name, Mile: mile });
   return { fails: fails.length };
+}
+
+/** ผลตรวจทั้งเดือนของรถหนึ่งคัน (ym = yyyy-MM) สำหรับปฏิทินและพิมพ์แบบ 6103 */
+function checksMonth_(carId, ym) {
+  if (!/^\d{4}-\d{2}$/.test(ym)) throw new Error('เดือนไม่ถูกต้อง');
+  const K = table_(SH.CHECK), out = [];
+  K.rows.forEach(function (r) {
+    if (String(r[K.h.CarId]) !== carId || String(r[K.h.Form]) !== '6103') return;
+    const d = parseDate_(r[K.h.Date]); if (!d || Utilities.formatDate(d, TZ, 'yyyy-MM') !== ym) return;
+    out.push({ at: iso_(d), results: String(r[K.h.Results] || ''), fails: String(r[K.h.Fails] || ''), by: String(r[K.h.By] || ''), mile: num_(r[K.h.Mile]) });
+  });
+  return out;
 }
 
 /** ผลตรวจของวันนี้ ล่าสุดต่อรถหนึ่งคัน */

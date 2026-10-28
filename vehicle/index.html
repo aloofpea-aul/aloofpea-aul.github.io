@@ -40,8 +40,8 @@ header.top{position:sticky;top:0;z-index:20;background:var(--pri);color:#fff;
 main{max-width:960px;margin:0 auto;padding:12px 12px calc(var(--navh) + var(--sb) + 20px);display:flex;flex-direction:column;gap:12px}
 nav.bot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);
   padding:0 env(safe-area-inset-right) var(--sb) env(safe-area-inset-left);box-shadow:0 -2px 12px rgba(30,26,34,.06)}
-nav.bot .in{max-width:960px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--navh)}
-nav.bot button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#7A7282;font-size:13px;font-weight:600;position:relative}
+nav.bot .in{max-width:960px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--navh)}
+nav.bot button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#7A7282;font-size:12px;padding:0;font-weight:600;position:relative}
 nav.bot button svg{width:24px;height:24px}
 nav.bot button.on{color:var(--pri)}
 nav.bot button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;height:3px;border-radius:0 0 3px 3px;background:var(--pri)}
@@ -155,6 +155,19 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 .crop img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none;max-width:none}
 .crop .hint{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 8px;border-radius:8px;pointer-events:none}
 .zoom{display:flex;align-items:center;gap:10px;margin-top:10px}.zoom input{flex:1}
+/* แท็บตรวจ: ปฏิทินผลตรวจ */
+.cal .d.ok{background:var(--okb);border-color:#9BD3AC;color:var(--ok)}
+.cal .d.bad{background:var(--badb);border-color:#F0A8A3;color:var(--bad)}
+.cal .d.sel{outline:3px solid var(--pri);outline-offset:-1px}
+.cklegend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:10px}
+.cklegend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+#printArea{display:none}
+@media print{
+  @page{size:A4 landscape;margin:5mm}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important;color:#000}
+  html,body{background:#fff!important}
+}
 /* ตรวจก่อนใช้ 6103 */
 .ckhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 8px}
 .ckbar{height:6px;border-radius:3px;background:#EFE7F2;overflow:hidden;margin-bottom:10px}.ckbar i{display:block;height:100%;background:var(--pri);transition:width .15s}
@@ -211,6 +224,19 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
     <div class="card"><div class="list" id="recent"></div></div>
   </section>
 
+  <!-- ตรวจรถ 6103 -->
+  <section id="v-check" class="hide">
+    <div class="sec"><h2>ตรวจรถประจำวัน</h2><button class="btn sm soft" id="btnPrint6103">🖨 พิมพ์ 6103</button></div>
+    <div class="seg" id="ckSeg"></div>
+    <div class="card">
+      <div class="cal-h"><button id="ckPrev" aria-label="เดือนก่อน">‹</button><b id="ckTitle"></b><button id="ckNext" aria-label="เดือนถัดไป">›</button></div>
+      <div class="cal" id="ckCal"></div>
+      <div class="cklegend"><span><i style="background:var(--okb);border:1px solid #9BD3AC"></i>ตรวจแล้ว ผ่าน</span><span><i style="background:var(--badb);border:1px solid #F0A8A3"></i>พบข้อบกพร่อง</span><span><i style="border:2px solid var(--pri)"></i>วันนี้</span></div>
+    </div>
+    <button class="btn block" id="btnCheckOnly">🔍 ตรวจรถคันนี้วันนี้ (ไม่เบิกรถ)</button>
+    <div class="card"><div class="list" id="ckDayList"></div></div>
+  </section>
+
   <!-- จองรถ -->
   <section id="v-book" class="hide">
     <div class="sec"><h2>การจองรถ</h2><button class="btn sm" id="btnBook">+ จองรถ</button></div>
@@ -242,12 +268,14 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 
 <nav class="bot"><div class="in">
   <button data-v="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-6h9L18 17"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/><path d="M8 11l1-3h6l1 3"/></svg>รถ</button>
+  <button data-v="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 12l2 2 4.5-4.5M9 17h6"/></svg>ตรวจรถ</button>
   <button data-v="book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>จองรถ<span class="dot hide" id="navDot"></span></button>
   <button data-v="repair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/></svg>บันทึกซ่อม</button>
   <button data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10l2 2 4-4M9 16h6"/></svg>แผนบำรุง</button>
 </div></nav>
 
 <div id="layer"></div>
+<div id="printArea"></div>
 
 <script>
 'use strict';
@@ -327,7 +355,7 @@ function toast(msg, err){ clearTimeout(toastT); let t=document.querySelector('.t
 function busy(on, text='กำลังบันทึก…'){ let b=document.querySelector('.busy'); if(on){ if(!b){b=document.createElement('div');b.className='busy';document.body.appendChild(b);} b.innerHTML='<div>'+esc(text)+'</div>'; } else if(b) b.remove(); }
 
 /* ====== สถานะ ====== */
-const S = { d: LS.get('boot'), view: 'home', filter: null, calM: null, selDay: null, bookTab: 'up', repCar: '', planCar: '' };
+const S = { d: LS.get('boot'), view: 'home', filter: null, calM: null, selDay: null, bookTab: 'up', repCar: '', planCar: '', ckCar: '', ckM: null, ckDay: null, ckCache: {}, ckBusy: null };
 const me = () => (S.d && S.d.me) || {name: creds().user, admin: false};
 
 async function load(silent){
@@ -365,7 +393,7 @@ function render(){
   $('btnAddCar').classList.toggle('hide', !m.admin);
   const pending = S.d.bookings.filter(b=>b.status==='pending').length;
   $('navDot').textContent = pending; $('navDot').classList.toggle('hide', !(m.admin && pending));
-  renderHome(); renderBook(); renderRepair(); renderPlan();
+  renderHome(); renderBook(); renderRepair(); renderPlan(); renderCheckTab();
 }
 
 /* รูปรถ: ลองลิงก์ไดรฟ์ก่อน ถ้าเปิดไม่ได้ (บัญชีห้ามแชร์สาธารณะ) โหลดผ่านหลังบ้านแล้วจำไว้ในเครื่อง */
@@ -532,6 +560,7 @@ function sheet(html, locked){ $('layer').innerHTML = `<div class="ov" ${locked?'
 function closeSheet(){ $('layer').innerHTML=''; document.body.style.overflow=''; }
 const carById = id => S.d.vehicles.find(v=>v.id===String(id));
 
+const LOGO_6103 = 'data:image/jpeg;base64,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';
 /* ====== ตรวจก่อนใช้ (FM1-SOH3-S04-6103) — ขั้นแรกของการเบิกรถ ====== */
 let CK = null;                                       // {v, res:[], notes:{}, skip}
 const ckOn = () => !!(S.d && S.d.checkItems && S.d.checkItems.length);   // หลังบ้าน v17 ขึ้นไป
@@ -561,8 +590,87 @@ function renderCheck(){
         ${r==='O'?`<input class="cknote" placeholder="ระบุอาการ เช่น ไฟเบรกซ้ายไม่ติด" value="${esc(CK.notes[i+1]||'')}" oninput="CK.notes[${i+1}]=this.value">`:''}`; }).join('')}
     <div class="muted small" style="margin:10px 0">✓ ใช้ได้ · ✗ ต้องซ่อม · – ไม่เกี่ยวข้อง</div>
     <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button>
-      <button class="btn" ${all?'':'disabled'} onclick="openCheckoutForm(CK.v)">${all?'ถัดไป ›':'ตรวจให้ครบก่อน ('+(it.length-done)+')'}</button></div>`, true);
+      <button class="btn" ${all?'':'disabled'} onclick="${CK.only?'saveCheckOnly()':'openCheckoutForm(CK.v)'}">${!all?'ตรวจให้ครบก่อน ('+(it.length-done)+')':CK.only?'บันทึกผลตรวจ':'ถัดไป ›'}</button></div>`, true);
   const sh = document.querySelector('.sheet'); if (sh) sh.scrollTop = pre;
+}
+async function saveCheckOnly(){
+  const ok = await act('check', {carId: CK.v.id, check: {results: CK.res.join(''), notes: CK.notes}});
+  if (ok) { delete S.ckCache[CK.v.id+'|'+ymOf(new Date())]; CK = null; renderCheckTab(); }
+}
+/* ====== แท็บตรวจรถ: ปฏิทินรายเดือน + พิมพ์แบบ 6103 ====== */
+const ymOf = d => d.getFullYear()+'-'+p2(d.getMonth()+1);
+function ckVeh(){ const V = S.d.vehicles; if (!S.ckCar && V.length) S.ckCar = V[0].plate; return V.find(x=>x.plate===S.ckCar); }
+function ckRowsByDay(rows){ const m = {}; (rows||[]).forEach(r=>{ const d = pd(r.at); if(d) (m[d.getDate()] = m[d.getDate()]||[]).push(r); }); return m; }
+async function ckLoad(v, ym){
+  const k = v.id+'|'+ym; if (S.ckCache[k] || S.ckBusy===k) return;
+  S.ckBusy = k;
+  try { const j = await api('checks', {carId: v.id, ym}); S.ckCache[k] = j.rows || []; }
+  catch(e){ S.ckCache[k] = null; toast('โหลดผลตรวจไม่ได้: '+e.message, true); }
+  finally { S.ckBusy = null; if (S.view==='check') renderCheckTab(); }
+}
+function renderCheckTab(){
+  if (!S.d || !$('v-check')) return;
+  const on = ckOn() && parseFloat(S.d.version) >= 17.1; $('btnCheckOnly').classList.toggle('hide', !on); $('btnPrint6103').classList.toggle('hide', !on);
+  if (!on) { $('ckCal').innerHTML = ''; $('ckDayList').innerHTML = '<div class="empty">ต้องอัปเดตหลังบ้านเป็นเวอร์ชัน 17.1 ก่อน</div>'; return; }
+  carSeg($('ckSeg'), S.ckCar || (S.d.vehicles[0]||{}).plate, 'ckCar', false);
+  const v = ckVeh(); if (!v) { $('ckDayList').innerHTML = '<div class="empty">ยังไม่มีรถในระบบ</div>'; return; }
+  const M = S.ckM || (S.ckM = new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const ym = ymOf(M), rows = S.ckCache[v.id+'|'+ym];
+  $('ckTitle').textContent = TH_MF[M.getMonth()]+' '+(M.getFullYear()+543);
+  if (rows === undefined) ckLoad(v, ym);
+  const byDay = ckRowsByDay(rows), today = new Date(), isNowM = ymOf(today)===ym;
+  const first = M.getDay(), days = new Date(M.getFullYear(), M.getMonth()+1, 0).getDate();
+  if (!S.ckDay || S.ckDay > days) S.ckDay = isNowM ? today.getDate() : 1;
+  let h = ['อา','จ','อ','พ','พฤ','ศ','ส'].map(x=>`<div class="dw">${x}</div>`).join('');
+  for (let i=0;i<first;i++) h += '<div class="d x"></div>';
+  for (let d=1; d<=days; d++){
+    const L = byDay[d], bad = L && L.some(r=>r.results.indexOf('O')>=0);
+    h += `<button class="d ${L?(bad?'bad':'ok'):''} ${isNowM&&d===today.getDate()?'today':''} ${d===S.ckDay?'sel':''}" onclick="S.ckDay=${d};renderCheckTab()">${d}</button>`;
+  }
+  $('ckCal').innerHTML = h;
+  const L = byDay[S.ckDay] || [], it = S.d.checkItems;
+  $('ckDayList').innerHTML = rows===undefined ? '<div class="empty">กำลังโหลด…</div>' :
+    `<div class="t" style="font-weight:600;margin-bottom:4px">${S.ckDay} ${TH_M[M.getMonth()]} ${String(M.getFullYear()+543).slice(2)} · ${esc(v.plate)}</div>` +
+    (L.length ? L.slice().reverse().map(r=>{ const n = k => r.results.split('').filter(x=>x===k).length;
+      return `<div class="li"><div class="ic">${n('O')?'⚠️':'✅'}</div><div class="tx"><div class="t">${esc(r.by)} · ${fd(r.at).split(' ').pop()} น.</div>
+        <div class="s">ผ่าน ${n('P')} · ต้องซ่อม ${n('O')} · ไม่เกี่ยวข้อง ${n('-')}${r.mile?' · '+km(r.mile)+' กม.':''}</div>
+        ${r.fails?`<div class="s" style="color:var(--bad)">${r.fails.split(' | ').map(esc).join('<br>')}</div>`:''}</div></div>`; }).join('')
+      : '<div class="empty">ยังไม่มีการตรวจในวันนี้</div>');
+}
+function print6103(){
+  const v = ckVeh(), M = S.ckM; if (!v || !M) return;
+  const rows = S.ckCache[v.id+'|'+ymOf(M)]; if (!rows) { toast('รอโหลดผลตรวจก่อน', true); return; }
+  const byDay = ckRowsByDay(rows), it = S.d.checkItems, total = new Date(M.getFullYear(), M.getMonth()+1, 0).getDate();
+  const last = d => byDay[d] ? byDay[d][byDay[d].length-1] : null;
+  const B='border:0.5px solid #888;', CC='text-align:center;vertical-align:middle;', dw=(62/total).toFixed(3), PC='-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+  const UL = w => `border-bottom:0.5px solid #000;display:inline-block;padding:0 2px;min-width:${w}mm;`;
+  const defs = []; rows.forEach(r=>{ if (r.fails) r.fails.split(' | ').forEach(f=>defs.push({t:f, at:r.at, by:r.by})); });
+  let h = `<div style="font-family:'IBM Plex Sans Thai',sans-serif;font-size:7.5pt;line-height:1.2">
+    <table style="width:100%;border-collapse:collapse;margin-bottom:1.5mm"><tr><td style="width:15mm"><img src="${LOGO_6103}" style="height:13mm"></td>
+      <td style="text-align:center;font-size:12pt;font-weight:700">แบบฟอร์มการตรวจยานพาหนะก่อนปฏิบัติงานประจำวัน</td></tr></table>
+    <div style="font-size:8.5pt;margin-bottom:1mm">หน่วยงาน: <span style="${UL(26)}">กฟส.อ่าวลึก</span>&ensp;เลขทะเบียน: <span style="${UL(22)}">${esc(v.plate)}</span>&ensp;รหัส <span style="${UL(14)}"></span>&ensp;ยี่ห้อรถ/รุ่น: <span style="${UL(30)}">${esc(v.model)}</span>&ensp;เดือน <span style="${UL(16)}">${TH_MF[M.getMonth()]}</span>&ensp;พ.ศ. <span style="${UL(12)}">${M.getFullYear()+543}</span></div>
+    <div style="text-align:center;margin-bottom:1mm">ใช้เครื่องหมายถูก (✓) สำหรับทุกรายการที่อยู่ในสภาพดี&emsp;ใช้เครื่องหมายผิด (✗) สำหรับรายการที่ต้องการซ่อมแซม&emsp;ใช้เครื่องหมาย (-) ในช่องที่ไม่เกี่ยวข้อง</div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:3%"><col style="width:25%">${('<col style="width:'+dw+'%">').repeat(total)}<col style="width:7%"></colgroup>
+    <tr style="background:#b8ccdc;${PC}"><th colspan="${total+3}" style="${B}padding:2px;${CC}font-size:8.5pt">การตรวจสอบยานพาหนะ</th></tr>
+    <tr style="background:#ccdde8;${PC}"><th rowspan="2" style="${B}${CC}">ที่</th><th rowspan="2" style="${B}${CC}">รายการ</th><th colspan="${total}" style="${B}${CC}">วันที่</th><th rowspan="2" style="${B}${CC}">ข้อคิดเห็น</th></tr>
+    <tr style="background:#ccdde8;${PC}">${Array.from({length:total},(_,i)=>`<th style="${B}${CC}font-size:6.5pt">${i+1}</th>`).join('')}</tr>`;
+  it.forEach((name,i)=>{
+    h += `<tr style="background:${i%2?'#edf4f9':'#fff'};${PC}"><td style="${B}${CC}">${i+1}</td><td style="${B}padding:1px 3px;white-space:nowrap;overflow:hidden">${esc(name)}</td>`;
+    for (let d=1; d<=total; d++){ const r = last(d), x = r ? r.results[i] : ''; h += `<td style="${B}${CC}font-weight:700;font-size:9pt;${x==='O'?'color:#c00;':''}">${x==='P'?'✓':x==='O'?'✗':x==='-'?'-':''}</td>`; }
+    h += `<td style="${B}"></td></tr>`;
+  });
+  h += `<tr style="background:#e4edf4;height:10mm;${PC}"><td colspan="2" style="${B}${CC}">ลงชื่อผู้นำไปใช้งาน/ทำการตรวจสอบ</td>`;
+  for (let d=1; d<=total; d++){ const r = last(d); h += `<td style="${B}${CC}font-size:5.5pt;vertical-align:bottom">${r?esc(r.by):''}</td>`; }
+  h += `<td style="${B}background:#c8c8c8;${PC}"></td></tr></table>
+    <table style="width:100%;border-collapse:collapse;margin-top:1.5mm"><tr><td style="vertical-align:top;width:65%">
+      <table style="width:100%;border-collapse:collapse"><tr style="background:#ccdde8;${PC}"><th style="${B}width:58%">ข้อบกพร่อง</th><th style="${B}width:21%">วันที่แจ้ง</th><th style="${B}width:21%">ผู้ควบคุมยาน</th></tr>
+      ${defs.concat(Array(Math.max(0,3-defs.length)).fill({})).map(x=>`<tr><td style="${B}padding:1.5px 4px;height:6mm">${esc(x.t||'')}</td><td style="${B}${CC}">${x.at?fd(x.at,false):''}</td><td style="${B}"></td></tr>`).join('')}
+      </table></td>
+      <td style="vertical-align:top;padding-left:5mm;font-size:9pt"><b>ลงชื่อผู้ควบคุมยาน :</b><div style="text-align:center;margin:9mm 0 1mm"><span style="${UL(55)}"></span></div>
+        <div style="text-align:center">(&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;)</div><div style="margin-top:3mm">ตำแหน่ง <span style="${UL(45)}"></span></div></td></tr></table>
+    <div style="margin-top:1.5mm;font-size:6.5pt;display:flex;justify-content:space-between;color:#555"><span>FM1-SOH3-S04-6103 ประกาศใช้ครั้งแรกเมื่อ 30/05/2561</span><span>ปรับปรุงครั้งที่ 00 วันที่ -/-/-</span></div></div>`;
+  $('printArea').innerHTML = h;
+  setTimeout(()=>window.print(), 300);
 }
 function ckSet(i, val){ CK.res[i] = CK.res[i]===val ? '' : val; renderCheck(); }
 function ckAll(){ CK.res = CK.res.map(r => r==='O'||r==='-' ? r : 'P'); renderCheck(); }
@@ -576,6 +684,10 @@ function ckSummary(){
     <div style="background:var(--badb);color:var(--bad)"><b>${n('O')}</b>ต้องซ่อม</div><div style="background:#ECE8EF;color:var(--mut)"><b>${n('-')}</b>ไม่เกี่ยวข้อง</div></div>
     ${n('O')?'<div class="note err" style="margin:-4px 0 12px">ข้อบกพร่องจะแสดงที่การ์ดรถให้ผู้ควบคุมยานเห็น</div>':''}
     <a href="#" class="small" onclick="event.preventDefault();renderCheck()" style="color:var(--pri);font-weight:600;display:inline-block;margin:-6px 0 12px">‹ กลับไปแก้ผลตรวจ</a>`;
+}
+function openCheckOnly(){
+  const v = ckVeh(); if (!v || !ckOn()) return;
+  CK = { v, res: new Array(S.d.checkItems.length).fill(''), notes: {}, skip: false, only: true }; renderCheck();
 }
 function openCheckoutForm(v){
   const nb = nextBookingOf(v.plate);
@@ -714,10 +826,10 @@ function resize(file){
 }
 
 /* ====== เมนู / เหตุการณ์ ====== */
-const TITLES = {home:'ระบบยานพาหนะ',book:'จองรถ',repair:'บันทึกซ่อม',plan:'แผนบำรุงรักษา'};
+const TITLES = {home:'ระบบยานพาหนะ',check:'ตรวจรถประจำวัน',book:'จองรถ',repair:'บันทึกซ่อม',plan:'แผนบำรุงรักษา'};
 function go(v){
   S.view = v; LS.set('view', v);
-  ['home','book','repair','plan'].forEach(x=>$('v-'+x).classList.toggle('hide', x!==v));
+  ['home','check','book','repair','plan'].forEach(x=>$('v-'+x).classList.toggle('hide', x!==v));
   document.querySelectorAll('nav.bot button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
   $('hTitle').textContent = TITLES[v]; window.scrollTo(0,0);
 }
@@ -787,6 +899,9 @@ function showSetup(){
 }
 
 function start(){
+  $('btnCheckOnly').onclick = openCheckOnly; $('btnPrint6103').onclick = print6103;
+  $('ckPrev').onclick = () => { S.ckM = new Date(S.ckM.getFullYear(), S.ckM.getMonth()-1, 1); S.ckDay = null; renderCheckTab(); };
+  $('ckNext').onclick = () => { S.ckM = new Date(S.ckM.getFullYear(), S.ckM.getMonth()+1, 1); S.ckDay = null; renderCheckTab(); };
   if (!window.__MOCK__ && !apiUrl()) { showSetup(); return; }
   const c = creds();
   if (!c.user || !c.pass) { S.d = null; $('cars').innerHTML = ''; showLogin(); return; }
