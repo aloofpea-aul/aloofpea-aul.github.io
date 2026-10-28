@@ -121,6 +121,7 @@ main .card,.tkc{scroll-margin-top:62px}.tkc{padding:10px 12px;border-left:4px so
 .rq.gone{opacity:.4;pointer-events:none;transition:opacity .2s}
 .bar{height:10px;border-radius:5px;background:#EFEBF2;overflow:hidden}.bar>i{display:block;height:10px;border-radius:5px;background:#8E3FA0}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .muted{color:var(--mut);font-size:12px}
 .note{background:#EDE4F0;border-radius:10px;padding:8px 10px;font-size:12px;color:var(--pri2);line-height:1.5}
 .warn{background:#FFF1D6;color:#6B4500}
@@ -651,7 +652,7 @@ async function renderDaily(){
     typeof r.v==='string'?`<div class="nm">${esc(r.v)}</div>`:(r.v.length?`<div class="ppl">${r.v.map(n=>personRow(n,NOTE[n])).join('')}</div>`:'<div class="nm">—</div>')}</div></div>`).join('');
   $('dSign').classList.toggle('hide',S.dGroup!=='emp');
   { const ck=curBlockKey(), ok=S.dGroup==='emp'&&S.boot.months.some(x=>x.month===ck.slice(0,7)); $('dOut').classList.toggle('hide',!ok);
-    if(ok){ const d=new Date(ck.slice(0,10)+'T00:00:00Z'); const md=(S.months[ck.slice(0,7)]||{}).data, dy=md&&md.days[d.getUTCDate()-1]; $('dOutSub').textContent='· เวรตอนนี้ '+(ck.endsWith('p1')?'ช่วง 1':dy&&dy.off?'ช่วง 2+3':'ช่วง 3')+(ck.slice(0,7)===S.dMonth&&+ck.slice(8,10)===S.dDay?'':' · '+d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]);
+    if(ok){ const d=new Date(ck.slice(0,10)+'T00:00:00Z'); const md=(S.months[ck.slice(0,7)]||{}).data, dy=md&&md.days[d.getUTCDate()-1]; $('dOutSub').textContent=(ck.endsWith('p2')?'· ในเวลาทำการ':'· เวรตอนนี้ '+(ck.endsWith('p1')?'ช่วง 1':dy&&dy.off?'ช่วง 2+3':'ช่วง 3'))+(ck.slice(0,7)===S.dMonth&&+ck.slice(8,10)===S.dDay?'':' · '+d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]);
       $('dOut').onclick=()=>{ S.dMonth=ck.slice(0,7); S.dDay=+ck.slice(8,10); $('dMonth').value=S.dMonth; S.repOpen=ck; S.openOut=ck; renderDaily().then(()=>{ const e=$('dRep'); e&&e.scrollIntoView({block:'start'}); }); }; } }
   renderRepCard(data);
   renderWx();
@@ -832,13 +833,13 @@ async function renderRepCard(data){
   if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
   const OD=((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k.slice(0,10)===key+'-'+String(d).padStart(2,'0')), OT=outTotals(OD);
   const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
-  const parts=[['p1','ช่วง 1'],['p3',data.days[d-1].off?'ช่วง 2+3':'ช่วง 3']];
+  const parts=data.days[d-1].off?[['p1','ช่วง 1'],['p3','ช่วง 2+3']]:[['p1','ช่วง 1'],['p2','เวลาทำการ'],['p3','ช่วง 3']];
   const T=trackOf(key), st0=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
-  const st=k=>{ const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':''); };
+  const st=k=>{ if(k.endsWith('p2')){ const n=OD.filter(o=>o.k===k).length; return n?'<span class="rs1">ไฟดับ '+n+' ครั้ง</span>':'<span class="muted">บันทึกไฟดับ</span>'; } const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':''); };
   loadTrack(key);
   el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
       <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
-    <div class="grid2" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
+    <div class="${parts.length>2?'grid3':'grid2'}" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
       return `<button class="btn ${S.repOpen===k?'':'ghost'}" data-k="${k}" style="height:auto;min-height:46px;padding:6px 8px;line-height:1.3">${l}<br><small style="font-weight:400">${st(k)}</small></button>`;}).join('')}</div>
     ${OD.length?`<div class="muted" style="margin-top:6px">⚡ ไฟดับวันนี้: แรงสูง ${OT.hv.n} ครั้ง · แรงต่ำ ${OT.lv.n} ครั้ง${OT.temp.length?' · แก้ชั่วคราว '+OT.temp.length:''}</div>`:''}
     <div id="repEd"></div>`;
@@ -851,6 +852,12 @@ async function renderRepCard(data){
 }
 function repEditor(data,k,r){
   const p=k.slice(-2), d=+k.slice(8,10), I=sheetInfo(S.dMonth,data,d,p), auth=repAuthFor(k);
+  if(p==='p2'){
+    $('repEd').innerHTML=`<div class="note" style="margin-top:8px">⏰ ในเวลาทำการ (08:30–16:30) — ไม่มีเวรประจำ ทุกคนที่มีสิทธิ์ตารางเวรในศูนย์รวมงานบันทึกได้ · ไม่มีบัญชีลงนาม · นับรวมในสรุปไฟดับประจำเดือน</div>${outCardHtml(k,outCan(k))}`;
+    bindOutCard(k,I,data);
+    if(S.openOut===k){ S.openOut=null; const pre=S.tkPre; S.tkPre=null; if($('outAdd')) setTimeout(()=>outForm(k,I,null,data,pre),150); }
+    return;
+  }
   const canDuty=!auth||auth.r==='duty', canInsp=!auth||auth.r==='insp';
   const hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
   const num=(id,val,ph)=>`<input type="number" step="0.5" min="0" id="${id}" value="${val==null?'':esc(val)}" placeholder="${ph}" inputmode="decimal">`;
@@ -945,7 +952,7 @@ function outIssues(o,k,L){
   if(o.ws&&o.we&&tm(o.we)<tm(o.ws)) out.push(['r','เวลาเสร็จงานก่อนเวลาเริ่มปฏิบัติงาน']);
   const d=k.slice(0,10), p=k.slice(-2), mo=S.months[d.slice(0,7)], dy=mo&&mo.data.days[+d.slice(8,10)-1];
   const nx=new Date(Date.parse(d+'T00:00:00Z')+864e5).toISOString().slice(0,10);
-  const st=Date.parse(d+'T'+(p==='p1'?'00:30':dy&&dy.off?'08:30':'16:30')+':00+07:00'), en=p==='p1'?Date.parse(d+'T08:30:00+07:00'):Date.parse(nx+'T00:30:00+07:00');
+  const st=Date.parse(d+'T'+(p==='p1'?'00:30':p==='p2'||dy&&dy.off?'08:30':'16:30')+':00+07:00'), en=p==='p1'?Date.parse(d+'T08:30:00+07:00'):p==='p2'?Date.parse(d+'T16:30:00+07:00'):Date.parse(nx+'T00:30:00+07:00');
   if(!isNaN(off)&&(off<st-15*6e4||off>en)) out.push(['y','เวลาไฟดับ '+hmTh(o.off)+' น. อยู่นอกช่วงเวรนี้ ('+new Date(st+7*36e5).toISOString().slice(11,16).replace(':','.')+'–'+new Date(en+7*36e5).toISOString().slice(11,16).replace(':','.')+' น.) — ตรวจว่าบันทึกถูกเวรหรือไม่']);
   if(!o.cType) out.push(['y','ยังไม่ระบุสาเหตุ']);
   const dup=(L||[]).find(x=>x.id!==o.id&&x.feeder===o.feeder&&((x.dev&&x.dev.id)||'')===((o.dev&&o.dev.id)||'')&&Math.abs(tm(x.off)-off)<=15*6e4);
@@ -983,20 +990,24 @@ const devObj=d=>({id:d[0],type:d[1],rating:d[2],desc:d[3],lat:d[5],lon:d[6]});
 /* เวรพนักงานที่กำลังอยู่ตอนนี้ → 'yyyy-MM-dd|p1' / '|p3' */
 function curBlockKey(){ const t=new Date(Date.now()+7*3600e3), hm=t.toISOString().slice(11,16), today=t.toISOString().slice(0,10);
   if(hm<'00:30'){ const y=new Date(t.getTime()-864e5).toISOString().slice(0,10); return y+'|p3'; }
-  return today+(hm<'08:30'?'|p1':'|p3'); }
+  if(hm<'08:30') return today+'|p1';
+  if(hm<'16:30'&&isWorkdayK(today)) return today+'|p2';   // วันทำการ 08:30–16:30 ไม่มีเวรประจำ → ชุด "ในเวลาทำการ"
+  return today+'|p3'; }
+function isWorkdayK(ymd){ const mo=S.months[ymd.slice(0,7)], dy=mo&&mo.data.days[+ymd.slice(8,10)-1]; if(dy) return !dy.off; const w=new Date(ymd+'T00:00:00Z').getUTCDay(); return w>0&&w<6; }
 /* ---- การ์ดในหน้ารายงานการอยู่เวร ---- */
 /* ---- สิทธิ์แก้เหตุการณ์ไฟดับ: ผู้อนุมัติ = ทุกเวร · คนอยู่เวรชุดนั้น = เวรตัวเองที่ยังไม่ล็อก (หผ.ปร. รับเอกสารแล้ว = ล็อก) ---- */
 const OUT_WHY={dup:'บันทึกซ้ำ',wrong:'บันทึกผิดเวร',bad:'ไม่ใช่เหตุการณ์ไฟดับ / ข้อมูลผิด',other:'อื่น ๆ'};
 function outLocked(k){ const R=(S.reps&&S.reps[k.slice(0,7)])||LS.get('rp_'+k.slice(0,7))||{}, x=trackOf(k.slice(0,7)).find(y=>y.k===k); return !!((R[k]&&R[k].received)||(x&&x.received)); }
-function outInSet(k,short){ const mo=S.months[k.slice(0,7)]; if(!mo||!short) return false; const c=((mo.data.emp||{})[short]||[])[+k.slice(8,10)-1]; return k.endsWith('p1')?cHas(c,'1'):(cHas(c,'2')||cHas(c,'3')); }
+function outInSet(k,short){ const mo=S.months[k.slice(0,7)]; if(!mo||!short) return false; const c=((mo.data.emp||{})[short]||[])[+k.slice(8,10)-1]; return k.endsWith('p1')?cHas(c,'1'):k.endsWith('p2')?false:(cHas(c,'2')||cHas(c,'3')); }
 function outCan(k){
   const me=meInfo(), a=repAuthFor(k);
   if(me.appr||S.outPinAppr) return true;
+  if(k.endsWith('p2')) return !!hubCreds().user;   // ในเวลาทำการ: ทุกคนที่ล็อกอินศูนย์รวมงาน (สิทธิ์ตารางเวร) · ไม่มีล็อก
   if(outLocked(k)) return false;
   if(a&&a.r==='duty') return true;
   return !!(me.p&&outInSet(k,me.p.short));
 }
-const outKeyTxt=k=>{ const d=new Date(k.slice(0,10)+'T00:00:00Z'), mo=S.months[k.slice(0,7)], dy=mo&&mo.data.days[d.getUTCDate()-1]; return d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]+' '+(k.endsWith('p1')?'ช่วง 1':dy&&dy.off?'ช่วง 2+3':'ช่วง 3'); };
+const outKeyTxt=k=>{ const d=new Date(k.slice(0,10)+'T00:00:00Z'), mo=S.months[k.slice(0,7)], dy=mo&&mo.data.days[d.getUTCDate()-1]; return d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]+' '+(k.endsWith('p1')?'ช่วง 1':k.endsWith('p2')?'ในเวลาทำการ':dy&&dy.off?'ช่วง 2+3':'ช่วง 3'); };
 function outMetaHtml(o){
   const H=(o.hist||[]).slice().reverse(), F={lvl:'แรงดัน',off:'เวลาไฟดับ',on:'เวลาจ่ายไฟ',ws:'เริ่มปฏิบัติงาน',we:'เสร็จงาน',feeder:'ฟีดเดอร์',place:'สถานที่',cType:'สาเหตุ',cData:'สาเหตุย่อย',fix:'การแก้ไข',cust:'ผู้ใช้ไฟ',detail:'รายละเอียด',dev:'อุปกรณ์',mats:'อุปกรณ์ที่ใช้'};
   const v=x=>x==null||x===''?'(ว่าง)':/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(x)?x.slice(11,16):x==='hv'?'แรงสูง':x==='lv'?'แรงต่ำ':x;
@@ -1015,7 +1026,7 @@ function outDelDialog(o,k,auth,pin,done){
     ${tk?`<div class="oiss y">🔗 รายการนี้ปิดงานรับแจ้ง <b>${esc(tk)}</b> — ลบแล้วงานรับแจ้งจะกลับเป็น "กำลังแก้"</div>`:''}
     ${(o.photos||[]).length?`<div class="oiss b">📷 มีรูป ${o.photos.length} รูป — เก็บไว้ กู้คืนแล้วกลับมาครบ</div>`:''}
     ${o.fix==='temp'&&o.patrol&&o.patrol.id?'<div class="oiss y">จุดใน Patrol ไม่ถูกลบ — ถ้าบันทึกผิด ให้ปิดใน Patrol ด้วย</div>':''}
-    <div class="oiss r">ข้อ ${lv} ในบัญชีลงนามจะเปลี่ยน: ${T[g].n} → ${T2[g].n} ครั้ง · ${T[g].out} → ${T2[g].out} ชม.</div>
+    ${k.endsWith('p2')?'':`<div class="oiss r">ข้อ ${lv} ในบัญชีลงนามจะเปลี่ยน: ${T[g].n} → ${T2[g].n} ครั้ง · ${T[g].out} → ${T2[g].out} ชม.</div>`}
     <div class="muted" style="margin-top:6px">ลบแบบกู้คืนได้ — ดูได้ที่ "ลบแล้ว" ท้ายรายการไฟดับ</div><div id="odMsg"></div>
     <div class="grid2" style="margin-top:10px"><button type="button" class="btn ghost" id="odNo">ยกเลิก</button><button type="button" class="btn" id="odGo" style="background:#A23434" disabled>ลบ</button></div></div>`;
   document.body.appendChild(bg);
@@ -1028,13 +1039,13 @@ function outDelDialog(o,k,auth,pin,done){
 function outMoveDialog(o,k,auth,pin,done){
   // เวรที่ตรงกับเวลาไฟดับ: 00:30–08:30 = ช่วง 1 ของวันนั้น · 08:30–16:30 = ช่วง 2 (วันหยุด) · หลัง 16:30 / ก่อน 00:30 = ช่วง 3
   const off=o.off||'', d=off.slice(0,10), hm=off.slice(11,16), prev=new Date(Date.parse(d+'T00:00:00Z')-864e5).toISOString().slice(0,10);
-  const sug=hm<'00:30'?prev+'|p3':hm<'08:30'?d+'|p1':d+'|p3';
-  const near=[sug,d+'|p1',d+'|p3',prev+'|p3'].filter((x,i,a)=>a.indexOf(x)===i&&x!==k&&S.boot.months.some(m=>m.month===x.slice(0,7)));
+  const wd=isWorkdayK(d), sug=hm<'00:30'?prev+'|p3':hm<'08:30'?d+'|p1':hm<'16:30'&&wd?d+'|p2':d+'|p3';
+  const near=[sug,d+'|p1'].concat(wd?[d+'|p2']:[]).concat([d+'|p3',prev+'|p3']).filter((x,i,a)=>a.indexOf(x)===i&&x!==k&&S.boot.months.some(m=>m.month===x.slice(0,7)));
   const names=x=>{ const mo=S.months[x.slice(0,7)]; if(!mo) return ''; return Object.keys(mo.data.emp).filter(n=>outInSet(x,n)).join(', '); };
   const bg=document.createElement('div'); bg.className='rqov'; let to=near[0]||'';
   bg.innerHTML=`<div class="rqsh"><h4>⇄ ย้ายไปเวรที่ถูกต้อง</h4><div class="muted">ไฟดับ ${hmTh(off)} น. ${esc(isoShort(d))} — ตอนนี้อยู่ใน ${esc(outKeyTxt(k))}</div>
-    ${near.map(x=>`<button type="button" class="rqit ${x===to?'over':''}" data-to="${x}"><div style="flex:1"><b>${esc(outKeyTxt(x))}</b><div class="muted">${esc(names(x)||'—')}</div></div>${x===sug?'<span class="rqp g">ตรงเวลาไฟดับ</span>':''}</button>`).join('')}
-    <div class="oiss b">รูป ประวัติ และงานรับแจ้งที่ผูกอยู่ ย้ายตามไปด้วย · ข้อ ๒–๓ ของทั้งสองเวรคำนวณใหม่</div><div id="omMsg"></div>
+    ${near.map(x=>`<button type="button" class="rqit ${x===to?'over':''}" data-to="${x}"><div style="flex:1"><b>${esc(outKeyTxt(x))}</b><div class="muted">${esc(x.endsWith('p2')?'ไม่มีเวรประจำ · ไม่มีบัญชีลงนาม':names(x)||'—')}</div></div>${x===sug?'<span class="rqp g">ตรงเวลาไฟดับ</span>':''}</button>`).join('')}
+    <div class="oiss b">รูป ประวัติ และงานรับแจ้งที่ผูกอยู่ ย้ายตามไปด้วย · ข้อ ๒–๓ ของเวรที่เกี่ยวข้องคำนวณใหม่</div><div id="omMsg"></div>
     <div class="grid2" style="margin-top:10px"><button type="button" class="btn ghost" id="omNo">ยกเลิก</button><button type="button" class="btn" id="omGo" ${to?'':'disabled'}>ย้าย</button></div></div>`;
   document.body.appendChild(bg);
   bg.querySelectorAll('[data-to]').forEach(b=>b.onclick=()=>{ to=b.dataset.to; bg.querySelectorAll('[data-to]').forEach(x=>x.classList.toggle('over',x===b)); $('omGo').disabled=false; });
@@ -1052,13 +1063,14 @@ function outCardHtml(k,canEdit){
      ${(o.mats||[]).length?`<span class="opl">ใช้ ${esc(o.mats.map(m=>m.n+' ×'+m.q).join(', '))}</span>`:''}${(o.photos||[]).length?`<span class="opl">📷 ${o.photos.length} รูป</span>`:''}
      ${outIssues(o,k,L).map(([c,t])=>`<div class="oiss ${c}">${c==='r'?'❗':'⚠'} ${esc(t)}</div>`).join('')}
      ${o.fix==='temp'?(o.patrol&&o.patrol.id?`<span class="opl ok">Patrol: ${esc(o.patrol.status||'ส่งแล้ว')}</span>`:`<span class="opl warn">ยังไม่เข้า Patrol${o.patrol&&o.patrol.err?' — '+esc(o.patrol.err):''}</span>`):''}</div></div></div>`;
-  return `<div class="rp-sec"><h4>๒–๔. เหตุการณ์ไฟดับในเวรนี้</h4>
+  const P2=k.endsWith('p2');
+  return `<div class="rp-sec"><h4>${P2?'⚡ เหตุการณ์ไฟดับในเวลาทำการ':'๒–๔. เหตุการณ์ไฟดับในเวรนี้'}</h4>
     <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hmH((T.hv.outM||0)+(T.lv.outM||0))}</b><span>ชม. ไฟดับรวม</span></div></div>
     <div class="evl">${L.map(row).join('')||'<div class="muted" style="padding:8px 0">ยังไม่มีเหตุการณ์ไฟดับ</div>'}</div>
-    ${canEdit?'<button class="btn" type="button" id="outAdd" style="width:100%;margin-top:6px">＋ เพิ่มเหตุการณ์ไฟดับ</button>':`<div class="oiss ${outLocked(k)?'g':'b'}">${outLocked(k)?'🔒 ล็อกแล้ว (หผ.ปร. รับเอกสารแล้ว) — แก้ได้เฉพาะผู้อนุมัติ':'อ่านอย่างเดียว — แก้ได้เฉพาะคนอยู่เวรชุดนี้ หรือผู้อนุมัติ'} <button class="lnk" type="button" id="outPin" style="font-size:12.5px">ผู้อนุมัติ: ใส่ PIN เพื่อแก้</button></div>`}
+    ${canEdit?'<button class="btn" type="button" id="outAdd" style="width:100%;margin-top:6px">＋ เพิ่มเหตุการณ์ไฟดับ</button>':`<div class="oiss ${outLocked(k)?'g':'b'}">${outLocked(k)?'🔒 ล็อกแล้ว (หผ.ปร. รับเอกสารแล้ว) — แก้ได้เฉพาะผู้อนุมัติ':P2?'อ่านอย่างเดียว — ล็อกอินศูนย์รวมงานก่อนบันทึก (หรือใส่ PIN ผู้อนุมัติ)':'อ่านอย่างเดียว — แก้ได้เฉพาะคนอยู่เวรชุดนี้ หรือผู้อนุมัติ'} <button class="lnk" type="button" id="outPin" style="font-size:12.5px">ผู้อนุมัติ: ใส่ PIN เพื่อแก้</button></div>`}
     ${(()=>{ const D=outDelOf(S.dMonth,k); return D.length?`<details class="odel"><summary>ลบแล้ว (${D.length})</summary>${D.map(o=>`<div class="ev del"><span class="tag ${o.lvl}">${o.lvl==='hv'?'แรงสูง':'แรงต่ำ'}</span><div style="min-width:0;flex:1"><div class="t">${esc(outWhere(o)||'ไม่ระบุที่เกิดเหตุ')}</div><div class="d">ดับ ${hmTh(o.off)} – ${o.on?hmTh(o.on):'—'} · ลบโดย ${esc((o.del&&o.del.by)||'-')} ${o.del?esc(isoShort(o.del.at.slice(0,10)))+' '+new Date(new Date(o.del.at).getTime()+7*36e5).toISOString().slice(11,16):''}<br>เหตุผล: ${esc(o.del?(OUT_WHY[o.del.why]||o.del.why)+(o.del.note?' — '+o.del.note:''):'-')}</div>${canEdit||(S.outPin)?`<button class="btn ghost" type="button" data-rest="${esc(o.id)}" style="height:32px;padding:0 10px;font-size:12.5px;margin-top:6px">↩ กู้คืน</button>`:''}</div></div>`).join('')}</details>`:''; })()}
-    ${L.length?`<div class="oiss g">ในบัญชีลงนาม: ข้อ ๒ แรงสูง ${T.hv.n} ครั้ง ${T.hv.out} ชม. · ข้อ ๓ แรงต่ำ ${T.lv.n} ครั้ง ${T.lv.out} ชม.${L.some(o=>outIssues(o,k,L).length)?' · <b>มีรายการที่ควรตรวจ</b>':' ✓'}</div>`:''}
-    <div class="muted" style="margin-top:4px">ข้อ ๒–๔ ในบัญชีลงนามคำนวณจากรายการนี้ให้เอง</div></div>`;
+    ${L.length&&!P2?`<div class="oiss g">ในบัญชีลงนาม: ข้อ ๒ แรงสูง ${T.hv.n} ครั้ง ${T.hv.out} ชม. · ข้อ ๓ แรงต่ำ ${T.lv.n} ครั้ง ${T.lv.out} ชม.${L.some(o=>outIssues(o,k,L).length)?' · <b>มีรายการที่ควรตรวจ</b>':' ✓'}</div>`:''}
+    <div class="muted" style="margin-top:4px">${P2?'ไม่อยู่ในบัญชีลงนาม — นับรวมในสรุปเหตุการณ์ไฟดับประจำเดือน (แยกแหล่ง "ในเวลาทำการ")':'ข้อ ๒–๔ ในบัญชีลงนามคำนวณจากรายการนี้ให้เอง'}</div></div>`;
 }
 function bindOutCard(k,I,data){
   const a=$('outAdd'); if(a) a.onclick=()=>outForm(k,I,null,data);
@@ -1255,14 +1267,19 @@ function outSummaryPages(key,L,cfg){
   const byF={}; L.forEach(o=>{const f=o.feeder||'ไม่ระบุ', x=byF[f]=byF[f]||{hv:0,hvm:0,lv:0,lvm:0,cust:0}; x[o.lvl]++; x[o.lvl+'m']+=durMin(o.off,o.on)||0; x.cust+=o.cust||0;});
   const byC={}; L.forEach(o=>{const c=o.cType||'ไม่ทราบสาเหตุ'; byC[c]=(byC[c]||0)+1;});
   const temp=L.filter(o=>o.fix==='temp');
+  const SRC=[['p1','เวรช่วง 1'],['p3','เวรช่วง 2–3'],['p2','ในเวลาทำการ']].map(([p,l])=>{const t=outTotals(L.filter(o=>o.k.endsWith(p)));return {l,t};});
+  const srcT=`<div style="margin-top:3mm"><b>แยกตามแหล่งที่บันทึก</b></div><table class="an"><tr><th>แหล่ง</th><th>แรงสูง (ครั้ง)</th><th>ชม.</th><th>แรงต่ำ (ครั้ง)</th><th>ชม.</th></tr>
+    ${SRC.map(x=>`<tr><td style="text-align:left">${x.l}</td><td>${THD(x.t.hv.n)}</td><td>${THD(x.t.hv.out)}</td><td>${THD(x.t.lv.n)}</td><td>${THD(x.t.lv.out)}</td></tr>`).join('')}
+    <tr><th>รวม</th><th>${THD(T.hv.n)}</th><th>${THD(T.hv.out)}</th><th>${THD(T.lv.n)}</th><th>${THD(T.lv.out)}</th></tr></table>`;
   const dsh=o=>{const p=dParts(new Date(o.off.slice(0,10)+'T00:00:00Z'));return THD(p.d+' '+TH_MS[p.m]);};
   const head=`<div style="text-align:center;font-weight:700;font-size:18pt">สรุปเหตุการณ์ไฟฟ้าขัดข้องและอุปกรณ์ที่ใช้แก้ไข</div>
-    <div style="text-align:center;margin-bottom:3mm">${esc(cfg.office)} · ประจำเดือน ${mY} · บันทึกโดยพนักงานอยู่เวรแก้ไฟ</div>`;
+    <div style="text-align:center;margin-bottom:3mm">${esc(cfg.office)} · ประจำเดือน ${mY} · บันทึกโดยพนักงานอยู่เวรแก้ไฟ${L.some(o=>o.k.endsWith('p2'))?' และในเวลาทำการ':''}</div>`;
   const p1=`<div class="page a4l"><div class="doc m2" style="padding:12mm 14mm;font-size:15pt">${head}
     <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:8mm">
       <div><b>แยกตามฟีดเดอร์</b><table class="an"><tr><th>ฟีดเดอร์</th><th>แรงสูง (ครั้ง)</th><th>ชม.</th><th>แรงต่ำ (ครั้ง)</th><th>ชม.</th><th>ผู้ใช้ไฟ~</th></tr>
         ${Object.keys(byF).sort().map(f=>{const x=byF[f];return `<tr><td>${esc(f)}</td><td>${THD(x.hv)}</td><td>${THD(hmH(x.hvm))}</td><td>${THD(x.lv)}</td><td>${THD(hmH(x.lvm))}</td><td>${x.cust?THD(x.cust):'-'}</td></tr>`;}).join('')}
         <tr><th>รวม</th><th>${THD(T.hv.n)}</th><th>${THD(T.hv.out)}</th><th>${THD(T.lv.n)}</th><th>${THD(T.lv.out)}</th><th></th></tr></table>
+        ${srcT}
         <div style="margin-top:3mm"><b>แยกตามสาเหตุ</b> (ตามกลุ่มสาเหตุของ กฟภ.)</div>
         <table class="an">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<tr><td style="text-align:left">${esc(c)}</td><td style="width:22%">${THD(n)} ครั้ง</td></tr>`).join('')}</table></div>
       <div><b>อุปกรณ์ที่ใช้แก้ไขรวมทั้งเดือน</b><table class="an"><tr><th>รายการ</th><th>จำนวน</th></tr>${M.map(x=>`<tr><td style="text-align:left">${esc(x.n)}</td><td>${THD(x.q)} ${esc(x.u||'')}</td></tr>`).join('')||'<tr><td colspan="2">-</td></tr>'}</table>
@@ -1715,8 +1732,8 @@ function sheetInfo(key,data,d,part){
     if(part==='p1'&&cHas(c,'1')) ppl[n]='ช่วง 1';
     if(part==='p3'&&(cHas(c,'2')||cHas(c,'3'))) ppl[n]=cHas(c,'2')&&cHas(c,'3')?'ช่วง 2+3':cHas(c,'2')?'ช่วง 2':'ช่วง 3';});
   const names=Object.keys(ppl).sort((x,y)=>rank(x)-rank(y));
-  const t0=part==='p1'?'00:30':day.off?'08:30':'16:30', t1=part==='p1'?'08:30':'00:30';
-  const a=dOf(key,d), b=part==='p1'?a:dOf(key,d+1);
+  const t0=part==='p1'?'00:30':part==='p2'||day.off?'08:30':'16:30', t1=part==='p1'?'08:30':part==='p2'?'16:30':'00:30';
+  const a=dOf(key,d), b=part!=='p3'?a:dOf(key,d+1);
   return {names,ppl,t0,t1,a,b,day,insp:(data.insp||[])[d-1]||'',k:key+'-'+String(d).padStart(2,'0')+'|'+part};
 }
 const tTh=t=>THD(String(t||'').replace(':','.'));

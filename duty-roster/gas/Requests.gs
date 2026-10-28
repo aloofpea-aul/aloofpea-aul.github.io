@@ -530,9 +530,23 @@ function outagesOf_(month, withDel) {
  *  ผู้อนุมัติ (PIN / บัญชีศูนย์รวมงานที่ตรงชีต Approvers) = ทุกเวร แม้ล็อกแล้ว
  *  คนอยู่เวรชุดนั้น (ลิงก์ LINE ของเวรนี้ / บัญชีศูนย์รวมงานที่มีชื่ออยู่ในเวรนี้) = เฉพาะเวรตัวเอง และต้องยังไม่ล็อก
  *  ล็อก = หผ.ปร. กด "รับเอกสารแล้ว" ของเวรนั้น · คืน { by, appr } */
+/** ชุด "ในเวลาทำการ" (yyyy-mm-dd|p2) — เฉพาะวันทำการ 08:30–16:30 ที่ไม่มีเวรประจำ */
+function isWorkday_(ymd) {
+  const dw = new Date(ymd + 'T00:00:00Z').getUTCDay();
+  if (dw === 0 || dw === 6) return false;
+  return peaHolidaysOf_(Number(ymd.slice(0, 4)), Number(ymd.slice(5, 7))).indexOf(ymd) < 0;
+}
+const OUT_K_RE_ = /^\d{4}-\d{2}-\d{2}\|p[123]$/;
+function outKeyOk_(k) { return OUT_K_RE_.test(k) && (k.slice(-2) !== 'p2' || isWorkday_(k.slice(0, 10))); }
 function outPerm_(b, k) {
   const who = approverOf_(b);
   if (who) return { by: who.short || who.name, appr: true };
+  if (k.slice(-2) === 'p2') {   // ในเวลาทำการ: ทุกคนที่มีสิทธิ์ตารางเวรในศูนย์รวมงาน · ไม่มีบัญชีลงนาม จึงไม่มีล็อก
+    if (!(b.hubUser && b.hubPass)) throw new Error('ล็อกอินศูนย์รวมงานก่อนบันทึกไฟดับในเวลาทำการ');
+    if (!hubAllowed_(String(b.hubUser), String(b.hubPass))) throw new Error('บัญชีศูนย์รวมงานนี้ไม่มีสิทธิ์ใช้ตารางเวร');
+    const nn = normN_(b.hubUser), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
+    return { by: pr ? pr.short : String(b.hubUser), appr: false };
+  }
   let by = null;
   if (b.r === 'duty' && b.t) {
     if (Number(b.x) < Date.now() || repToken_(String(b.rk || k), b.u, 'duty', b.x) !== b.t) throw new Error('ลิงก์หมดอายุ — ขอลิงก์ใหม่ทาง LINE (พิมพ์ "รายงานเวร")');
@@ -558,7 +572,7 @@ function outHist_(d, by, act, extra) {
   d.hist = (Array.isArray(d.hist) ? d.hist : []).concat([Object.assign({ at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by: by, act: act }, extra || {})]).slice(-30);
 }
 function saveOutage_(b) {
-  const k = String(b.k || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k)) throw new Error('รหัสเวรไม่ถูกต้อง');
+  const k = String(b.k || ''); if (!outKeyOk_(k)) throw new Error('รหัสเวรไม่ถูกต้อง');
   const P = outPerm_(b, k), by = P.by, o = b.o || {};
   if (o.lvl !== 'hv' && o.lvl !== 'lv') throw new Error('เลือกระดับแรงดัน');
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(o.off || ''))) throw new Error('ใส่เวลาไฟดับ');
@@ -628,12 +642,14 @@ function restoreOutage_(b) {
 }
 /** ย้ายไปเวรที่ถูกต้อง — ต้องมีสิทธิ์ทั้งเวรต้นทางและเวรปลายทาง (คนอยู่เวร: ปลายทางต้องยังไม่ล็อก) */
 function moveOutage_(b) {
-  const id = String(b.id || ''), to = String(b.to || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(to)) throw new Error('เวรปลายทางไม่ถูกต้อง');
+  const id = String(b.id || ''), to = String(b.to || ''); if (!outKeyOk_(to)) throw new Error('เวรปลายทางไม่ถูกต้อง (ในเวลาทำการใช้ได้เฉพาะวันทำการ)');
   const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0]; if (!x) throw new Error('ไม่พบรายการ');
   if (x.k === to) throw new Error('อยู่เวรนี้อยู่แล้ว');
   const P = outPerm_(b, x.k), by = P.by;
   if (!getMonth_(to.slice(0, 7))) throw new Error('ไม่พบตารางเดือน ' + to.slice(0, 7));
-  if (!P.appr) { const R = reportsOf_(to.slice(0, 7))[to]; if (R && R.received) throw new Error('เวรปลายทางล็อกแล้ว — ให้ผู้อนุมัติย้าย'); }
+  // จากชุดในเวลาทำการ (ใครก็บันทึกได้) ไปเข้าเวร → ต้องเป็นคนอยู่เวรปลายทางหรือผู้อนุมัติ กันรายการเข้าบัญชีลงนามของคนอื่น
+  if (!P.appr && x.k.slice(-2) === 'p2' && to.slice(-2) !== 'p2') outPerm_(b, to);
+  if (!P.appr) { const R = to.slice(-2) === 'p2' ? null : reportsOf_(to.slice(0, 7))[to]; if (R && R.received) throw new Error('เวรปลายทางล็อกแล้ว — ให้ผู้อนุมัติย้าย'); }
   const d = x.d, from = x.k; d.k = to; outHist_(d, by, 'move', { from: from, to: to });
   outSheet_().getRange(x.row, 2, 1, 4).setValues([["'" + to, JSON.stringify(d), new Date(), by]]);
   outUnlock_(from, P); outUnlock_(to, P);
