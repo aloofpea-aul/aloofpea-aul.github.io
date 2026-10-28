@@ -397,6 +397,7 @@ function doGet(e) {
     if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
     if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m) });
+    if (a === 'repTrack') return json_({ ok: true, items: repTrack_(String(q.m || '')), from: repTrackFrom_() });
     if (a === 'sldPing') { const x = sldSS_(), f = x.getSheetByName('PatrolFinding'); return json_({ ok: true, sheet: x.getName(), patrol: !!f }); }
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) { return json_({ ok: false, error: String(err.message || err) }); }
@@ -417,6 +418,7 @@ function doPost(e) {
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- รายงานเวร: ลิงก์มีลายเซ็นจาก LINE หรือ PIN ผู้อนุมัติ ----
     if (b.action === 'saveReport') return json_({ ok: true, report: saveReport_(b) });
+    if (b.action === 'repMark') return json_({ ok: true, result: repMark_(b) });
     if (b.action === 'saveOutage') return json_({ ok: true, outage: saveOutage_(b) });
     if (b.action === 'deleteOutage') return json_({ ok: true, result: deleteOutage_(b) });
     if (b.action === 'addOutPhotos') return json_({ ok: true, outage: addOutPhotos_(b) });

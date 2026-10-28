@@ -349,8 +349,18 @@ const INSP_FIELDS_ = ['insp'];
 function saveReport_(b) {
   const k = String(b.k || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k)) throw new Error('รหัสรายงานไม่ถูกต้อง');
   let fields, by;
-  const who = approverByPin_(b.pin);
+  const who = approverOf_(b);
+  let hubP = null;                                          // บัญชีศูนย์รวมงานของคนอยู่เวร / ผู้ตรวจเวรของวันนั้น
+  if (!who && b.hubUser && b.hubPass && !b.t && hubAllowed_(String(b.hubUser), String(b.hubPass))) {
+    const nn = normN_(b.hubUser), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
+    if (pr) {
+      const ymd = k.slice(0, 10), c = empCode_(ymd, pr.short), inSet = k.slice(-2) === 'p1' ? cHas_(c, '1') : (cHas_(c, '2') || cHas_(c, '3'));
+      if (inSet) hubP = { short: pr.short, f: DUTY_FIELDS_ }; else if (inspOf_(ymd) === pr.short) hubP = { short: pr.short, f: INSP_FIELDS_ };
+    }
+    if (!hubP) throw new Error('บัญชีนี้ไม่ได้อยู่เวรชุดนี้ — ใช้ลิงก์จาก LINE หรือ PIN ผู้อนุมัติ');
+  }
   if (who) { fields = DUTY_FIELDS_.concat(INSP_FIELDS_); by = who.short || who.name; }
+  else if (hubP) { fields = hubP.f; by = hubP.short; }
   else {
     if (!b.t || Number(b.x) < Date.now() || repToken_(b.r === 'insp' ? k.slice(0, 10) : k, b.u, b.r, b.x) !== b.t) throw new Error('ลิงก์หมดอายุหรือไม่ถูกต้อง — ขอลิงก์ใหม่ทาง LINE (พิมพ์ "รายงานเวร" หรือ "ตรวจเวร")');
     if (b.r === 'insp') { if (b.k.slice(0, 10) !== k.slice(0, 10)) throw new Error('ไม่ใช่วันที่ตรวจ'); fields = INSP_FIELDS_; }
@@ -362,6 +372,7 @@ function saveReport_(b) {
   for (let i = 0; i < v.length; i++) if (String(v[i][0]).replace(/^'/, '') === k) { row = i + 2; try { cur = JSON.parse(v[i][1] || '{}'); } catch (e) {} break; }
   fields.forEach(function (f) { if (b.data && f in b.data) cur[f] = b.data[f]; });
   if (fields === INSP_FIELDS_ && cur.insp) cur.insp.by = by;
+  if (fields !== INSP_FIELDS_ && !cur.filledAt && repFilled_(cur)) cur.filledAt = Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd'T'HH:mm");
   const rec = ["'" + k, JSON.stringify(cur), new Date(), by];
   if (row > 0) sh.getRange(row, 1, 1, 4).setValues([rec]); else sh.appendRow(rec);
   log_(by, 'รายงานเวร', k.slice(0, 7), k + ' ' + fields.join(','));
@@ -787,6 +798,7 @@ function tkNotify_(d, again) {
 }
 /** ทุก 5 นาที: รายการที่ยังไม่มีคนรับเกิน 10 นาที → เตือนซ้ำครั้งเดียว */
 function tkCheck() {
+  try { repRemindDaily_(); } catch (e) { log_('system', 'เตือนรายงานเวรไม่สำเร็จ', '', String(e)); }
   const now = Date.now();
   tkRows_().forEach(function (x) {
     if (x.st !== 'new' || x.d.again) return;
@@ -849,4 +861,112 @@ function tkFromLine_(text, by) {
   try { tkNotify_(d, false); } catch (e) {}
   try { tkEnsureTrigger_(); } catch (e) {}
   return d;
+}
+
+/* ======================================================================
+ *  ติดตามรายงานการอยู่เวร — กำหนดส่ง 3 วันหลังวันเข้าเวร (ถึง 23:59)
+ *  ขั้น: กรอก (คนอยู่เวร) → ตรวจ (ผู้ตรวจเวร, อีก 3 วันหลังกรอก) → พิมพ์ → หผ.ปร. รับเอกสาร = ปิด
+ *  เริ่มติดตามตั้งแต่ config.repTrackFrom (ค่าเริ่มต้น 2026-10-28) — ก่อนหน้านั้นไม่ทวง
+ * ====================================================================== */
+const REP_DUE_DAYS_ = 3;
+function repTrackFrom_() { const v = getConfig_().repTrackFrom; return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v || '2026-10-28').slice(0, 10); }
+function normN_(s) { return String(s || '').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').replace(/\s+/g, '').toLowerCase(); }
+function repFilled_(r) { return !!r && ['arr', 'dep', 'hv', 'lv', 'temp', 'comm', 'att', 'other'].some(function (f) { return r[f] != null && r[f] !== ''; }); }
+function dayDiff_(a, b) { return Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86400000); }
+/** รายการติดตามของเดือน (เฉพาะชุดเวรที่ลงเวรแล้ว) */
+function repTrack_(month) {
+  const mo = getMonth_(month); if (!mo) return [];
+  const R = reportsOf_(month), now = Date.now(), today = bkkYmd_(), from = repTrackFrom_(), out = [];
+  mo.data.days.forEach(function (dd, i) {
+    const ymd = month + '-' + ('0' + (i + 1)).slice(-2); if (ymd < from) return;
+    ['p1', 'p3'].forEach(function (p) {
+      const names = Object.keys(mo.data.emp).filter(function (n) { const c = mo.data.emp[n][i]; return p === 'p1' ? cHas_(c, '1') : (cHas_(c, '2') || cHas_(c, '3')); });
+      if (!names.length) return;
+      const any3 = names.some(function (n) { return cHas_(mo.data.emp[n][i], '3'); });
+      const end = p === 'p1' ? new Date(ymd + 'T08:30:00+07:00').getTime() : any3 ? new Date(addDays_(ymd, 1) + 'T00:30:00+07:00').getTime() : new Date(ymd + 'T16:30:00+07:00').getTime();
+      if (end > now) return;
+      const k = ymd + '|' + p, r = R[k], filled = repFilled_(r);
+      const insp = (mo.data.insp || [])[i] || '', inspected = !!(r && r.insp && r.insp.complete != null);
+      const due = addDays_(ymd, REP_DUE_DAYS_);
+      const fd = r && r.filledAt ? String(r.filledAt).slice(0, 10) : (r && r._at ? (function (s) { const m = String(s).match(/^(\d+)\/(\d+)\/(\d+)/); return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : today; })(r._at) : today);
+      const inspDue = addDays_(fd, REP_DUE_DAYS_);
+      let st = !filled ? 'fill' : !inspected ? 'insp' : !(r.received) ? 'recv' : 'done';
+      const d0 = st === 'fill' ? due : st === 'insp' ? inspDue : '';
+      const left = d0 ? dayDiff_(today, d0) : null;
+      out.push({ k: k, d: i + 1, p: p, label: p === 'p1' ? 'ช่วง 1' : (names.some(function (n) { return cHas_(mo.data.emp[n][i], '2'); }) ? 'ช่วง 2+3' : 'ช่วง 3'),
+        names: names, insp: insp, st: st, due: d0, left: left, over: left != null && left < 0,
+        printed: r && r.printed ? r.printed : null, received: r && r.received ? r.received : null });
+    });
+  });
+  return out;
+}
+/** เตือนรายวัน (เรียกจาก tkCheck ทุก 5 นาที — ทำวันละครั้งหลัง 08:30) */
+function repRemindDaily_() {
+  const now = new Date(), today = bkkYmd_(now), hm = Utilities.formatDate(now, TZ, 'HH:mm');
+  const props = PropertiesService.getScriptProperties();
+  if (hm < '08:30' || props.getProperty('REP_REM') === today) return;
+  props.setProperty('REP_REM', today);
+  const months = [today.slice(0, 7), addDays_(today.slice(0, 7) + '-01', -1).slice(0, 7)];
+  const over = [];
+  months.forEach(function (m) {
+    repTrack_(m).forEach(function (x) {
+      if (x.st === 'fill' && x.left === 0) x.names.forEach(function (n) { repNotify_(x, n, 'fill'); });
+      if (x.st === 'insp' && x.left === 0 && x.insp) repNotify_(x, x.insp, 'insp');
+      if (x.over) over.push(x);
+    });
+  });
+  if (over.length) {
+    const L = over.map(function (x) { return '• ' + thShortD_(x.k.slice(0, 10)) + ' ' + x.label + ' — ' + (x.st === 'fill' ? x.names.join(', ') : 'ผู้ตรวจ ' + (x.insp || '-')) + ' (เกิน ' + (-x.left) + ' วัน)'; });
+    const u = webUrl_('viewReport', { kind: 'track', m: today.slice(0, 7) }), btn = u ? [{ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูทั้งหมดในแอป', uri: u } }] : null;
+    approverList_().forEach(function (a) { const id = lineIdOf_(a.short); if (id) push_(id, [flex_('รายงานเวรเกินกำหนด', bubble_('สรุปรายงานเวรเกินกำหนด', '#C92A2A', 'ค้าง ' + over.length + ' รายการ', L.slice(0, 15), btn))], 'change'); });
+  }
+  log_('system', 'เตือนรายงานเวร', today.slice(0, 7), 'เกินกำหนด ' + over.length);
+}
+function repNotify_(x, short, kind) {
+  const ymd = x.k.slice(0, 10), link = kind === 'insp' ? repLink_(ymd, short, 'insp') : repLink_(x.k, short, 'duty');
+  const body = kind === 'insp'
+    ? ['คุณ' + short + ' ยังไม่ได้ตรวจเวร', thShortD_(ymd) + ' ' + x.label + ' (' + x.names.join(', ') + ')', x.over ? 'เกินกำหนดแล้ว ' + (-x.left) + ' วัน' : 'ครบกำหนดวันนี้ 23:59 น. — เกินกำหนดจะแจ้ง หผ.ปร.']
+    : ['คุณ' + short + ' ยังไม่ได้ลงรายงานการอยู่เวร', thShortD_(ymd) + ' ' + x.label + (x.names.length > 1 ? ' (กับ ' + x.names.filter(function (n) { return n !== short; }).join(', ') + ')' : ''), x.over ? 'เกินกำหนดแล้ว ' + (-x.left) + ' วัน' : 'ส่งภายในวันนี้ 23:59 น. — เกินกำหนดจะแจ้ง หผ.ปร.'];
+  const btn = link ? [{ type: 'button', style: 'primary', color: '#5B1A63', height: 'sm', action: { type: 'uri', label: kind === 'insp' ? 'ตรวจเวร' : 'ลงรายงานการอยู่เวร', uri: link } }] : null;
+  notifyPeople_([short], kind === 'insp' ? 'เตือนตรวจเวร' : 'เตือนลงรายงานการอยู่เวร', body.join('\n'), x.over ? '#C92A2A' : '#E8590C', (x.over ? 'เกินกำหนด · ' : 'ครบกำหนดวันนี้ · ') + x.label + ' ' + thShortD_(ymd), btn);
+}
+/** ผู้อนุมัติจาก PIN หรือบัญชีศูนย์รวมงานที่ชื่อตรงกับชีต Approvers */
+function approverOf_(b) {
+  const w = approverByPin_(b.pin); if (w) return w;
+  if (b.hubUser && b.hubPass && hubAllowed_(String(b.hubUser), String(b.hubPass))) {
+    const nn = normN_(b.hubUser);
+    return approverList_().filter(function (a) { return normN_(a.name) === nn || normN_(a.short) === nn; })[0] || null;
+  }
+  return null;
+}
+function repSetMeta_(k, patch) {
+  const sh = repSheet_(), v = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues() : [];
+  for (let i = 0; i < v.length; i++) if (String(v[i][0]).replace(/^'/, '') === k) {
+    let cur = {}; try { cur = JSON.parse(v[i][1] || '{}'); } catch (e) {}
+    Object.keys(patch).forEach(function (f) { if (patch[f] === null) delete cur[f]; else cur[f] = patch[f]; });
+    sh.getRange(i + 2, 2).setValue(JSON.stringify(cur)); return true;
+  }
+  return false;
+}
+/** พิมพ์แล้ว (ใครก็ได้ที่กดพิมพ์จากแอป) / รับเอกสารแล้ว (ผู้อนุมัติ) / เตือนซ้ำ (ผู้อนุมัติ) */
+function repMark_(b) {
+  const at = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  const keys = (Array.isArray(b.keys) ? b.keys : [b.k]).map(String).filter(function (k) { return /^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k); }).slice(0, 70);
+  if (b.what === 'printed') { let n = 0; keys.forEach(function (k) { if (repSetMeta_(k, { printed: at })) n++; }); return { n: n }; }
+  const who = approverOf_(b); if (!who) throw new Error('เฉพาะผู้อนุมัติ (ใส่ PIN หรือเข้าด้วยบัญชีศูนย์รวมงานของผู้อนุมัติ)');
+  if (b.what === 'received' || b.what === 'unreceive') {
+    let n = 0; keys.forEach(function (k) { if (repSetMeta_(k, { received: b.what === 'received' ? at + ' ' + (who.short || who.name) : null })) n++; });
+    log_(who.short || who.name, b.what === 'received' ? 'รับเอกสารรายงานเวร' : 'ยกเลิกรับเอกสาร', keys[0] ? keys[0].slice(0, 7) : '', keys.join(','));
+    return { n: n };
+  }
+  if (b.what === 'nudge') {
+    let n = 0; keys.forEach(function (k) {
+      const x = repTrack_(k.slice(0, 7)).filter(function (y) { return y.k === k; })[0]; if (!x) return;
+      if (x.st === 'fill') x.names.forEach(function (s) { repNotify_(x, s, 'fill'); n++; });
+      else if (x.st === 'insp' && x.insp) { repNotify_(x, x.insp, 'insp'); n++; }
+    });
+    log_(who.short || who.name, 'เตือนรายงานเวรซ้ำ', keys[0] ? keys[0].slice(0, 7) : '', keys.join(','));
+    return { n: n };
+  }
+  throw new Error('คำสั่งไม่ถูกต้อง');
 }

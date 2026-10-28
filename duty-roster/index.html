@@ -56,6 +56,12 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .days button.off{background:var(--off);color:var(--offf)}.days button.hol{background:#DCE5F6;color:#1F3F80}
 .days button{position:relative}.days button i.cd{position:absolute;bottom:3px;left:50%;margin-left:-3px;width:6px;height:6px;border-radius:50%;background:#E08A00}
 .days button.on i.cd{background:#FFD27A}
+.days button i.rqb{position:absolute;bottom:2px;left:50%;margin-left:-9px;width:18px;height:3px;border-radius:2px;background:#C92A2A}.days button.on i.rqb{background:#fff}.days button.rqd i.cd{bottom:7px}
+.rqp{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}.rqp.o{background:#FFF1D6;color:#7A4A00}.rqp.r{background:#FDECEC;color:#9B1C1C}.rqp.b{background:#E3E6FA;color:#26307A}.rqp.g{background:#E6F4E8;color:#1F5A2A}.rqp.n{background:#EEE;color:#555}
+.rqov{position:fixed;inset:0;background:rgba(20,10,25,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:10px}
+.rqsh{background:#fff;border-radius:18px;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.rqsh h4{margin:0 0 4px;font-size:17px}.rqit{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;cursor:pointer;background:#fff;width:100%;text-align:left}.rqit.over{border-color:#EBA3A3;background:#FFF7F7}
+.trk td,.trk th{padding:6px 4px;border-bottom:1px solid #EEE9F1;text-align:left;font-size:13px;vertical-align:middle}.trk th{font-size:11.5px;color:var(--mut);font-weight:400}.trk{width:100%;border-collapse:collapse}
 .days button i.tw{position:absolute;top:1px;right:1px;display:flex;font-style:normal}
 .tw span,.tlg span{display:inline-block;width:12px;height:12px;border-radius:50%;background:#F59F00;color:#fff;font:700 9px/12px sans-serif;text-align:center;box-shadow:0 0 0 1.5px #fff}
 .tw span+span,.tlg span+span{margin-left:-4px}.tw span.k,.tlg span.k{background:#E8590C}.tw span.hi,.tlg span.hi{background:#C92A2A}
@@ -326,7 +332,7 @@ fieldset:disabled{opacity:.55}
         <label class="f">เดือน<select id="rMonth"></select></label>
         <label class="f">รายงาน<select id="rKind">
           <optgroup label="ตารางเวรประจำเดือน"><option value="emp">พนักงาน (บันทึก + คำสั่ง)</option><option value="wk">คนงาน</option><option value="all">ทั้งหมด 3 แผ่น</option><option value="chg">รายการเปลี่ยนแปลงเวร (แนบเบิกค่าตอบแทน)</option></optgroup>
-          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option><option value="insporder">คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน)</option><option value="outsum">สรุปไฟดับ + อุปกรณ์ที่ใช้ (รายเดือน)</option></optgroup></select></label>
+          <optgroup label="เอกสารประกอบ"><option value="leave">บันทึกขออนุมัติลาเวร / จัดเวรแทน</option><option value="leavelog">แบบฟอร์มบันทึกการลา (รายเดือน)</option><option value="sign">บัญชีลงนามการอยู่เวร (รายวัน)</option><option value="insporder">คำสั่งแต่งตั้งผู้ตรวจเวร (รายเดือน)</option><option value="outsum">สรุปไฟดับ + อุปกรณ์ที่ใช้ (รายเดือน)</option></optgroup><optgroup label="ติดตาม"><option value="track">ติดตามรายงานการอยู่เวร (กำหนดส่ง 3 วัน)</option></optgroup></select></label>
         <label class="f rRoster">วันที่เสนอ / สั่ง ณ วันที่<input type="date" id="rDate"></label>
         <label class="f rRoster">สถานะ<select id="rStatus"><option>ร่าง</option><option>อนุมัติแล้ว</option></select></label>
         <label class="f rDoc rLeave hide" style="grid-column:1/-1">ฉบับ<select id="rItem"></select></label>
@@ -629,6 +635,7 @@ async function renderDaily(){
   const chDays=new Set((data.changes||[]).filter(c=>c.g===S.dGroup).map(c=>c.day));
   $('dDays').innerHTML=data.days.map(d=>`<button data-d="${d.d}" class="${d.hol?'hol':d.off?'off':''} ${d.d===S.dDay?'on':''}"${chDays.has(d.d)?' aria-label="'+d.d+' มีการเปลี่ยนเวร"':''}><small>${TH_WD[d.wd]}</small><b>${d.d}</b>${chDays.has(d.d)?'<i class="cd"></i>':''}</button>`).join('');
   $('dDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.dDay=+b.dataset.d;renderDaily();});
+  paintRepDue(S.dMonth); loadTrack(S.dMonth); { const ck=todayIso().slice(0,7); if(S.dMonth!==ck) loadTrack(ck); if(+todayIso().slice(8,10)<=7&&(S.boot.months||[]).some(x=>x.month===prevKey(ck))) loadTrack(prevKey(ck)); } repPopup();
   { const st=$('dDays'), on=st.querySelector('.on'); if(on) st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2); }   // เลื่อนเฉพาะแถบวันที่ ไม่ให้ทั้งหน้าเลื่อนตาม (iPhone)
   const day=data.days[S.dDay-1],{m}=parseKey(S.dMonth);
   $('dTitle').textContent=TH_WDF[day.wd]+' '+day.d+' '+TH_MS[m-1];
@@ -751,6 +758,71 @@ function setBadge(st){const b=$('hdrBadge');b.textContent=st||'';b.className='ba
 
 /* ---------- ผู้ตรวจเวร + รายงานการอยู่เวร (หน้าเวรรายวัน) ---------- */
 S.repOpen=null;
+/* ---------- ติดตามรายงานการอยู่เวร (กำหนดส่ง 3 วันหลังวันเข้าเวร) ---------- */
+const prevKey=k=>{const {y,m}=parseKey(k);return m===1?(y-1)+'-12':y+'-'+String(m-1).padStart(2,'0');};
+function trackOf(key){ return (S.track&&S.track[key])||LS.get('trk_'+key)||[]; }
+function loadTrack(key,force){
+  S.track=S.track||{}; S.trackAt=S.trackAt||{};
+  if(!force&&S.trackAt[key]&&Date.now()-S.trackAt[key]<120e3) return Promise.resolve(trackOf(key));
+  S.trackAt[key]=Date.now();
+  return apiGet({action:'repTrack',m:key}).then(j=>{ if(j.from){ const d=new Date(j.from+'T00:00:00Z'); S.trackFrom=d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]+' '+(d.getUTCFullYear()+543); } const ch=JSON.stringify(j.items)!==JSON.stringify(trackOf(key)); S.track[key]=j.items; LS.set('trk_'+key,j.items);
+    if(ch){ if(currentView()==='viewDaily'&&S.dMonth===key){ paintRepDue(key); if(S.months[key]) renderRepCard(S.months[key].data); } if(currentView()==='viewReport'&&$('rKind').value==='track') drawTrack(); }
+    repPopup(); return j.items; }).catch(()=>trackOf(key));
+}
+const dueTxt=x=>x.left==null?'':x.left<0?'เกิน '+(-x.left)+' วัน':x.left===0?'ครบกำหนดวันนี้':'เหลือ '+x.left+' วัน';
+function paintRepDue(key){
+  if(currentView()!=='viewDaily'||S.dMonth!==key||S.dGroup!=='emp') { document.querySelectorAll('#dDays i.rqb').forEach(x=>x.remove()); return; }
+  const days=new Set(trackOf(key).filter(x=>x.st==='fill').map(x=>x.d));
+  document.querySelectorAll('#dDays button').forEach(b=>{ const on=days.has(+b.dataset.d); b.classList.toggle('rqd',on); let i=b.querySelector('i.rqb'); if(on&&!i){ i=document.createElement('i'); i.className='rqb'; b.appendChild(i); b.setAttribute('aria-label',(b.getAttribute('aria-label')||b.dataset.d)+' รายงานเวรยังไม่ส่ง'); } else if(!on&&i) i.remove(); });
+}
+/* popup ตอนเปิดแอป: เฉพาะคนที่มีรายงาน/ตรวจเวรค้าง · ไว้ทีหลัง = ไม่ขึ้นอีกจนพรุ่งนี้ (ยกเว้นรายการครบกำหนดวันนี้/เกินกำหนด ขึ้นทุกครั้งที่เปิดแอป) */
+function repPopup(){
+  if(S.repPopShown||currentView()!=='viewDaily'||!S.boot) return;
+  const m=meInfo(); if(!m.p||m.p.g!=='emp') return;
+  const cur=todayIso().slice(0,7), L=[...trackOf(prevKey(cur)),...trackOf(cur)];
+  const mine=L.filter(x=>(x.st==='fill'&&x.names.includes(m.p.short))||(x.st==='insp'&&x.insp===m.p.short));
+  if(!mine.length) return;
+  const urgent=mine.some(x=>x.left!=null&&x.left<=0); let dis=null; try{ dis=localStorage.getItem('repPopDay'); }catch(e){}
+  if(!urgent&&dis===todayIso()) return;
+  S.repPopShown=true;
+  mine.sort((a,b)=>(a.left??99)-(b.left??99));
+  const ov=document.createElement('div'); ov.className='rqov';
+  const lab=x=>{ const d=new Date(x.k.slice(0,10)+'T00:00:00Z'); return TH_WD[d.getUTCDay()]+'. '+d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]+' · '+x.label; };
+  ov.innerHTML=`<div class="rqsh" role="dialog" aria-modal="true"><h4>📝 ${mine.some(x=>x.st==='fill')?'รายงานการอยู่เวรค้าง':'ตรวจเวรค้าง'} ${mine.length} รายการ</h4>
+    <div class="muted">ส่งภายใน 3 วันหลังวันเข้าเวร — เกินกำหนดระบบจะแจ้ง หผ.ปร.</div>
+    ${mine.map((x,i)=>`<button class="rqit ${x.over?'over':''}" data-i="${i}"><div style="flex:1;min-width:0"><b>${esc(lab(x))}</b><div class="muted">${x.st==='insp'?'ผู้ตรวจเวร · ยังไม่ได้ตรวจ':x.names.length>1?'กับ '+esc(x.names.filter(n=>n!==m.p.short).join(', ')):'ยังไม่ได้กรอก'}</div></div><span class="rqp ${x.over?'r':'o'}">${dueTxt(x)}</span></button>`).join('')}
+    <button class="btn" id="rqGo" style="width:100%;margin-top:12px">${mine[0].st==='insp'?'ตรวจเวรรายการแรก':'กรอกรายงานรายการแรก'}</button>
+    <button class="btn ghost" id="rqLater" style="width:100%;margin-top:8px">ไว้ทีหลัง</button></div>`;
+  document.body.appendChild(ov);
+  const go=x=>{ ov.remove(); S.dMonth=x.k.slice(0,7); S.dDay=+x.k.slice(8,10); S.dGroup='emp'; if($('dMonth')) $('dMonth').value=S.dMonth; S.repOpen=x.k; renderDaily().then(()=>{ const e=$('dRep'); e&&e.scrollIntoView({block:'start',behavior:'smooth'}); }); };
+  ov.querySelectorAll('.rqit').forEach(b=>b.onclick=()=>go(mine[+b.dataset.i]));
+  $('rqGo').onclick=()=>go(mine[0]);
+  $('rqLater').onclick=()=>{ try{ localStorage.setItem('repPopDay',todayIso()); }catch(e){} ov.remove(); };
+  ov.addEventListener('click',e=>{ if(e.target===ov) $('rqLater').onclick(); });
+}
+/* หน้าติดตาม (แท็บรายงาน) — ผู้อนุมัติกดเตือนซ้ำ / รับเอกสารแล้ว */
+async function drawTrack(){
+  const key=$('rMonth').value; if(key==='__preview'){ $('printArea').innerHTML='<div class="note warn">เลือกเดือนที่บันทึกแล้ว</div>'; return; }
+  const PA=$('printArea'); if(!trackOf(key).length) PA.innerHTML='<div class="loading">กำลังโหลด…</div>';
+  const paint=L=>{
+    if($('rKind').value!=='track'||$('rMonth').value!==key) return;
+    const cnt=t=>L.filter(t).length, S0=[['r','เกินกำหนด',x=>(x.st==='fill'||x.st==='insp')&&x.over],['o','รอกรอก',x=>x.st==='fill'&&!x.over],['b','รอผู้ตรวจ',x=>x.st==='insp'&&!x.over],['g','รอรับเอกสาร',x=>x.st==='recv'],['n','ปิดแล้ว',x=>x.st==='done']];
+    const pill=x=>x.st==='done'?'<span class="rqp n">✓ ปิด</span>':x.st==='recv'?`<span class="rqp g">${x.printed?'พิมพ์แล้ว':'ตรวจแล้ว · ยังไม่พิมพ์'}</span>`:`<span class="rqp ${x.over?'r':x.st==='insp'?'b':'o'}">${x.st==='insp'?'รอผู้ตรวจ · ':''}${dueTxt(x)}</span>`;
+    const act=x=>x.st==='fill'||x.st==='insp'?`<button class="btn ghost" data-nudge="${x.k}" style="height:32px;padding:0 10px;font-size:12px" title="ส่ง LINE เตือนซ้ำ">🔔</button>`:x.st==='recv'?`<button class="btn" data-recv="${x.k}" style="height:32px;padding:0 10px;font-size:12px">รับแล้ว</button>`:`<button class="lnk" data-unrecv="${x.k}" style="font-size:11px">ยกเลิก</button>`;
+    const order={fill:0,insp:1,recv:2,done:3}, rows=L.slice().sort((a,b)=>(b.over-a.over)||(order[a.st]-order[b.st])||(a.left??99)-(b.left??99)||a.k.localeCompare(b.k));
+    PA.innerHTML=`<div class="card" style="max-width:760px;margin:0 auto 10px"><div class="row" style="gap:6px;flex-wrap:wrap">${S0.map(([c,l,t])=>`<span class="rqp ${c}">${l} ${cnt(t)}</span>`).join('')}</div>
+      <div class="muted" style="margin-top:6px">กำหนดส่ง 3 วันหลังวันเข้าเวร · ผู้ตรวจเวรตรวจภายใน 3 วันหลังกรอก · ติดตามตั้งแต่ ${esc(S.trackFrom||'28 ต.ค. 2569')}</div></div>
+      <div class="card" style="max-width:760px;margin:0 auto">${rows.length?`<table class="trk"><tr><th>เวร</th><th>คนอยู่เวร / ผู้ตรวจ</th><th>สถานะ</th><th></th></tr>${rows.map(x=>`<tr><td style="white-space:nowrap">${x.d} ${esc(x.label)}</td><td>${esc(x.names.join(', '))}<div class="muted" style="font-size:11.5px">ตรวจ: ${esc(x.insp||'—')}${x.received?' · รับ '+esc(x.received):''}</div></td><td>${pill(x)}</td><td style="text-align:right">${act(x)}</td></tr>`).join('')}</table>`:'<div class="muted">ยังไม่มีชุดเวรที่ต้องติดตามในเดือนนี้</div>'}
+      <div class="muted" style="margin-top:8px">🔔 ส่ง LINE เตือนซ้ำทันที · "พิมพ์แล้ว" บันทึกเองเมื่อกดพิมพ์บัญชีลงนามจากแอป · "รับแล้ว" = ได้รับเอกสารลงนามครบ ปิดเรื่อง</div><div id="trkMsg"></div></div>`;
+    const auth=()=>{ const c=hubCreds(); if(c.user){ const me=meInfo(); if(me.appr) return {hubUser:c.user,hubPass:c.pass}; } const pin=prompt('PIN ผู้อนุมัติ'); return pin?{pin}:null; };
+    const run=async(what,k)=>{ const a=auth(); if(!a) return; msg('trkMsg','กำลังบันทึก…');
+      try{ const j=await apiPost(Object.assign({action:'repMark',what,keys:[k]},a)); msg('trkMsg',what==='nudge'?'ส่ง LINE เตือนแล้ว '+j.result.n+' คน':'บันทึกแล้ว ✓'); await loadTrack(key,true); }catch(e){ msg('trkMsg',e.message,'err'); } };
+    PA.querySelectorAll('[data-nudge]').forEach(b=>b.onclick=()=>run('nudge',b.dataset.nudge));
+    PA.querySelectorAll('[data-recv]').forEach(b=>b.onclick=()=>run('received',b.dataset.recv));
+    PA.querySelectorAll('[data-unrecv]').forEach(b=>b.onclick=()=>{ if(confirm('ยกเลิก "รับเอกสารแล้ว" ของรายการนี้?')) run('unreceive',b.dataset.unrecv); });
+  };
+  paint(trackOf(key)); paint(await loadTrack(key,true));
+}
 function repAuthFor(k){ const a=S.repAuth; if(!a) return null; if(a.r==='duty'&&a.k===k) return a; if(a.r==='insp'&&k.indexOf(a.k)===0) return a; return null; }
 async function renderRepCard(data){
   const el=$('dRep'); if(S.dGroup!=='emp'){el.classList.add('hide');return;} el.classList.remove('hide');
@@ -759,7 +831,9 @@ async function renderRepCard(data){
   const OD=((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k.slice(0,10)===key+'-'+String(d).padStart(2,'0')), OT=outTotals(OD);
   const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
   const parts=[['p1','ช่วง 1'],['p3',data.days[d-1].off?'ช่วง 2+3':'ช่วง 3']];
-  const st=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
+  const T=trackOf(key), st0=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
+  const st=k=>{ const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':''); };
+  loadTrack(key);
   el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
       <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
     <div class="grid2" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
@@ -779,7 +853,7 @@ function repEditor(data,k,r){
   const hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
   const num=(id,val,ph)=>`<input type="number" step="0.5" min="0" id="${id}" value="${val==null?'':esc(val)}" placeholder="${ph}" inputmode="decimal">`;
   const yn=(name,val,a,b)=>`<label class="ckb"><input type="radio" name="${name}" value="1" ${val===true?'checked':''}>${a}</label><label class="ckb"><input type="radio" name="${name}" value="0" ${val===false?'checked':''}>${b}</label>`;
-  $('repEd').innerHTML=`<div class="note" style="margin-top:8px">${auth?'เข้าจากลิงก์ LINE ของ '+esc(auth.u)+' · '+(auth.r==='insp'?'ผู้ตรวจเวร':'คนอยู่เวร'):'ผู้อนุมัติแก้ได้ทุกช่องด้วย PIN · คนอยู่เวร/ผู้ตรวจ ขอลิงก์ทาง LINE: พิมพ์ "รายงานเวร" หรือ "ตรวจเวร"'}</div>
+  $('repEd').innerHTML=`<div class="note" style="margin-top:8px">${auth?'เข้าจากลิงก์ LINE ของ '+esc(auth.u)+' · '+(auth.r==='insp'?'ผู้ตรวจเวร':'คนอยู่เวร'):(hubCreds().user?'คนอยู่เวร/ผู้ตรวจเวรของชุดนี้ กรอกได้เลยด้วยบัญชีศูนย์รวมงาน · ผู้อนุมัติแก้ได้ทุกช่อง':'ผู้อนุมัติแก้ได้ทุกช่องด้วย PIN · คนอยู่เวร/ผู้ตรวจ ขอลิงก์ทาง LINE: พิมพ์ "รายงานเวร" หรือ "ตรวจเวร"')}</div>
    <fieldset id="rpDuty" ${canDuty?'':'disabled'}>
     <div class="rp-sec"><h4>๑. เวลามา–กลับ <span class="muted">(${tTh(I.t0)} → ${tTh(I.t1)})</span></h4>
       ${I.names.map(n=>`<div class="rpf" style="grid-template-columns:1fr 92px 92px"><div style="align-self:center">${esc(n)}</div><input type="time" data-arr="${esc(n)}" value="${esc((r.arr||{})[n]||I.t0)}"><input type="time" data-dep="${esc(n)}" value="${esc((r.dep||{})[n]||I.t1)}"></div>`).join('')||'<div class="muted">ไม่มีคนเวรชุดนี้</div>'}</div>
@@ -794,7 +868,7 @@ function repEditor(data,k,r){
       <div>พนักงาน/คนงานอยู่เวร: ${yn('inC',ins.complete,'ครบถ้วน','ไม่ครบถ้วน')}</div><input type="text" id="inM" value="${esc(ins.missing||'')}" placeholder="ไม่ครบถ้วน (ระบุ)" style="margin:4px 0 6px">
       <div>ยานพาหนะ/เครื่องมือ: ${yn('inR',ins.ready,'พร้อม','ไม่พร้อม')}</div><input type="text" id="inN" value="${esc(ins.notready||'')}" placeholder="ไม่พร้อม (ระบุ)" style="margin-top:4px"></div>
    </fieldset>
-   ${auth?'':'<label class="f" style="margin-top:8px">PIN ผู้อนุมัติ<input type="password" id="rpPin" inputmode="numeric" autocomplete="off"></label>'}
+   ${auth?'':hubCreds().user?`<div class="muted" style="margin-top:8px">บันทึกในชื่อ ${esc(hubCreds().user)} (บัญชีศูนย์รวมงาน) — ถ้าไม่ได้อยู่เวรชุดนี้ ใส่ PIN ผู้อนุมัติ</div><label class="f">PIN ผู้อนุมัติ (ไม่บังคับ)<input type="password" id="rpPin" inputmode="numeric" autocomplete="off"></label>`:'<label class="f" style="margin-top:8px">PIN ผู้อนุมัติ<input type="password" id="rpPin" inputmode="numeric" autocomplete="off"></label>'}
    <div class="grid2" style="margin-top:8px"><button class="btn ghost" id="rpPrint">พิมพ์แผ่นนี้</button><button class="btn" id="rpSave">บันทึก</button></div>
    <div class="muted" style="margin-top:4px">${r._by?'บันทึกล่าสุดโดย '+esc(r._by)+' · '+esc(r._at||''):''}</div><div id="rpMsg"></div>`;
   const val=id=>{const e=$(id);return e&&e.value!==''?e.value:null;}, nv=id=>{const x=val(id);return x==null?null:+x;};
@@ -804,7 +878,8 @@ function repEditor(data,k,r){
     const dataO={arr,dep,
       comm:{time:val('cmT'),ok:rad('cmOk'),fail:val('cmF')},att:nv('att'),other:val('oth'),
       insp:{date:val('inD'),time:val('inT'),complete:rad('inC'),missing:val('inM'),ready:rad('inR'),notready:val('inN')}};
-    const body=Object.assign({action:'saveReport',k,data:dataO}, auth?{u:auth.u,r:auth.r,x:auth.x,t:auth.t}:{pin:($('rpPin')||{}).value});
+    const pinV=($('rpPin')||{}).value, hc=hubCreds();
+    const body=Object.assign({action:'saveReport',k,data:dataO}, auth?{u:auth.u,r:auth.r,x:auth.x,t:auth.t}:pinV||!hc.user?{pin:pinV}:{hubUser:hc.user,hubPass:hc.pass});
     msg('rpMsg','กำลังบันทึก…');
     try{ const j=await apiPost(body); S.reps=S.reps||{}; (S.reps[S.dMonth]=S.reps[S.dMonth]||{})[k]=j.report; LS.set('rp_'+S.dMonth,S.reps[S.dMonth]); msg('rpMsg','บันทึกแล้ว ✓'); renderRepCard(data); }
     catch(e){ msg('rpMsg',e.message,'err'); }
@@ -1247,6 +1322,7 @@ async function currentReportData(){
 }
 async function drawReport(){
   const k=$('rKind').value, isDoc=['leave','leavelog','sign','insporder','outsum'].includes(k);
+  if(k==='track'){ document.querySelectorAll('.rRoster').forEach(e=>e.classList.add('hide')); document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide')); $('rHint').textContent='หน้าติดตาม (ไม่ใช่เอกสารพิมพ์)'; return drawTrack(); }
   document.querySelectorAll('.rRoster').forEach(e=>e.classList.toggle('hide',isDoc));
   document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide'));
   if(isDoc){ if($('rMonth').value==='__preview'){$('printArea').innerHTML='<div class="note warn">เอกสารประกอบใช้กับตารางที่บันทึกแล้วเท่านั้น</div>';return;}
@@ -1456,6 +1532,7 @@ async function drawDocs(k){
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
     const [R,OUT]=await Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]), kk=(d,p)=>key+'-'+String(d).padStart(2,'0')+'|'+p, ax=$('rAnnex').checked;
     const one=(d,p)=>{const OL=OUT.filter(o=>o.k===kk(d,p)); return signPage(key,mo.data,null,d,cfg,p,R[kk(d,p)],sg,OL)+(ax&&OL.length?outAnnexPage(sheetInfo(key,mo.data,d,p),OL):'');};
+    S.signKeys=list.flatMap(d=>['p1','p3'].map(p=>kk(d,p))).filter(x=>R[x]);
     PA.innerHTML=list.map(d=>one(d,'p1')+one(d,'p3')).join('');
     return;
   }
@@ -1649,7 +1726,7 @@ function setPageSize(){ const ps=[...document.querySelectorAll('#printArea .page
   let st=$('pgSize'); if(!st){ st=document.createElement('style'); st.id='pgSize'; document.head.appendChild(st); } st.textContent='@page{size:'+k+';margin:0}'; }
 window.addEventListener('beforeprint',setPageSize);
 try{ new MutationObserver(setPageSize).observe($('printArea'),{childList:true}); }catch(e){}
-$('rPrint').onclick=()=>{ setPageSize(); window.print(); };
+$('rPrint').onclick=()=>{ setPageSize(); if($('rKind').value==='sign'&&(S.signKeys||[]).length) apiPost({action:'repMark',what:'printed',keys:S.signKeys}).then(()=>{ (S.track||{})[$('rMonth').value]&&loadTrack($('rMonth').value,true); }).catch(()=>{}); window.print(); };
 $('rSetStatus').onclick=async()=>{
   const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
   const pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
