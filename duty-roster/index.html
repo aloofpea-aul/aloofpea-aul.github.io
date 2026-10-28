@@ -1259,15 +1259,16 @@ function empPage(r,cfg,docDate,sheet){
     <div style="display:grid;grid-template-columns:4.35in 3in;margin-top:.28in;text-align:center">
       <div>( ${esc(headName)} )<br>${esc(cfg.headTitle)}</div><div>( ${esc(mgrName)} )<br>${esc(cfg.mgrTitle)}</div></div>
     <div style="margin-top:auto;padding-top:.22in;padding-bottom:.2in">หมายเหตุ ช่วง 1 เวลา(00.30-08.30น.),ช่วง 2 เวลา(08.30-16.30น.),ช่วง 3 เวลา(16.30-00.30น.)</div>`
-  : `<div style="font-size:12px;display:flex;flex-direction:column;gap:0;margin-top:4px">
+  : `<div style="font-size:13px;line-height:1.35;display:flex;flex-direction:column;flex:1;margin-top:4px">
       <div style="text-align:center">ทั้งนี้ ตั้งแต่วันที่ 1-${N} ${mName} ${yTh}</div>
-      <div style="display:grid;grid-template-columns:2.7in 2.7in 1fr"><div>หมายเหตุ (1) เวรปฏิบัติงานตั้งแต่ 00.30น.-08.30น.</div><div style="padding-left:.2in">สั่ง ณ วันที่ ${esc(docDate)}</div><div style="padding-left:1.2in">ที่ ${esc(String(cfg.docNo).replace('(ปร.)','(ปร)'))}</div></div>
-      <div style="display:grid;grid-template-columns:5.4in 1fr"><div style="padding-left:.52in">(2) เวรปฏิบัติงานตั้งแต่ 08.30น.-16.30น.</div><div style="padding-left:.4in">${esc(cfg.ccTo)}</div></div>
-      <div style="display:grid;grid-template-columns:5.4in 1fr"><div style="padding-left:.52in">(3) เวรปฏิบัติงานตั้งแต่ 16.30น.-00.30น.<span style="padding-left:.9in">(ลงชื่อ) &nbsp;${esc(hn)}</span></div><div style="padding-left:1.2in">เพื่อโปรดทราบ</div></div>
-      <div style="display:grid;grid-template-columns:2.7in 1fr"><div style="padding-left:1.5in">อนุมัติ</div><div style="padding-left:.45in">${esc(headName)}</div></div>
-      <div style="display:grid;grid-template-columns:2.7in 1fr"><div style="padding-left:.4in">(ลงชื่อ) &nbsp;${esc(mn)}</div><div style="padding-left:.55in">${esc(cfg.headTitle)}</div></div>
-      <div style="padding-left:.68in">${esc(mgrName)}</div>
-      <div style="padding-left:.76in">${esc(cfg.mgrTitle)}</div></div>`;
+      <div style="display:grid;grid-template-columns:1.15fr 1fr 1fr;margin-top:4px">
+        <div style="padding-left:.15in">หมายเหตุ (1) เวรปฏิบัติงานตั้งแต่ 00.30น.-08.30น.<br><span style="padding-left:.52in">(2) เวรปฏิบัติงานตั้งแต่ 08.30น.-16.30น.</span><br><span style="padding-left:.52in">(3) เวรปฏิบัติงานตั้งแต่ 16.30น.-00.30น.</span></div>
+        <div style="text-align:center">สั่ง ณ วันที่ ${esc(docDate)}</div>
+        <div style="padding-left:.6in">ที่ ${esc(String(cfg.docNo).replace('(ปร.)','(ปร)'))}<br>${esc(cfg.ccTo)}<br><span style="padding-left:.5in">เพื่อโปรดทราบ</span></div></div>
+      <div style="display:grid;grid-template-columns:1.15fr 1fr 1fr;margin:auto 0;padding:.05in 0 .04in;text-align:center">
+        <div>อนุมัติ<div style="margin-top:.1in">(ลงชื่อ) &nbsp;${esc(mn)}</div>${esc(mgrName)}<br>${esc(cfg.mgrTitle)}</div>
+        <div><div style="margin-top:calc(.1in + 1.35em)">(ลงชื่อ) &nbsp;${esc(hn)}</div>${esc(headName)}<br>${esc(cfg.headTitle)}</div>
+        <div></div></div></div>`;
   const revTag=g.rev?`<div style="position:absolute;top:.15in;right:.25in;font-size:11px">ฉบับแก้ไขครั้งที่ ${g.rev}</div>`:'';
   return `<div class="page">${revTag}<div class="rp">${top}
     <div style="display:flex;gap:.08in;align-items:flex-start;margin-top:2px"><table class="t">${head}${rows}</table>${legend}</div>
