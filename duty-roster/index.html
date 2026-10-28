@@ -24,6 +24,9 @@ header.top{background:var(--pri);color:#fff;padding:calc(14px + env(safe-area-in
 header.top .t1{display:none}header.top .t2{font-size:17px;font-weight:700}
 header.top .t2{display:flex;align-items:center;gap:8px}.hlogo{width:28px;height:28px;border-radius:7px;flex:none;box-shadow:0 0 0 1.5px rgba(255,255,255,.35)}
 header.top{padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));min-height:50px;justify-content:center}
+header.top>.row{flex-wrap:nowrap;gap:8px}header.top>.row>div:first-child{min-width:0;flex:1 1 auto}header.top .t2{min-width:0}header.top .mpill,header.top .badge{flex:none}
+.httl{min-width:0;line-height:1.15}.hsub{font-size:12px;font-weight:400;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}.hsub:empty{display:none}
+.hsub.tap{cursor:pointer}.htag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:999px;padding:0 7px;line-height:17px;margin:0 3px;background:rgba(255,255,255,.22)}.htag.ap{background:#FFD98A;color:#5A3A00}
 .mpill{position:relative;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 9px;border-radius:16px;background:rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
 .mpill .mdot{width:8px;height:8px;border-radius:50%;background:#7BE08A;flex:0 0 8px}.mpill .mdot.draft{background:#F5C25B}
 .mpill select{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;cursor:pointer}
@@ -261,7 +264,7 @@ fieldset:disabled{opacity:.55}
 <div class="app" id="app">
   <header class="top" id="hdr">
     <div class="row" style="justify-content:space-between">
-      <div><div class="t1">กฟส.อ่าวลึก · ตารางเวร · รายงานเวร · ไฟดับ</div><div class="t2" id="hdrTitle"><img src="icon.svg?v=1" alt="" class="hlogo" width="28" height="28">งานเวรแก้ไฟ</div></div>
+      <div><div class="t1">กฟส.อ่าวลึก · ตารางเวร · รายงานเวร · ไฟดับ</div><div class="t2" id="hdrTitle"><img src="icon.svg?v=1" alt="" class="hlogo" width="28" height="28"><div class="httl"><div>งานเวรแก้ไฟ</div><div class="hsub" id="hdrSub"></div></div></div></div>
       <span class="badge" id="hdrBadge"></span>
       <label class="mpill" id="hMonth" aria-label="เลือกเดือน"><span class="mdot" id="hMonthDot"></span><span id="hMonthT"></span><span aria-hidden="true">⌄</span><select id="dMonth"></select></label>
     </div>
@@ -501,7 +504,7 @@ async function loadMonth(key){
   const c=LS.get('m_'+key);
   const fresh=apiGet({action:'month',m:key}).then(j=>{
     const changed=JSON.stringify(j.month)!==JSON.stringify(c);
-    S.months[key]=j.month; LS.set('m_'+key,j.month); if(c&&changed) refreshView(); return j.month;});
+    S.months[key]=j.month; LS.set('m_'+key,j.month); if(c&&changed) refreshView(); try{paintHello();}catch(e){} return j.month;});
   if(c){ S.months[key]=c; fresh.catch(()=>{}); return c; }
   return fresh;
 }
@@ -517,12 +520,58 @@ function msg(el,text,cls){$(el).innerHTML=text?`<div class="note ${cls||''}">${e
 const fullName=s=>{const p=[...S.boot.people.emp,...S.boot.people.wk].find(x=>x.short===s);return p?p.full:s;};
 
 /* ---------- นำทาง ---------- */
+/* ---------- ทักทายบนแถบหัว: ชื่อ + เวรของตัวเอง / งานรออนุมัติ / ดูข้อมูล ---------- */
+const normN=s=>String(s||'').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/,'').replace(/\s+/g,'').toLowerCase();
+function meInfo(){
+  const a=S.repAuth, c=hubCreds(), nn=normN(c.user);
+  const ppl=[...(S.boot.people.emp||[]).map(p=>Object.assign({g:'emp'},p)),...(S.boot.people.wk||[]).map(p=>Object.assign({g:'wk'},p))];
+  const hit=(full,short)=>nn&&(normN(full)===nn||normN(short)===nn||(nn.length>=3&&normN(full).startsWith(nn)));
+  const line=a&&a.u?ppl.find(x=>x.short===a.u):null;
+  const p=line||ppl.find(x=>hit(x.full,x.short))||null;
+  const appr=!line&&(S.boot.approvers||[]).find(x=>hit(x.name,x.short))||null;
+  return {p,appr,line:!!line,user:c.user};
+}
+function dutyLine(p){
+  const now=new Date(Date.now()+7*3600e3), today=now.toISOString().slice(0,10), nowM=now.getUTCHours()*60+now.getUTCMinutes();
+  const SEG=p.g==='emp'?{'1':[30,510],'2':[510,990],'3':[990,1470],'S':[30,510]}:{'1':[0,480],'2':[480,960],'3':[960,1440]};
+  const iv=[]; let base=new Date(today+'T00:00:00Z');
+  for(let off=-1;off<=40;off++){ const d=new Date(base.getTime()+off*864e5), k=d.toISOString().slice(0,7), mo=S.months[k];
+    if(!mo){ if(off>0) break; else continue; }
+    const c=((mo.data[p.g]||{})[p.short]||[])[d.getUTCDate()-1]; if(!c||c==='0') continue;
+    String(c).split(',').forEach(x=>{ const sg=SEG[x]; if(sg) iv.push({a:off*1440+sg[0],b:off*1440+sg[1],sb:x==='S',off,code:c,wd:d.getUTCDay(),dd:d.getUTCDate()}); }); }
+  iv.sort((x,y)=>x.a-y.a);
+  const hm=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
+  const lab=x=>x.sb?'เตรียมพร้อม':p.g==='emp'?(CODE_TH[noSb(x.code)]||noSb(x.code)):'กะ '+x.code;
+  const cur=iv.find(x=>!x.sb&&x.a<=nowM&&nowM<x.b);
+  if(cur){ let end=cur.b; iv.filter(x=>!x.sb).forEach(x=>{ if(x.a<=end&&x.b>end) end=x.b; }); return '🟢 กำลังอยู่เวร ถึง '+hm(end); }
+  const sb=iv.find(x=>x.sb&&x.a<=nowM&&nowM<x.b); if(sb) return 'เตรียมพร้อมอยู่ ถึง '+hm(sb.b);
+  const nx=iv.find(x=>x.a>nowM); if(!nx) return 'ยังไม่มีเวรถัดไปในตาราง';
+  if(nx.off===0) return 'วันนี้ '+lab(nx)+' · '+hm(nx.a);
+  if(nx.off===1) return 'พรุ่งนี้ '+lab(nx)+' · '+hm(nx.a);
+  return 'เวรถัดไป '+TH_WD[nx.wd]+'.'+nx.dd+' '+lab(nx);
+}
+function paintHello(){
+  const el=$('hdrSub'); if(!el||!S.boot) return;
+  const m=meInfo(), first=n=>String(n||'').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/,'').trim().split(/\s+/)[0];
+  el.classList.remove('tap'); el.onclick=null;
+  if(m.appr){ const n=(S.pending?S.pending.length:S.boot.pendingCount)||0;
+    el.innerHTML=`สวัสดี คุณ${esc(m.appr.short||first(m.appr.name))}<span class="htag ap">ผู้อนุมัติ</span>${n?'รออนุมัติ '+n+' รายการ':'ไม่มีรออนุมัติ ✓'}`;
+    el.classList.add('tap'); el.onclick=()=>show('viewReq'); return; }
+  if(m.p){ el.textContent='สวัสดี คุณ'+m.p.short+' · '+dutyLine(m.p);
+    const t=todayIso(), ks=[t.slice(0,7)]; { const {y,m:mm}=parseKey(t.slice(0,7)); ks.push(mm===12?(y+1)+'-01':y+'-'+String(mm+1).padStart(2,'0')); }
+    ks.forEach(k=>{ if(!S.months[k]&&(S.boot.months||[]).some(x=>x.month===k)&&!(S.helloLoad||{})[k]){ (S.helloLoad=S.helloLoad||{})[k]=1; loadMonth(k).then(paintHello).catch(()=>{}); } });
+    return; }
+  if(m.user){ el.innerHTML=`สวัสดี คุณ${esc(first(m.user))}<span class="htag">ดูข้อมูล</span>`; return; }
+  el.innerHTML='ยังไม่ได้เข้าสู่ระบบ · <u>แตะเพื่อเข้า</u>'; el.classList.add('tap');
+  el.onclick=()=>{ if(window.PEAHub&&PEAHub.logout) PEAHub.logout(true); else location.href='/'; };
+}
+setInterval(()=>{ if(document.visibilityState==='visible') paintHello(); },60000);
 function show(v){
   ['viewDaily','viewGen','viewReport','viewReq','viewSet'].forEach(x=>$(x).classList.toggle('hide',x!==v));
   document.body.classList.toggle('wide',v==='viewReport'); document.body.classList.toggle('vDaily',v==='viewDaily');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   ({viewDaily:renderDaily,viewGen:renderGen,viewReport:renderReport,viewReq:renderReq,viewSet:renderSet})[v]();
-  window.scrollTo(0,0);
+  window.scrollTo(0,0); paintHello();
 }
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 
@@ -1614,7 +1663,7 @@ $('rSetStatus').onclick=async()=>{
 const CODE_LBL={emp:c=>c===''?'ว่าง':(CODE_TH[c]||c), wk:c=>c==='0'?'พักกะ':'กะ '+c};
 const isFree=(g,c)=>g==='emp'?(c===''||c==='S'):c==='0';
 const dutyCount=(g,codes)=>codes.reduce((s,c)=>s+(g==='emp'?cParts(c):(c==='0'?0:c==='1,3'?2:1)),0);
-function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);}
+function setDot(n){const d=$('navDot');d.textContent=n;d.classList.toggle('hide',!n);try{paintHello();}catch(e){}}
 S.qType='leave';   // ค่าเริ่มต้น: ลาเวร-หาคนแทน (ใช้บ่อยกว่า)
 async function renderReq(){
   setBadge('');
