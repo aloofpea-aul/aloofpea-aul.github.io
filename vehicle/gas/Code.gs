@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '16.5';
+const VERSION = '17.0';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -28,8 +28,15 @@ const SH = {
   BOOK:  { name: 'การจอง', cols: ['ID', 'StartDate', 'EndDate', 'Mission', 'Status', 'User', 'CarPlate', 'CreatedDate'],
            labels: ['ID', 'เริ่ม', 'สิ้นสุด', 'ภารกิจ', 'สถานะ', 'ผู้จอง', 'ทะเบียน', 'วันที่จอง'] },
   MAINT: { name: 'การซ่อมบำรุง', cols: ['ID', 'Date', 'CarPlate', 'Type', 'Cost', 'Note', 'By', 'Mile'],
-           labels: ['ID', 'วันที่', 'ทะเบียน', 'รายการ', 'ค่าใช้จ่าย', 'หมายเหตุ', 'ผู้บันทึก', 'เลขไมล์'] }
+           labels: ['ID', 'วันที่', 'ทะเบียน', 'รายการ', 'ค่าใช้จ่าย', 'หมายเหตุ', 'ผู้บันทึก', 'เลขไมล์'] },
+  CHECK: { name: 'ตรวจรถก่อนใช้', cols: ['ID', 'Date', 'CarId', 'Plate', 'Form', 'Results', 'Fails', 'By', 'Mile'],
+           labels: ['ID', 'วันเวลา', 'รหัสรถ', 'ทะเบียน', 'แบบฟอร์ม', 'ผลตรวจ', 'ข้อบกพร่อง', 'ผู้ตรวจ', 'เลขไมล์'] }
 };
+// แบบ FM1-SOH3-S04-6103 ตรวจยานพาหนะก่อนปฏิบัติงานประจำวัน — ผลตรวจเก็บเป็นตัวอักษร 1 ตัวต่อข้อ: P ผ่าน · O ต้องซ่อม · - ไม่เกี่ยวข้อง
+const CHECK_6103 = ['เข็มขัดนิรภัย', 'ไฟส่องสว่าง (สูง-ต่ำ) หน้า-หลัง', 'ไฟเบรก', 'ไฟสัญญาณ (ไฟวับวาบ, เลี้ยวซ้าย-ขวา, ถอยหลัง)', 'กระจกหน้ารถ',
+  'กระจกมองข้าง/หลัง', 'ที่ปัดน้ำฝน', 'น้ำฉีดกระจก', 'ระดับน้ำมันเชื้อเพลิง', 'ระดับน้ำมันหล่อลื่นเครื่องยนต์', 'การทำงานของแตร',
+  'ระบบเบรก (เบรกมือ/เบรกเท้า)', 'เครื่องปรับอากาศ', 'สภาพยาง กระทะล้อ และน๊อตยึดล้อ', 'อุปกรณ์ดับเพลิง', 'แบตเตอรี่ (ขั้ว, น้ำกลั่น)',
+  'ทำความสะอาดด้านในและด้านนอก', 'ความเสียหายภายใน', 'ความเสียหายภายนอก'];
 const MEMBERS = 'ระบบสมาชิก';   // A รหัสพนักงาน · B รหัสผ่าน · C ชื่อ · D ตำแหน่ง · E แผนก · F บทบาท · G วันเวลา
 
 /* ====================================================================== */
@@ -102,6 +109,7 @@ const ACTIONS = {
     set_(t, r, { Status: 'in-use', User: me.name, UserId: me.empId || '', Mile: mile });
     append_(table_(SH.LOGS), { Date: new Date(), User: me.name, Action: plate, Detail: mission,
       StartMile: mile, EndMile: '', Status: 'in-use', CarId: get_(t, r, 'ID') });
+    const chk = saveCheck_(b.check, get_(t, r, 'ID'), plate, mile, me);   // ผลตรวจก่อนใช้ (6103) — ถ้าวันนี้มีคนตรวจแล้ว หน้าเว็บไม่ส่งมา
     // การจองของตัวเองช่วงนี้ (รถคันนี้หรือไม่ระบุรถ) → "รับรถแล้ว"
     const B = table_(SH.BOOK), now = new Date(), soon = new Date(now.getTime() + 3 * 3600000);
     for (let i = 0; i < B.rows.length; i++) {
@@ -110,7 +118,7 @@ const ACTIONS = {
       const bp = String(row[B.h.CarPlate] || '-'), s2 = parseDate_(row[B.h.StartDate]), e2 = parseDate_(row[B.h.EndDate]);
       if ((np_(bp) === np_(plate) || bp === '-' || bp === '') && s2 && e2 && s2 <= soon && e2 >= now) { set_(B, i, { Status: 'used', CarPlate: plate }); break; }
     }
-    return 'เบิกรถ ' + plate + ' แล้ว';
+    return 'เบิกรถ ' + plate + ' แล้ว' + (chk && chk.fails ? ' · แจ้งข้อบกพร่อง ' + chk.fails + ' ข้อ' : '');
   },
 
   returnCar: function (b, me) {
@@ -255,12 +263,35 @@ const ACTIONS = {
   }
 };
 
+/** บันทึกผลตรวจ 6103 — ตรวจครบทุกข้อเท่านั้น (คืน null ถ้าไม่ได้ส่งผลตรวจมา) */
+function saveCheck_(chk, carId, plate, mile, me) {
+  if (!chk || chk.results == null) return null;
+  const res = String(chk.results);
+  if (res.length !== CHECK_6103.length || !/^[PO-]+$/.test(res)) throw new Error('ผลตรวจรถไม่ครบ ' + CHECK_6103.length + ' ข้อ — ตรวจให้ครบก่อนเบิก');
+  const notes = chk.notes || {}, fails = [];
+  for (let i = 0; i < res.length; i++) if (res[i] === 'O') fails.push((i + 1) + '. ' + CHECK_6103[i] + (clean_(notes[i + 1]) ? ' — ' + clean_(notes[i + 1]) : ''));
+  const C = table_(SH.CHECK);
+  append_(C, { ID: nextId_(C), Date: new Date(), CarId: carId, Plate: plate, Form: '6103', Results: res, Fails: fails.join(' | '), By: me.name, Mile: mile });
+  return { fails: fails.length };
+}
+
+/** ผลตรวจของวันนี้ ล่าสุดต่อรถหนึ่งคัน */
+function todayChecks_() {
+  const K = table_(SH.CHECK), today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), out = {};
+  K.rows.forEach(function (r) {
+    const d = parseDate_(r[K.h.Date]); if (!d || Utilities.formatDate(d, TZ, 'yyyy-MM-dd') !== today) return;
+    if (String(r[K.h.Form]) !== '6103') return;
+    out[String(r[K.h.CarId])] = { at: iso_(d), by: String(r[K.h.By] || ''), fails: String(r[K.h.Fails] || '') };
+  });
+  return out;
+}
+
 /* ====================================================================== */
 
 function bootstrap_(me) {
   const C = table_(SH.CARS), L = table_(SH.LOGS), B = table_(SH.BOOK), M = table_(SH.MAINT);
   const filled = function (r) { return r.some(function (v) { return v !== '' && v != null; }); };
-  const since = {};                                     // เบิกล่าสุดของรถที่กำลังใช้งาน
+  const since = {}, checked = todayChecks_();            // เบิกล่าสุดของรถที่กำลังใช้งาน · ผลตรวจวันนี้
   L.rows.forEach(function (r) {
     if (String(r[L.h.Status]) !== 'in-use') return;
     const v = { at: iso_(r[L.h.Date]), mission: String(r[L.h.Detail] || '') };
@@ -272,7 +303,8 @@ function bootstrap_(me) {
     const sc = inUse ? (since['id:' + r[C.h.ID]] || since['p:' + np_(r[C.h.Plate])] || {}) : {};
     return { id: String(r[C.h.ID]), plate: String(r[C.h.Plate]), model: String(r[C.h.Model] || ''),
       status: inUse ? 'in-use' : 'available', mile: Number(r[C.h.Mile]) || 0, image: imgUrl_(r[C.h.Image]), imageId: imgId_(r[C.h.Image]),
-      user: inUse ? String(r[C.h.User] || '') : '', since: sc.at || '', mission: sc.mission || '' };
+      user: inUse ? String(r[C.h.User] || '') : '', since: sc.at || '', mission: sc.mission || '',
+      checked: checked[String(r[C.h.ID])] || null };
   });
   const logs = L.rows.filter(filled).slice(-200).reverse().map(function (r) {
     return { date: iso_(r[L.h.Date]), user: String(r[L.h.User] || ''), plate: String(r[L.h.Action] || ''),
@@ -289,7 +321,7 @@ function bootstrap_(me) {
       type: String(r[M.h.Type] || ''), cost: num_(String(r[M.h.Cost]).replace(/[,฿\s]/g, '')), note: String(r[M.h.Note] || ''),
       by: String(r[M.h.By] || ''), mile: num_(r[M.h.Mile]) };
   });
-  return { ok: true, version: VERSION, me: me, vehicles: vehicles, logs: logs, bookings: bookings, maint: maint, at: iso_(new Date()) };
+  return { ok: true, version: VERSION, me: me, checkItems: CHECK_6103, vehicles: vehicles, logs: logs, bookings: bookings, maint: maint, at: iso_(new Date()) };
 }
 
 /** รถคันเดียวกันห้ามจองซ้อนเวลา (ไม่นับที่ไม่อนุมัติ/รับรถแล้ว และแถวที่กำลังแก้) */
@@ -508,7 +540,7 @@ function fmt_(d) { return Utilities.formatDate(d, TZ, 'dd/MM HH:mm'); }
 /** Run ครั้งแรกใน Apps Script เพื่ออนุญาตสิทธิ์ (Sheets / Drive / เชื่อมต่อภายนอก) และปรับหัวคอลัมน์ */
 function setup() {
   migrate_();
-  [SH.CARS, SH.LOGS, SH.BOOK, SH.MAINT].forEach(table_);
+  [SH.CARS, SH.LOGS, SH.BOOK, SH.MAINT, SH.CHECK].forEach(table_);
   UrlFetchApp.fetch(HUB_API + '?action=ping', { muteHttpExceptions: true });
   const f = DriveApp.getFolderById(IMAGE_FOLDER_ID).createFile('test_permission.txt', 'ok');   // ขอสิทธิ์เขียนไฟล์รูป
   f.setTrashed(true);

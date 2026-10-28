@@ -155,6 +155,22 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 .crop img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none;max-width:none}
 .crop .hint{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 8px;border-radius:8px;pointer-events:none}
 .zoom{display:flex;align-items:center;gap:10px;margin-top:10px}.zoom input{flex:1}
+/* ตรวจก่อนใช้ 6103 */
+.ckhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 8px}
+.ckbar{height:6px;border-radius:3px;background:#EFE7F2;overflow:hidden;margin-bottom:10px}.ckbar i{display:block;height:100%;background:var(--pri);transition:width .15s}
+.ck{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F0ECF3}
+.ck .n{width:26px;height:26px;border-radius:13px;background:#EFE7F2;color:var(--pri2);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 26px}
+.ck .t{flex:1;font-size:15px;line-height:1.35}
+.ck .b3{display:flex;gap:6px;flex:0 0 auto}
+.ck .b3 button{width:44px;height:44px;border-radius:10px;border:1.5px solid #D6CEDC;background:#fff;font-size:19px;font-weight:700;color:var(--mut);padding:0}
+.ck .b3 button.P{background:var(--ok);border-color:var(--ok);color:#fff}
+.ck .b3 button.O{background:var(--bad);border-color:var(--bad);color:#fff}
+.ck .b3 button.D{background:#6B6370;border-color:#6B6370;color:#fff}
+.ck.O{background:#FDF1F0}
+.cknote{width:100%;height:44px;border:1.5px solid #F0B8B4;border-radius:10px;padding:0 12px;margin:0 0 8px;background:#fff}
+.cksum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.cksum div{border-radius:12px;padding:8px;text-align:center;font-size:13px}.cksum b{display:block;font-size:22px}
+.car .ckd{font-size:13px;font-weight:600;color:var(--ok)}.car .ckd.bad{color:var(--bad)}
 .toast{position:fixed;left:50%;bottom:calc(var(--navh) + var(--sb) + 14px);transform:translateX(-50%);z-index:60;background:#2B2230;color:#fff;
   padding:12px 18px;border-radius:12px;font-size:15px;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25);text-align:center}
 .toast.err{background:var(--bad)}
@@ -399,7 +415,7 @@ function renderHome(){
     const addPh = m.admin && !v.image ? `<button class="addph" onclick="openPhoto('${esc(v.id)}')">📷 เพิ่มรูปรถ</button>` : '';
     return `<div class="car"><div class="ph"${m.admin&&v.image?` onclick="openPhoto('${esc(v.id)}')" style="cursor:pointer"`:''}>${ph}${carStatusPill(v)}${addPh}${m.admin?`<button class="edit" aria-label="แก้ไข" onclick="event.stopPropagation();openCar('${esc(v.id)}')">✏️</button>`:''}</div>
       <div class="bd"><div class="pl">${esc(v.plate)}</div><div class="md">${esc(v.model)||'&nbsp;'}</div>
-      <div class="mi">เลขไมล์ ${km(v.mile)} กม.</div>${use}${nbTxt}${btn}</div></div>`;
+      <div class="mi">เลขไมล์ ${km(v.mile)} กม.</div>${use}${nbTxt}${ckBadge(v)}${btn}</div></div>`;
   }).join('') : `<div class="card empty"><div class="ic">🚗</div>${S.filter?'ไม่มีรถในสถานะนี้':'ยังไม่มีรถในระบบ'}${m.admin&&!S.filter?'<br><br><button class="btn" onclick="openCar()">+ เพิ่มรถคันแรก</button>':''}</div>`;
 
   const L = S.d.logs.slice(0,6);
@@ -516,10 +532,55 @@ function sheet(html, locked){ $('layer').innerHTML = `<div class="ov" ${locked?'
 function closeSheet(){ $('layer').innerHTML=''; document.body.style.overflow=''; }
 const carById = id => S.d.vehicles.find(v=>v.id===String(id));
 
+/* ====== ตรวจก่อนใช้ (FM1-SOH3-S04-6103) — ขั้นแรกของการเบิกรถ ====== */
+let CK = null;                                       // {v, res:[], notes:{}, skip}
+const ckOn = () => !!(S.d && S.d.checkItems && S.d.checkItems.length);   // หลังบ้าน v17 ขึ้นไป
+function ckFails(v){ return v.checked && v.checked.fails ? v.checked.fails.split(' | ').length : 0; }
+function ckBadge(v){
+  if (!v.checked) return '';
+  const f = ckFails(v), t = fd(v.checked.at).split(' ').pop();
+  return f ? `<div class="ckd bad">⚠️ แจ้งข้อบกพร่อง ${f} ข้อ · ${esc(v.checked.by)} ${t}</div>`
+           : `<div class="ckd">✓ ตรวจวันนี้แล้ว · ${esc(v.checked.by)} ${t}</div>`;
+}
 function openCheckout(id){
   const v = carById(id); if(!v) return;
+  if (!ckOn()) return openCheckoutForm(v);
+  CK = { v, res: new Array(S.d.checkItems.length).fill(''), notes: {}, skip: !!v.checked };
+  CK.skip ? openCheckoutForm(v) : renderCheck();
+}
+function renderCheck(){
+  const it = S.d.checkItems, done = CK.res.filter(Boolean).length, all = done === it.length;
+  const pre = document.querySelector('.sheet') ? document.querySelector('.sheet').scrollTop : 0;
+  sheet(`<h3>🔍 ตรวจก่อนใช้ ${esc(CK.v.plate)}</h3>
+    <div class="ckhead"><span class="muted small">แบบ FM1-SOH3-S04-6103 · ตรวจแล้ว ${done}/${it.length} ข้อ</span>
+      <button class="btn green sm" onclick="ckAll()" style="white-space:nowrap">✓ ผ่านหมด</button></div>
+    <div class="ckbar"><i style="width:${done/it.length*100}%"></i></div>
+    ${it.map((t,i)=>{ const r = CK.res[i];
+      return `<div class="ck ${r==='O'?'O':''}"><div class="n">${i+1}</div><div class="t">${esc(t)}</div>
+        <div class="b3"><button class="${r==='P'?'P':''}" aria-label="ผ่าน" onclick="ckSet(${i},'P')">✓</button><button class="${r==='O'?'O':''}" aria-label="ต้องซ่อม" onclick="ckSet(${i},'O')">✗</button><button class="${r==='-'?'D':''}" aria-label="ไม่เกี่ยวข้อง" onclick="ckSet(${i},'-')">–</button></div></div>
+        ${r==='O'?`<input class="cknote" placeholder="ระบุอาการ เช่น ไฟเบรกซ้ายไม่ติด" value="${esc(CK.notes[i+1]||'')}" oninput="CK.notes[${i+1}]=this.value">`:''}`; }).join('')}
+    <div class="muted small" style="margin:10px 0">✓ ใช้ได้ · ✗ ต้องซ่อม · – ไม่เกี่ยวข้อง</div>
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button>
+      <button class="btn" ${all?'':'disabled'} onclick="openCheckoutForm(CK.v)">${all?'ถัดไป ›':'ตรวจให้ครบก่อน ('+(it.length-done)+')'}</button></div>`, true);
+  const sh = document.querySelector('.sheet'); if (sh) sh.scrollTop = pre;
+}
+function ckSet(i, val){ CK.res[i] = CK.res[i]===val ? '' : val; renderCheck(); }
+function ckAll(){ CK.res = CK.res.map(r => r==='O'||r==='-' ? r : 'P'); renderCheck(); }
+function ckSummary(){
+  if (!CK) return '';
+  if (CK.skip) { const c = CK.v.checked, f = ckFails(CK.v);
+    return `<div class="note" style="margin-bottom:12px">${f?'⚠️':'✓'} วันนี้ <b>${esc(c.by)}</b> ตรวจรถคันนี้แล้ว ${fd(c.at).split(' ').pop()} น.${f?' · พบข้อบกพร่อง '+f+' ข้อ':''}
+      <br><a href="#" onclick="event.preventDefault();CK.skip=false;renderCheck()" style="color:var(--pri);font-weight:600">ตรวจใหม่อีกครั้ง</a></div>`; }
+  const n = k => CK.res.filter(r=>r===k).length;
+  return `<div class="cksum"><div style="background:var(--okb);color:var(--ok)"><b>${n('P')}</b>ผ่าน</div>
+    <div style="background:var(--badb);color:var(--bad)"><b>${n('O')}</b>ต้องซ่อม</div><div style="background:#ECE8EF;color:var(--mut)"><b>${n('-')}</b>ไม่เกี่ยวข้อง</div></div>
+    ${n('O')?'<div class="note err" style="margin:-4px 0 12px">ข้อบกพร่องจะแสดงที่การ์ดรถให้ผู้ควบคุมยานเห็น</div>':''}
+    <a href="#" class="small" onclick="event.preventDefault();renderCheck()" style="color:var(--pri);font-weight:600;display:inline-block;margin:-6px 0 12px">‹ กลับไปแก้ผลตรวจ</a>`;
+}
+function openCheckoutForm(v){
   const nb = nextBookingOf(v.plate);
   sheet(`<h3>🔑 เบิกใช้รถ ${esc(v.plate)}</h3>
+    ${ckOn()?ckSummary():''}
     ${nb?`<div class="note" style="margin-bottom:12px">มีการจองรถคันนี้ ${fd(nb.start)} – ${fd(nb.end)} โดย ${esc(nb.user)}</div>`:''}
     <label class="fld"><span>ภารกิจ / จุดหมาย</span><input id="fMission" placeholder="เช่น แก้ไฟ ต.คลองหิน" autocomplete="off"></label>
     <div class="chips">${['แก้ไฟฟ้าขัดข้อง','ตรวจระบบ','ติดต่อราชการ','ประชุม','ส่งเอกสาร'].map(t=>`<button type="button" onclick="$('fMission').value='${t}'">${t}</button>`).join('')}</div>
@@ -533,7 +594,9 @@ function openCheckout(id){
     const n = Number($('fStart').value);
     if (!n || n <= 0) { toast('กรุณากรอกเลขไมล์ขณะออก', true); return; }
     if (n < v.mile && !confirm('เลขไมล์น้อยกว่าที่บันทึกล่าสุด ('+km(v.mile)+' กม.) ยืนยันใช้ '+km(n)+' กม.?')) return;
-    act('checkout', {carId:v.id, mission:$('fMission').value, startMile:n});
+    const data = {carId:v.id, mission:$('fMission').value, startMile:n};
+    if (ckOn() && CK && CK.v.id===v.id && !CK.skip) data.check = { results: CK.res.join(''), notes: CK.notes };
+    act('checkout', data);
   };
   setTimeout(()=>$('fMission').focus(),150);
 }
