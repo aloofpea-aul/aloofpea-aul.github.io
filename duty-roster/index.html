@@ -1660,10 +1660,10 @@ function item7(OL,other){
   const cnt={}, order=[]; OL.slice().sort((a,b)=>String(a.off).localeCompare(String(b.off))).forEach(o=>{ const p=outPlace(o); if(!(p in cnt)){cnt[p]=0;order.push(p);} cnt[p]++; });
   let items=order.map(p=>p+(cnt[p]>1?' ×'+cnt[p]:''));
   // พื้นที่ข้อ ๗ ≈ 3.8 บรรทัดที่ 15pt (24 มม.) — เหลือขอบล่างอย่างน้อย ~1 ซม. · ย่อได้ถึง 11pt (ได้ 5 บรรทัด)
-  const m=items.length, cols=m<=2?1:m<=6?2:m<=12?3:4, LIM=cols*(5-1-(other?1:0));
+  const m=items.length, cols=m<=2?1:m<=4?2:m<=9?3:4, LIM=cols*(5-1-(other?1:0));
   if(m>LIM){ const rest=m-(LIM-1); items=items.slice(0,LIM-1).concat(['และอีก '+rest+' จุด']); }
   const rows=Math.ceil(items.length/cols)+1+(other?1:0);           // หัวข้อ + แถวรายการ + ข้อความเพิ่มเติม
-  const fs=Math.max(11,Math.min(15,Math.floor(15*3.8/rows*2)/2));
+  const fs=Math.max(11,Math.min(15,Math.floor(15*4/rows*2)/2));
   return `<div style="font-size:${fs}pt;line-height:1.2">๗. อื่น ๆ &nbsp;ไฟดับ ${THD(OL.length)} ครั้ง
     <div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));column-gap:4mm;padding-left:6mm">${items.map((t,i)=>`<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">(${THD(i+1)}) ${esc(t)}</div>`).join('')}</div>
     ${other?`<div style="padding-left:6mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">เพิ่มเติม: ${esc(other)}</div>`:''}</div>`;
