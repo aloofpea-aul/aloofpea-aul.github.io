@@ -512,34 +512,54 @@ function outRows_() {
   });
 }
 /** รายการไฟดับของเดือน (ไม่รวมที่ลบ) + สถานะใน Patrol */
-function outagesOf_(month) {
-  const list = outRows_().filter(function (x) { return !x.deleted && x.k.indexOf(month) === 0; }).map(function (x) { return x.d; });
+function outagesOf_(month, withDel) {
+  const all = outRows_().filter(function (x) { return x.k.indexOf(month) === 0; });
+  const list = all.filter(function (x) { return !x.deleted; }).map(function (x) { return x.d; });
+  const del = all.filter(function (x) { return x.deleted; }).map(function (x) { return Object.assign({}, x.d, { deleted: true, k: x.k }); });
   const ids = list.filter(function (o) { return o.patrol && o.patrol.id; }).map(function (o) { return o.patrol.id; });
   if (ids.length) {
     const st = patrolStatus_(ids);
     list.forEach(function (o) { if (o.patrol && st[o.patrol.id]) o.patrol.status = st[o.patrol.id]; });
   }
-  return list.sort(function (a, b) { return String(a.off).localeCompare(String(b.off)); });
+  list.sort(function (a, b) { return String(a.off).localeCompare(String(b.off)); });
+  return withDel ? list.concat(del) : list;
 }
 
 /** สิทธิ์บันทึก: ลิงก์ LINE ของคนเวรชุดนั้น หรือ PIN ผู้อนุมัติ */
-function outAuth_(b, k) {
-  const who = approverByPin_(b.pin);
-  if (who) return who.short || who.name;
-  if (b.hubUser && b.hubPass && !b.t) {                       // ล็อกอินศูนย์รวมงานและมีสิทธิ์ใช้ตารางเวร
-    if (hubAllowed_(String(b.hubUser), String(b.hubPass))) return String(b.hubUser).slice(0, 60);
-    throw new Error('บัญชีศูนย์รวมงานนี้ไม่มีสิทธิ์ใช้ตารางเวร — ใส่ PIN ผู้อนุมัติ หรือใช้ลิงก์จาก LINE');
-  }
-  if (b.r !== 'duty' || !b.t || Number(b.x) < Date.now() || repToken_(String(b.rk || k), b.u, 'duty', b.x) !== b.t)
-    throw new Error('ไม่มีสิทธิ์บันทึก — ล็อกอินศูนย์รวมงาน, ใช้ลิงก์จาก LINE ของเวรชุดนี้ หรือใส่ PIN ผู้อนุมัติ');
-  if (String(b.rk || '') !== k) throw new Error('ลิงก์นี้ใช้บันทึกได้เฉพาะเวรของตัวเอง');
-  return b.u;
+/** สิทธิ์แก้เหตุการณ์ไฟดับของเวร k
+ *  ผู้อนุมัติ (PIN / บัญชีศูนย์รวมงานที่ตรงชีต Approvers) = ทุกเวร แม้ล็อกแล้ว
+ *  คนอยู่เวรชุดนั้น (ลิงก์ LINE ของเวรนี้ / บัญชีศูนย์รวมงานที่มีชื่ออยู่ในเวรนี้) = เฉพาะเวรตัวเอง และต้องยังไม่ล็อก
+ *  ล็อก = หผ.ปร. กด "รับเอกสารแล้ว" ของเวรนั้น · คืน { by, appr } */
+function outPerm_(b, k) {
+  const who = approverOf_(b);
+  if (who) return { by: who.short || who.name, appr: true };
+  let by = null;
+  if (b.r === 'duty' && b.t) {
+    if (Number(b.x) < Date.now() || repToken_(String(b.rk || k), b.u, 'duty', b.x) !== b.t) throw new Error('ลิงก์หมดอายุ — ขอลิงก์ใหม่ทาง LINE (พิมพ์ "รายงานเวร")');
+    if (String(b.rk || '') !== k) throw new Error('ลิงก์นี้ใช้ได้เฉพาะเวรของตัวเอง');
+    by = b.u;
+  } else if (b.hubUser && b.hubPass) {
+    if (!hubAllowed_(String(b.hubUser), String(b.hubPass))) throw new Error('บัญชีศูนย์รวมงานนี้ไม่มีสิทธิ์ใช้ตารางเวร');
+    const nn = normN_(b.hubUser), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
+    const c = pr ? empCode_(k.slice(0, 10), pr.short) : '', inSet = pr && (k.slice(-2) === 'p1' ? cHas_(c, '1') : (cHas_(c, '2') || cHas_(c, '3')));
+    if (!inSet) throw new Error('แก้ได้เฉพาะคนอยู่เวรชุดนี้ หรือผู้อนุมัติ (ใส่ PIN)');
+    by = pr.short;
+  } else throw new Error('ไม่มีสิทธิ์ — ล็อกอินศูนย์รวมงาน, ใช้ลิงก์จาก LINE ของเวรชุดนี้ หรือใส่ PIN ผู้อนุมัติ');
+  const R = reportsOf_(k.slice(0, 7))[k];
+  if (R && R.received) throw new Error('เวรนี้ล็อกแล้ว (หผ.ปร. รับเอกสารแล้ว) — แก้ได้เฉพาะผู้อนุมัติ');
+  return { by: by, appr: false };
 }
-
+function outAuth_(b, k) { return outPerm_(b, k).by; }
 const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place'];
+/** แก้ข้อมูลเวรที่ล็อกแล้ว (ผู้อนุมัติ) → ยกเลิก "รับแล้ว" ให้พิมพ์บัญชีลงนามใหม่ */
+function outUnlock_(k, P) { if (!P.appr) return; const R = reportsOf_(k.slice(0, 7))[k]; if (R && R.received) { repSetMeta_(k, { received: null }); log_(P.by, 'ยกเลิกรับเอกสาร (แก้ไฟดับ)', k.slice(0, 7), k); } }
+const OUT_HIST_F_ = { lvl: 'แรงดัน', off: 'เวลาไฟดับ', on: 'เวลาจ่ายไฟ', ws: 'เริ่มปฏิบัติงาน', we: 'เสร็จงาน', feeder: 'ฟีดเดอร์', place: 'สถานที่', cType: 'สาเหตุ', cData: 'สาเหตุย่อย', fix: 'การแก้ไข', cust: 'ผู้ใช้ไฟ', detail: 'รายละเอียด' };
+function outHist_(d, by, act, extra) {
+  d.hist = (Array.isArray(d.hist) ? d.hist : []).concat([Object.assign({ at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by: by, act: act }, extra || {})]).slice(-30);
+}
 function saveOutage_(b) {
   const k = String(b.k || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k)) throw new Error('รหัสเวรไม่ถูกต้อง');
-  const by = outAuth_(b, k), o = b.o || {};
+  const P = outPerm_(b, k), by = P.by, o = b.o || {};
   if (o.lvl !== 'hv' && o.lvl !== 'lv') throw new Error('เลือกระดับแรงดัน');
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(o.off || ''))) throw new Error('ใส่เวลาไฟดับ');
   if (o.on && String(o.on) < String(o.off)) throw new Error('เวลาไฟมาต้องหลังเวลาไฟดับ');
@@ -548,22 +568,78 @@ function saveOutage_(b) {
   if (o.id) cur = rows.filter(function (x) { return x.id === String(o.id) && !x.deleted; })[0] || null;
   if (cur && cur.k !== k) throw new Error('รายการนี้อยู่คนละเวร');
   const d = cur ? cur.d : { id: 'OUT-' + Utilities.formatDate(new Date(), TZ, 'yyMMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100), k: k, created: new Date().toISOString(), createdBy: by };
+  const before = JSON.parse(JSON.stringify(d));
   OUT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
   if (!Array.isArray(d.mats)) d.mats = [];
   d.mats = d.mats.filter(function (m) { return m && m.n && Number(m.q) > 0; }).map(function (m) { return { n: String(m.n).slice(0, 80), q: Number(m.q), u: String(m.u || '') }; });
   d.updated = new Date().toISOString(); d.by = by;
   const isNew = !cur;
+  if (isNew) outHist_(d, by, 'new');
+  else {
+    const ch = [];
+    Object.keys(OUT_HIST_F_).forEach(function (f) { const a = before[f] == null ? '' : String(before[f]), z = d[f] == null ? '' : String(d[f]); if (a !== z) ch.push({ f: f, from: a.slice(0, 60), to: z.slice(0, 60) }); });
+    const da = (before.dev && before.dev.id) || '', dz = (d.dev && d.dev.id) || ''; if (da !== dz) ch.push({ f: 'dev', from: da, to: dz });
+    if (JSON.stringify(before.mats || []) !== JSON.stringify(d.mats)) ch.push({ f: 'mats', from: '', to: d.mats.map(function (m) { return m.n + '×' + m.q; }).join(', ').slice(0, 60) });
+    if (ch.length) outHist_(d, by, 'edit', { ch: ch });
+  }
   // แก้ชั่วคราว + มีพิกัด → ส่งเข้า Patrol ครั้งเดียว
   if (d.fix === 'temp' && !(d.patrol && d.patrol.id)) {
     try { d.patrol = patrolPush_(d, by); } catch (e) { d.patrol = { err: String(e.message || e) }; }
   }
   const rec = [d.id, "'" + k, JSON.stringify(d), new Date(), by, false];
   if (cur) sh.getRange(cur.row, 1, 1, 6).setValues([rec]); else sh.appendRow(rec);
+  outUnlock_(k, P);
   log_(by, isNew ? 'บันทึกไฟดับ' : 'แก้ไขไฟดับ', k.slice(0, 7), d.id + ' ' + (d.feeder || '') + ' ' + ((d.dev && d.dev.id) || ''));
   if (isNew && d.lvl === 'hv') { try { notifyOutage_(d, by); } catch (e) { log_('system', 'แจ้งไฟดับไม่สำเร็จ', '', String(e)); } }
   return d;
 }
-/** เพิ่มรูปที่อัปโหลดขึ้น Drive (ผ่านระบบ SLD) ให้เหตุการณ์ไฟดับ — เก็บเฉพาะลิงก์ */
+const OUT_DEL_WHY_ = { dup: 'บันทึกซ้ำ', wrong: 'บันทึกผิดเวร', bad: 'ไม่ใช่เหตุการณ์ไฟดับ / ข้อมูลผิด', other: 'อื่น ๆ' };
+function deleteOutage_(b) {
+  const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
+  if (!x) throw new Error('ไม่พบรายการ');
+  const P = outPerm_(b, x.k), by = P.by, d = x.d;
+  const why = OUT_DEL_WHY_[b.why] ? b.why : ''; if (!why) throw new Error('เลือกเหตุผลที่ลบ');
+  const note = String(b.note || '').trim().slice(0, 120); if (why === 'other' && !note) throw new Error('ระบุเหตุผล');
+  d.del = { at: new Date().toISOString(), by: by, why: why, note: note };
+  // งานรับแจ้งที่ปิดด้วยรายการนี้ → กลับเป็น "กำลังแก้"
+  const tks = tkRows_().filter(function (t) { return t.st === 'done' && t.d.outId === id; });
+  tks.forEach(function (t) { t.st = t.d.accBy ? 'acc' : 'new'; delete t.d.doneAt; delete t.d.outId; delete t.d.onAt; tkWrite_(t); });
+  if (tks.length) d.del.tk = tks.map(function (t) { return t.id; });
+  outHist_(d, by, 'del', { why: OUT_DEL_WHY_[why] + (note ? ': ' + note : '') });
+  outSheet_().getRange(x.row, 3, 1, 4).setValues([[JSON.stringify(d), new Date(), by, true]]);
+  outUnlock_(x.k, P);
+  log_(by, 'ลบไฟดับ', x.k.slice(0, 7), id + ' · ' + OUT_DEL_WHY_[why] + (note ? ': ' + note : '') + (tks.length ? ' · เปิดงานรับแจ้ง ' + d.del.tk.join(',') + ' ใหม่' : ''));
+  return { id: id, reopened: d.del.tk || [] };
+}
+/** กู้คืน — คนอยู่เวรภายใน 7 วัน · ผู้อนุมัติได้เสมอ · งานรับแจ้งที่เคยผูกกลับมาปิดอีกครั้ง */
+function restoreOutage_(b) {
+  const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && r.deleted; })[0];
+  if (!x) throw new Error('ไม่พบรายการที่ลบ');
+  const P = outPerm_(b, x.k), by = P.by, d = x.d;
+  if (!P.appr && d.del && Date.now() - new Date(d.del.at).getTime() > 7 * 86400000) throw new Error('ลบเกิน 7 วันแล้ว — ให้ผู้อนุมัติกู้คืน');
+  const tk = (d.del && d.del.tk) || [];
+  tkRows_().filter(function (t) { return tk.indexOf(t.id) >= 0 && (t.st === 'acc' || t.st === 'new'); }).forEach(function (t) {
+    t.st = 'done'; t.d.outId = id; t.d.doneAt = new Date().toISOString(); if (d.on) t.d.onAt = new Date(d.on + ':00+07:00').toISOString(); tkWrite_(t); });
+  delete d.del; outHist_(d, by, 'restore');
+  outSheet_().getRange(x.row, 3, 1, 4).setValues([[JSON.stringify(d), new Date(), by, false]]);
+  outUnlock_(x.k, P);
+  log_(by, 'กู้คืนไฟดับ', x.k.slice(0, 7), id);
+  return d;
+}
+/** ย้ายไปเวรที่ถูกต้อง — ต้องมีสิทธิ์ทั้งเวรต้นทางและเวรปลายทาง (คนอยู่เวร: ปลายทางต้องยังไม่ล็อก) */
+function moveOutage_(b) {
+  const id = String(b.id || ''), to = String(b.to || ''); if (!/^\d{4}-\d{2}-\d{2}\|p[13]$/.test(to)) throw new Error('เวรปลายทางไม่ถูกต้อง');
+  const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0]; if (!x) throw new Error('ไม่พบรายการ');
+  if (x.k === to) throw new Error('อยู่เวรนี้อยู่แล้ว');
+  const P = outPerm_(b, x.k), by = P.by;
+  if (!getMonth_(to.slice(0, 7))) throw new Error('ไม่พบตารางเดือน ' + to.slice(0, 7));
+  if (!P.appr) { const R = reportsOf_(to.slice(0, 7))[to]; if (R && R.received) throw new Error('เวรปลายทางล็อกแล้ว — ให้ผู้อนุมัติย้าย'); }
+  const d = x.d, from = x.k; d.k = to; outHist_(d, by, 'move', { from: from, to: to });
+  outSheet_().getRange(x.row, 2, 1, 4).setValues([["'" + to, JSON.stringify(d), new Date(), by]]);
+  outUnlock_(from, P); outUnlock_(to, P);
+  log_(by, 'ย้ายเวรไฟดับ', from.slice(0, 7), id + ' ' + from + ' → ' + to);
+  return d;
+}
 function addOutPhotos_(b) {
   const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
   if (!x) throw new Error('ไม่พบรายการ');
@@ -576,14 +652,6 @@ function addOutPhotos_(b) {
   outSheet_().getRange(x.row, 3, 1, 3).setValues([[JSON.stringify(d), new Date(), by]]);
   log_(by, 'แนบรูปไฟดับ', x.k.slice(0, 7), id + ' +' + add.length + ' รูป');
   return d;
-}
-function deleteOutage_(b) {
-  const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
-  if (!x) throw new Error('ไม่พบรายการ');
-  const by = outAuth_(b, x.k);
-  outSheet_().getRange(x.row, 4, 1, 3).setValues([[new Date(), by, true]]);
-  log_(by, 'ลบไฟดับ', x.k.slice(0, 7), id);
-  return { id: id };
 }
 function saveOutMats_(b) {
   const who = approverByPin_(b.pin); if (!who) throw new Error('PIN ไม่ถูกต้อง');

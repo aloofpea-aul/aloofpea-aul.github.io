@@ -396,7 +396,7 @@ function doGet(e) {
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
     if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
-    if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m) });
+    if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m, q.del === '1') });
     if (a === 'repTrack') return json_({ ok: true, items: repTrack_(String(q.m || '')), from: repTrackFrom_() });
     if (a === 'sldPing') { const x = sldSS_(), f = x.getSheetByName('PatrolFinding'); return json_({ ok: true, sheet: x.getName(), patrol: !!f }); }
     return json_({ ok: false, error: 'unknown action' });
@@ -421,6 +421,8 @@ function doPost(e) {
     if (b.action === 'repMark') return json_({ ok: true, result: repMark_(b) });
     if (b.action === 'saveOutage') return json_({ ok: true, outage: saveOutage_(b) });
     if (b.action === 'deleteOutage') return json_({ ok: true, result: deleteOutage_(b) });
+    if (b.action === 'restoreOutage') return json_({ ok: true, outage: restoreOutage_(b) });
+    if (b.action === 'moveOutage') return json_({ ok: true, outage: moveOutage_(b) });
     if (b.action === 'addOutPhotos') return json_({ ok: true, outage: addOutPhotos_(b) });
     if (b.action === 'saveOutMats') return json_({ ok: true, mats: saveOutMats_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
