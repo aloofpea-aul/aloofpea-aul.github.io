@@ -883,6 +883,7 @@ function tkNotify_(d, again) {
 /** ทุก 5 นาที: รายการที่ยังไม่มีคนรับเกิน 10 นาที → เตือนซ้ำครั้งเดียว */
 function tkCheck() {
   try { repRemindDaily_(); } catch (e) { log_('system', 'เตือนรายงานเวรไม่สำเร็จ', '', String(e)); }
+  try { wxTick_(); } catch (e) {}
   const now = Date.now();
   tkRows_().forEach(function (x) {
     if (x.st !== 'new' || x.d.again) return;

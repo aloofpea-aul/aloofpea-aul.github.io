@@ -158,46 +158,62 @@ const WX_TH_ = { 0: 'ท้องฟ้าแจ่มใส', 1: 'มีเม�
   66: 'ฝนตก', 67: 'ฝนตกหนัก', 80: 'ฝนตกเป็นช่วง ๆ', 81: 'ฝนตกเป็นช่วง ๆ', 82: 'ฝนตกหนักเป็นช่วง ๆ',
   95: 'พายุฝนฟ้าคะนอง', 96: 'พายุฝนฟ้าคะนอง ลูกเห็บ', 99: 'พายุฝนฟ้าคะนองรุนแรง' };
 const WX_LV_ = { 1: 'สภาพปกติ', 2: 'ชื้น', 3: 'ฝนตก', 4: 'ลมแรง', 5: 'ฝนตก ลมแรง', 6: 'ฝนตก ฟ้าคะนอง' };
-/** ข้อมูลดิบ (จำไว้ 30 นาที) */
+/** ข้อมูลดิบ (จำไว้ 30 นาที = 1 รอบตรวจ) · hourly[0] = ชั่วโมงปัจจุบัน */
 function weatherData_() {
-  const cache = CacheService.getScriptCache(), hit = cache.get('wx2');
+  const cache = CacheService.getScriptCache(), hit = cache.get('wx3');
   if (hit) return JSON.parse(hit);
   try {
     const cfg = getConfig_(), lat = Number(cfg.wxLat || 8.3756), lon = Number(cfg.wxLon || 98.7271);
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-      '&current=temperature_2m,relative_humidity_2m,weather_code,wind_gusts_10m' +
-      '&hourly=precipitation_probability,weather_code,wind_gusts_10m&forecast_hours=8&timezone=Asia%2FBangkok';
+      '&current=temperature_2m,relative_humidity_2m,weather_code,wind_gusts_10m,precipitation' +
+      '&hourly=precipitation_probability,weather_code,wind_gusts_10m,precipitation&forecast_hours=8&timezone=Asia%2FBangkok';
     const j = JSON.parse(UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText());
-    const c = j.current || {}, h = j.hourly || {}, num = function (a) { return (a || []).filter(function (x) { return x != null; }); };
-    const d = { code: c.weather_code, t: c.temperature_2m, rh: c.relative_humidity_2m, gust: c.wind_gusts_10m,
-      codes: num(h.weather_code), probs: num(h.precipitation_probability), gusts: num(h.wind_gusts_10m) };
+    const c = j.current || {}, h = j.hourly || {}, num = function (a) { return (a || []).map(function (x) { return x == null ? null : x; }); };
+    const d = { at: Date.now(), code: c.weather_code, t: c.temperature_2m, rh: c.relative_humidity_2m, gust: c.wind_gusts_10m, pr: c.precipitation,
+      hrs: (h.time || []).map(function (x) { return String(x).slice(11, 13); }),
+      codes: num(h.weather_code), probs: num(h.precipitation_probability), gusts: num(h.wind_gusts_10m), mm: num(h.precipitation) };
     if (d.code == null) return null;
-    cache.put('wx2', JSON.stringify(d), 1800);
+    cache.put('wx3', JSON.stringify(d), 1800);
     return d;
   } catch (e) { return null; }
 }
-/** วิเคราะห์ระดับ 1–6 จากข้อมูล (ดูตอนนี้ + 8 ชม.ข้างหน้า) */
-function wxLevelOf_(d, cfg) {
+const WX_RAIN_C_ = function (c) { return (c >= 61 && c <= 67) || (c >= 80 && c <= 82); };
+/** วิเคราะห์ระดับดิบจากข้อมูล (ยังไม่ผ่านการยืนยัน 2 รอบ / หน่วงลดระดับ)
+ *  ระดับ 6 = ด่าน 1 (ฟ้าคะนองใน 3 ชม. + โอกาสฝน ≥ 80%) และด่าน 2 (ประกาศกรมอุตุฯ ระบุกระบี่ หรือ ลม ≥ 50 / ฝน ≥ 10 มม./ชม.) */
+function wxEval_(d, cfg, tmd) {
   if (!d) return null;
-  const G = Number(cfg.wxGust || 40), P = Number(cfg.wxRainProb || 60), H = Number(cfg.wxHumid || 85);
-  const codes = [d.code].concat(d.codes), max = function (a) { return a.length ? Math.max.apply(null, a) : 0; };
-  const isRain = function (c) { return (c >= 61 && c <= 67) || (c >= 80 && c <= 82); };
-  const thunder = codes.some(function (c) { return c >= 95; });
-  const rain = codes.some(isRain) || max(d.probs) >= P;
-  const windy = max([d.gust || 0].concat(d.gusts)) >= G;
-  if (thunder) return 6;
-  if (rain && windy) return 5;
-  if (windy) return 4;
-  if (rain) return 3;
-  if ((d.rh || 0) >= H || [45, 48, 51, 53, 55, 56, 57].indexOf(d.code) >= 0) return 2;
-  return 1;
+  const C = function (k, v) { const x = Number(cfg[k]); return isFinite(x) && cfg[k] !== '' && cfg[k] != null ? x : v; };
+  const G = C('wxGust', 40), G6 = C('wxGust6', 50), P = C('wxRainProb', 70), P6 = C('wxRain6Prob', 80), MM = C('wxRainMm', 2), MM6 = C('wxRainMm6', 10), H = C('wxHumid', 85);
+  const win = function (a, n) { return (a || []).slice(0, n + 1).filter(function (x) { return x != null; }); };
+  const max = function (a) { return a.length ? Math.max.apply(null, a) : 0; };
+  const prob3 = max(win(d.probs, 3)), prob6 = max(win(d.probs, 6));
+  const gust3 = max([d.gust || 0].concat(win(d.gusts, 3))), gust6 = max([d.gust || 0].concat(win(d.gusts, 6)));
+  const mm3 = max([d.pr || 0].concat(win(d.mm, 3)));
+  const thIdx = (d.codes || []).map(function (c, i) { return c >= 95 ? i : -1; }).filter(function (i) { return i >= 0; });
+  const thunder3 = d.code >= 95 || thIdx.some(function (i) { return i <= 3; });
+  const rainNow = WX_RAIN_C_(d.code) || (d.pr || 0) > 0;
+  const g1 = thunder3 && prob3 >= P6, tk = !!(tmd && tmd.k), gW = gust3 >= G6, gR = mm3 >= MM6;
+  const six = g1 && (tk || gW || gR);
+  const rain3 = rainNow || prob3 >= P || mm3 >= MM, rain6 = rainNow || prob6 >= P;
+  const lvNo6 = rain3 && gust3 >= G ? 5 : gust6 >= G ? 4 : rain6 ? 3 : ((d.rh || 0) >= H || [45, 48, 51, 53, 55, 56, 57].indexOf(d.code) >= 0) ? 2 : 1;
+  const hr = function (i) { return (d.hrs || [])[i] || ''; };
+  const watch = !six && (d.code >= 95 || thIdx.length) ? (d.code >= 95 ? 'ตอนนี้' : hr(thIdx[0]) + '–' + String((+hr(thIdx[thIdx.length - 1]) + 1) % 24).padStart(2, '0') + ' น.') : '';
+  const t78 = [7, 8].filter(function (i) { return d.probs && d.probs[i] != null; });
+  const trend = t78.some(function (i) { return d.codes[i] >= 95; }) ? 'ฟ้าคะนอง' : t78.some(function (i) { return d.gusts[i] >= G; }) ? 'ลมแรง' : t78.some(function (i) { return d.probs[i] >= P; }) ? 'ฝน' : '';
+  return { lv: six ? 6 : lvNo6, lvNo6: lvNo6, six: six, watch: watch, trend: trend,
+    ck: [
+      { k: 'g1', ok: g1, t: thunder3 ? 'ฟ้าคะนองใน 3 ชม. · โอกาสฝน ' + prob3 + '%' + (g1 ? '' : ' (ต้อง ≥ ' + P6 + '%)') : 'ไม่มีฟ้าคะนองใน 3 ชม.' },
+      { k: 'tmd', ok: tk, t: tk ? 'ประกาศกรมอุตุฯ ระบุกระบี่' + (tmd.k.no ? ' ฉบับที่ ' + tmd.k.no : '') : 'ประกาศกรมอุตุฯ ระบุกระบี่ — ' + (tmd && tmd.s ? 'ไม่มี (มีเฉพาะภาคใต้)' : 'ไม่มี') },
+      { k: 'gust', ok: gW, t: 'ลมกระโชกสูงสุด ' + Math.round(gust3) + ' กม./ชม.' + (gW ? '' : ' — ยังไม่ถึง ' + G6) },
+      { k: 'mm', ok: gR, t: 'ฝนสูงสุด ' + (Math.round(mm3 * 10) / 10) + ' มม./ชม.' + (gR ? '' : ' — ยังไม่ถึง ' + MM6) }] };
 }
+function wxLevelOf_(d, cfg) { const e = wxEval_(d, cfg, null); return e ? e.lv : null; }   // (ใช้ในทดสอบเดิม)
 function wxDetail_(d) {
   if (!d) return '';
-  const max = function (a) { return a.length ? Math.max.apply(null, a) : null; };
-  const g = max([d.gust || 0].concat(d.gusts)), p = max(d.probs);
+  const max = function (a) { a = (a || []).filter(function (x) { return x != null; }); return a.length ? Math.max.apply(null, a) : null; };
+  const g = max([d.gust || 0].concat((d.gusts || []).slice(0, 7))), p = max((d.probs || []).slice(0, 7));
   return [WX_TH_[d.code] || 'ไม่ทราบ', d.t != null ? Math.round(d.t) + '°C' : '', d.rh != null ? 'ความชื้น ' + Math.round(d.rh) + '%' : '',
-    g != null ? 'ลมกระโชก ' + Math.round(g) + ' กม./ชม.' : '', p != null ? 'โอกาสฝน 8 ชม.ข้างหน้า ' + p + '%' : ''].filter(String).join(' · ');
+    g != null ? 'ลมกระโชก ' + Math.round(g) + ' กม./ชม.' : '', p != null ? 'โอกาสฝน 6 ชม.ข้างหน้า ' + p + '%' : ''].filter(String).join(' · ');
 }
 function wxOverride_() {
   const o = JSON.parse(PropertiesService.getScriptProperties().getProperty('WX_OVERRIDE') || 'null');
@@ -205,16 +221,42 @@ function wxOverride_() {
   if (o.until && Date.now() > o.until) { PropertiesService.getScriptProperties().deleteProperty('WX_OVERRIDE'); return null; }
   return o;
 }
-/** สถานะสภาพอากาศตอนนี้: { lv, auto, manual:{lv,by,at,until,note}|null, detail } */
-function wxNow_() {
-  const cfg = getConfig_(), d = weatherData_(), auto = wxLevelOf_(d, cfg), o = wxOverride_();
-  return { lv: o ? o.lv : auto, auto: auto, manual: o, detail: wxDetail_(d), label: WX_LV_[o ? o.lv : auto] || '' };
+/** ระดับอัตโนมัติหลังกรอง: ระดับ 6 ต้องเห็น 2 รอบติดกัน · ขึ้นทันที · ลดเมื่อเงื่อนไขหายครบ 1 ชม. (สถานะเก็บใน WX_STATE) */
+function wxAuto_(e, at) {
+  const props = PropertiesService.getScriptProperties();
+  const st = JSON.parse(props.getProperty('WX_STATE') || '{}');
+  if (!e) return { lv: st.lv || null, st: st };
+  if (st.at === at) return { lv: st.lv, st: st };              // รอบเดิม (ข้อมูลยังไม่เปลี่ยน)
+  const cont = st.at && at - st.at <= 75 * 60000;              // ต่อเนื่องจากรอบก่อน
+  let eff = e.lv, c6 = null, ok6 = null;
+  if (e.six) {
+    c6 = cont && st.c6 ? st.c6 : at;
+    if (at - c6 >= 20 * 60000) ok6 = st.ok6 || [c6, at]; else eff = e.lvNo6;
+  }
+  const cur = st.lv || eff;
+  let lv, down = null;
+  if (eff >= cur) lv = eff;
+  else { down = st.down || at; if (at - down >= 60 * 60000) { lv = eff; down = null; } else lv = cur; }
+  const ns = { at: at, lv: lv, c6: c6, down: down, ok6: lv === 6 ? (ok6 || st.ok6 || null) : null, raw: e.lv };
+  props.setProperty('WX_STATE', JSON.stringify(ns));
+  return { lv: lv, st: ns };
 }
+/** สถานะสภาพอากาศตอนนี้: { lv, auto, manual, detail, label, ck, watch, trend, pend6, ok6, hold } */
+function wxNow_() {
+  const cfg = getConfig_(), d = weatherData_(), o = wxOverride_();
+  let tmd = null; try { tmd = tmdOn_(bkkYmd_(new Date())); } catch (x) {}
+  const e = wxEval_(d, cfg, tmd), A = wxAuto_(e, d ? d.at : null), auto = A.lv, st = A.st || {};
+  return { lv: o ? o.lv : auto, auto: auto, manual: o, detail: wxDetail_(d), label: WX_LV_[o ? o.lv : auto] || '',
+    ck: e ? e.ck : [], watch: e && auto !== 6 ? e.watch : '', trend: e ? e.trend : '', raw: e ? e.lv : null,
+    pend6: !!(e && e.six && auto !== 6), ok6: auto === 6 ? st.ok6 || null : null, hold: st.down && auto > (e ? e.lv : 0) ? st.down : null };
+}
+/** เรียกจาก tkCheck ทุก 5 นาที: อัปเดตสถานะ + แจ้ง หผ.ปร./ชผ. เมื่ออัตโนมัติถึงระดับ 5–6 */
+function wxTick_() { const w = wxNow_(); if (w.lv >= 5 && !w.manual) notifyWx_(w.lv, 'ระบบวิเคราะห์จากพยากรณ์อากาศ' + (w.lv === 6 ? ' (ยืนยันแล้ว 2 รอบ)' : ''), false); }
 /** 2 บรรทัดท้ายข้อความ */
 function wxLines_() {
   const w = wxNow_(); if (w.lv == null) return [];
   const by = w.manual ? ' · หน้างานแจ้งโดย ' + w.manual.by + ' ' + Utilities.formatDate(new Date(w.manual.at), TZ, 'HH:mm') + (w.manual.note ? ' (' + w.manual.note + ')' : '') : '';
-  return ['สภาพอากาศ : ' + w.lv + by, w.detail ? '(' + w.detail + ')' : ''].filter(String);
+  return ['สภาพอากาศ : ' + w.lv + by, w.detail ? '(' + w.detail + ')' : '', !w.manual && w.pend6 ? '⚡ เข้าเกณฑ์ระดับ 6 — รอยืนยันรอบถัดไป' : !w.manual && w.watch ? '⚡ เฝ้าระวังฟ้าคะนอง ' + w.watch : ''].filter(String);
 }
 function weatherText_() { return wxLines_().join(' '); }        // ใช้กับข้อความเดิม
 

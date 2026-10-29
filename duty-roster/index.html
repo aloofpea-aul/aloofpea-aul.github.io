@@ -121,6 +121,8 @@ main .card,.tkc{scroll-margin-top:62px}.tkc{padding:10px 12px;border-left:4px so
 .rq.gone{opacity:.4;pointer-events:none;transition:opacity .2s}
 .bar{height:10px;border-radius:5px;background:#EFEBF2;overflow:hidden}.bar>i{display:block;height:10px;border-radius:5px;background:#8E3FA0}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.wxp{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12.5px;margin:2px 4px 2px 0}.wxp.r{background:#FDECEC;color:#A12A2A}.wxp.y{background:#FFF4E0;color:#8A5A00}.wxp.g{background:#EFECF3;color:#5A5266}
+.wxck{list-style:none;margin:6px 0 2px;padding:0;font-size:13.5px}.wxck li{padding:4px 0;border-bottom:1px dashed #E5DFEC}.wxck .ok{color:#1E7B45}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .muted{color:var(--mut);font-size:12px}
 .note{background:#EDE4F0;border-radius:10px;padding:8px 10px;font-size:12px;color:var(--pri2);line-height:1.5}
@@ -1336,6 +1338,19 @@ window.addEventListener('resize',()=>{ if(currentView()==='viewReport') fitPages
 const WX_LV={1:'ปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝนตก ลมแรง',6:'ฝนตก ฟ้าคะนอง'};
 S.wxPick=null; S.wxDur='6h';
 async function loadWx(){ try{ const j=await apiGet({action:'wx'}); S.wx=j.wx; LS.set('wx',j.wx); }catch(e){} renderWx(); }
+/* เหตุผลของระดับอัตโนมัติ: ป้ายเฝ้าระวัง / แนวโน้ม / ยืนยันระดับ 6 + รายการตรวจ */
+function wxWhy(w,tm){
+  const ck=w.ck||[], g1=(ck.find(c=>c.k==='g1')||{}).ok, pills=[];
+  if(w.ok6) pills.push(`<span class="wxp r">ยืนยันแล้ว 2 รอบ · ${tm(w.ok6[0]).replace(':','.')} / ${tm(w.ok6[1]).replace(':','.')}</span>`);
+  if(w.pend6) pills.push('<span class="wxp r">⚡ เข้าเกณฑ์ระดับ 6 — รอยืนยันรอบถัดไป (30 นาที)</span>');
+  if(w.watch) pills.push(`<span class="wxp y">⚡ เฝ้าระวังฟ้าคะนอง ${esc(w.watch)}</span>`);
+  if(w.hold) pills.push(`<span class="wxp g">คงระดับไว้ถึง ${tm(w.hold+36e5).replace(':','.')} น. (รอให้แน่ใจว่าเบาลง)</span>`);
+  if(w.trend) pills.push(`<span class="wxp g">แนวโน้ม 7–8 ชม.: ${esc(w.trend)}</span>`);
+  const showCk=g1||w.auto===6||w.pend6;
+  const ic={g1:'⚡',tmd:'📄',gust:'🌬',mm:'🌧'};
+  return (pills.length?`<div style="margin-top:6px">${pills.join('')}</div>`:'')+(showCk?`<ul class="wxck">${ck.map(c=>`<li>${ic[c.k]||''} ${esc(c.t)} ${c.ok?'<b class="ok">✓</b>':''}</li>`).join('')}</ul>
+    ${w.auto!==6?'<div class="muted" style="font-size:12.5px">ระดับ 6 ต้องผ่าน ⚡ และมีหลักฐานยืนยันอีกอย่างน้อย 1 ข้อ (📄 / 🌬 / 🌧) ติดกัน 2 รอบ</div>':''}`:'');
+}
 function renderWx(){
   const w=S.wx||LS.get('wx'); const el=$('dWx'); if(!el) return;
   if(!S.wxLoading){S.wxLoading=1;loadWx();}
@@ -1346,6 +1361,7 @@ function renderWx(){
   el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">สภาพอากาศตอนนี้ : ${w.lv} <span style="font-weight:400">(${esc(WX_LV[w.lv]||'')})</span></h3><span class="muted">ระบบวิเคราะห์: ${w.auto==null?'—':w.auto}</span></div>
     ${m?`<div class="note" style="margin-top:6px">ตั้งเองโดย ${esc(m.by)} ${tm(m.at)} น.${m.note?' · '+esc(m.note):''} · ${m.until?'ใช้ถึง '+tm(m.until)+' น.':'จนกว่าจะยกเลิก'}</div>`:''}
     <div class="muted" style="margin-top:4px">${esc(w.detail||'')}</div>
+    ${wxWhy(w,tm)}
     <div class="wxg">${[1,2,3,4,5,6].map(n=>`<button data-l="${n}" class="${n===pick?'on':''} ${!m&&n===w.auto?'auto':''}">${n} ${WX_LV[n]}</button>`).join('')}</div>
     <div class="seg light" id="wxDur">${[['6h','6 ชม.'],['shift','จบเวรนี้'],['forever','จนกว่าจะยกเลิก']].map(x=>`<button data-d="${x[0]}" class="${S.wxDur===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
     <div class="grid2" style="margin-top:8px"><input type="text" id="wxNote" placeholder="หมายเหตุ (ไม่บังคับ)" aria-label="หมายเหตุสภาพอากาศ"><input type="password" id="wxPin" inputmode="numeric" autocomplete="off" placeholder="PIN ผู้มีสิทธิ์" aria-label="PIN"></div>
