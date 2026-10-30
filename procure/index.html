@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script src="/pea-hub.js" data-app="procure" data-perm="login" data-name="ระบบงานจัดซื้อจัดจ้าง"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ระบบงานจัดซื้อจัดจ้าง · กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#6b1f7c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<style>
+@font-face{font-family:'Sarabun16';src:url('fonts/THSarabunNew.woff') format('woff');font-weight:400}
+@font-face{font-family:'Sarabun16';src:url('fonts/THSarabunNew-Bold.woff') format('woff');font-weight:700}
+:root{--pea:#6b1f7c;--pea2:#8e3aa0;--bg:#f3f1f6;--card:#fff;--line:#e3dfe8;--ink:#2b2433;--mute:#7a7184;--ok:#1f8a4c;--warn:#c27a00}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Sarabun16','TH SarabunIT๙','TH Sarabun New',sans-serif;font-size:21px}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:flex;flex-direction:column;height:100%}
+.top{background:linear-gradient(135deg,var(--pea),var(--pea2));color:#fff;padding:10px 14px calc(10px);display:flex;align-items:center;gap:10px;flex:none}
+.top h1{font-size:23px;margin:0;font-weight:700;line-height:1.1}
+.top small{display:block;font-weight:400;opacity:.85;font-size:17px}
+.top .sp{flex:1}
+.ibtn{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;padding:4px 12px;cursor:pointer;font-size:20px}
+.main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:1500px;margin:0 auto;padding:12px}
+.bnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.bnav button{flex:1;border:0;background:none;padding:6px 0 4px;color:var(--mute);font-size:16px;cursor:pointer;line-height:1.1}
+.bnav button b{display:block;font-size:22px;font-weight:400}
+.bnav button.on{color:var(--pea);font-weight:700}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(40,10,50,.06)}
+.card h3{margin:0 0 6px;font-size:22px;color:var(--pea)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 220px}
+label.f{display:block;margin:4px 0 8px}
+label.f>span{display:block;font-size:17px;color:var(--mute);line-height:1.2}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:3px 9px;background:#fff;line-height:1.25}
+.f textarea{min-height:64px;resize:vertical}
+.f input:focus,.f textarea:focus,.f select:focus{outline:2px solid var(--pea2);border-color:transparent}
+.btn{border:0;border-radius:10px;padding:4px 14px;cursor:pointer;background:#efe8f3;color:var(--pea);font-weight:700}
+.btn.p{background:var(--pea);color:#fff}
+.btn.g{background:#e3f4ea;color:var(--ok)}
+.btn.sm{padding:1px 10px;font-size:18px}
+.muted{color:var(--mute);font-size:17px}
+.seg{display:inline-flex;background:#efe8f3;border-radius:11px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{border:0;background:none;border-radius:8px;padding:2px 14px;cursor:pointer;color:var(--pea)}
+.seg button.on{background:var(--pea);color:#fff;font-weight:700}
+.segrow{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap}.segrow>span{min-width:88px;color:var(--mute);font-size:18px}
+.tag{display:inline-block;border-radius:20px;padding:0 9px;font-size:16px;background:#efe8f3;color:var(--pea)}
+.tag.ok{background:#e3f4ea;color:var(--ok)}.tag.w{background:#fff3dc;color:var(--warn)}
+/* list */
+.job{display:flex;gap:12px;align-items:center;cursor:pointer}
+.job .ico{width:46px;height:46px;border-radius:12px;background:#efe8f3;display:grid;place-items:center;font-size:26px;flex:none}
+.job .t{font-weight:700;line-height:1.15}
+.steps{display:flex;gap:3px;margin-top:5px}
+.steps i{flex:1;height:6px;border-radius:4px;background:#e6e1ea}
+.steps i.d{background:var(--ok)}.steps i.c{background:var(--warn)}
+.fab{position:fixed;right:18px;bottom:78px;background:var(--pea);color:#fff;border:0;border-radius:30px;padding:8px 20px;font-size:22px;font-weight:700;box-shadow:0 4px 14px rgba(107,31,124,.4);cursor:pointer}
+/* items table */
+.it{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:#fcfbfd}
+.it .hd{display:flex;align-items:center;gap:8px}
+.it .no{width:30px;height:30px;border-radius:50%;background:var(--pea);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.sum{display:grid;grid-template-columns:1fr auto;gap:0 14px;font-size:20px}
+.sum b{text-align:right}
+/* person */
+.pc{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d9c6e0,#efe8f3);display:grid;place-items:center;color:var(--pea);font-weight:700;flex:none;font-size:20px}
+.pc .body{flex:1}
+.role{font-size:16px;color:#fff;background:var(--pea2);border-radius:6px;padding:0 7px;display:inline-block}
+/* docs */
+.doc{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.doc .n{width:34px;height:34px;border-radius:9px;background:#efe8f3;color:var(--pea);display:grid;place-items:center;font-weight:700;flex:none}
+.doc .b{flex:1;min-width:0}
+.doc .ttl{font-weight:700;line-height:1.15}
+.doc .row>*{flex:0 0 auto}
+.it .row{display:grid;grid-template-columns:1fr 1fr 1.3fr 1.3fr;gap:6px}.it .row>*{min-width:0}
+.top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 130px)}
+.doc input{border:1px solid var(--line);border-radius:8px;padding:0 6px;width:150px}
+.doc input.num{width:96px}
+details.more{margin-top:4px}
+details.more summary{color:var(--pea);cursor:pointer;font-size:17px}
+/* layout: editor + preview */
+.split{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media(min-width:1100px){.split{grid-template-columns:minmax(420px,560px) minmax(0,1fr)}.split .pv{position:sticky;top:0;max-height:calc(100vh - 90px);overflow:auto}.bnav .pvbtn{display:none}}
+.pvbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border-radius:12px;padding:6px 10px;margin-bottom:10px}
+.pvbar .sp{flex:1}
+.sheetbox{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:30px}
+.sheetwrap{box-shadow:0 2px 10px rgba(0,0,0,.18);position:relative}
+.ovf::after{content:'⚠ เนื้อหาเกินหน้ากระดาษ';position:absolute;top:6px;right:6px;background:#c62828;color:#fff;font:16px 'Sarabun16';padding:0 8px;border-radius:6px}
+.savest{font-size:15px;opacity:.9;margin-left:6px;white-space:nowrap}.savest.err{background:#fff3;border-radius:6px;padding:0 6px;cursor:pointer;color:#ffe08a}
+.warnbox{background:#fff6e0;color:#7a4b00}
+.mdl{position:fixed;inset:0;background:rgba(30,10,40,.45);display:flex;align-items:center;justify-content:center;z-index:20;padding:14px}
+.mbox{background:#fff;border-radius:16px;padding:14px 16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.mbox h3{margin:0 0 6px;color:var(--pea)}.mbtn{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.minp{width:100%;border:1px solid var(--line);border-radius:9px;padding:3px 9px;margin-top:8px}
+.mlist{display:flex;flex-direction:column;gap:6px;margin-top:6px}.mlist button{border:1px solid var(--line);background:#fcfbfd;border-radius:10px;padding:4px 10px;text-align:left;cursor:pointer}.mlist button:hover{background:#efe8f3}
+#busy{position:fixed;inset:0;background:rgba(255,255,255,.5);display:none;align-items:center;justify-content:center;z-index:15}
+.spin{width:42px;height:42px;border:4px solid #e3d6e8;border-top-color:var(--pea);border-radius:50%;animation:sp 0.8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.toast{z-index:30;position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2b2433;color:#fff;padding:6px 16px;border-radius:20px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+.toast.on{opacity:.95}
+.editing .page [data-e]{outline:1px dashed #b07cc0;background:#fbf5fd}
+
+/* ================= A4 PAGE (print) ================= */
+.page{width:210mm;height:297mm;background:#fff;color:#000;padding:12mm 22.4mm 10mm 25mm;font-family:'Sarabun16';font-size:9.6pt;line-height:18.1pt;overflow:hidden;position:relative}
+.page p{margin:0;text-align:justify;text-justify:inter-character}
+.page .in{text-indent:2.5cm}
+.page .in2{padding-left:2.5cm}
+.page .in3{padding-left:3.2cm}
+.page .c{text-align:center}
+.page b{font-weight:700}
+.logo{width:42mm;display:block;margin-left:0}
+.mh{display:grid;grid-template-columns:12.5mm 67.5mm 10mm 1fr}
+.mh>div{white-space:nowrap}
+.mh .lb{font-weight:400}
+.subj{display:grid;grid-template-columns:12.5mm 1fr}
+.gap{height:6pt}
+.gap2{height:18pt}
+table.t{border-collapse:collapse;width:100%}
+table.t td,table.t th{border:.75pt solid #000;padding:0 4px;vertical-align:top;line-height:17pt}
+table.t th{font-weight:700;text-align:center}
+.r{text-align:right}.ctr{text-align:center}
+.sig{display:grid;grid-template-columns:79mm 1fr;gap:0 4mm;align-items:start}
+.box{border:.75pt solid #000;padding:1.5mm 3mm 2mm}
+.box .l{padding-left:12mm}
+.sc{text-align:center}
+.pgno{text-align:center}
+.cont{text-align:right;margin-top:2mm}
+@page{size:A4;margin:0}
+@media print{
+  html,body{background:#fff;height:auto}
+  .app,.toast,#busy,.mdl{display:none!important}
+  #printArea{display:block!important}
+  #printArea .page{break-after:page}
+  #printArea .page:last-child{break-after:auto}
+}
+#printArea{display:none}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top">
+    <button class="ibtn" id="backBtn" style="display:none">‹</button>
+    <div><h1 id="ttl">ระบบงานจัดซื้อ</h1><small id="sub">กฟส.อ่าวลึก · วิธีเฉพาะเจาะจง</small></div>
+    <div class="sp"></div>
+    <button class="ibtn" id="delBtn" title="ลบงานนี้" style="display:none">🗑</button>
+    <button class="ibtn" id="setBtn" title="ตั้งค่า">⚙</button>
+  </div>
+  <div class="main" id="main"><div class="wrap" id="view"></div></div>
+  <div class="bnav" id="bnav" style="display:none">
+    <button data-t="info"><b>📝</b>ข้อมูลงาน</button>
+    <button data-t="items"><b>📦</b>รายการพัสดุ</button>
+    <button data-t="people"><b>👥</b>ผู้ลงนาม</button>
+    <button data-t="docs"><b>🔢</b>เอกสาร/ออกเลข</button>
+    <button data-t="pv" class="pvbtn"><b>🖨</b>ดู/พิมพ์</button>
+  </div>
+</div>
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+<div id="busy"><div class="spin"></div></div>
+<datalist id="staff"></datalist>
+
+<script>
+/* ---------------- utilities ---------------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TM=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+function thDate(iso){if(!iso)return '……………………';const[y,m,d]=iso.split('-').map(Number);return `${d} ${TM[m-1]} ${y+543}`}
+function beYear(iso){return (iso?+iso.slice(0,4):new Date().getFullYear())+543}
+const money=n=>(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function bahtText(num){
+  num=Math.round((+num||0)*100)/100;
+  const D=['','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'],P=['','สิบ','ร้อย','พัน','หมื่น','แสน'];
+  const rd=s=>{let o='';s=String(+s);if(s==='0')return '';
+    // handle millions
+    if(s.length>6){return rd(s.slice(0,-6))+'ล้าน'+rd(s.slice(-6))}
+    const L=s.length;for(let i=0;i<L;i++){const d=+s[i],p=L-i-1;if(!d)continue;
+      if(p===0&&d===1&&L>1)o+='เอ็ด';else if(p===1&&d===2)o+='ยี่';else if(p===1&&d===1)o+='';else o+=D[d];o+=P[p]}return o};
+  const [b,s]=num.toFixed(2).split('.');let t=rd(b);if(t)t+='บาท';
+  if(+s){t+=rd(s)+'สตางค์'}else t+='ถ้วน';return t||'ศูนย์บาทถ้วน'}
+const toThaiDigits=s=>s.replace(/[0-9]/g,d=>'๐๑๒๓๔๕๖๗๘๙'[d]);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1800)}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+/* ---------------- ตั้งค่าการเชื่อมต่อ ---------------- */
+const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้านระบบงานจัดซื้อจัดจ้าง (…/exec) · ว่าง = โหมดทดลองเก็บในเครื่อง
+const BOOK_API = 'https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec';   // ระบบออกเลขหนังสือ V4
+const ST_API = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';     // ฐานข้อมูลพนักงาน (Safety Talk)
+const LOGO = 'pea-logo.png';
+const lsr = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const API_URL = () => lsr('procure_api') || API_DEFAULT;
+const LOCAL = () => !API_URL();
+const cred = () => ({ user: lsr('pea_aoluek_username') || '', pass: lsr('pea_aoluek_password') || '' });
+const nm = s => String(s || '').replace(/[\s​-‍﻿]/g, '').toLowerCase();
+
+/* ---------------- ข้อมูลกลาง ---------------- */
+const DEFSET = { office: 'กฟส.อ่าวลึก', bookPrefix: 'ต.2 กฟส.อล.', authNo: 'พ.(ม)28/2568', authDate: '2025-11-17', authLimit: '1,000,000.-บาท (หนึ่งล้านบาทถ้วน)',
+  approver: { name: '', pos: 'ผจก.กฟส.อ่าวลึก' },
+  depts: { 'ผปร.': { code: '(ปร.)', head: 'หผ.ปร.', cc: '', acc: '', accName: '' }, 'ผบง.': { code: '(บง.)', head: 'หผ.บง.', cc: '', acc: '', accName: '' }, 'ผบค.': { code: '(บค.)', head: 'หผ.บค.', cc: '', acc: '', accName: '' } } };
+let SET = Object.assign({}, DEFSET, store.get('procure_settings', {}));
+SET.thaiNum = store.get('procure_thainum', true);
+let STAFF = store.get('procure_staff', { list: [] }).list || [];
+let ME = { name: cred().user, admin: false };
+let LIST = [];
+
+const DOCS = [
+ { k: 'd1', short: 'แต่งตั้งเจ้าหน้าที่จัดทำ TOR/ราคากลาง', num: true },
+ { k: 'd2', short: 'ขอความเห็นชอบร่าง TOR', num: true },
+ { k: 'd3', short: 'ร่างขอบเขตงาน (TOR) 2 หน้า', num: false },
+ { k: 'd4', short: 'รายงานขอซื้อ 2 หน้า', num: true },
+ { k: 'd5', short: 'ขออนุมัติจัดซื้อ', num: true },
+ { k: 'd6', short: 'รายงานการตรวจรับงานซื้อ', num: false },
+ { k: 'd7', short: 'ขออนุมัติจ่ายเงิน', num: true }];
+
+const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+function blankJob() {
+  const t = today();
+  return { kind: 'buy', inspect: 'committee', title: '', purpose: '', dept: '', deptFull: '', deptCode: '', headShort: '', headAbbr: '',
+    budgetType: 'งบทำการ', cc: '', acc: '', accName: '',
+    background: '', objective: '', reason: '',
+    bidderQual: 'เป็นบุคคลธรรมดาหรือนิติบุคคลผู้มีอาชีพจำหน่ายพัสดุที่จัดซื้อ',
+    vendor: '', vendorAddr: '', bank: '', bankAcc: '', days: 7, penalty: '0.10', vatIncl: true, invBook: '', invNo: '', invDate: '',
+    items: [{ name: '', qty: 1, unit: '', price: 0, spec: '' }],
+    officer: { name: '', pos: '' }, head: { name: '', pos: '' }, approver: Object.assign({}, SET.approver),
+    committee: [{ name: '', pos: '', role: 'ประธานกรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }],
+    docs: { d1: { no: '', date: t }, d2: { no: '', date: t }, d3: { date: t }, d4: { no: '', date: t }, d5: { no: '', date: '' }, d6: { date: '' }, d7: { no: '', date: '' } },
+    printed: {} };
+}
+function fixJob(j) {   // งานเก่า/ข้อมูลไม่ครบ → เติมช่องที่ขาด
+  const b = blankJob();
+  for (const k in b) if (j[k] === undefined) j[k] = b[k];
+  for (const k in b.docs) j.docs[k] = j.docs[k] || {};
+  j.printed = j.printed || {};
+  if (!j.committee.length) j.committee.push({ name: '', pos: '', role: 'ประธานกรรมการ' });
+  return j;
+}
+function summaryOf(j) {
+  const c = calc(j), keys = DOCS.map(d => d.k);
+  const done = keys.filter(k => { const d = j.docs[k] || {}; return (j.printed || {})[k] || d.no || ((k === 'd3' || k === 'd6') && d.date); }).length;
+  return { id: j.id, year: beYear((j.docs.d1 || {}).date), kind: j.kind === 'hire' ? 'จัดจ้าง' : 'จัดซื้อ', dept: j.dept, title: j.title, vendor: j.vendor,
+    total: c.total, step: done + ' จาก 7', nums: keys.map(k => (j.docs[k] || {}).no).filter(Boolean).join(', '), updatedBy: ME.name, updatedAt: new Date().toISOString() };
+}
+
+/* ---------------- เรียกหลังบ้าน ---------------- */
+async function api(action, payload) {
+  if (LOCAL()) return localApi(action, payload || {});
+  const c = cred();
+  if (!c.user) { const e = new Error('ยังไม่ได้เข้าสู่ระบบศูนย์รวมงาน'); e.code = 'unauthorized'; throw e; }
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
+  let j;
+  try {
+    const r = await fetch(API_URL(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, user: c.user, pass: c.pass }, payload || {})), signal: ctrl.signal });
+    j = await r.json();
+  } catch (e) { throw new Error(e.name === 'AbortError' ? 'เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง' : 'เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ต'); }
+  finally { clearTimeout(t); }
+  if (!j || !j.ok) { const e = new Error((j && (j.message || j.error)) || 'ไม่ทราบสาเหตุ'); e.code = j && j.error; e.latest = j && j.latest; throw e; }
+  return j;
+}
+/* โหมดทดลอง (ยังไม่ได้ใส่ลิงก์หลังบ้าน): เก็บในเครื่องนี้ด้วยกติกาเดียวกับหลังบ้านจริง */
+function localApi(action, b) {
+  const all = store.get('procure_local_jobs', {});
+  const put = () => store.set('procure_local_jobs', all);
+  if (action === 'bootstrap') return { ok: true, me: { name: ME.name || 'ผู้ทดลอง', admin: true }, settings: Object.assign({}, DEFSET, store.get('procure_local_settings', {})),
+    jobs: Object.values(all).filter(j => !j._deleted).map(j => Object.assign(summaryOf(j), { updatedAt: j._at })).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))) };
+  if (action === 'get') { const j = all[b.id]; if (!j) throw new Error('ไม่พบงานนี้'); return { ok: true, job: JSON.parse(JSON.stringify(j)) }; }
+  if (action === 'save') {
+    const job = JSON.parse(JSON.stringify(b.job)), old = job.id && all[job.id];
+    if (!old) { job.id = 'PR' + Date.now().toString(36).toUpperCase(); job.rev = 1; job.createdBy = ME.name; job.createdAt = new Date().toISOString(); }
+    else {
+      if (b.baseRev != null && (old.rev || 0) !== b.baseRev && !b.force) { const e = new Error('มีผู้อื่นแก้ไขงานนี้หลังจากที่คุณเปิด'); e.code = 'conflict'; e.latest = old; throw e; }
+      job.rev = (old.rev || 0) + 1;
+      for (const k in old.docs || {}) if (old.docs[k].no && !(job.docs[k] || {}).no) job.docs[k] = Object.assign(job.docs[k] || {}, { no: old.docs[k].no });
+    }
+    job._at = new Date().toISOString(); all[job.id] = job; put();
+    return { ok: true, job, rev: job.rev, summary: summaryOf(job) };
+  }
+  if (action === 'setDocNo') {
+    const job = all[b.id]; if (!job) throw new Error('ไม่พบงานนี้');
+    if (job.docs[b.docKey].no && !b.replace) throw new Error('ฉบับนี้มีเลขแล้ว');
+    Object.assign(job.docs[b.docKey], { no: b.no, date: b.date || job.docs[b.docKey].date, bookRef: b.bookRef || '' });
+    job.rev = (job.rev || 0) + 1; job._at = new Date().toISOString(); put();
+    return { ok: true, job, rev: job.rev, summary: summaryOf(job) };
+  }
+  if (action === 'remove') { if (all[b.id]) all[b.id]._deleted = true; put(); return { ok: true }; }
+  if (action === 'saveSettings') { store.set('procure_local_settings', b.settings); return { ok: true, settings: b.settings }; }
+  throw new Error('unknown action');
+}
+
+/* ---------------- บันทึกอัตโนมัติ ---------------- */
+let saving = false, dirty = false, saveT = null, saveState = '';
+function setSave(s) { saveState = s; const el = $('#saveSt'); if (el) { el.textContent = { wait: '● ยังไม่บันทึก', busy: '⟳ กำลังบันทึก…', ok: '✓ บันทึกแล้ว', err: '⚠ บันทึกไม่สำเร็จ — แตะเพื่อลองใหม่' }[s] || ''; el.className = 'savest ' + s; } }
+function save() { if (!cur) return; dirty = true; setSave('wait'); clearTimeout(saveT); saveT = setTimeout(flush, 1200); }
+const clean = j => { const o = JSON.parse(JSON.stringify(j)); delete o._at; delete o._deleted; return o; };
+async function flush() {
+  clearTimeout(saveT);
+  if (!cur || !dirty) return;
+  if (saving) { saveT = setTimeout(flush, 500); return; }
+  saving = true; dirty = false; setSave('busy');
+  const j = cur;
+  try {
+    const r = await api('save', { job: clean(j), baseRev: j.rev });
+    j.id = r.job.id; j.rev = r.rev; upsertList(r.summary || summaryOf(j));
+    rememberPeople(j);
+    setSave(dirty ? 'wait' : 'ok');
+  } catch (e) {
+    if (e.code === 'conflict') {
+      const ok = await ask('มีผู้อื่นแก้ไขงานนี้ไปก่อน', `${esc(e.message)}<br><br><b>โหลดข้อมูลล่าสุด</b> = ใช้ข้อมูลของอีกฝ่าย (สิ่งที่คุณเพิ่งแก้จะหาย)<br><b>บันทึกของฉันทับ</b> = ใช้ข้อมูลในหน้าจอนี้`, ['โหลดข้อมูลล่าสุด', 'บันทึกของฉันทับ']);
+      if (ok === 0 && e.latest) { cur = fixJob(e.latest); setSave('ok'); jobView(); }
+      else { try { const r = await api('save', { job: clean(j), force: true }); j.rev = r.rev; upsertList(r.summary); setSave('ok'); } catch (e2) { dirty = true; setSave('err'); toast(e2.message); } }
+    } else { dirty = true; setSave('err'); toast('บันทึกไม่สำเร็จ: ' + e.message); }
+  } finally { saving = false; if (dirty && saveState !== 'err') saveT = setTimeout(flush, 1500); }
+}
+async function settle() { for (let i = 0; i < 120 && (saving || dirty); i++) { if (dirty && !saving) await flush(); else await new Promise(r => setTimeout(r, 250)); } return !dirty; }
+function upsertList(s) { if (!s || !s.id) return; const i = LIST.findIndex(x => x.id === s.id); if (i >= 0) LIST[i] = Object.assign(LIST[i], s); else LIST.unshift(s); }
+function rememberPeople(j) { store.set('procure_last', { dept: j.dept, officer: j.officer, head: j.head, approver: j.approver, committee: j.committee }); }
+addEventListener('beforeunload', e => { if (dirty || saving) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------------- รายชื่อพนักงาน (ฐานข้อมูลเดียวกับ Safety Talk) ---------------- */
+function staffPos(p) { return String(p.newsPos || p.position || '').trim(); }
+async function loadStaff(force) {
+  const c = store.get('procure_staff', null);
+  if (!force && c && c.list && c.list.length && Date.now() - (c.ts || 0) < 12 * 3600e3) return;
+  const a = cred(); if (!a.user) return;
+  try {
+    const j = await fetch(ST_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: 'st', args: [{ action: 'people', auth: { name: a.user, pass: a.pass } }] }) }).then(r => r.json());
+    const arr = (j && (j.result || j.data)) || [];
+    if (!Array.isArray(arr) || !arr.length) return;
+    STAFF = arr.map(p => ({ name: String(p.name || '').replace(/\s+/g, ' ').trim(), pos: staffPos(p), dept: String(p.dept || '') })).filter(p => p.name);
+    store.set('procure_staff', { ts: Date.now(), list: STAFF });
+    fillStaff();
+  } catch (e) {}
+}
+function fillStaff() { $('#staff').innerHTML = STAFF.map(s => `<option value="${esc(s.name)}">${esc(s.pos)}</option>`).join(''); }
+const findStaff = n => STAFF.find(x => nm(x.name.replace(/^(นางสาว|นาง|นาย)/, '')) === nm(String(n).replace(/^(นางสาว|นาง|นาย)/, '')));
+
+/* ---------------- ระบบออกเลขหนังสือ (หมวด "หนังสือทั่วไป") ---------------- */
+async function book(fn, args) {
+  const r = await fetch(BOOK_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }) }).then(x => x.text());
+  let j; try { j = JSON.parse(r); } catch (e) { throw new Error('ระบบออกเลขหนังสือตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้ง'); }
+  if (!j.ok) throw new Error(j.error || 'ระบบออกเลขหนังสือขัดข้อง');
+  return j.data;
+}
+async function bookToken(again) {
+  let t = again ? null : lsr('booknum_token_v1');
+  if (t) return t;
+  const code = await askText('เชื่อมระบบออกเลขหนังสือ', 'กรอก <b>รหัสสำนักงาน</b> (รหัสเดียวกับที่ใช้เข้าระบบออกเลขหนังสือ) — ทำครั้งเดียวต่อเครื่อง', 'รหัสสำนักงาน', true);
+  if (!code) return null;
+  const r = await book('login', [code]);
+  if (!r || !r.ok) throw new Error(r && r.reason === 'SETUP_REQUIRED' ? 'ระบบออกเลขหนังสือยังไม่ได้ตั้งรหัสสำนักงาน' : 'รหัสสำนักงานไม่ถูกต้อง');
+  lsr('booknum_token_v1', r.token);
+  if (r.settings) lsr('booknum_settings_v1', JSON.stringify(r.settings));
+  return r.token;
+}
+async function bookCall(fn, args) {   // แนบ token อัตโนมัติ · หมดอายุ → ถามรหัสใหม่ 1 ครั้ง
+  let t = await bookToken(false); if (!t) return null;
+  try { return await book(fn, [t].concat(args)); }
+  catch (e) {
+    if (!/AUTH_REQUIRED|SETUP_REQUIRED/.test(e.message)) throw e;
+    lsr('booknum_token_v1', null); t = await bookToken(true); if (!t) return null;
+    return await book(fn, [t].concat(args));
+  }
+}
+function docSubject(j, k) {
+  const box = document.createElement('div'); box.innerHTML = renderPages(j, [k]);
+  const s = box.querySelectorAll('.subj')[0];
+  return s ? s.children[1].textContent.replace(/\s+/g, ' ').trim() : (DOCS.find(d => d.k === k) || {}).short;
+}
+async function issueNo(k, btn) {
+  const j = cur, d = j.docs[k], info = DOCS.find(x => x.k === k);
+  if (d.no) return toast('ฉบับนี้มีเลขแล้ว');
+  if (!j.dept) return toast('เลือกแผนกในแท็บข้อมูลงานก่อน');
+  if (LOCAL()) return toast('โหมดทดลอง: ยังไม่เชื่อมหลังบ้าน จึงยังออกเลขจริงไม่ได้ (พิมพ์เลขเองในช่องได้)');
+  const old = btn.textContent; btn.disabled = true; btn.textContent = 'กำลังเตรียม…';
+  try {
+    if (!(await settle())) throw new Error('บันทึกงานไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    if (!j.id) throw new Error('บันทึกงานก่อนออกเลข');
+    let st = null; try { st = JSON.parse(lsr('booknum_settings_v1') || 'null'); } catch (e) {}
+    if (!st || !(st.departments || []).length) { st = await bookCall('getSettings', []); if (!st) return; lsr('booknum_settings_v1', JSON.stringify(st)); }
+    const code = j.deptCode.replace(/\s/g, '');
+    let dept = (st.departments || []).find(x => String(x).replace(/\s/g, '').includes(code));
+    if (!dept) { const i = await choose('เลือกแผนกในระบบออกเลขหนังสือ', st.departments || []); if (i < 0) return; dept = st.departments[i]; }
+    const recs = st.recorders || [];
+    let rec = [lsr('booknum_user_v1'), ME.name].find(x => x && recs.some(r => nm(r) === nm(x)));
+    if (rec) rec = recs.find(r => nm(r) === nm(rec));
+    else { const i = await choose('ผู้บันทึก (ชื่อในระบบออกเลขหนังสือ)', recs); if (i < 0) return; rec = recs[i]; lsr('booknum_user_v1', rec); }
+    const date = d.date || today(), subject = docSubject(j, k);
+    const go = await ask('ยืนยันออกเลขหนังสือ', `<div style="line-height:1.5"><b>${esc(lbl(j, info.short))}</b><br>เรื่อง: ${esc(subject)}<br>แผนก: ${esc(dept)} · วันที่ ${thDate(date)}<br>ผู้บันทึก: ${esc(rec)}</div><div class="muted" style="margin-top:6px">เลขจะถูกบันทึกในระบบออกเลขหนังสือทันที ยกเลิกภายหลังต้องแก้ที่ระบบออกเลข</div>`, ['ออกเลข', 'ยกเลิก']);
+    if (go !== 0) return;
+    btn.textContent = 'กำลังขอเลข…';
+    let next = ''; try { const n = await bookCall('getNextInfo', ['หนังสือทั่วไป', date]); next = (n && n.nextBookNum) || ''; } catch (e) {}
+    const res = await bookCall('saveData', [{ category: 'หนังสือทั่วไป', rowIndex: '', bookNum: next, department: dept, date, recorder: rec, subject,
+      detail: 'ออกจากระบบงานจัดซื้อจัดจ้าง · ' + j.id, medianPrice: '', paymentDocNum: '', paymentItem: '', paymentAmount: '', payee: '', paymentNote: '', contractor: '', procurement: 'ทั่วไป', startDate: '', endDate: '', orderDate: '', amount: '', retention: '' }]);
+    if (!res) return;
+    if (res.status !== 'success') throw new Error('ระบบออกเลขหนังสือ: ' + (res.message || 'บันทึกไม่สำเร็จ'));
+    const ref = String(res.bookNum || '');
+    const m = ref.match(/(\d+)\s*\/\s*\d{4}\s*$/) || ref.match(/(\d+)(?!.*\d)/);
+    const no = m ? m[1] : ref;
+    const r = await api('setDocNo', { id: j.id, docKey: k, no, date, bookRef: ref });
+    j.docs[k].no = no; j.docs[k].date = date; j.docs[k].bookRef = ref; j.rev = r.rev; upsertList(r.summary);
+    jobView(); toast('ได้เลขที่ ' + no + (res.changed ? ' (เลขที่ขอไว้มีผู้ใช้ก่อน ระบบให้เลขถัดไป)' : ''));
+  } catch (e) { toast(e.message || String(e)); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+
+/* ---------------- กล่องโต้ตอบ ---------------- */
+function modal(html) { const m = document.createElement('div'); m.className = 'mdl'; m.innerHTML = `<div class="mbox">${html}</div>`; document.body.appendChild(m); return m; }
+function ask(title, body, btns) { return new Promise(res => { const m = modal(`<h3>${esc(title)}</h3><div>${body}</div><div class="mbtn">${btns.map((b, i) => `<button class="btn ${i ? '' : 'p'}" data-i="${i}">${esc(b)}</button>`).join('')}</div>`);
+  m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { m.remove(); res(+b.dataset.i); }); }); }
+function askText(title, body, ph, pw) { return new Promise(res => { const m = modal(`<h3>${esc(title)}</h3><div>${body}</div><input class="minp" type="${pw ? 'password' : 'text'}" placeholder="${esc(ph)}"><div class="mbtn"><button class="btn p" data-ok>ตกลง</button><button class="btn" data-x>ยกเลิก</button></div>`);
+  const i = m.querySelector('input'); i.focus(); const done = v => { m.remove(); res(v); };
+  m.querySelector('[data-ok]').onclick = () => done(i.value.trim()); m.querySelector('[data-x]').onclick = () => done(''); i.onkeydown = e => { if (e.key === 'Enter') done(i.value.trim()); }; }); }
+function choose(title, opts) { return new Promise(res => { const m = modal(`<h3>${esc(title)}</h3><div class="mlist">${opts.map((o, i) => `<button data-i="${i}">${esc(o)}</button>`).join('') || '<div class="muted">ไม่มีรายการ</div>'}</div><div class="mbtn"><button class="btn" data-i="-1">ยกเลิก</button></div>`);
+  m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { m.remove(); res(+b.dataset.i); }); }); }
+
+/* ---------------- calculations ---------------- */
+function calc(j){const sum=j.items.reduce((s,i)=>s+(+i.qty||0)*(+i.price||0),0);
+ let total,vat,net;if(j.vatIncl){total=sum;vat=Math.round(total*7/107*100)/100;net=Math.round((total-vat)*100)/100}
+ else{net=sum;vat=Math.round(sum*0.07*100)/100;total=Math.round((net+vat)*100)/100}
+ return{total,vat,net,n:j.items.length}}
+function docNo(j,k){const d=j.docs[k]||{};const y=beYear(d.date);return `${SET.bookPrefix}${j.deptCode}${d.no||'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}/${y}`}
+function progress(j){return DOCS.map(d=>{const x=j.docs[d.k]||{};if(j.printed[d.k])return 'd';if(d.num?x.no:x.date)return 'c';return ''})}
+
+/* ---------------- document renderers ---------------- */
+let w;
+function W(j){const h=j.kind==='hire',one=j.inspect==='single';return{act:h?'จัดจ้าง':'จัดซื้อ',s:h?'จ้าง':'ซื้อ',vendor:h?'ผู้รับจ้าง':'ผู้ขาย',goods:h?'งาน':'สินค้า',item:h?'งาน':'พัสดุ',inv:h?'ใบส่งมอบงาน':'ใบส่งของ',deliv:h?'แล้วเสร็จ':'ส่งของ',
+ single:one,cm:one?'ผู้ตรวจรับพัสดุ':'คณะกรรมการตรวจรับ',cmS:one?'ผู้ตรวจรับพัสดุ':'คณะกรรมการตรวจรับ',cmK:one?'ผู้ตรวจรับพัสดุ':'คณะกรรมการ',cmFull:one?'ผู้ตรวจรับพัสดุ':'คณะกรรมการตรวจรับพัสดุ'}}
+const lbl=(j,t)=>j.kind==='hire'?t.replace(/ซื้อ/g,'จ้าง'):t;
+let DEPTS=SET.depts;
+function setDept(j,d){const x=DEPTS[d]||{};j.dept=d;j.deptFull=d+SET.office;j.deptCode=x.code||'';j.headAbbr=x.head||'';j.headShort=(x.head||'')+SET.office;if(x.cc)j.cc=x.cc;if(x.acc)j.acc=x.acc;if(x.accName)j.accName=x.accName}
+const E=(f,s)=>`<span data-e="${f}">${s}</span>`;
+function memoHead(j,k,o){const d=j.docs[k]||{},ov=d.ov||{};
+ return `<img class="logo" src="${LOGO}">
+ <div class="mh"><div>จาก</div><div>${E('from',esc(ov.from||o.from))}</div><div>ถึง</div><div>${esc(ov.to||o.to)}</div>
+ <div>เลขที่</div><div>${docNo(j,k)}</div><div>วันที่</div><div>${thDate(d.date)}</div></div>
+ <div class="subj"><div>เรื่อง</div><div>${esc(ov.subj||o.subj)}</div></div>
+ <div class="gap"></div>
+ <div class="subj"><div>เรียน</div><div>${esc(ov.attn||o.attn)}</div></div><div class="gap"></div>`}
+function itemTable(j,c){const r=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td class="ctr">${i.qty} ${esc(i.unit)}</td><td class="r">${money(i.price)}</td><td class="r">${money(i.qty*i.price)}</td></tr>`).join('');
+ return `<table class="t" style="margin-left:-6mm;width:calc(100% + 6mm)"><colgroup><col style="width:13mm"><col><col style="width:22mm"><col style="width:32mm"><col style="width:40mm"></colgroup>
+ <tr><th>ลำดับ</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย (บาท)</th><th>รวมเป็นเงินทั้งสิ้น</th></tr>${r}
+ <tr><td colspan="4" class="r"><b>(${bahtText(c.total)})&nbsp; รวมเป็นเงิน (บาท)</b></td><td class="r"><b>${money(c.total)}</b></td></tr>
+ <tr><td colspan="4" class="r"><b>ภาษีมูลค่าเพิ่ม 7 %</b></td><td class="r"><b>${money(c.vat)}</b></td></tr>
+ <tr><td colspan="4" class="r"><b>ราคา${w.goods}รวม</b></td><td class="r"><b>${money(c.net)}</b></td></tr></table>`}
+function approverBox(j,k,lines){const d=j.docs[k]||{},ov=d.ov||{};const L=(ov.box||lines.join('\n')).split('\n');
+ return `<div class="box"><div>${esc(L[0])}</div>${L.slice(1).map(l=>`<div class="l">${esc(l)}</div>`).join('')}
+ <div class="gap2"></div><div class="gap2"></div><div class="gap"></div>
+ <div class="sc">(${esc(j.approver.name)})</div><div class="sc">${esc(j.approver.pos)}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`}
+function signer(p,extra){return `<div class="sc">(${esc(p.name)})</div><div class="sc">${esc(p.pos)}</div>${(extra||[]).map(x=>`<div class="sc">${esc(x)}</div>`).join('')}`}
+const closing=(j,k,def)=>esc(((j.docs[k]||{}).ov||{}).close||def);
+const P=(s,c='in')=>`<p class="${c}">${s}</p>`;
+
+function R_d1(j,c){const auth=`ตามคำสั่งการไฟฟ้าส่วนภูมิภาค ที่ ${SET.authNo} เรื่อง มอบอำนาจดำเนินการจัดซื้อจัดจ้างจัดเช่า สั่ง ณ วันที่ ${thDate(SET.authDate)} ข้อ 2 การแต่งตั้งคณะกรรมการหรือบุคคลใดบุคคลหนึ่งในการจัดทำร่างขอบเขตของงานฯ กำหนดราคากลาง รวมถึงให้ความเห็นชอบร่างฯ ข้อ 2.2 ผู้จัดการการไฟฟ้าส่วนภูมิภาค...สาขา หรือผู้รักษาการแทนตำแหน่งดังกล่าว กรณีวงเงินที่จะจัดซื้อ จัดจ้างจัดเช่าครั้งหนึ่งไม่เกิน ${SET.authLimit} นั้น`;
+ const rows=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td class="ctr">${i.qty}</td><td class="ctr">${esc(i.unit)}</td></tr>`).join('');
+ return `<div class="page">${memoHead(j,'d1',{from:j.deptFull,to:SET.office,subj:`ขออนุมัติแต่งตั้งเจ้าหน้าที่จัดทำร่างขอบเขตของงาน (TOR) พร้อมกำหนดหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอและกำหนดราคากลางในการ${w.act}${j.title}`,attn:`ผจก.${SET.office}`})}
+ ${P(auth)}<div class="gap"></div>
+ ${P(`เพื่อให้สอดคล้องตามระเบียบกระทรวงการคลังว่าด้วยหลักเกณฑ์การจัดซื้อจัดจ้าง และการบริหารพัสดุภาครัฐ พ.ศ.2560 จึงขอแต่งตั้ง ${esc(j.officer.name)} ${esc(j.officer.pos)} เป็นเจ้าหน้าที่จัดทำร่างขอบเขตงานและกำหนดราคากลาง ในการ${w.act}${esc(j.title)}จำนวน ${c.n} รายการ ${esc(j.purpose)}`)}
+ <table class="t" style="width:120mm;margin-left:20mm"><colgroup><col style="width:11mm"><col><col style="width:19mm"><col style="width:17mm"></colgroup><tr><td class="ctr">ที่</td><td class="ctr">รายการ</td><td class="ctr">จำนวน</td><td class="ctr">หน่วย</td></tr>${rows}</table>
+ <div class="gap"></div>${P(`โดยเบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)}`,'')}
+ <div class="gap"></div>${P(closing(j,'d1','จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบโปรดอนุมัติตามเสนอต่อไป'),'c')}<div class="gap"></div>
+ <div class="sig" style="margin-left:-9mm"><div>${approverBox(j,'d1',[`เรียน   ${j.headShort}, เจ้าหน้าที่จัดทำร่างฯ`,'-  อนุมัติตามเสนอ','-  ดำเนินการต่อไป'])}</div><div style="padding-top:12mm">${signer(j.head)}</div></div></div>`}
+
+function R_d2(j,c){return `<div class="page">${memoHead(j,'d2',{from:'เจ้าหน้าที่จัดทำร่างขอบเขตของงานฯ',to:`ผจก.${SET.office}`,subj:`ขอความเห็นชอบร่างขอบเขตของงาน (TOR) พร้อมกำหนดหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอและกำหนดราคากลางในการ${w.act}${j.title}`,attn:`ผจก.${SET.office} ผ่าน ${j.headShort}`})}
+ ${P(`ตามอนุมัติ ผจก.${SET.office} ลว.${thDate(j.docs.d1.date)} ได้แต่งตั้งเจ้าหน้าที่จัดทำร่างขอบเขตของงาน (TOR) และหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ พร้อมกำหนดราคากลางสำหรับงาน${w.act}${esc(j.title)} จำนวน ${c.n} รายการ ${esc(j.purpose)}`)}<div class="gap"></div>
+ ${P(`ฉะนั้น เพื่อให้การดำเนินการดังกล่าวสอดคล้องกับพระราชบัญญัติการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ.2560 และระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ.2560 นั้น เจ้าหน้าที่จัดทำร่างขอบเขตงานฯ ได้จัดทำร่างขอบเขตของงานหรือรูปแบบรายการสำหรับงาน${w.act}${esc(j.title)} จำนวน ${c.n} รายการ ${esc(j.purpose)} โดยมีรายละเอียดดังนี้`)}<div class="gap"></div>
+ ${P('ขอบเขตงาน (TOR) (ตามเอกสารแนบ)')}<div class="gap"></div>
+ ${P(`ราคากลางเป็นเงิน ${money(c.total)} บาท เป็นราคาที่สืบจากท้องตลาด (${esc(j.vendor)} ${esc(j.vendorAddr)})`)}<div class="gap"></div>
+ ${P(closing(j,'d2','จึงเรียนมาเพื่อพิจารณา เห็นชอบร่างขอบเขตของงาน (TOR) และหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอต่อไป'))}
+ <div class="gap2"></div><div class="gap2"></div>
+ <div class="sig" style="margin-left:-9mm"><div style="padding-top:24mm">${approverBox(j,'d2',[`เรียน   ${j.headShort}, เจ้าหน้าที่จัดทำร่างฯ`,'- เห็นชอบร่างขอบเขตฯ/อนุมัติราคากลาง','- ดำเนินการต่อไป'])}</div><div>${signer(j.officer,['เจ้าหน้าที่จัดทำร่างขอบเขตฯและ','กำหนดราคากลาง'])}</div></div></div>`}
+
+function R_d3(j,c){const quals=[esc(j.bidderQual),'ไม่เป็นบุคคลล้มละลายหรืออยู่ระหว่างเลิกกิจการ','ไม่เป็นผู้ได้รับเอกสิทธิ์หรือความคุ้มกันซึ่งอาจปฏิเสธไม่ยอมขึ้นศาลไทย เว้นแต่รัฐบาลของผู้ยื่นข้อเสนอได้มีคำสั่งให้สละสิทธิและความคุ้มกันเช่นว่านั้น','ไม่เป็นบุคคลซึ่งถูกระบุชื่อไว้ในบัญชีผู้ทิ้งงานหรือได้แจ้งเวียนชื่อเป็นผู้ทิ้งงานของหน่วยงานของรัฐ'];
+ const H=(n,t)=>`<div class="gap"></div><p>${n}. ${t}</p>`;
+ const spec=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td style="line-height:15pt">${esc(i.spec).replace(/\n/g,'<br>')}</td></tr>`).join('');
+ const money5=`วงเงินในการ${w.act} เบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)} เป็นจำนวนเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) (รวมภาษีมูลค่าเพิ่ม)`;
+ return `<div class="page" style="padding-top:20mm"><p class="c"><b>ร่างขอบเขตงาน (Terms of Reference : TOR)</b></p><p class="c"><b>งาน${w.act}${esc(j.title)}</b></p><p class="c"><b>โดยวิธีเฉพาะเจาะจง ตามมาตรา 56 วรรคหนึ่ง(2)(ข)</b></p><div class="gap"></div>
+ ${H(1,'ความเป็นมา')}${P(esc(j.background))}${H(2,'วัตถุประสงค์')}${P(esc(j.objective))}${H(3,'คุณสมบัติของผู้ยื่นข้อเสนอ')}
+ ${quals.map((q,x)=>P(`3.${x+1} ${q}`)).join('')}${H(4,'รายละเอียดคุณลักษณะเฉพาะของงาน')}
+ <table class="t" style="width:150mm;margin-left:10mm"><colgroup><col style="width:13mm"><col style="width:52mm"><col></colgroup><tr><td class="ctr">ลำดับ</td><td class="ctr">รายการ</td><td class="ctr">คุณสมบัติสินค้า</td></tr>${spec}</table>
+ ${H(5,`วงเงินในการ${w.act}`)}${P(money5)}${H(6,`ระยะเวลาส่งมอบ${w.item}`)}${P(`ส่งมอบงานภายใน ${j.days} วัน นับถัดจากวันที่ได้รับอนุมัติสั่ง${w.s}`)}${H(7,'หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ')}</div>
+ <div class="page" style="padding-top:20mm">${P('ใช้เกณฑ์การพิจารณาถึงประโยชน์ของหน่วยงานของรัฐ และวัตถุประสงค์ของการใช้งานเป็นสำคัญ โดยคำนึงเกณฑ์ราคา')}
+ ${H(8,'วงเงินงบประมาณ/วงเงินที่ได้รับจัดสรร')}${P(`งบประมาณที่ได้รับจัดสรร เป็นเงิน ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}
+ ${H(9,'งวดงานและการจ่ายเงิน')}${P('ส่งมอบงานงวดเดียวและจ่ายเงินครบตามจำนวนที่ดำเนินการจริง')}
+ ${H(10,'อัตราค่าปรับ')}${P(`หากส่งมอบล่าช้าคิดค่าปรับเป็นอัตรารายวัน ร้อยละ ${esc(j.penalty)} ของมูลค่า${w.item}ที่ยังไม่ส่งมอบ`)}
+ <div class="gap2"></div><div class="gap2"></div><div style="margin-left:70mm"><div class="sc">(ลงชื่อ) ……………………………… เจ้าหน้าที่ร่างขอบเขตงาน</div><div style="margin-left:-20mm">${signer(j.officer)}</div></div></div>`}
+
+function R_d4(j,c){const cm=cmList(j).map((m,x)=>`<div class="in3" style="display:grid;grid-template-columns:52mm 50mm 1fr;gap:0 2mm"><span>${w.single?'':'2.'+(x+1)+' '}${esc(m.name)}</span><span>${esc(m.pos)}</span><span style="min-width:30mm">${esc(m.role)}</span></div>`).join('');
+ return `<div class="page">${memoHead(j,'d4',{from:j.deptFull,to:SET.office,subj:`รายงานขอ${w.s}${j.title}`,attn:`ผจก.${SET.office}`})}
+ ${P(`ด้วย ${esc(j.deptFull)} มีความประสงค์จะ${w.act}${esc(j.title)}จำนวน ${c.n} รายการ ${esc(j.purpose)} และเพื่อให้สอดคล้องตามพระราชบัญญัติการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 ตามมาตรา 56 (2)(ข) และตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 จึงเห็นควรดำเนินการ${w.act}โดยวิธีเฉพาะเจาะจง มีรายละเอียดดังต่อไปนี้`)}<div class="gap"></div>
+ <p class="in2">1. เหตุผลและความจำเป็นที่ต้อง${w.s}</p>${P(esc(j.reason))}<div class="gap"></div>
+ <p class="in2">2. รายละเอียดของ${w.item}ที่${w.s} จำนวน ${c.n} รายการ</p>${itemTable(j,c)}<div class="gap"></div>
+ ${P(`3. ราคากลางของ${w.item}ที่จะ${w.s} เป็นราคาจากการสืบหาจากบริษัทฯ/ห้างร้านในท้องถิ่น โดยได้ไปสอบถามราคาจาก ${esc(j.vendor)} ${esc(j.vendorAddr)}`)}
+ ${P(`4. วงเงินที่จะ${w.s}เบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)} เป็นจำนวนเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) (รวมภาษีมูลค่าเพิ่ม)`)}
+ ${P(`5. ระยะเวลาแล้วเสร็จ กำหนด${w.deliv}ภายใน ${j.days} วัน นับถัดจากวันที่ได้รับอนุมัติสั่ง${w.s}`)}
+ ${P(`6. วิธีจะ${w.s} พิจารณาเห็นสมควรดำเนินการ${w.act}โดยวิธีเฉพาะเจาะจง ตามพระราชบัญญัติการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 ตามมาตรา 56 (2)(ข) เนื่องจากการ${w.act}ครั้งนี้ มีราคาไม่เกิน 500,000.00 บาท และดำเนินการตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 ข้อ 79`)}
+ <div class="cont">/7. หลักเกณฑ์...</div></div>
+ <div class="page" style="padding-top:15mm"><div class="pgno">-2-</div><div class="gap"></div>
+ ${P('7. หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ ใช้เกณฑ์ราคา')}${P('8. ข้อเสนออื่นๆ')}
+ <p class="in2">&nbsp;&nbsp;(1) เห็นสมควรให้เจ้าหน้าที่พัสดุโดย ${esc(j.officer.name)} ${esc(j.officer.pos)} เป็นผู้ติดต่อตกลงราคากับ${w.vendor}โดยตรง</p>
+ <p class="in2">&nbsp;&nbsp;(2) แต่งตั้ง${w.single?'ผู้ตรวจรับพัสดุ':'คณะกรรมการตรวจรับงาน'+w.s} ตามรายงานฉบับนี้ ${w.single?'ได้แก่':'ดังนี้'}</p>${cm}<div class="gap"></div>
+ ${P(`ทั้งนี้เป็นอำนาจของ ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขา ระดับ 9 หรือผู้รักษาการแทนตำแหน่งดังกล่าว ตามคำสั่ง กฟภ. ที่ ${SET.authNo} เรื่อง มอบอำนาจดำเนินการจัดซื้อจัดจ้างจัดเช่า สั่ง ณ วันที่ ${thDate(SET.authDate)}`)}<div class="gap"></div>
+ ${P(closing(j,'d4',`จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้ดำเนินการจัดซื้อจัดจ้าง โดยวิธีเฉพาะเจาะจง ตามมาตรา 56(2)(ข) และแต่งตั้ง${w.cmS}ฯ ตามรายละเอียดในรายงานขอ${w.s}ดังกล่าวข้างต้น`))}
+ <div class="gap2"></div><div class="gap2"></div><div style="margin-left:80mm">${signer(j.head)}</div><div class="gap2"></div><div class="gap2"></div>
+ <div style="width:72mm;margin-left:62mm">${approverBox(j,'d4',[`เรียน ${j.headAbbr}`,`- เห็นชอบขอ${w.s}และลงนามแล้ว`,'- ดำเนินการต่อไป'])}</div></div>`}
+
+function R_d5(j,c){return `<div class="page">${memoHead(j,'d5',{from:j.deptFull,to:`ผจก.${SET.office}`,subj:`ขออนุมัติ${w.act}${j.title}`,attn:`ผจก.${SET.office}`})}
+ ${P(`ตามอนุมัติ ผจก.${SET.office} ลงวันที่ ${thDate(j.docs.d4.date)} เห็นชอบรายงานขอ${w.s}${esc(j.title)} จำนวน ${c.n} รายการ ในวงเงินงบประมาณ จำนวน ${money(c.total)} บาท (${bahtText(c.total)}) (รวมภาษีมูลค่าเพิ่ม) นั้น และตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 การดำเนินการตามข้อ 79 กรณีตามมาตรา 56(2)(ข) ให้เจ้าหน้าที่เจรจาตกลงราคากับผู้ประกอบการนั้นโดยตรง แล้วให้หัวหน้าเจ้าหน้าที่ซื้อหรือจ้างได้ภายในวงเงินที่ได้รับความเห็นชอบจากหัวหน้าหน่วยงานของรัฐ ตามข้อ 24`)}
+ ${P(`เจ้าหน้าที่ได้ดำเนินการสำรวจราคาและรายการ${w.act}${esc(j.title)} จำนวน ${c.n} รายการ เห็นว่าราคาที่${w.act}เท่ากับราคางบประมาณที่ได้รับความเห็นชอบ จึงเห็นว่าราคาดังกล่าวเหมาะสมแล้ว จึงเห็นควรขออนุมัติ${w.act}${esc(j.title)} ${esc(j.purpose)} จาก${esc(j.vendor)} ${esc(j.vendorAddr)} ดังนี้`)}
+ ${itemTable(j,c)}<div class="gap"></div>${P(closing(j,'d5',`จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้สั่ง${w.s}จากผู้เสนอราคาดังกล่าว`))}
+ <div class="gap"></div><div class="sig" style="margin-left:-9mm"><div style="padding-top:6mm">${approverBox(j,'d5',[`เรียน   ${j.headAbbr}`,`-  อนุมัติ${w.act}`,'ดำเนินการต่อไป'])}</div><div>${signer(j.head)}</div></div></div>`}
+
+function R_d6(j,c){const d=j.docs.d6;const cm=cmList(j).map(m=>`<div>(ลงชื่อ)……………………………………… ${esc(m.role)}</div><div style="padding-left:8mm">(${esc(m.name)}) ${esc(m.pos)}</div><div class="gap2"></div>`).join('');
+ return `<div class="page"><div style="display:grid;grid-template-columns:62mm 1fr"><div style="padding-top:6mm"><img class="logo" style="margin-left:0" src="${LOGO}"></div>
+ <div><div class="c" style="margin-left:-30mm">การไฟฟ้าส่วนภูมิภาค</div><div class="c" style="margin-left:-30mm">รายงานการตรวจรับงาน${w.s}</div><div class="gap2"></div>
+ <div style="margin-left:28mm">${esc(j.budgetType)}${esc(j.accName)}</div><div style="margin-left:28mm">รหัสบัญชี ${esc(j.acc)}</div><div style="margin-left:28mm">ตรวจรับที่ ${esc(j.deptFull)}</div></div></div>
+ <div class="gap"></div><div class="c">${thDate(d.date)}</div><div class="gap"></div>
+ ${P(`ตาม${w.inv} เล่มที่ ${esc(j.invBook)} เลขที่ ${esc(j.invNo)} ลงวันที่ ${thDate(j.invDate)} ${esc(j.deptFull)} ${w.act}${esc(j.title)} จำนวน ${c.n} รายการ ${esc(j.purpose)} จาก${esc(j.vendor)} ${esc(j.vendorAddr)} เป็นเงิน ${money(c.total)} บาท รวมภาษีมูลค่าเพิ่ม`)}
+ ${P(`${w.cmS} ได้ทำการตรวจรับ${esc(j.title)}จากการ${w.act}ตามรายละเอียด ดังนี้`)}${itemTable(j,c)}<div class="gap"></div>
+ ${P(`${w.cmS} ได้ตรวจสอบรายการ${esc(j.title)} ที่ส่งมอบแล้ว ${w.goods}ถูกต้อง และครบถ้วนตามจำนวนที่${w.act}จึงเห็นควรตรวจรับ${esc(j.title)} เพื่อใช้งานต่อไป`)}<div class="gap"></div>
+ <div class="sig" style="margin-left:-9mm;grid-template-columns:92mm 1fr"><div><div class="box"><p class="in" style="text-indent:8mm">- ${esc(j.deptFull)} ได้ตรวจรับ${esc(j.title)} จาก${w.cmS} ไว้ใช้งานเป็นที่เรียบร้อยแล้ว ตั้งแต่วันที่ ${thDate(d.date)}</p><div class="gap2"></div>${signer(j.officer)}</div>
+ <div style="height:3mm"></div>${approverBox(j,'d6',[`เรียน  ${w.cmFull}, ${j.dept}`,'-   ทราบและดำเนินการต่อไป'])}</div><div style="padding-top:4mm">${cm}</div></div></div>`}
+
+function R_d7(j,c){return `<div class="page">${memoHead(j,'d7',{from:j.deptFull,to:`ผจก.${SET.office}`,subj:`ขออนุมัติจ่ายเงินค่า${w.s}${j.title}`,attn:`ผจก.${SET.office}`})}
+ ${P(`ตามหนังสือ${w.cmFull} ลงวันที่ ${thDate(j.docs.d6.date)} เรื่องรายงานผลการตรวจรับ${esc(j.title)} จาก${esc(j.vendor)} ซึ่งได้ส่งมอบ${w.goods}ตาม${w.inv}เล่มที่ ${esc(j.invBook)} เลขที่ ${esc(j.invNo)} ลงวันที่ ${thDate(j.invDate)} ครบถ้วนตามจำนวนที่ได้สั่ง${w.s} มีรายละเอียดดังนี้`)}
+ ${itemTable(j,c)}<div class="gap"></div>
+ ${P(`เจ้าหน้าที่ได้ดำเนินการ${w.act}และ${w.cmK}ได้ตรวจรับ${w.goods}ครบถ้วน จึงเห็นควรดำเนินการ ดังนี้`)}
+ ${P(`1. อนุมัติเบิกจ่ายเงินค่า${w.act}${esc(j.title)}รวมทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) (รวมภาษีมูลค่าเพิ่ม) ให้แก่ ${esc(j.vendor)}`)}
+ ${P(`2. เบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)}`)}
+ ${P(`3. ให้ ${esc(j.deptFull)} ดำเนินการโอนเงินให้กับ${esc(j.vendor)} โอนเงินเข้าบัญชี${esc(j.bank)} ชื่อบัญชี ${esc(j.vendor)} เลขที่บัญชี ${esc(j.bankAcc)} ทั้งนี้ ค่าธรรมเนียม ในการโอนเงิน ${w.vendor}ยินยอมให้หักจากจำนวนเงินข้างต้น`)}
+ <div class="gap"></div>${P(closing(j,'d7','จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติตามเสนอ'))}
+ <div class="sig" style="margin-left:-9mm"><div style="padding-top:4mm">${approverBox(j,'d7',[`เรียน   ${j.headAbbr}`,'-  อนุมัติเบิกจ่าย','ดำเนินการต่อไป'])}</div><div>${signer(j.head)}</div></div></div>`}
+function cmList(j){return w.single?[{...j.committee[0],role:'ผู้ตรวจรับพัสดุ'}]:j.committee}
+const RENDER={d1:R_d1,d2:R_d2,d3:R_d3,d4:R_d4,d5:R_d5,d6:R_d6,d7:R_d7};
+
+function renderPages(j,keys){const c=calc(j);w=W(j);return keys.map(k=>RENDER[k](j,c)).join('')}
+function thaiNumify(root){if(!SET.thaiNum)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(/[0-9]/.test(n.nodeValue))n.nodeValue=toThaiDigits(n.nodeValue)}}
+
+/* ---------------- views ---------------- */
+let cur=null,tab='info',pvSel='all',editing=false;
+function setTop(t,s,back){$('#ttl').textContent=t;$('#sub').innerHTML=s;$('#backBtn').style.display=back?'':'none';$('#bnav').style.display=cur?'flex':'none';$('#delBtn').style.display=cur?'':'none'}
+function fld(path,label,opt={}){const v=path.split('.').reduce((o,k)=>o?.[k],cur)??'';
+ const t=opt.ta?`<textarea data-p="${path}" rows="${opt.rows||3}">${esc(v)}</textarea>`:`<input data-p="${path}" value="${esc(v)}" ${opt.type?`type="${opt.type}"`:''} ${opt.list?`list="${opt.list}"`:''}>`;
+ return `<label class="f"><span>${label}</span>${t}</label>`}
+function jobView(){const j=cur,c=calc(j);setTop(j.title?(W(j).act+j.title):('งาน'+W(j).act+'ใหม่'),`<span id="subAmt">${money(c.total)} บาท · ${c.n} รายการ</span> <span id="saveSt" class="savest"></span>`,true);setSave(saveState);
+ document.querySelectorAll('.bnav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+ let L='';
+ if(tab==='info')L=`<div class="card"><h3>รูปแบบงาน</h3>
+ <div class="segrow"><span>ประเภท</span><div class="seg">${[['buy','จัดซื้อ'],['hire','จัดจ้าง']].map(([v,t])=>`<button data-seg="kind" data-v="${v}" class="${j.kind===v?'on':''}">${t}</button>`).join('')}</div></div>
+ <div class="segrow"><span>การตรวจรับ</span><div class="seg">${[['committee','คณะกรรมการตรวจรับ'],['single','ผู้ตรวจรับพัสดุ (คนเดียว)']].map(([v,t])=>`<button data-seg="inspect" data-v="${v}" class="${j.inspect===v?'on':''}">${t}</button>`).join('')}</div></div>
+ <div class="segrow"><span>แผนก</span><div class="seg">${Object.keys(DEPTS).map(v=>`<button data-seg="dept" data-v="${v}" class="${j.dept===v?'on':''}">${v}</button>`).join('')}</div></div></div>
+ <div class="card"><h3>ข้อมูลงาน</h3>${fld('title',`ชื่องาน (ต่อท้ายคำว่า "${W(j).act}")`)}${fld('purpose','วัตถุประสงค์สั้น (ใช้ต่อท้ายประโยคในทุกฉบับ)')}
+ <div class="row">${fld('deptFull','แผนกเจ้าของเรื่อง (ข้อความในหนังสือ)')}${fld('deptCode','รหัสแผนกในเลขหนังสือ')}</div><div class="row">${fld('headShort','หัวหน้าแผนก (ใช้ในช่อง “ผ่าน”)')}${fld('headAbbr','หัวหน้าแผนก ตัวย่อ (กล่องสั่งการ)')}</div></div>
+ <div class="card"><h3>งบประมาณ</h3><div class="row">${fld('budgetType','ประเภทงบ')}${fld('cc','รหัสศูนย์ต้นทุน')}${fld('acc','รหัสบัญชี')}</div>${fld('accName','ชื่อบัญชี')}</div>
+ <div class="card"><h3>${j.kind==='hire'?'ผู้รับจ้าง':'ผู้ขาย / ร้านค้า'}</h3>${fld('vendor','ชื่อร้าน/บริษัท')}${fld('vendorAddr','ที่อยู่',{ta:1,rows:2})}<div class="row">${fld('bank','ธนาคาร/สาขา')}${fld('bankAcc','เลขที่บัญชี')}</div>
+ <div class="row">${fld('invBook',W(j).inv+' เล่มที่')}${fld('invNo','เลขที่')}${fld('invDate','ลงวันที่',{type:'date'})}</div></div>
+ <div class="card"><h3>เนื้อหา TOR / ${lbl(j,'รายงานขอซื้อ')}</h3>${fld('background','1. ความเป็นมา (TOR)',{ta:1})}${fld('objective','2. วัตถุประสงค์ (TOR)',{ta:1,rows:2})}${fld('bidderQual','3.1 คุณสมบัติผู้ยื่นข้อเสนอ',{ta:1,rows:2})}${fld('reason',`เหตุผลและความจำเป็น (${lbl(j,'รายงานขอซื้อ')})`,{ta:1})}
+ <div class="row">${fld('days','ส่งมอบภายใน (วัน)',{type:'number'})}${fld('penalty','ค่าปรับรายวัน ร้อยละ')}</div></div>`;
+ if(tab==='items')L=`<div class="card"><h3>รายการพัสดุ</h3><label class="muted"><input type="checkbox" id="vat" ${j.vatIncl?'checked':''}> ราคาต่อหน่วยรวม VAT แล้ว</label></div>
+ ${j.items.map((i,x)=>`<div class="it"><div class="hd"><div class="no">${x+1}</div><input data-i="${x}" data-k="name" value="${esc(i.name)}" placeholder="ชื่อรายการ" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:2px 8px;font-weight:700">
+ <button class="btn sm" data-up="${x}">↑</button><button class="btn sm" data-del="${x}" style="color:#c62828">✕</button></div>
+ <div class="row" style="margin-top:6px"><label class="f"><span>จำนวน</span><input type="number" data-i="${x}" data-k="qty" value="${i.qty}"></label><label class="f"><span>หน่วย</span><input data-i="${x}" data-k="unit" value="${esc(i.unit)}"></label><label class="f"><span>ราคา/หน่วย</span><input type="number" step="0.01" data-i="${x}" data-k="price" value="${i.price}"></label><label class="f"><span>รวม</span><input disabled value="${money(i.qty*i.price)}"></label></div>
+ <label class="f"><span>คุณสมบัติ (สำหรับ TOR ข้อ 4 — ขึ้นบรรทัดใหม่ได้)</span><textarea data-i="${x}" data-k="spec" rows="2">${esc(i.spec)}</textarea></label></div>`).join('')}
+ <button class="btn" id="addIt" style="width:100%;margin-bottom:12px">＋ เพิ่มรายการ</button>
+ <div class="card sum"><span>รวมเป็นเงิน</span><b>${money(c.total)}</b><span>ภาษีมูลค่าเพิ่ม 7%</span><b>${money(c.vat)}</b><span>ราคาสินค้ารวม (ก่อน VAT)</span><b>${money(c.net)}</b><span class="muted" style="grid-column:1/3">(${bahtText(c.total)})</span></div>`;
+ if(tab==='people'){const pc=(p,role,path,x)=>`<div class="pc"><div class="av">${esc((p.name||'?').replace(/^(นาย|นางสาว|นาง)/,'').trim().charAt(0))}</div><div class="body"><span class="role">${role}</span>${fld(path+'.name','ชื่อ-สกุล',{list:'staff'})}${fld(path+'.pos','ตำแหน่ง / บรรทัดใต้ชื่อ')}${x!=null?`<div class="row">${fld(path+'.role','หน้าที่')}<div style="flex:0 0 auto;align-self:end;margin-bottom:8px"><button class="btn sm" data-cdel="${x}" style="color:#c62828">ลบ</button></div></div>`:''}</div></div>`;
+  L=`<div class="card"><h3>ผู้ลงนาม</h3><div class="muted">พิมพ์ชื่อแล้วเลือกจากรายชื่อพนักงาน ตำแหน่งจะเติมให้อัตโนมัติ · แก้คำได้ทุกช่อง เช่น “รักษาการแทน”</div></div>
+  ${pc(j.head,'ผู้เสนอ (หัวหน้าแผนก/ผู้รักษาการ)','head')}${pc(j.officer,'เจ้าหน้าที่พัสดุ / ผู้จัดทำ TOR & ราคากลาง','officer')}${pc(j.approver,'ผู้อนุมัติ','approver')}
+  ${j.inspect==='single'?`<div class="card"><h3>ผู้ตรวจรับพัสดุ</h3><div class="muted">ใช้ 1 คน (เปลี่ยนเป็นแบบคณะกรรมการได้ที่แท็บข้อมูลงาน)</div>${pc(j.committee[0],'ผู้ตรวจรับพัสดุ','committee.0')}</div>`:
+ `<div class="card"><h3>คณะกรรมการตรวจรับพัสดุ</h3>${j.committee.map((m,x)=>pc(m,'กรรมการ '+(x+1),'committee.'+x,x)).join('')}<button class="btn" id="addCm" style="width:100%">＋ เพิ่มกรรมการ</button></div>`}`}
+ if(tab==='docs')L=`<div class="card"><h3>เอกสาร 7 ฉบับ</h3><div class="muted">กด “ออกเลข” = ขอเลขจากระบบออกเลขหนังสือ หมวดหนังสือทั่วไป แล้วบันทึกลงงานนี้ให้อัตโนมัติ ${LOCAL()?'<br><b style="color:#c27a00">โหมดทดลอง: ยังออกเลขจริงไม่ได้</b>':''}</div></div>
+ ${DOCS.map((d,x)=>{const s=j.docs[d.k]||(j.docs[d.k]={}),ov=s.ov||{};return `<div class="doc"><div class="n">${x+1}</div><div class="b"><div class="ttl">${lbl(j,d.short)} ${j.printed[d.k]?'<span class="tag ok">พิมพ์แล้ว</span>':''}</div>
+ <div class="row" style="gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap">${d.num?`<span class="muted">เลขที่</span><input class="num" data-dno="${d.k}" value="${esc(s.no||'')}" placeholder="—" ${s.bookRef?'readonly title="ออกจากระบบออกเลขหนังสือแล้ว"':''}>${s.no?'':`<button class="btn sm g" data-gen="${d.k}">ออกเลข</button>`}`:''}
+ <span class="muted">วันที่</span><input type="date" data-ddate="${d.k}" value="${s.date||''}"><button class="btn sm" data-pv="${d.k}">👁 ดู</button></div>
+ <details class="more"><summary>แก้ข้อความเฉพาะฉบับนี้ (จาก/ถึง/เรื่อง/เรียน/คำลงท้าย/กล่องสั่งการ)</summary>
+ ${d.k!=='d3'&&d.k!=='d6'?['from:จาก','to:ถึง','subj:เรื่อง','attn:เรียน'].map(z=>{const[a,b]=z.split(':');return `<label class="f"><span>${b} (เว้นว่าง = ค่าอัตโนมัติ)</span><input data-ov="${d.k}.${a}" value="${esc(ov[a]||'')}"></label>`}).join(''):''}
+ ${d.k!=='d3'?`<label class="f"><span>คำลงท้าย</span><input data-ov="${d.k}.close" value="${esc(ov.close||'')}" placeholder="(ค่าอัตโนมัติ)"></label><label class="f"><span>ข้อความในกล่องสั่งการของผู้อนุมัติ (บรรทัดละข้อ)</span><textarea data-ov="${d.k}.box" rows="3" placeholder="(ค่าอัตโนมัติ)">${esc(ov.box||'')}</textarea></label>`:''}</details></div></div>`}).join('')}`;
+ const pv=`<div class="pvbar"><b>ตัวอย่างพิมพ์</b><select id="pvSel" style="border:1px solid var(--line);border-radius:8px">${[['all','ทั้งชุด (7 ฉบับ)'],...DOCS.map((d,x)=>[d.k,(x+1)+'. '+lbl(j,d.short)])].map(([v,t])=>`<option value="${v}" ${pvSel===v?'selected':''}>${t}</option>`).join('')}</select>
+ <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum?'checked':''}> เลขไทย</label><label class="muted"><input type="checkbox" id="ed" ${editing?'checked':''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox" id="sheets"></div>`;
+ $('#view').innerHTML=tab==='pv'?pv:`<div class="split"><div>${L}<div style="height:60px"></div></div><div class="pv" id="pvcol">${pv}</div></div>`;
+ bindJob();drawSheets();}
+function drawSheets(){const box=$('#sheets');if(!box)return;const keys=pvSel==='all'?DOCS.map(d=>d.k):[pvSel];
+ box.innerHTML=renderPages(cur,keys);thaiNumify(box);
+ const pages=[...box.querySelectorAll('.page')];const W=box.clientWidth||600;const z=Math.min(1,(W-4)/(210*3.7795));
+ pages.forEach(p=>{const w=document.createElement('div');w.className='sheetwrap';p.parentNode.insertBefore(w,p);w.appendChild(p);w.style.zoom=z;if(p.scrollHeight>p.clientHeight+2)w.classList.add('ovf');if(editing)p.contentEditable=true});}
+function bindJob(){const j=cur;const V=$('#view');
+ const redraw=()=>{save();clearTimeout(bindJob._t);bindJob._t=setTimeout(()=>{drawSheets();const c=calc(j);const sa=$('#subAmt');if(sa)sa.textContent=`${money(c.total)} บาท · ${c.n} รายการ`},250)};
+ V.querySelectorAll('[data-p]').forEach(el=>el.oninput=()=>{const ks=el.dataset.p.split('.');let o=j;ks.slice(0,-1).forEach(k=>o=o[k]);let v=el.value;if(el.type==='number')v=+v;o[ks.at(-1)]=v;
+  if(ks.at(-1)==='name'){const s=findStaff(v);if(s&&s.pos){o.pos=s.pos;const pe=V.querySelector(`[data-p="${ks.slice(0,-1).join('.')}.pos"]`);if(pe)pe.value=s.pos}}redraw()});
+ V.querySelectorAll('[data-i]').forEach(el=>{el.oninput=()=>{const i=j.items[+el.dataset.i];i[el.dataset.k]=el.type==='number'?+el.value:el.value;redraw()};if(el.type==='number')el.onchange=()=>jobView()});
+ V.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{j.items.splice(+b.dataset.del,1);save();jobView()});
+ V.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const x=+b.dataset.up;if(x>0){[j.items[x-1],j.items[x]]=[j.items[x],j.items[x-1]];save();jobView()}});
+ V.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{const f=b.dataset.seg,v=b.dataset.v;if(f==='dept')setDept(j,v);else j[f]=v;
+  if(f==='inspect'&&!j.committee.length)j.committee.push({name:'',pos:'',role:'ประธานกรรมการ'});save();jobView();toast(f==='kind'?(v==='hire'?'เปลี่ยนข้อความทุกฉบับเป็นงานจัดจ้าง':'เปลี่ยนข้อความทุกฉบับเป็นงานจัดซื้อ'):f==='dept'?'เปลี่ยนแผนก/เลขหนังสือ/หัวหน้าแผนกแล้ว':'เปลี่ยนรูปแบบการตรวจรับแล้ว')});
+ const ai=$('#addIt');if(ai)ai.onclick=()=>{j.items.push({name:'',qty:1,unit:'',price:0,spec:''});save();jobView()};
+ const va=$('#vat');if(va)va.onchange=()=>{j.vatIncl=va.checked;save();jobView()};
+ const ac=$('#addCm');if(ac)ac.onclick=()=>{j.committee.push({name:'',pos:'',role:'กรรมการ'});save();jobView()};
+ V.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{j.committee.splice(+b.dataset.cdel,1);save();jobView()});
+ V.querySelectorAll('[data-dno]').forEach(el=>el.oninput=()=>{j.docs[el.dataset.dno].no=el.value;redraw()});
+ V.querySelectorAll('[data-ddate]').forEach(el=>el.onchange=()=>{j.docs[el.dataset.ddate].date=el.value;redraw()});
+ V.querySelectorAll('[data-ov]').forEach(el=>el.oninput=()=>{const[k,f]=el.dataset.ov.split('.');const d=j.docs[k];d.ov=d.ov||{};d.ov[f]=el.value;redraw()});
+ V.querySelectorAll('[data-gen]').forEach(b=>b.onclick=()=>issueNo(b.dataset.gen,b));
+ V.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{pvSel=b.dataset.pv;if(innerWidth<1100){tab='pv';jobView()}else{$('#pvSel').value=pvSel;drawSheets();$('#pvcol').scrollTop=0}});
+ const ps=$('#pvSel');if(ps)ps.onchange=()=>{pvSel=ps.value;drawSheets()};
+ const tn=$('#tn');if(tn)tn.onchange=()=>{SET.thaiNum=tn.checked;store.set('procure_thainum',tn.checked);drawSheets()};
+ const ed=$('#ed');if(ed)ed.onchange=()=>{editing=ed.checked;$('#app').classList.toggle('editing',editing);drawSheets();if(editing)toast('คลิกที่ข้อความบนกระดาษเพื่อแก้ไขก่อนพิมพ์')};
+ const pr=$('#prt');if(pr)pr.onclick=doPrint;}
+function doPrint(){const keys=pvSel==='all'?DOCS.map(d=>d.k):[pvSel];const pa=$('#printArea');
+ if(editing){pa.innerHTML=[...document.querySelectorAll('#sheets .page')].map(p=>{const c=p.cloneNode(true);c.removeAttribute('contenteditable');return c.outerHTML}).join('')}
+ else{pa.innerHTML=renderPages(cur,keys);thaiNumify(pa)}
+ keys.forEach(k=>cur.printed[k]=Date.now());save();
+ Promise.all([...pa.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r}))).then(()=>setTimeout(()=>window.print(),150))}
+
+
+/* ---------------- หน้ารายการงาน ---------------- */
+let fDept = store.get('procure_fdept', ''), loadErr = '';
+function stepN(s) { return parseInt(String(s || '0'), 10) || 0; }
+function listView() {
+  cur = null; setTop('ระบบงานจัดซื้อจัดจ้าง', 'กฟส.อ่าวลึก · วิธีเฉพาะเจาะจง', false);
+  const q = (store.get('procure_q', '') || '').trim();
+  const rows = LIST.filter(x => (!fDept || x.dept === fDept) && (!q || [x.title, x.vendor, x.nums, x.dept, x.kind].join(' ').includes(q)));
+  $('#view').innerHTML = `${LOCAL() ? `<div class="card warnbox"><b>โหมดทดลอง</b> — ยังไม่ได้เชื่อมหลังบ้าน ข้อมูลเก็บเฉพาะเครื่องนี้ และยังออกเลขหนังสือจริงไม่ได้${ME.admin ? ' · ผู้ดูแลใส่ลิงก์หลังบ้านได้ที่ ⚙ ตั้งค่า' : ''}</div>` : ''}
+  ${loadErr ? `<div class="card warnbox">${esc(loadErr)} <button class="btn sm" id="retry">ลองใหม่</button></div>` : ''}
+  <div class="card"><input id="q" placeholder="🔍 ค้นหาชื่องาน / ผู้ขาย / เลขหนังสือ" value="${esc(q)}" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:4px 10px">
+  <div class="seg" style="margin-top:8px">${['', ...Object.keys(DEPTS)].map(d => `<button data-fd="${d}" class="${fDept === d ? 'on' : ''}">${d || 'ทุกแผนก'}</button>`).join('')}</div>
+  <span class="muted" style="margin-left:8px">${rows.length} งาน</span></div>
+  ${rows.map(x => { const n = stepN(x.step);
+    const st = n >= 7 ? '<span class="tag ok">ครบทุกฉบับ</span>' : `<span class="tag w">ขั้นที่ ${Math.min(n + 1, 7)}/7 · ${x.kind === 'จัดจ้าง' ? DOCS[Math.min(n, 6)].short.replace(/ซื้อ/g, 'จ้าง') : DOCS[Math.min(n, 6)].short}</span>`;
+    return `<div class="card job" data-id="${esc(x.id)}"><div class="ico">${x.kind === 'จัดจ้าง' ? '🛠️' : '🛒'}</div><div style="flex:1;min-width:0"><div class="t">${esc(x.kind)}${esc(x.title || '(ยังไม่ตั้งชื่อ)')}</div>
+    <div class="muted">${esc(x.dept || '')}${x.vendor ? ' · ' + esc(x.vendor) : ''} · <b style="color:var(--ink)">${money(x.total)}</b> บาท${x.nums ? ' · เลขที่ ' + esc(x.nums) : ''}</div>${st}
+    <div class="steps">${DOCS.map((d, i) => `<i class="${i < n ? 'd' : ''}"></i>`).join('')}</div></div><div style="font-size:26px;color:var(--mute)">›</div></div>`; }).join('') ||
+    `<div class="card muted" style="text-align:center;padding:30px">${LIST.length ? 'ไม่พบงานที่ค้นหา' : 'ยังไม่มีงาน — กด “＋ งานใหม่” เพื่อเริ่ม'}</div>`}
+  <div style="height:80px"></div><button class="fab" id="newBtn">＋ งานใหม่</button>`;
+  $('#q').oninput = e => store.set('procure_q', e.target.value); $('#q').onchange = () => listView();
+  document.querySelectorAll('[data-fd]').forEach(b => b.onclick = () => { fDept = b.dataset.fd; store.set('procure_fdept', fDept); listView(); });
+  document.querySelectorAll('.job').forEach(el => el.onclick = () => openJob(el.dataset.id));
+  $('#newBtn').onclick = newJob;
+  const rt = $('#retry'); if (rt) rt.onclick = () => boot();
+  history.replaceState(null, '', location.pathname);
+}
+async function newJob() {
+  const choice = await choose('สร้างงานใหม่ — เลือกแผนก', Object.keys(DEPTS));
+  if (choice < 0) return;
+  const j = blankJob(), last = store.get('procure_last', null);
+  setDept(j, Object.keys(DEPTS)[choice]);
+  if (last) { j.officer = Object.assign({}, last.officer); j.approver = Object.assign({}, last.approver || j.approver); j.committee = (last.committee || j.committee).map(x => Object.assign({}, x));
+    if (last.dept === j.dept) j.head = Object.assign({}, last.head); }
+  busy(true);
+  try { const r = await api('save', { job: j }); j.id = r.job.id; j.rev = r.rev; upsertList(r.summary); cur = j; tab = 'info'; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + j.id); }
+  catch (e) { toast('สร้างงานไม่สำเร็จ: ' + e.message); }
+  finally { busy(false); }
+}
+async function openJob(id) {
+  busy(true);
+  try { const r = await api('get', { id }); cur = fixJob(r.job); tab = 'info'; dirty = false; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + id); $('#main').scrollTop = 0; }
+  catch (e) { toast('เปิดงานไม่สำเร็จ: ' + e.message); }
+  finally { busy(false); }
+}
+async function backToList() { if (cur && !(await settle())) { const k = await ask('ยังบันทึกไม่สำเร็จ', 'ออกไปตอนนี้ สิ่งที่แก้ล่าสุดอาจหาย', ['อยู่ต่อ', 'ออกเลย']); if (k === 0) return; } dirty = false; editing = false; $('#app').classList.remove('editing'); listView(); }
+async function delJob() {
+  if (!cur) return;
+  const why = await askText('ลบงานนี้', `ลบ “${esc(W(cur).act + (cur.title || ''))}” — เลขหนังสือที่ออกไปแล้วจะไม่ถูกยกเลิกในระบบออกเลข`, 'เหตุผลที่ลบ (จำเป็น)');
+  if (!why) return;
+  try { await api('remove', { id: cur.id, reason: why }); LIST = LIST.filter(x => x.id !== cur.id); dirty = false; toast('ลบงานแล้ว'); listView(); }
+  catch (e) { toast(e.message); }
+}
+function busy(on) { $('#busy').style.display = on ? 'flex' : 'none'; }
+
+/* ---------------- ตั้งค่า ---------------- */
+function settingsView() {
+  if (cur) { settle(); } cur = null; setTop('ตั้งค่า', ME.admin ? 'ผู้ดูแลแก้ไขค่ากลางได้' : 'ดูค่ากลาง (แก้ได้เฉพาะผู้ดูแล)', true);
+  const S = JSON.parse(JSON.stringify(SET)), ro = ME.admin ? '' : 'disabled';
+  const f = (k, l, t) => `<label class="f"><span>${l}</span><input data-s="${k}" value="${esc(S[k])}" ${t ? `type="${t}"` : ''} ${ro}></label>`;
+  $('#view').innerHTML = `<div class="card"><h3>ผู้ใช้</h3><div>${esc(ME.name || '-')} ${ME.admin ? '<span class="tag">ผู้ดูแล</span>' : ''}</div><label class="muted"><input type="checkbox" id="tn2" ${SET.thaiNum ? 'checked' : ''}> พิมพ์เอกสารเป็นเลขไทย (ตั้งค่าเฉพาะเครื่องนี้)</label></div>
+  <div class="card"><h3>หน่วยงาน & เลขหนังสือ</h3><div class="row">${f('office', 'ชื่อย่อหน่วยงาน')}${f('bookPrefix', 'คำนำหน้าเลขหนังสือ')}</div></div>
+  <div class="card"><h3>คำสั่งมอบอำนาจ</h3><div class="row">${f('authNo', 'คำสั่ง กฟภ. ที่')}${f('authDate', 'สั่ง ณ วันที่', 'date')}</div>${f('authLimit', 'วงเงินไม่เกิน')}</div>
+  <div class="card"><h3>ผู้อนุมัติเริ่มต้น</h3><div class="row"><label class="f"><span>ชื่อ-สกุล</span><input data-ap="name" list="staff" value="${esc(S.approver.name)}" ${ro}></label><label class="f"><span>ตำแหน่ง</span><input data-ap="pos" value="${esc(S.approver.pos)}" ${ro}></label></div></div>
+  <div class="card"><h3>ค่าเริ่มต้นของแต่ละแผนก</h3><div class="muted">งานใหม่ของแผนกนั้นจะเติมรหัสศูนย์ต้นทุน/บัญชีให้</div>${Object.keys(S.depts).map(d => { const c = S.depts[d];
+    return `<div style="margin-top:6px"><b>${d}</b> <span class="muted">เลขหนังสือ ${esc(S.bookPrefix)}${esc(c.code)}… · ${esc(c.head)}</span><div class="row">
+    <label class="f"><span>รหัสศูนย์ต้นทุน</span><input data-dc="${d}.cc" value="${esc(c.cc || '')}" ${ro}></label><label class="f"><span>รหัสบัญชี</span><input data-dc="${d}.acc" value="${esc(c.acc || '')}" ${ro}></label><label class="f"><span>ชื่อบัญชี</span><input data-dc="${d}.accName" value="${esc(c.accName || '')}" ${ro}></label></div></div>`; }).join('')}</div>
+  ${ME.admin ? `<button class="btn p" id="saveSet" style="width:100%;margin-bottom:12px">บันทึกตั้งค่า</button>` : ''}
+  <div class="card"><h3>การเชื่อมต่อ</h3><div class="muted">หลังบ้าน: ${LOCAL() ? '<b style="color:#c27a00">ยังไม่เชื่อม (โหมดทดลอง)</b>' : 'เชื่อมแล้ว'} · ระบบออกเลขหนังสือ: ${lsr('booknum_token_v1') ? 'เชื่อมแล้วในเครื่องนี้' : 'จะถามรหัสสำนักงานตอนออกเลขครั้งแรก'} · รายชื่อพนักงาน ${STAFF.length} คน</div>
+  ${ME.admin || LOCAL() ? `<label class="f"><span>ลิงก์หลังบ้าน (Web app …/exec) — ใช้เฉพาะเครื่องนี้ เว้นว่าง = ใช้ค่าในระบบ</span><input id="apiUrl" value="${esc(lsr('procure_api') || '')}" placeholder="${esc(API_DEFAULT || 'https://script.google.com/macros/s/…/exec')}"></label><button class="btn sm" id="saveApi">ใช้ลิงก์นี้</button>` : ''}
+  <button class="btn sm" id="reStaff">โหลดรายชื่อพนักงานใหม่</button> <button class="btn sm" id="reBook">ล้างการเชื่อมระบบออกเลข</button></div>`;
+  $('#tn2').onchange = e => { SET.thaiNum = e.target.checked; store.set('procure_thainum', SET.thaiNum); };
+  document.querySelectorAll('[data-s]').forEach(el => el.oninput = () => { S[el.dataset.s] = el.value; });
+  document.querySelectorAll('[data-ap]').forEach(el => el.oninput = () => { S.approver[el.dataset.ap] = el.value; if (el.dataset.ap === 'name') { const s = findStaff(el.value); if (s && s.pos) { S.approver.pos = s.pos; document.querySelector('[data-ap="pos"]').value = s.pos; } } });
+  document.querySelectorAll('[data-dc]').forEach(el => el.oninput = () => { const [d, k] = el.dataset.dc.split('.'); S.depts[d][k] = el.value; });
+  const ss = $('#saveSet'); if (ss) ss.onclick = async () => { delete S.thaiNum; try { const r = await api('saveSettings', { settings: S }); applySettings(r.settings); toast('บันทึกตั้งค่าแล้ว'); } catch (e) { toast(e.message); } };
+  const sa = $('#saveApi'); if (sa) sa.onclick = () => { const v = $('#apiUrl').value.trim(); if (v && !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(v)) return toast('ลิงก์ต้องเป็น https://script.google.com/macros/s/…/exec'); lsr('procure_api', v || null); boot(); };
+  $('#reStaff').onclick = () => { loadStaff(true).then(() => { toast('รายชื่อพนักงาน ' + STAFF.length + ' คน'); }); };
+  $('#reBook').onclick = () => { lsr('booknum_token_v1', null); lsr('booknum_settings_v1', null); toast('ล้างแล้ว — ออกเลขครั้งถัดไปจะถามรหัสสำนักงาน'); settingsView(); };
+}
+function applySettings(s) { const tn = SET.thaiNum; SET = Object.assign({}, DEFSET, s || {}); SET.thaiNum = tn; DEPTS = SET.depts; store.set('procure_settings', Object.assign({}, SET, { thaiNum: undefined })); }
+
+/* ---------------- เริ่มต้น ---------------- */
+async function boot() {
+  ME.name = cred().user;
+  loadErr = ''; busy(true);
+  try {
+    const r = await api('bootstrap');
+    ME = r.me || ME; applySettings(r.settings); LIST = r.jobs || [];
+    store.set('procure_list_cache', LIST);
+  } catch (e) { LIST = store.get('procure_list_cache', []); loadErr = 'โหลดรายการงานไม่สำเร็จ: ' + e.message; }
+  finally { busy(false); }
+  const id = new URLSearchParams(location.search).get('id');
+  if (id && !loadErr) openJob(id); else listView();
+}
+fillStaff();
+$('#backBtn').onclick = backToList; $('#setBtn').onclick = settingsView; $('#delBtn').onclick = delJob;
+document.addEventListener('click', e => { if (e.target && e.target.id === 'saveSt' && saveState === 'err') { dirty = true; flush(); } });
+document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => { tab = b.dataset.t; jobView(); $('#main').scrollTop = 0; });
+addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTimeout(() => { if (cur) drawSheets(); }, 200); });
+document.fonts && document.fonts.ready.then(() => { if (cur) drawSheets(); });
+// รอ pea-hub.js ตรวจล็อกอินให้เสร็จ (มีชื่อ/รหัสในเครื่อง) แล้วค่อยโหลด
+(function wait(n) { if (cred().user || LOCAL() || n > 600) { boot(); loadStaff(); } else setTimeout(() => wait(n + 1), 500); })(0);
+
+</script>
+</body>
+</html>
