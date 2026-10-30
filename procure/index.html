@@ -184,7 +184,7 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v)
 const uid=()=>Math.random().toString(36).slice(2,9);
 
 /* ---------------- ตั้งค่าการเชื่อมต่อ ---------------- */
-const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้านระบบงานจัดซื้อจัดจ้าง (…/exec) · ว่าง = โหมดทดลองเก็บในเครื่อง
+const API_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJEHg7z1xtXk4xWntweZ1MBzdz34l0KuPLyQ7iCe5Bm5isvWENHwnGn4MmVJ_MIyqZjQ/exec';   // ← ลิงก์ Web app หลังบ้านระบบงานจัดซื้อจัดจ้าง (…/exec) · ว่าง = โหมดทดลองเก็บในเครื่อง
 const BOOK_API = 'https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec';   // ระบบออกเลขหนังสือ V4
 const ST_API = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';     // ฐานข้อมูลพนักงาน (Safety Talk)
 const LOGO = 'pea-logo.png';

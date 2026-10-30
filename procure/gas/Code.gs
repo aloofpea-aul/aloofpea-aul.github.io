@@ -17,6 +17,7 @@
  */
 
 const SPREADSHEET_ID = '19fEbARQGPUHNzd-d62SpseikLeANU5oJb7cpe3qQPbU';   // ชีตเก็บข้อมูล (เว้นว่าง = ใช้ชีตที่ผูกกับสคริปต์)
+// Web app: https://script.google.com/macros/s/AKfycbwJEHg7z1xtXk4xWntweZ1MBzdz34l0KuPLyQ7iCe5Bm5isvWENHwnGn4MmVJ_MIyqZjQ/exec
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
 const VERSION = '1.0';
