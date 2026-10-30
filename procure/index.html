@@ -104,7 +104,7 @@ details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
 .editing .page [data-e]{outline:1px dashed #b07cc0;background:#fbf5fd}
 
 /* ================= A4 PAGE (print) ================= */
-.page{width:210mm;height:297mm;background:#fff;color:#000;padding:12mm 22.4mm 10mm 25mm;font-family:'Sarabun16';font-size:9.6pt;line-height:18.1pt;overflow:hidden;position:relative}
+.page{width:210mm;height:297mm;background:#fff;color:#000;padding:12mm 22.4mm 6mm 25mm;font-family:'Sarabun16';font-size:calc(16pt / 1.5283);line-height:18.1pt;overflow:hidden;position:relative}
 .page p{margin:0;text-align:justify;text-justify:inter-character}
 .page .in{text-indent:2.5cm}
 .page .in2{padding-left:2.5cm}
@@ -119,7 +119,10 @@ details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
 .gap{height:6pt}
 .gap2{height:18pt}
 table.t{border-collapse:collapse;width:100%}
-table.t td,table.t th{border:.75pt solid #000;padding:0 4px;vertical-align:top;line-height:17pt}
+table.t td,table.t th{border:.75pt solid #000;padding:0 4px;vertical-align:top;line-height:18pt}
+/* ขนาดตามต้นฉบับ: เนื้อความ 16pt · ตารางราคา 15pt · ตารางคุณลักษณะใน TOR 14pt */
+table.t15 td,table.t15 th{font-size:calc(15pt / 1.5283);line-height:17pt}
+table.t14 td,table.t14 th{font-size:calc(14pt / 1.5283);line-height:15.5pt}
 table.t th{font-weight:700;text-align:center}
 .r{text-align:right}.ctr{text-align:center}
 .sig{display:grid;grid-template-columns:79mm 1fr;gap:0 4mm;align-items:start}
@@ -444,7 +447,7 @@ function memoHead(j,k,o){const d=j.docs[k]||{},ov=d.ov||{};
  <div class="gap"></div>
  <div class="subj"><div>เรียน</div><div>${esc(ov.attn||o.attn)}</div></div><div class="gap"></div>`}
 function itemTable(j,c){const r=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td class="ctr">${i.qty} ${esc(i.unit)}</td><td class="r">${money(i.price)}</td><td class="r">${money(i.qty*i.price)}</td></tr>`).join('');
- return `<table class="t" style="margin-left:-6mm;width:calc(100% + 6mm)"><colgroup><col style="width:13mm"><col><col style="width:22mm"><col style="width:32mm"><col style="width:40mm"></colgroup>
+ return `<table class="t t15" style="margin-left:-6mm;width:calc(100% + 6mm)"><colgroup><col style="width:13mm"><col><col style="width:22mm"><col style="width:32mm"><col style="width:40mm"></colgroup>
  <tr><th>ลำดับ</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย (บาท)</th><th>รวมเป็นเงินทั้งสิ้น</th></tr>${r}
  <tr><td colspan="4" class="r"><b>(${bahtText(c.total)})&nbsp; รวมเป็นเงิน (บาท)</b></td><td class="r"><b>${money(c.total)}</b></td></tr>
  <tr><td colspan="4" class="r"><b>ภาษีมูลค่าเพิ่ม 7 %</b></td><td class="r"><b>${money(c.vat)}</b></td></tr>
@@ -478,14 +481,14 @@ function R_d2(j,c){return `<div class="page">${memoHead(j,'d2',{from:'เจ้�
 
 function R_d3(j,c){const quals=[esc(j.bidderQual),'ไม่เป็นบุคคลล้มละลายหรืออยู่ระหว่างเลิกกิจการ','ไม่เป็นผู้ได้รับเอกสิทธิ์หรือความคุ้มกันซึ่งอาจปฏิเสธไม่ยอมขึ้นศาลไทย เว้นแต่รัฐบาลของผู้ยื่นข้อเสนอได้มีคำสั่งให้สละสิทธิและความคุ้มกันเช่นว่านั้น','ไม่เป็นบุคคลซึ่งถูกระบุชื่อไว้ในบัญชีผู้ทิ้งงานหรือได้แจ้งเวียนชื่อเป็นผู้ทิ้งงานของหน่วยงานของรัฐ'];
  const H=(n,t)=>`<div class="gap"></div><p>${n}. ${t}</p>`;
- const spec=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td style="line-height:15pt">${esc(i.spec).replace(/\n/g,'<br>')}</td></tr>`).join('');
+ const spec=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td style="">${esc(i.spec).replace(/\n/g,'<br>')}</td></tr>`).join('');
  const money5=`วงเงินในการ${w.act} เบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)} เป็นจำนวนเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) (รวมภาษีมูลค่าเพิ่ม)`;
- return `<div class="page" style="padding-top:20mm"><p class="c"><b>ร่างขอบเขตงาน (Terms of Reference : TOR)</b></p><p class="c"><b>งาน${w.act}${esc(j.title)}</b></p><p class="c"><b>โดยวิธีเฉพาะเจาะจง ตามมาตรา 56 วรรคหนึ่ง(2)(ข)</b></p><div class="gap"></div>
+ return `<div class="page" style="padding-top:14mm"><p class="c"><b>ร่างขอบเขตงาน (Terms of Reference : TOR)</b></p><p class="c"><b>งาน${w.act}${esc(j.title)}</b></p><p class="c"><b>โดยวิธีเฉพาะเจาะจง ตามมาตรา 56 วรรคหนึ่ง(2)(ข)</b></p><div class="gap"></div>
  ${H(1,'ความเป็นมา')}${P(esc(j.background))}${H(2,'วัตถุประสงค์')}${P(esc(j.objective))}${H(3,'คุณสมบัติของผู้ยื่นข้อเสนอ')}
  ${quals.map((q,x)=>P(`3.${x+1} ${q}`)).join('')}${H(4,'รายละเอียดคุณลักษณะเฉพาะของงาน')}
- <table class="t" style="width:150mm;margin-left:10mm"><colgroup><col style="width:13mm"><col style="width:52mm"><col></colgroup><tr><td class="ctr">ลำดับ</td><td class="ctr">รายการ</td><td class="ctr">คุณสมบัติสินค้า</td></tr>${spec}</table>
+ <table class="t t14" style="width:150mm;margin-left:10mm"><colgroup><col style="width:13mm"><col style="width:52mm"><col></colgroup><tr><td class="ctr">ลำดับ</td><td class="ctr">รายการ</td><td class="ctr">คุณสมบัติสินค้า</td></tr>${spec}</table>
  ${H(5,`วงเงินในการ${w.act}`)}${P(money5)}${H(6,`ระยะเวลาส่งมอบ${w.item}`)}${P(`ส่งมอบงานภายใน ${j.days} วัน นับถัดจากวันที่ได้รับอนุมัติสั่ง${w.s}`)}${H(7,'หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ')}</div>
- <div class="page" style="padding-top:20mm">${P('ใช้เกณฑ์การพิจารณาถึงประโยชน์ของหน่วยงานของรัฐ และวัตถุประสงค์ของการใช้งานเป็นสำคัญ โดยคำนึงเกณฑ์ราคา')}
+ <div class="page" style="padding-top:14mm">${P('ใช้เกณฑ์การพิจารณาถึงประโยชน์ของหน่วยงานของรัฐ และวัตถุประสงค์ของการใช้งานเป็นสำคัญ โดยคำนึงเกณฑ์ราคา')}
  ${H(8,'วงเงินงบประมาณ/วงเงินที่ได้รับจัดสรร')}${P(`งบประมาณที่ได้รับจัดสรร เป็นเงิน ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}
  ${H(9,'งวดงานและการจ่ายเงิน')}${P('ส่งมอบงานงวดเดียวและจ่ายเงินครบตามจำนวนที่ดำเนินการจริง')}
  ${H(10,'อัตราค่าปรับ')}${P(`หากส่งมอบล่าช้าคิดค่าปรับเป็นอัตรารายวัน ร้อยละ ${esc(j.penalty)} ของมูลค่า${w.item}ที่ยังไม่ส่งมอบ`)}
