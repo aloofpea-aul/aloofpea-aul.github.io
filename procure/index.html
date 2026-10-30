@@ -332,6 +332,11 @@ async function loadStaff(force) {
   } catch (e) {}
 }
 function fillStaff() { $('#staff').innerHTML = STAFF.map(s => `<option value="${esc(s.name)}">${esc(s.pos)}</option>`).join(''); }
+const PRE_RE = /^\s*(นางสาว|นาง|นาย|ว่าที่\s*ร\.ต\.)\s*/;
+const baseName = n => String(n || '').replace(PRE_RE, '').replace(/\s+/g, ' ').trim();
+function learnPre(n) { const m = String(n || '').match(PRE_RE); if (!m) return; const map = store.get('procure_prefix', {}); map[nm(baseName(n))] = m[1].replace(/\s+/g, ''); store.set('procure_prefix', map); }
+function withPre(n) { if (!n) return ''; if (PRE_RE.test(n)) return String(n).replace(/\s+/g, ' ').trim(); const pre = store.get('procure_prefix', {})[nm(baseName(n))]; return (pre || '') + baseName(n); }
+function learnJob(j) { [j.officer, j.head, j.approver, ...(j.committee || [])].forEach(p => p && learnPre(p.name)); }
 const findStaff = n => STAFF.find(x => nm(x.name.replace(/^(นางสาว|นาง|นาย)/, '')) === nm(String(n).replace(/^(นางสาว|นาง|นาย)/, '')));
 
 /* ---------------- ระบบออกเลขหนังสือ (หมวด "หนังสือทั่วไป") ---------------- */
@@ -445,8 +450,8 @@ function itemTable(j,c){const r=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</
 function approverBox(j,k,lines){const d=j.docs[k]||{},ov=d.ov||{};const L=(ov.box||lines.join('\n')).split('\n');
  return `<div class="box"><div>${esc(L[0])}</div>${L.slice(1).map(l=>`<div class="l">${esc(l)}</div>`).join('')}
  <div class="gap2"></div><div class="gap2"></div><div class="gap"></div>
- <div class="sc">(${esc(j.approver.name)})</div><div class="sc">${esc(j.approver.pos)}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`}
-function signer(p,extra){return `<div class="sc">(${esc(p.name)})</div><div class="sc">${esc(p.pos)}</div>${(extra||[]).map(x=>`<div class="sc">${esc(x)}</div>`).join('')}`}
+ <div class="sc">(${esc(withPre(j.approver.name))})</div><div class="sc">${esc(j.approver.pos)}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`}
+function signer(p,extra){return `<div class="sc">(${esc(withPre(p.name))})</div><div class="sc">${esc(p.pos)}</div>${(extra||[]).map(x=>`<div class="sc">${esc(x)}</div>`).join('')}`}
 const closing=(j,k,def)=>esc(((j.docs[k]||{}).ov||{}).close||def);
 const P=(s,c='in')=>`<p class="${c}">${s}</p>`;
 
@@ -454,7 +459,7 @@ function R_d1(j,c){const auth=`ตามคำสั่งการไฟฟ้�
  const rows=j.items.map((i,x)=>`<tr><td class="ctr">${x+1}</td><td>${esc(i.name)}</td><td class="ctr">${i.qty}</td><td class="ctr">${esc(i.unit)}</td></tr>`).join('');
  return `<div class="page">${memoHead(j,'d1',{from:j.deptFull,to:SET.office,subj:`ขออนุมัติแต่งตั้งเจ้าหน้าที่จัดทำร่างขอบเขตของงาน (TOR) พร้อมกำหนดหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอและกำหนดราคากลางในการ${w.act}${j.title}`,attn:`ผจก.${SET.office}`})}
  ${P(auth)}<div class="gap"></div>
- ${P(`เพื่อให้สอดคล้องตามระเบียบกระทรวงการคลังว่าด้วยหลักเกณฑ์การจัดซื้อจัดจ้าง และการบริหารพัสดุภาครัฐ พ.ศ.2560 จึงขอแต่งตั้ง ${esc(j.officer.name)} ${esc(j.officer.pos)} เป็นเจ้าหน้าที่จัดทำร่างขอบเขตงานและกำหนดราคากลาง ในการ${w.act}${esc(j.title)}จำนวน ${c.n} รายการ ${esc(j.purpose)}`)}
+ ${P(`เพื่อให้สอดคล้องตามระเบียบกระทรวงการคลังว่าด้วยหลักเกณฑ์การจัดซื้อจัดจ้าง และการบริหารพัสดุภาครัฐ พ.ศ.2560 จึงขอแต่งตั้ง ${esc(withPre(j.officer.name))} ${esc(j.officer.pos)} เป็นเจ้าหน้าที่จัดทำร่างขอบเขตงานและกำหนดราคากลาง ในการ${w.act}${esc(j.title)}จำนวน ${c.n} รายการ ${esc(j.purpose)}`)}
  <table class="t" style="width:120mm;margin-left:20mm"><colgroup><col style="width:11mm"><col><col style="width:19mm"><col style="width:17mm"></colgroup><tr><td class="ctr">ที่</td><td class="ctr">รายการ</td><td class="ctr">จำนวน</td><td class="ctr">หน่วย</td></tr>${rows}</table>
  <div class="gap"></div>${P(`โดยเบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)}`,'')}
  <div class="gap"></div>${P(closing(j,'d1','จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบโปรดอนุมัติตามเสนอต่อไป'),'c')}<div class="gap"></div>
@@ -484,7 +489,7 @@ function R_d3(j,c){const quals=[esc(j.bidderQual),'ไม่เป็นบุ�
  ${H(10,'อัตราค่าปรับ')}${P(`หากส่งมอบล่าช้าคิดค่าปรับเป็นอัตรารายวัน ร้อยละ ${esc(j.penalty)} ของมูลค่า${w.item}ที่ยังไม่ส่งมอบ`)}
  <div class="gap2"></div><div class="gap2"></div><div style="margin-left:70mm"><div class="sc">(ลงชื่อ) ……………………………… เจ้าหน้าที่ร่างขอบเขตงาน</div><div style="margin-left:-20mm">${signer(j.officer)}</div></div></div>`}
 
-function R_d4(j,c){const cm=cmList(j).map((m,x)=>`<div class="in3" style="display:grid;grid-template-columns:52mm 50mm 1fr;gap:0 2mm"><span>${w.single?'':'2.'+(x+1)+' '}${esc(m.name)}</span><span>${esc(m.pos)}</span><span style="min-width:30mm">${esc(m.role)}</span></div>`).join('');
+function R_d4(j,c){const cm=cmList(j).map((m,x)=>`<div class="in3" style="display:grid;grid-template-columns:52mm 50mm 1fr;gap:0 2mm"><span>${w.single?'':'2.'+(x+1)+' '}${esc(withPre(m.name))}</span><span>${esc(m.pos)}</span><span style="min-width:30mm">${esc(m.role)}</span></div>`).join('');
  return `<div class="page">${memoHead(j,'d4',{from:j.deptFull,to:SET.office,subj:`รายงานขอ${w.s}${j.title}`,attn:`ผจก.${SET.office}`})}
  ${P(`ด้วย ${esc(j.deptFull)} มีความประสงค์จะ${w.act}${esc(j.title)}จำนวน ${c.n} รายการ ${esc(j.purpose)} และเพื่อให้สอดคล้องตามพระราชบัญญัติการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 ตามมาตรา 56 (2)(ข) และตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 จึงเห็นควรดำเนินการ${w.act}โดยวิธีเฉพาะเจาะจง มีรายละเอียดดังต่อไปนี้`)}<div class="gap"></div>
  <p class="in2">1. เหตุผลและความจำเป็นที่ต้อง${w.s}</p>${P(esc(j.reason))}<div class="gap"></div>
@@ -496,7 +501,7 @@ function R_d4(j,c){const cm=cmList(j).map((m,x)=>`<div class="in3" style="displa
  <div class="cont">/7. หลักเกณฑ์...</div></div>
  <div class="page" style="padding-top:15mm"><div class="pgno">-2-</div><div class="gap"></div>
  ${P('7. หลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ ใช้เกณฑ์ราคา')}${P('8. ข้อเสนออื่นๆ')}
- <p class="in2">&nbsp;&nbsp;(1) เห็นสมควรให้เจ้าหน้าที่พัสดุโดย ${esc(j.officer.name)} ${esc(j.officer.pos)} เป็นผู้ติดต่อตกลงราคากับ${w.vendor}โดยตรง</p>
+ <p class="in2">&nbsp;&nbsp;(1) เห็นสมควรให้เจ้าหน้าที่พัสดุโดย ${esc(withPre(j.officer.name))} ${esc(j.officer.pos)} เป็นผู้ติดต่อตกลงราคากับ${w.vendor}โดยตรง</p>
  <p class="in2">&nbsp;&nbsp;(2) แต่งตั้ง${w.single?'ผู้ตรวจรับพัสดุ':'คณะกรรมการตรวจรับงาน'+w.s} ตามรายงานฉบับนี้ ${w.single?'ได้แก่':'ดังนี้'}</p>${cm}<div class="gap"></div>
  ${P(`ทั้งนี้เป็นอำนาจของ ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขา ระดับ 9 หรือผู้รักษาการแทนตำแหน่งดังกล่าว ตามคำสั่ง กฟภ. ที่ ${SET.authNo} เรื่อง มอบอำนาจดำเนินการจัดซื้อจัดจ้างจัดเช่า สั่ง ณ วันที่ ${thDate(SET.authDate)}`)}<div class="gap"></div>
  ${P(closing(j,'d4',`จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้ดำเนินการจัดซื้อจัดจ้าง โดยวิธีเฉพาะเจาะจง ตามมาตรา 56(2)(ข) และแต่งตั้ง${w.cmS}ฯ ตามรายละเอียดในรายงานขอ${w.s}ดังกล่าวข้างต้น`))}
@@ -509,7 +514,7 @@ function R_d5(j,c){return `<div class="page">${memoHead(j,'d5',{from:j.deptFull,
  ${itemTable(j,c)}<div class="gap"></div>${P(closing(j,'d5',`จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้สั่ง${w.s}จากผู้เสนอราคาดังกล่าว`))}
  <div class="gap"></div><div class="sig" style="margin-left:-9mm"><div style="padding-top:6mm">${approverBox(j,'d5',[`เรียน   ${j.headAbbr}`,`-  อนุมัติ${w.act}`,'ดำเนินการต่อไป'])}</div><div>${signer(j.head)}</div></div></div>`}
 
-function R_d6(j,c){const d=j.docs.d6;const cm=cmList(j).map(m=>`<div>(ลงชื่อ)……………………………………… ${esc(m.role)}</div><div style="padding-left:8mm">(${esc(m.name)}) ${esc(m.pos)}</div><div class="gap2"></div>`).join('');
+function R_d6(j,c){const d=j.docs.d6;const cm=cmList(j).map(m=>`<div>(ลงชื่อ)……………………………………… ${esc(m.role)}</div><div style="padding-left:8mm">(${esc(withPre(m.name))}) ${esc(m.pos)}</div><div class="gap2"></div>`).join('');
  return `<div class="page"><div style="display:grid;grid-template-columns:62mm 1fr"><div style="padding-top:6mm"><img class="logo" style="margin-left:0" src="${LOGO}"></div>
  <div><div class="c" style="margin-left:-30mm">การไฟฟ้าส่วนภูมิภาค</div><div class="c" style="margin-left:-30mm">รายงานการตรวจรับงาน${w.s}</div><div class="gap2"></div>
  <div style="margin-left:28mm">${esc(j.budgetType)}${esc(j.accName)}</div><div style="margin-left:28mm">รหัสบัญชี ${esc(j.acc)}</div><div style="margin-left:28mm">ตรวจรับที่ ${esc(j.deptFull)}</div></div></div>
@@ -563,7 +568,7 @@ function jobView(){const j=cur,c=calc(j);setTop(j.title?(W(j).act+j.title):('ง
  <button class="btn" id="addIt" style="width:100%;margin-bottom:12px">＋ เพิ่มรายการ</button>
  <div class="card sum"><span>รวมเป็นเงิน</span><b>${money(c.total)}</b><span>ภาษีมูลค่าเพิ่ม 7%</span><b>${money(c.vat)}</b><span>ราคาสินค้ารวม (ก่อน VAT)</span><b>${money(c.net)}</b><span class="muted" style="grid-column:1/3">(${bahtText(c.total)})</span></div>`;
  if(tab==='people'){const pc=(p,role,path,x)=>`<div class="pc"><div class="av">${esc((p.name||'?').replace(/^(นาย|นางสาว|นาง)/,'').trim().charAt(0))}</div><div class="body"><span class="role">${role}</span>${fld(path+'.name','ชื่อ-สกุล',{list:'staff'})}${fld(path+'.pos','ตำแหน่ง / บรรทัดใต้ชื่อ')}${x!=null?`<div class="row">${fld(path+'.role','หน้าที่')}<div style="flex:0 0 auto;align-self:end;margin-bottom:8px"><button class="btn sm" data-cdel="${x}" style="color:#c62828">ลบ</button></div></div>`:''}</div></div>`;
-  L=`<div class="card"><h3>ผู้ลงนาม</h3><div class="muted">พิมพ์ชื่อแล้วเลือกจากรายชื่อพนักงาน ตำแหน่งจะเติมให้อัตโนมัติ · แก้คำได้ทุกช่อง เช่น “รักษาการแทน”</div></div>
+  L=`<div class="card"><h3>ผู้ลงนาม</h3><div class="muted">พิมพ์ชื่อแล้วเลือกจากรายชื่อพนักงาน ตำแหน่งจะเติมให้อัตโนมัติ · ฐานข้อมูลพนักงานไม่มีคำนำหน้า ให้พิมพ์ นาย/นาง/นางสาว นำหน้าชื่อครั้งแรกครั้งเดียว ระบบจะจำไว้ · แก้คำได้ทุกช่อง เช่น “รักษาการแทน”</div></div>
   ${pc(j.head,'ผู้เสนอ (หัวหน้าแผนก/ผู้รักษาการ)','head')}${pc(j.officer,'เจ้าหน้าที่พัสดุ / ผู้จัดทำ TOR & ราคากลาง','officer')}${pc(j.approver,'ผู้อนุมัติ','approver')}
   ${j.inspect==='single'?`<div class="card"><h3>ผู้ตรวจรับพัสดุ</h3><div class="muted">ใช้ 1 คน (เปลี่ยนเป็นแบบคณะกรรมการได้ที่แท็บข้อมูลงาน)</div>${pc(j.committee[0],'ผู้ตรวจรับพัสดุ','committee.0')}</div>`:
  `<div class="card"><h3>คณะกรรมการตรวจรับพัสดุ</h3>${j.committee.map((m,x)=>pc(m,'กรรมการ '+(x+1),'committee.'+x,x)).join('')}<button class="btn" id="addCm" style="width:100%">＋ เพิ่มกรรมการ</button></div>`}`}
@@ -585,7 +590,7 @@ function drawSheets(){const box=$('#sheets');if(!box)return;const keys=pvSel==='
 function bindJob(){const j=cur;const V=$('#view');
  const redraw=()=>{save();clearTimeout(bindJob._t);bindJob._t=setTimeout(()=>{drawSheets();const c=calc(j);const sa=$('#subAmt');if(sa)sa.textContent=`${money(c.total)} บาท · ${c.n} รายการ`},250)};
  V.querySelectorAll('[data-p]').forEach(el=>el.oninput=()=>{const ks=el.dataset.p.split('.');let o=j;ks.slice(0,-1).forEach(k=>o=o[k]);let v=el.value;if(el.type==='number')v=+v;o[ks.at(-1)]=v;
-  if(ks.at(-1)==='name'){const s=findStaff(v);if(s&&s.pos){o.pos=s.pos;const pe=V.querySelector(`[data-p="${ks.slice(0,-1).join('.')}.pos"]`);if(pe)pe.value=s.pos}}redraw()});
+  if(ks.at(-1)==='name'){learnPre(v);const s=findStaff(v);if(s&&s.pos){o.pos=s.pos;const pe=V.querySelector(`[data-p="${ks.slice(0,-1).join('.')}.pos"]`);if(pe)pe.value=s.pos}}redraw()});
  V.querySelectorAll('[data-i]').forEach(el=>{el.oninput=()=>{const i=j.items[+el.dataset.i];i[el.dataset.k]=el.type==='number'?+el.value:el.value;redraw()};if(el.type==='number')el.onchange=()=>jobView()});
  V.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{j.items.splice(+b.dataset.del,1);save();jobView()});
  V.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const x=+b.dataset.up;if(x>0){[j.items[x-1],j.items[x]]=[j.items[x],j.items[x-1]];save();jobView()}});
@@ -651,7 +656,7 @@ async function newJob() {
 }
 async function openJob(id) {
   busy(true);
-  try { const r = await api('get', { id }); cur = fixJob(r.job); tab = 'info'; dirty = false; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + id); $('#main').scrollTop = 0; }
+  try { const r = await api('get', { id }); cur = fixJob(r.job); learnJob(cur); tab = 'info'; dirty = false; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + id); $('#main').scrollTop = 0; }
   catch (e) { toast('เปิดงานไม่สำเร็จ: ' + e.message); }
   finally { busy(false); }
 }
