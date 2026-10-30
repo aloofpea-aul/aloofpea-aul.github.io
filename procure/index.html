@@ -109,6 +109,8 @@ details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
    แบ่งหน้าด้วยการจัดวางปกติก่อน แล้วค่อยใส่ .pinned ให้ดันลงล่าง */
 .page .tobottom{padding-bottom:5mm}
 .page.pinned{display:flex;flex-direction:column}.page.pinned>*{flex-shrink:0}.page.pinned>.tobottom{margin-top:auto}
+/* ช่องลงนามอยู่ที่เดิม (ต่อจากข้อความ) · เฉพาะกรอบอนุมัติที่ลงไปชิดล่าง */
+.page.pinned>.sig.tobottom{margin-top:0;flex-grow:1}.sig>.sgn{align-self:start}.sig>.bxc{align-self:end}
 .page p{margin:0;text-align:justify;text-justify:inter-character}
 .page .in{text-indent:2.5cm}
 .page .in2{padding-left:2.5cm}
@@ -471,7 +473,7 @@ function R_d1(j,c){const auth=`ตามคำสั่งการไฟฟ้�
  <table class="t" style="width:120mm;margin-left:20mm"><colgroup><col style="width:11mm"><col><col style="width:19mm"><col style="width:17mm"></colgroup><tr><td class="ctr">ที่</td><td class="ctr">รายการ</td><td class="ctr">จำนวน</td><td class="ctr">หน่วย</td></tr>${rows}</table>
  <div class="gap"></div>${P(`โดยเบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)}`,'')}
  <div class="gap"></div>${PK(closing(j,'d1','จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบโปรดอนุมัติตามเสนอต่อไป'),'c')}<div class="gap"></div>
- <div class="sig tobottom" style="margin-left:-9mm"><div>${approverBox(j,'d1',[`เรียน   ${j.headShort}, เจ้าหน้าที่จัดทำร่างฯ`,'-  อนุมัติตามเสนอ','-  ดำเนินการต่อไป'])}</div><div style="padding-top:12mm">${signer(j.head)}</div></div></div>`}
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc">${approverBox(j,'d1',[`เรียน   ${j.headShort}, เจ้าหน้าที่จัดทำร่างฯ`,'-  อนุมัติตามเสนอ','-  ดำเนินการต่อไป'])}</div><div class="sgn" style="padding-top:6mm">${signer(j.head)}</div></div></div>`}
 
 function R_d2(j,c){return `<div class="page">${memoHead(j,'d2',{from:'เจ้าหน้าที่จัดทำร่างขอบเขตของงานฯ',to:`ผจก.${SET.office}`,subj:`ขอความเห็นชอบร่างขอบเขตของงาน (TOR) พร้อมกำหนดหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอและกำหนดราคากลางในการ${w.act}${j.title}`,attn:`ผจก.${SET.office} ผ่าน ${j.headShort}`})}
  ${P(`ตามอนุมัติ ผจก.${SET.office} ลว.${thDate(j.docs.d1.date)} ได้แต่งตั้งเจ้าหน้าที่จัดทำร่างขอบเขตของงาน (TOR) และหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ พร้อมกำหนดราคากลางสำหรับงาน${w.act}${esc(j.title)} จำนวน ${c.n} รายการ ${esc(j.purpose)}`)}<div class="gap"></div>
@@ -480,7 +482,7 @@ function R_d2(j,c){return `<div class="page">${memoHead(j,'d2',{from:'เจ้�
  ${P(`ราคากลางเป็นเงิน ${money(c.total)} บาท เป็นราคาที่สืบจากท้องตลาด (${esc(j.vendor)} ${esc(j.vendorAddr)})`)}<div class="gap"></div>
  ${PK(closing(j,'d2','จึงเรียนมาเพื่อพิจารณา เห็นชอบร่างขอบเขตของงาน (TOR) และหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอต่อไป'))}
  <div class="gap2"></div><div class="gap2"></div>
- <div class="sig tobottom" style="margin-left:-9mm"><div style="padding-top:12mm">${approverBox(j,'d2',[`เรียน   ${j.headShort}, เจ้าหน้าที่จัดทำร่างฯ`,'- เห็นชอบร่างขอบเขตฯ/อนุมัติราคากลาง','- ดำเนินการต่อไป'])}</div><div>${signer(j.officer,['เจ้าหน้าที่จัดทำร่างขอบเขตฯและ','กำหนดราคากลาง'])}</div></div></div>`}
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc" style="padding-top:12mm">${approverBox(j,'d2',[`เรียน   ${j.headShort}, เจ้าหน้าที่จัดทำร่างฯ`,'- เห็นชอบร่างขอบเขตฯ/อนุมัติราคากลาง','- ดำเนินการต่อไป'])}</div><div class="sgn">${signer(j.officer,['เจ้าหน้าที่จัดทำร่างขอบเขตฯและ','กำหนดราคากลาง'])}</div></div></div>`}
 
 function R_d3(j,c){const quals=[esc(j.bidderQual),'ไม่เป็นบุคคลล้มละลายหรืออยู่ระหว่างเลิกกิจการ','ไม่เป็นผู้ได้รับเอกสิทธิ์หรือความคุ้มกันซึ่งอาจปฏิเสธไม่ยอมขึ้นศาลไทย เว้นแต่รัฐบาลของผู้ยื่นข้อเสนอได้มีคำสั่งให้สละสิทธิและความคุ้มกันเช่นว่านั้น','ไม่เป็นบุคคลซึ่งถูกระบุชื่อไว้ในบัญชีผู้ทิ้งงานหรือได้แจ้งเวียนชื่อเป็นผู้ทิ้งงานของหน่วยงานของรัฐ'];
  const H=(n,t)=>`<div class="gap"></div><p class="kwn">${n}. ${t}</p>`;
@@ -517,7 +519,7 @@ function R_d5(j,c){return `<div class="page">${memoHead(j,'d5',{from:j.deptFull,
  ${P(`ตามอนุมัติ ผจก.${SET.office} ลงวันที่ ${thDate(j.docs.d4.date)} เห็นชอบรายงานขอ${w.s}${esc(j.title)} จำนวน ${c.n} รายการ ในวงเงินงบประมาณ จำนวน ${money(c.total)} บาท (${bahtText(c.total)}) (รวมภาษีมูลค่าเพิ่ม) นั้น และตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 การดำเนินการตามข้อ 79 กรณีตามมาตรา 56(2)(ข) ให้เจ้าหน้าที่เจรจาตกลงราคากับผู้ประกอบการนั้นโดยตรง แล้วให้หัวหน้าเจ้าหน้าที่ซื้อหรือจ้างได้ภายในวงเงินที่ได้รับความเห็นชอบจากหัวหน้าหน่วยงานของรัฐ ตามข้อ 24`)}
  ${P(`เจ้าหน้าที่ได้ดำเนินการสำรวจราคาและรายการ${w.act}${esc(j.title)} จำนวน ${c.n} รายการ เห็นว่าราคาที่${w.act}เท่ากับราคางบประมาณที่ได้รับความเห็นชอบ จึงเห็นว่าราคาดังกล่าวเหมาะสมแล้ว จึงเห็นควรขออนุมัติ${w.act}${esc(j.title)} ${esc(j.purpose)} จาก${esc(j.vendor)} ${esc(j.vendorAddr)} ดังนี้`)}
  ${itemTable(j,c)}<div class="gap"></div>${PK(closing(j,'d5',`จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้สั่ง${w.s}จากผู้เสนอราคาดังกล่าว`))}
- <div class="sig tobottom" style="margin-left:-9mm"><div style="padding-top:2mm">${approverBox(j,'d5',[`เรียน   ${j.headAbbr}`,`-  อนุมัติ${w.act}`,'ดำเนินการต่อไป'])}</div><div>${signer(j.head)}</div></div></div>`}
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc" style="padding-top:2mm">${approverBox(j,'d5',[`เรียน   ${j.headAbbr}`,`-  อนุมัติ${w.act}`,'ดำเนินการต่อไป'])}</div><div class="sgn">${signer(j.head)}</div></div></div>`}
 
 function R_d6(j,c){const d=j.docs.d6;const cm=cmList(j).map(m=>`<div>(ลงชื่อ)………………………… ${esc(m.role)}</div><div style="padding-left:6mm">(${esc(withPre(m.name))}) ${esc(m.pos)}</div><div class="gap2"></div>`).join('');
  return `<div class="page"><div style="display:grid;grid-template-columns:62mm 1fr"><div style="padding-top:6mm"><img class="logo" style="margin-left:0" src="${LOGO}"></div>
@@ -527,8 +529,8 @@ function R_d6(j,c){const d=j.docs.d6;const cm=cmList(j).map(m=>`<div>(ลงช�
  ${P(`ตาม${w.inv} เล่มที่ ${esc(j.invBook)} เลขที่ ${esc(j.invNo)} ลงวันที่ ${thDate(j.invDate)} ${esc(j.deptFull)} ${w.act}${esc(j.title)} จำนวน ${c.n} รายการ ${esc(j.purpose)} จาก${esc(j.vendor)} ${esc(j.vendorAddr)} เป็นเงิน ${money(c.total)} บาท รวมภาษีมูลค่าเพิ่ม`)}
  ${P(`${w.cmS} ได้ทำการตรวจรับ${esc(j.title)}จากการ${w.act}ตามรายละเอียด ดังนี้`)}${itemTable(j,c)}<div class="gap"></div>
  ${P(`${w.cmS} ได้ตรวจสอบรายการ${esc(j.title)} ที่ส่งมอบแล้ว ${w.goods}ถูกต้อง และครบถ้วนตามจำนวนที่${w.act}จึงเห็นควรตรวจรับ${esc(j.title)} เพื่อใช้งานต่อไป`)}<div class="gap"></div>
- <div class="sig tobottom" style="margin-left:-9mm;margin-right:-8mm;grid-template-columns:90mm 1fr;gap:0 3mm"><div><div class="box"><p class="in" style="text-indent:8mm">- ${esc(j.deptFull)} ได้ตรวจรับ${esc(j.title)} จาก${w.cmS} ไว้ใช้งานเป็นที่เรียบร้อยแล้ว ตั้งแต่วันที่ ${thDate(d.date)}</p><div class="gap2"></div>${signer(j.officer)}</div>
- <div style="height:1.5mm"></div>${approverBox(j,'d6',[`เรียน  ${w.cmFull}, ${j.dept}`,'-   ทราบและดำเนินการต่อไป'])}</div><div style="padding-top:4mm">${cm}</div></div></div>`}
+ <div class="sig tobottom" style="margin-left:-9mm;margin-right:-8mm;grid-template-columns:90mm 1fr;gap:0 3mm"><div class="bxc"><div class="box"><p class="in" style="text-indent:8mm">- ${esc(j.deptFull)} ได้ตรวจรับ${esc(j.title)} จาก${w.cmS} ไว้ใช้งานเป็นที่เรียบร้อยแล้ว ตั้งแต่วันที่ ${thDate(d.date)}</p><div class="gap2"></div>${signer(j.officer)}</div>
+ <div style="height:1.5mm"></div>${approverBox(j,'d6',[`เรียน  ${w.cmFull}, ${j.dept}`,'-   ทราบและดำเนินการต่อไป'])}</div><div class="sgn" style="padding-top:4mm">${cm}</div></div></div>`}
 
 function R_d7(j,c){return `<div class="page">${memoHead(j,'d7',{from:j.deptFull,to:`ผจก.${SET.office}`,subj:`ขออนุมัติจ่ายเงินค่า${w.s}${j.title}`,attn:`ผจก.${SET.office}`})}
  ${P(`ตามหนังสือ${w.cmFull} ลงวันที่ ${thDate(j.docs.d6.date)} เรื่องรายงานผลการตรวจรับ${esc(j.title)} จาก${esc(j.vendor)} ซึ่งได้ส่งมอบ${w.goods}ตาม${w.inv}เล่มที่ ${esc(j.invBook)} เลขที่ ${esc(j.invNo)} ลงวันที่ ${thDate(j.invDate)} ครบถ้วนตามจำนวนที่ได้สั่ง${w.s} มีรายละเอียดดังนี้`)}
@@ -538,7 +540,7 @@ function R_d7(j,c){return `<div class="page">${memoHead(j,'d7',{from:j.deptFull,
  ${P(`2. เบิกจ่ายจาก${esc(j.budgetType)} รหัสศูนย์ต้นทุน ${esc(j.cc)} รหัสบัญชี ${esc(j.acc)} ${esc(j.accName)}`)}
  ${P(`3. ให้ ${esc(j.deptFull)} ดำเนินการโอนเงินให้กับ${esc(j.vendor)} โอนเงินเข้าบัญชี${esc(j.bank)} ชื่อบัญชี ${esc(j.vendor)} เลขที่บัญชี ${esc(j.bankAcc)} ทั้งนี้ ค่าธรรมเนียม ในการโอนเงิน ${w.vendor}ยินยอมให้หักจากจำนวนเงินข้างต้น`)}
  <div class="gap"></div>${PK(closing(j,'d7','จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติตามเสนอ'))}
- <div class="sig tobottom" style="margin-left:-9mm"><div style="padding-top:2mm">${approverBox(j,'d7',[`เรียน   ${j.headAbbr}`,'-  อนุมัติเบิกจ่าย','ดำเนินการต่อไป'])}</div><div>${signer(j.head)}</div></div></div>`}
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc" style="padding-top:2mm">${approverBox(j,'d7',[`เรียน   ${j.headAbbr}`,'-  อนุมัติเบิกจ่าย','ดำเนินการต่อไป'])}</div><div class="sgn">${signer(j.head)}</div></div></div>`}
 function cmList(j){return w.single?[{...j.committee[0],role:'ผู้ตรวจรับพัสดุ'}]:j.committee}
 const RENDER={d1:R_d1,d2:R_d2,d3:R_d3,d4:R_d4,d5:R_d5,d6:R_d6,d7:R_d7};
 
