@@ -3,8 +3,8 @@
  * หน้าเว็บ: https://aloofpea-aul.github.io/procure/  (GitHub Pages ในศูนย์รวมงาน)
  *
  * ติดตั้ง (ครั้งแรก)
- *   1) สร้าง Google Sheets ใหม่ ตั้งชื่อ "ระบบงานจัดซื้อจัดจ้าง กฟส.อ่าวลึก"
- *   2) เมนู ส่วนขยาย › Apps Script → ลบโค้ดเดิม วางไฟล์นี้ทั้งหมด → บันทึก
+ *   1) สร้าง Google Sheets ใหม่ ใส่รหัสชีตใน SPREADSHEET_ID (หรือเว้นว่างแล้วสร้างสคริปต์จากเมนู ส่วนขยาย › Apps Script ของชีต)
+ *   2) วางไฟล์นี้ทั้งหมดใน Apps Script → บันทึก
  *   3) เลือกฟังก์ชัน setup → Run (กดอนุญาตสิทธิ์) → ชีตจะถูกสร้างให้ครบ
  *   4) Deploy › New deployment › Web app · Execute as: Me · Who has access: Anyone → Deploy
  *   5) คัดลอกลิงก์ Web app (…/exec) ส่งให้ผู้พัฒนา/วางในหน้าเว็บ
@@ -16,6 +16,7 @@
  * ไม่มีค่าใช้จ่าย: ใช้ Google Sheets + Apps Script ฟรีทั้งหมด
  */
 
+const SPREADSHEET_ID = '19fEbARQGPUHNzd-d62SpseikLeANU5oJb7cpe3qQPbU';   // ชีตเก็บข้อมูล (เว้นว่าง = ใช้ชีตที่ผูกกับสคริปต์)
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
 const VERSION = '1.0';
@@ -228,7 +229,7 @@ function hubRole_(user, pass) {
 }
 
 /* ---------------- ชีต ---------------- */
-function ss_() { return SpreadsheetApp.getActiveSpreadsheet(); }
+function ss_() { return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet(); }
 function sheet_(def) {
   let sh = ss_().getSheetByName(def.name);
   if (!sh) {
