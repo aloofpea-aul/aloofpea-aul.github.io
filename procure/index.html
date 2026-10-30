@@ -9,77 +9,79 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
 <style>
 @font-face{font-family:'Sarabun16';src:url('fonts/THSarabunNew.woff') format('woff');font-weight:400}
 @font-face{font-family:'Sarabun16';src:url('fonts/THSarabunNew-Bold.woff') format('woff');font-weight:700}
 :root{--pea:#6b1f7c;--pea2:#8e3aa0;--bg:#f3f1f6;--card:#fff;--line:#e3dfe8;--ink:#2b2433;--mute:#7a7184;--ok:#1f8a4c;--warn:#c27a00}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Sarabun16','TH SarabunIT๙','TH Sarabun New',sans-serif;font-size:21px}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.5}
 button,input,select,textarea{font:inherit;color:inherit}
 .app{display:flex;flex-direction:column;height:100%}
 .top{background:linear-gradient(135deg,var(--pea),var(--pea2));color:#fff;padding:10px 14px calc(10px);display:flex;align-items:center;gap:10px;flex:none}
-.top h1{font-size:23px;margin:0;font-weight:700;line-height:1.1}
-.top small{display:block;font-weight:400;opacity:.85;font-size:17px}
+.top h1{font-size:17px;margin:0;font-weight:700;line-height:1.1}
+.top small{display:block;font-weight:400;opacity:.85;font-size:12.5px}
 .top .sp{flex:1}
-.ibtn{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;padding:4px 12px;cursor:pointer;font-size:20px}
+.ibtn{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;padding:6px 11px;cursor:pointer;font-size:16px}
 .main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 .wrap{max-width:1500px;margin:0 auto;padding:12px}
 .bnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-.bnav button{flex:1;border:0;background:none;padding:6px 0 4px;color:var(--mute);font-size:16px;cursor:pointer;line-height:1.1}
-.bnav button b{display:block;font-size:22px;font-weight:400}
+.bnav button{flex:1;border:0;background:none;padding:6px 0 4px;color:var(--mute);font-size:12px;cursor:pointer;line-height:1.3}
+.bnav button b{display:block;font-size:18px;font-weight:400}
 .bnav button.on{color:var(--pea);font-weight:700}
 .card{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(40,10,50,.06)}
-.card h3{margin:0 0 6px;font-size:22px;color:var(--pea)}
+.card h3{margin:0 0 8px;font-size:16px;font-weight:600;color:var(--pea)}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 220px}
 label.f{display:block;margin:4px 0 8px}
-label.f>span{display:block;font-size:17px;color:var(--mute);line-height:1.2}
-.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:3px 9px;background:#fff;line-height:1.25}
+label.f>span{display:block;font-size:12.5px;color:var(--mute);line-height:1.35;margin-bottom:2px}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:#fff;line-height:1.4;font-size:14.5px}
 .f textarea{min-height:64px;resize:vertical}
 .f input:focus,.f textarea:focus,.f select:focus{outline:2px solid var(--pea2);border-color:transparent}
-.btn{border:0;border-radius:10px;padding:4px 14px;cursor:pointer;background:#efe8f3;color:var(--pea);font-weight:700}
+.btn{border:0;border-radius:10px;padding:7px 14px;cursor:pointer;background:#efe8f3;color:var(--pea);font-weight:600;font-size:14px}
 .btn.p{background:var(--pea);color:#fff}
 .btn.g{background:#e3f4ea;color:var(--ok)}
-.btn.sm{padding:1px 10px;font-size:18px}
-.muted{color:var(--mute);font-size:17px}
+.btn.sm{padding:4px 10px;font-size:13px}
+.muted{color:var(--mute);font-size:13px}
 .seg{display:inline-flex;background:#efe8f3;border-radius:11px;padding:3px;gap:3px;flex-wrap:wrap}
-.seg button{border:0;background:none;border-radius:8px;padding:2px 14px;cursor:pointer;color:var(--pea)}
-.seg button.on{background:var(--pea);color:#fff;font-weight:700}
-.segrow{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap}.segrow>span{min-width:88px;color:var(--mute);font-size:18px}
-.tag{display:inline-block;border-radius:20px;padding:0 9px;font-size:16px;background:#efe8f3;color:var(--pea)}
+.seg button{border:0;background:none;border-radius:8px;padding:5px 14px;cursor:pointer;color:var(--pea);font-size:14px}
+.seg button.on{background:var(--pea);color:#fff;font-weight:600}
+.segrow{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap}.segrow>span{min-width:80px;color:var(--mute);font-size:13px}
+.tag{display:inline-block;border-radius:20px;padding:1px 9px;font-size:12px;background:#efe8f3;color:var(--pea)}
 .tag.ok{background:#e3f4ea;color:var(--ok)}.tag.w{background:#fff3dc;color:var(--warn)}
 /* list */
 .job{display:flex;gap:12px;align-items:center;cursor:pointer}
-.job .ico{width:46px;height:46px;border-radius:12px;background:#efe8f3;display:grid;place-items:center;font-size:26px;flex:none}
-.job .t{font-weight:700;line-height:1.15}
+.job .ico{width:42px;height:42px;border-radius:12px;background:#efe8f3;display:grid;place-items:center;font-size:21px;flex:none}
+.job .t{font-weight:600;line-height:1.35}
 .steps{display:flex;gap:3px;margin-top:5px}
 .steps i{flex:1;height:6px;border-radius:4px;background:#e6e1ea}
 .steps i.d{background:var(--ok)}.steps i.c{background:var(--warn)}
-.fab{position:fixed;right:18px;bottom:78px;background:var(--pea);color:#fff;border:0;border-radius:30px;padding:8px 20px;font-size:22px;font-weight:700;box-shadow:0 4px 14px rgba(107,31,124,.4);cursor:pointer}
+.fab{position:fixed;right:18px;bottom:78px;background:var(--pea);color:#fff;border:0;border-radius:30px;padding:10px 20px;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(107,31,124,.4);cursor:pointer}
 /* items table */
 .it{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:#fcfbfd}
 .it .hd{display:flex;align-items:center;gap:8px}
-.it .no{width:30px;height:30px;border-radius:50%;background:var(--pea);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
-.sum{display:grid;grid-template-columns:1fr auto;gap:0 14px;font-size:20px}
+.it .no{width:26px;height:26px;font-size:13px;border-radius:50%;background:var(--pea);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.sum{display:grid;grid-template-columns:1fr auto;gap:2px 14px;font-size:14.5px}
 .sum b{text-align:right}
 /* person */
 .pc{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}
-.av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d9c6e0,#efe8f3);display:grid;place-items:center;color:var(--pea);font-weight:700;flex:none;font-size:20px}
+.av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#d9c6e0,#efe8f3);display:grid;place-items:center;color:var(--pea);font-weight:600;flex:none;font-size:15px}
 .pc .body{flex:1}
-.role{font-size:16px;color:#fff;background:var(--pea2);border-radius:6px;padding:0 7px;display:inline-block}
+.role{font-size:12px;color:#fff;background:var(--pea2);border-radius:6px;padding:0 7px;display:inline-block}
 /* docs */
 .doc{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}
-.doc .n{width:34px;height:34px;border-radius:9px;background:#efe8f3;color:var(--pea);display:grid;place-items:center;font-weight:700;flex:none}
+.doc .n{width:30px;height:30px;font-size:14px;border-radius:9px;background:#efe8f3;color:var(--pea);display:grid;place-items:center;font-weight:700;flex:none}
 .doc .b{flex:1;min-width:0}
-.doc .ttl{font-weight:700;line-height:1.15}
+.doc .ttl{font-weight:600;line-height:1.35}
 .doc .row>*{flex:0 0 auto}
 .it .row{display:grid;grid-template-columns:1fr 1fr 1.3fr 1.3fr;gap:6px}.it .row>*{min-width:0}
 .top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 130px)}
-.doc input{border:1px solid var(--line);border-radius:8px;padding:0 6px;width:150px}
+.doc input{border:1px solid var(--line);border-radius:8px;padding:4px 7px;width:150px;font-size:14px}
 .doc input.num{width:96px}
 details.more{margin-top:4px}
-details.more summary{color:var(--pea);cursor:pointer;font-size:17px}
+details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
 /* layout: editor + preview */
 .split{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 @media(min-width:1100px){.split{grid-template-columns:minmax(420px,560px) minmax(0,1fr)}.split .pv{position:sticky;top:0;max-height:calc(100vh - 90px);overflow:auto}.bnav .pvbtn{display:none}}
@@ -87,14 +89,14 @@ details.more summary{color:var(--pea);cursor:pointer;font-size:17px}
 .pvbar .sp{flex:1}
 .sheetbox{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:30px}
 .sheetwrap{box-shadow:0 2px 10px rgba(0,0,0,.18);position:relative}
-.ovf::after{content:'⚠ เนื้อหาเกินหน้ากระดาษ';position:absolute;top:6px;right:6px;background:#c62828;color:#fff;font:16px 'Sarabun16';padding:0 8px;border-radius:6px}
-.savest{font-size:15px;opacity:.9;margin-left:6px;white-space:nowrap}.savest.err{background:#fff3;border-radius:6px;padding:0 6px;cursor:pointer;color:#ffe08a}
+.ovf::after{content:'⚠ เนื้อหาเกินหน้ากระดาษ';position:absolute;top:6px;right:6px;background:#c62828;color:#fff;font:13px 'IBM Plex Sans Thai',sans-serif;padding:0 8px;border-radius:6px}
+.savest{font-size:12px;opacity:.9;margin-left:6px;white-space:nowrap}.savest.err{background:#fff3;border-radius:6px;padding:0 6px;cursor:pointer;color:#ffe08a}
 .warnbox{background:#fff6e0;color:#7a4b00}
 .mdl{position:fixed;inset:0;background:rgba(30,10,40,.45);display:flex;align-items:center;justify-content:center;z-index:20;padding:14px}
 .mbox{background:#fff;border-radius:16px;padding:14px 16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
-.mbox h3{margin:0 0 6px;color:var(--pea)}.mbtn{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
-.minp{width:100%;border:1px solid var(--line);border-radius:9px;padding:3px 9px;margin-top:8px}
-.mlist{display:flex;flex-direction:column;gap:6px;margin-top:6px}.mlist button{border:1px solid var(--line);background:#fcfbfd;border-radius:10px;padding:4px 10px;text-align:left;cursor:pointer}.mlist button:hover{background:#efe8f3}
+.mbox h3{margin:0 0 8px;color:var(--pea);font-size:17px}.mbtn{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.minp{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:15px}
+.mlist{display:flex;flex-direction:column;gap:6px;margin-top:6px}.mlist button{border:1px solid var(--line);background:#fcfbfd;border-radius:10px;padding:8px 12px;font-size:14px;text-align:left;cursor:pointer}.mlist button:hover{background:#efe8f3}
 #busy{position:fixed;inset:0;background:rgba(255,255,255,.5);display:none;align-items:center;justify-content:center;z-index:15}
 .spin{width:42px;height:42px;border:4px solid #e3d6e8;border-top-color:var(--pea);border-radius:50%;animation:sp 0.8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 .toast{z-index:30;position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2b2433;color:#fff;padding:6px 16px;border-radius:20px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
@@ -219,7 +221,7 @@ function blankJob() {
   return { kind: 'buy', inspect: 'committee', title: '', purpose: '', dept: '', deptFull: '', deptCode: '', headShort: '', headAbbr: '',
     budgetType: 'งบทำการ', cc: '', acc: '', accName: '',
     background: '', objective: '', reason: '',
-    bidderQual: 'เป็นบุคคลธรรมดาหรือนิติบุคคลผู้มีอาชีพจำหน่ายพัสดุที่จัดซื้อ',
+    bidderQual: 'เป็นบุคคลธรรมดาหรือนิติบุคคลผู้มีอาชีพขายหรือรับจ้างงานที่จัดซื้อจัดจ้างนี้',
     vendor: '', vendorAddr: '', bank: '', bankAcc: '', days: 7, penalty: '0.10', vatIncl: true, invBook: '', invNo: '', invDate: '',
     items: [{ name: '', qty: 1, unit: '', price: 0, spec: '' }],
     officer: { name: '', pos: '' }, head: { name: '', pos: '' }, approver: Object.assign({}, SET.approver),
@@ -335,7 +337,7 @@ function fillStaff() { $('#staff').innerHTML = STAFF.map(s => `<option value="${
 const PRE_RE = /^\s*(นางสาว|นาง|นาย|ว่าที่\s*ร\.ต\.)\s*/;
 const baseName = n => String(n || '').replace(PRE_RE, '').replace(/\s+/g, ' ').trim();
 function learnPre(n) { const m = String(n || '').match(PRE_RE); if (!m) return; const map = store.get('procure_prefix', {}); map[nm(baseName(n))] = m[1].replace(/\s+/g, ''); store.set('procure_prefix', map); }
-function withPre(n) { if (!n) return ''; if (PRE_RE.test(n)) return String(n).replace(/\s+/g, ' ').trim(); const pre = store.get('procure_prefix', {})[nm(baseName(n))]; return (pre || '') + baseName(n); }
+function withPre(n) { if (!String(n || '').trim()) return '……………………………………'; if (PRE_RE.test(n)) return String(n).replace(/\s+/g, ' ').trim(); const pre = store.get('procure_prefix', {})[nm(baseName(n))]; return (pre || '') + baseName(n); }
 function learnJob(j) { [j.officer, j.head, j.approver, ...(j.committee || [])].forEach(p => p && learnPre(p.name)); }
 const findStaff = n => STAFF.find(x => nm(x.name.replace(/^(นางสาว|นาง|นาย)/, '')) === nm(String(n).replace(/^(นางสาว|นาง|นาย)/, '')));
 
@@ -561,7 +563,7 @@ function jobView(){const j=cur,c=calc(j);setTop(j.title?(W(j).act+j.title):('ง
  <div class="card"><h3>เนื้อหา TOR / ${lbl(j,'รายงานขอซื้อ')}</h3>${fld('background','1. ความเป็นมา (TOR)',{ta:1})}${fld('objective','2. วัตถุประสงค์ (TOR)',{ta:1,rows:2})}${fld('bidderQual','3.1 คุณสมบัติผู้ยื่นข้อเสนอ',{ta:1,rows:2})}${fld('reason',`เหตุผลและความจำเป็น (${lbl(j,'รายงานขอซื้อ')})`,{ta:1})}
  <div class="row">${fld('days','ส่งมอบภายใน (วัน)',{type:'number'})}${fld('penalty','ค่าปรับรายวัน ร้อยละ')}</div></div>`;
  if(tab==='items')L=`<div class="card"><h3>รายการพัสดุ</h3><label class="muted"><input type="checkbox" id="vat" ${j.vatIncl?'checked':''}> ราคาต่อหน่วยรวม VAT แล้ว</label></div>
- ${j.items.map((i,x)=>`<div class="it"><div class="hd"><div class="no">${x+1}</div><input data-i="${x}" data-k="name" value="${esc(i.name)}" placeholder="ชื่อรายการ" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:2px 8px;font-weight:700">
+ ${j.items.map((i,x)=>`<div class="it"><div class="hd"><div class="no">${x+1}</div><input data-i="${x}" data-k="name" value="${esc(i.name)}" placeholder="ชื่อรายการ" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-weight:600;font-size:14.5px">
  <button class="btn sm" data-up="${x}">↑</button><button class="btn sm" data-del="${x}" style="color:#c62828">✕</button></div>
  <div class="row" style="margin-top:6px"><label class="f"><span>จำนวน</span><input type="number" data-i="${x}" data-k="qty" value="${i.qty}"></label><label class="f"><span>หน่วย</span><input data-i="${x}" data-k="unit" value="${esc(i.unit)}"></label><label class="f"><span>ราคา/หน่วย</span><input type="number" step="0.01" data-i="${x}" data-k="price" value="${i.price}"></label><label class="f"><span>รวม</span><input disabled value="${money(i.qty*i.price)}"></label></div>
  <label class="f"><span>คุณสมบัติ (สำหรับ TOR ข้อ 4 — ขึ้นบรรทัดใหม่ได้)</span><textarea data-i="${x}" data-k="spec" rows="2">${esc(i.spec)}</textarea></label></div>`).join('')}
@@ -579,7 +581,7 @@ function jobView(){const j=cur,c=calc(j);setTop(j.title?(W(j).act+j.title):('ง
  <details class="more"><summary>แก้ข้อความเฉพาะฉบับนี้ (จาก/ถึง/เรื่อง/เรียน/คำลงท้าย/กล่องสั่งการ)</summary>
  ${d.k!=='d3'&&d.k!=='d6'?['from:จาก','to:ถึง','subj:เรื่อง','attn:เรียน'].map(z=>{const[a,b]=z.split(':');return `<label class="f"><span>${b} (เว้นว่าง = ค่าอัตโนมัติ)</span><input data-ov="${d.k}.${a}" value="${esc(ov[a]||'')}"></label>`}).join(''):''}
  ${d.k!=='d3'?`<label class="f"><span>คำลงท้าย</span><input data-ov="${d.k}.close" value="${esc(ov.close||'')}" placeholder="(ค่าอัตโนมัติ)"></label><label class="f"><span>ข้อความในกล่องสั่งการของผู้อนุมัติ (บรรทัดละข้อ)</span><textarea data-ov="${d.k}.box" rows="3" placeholder="(ค่าอัตโนมัติ)">${esc(ov.box||'')}</textarea></label>`:''}</details></div></div>`}).join('')}`;
- const pv=`<div class="pvbar"><b>ตัวอย่างพิมพ์</b><select id="pvSel" style="border:1px solid var(--line);border-radius:8px">${[['all','ทั้งชุด (7 ฉบับ)'],...DOCS.map((d,x)=>[d.k,(x+1)+'. '+lbl(j,d.short)])].map(([v,t])=>`<option value="${v}" ${pvSel===v?'selected':''}>${t}</option>`).join('')}</select>
+ const pv=`<div class="pvbar"><b>ตัวอย่างพิมพ์</b><select id="pvSel" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:14px;max-width:100%">${[['all','ทั้งชุด (7 ฉบับ)'],...DOCS.map((d,x)=>[d.k,(x+1)+'. '+lbl(j,d.short)])].map(([v,t])=>`<option value="${v}" ${pvSel===v?'selected':''}>${t}</option>`).join('')}</select>
  <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum?'checked':''}> เลขไทย</label><label class="muted"><input type="checkbox" id="ed" ${editing?'checked':''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox" id="sheets"></div>`;
  $('#view').innerHTML=tab==='pv'?pv:`<div class="split"><div>${L}<div style="height:60px"></div></div><div class="pv" id="pvcol">${pv}</div></div>`;
  bindJob();drawSheets();}
@@ -625,14 +627,14 @@ function listView() {
   const rows = LIST.filter(x => (!fDept || x.dept === fDept) && (!q || [x.title, x.vendor, x.nums, x.dept, x.kind].join(' ').includes(q)));
   $('#view').innerHTML = `${LOCAL() ? `<div class="card warnbox"><b>โหมดทดลอง</b> — ยังไม่ได้เชื่อมหลังบ้าน ข้อมูลเก็บเฉพาะเครื่องนี้ และยังออกเลขหนังสือจริงไม่ได้${ME.admin ? ' · ผู้ดูแลใส่ลิงก์หลังบ้านได้ที่ ⚙ ตั้งค่า' : ''}</div>` : ''}
   ${loadErr ? `<div class="card warnbox">${esc(loadErr)} <button class="btn sm" id="retry">ลองใหม่</button></div>` : ''}
-  <div class="card"><input id="q" placeholder="🔍 ค้นหาชื่องาน / ผู้ขาย / เลขหนังสือ" value="${esc(q)}" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:4px 10px">
+  <div class="card"><input id="q" placeholder="🔍 ค้นหาชื่องาน / ผู้ขาย / เลขหนังสือ" value="${esc(q)}" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14.5px">
   <div class="seg" style="margin-top:8px">${['', ...Object.keys(DEPTS)].map(d => `<button data-fd="${d}" class="${fDept === d ? 'on' : ''}">${d || 'ทุกแผนก'}</button>`).join('')}</div>
   <span class="muted" style="margin-left:8px">${rows.length} งาน</span></div>
   ${rows.map(x => { const n = stepN(x.step);
     const st = n >= 7 ? '<span class="tag ok">ครบทุกฉบับ</span>' : `<span class="tag w">ขั้นที่ ${Math.min(n + 1, 7)}/7 · ${x.kind === 'จัดจ้าง' ? DOCS[Math.min(n, 6)].short.replace(/ซื้อ/g, 'จ้าง') : DOCS[Math.min(n, 6)].short}</span>`;
     return `<div class="card job" data-id="${esc(x.id)}"><div class="ico">${x.kind === 'จัดจ้าง' ? '🛠️' : '🛒'}</div><div style="flex:1;min-width:0"><div class="t">${esc(x.kind)}${esc(x.title || '(ยังไม่ตั้งชื่อ)')}</div>
     <div class="muted">${esc(x.dept || '')}${x.vendor ? ' · ' + esc(x.vendor) : ''} · <b style="color:var(--ink)">${money(x.total)}</b> บาท${x.nums ? ' · เลขที่ ' + esc(x.nums) : ''}</div>${st}
-    <div class="steps">${DOCS.map((d, i) => `<i class="${i < n ? 'd' : ''}"></i>`).join('')}</div></div><div style="font-size:26px;color:var(--mute)">›</div></div>`; }).join('') ||
+    <div class="steps">${DOCS.map((d, i) => `<i class="${i < n ? 'd' : ''}"></i>`).join('')}</div></div><div style="font-size:22px;color:var(--mute)">›</div></div>`; }).join('') ||
     `<div class="card muted" style="text-align:center;padding:30px">${LIST.length ? 'ไม่พบงานที่ค้นหา' : 'ยังไม่มีงาน — กด “＋ งานใหม่” เพื่อเริ่ม'}</div>`}
   <div style="height:80px"></div><button class="fab" id="newBtn">＋ งานใหม่</button>`;
   $('#q').oninput = e => store.set('procure_q', e.target.value); $('#q').onchange = () => listView();
