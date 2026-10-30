@@ -77,7 +77,8 @@ label.f>span{display:block;font-size:12.5px;color:var(--mute);line-height:1.35;m
 .doc .ttl{font-weight:600;line-height:1.35}
 .doc .row>*{flex:0 0 auto}
 .it .row{display:grid;grid-template-columns:1fr 1fr 1.3fr 1.3fr;gap:6px}.it .row>*{min-width:0}
-.top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 130px)}
+.top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 190px)}
+.top small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 190px)}
 .doc input{border:1px solid var(--line);border-radius:8px;padding:4px 7px;width:150px;font-size:14px}
 .doc input.num{width:96px}
 details.more{margin-top:4px}
@@ -87,7 +88,9 @@ details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
 @media(min-width:1100px){.split{grid-template-columns:minmax(420px,560px) minmax(0,1fr)}.split .pv{position:sticky;top:0;max-height:calc(100vh - 90px);overflow:auto}.bnav .pvbtn{display:none}}
 .pvbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border-radius:12px;padding:6px 10px;margin-bottom:10px}
 .pvbar .sp{flex:1}
-.sheetbox{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:30px}
+.sheetbox{display:flex;flex-direction:column;align-items:safe center;gap:14px;padding-bottom:30px;overflow-x:auto}
+.sheetbox.real{align-items:flex-start}.sheetbox.real .sheetwrap{flex:none}
+.sheetwrap{cursor:zoom-in}.sheetbox.real .sheetwrap{cursor:zoom-out}
 .sheetwrap{box-shadow:0 2px 10px rgba(0,0,0,.18);position:relative}
 .ovf::after{content:'⚠ เนื้อหาเกินหน้ากระดาษ';position:absolute;top:6px;right:6px;background:#c62828;color:#fff;font:13px 'IBM Plex Sans Thai',sans-serif;padding:0 8px;border-radius:6px}
 .savest{font-size:12px;opacity:.9;margin-left:6px;white-space:nowrap}.savest.err{background:#fff3;border-radius:6px;padding:0 6px;cursor:pointer;color:#ffe08a}
@@ -575,7 +578,7 @@ function renderPages(j,keys){const c=calc(j);w=W(j);return keys.map(k=>RENDER[k]
 function thaiNumify(root){if(!SET.thaiNum)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(/[0-9]/.test(n.nodeValue))n.nodeValue=toThaiDigits(n.nodeValue)}}
 
 /* ---------------- views ---------------- */
-let cur=null,tab='info',pvSel='all',editing=false;
+let cur=null,tab='info',pvSel='all',editing=false,pvReal=false;   // pvReal = ดูขนาดเท่าฉบับจริง (100%)
 function setTop(t,s,back){$('#ttl').textContent=t;$('#sub').innerHTML=s;$('#backBtn').style.display=back?'':'none';$('#bnav').style.display=cur?'flex':'none';$('#delBtn').style.display=cur?'':'none'}
 function fld(path,label,opt={}){const v=path.split('.').reduce((o,k)=>o?.[k],cur)??'';
  const t=opt.ta?`<textarea data-p="${path}" rows="${opt.rows||3}">${esc(v)}</textarea>`:`<input data-p="${path}" value="${esc(v)}" ${opt.type?`type="${opt.type}"`:''} ${opt.list?`list="${opt.list}"`:''}>`;
@@ -614,13 +617,14 @@ function jobView(){const j=cur,c=calc(j);setTop(j.title?(W(j).act+j.title):('ง
  ${d.k!=='d3'&&d.k!=='d6'?['from:จาก','to:ถึง','subj:เรื่อง','attn:เรียน'].map(z=>{const[a,b]=z.split(':');return `<label class="f"><span>${b} (เว้นว่าง = ค่าอัตโนมัติ)</span><input data-ov="${d.k}.${a}" value="${esc(ov[a]||'')}"></label>`}).join(''):''}
  ${d.k!=='d3'?`<label class="f"><span>คำลงท้าย</span><input data-ov="${d.k}.close" value="${esc(ov.close||'')}" placeholder="(ค่าอัตโนมัติ)"></label><label class="f"><span>ข้อความในกล่องสั่งการของผู้อนุมัติ (บรรทัดละข้อ)</span><textarea data-ov="${d.k}.box" rows="3" placeholder="(ค่าอัตโนมัติ)">${esc(ov.box||'')}</textarea></label>`:''}</details></div></div>`}).join('')}`;
  const pv=`<div class="pvbar"><b>ตัวอย่างพิมพ์</b><select id="pvSel" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:14px;max-width:100%">${[['all','ทั้งชุด (7 ฉบับ)'],...DOCS.map((d,x)=>[d.k,(x+1)+'. '+lbl(j,d.short)])].map(([v,t])=>`<option value="${v}" ${pvSel===v?'selected':''}>${t}</option>`).join('')}</select>
- <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum?'checked':''}> เลขไทย</label><label class="muted"><input type="checkbox" id="ed" ${editing?'checked':''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox" id="sheets"></div>`;
+ <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum?'checked':''}> เลขไทย</label><label class="muted"><input type="checkbox" id="ed" ${editing?'checked':''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn" id="zoomBtn">${pvReal?'↔ พอดีจอ':'🔍 ขนาดจริง'}</button><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox ${pvReal?'real':''}" id="sheets"></div>`;
  $('#view').innerHTML=tab==='pv'?pv:`<div class="split"><div>${L}<div style="height:60px"></div></div><div class="pv" id="pvcol">${pv}</div></div>`;
  bindJob();drawSheets();}
+function toggleReal(){pvReal=!pvReal;const zb=$('#zoomBtn');if(zb)zb.textContent=pvReal?'↔ พอดีจอ':'🔍 ขนาดจริง';drawSheets();if(pvReal)toast('ขนาดเท่ากระดาษ A4 จริง (100%) — เลื่อนซ้าย/ขวาเพื่อดู');}
 function drawSheets(){const box=$('#sheets');if(!box)return;const keys=pvSel==='all'?DOCS.map(d=>d.k):[pvSel];
  box.innerHTML=renderPages(cur,keys);thaiNumify(box);paginate(box);
- const pages=[...box.querySelectorAll('.page')];const W=box.clientWidth||600;const z=Math.min(1,(W-4)/(210*3.7795));
- pages.forEach(p=>{const w=document.createElement('div');w.className='sheetwrap';p.parentNode.insertBefore(w,p);w.appendChild(p);w.style.zoom=z;if(p.scrollHeight>p.clientHeight+2)w.classList.add('ovf');if(editing)p.contentEditable=true});}
+ const pages=[...box.querySelectorAll('.page')];const W=box.clientWidth||600;const z=pvReal?1:Math.min(1,(W-4)/(210*3.7795));box.classList.toggle('real',pvReal);
+ pages.forEach(p=>{const w=document.createElement('div');w.className='sheetwrap';p.parentNode.insertBefore(w,p);w.appendChild(p);w.style.zoom=z;if(!editing)w.ondblclick=toggleReal;if(p.scrollHeight>p.clientHeight+2)w.classList.add('ovf');if(editing)p.contentEditable=true});}
 function bindJob(){const j=cur;const V=$('#view');
  const redraw=()=>{save();clearTimeout(bindJob._t);bindJob._t=setTimeout(()=>{drawSheets();const c=calc(j);const sa=$('#subAmt');if(sa)sa.textContent=`${money(c.total)} บาท · ${c.n} รายการ`},250)};
  V.querySelectorAll('[data-p]').forEach(el=>el.oninput=()=>{const ks=el.dataset.p.split('.');let o=j;ks.slice(0,-1).forEach(k=>o=o[k]);let v=el.value;if(el.type==='number')v=+v;o[ks.at(-1)]=v;
@@ -642,6 +646,7 @@ function bindJob(){const j=cur;const V=$('#view');
  const ps=$('#pvSel');if(ps)ps.onchange=()=>{pvSel=ps.value;drawSheets()};
  const tn=$('#tn');if(tn)tn.onchange=()=>{SET.thaiNum=tn.checked;store.set('procure_thainum',tn.checked);drawSheets()};
  const ed=$('#ed');if(ed)ed.onchange=()=>{editing=ed.checked;$('#app').classList.toggle('editing',editing);drawSheets();if(editing)toast('คลิกที่ข้อความบนกระดาษเพื่อแก้ไขก่อนพิมพ์')};
+ const zb=$('#zoomBtn');if(zb)zb.onclick=()=>toggleReal();
  const pr=$('#prt');if(pr)pr.onclick=doPrint;}
 function doPrint(){const keys=pvSel==='all'?DOCS.map(d=>d.k):[pvSel];const pa=$('#printArea');
  if(!editing)drawSheets();   // ใช้หน้าที่แบ่งหน้าแล้วจากตัวอย่าง (ถ้าแก้บนกระดาษอยู่ ใช้ตามที่แก้)
