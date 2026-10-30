@@ -19,8 +19,8 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.5}
 button,input,select,textarea{font:inherit;color:inherit}
-.app{display:flex;flex-direction:column;height:100%}
-.top{background:linear-gradient(135deg,var(--pea),var(--pea2));color:#fff;padding:10px 14px calc(10px);display:flex;align-items:center;gap:10px;flex:none}
+.app{display:flex;flex-direction:column;position:fixed;inset:0}   /* เต็มจอพอดีทุกเครื่อง (iPhone ไม่เหลือที่ว่างด้านล่าง) */
+.top{background:linear-gradient(135deg,var(--pea),var(--pea2));color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px;flex:none}
 .top h1{font-size:17px;margin:0;font-weight:700;line-height:1.1}
 .top small{display:block;font-weight:400;opacity:.85;font-size:12.5px}
 .top .sp{flex:1}
@@ -58,7 +58,7 @@ label.f>span{display:block;font-size:12.5px;color:var(--mute);line-height:1.35;m
 .steps{display:flex;gap:3px;margin-top:5px}
 .steps i{flex:1;height:6px;border-radius:4px;background:#e6e1ea}
 .steps i.d{background:var(--ok)}.steps i.c{background:var(--warn)}
-.fab{position:fixed;right:18px;bottom:78px;background:var(--pea);color:#fff;border:0;border-radius:30px;padding:10px 20px;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(107,31,124,.4);cursor:pointer}
+.fab{position:fixed;right:18px;bottom:calc(78px + env(safe-area-inset-bottom,0px));background:var(--pea);color:#fff;border:0;border-radius:30px;padding:10px 20px;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(107,31,124,.4);cursor:pointer}
 /* items table */
 .it{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:#fcfbfd}
 .it .hd{display:flex;align-items:center;gap:8px}
@@ -157,10 +157,10 @@ table.t th{font-weight:700;text-align:center}
   </div>
   <div class="main" id="main"><div class="wrap" id="view"></div></div>
   <div class="bnav" id="bnav" style="display:none">
-    <button data-t="info"><b>📝</b>ข้อมูลงาน</button>
-    <button data-t="items"><b>📦</b>รายการพัสดุ</button>
+    <button data-t="info"><b>📝</b>ข้อมูล</button>
+    <button data-t="items"><b>📦</b>พัสดุ</button>
     <button data-t="people"><b>👥</b>ผู้ลงนาม</button>
-    <button data-t="docs"><b>🔢</b>เอกสาร/ออกเลข</button>
+    <button data-t="docs"><b>🔢</b>ออกเลข</button>
     <button data-t="pv" class="pvbtn"><b>🖨</b>ดู/พิมพ์</button>
   </div>
 </div>
