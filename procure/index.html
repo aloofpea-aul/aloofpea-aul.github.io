@@ -189,7 +189,7 @@ function bahtText(num){
     const L=s.length;for(let i=0;i<L;i++){const d=+s[i],p=L-i-1;if(!d)continue;
       if(p===0&&d===1&&L>1)o+='เอ็ด';else if(p===1&&d===2)o+='ยี่';else if(p===1&&d===1)o+='';else o+=D[d];o+=P[p]}return o};
   const [b,s]=num.toFixed(2).split('.');let t=rd(b);if(t)t+='บาท';
-  if(+s){t+=rd(s)+'สตางค์'}else t+='ถ้วน';return t||'ศูนย์บาทถ้วน'}
+  if(!t&&!+s)return 'ศูนย์บาทถ้วน';if(+s){t+=rd(s)+'สตางค์'}else t+='ถ้วน';return t}
 const toThaiDigits=s=>s.replace(/[0-9]/g,d=>'๐๑๒๓๔๕๖๗๘๙'[d]);
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1800)}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -574,12 +574,30 @@ function paginate(box){
    moved.forEach(m=>nx.appendChild(m));cur=nx}
  });
  box.querySelectorAll('.page').forEach(pg=>pg.classList.add('pinned'))}
-function renderPages(j,keys){const c=calc(j);w=W(j);return keys.map(k=>RENDER[k](j,c)).join('')}
+function renderPages(j,keys){torSync(j);const c=calc(j);w=W(j);return keys.map(k=>RENDER[k](j,c)).join('')}
 function thaiNumify(root){if(!SET.thaiNum)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(/[0-9]/.test(n.nodeValue))n.nodeValue=toThaiDigits(n.nodeValue)}}
 
 /* ---------------- views ---------------- */
 let cur=null,tab='info',pvSel='all',editing=false,pvReal=false;   // pvReal = ดูขนาดเท่าฉบับจริง (100%)
 function setTop(t,s,back){$('#ttl').textContent=t;$('#sub').innerHTML=s;$('#backBtn').style.display=back?'':'none';$('#bnav').style.display=cur?'flex':'none';$('#delBtn').style.display=cur?'':'none'}
+/* ร่างข้อความ TOR ข้อ 1-2 อัตโนมัติ (แม่แบบในเครื่อง ไม่มีค่าใช้จ่าย) — แก้เองเมื่อไรก็ได้ */
+const TOR_TYPES=[['replace','ทดแทนของเดิมที่ชำรุด'],['add','จัดหาเพิ่ม/ไม่เพียงพอ'],['supply','วัสดุใช้แล้วหมดไป'],['repair','ซ่อมแซม/บำรุงรักษา']];
+function torAuto(j){const t=(j.title||'').trim()||(j.kind==='hire'?'งานจ้าง':'พัสดุ'),a=j.kind==='hire'?'จัดจ้าง':'จัดซื้อ',d=j.deptFull||'แผนก',ty=j.torType||(j.kind==='hire'?'repair':'replace');
+ const T={
+  replace:[`ตามที่ ${d} ได้รับมอบหมายให้ดำเนินการจัดหา${t}สำหรับใช้งาน เนื่องจาก ${t}เดิมชำรุดหมดสภาพการใช้งาน เพื่อให้มี${t}ใช้งานได้อย่างต่อเนื่อง จึงเห็นควร${a}${t}ดังกล่าว`,
+           `เพื่อให้มี${t}ใช้งานได้อย่างต่อเนื่อง เพื่อความสะดวก รวดเร็วในการปฏิบัติงาน`],
+  add:[`ตามที่ ${d} ได้รับมอบหมายให้ดำเนินการจัดหา${t}สำหรับใช้งาน เนื่องจาก ${t}ที่มีอยู่ไม่เพียงพอต่อการปฏิบัติงาน เพื่อให้การปฏิบัติงานเป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ จึงเห็นควร${a}${t}ดังกล่าว`,
+       `เพื่อให้มี${t}เพียงพอต่อการใช้งาน และการปฏิบัติงานเป็นไปด้วยความสะดวก รวดเร็ว มีประสิทธิภาพ`],
+  supply:[`ตามที่ ${d} ได้รับมอบหมายให้ดำเนินการจัดหา${t}สำหรับใช้ในการปฏิบัติงาน เนื่องจาก ${t}ที่มีอยู่ใกล้หมด เพื่อให้มี${t}สำรองใช้งานได้อย่างต่อเนื่อง จึงเห็นควร${a}${t}ดังกล่าว`,
+          `เพื่อให้มี${t}ใช้ในการปฏิบัติงานได้อย่างต่อเนื่อง ไม่ขาดแคลน`],
+  repair:[`ตามที่ ${d} ได้รับมอบหมายให้ดำเนินการ${t} เนื่องจาก อยู่ในสภาพชำรุดเสียหาย ไม่สามารถใช้งานได้ตามปกติ เพื่อให้กลับมาอยู่ในสภาพพร้อมใช้งานได้อย่างต่อเนื่อง จึงเห็นควร${a}${t}ดังกล่าว`,
+          `เพื่อให้อยู่ในสภาพพร้อมใช้งาน และการปฏิบัติงานเป็นไปด้วยความต่อเนื่อง ปลอดภัย และมีประสิทธิภาพ`]};
+ const r=T[ty]||T.replace;return{background:r[0],objective:r[1]}}
+function torSync(j){ // งานเก่าที่มีข้อความอยู่แล้ว = ถือว่าแก้เอง · งานใหม่ (ว่าง) = อัตโนมัติ
+ if(j.bgManual===undefined)j.bgManual=!!(j.background||'').trim();if(j.objManual===undefined)j.objManual=!!(j.objective||'').trim();
+ const a=torAuto(j);if(!j.bgManual)j.background=a.background;if(!j.objManual)j.objective=a.objective}
+function autoFld(path,flag,label,rows){const j=cur;const man=j[flag];
+ return `<label class="f"><span>${label} <span data-tag="${path}">${man?`<span class="tag w">แก้เอง</span> <a href="#" data-reauto="${path}" style="color:var(--pea)">↺ กลับเป็นข้อความอัตโนมัติ</a>`:'<span class="tag ok">✨ ร่างอัตโนมัติ</span>'}</span></span><textarea data-p="${path}" data-flag="${flag}" rows="${rows}">${esc(j[path]||'')}</textarea></label>`}
 function fld(path,label,opt={}){const v=path.split('.').reduce((o,k)=>o?.[k],cur)??'';
  const t=opt.ta?`<textarea data-p="${path}" rows="${opt.rows||3}">${esc(v)}</textarea>`:`<input data-p="${path}" value="${esc(v)}" ${opt.type?`type="${opt.type}"`:''} ${opt.list?`list="${opt.list}"`:''}>`;
  return `<label class="f"><span>${label}</span>${t}</label>`}
@@ -595,7 +613,10 @@ function jobView(){const j=cur,c=calc(j);setTop(j.title?(W(j).act+j.title):('ง
  <div class="card"><h3>งบประมาณ</h3><div class="row">${fld('budgetType','ประเภทงบ')}${fld('cc','รหัสศูนย์ต้นทุน')}${fld('acc','รหัสบัญชี')}</div>${fld('accName','ชื่อบัญชี')}</div>
  <div class="card"><h3>${j.kind==='hire'?'ผู้รับจ้าง':'ผู้ขาย / ร้านค้า'}</h3>${fld('vendor','ชื่อร้าน/บริษัท')}${fld('vendorAddr','ที่อยู่',{ta:1,rows:2})}<div class="row">${fld('bank','ธนาคาร/สาขา')}${fld('bankAcc','เลขที่บัญชี')}</div>
  <div class="row">${fld('invBook',W(j).inv+' เล่มที่')}${fld('invNo','เลขที่')}${fld('invDate','ลงวันที่',{type:'date'})}</div></div>
- <div class="card"><h3>เนื้อหา TOR / ${lbl(j,'รายงานขอซื้อ')}</h3>${fld('background','1. ความเป็นมา (TOR)',{ta:1})}${fld('objective','2. วัตถุประสงค์ (TOR)',{ta:1,rows:2})}${fld('bidderQual','3.1 คุณสมบัติผู้ยื่นข้อเสนอ',{ta:1,rows:2})}${fld('reason',`เหตุผลและความจำเป็น (${lbl(j,'รายงานขอซื้อ')})`,{ta:1})}
+ <div class="card"><h3>เนื้อหา TOR / ${lbl(j,'รายงานขอซื้อ')}</h3>
+ <div class="segrow"><span>แบบข้อความ</span><div class="seg">${TOR_TYPES.map(([v,t])=>`<button data-tt="${v}" class="${(j.torType||(j.kind==='hire'?'repair':'replace'))===v?'on':''}">${t}</button>`).join('')}</div></div>
+ <div class="muted" style="margin:-2px 0 6px">ระบบร่างข้อ 1–2 ให้จากชื่องาน แผนก และแบบข้อความ — เปลี่ยนชื่องานแล้วข้อความเปลี่ยนตาม · พิมพ์แก้เองได้ทันที</div>
+ ${autoFld('background','bgManual','1. ความเป็นมา (TOR)',4)}${autoFld('objective','objManual','2. วัตถุประสงค์ (TOR)',2)}${fld('bidderQual','3.1 คุณสมบัติผู้ยื่นข้อเสนอ',{ta:1,rows:2})}${fld('reason',`เหตุผลและความจำเป็น (${lbl(j,'รายงานขอซื้อ')})`,{ta:1})}
  <div class="row">${fld('days','ส่งมอบภายใน (วัน)',{type:'number'})}${fld('penalty','ค่าปรับรายวัน ร้อยละ')}</div></div>`;
  if(tab==='items')L=`<div class="card"><h3>รายการพัสดุ</h3><label class="muted"><input type="checkbox" id="vat" ${j.vatIncl?'checked':''}> ราคาต่อหน่วยรวม VAT แล้ว</label></div>
  ${j.items.map((i,x)=>`<div class="it"><div class="hd"><div class="no">${x+1}</div><input data-i="${x}" data-k="name" value="${esc(i.name)}" placeholder="ชื่อรายการ" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-weight:600;font-size:14.5px">
@@ -627,8 +648,11 @@ function drawSheets(){const box=$('#sheets');if(!box)return;const keys=pvSel==='
  pages.forEach(p=>{const w=document.createElement('div');w.className='sheetwrap';p.parentNode.insertBefore(w,p);w.appendChild(p);w.style.zoom=z;if(!editing)w.ondblclick=toggleReal;if(p.scrollHeight>p.clientHeight+2)w.classList.add('ovf');if(editing)p.contentEditable=true});}
 function bindJob(){const j=cur;const V=$('#view');
  const redraw=()=>{save();clearTimeout(bindJob._t);bindJob._t=setTimeout(()=>{drawSheets();const c=calc(j);const sa=$('#subAmt');if(sa)sa.textContent=`${money(c.total)} บาท · ${c.n} รายการ`},250)};
- V.querySelectorAll('[data-p]').forEach(el=>el.oninput=()=>{const ks=el.dataset.p.split('.');let o=j;ks.slice(0,-1).forEach(k=>o=o[k]);let v=el.value;if(el.type==='number')v=+v;o[ks.at(-1)]=v;
-  if(ks.at(-1)==='name'){learnPre(v);const s=findStaff(v);if(s&&s.pos){o.pos=s.pos;const pe=V.querySelector(`[data-p="${ks.slice(0,-1).join('.')}.pos"]`);if(pe)pe.value=s.pos}}redraw()});
+ V.querySelectorAll('[data-tt]').forEach(b=>b.onclick=()=>{j.torType=b.dataset.tt;j.bgManual=false;j.objManual=false;torSync(j);save();jobView()});
+ V.querySelectorAll('[data-reauto]').forEach(a=>a.onclick=e=>{e.preventDefault();j[a.dataset.reauto==='background'?'bgManual':'objManual']=false;torSync(j);save();jobView()});
+ const refreshAuto=()=>{torSync(j);['background','objective'].forEach(k=>{const t=V.querySelector(`textarea[data-p="${k}"]`);if(t&&document.activeElement!==t)t.value=j[k]})};
+ V.querySelectorAll('[data-p]').forEach(el=>el.oninput=()=>{if(el.dataset.flag&&!j[el.dataset.flag]){j[el.dataset.flag]=true;const tg=V.querySelector(`[data-tag="${el.dataset.p}"]`);if(tg){tg.innerHTML=`<span class="tag w">แก้เอง</span> <a href="#" style="color:var(--pea)">↺ กลับเป็นข้อความอัตโนมัติ</a>`;tg.querySelector('a').onclick=e=>{e.preventDefault();j[el.dataset.flag]=false;torSync(j);save();jobView()}}}const ks=el.dataset.p.split('.');let o=j;ks.slice(0,-1).forEach(k=>o=o[k]);let v=el.value;if(el.type==='number')v=+v;o[ks.at(-1)]=v;
+  if(ks.at(-1)==='name'){learnPre(v);const s=findStaff(v);if(s&&s.pos){o.pos=s.pos;const pe=V.querySelector(`[data-p="${ks.slice(0,-1).join('.')}.pos"]`);if(pe)pe.value=s.pos}}if(['title','deptFull'].includes(ks[0]))refreshAuto();redraw()});
  V.querySelectorAll('[data-i]').forEach(el=>{el.oninput=()=>{const i=j.items[+el.dataset.i];i[el.dataset.k]=el.type==='number'?+el.value:el.value;redraw()};if(el.type==='number')el.onchange=()=>jobView()});
  V.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{j.items.splice(+b.dataset.del,1);save();jobView()});
  V.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const x=+b.dataset.up;if(x>0){[j.items[x-1],j.items[x]]=[j.items[x],j.items[x-1]];save();jobView()}});
