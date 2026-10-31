@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.4.1';
+const VERSION = '1.4.2';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -373,7 +373,7 @@ function vMap(job) {
   m.on('click', e => onMapClick(job, e.latlng));
   m.on('moveend', () => { job.center = [m.getCenter().lat, m.getCenter().lng]; S.jobs[job.id] = job; saveLocal('jobs'); });
   mapState.sel = null; mapState.spanA = null;
-  drawMap(job); renderTools(); renderSheet(job);
+  drawMap(job); renderTools(); renderSheet(job); sheetSwipe();
   if (job.poles.length) fitJob(); else if (!job.center) locate(true);
 }
 const TOOLS = [['sel', '☝', 'เลือก'], ['pole', '●', 'ปักเสา'], ['expole', '◌', 'เสาเดิม'], ['span', '⟋', 'พาดสาย'], ['tr', 'TR', 'หม้อแปลง'], ['guy', '↘', 'ยึดโยง'], ['meter', 'M', 'มิเตอร์']];
@@ -450,8 +450,15 @@ function drawMap(job) {
   updateAim(job);
 }
 function renderSheet(job) {
-  const c = jobCounts(job), p = mapState.sel && poleById(job, mapState.sel);
-  let html = `<div class="grab"></div>`;
+  const c = jobCounts(job), p = mapState.sel && poleById(job, mapState.sel), mini = localStorage.getItem('ccs_sheet_min') === '1';
+  let html = `<button class="grabbtn" onclick="toggleSheet()" aria-label="${mini ? 'ขยายแถบล่าง' : 'ย่อแถบล่าง'}" aria-expanded="${!mini}"><span class="grab"></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="transform:rotate(${mini ? 180 : 0}deg)"><path d="M6 9l6 6 6-6"/></svg></button>`;
+  if (mini) {
+    html += `<div class="row" style="gap:8px">${p ? `<i class="sq" style="background:${PCOL[poleCls(poleH(p), p.volt)]};width:12px;height:12px"></i><span class="s13" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b>${esc(p.label)}</b> ${[fH(poleH(p)), poleHead(p)].filter(Boolean).map(esc).join(' · ')}</span><a class="btn sm g" href="#pole/${job.id}/${p.id}">แก้ไข</a>`
+      : `<span class="s13 muted" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">เสาใหม่ <b>${c.np}</b> · HV <b>${c.hv}</b> ม. · LV <b>${c.lv}</b> ม. · หม้อแปลง <b>${c.tr}</b></span>`}
+      ${['pole', 'expole'].includes(mapState.tool) ? `<button class="btn sm p" onclick="placeAtAim()">ปักที่จุดเล็ง</button>` : ''}<a class="btn sm p" href="#bom/${job.id}">ถอดแบบ →</a></div>`;
+    $('#sheet').innerHTML = html; $('#sheet').classList.add('mini'); return;
+  }
+  $('#sheet').classList.remove('mini');
   if (p) {
     const ang = poleAngle(job, p);
     html += `<div class="row"><i class="sq" style="background:${PCOL[poleCls(poleH(p), p.volt)]}"></i><div class="grow" style="flex:1;min-width:0"><b>${esc(p.label)}</b> <span class="s13 muted">${p.ex ? 'เสาเดิม' : 'เสาใหม่'}${poleH(p) ? ' ' + fH(poleH(p)) : ''}${poleHead(p) ? ' · ' + esc(poleHead(p)) : ''}${ang.dev != null ? ` · มุม ${ang.dev}°` : ''}${p.photos?.length ? ` · รูป ${p.photos.length}` : ''}</span><div class="s12 muted">${p.sets.length ? p.sets.map(s => s.c + (s.q > 1 ? '×' + s.q : '')).join(', ') : 'ยังไม่มีชุด Set'}</div></div>
@@ -463,6 +470,10 @@ function renderSheet(job) {
   <a class="btn p" href="#bom/${job.id}">ถอดแบบ →</a></div>`;
   $('#sheet').innerHTML = html;
 }
+window.toggleSheet = () => { const on = localStorage.getItem('ccs_sheet_min') !== '1'; localStorage.setItem('ccs_sheet_min', on ? '1' : '0'); renderSheet(cur.job); setTimeout(() => { cur.map && cur.map.invalidateSize(); updateAim(cur.job); }, 60); };
+function sheetSwipe() { const el = $('#sheet'); if (!el) return; let y0 = null;
+  el.addEventListener('touchstart', e => { if (e.target.closest('.grabbtn')) y0 = e.touches[0].clientY; }, { passive: true });
+  el.addEventListener('touchend', e => { if (y0 == null) return; const dy = e.changedTouches[0].clientY - y0; y0 = null; const mini = localStorage.getItem('ccs_sheet_min') === '1'; if ((dy > 30 && !mini) || (dy < -30 && mini)) toggleSheet(); }, { passive: true }); }
 window.delPole = id => { const j = cur.job; if (!confirm('ลบเสานี้และช่วงสายที่ต่อ?')) return; pushHist(j); j.poles = j.poles.filter(p => p.id !== id); j.spans = j.spans.filter(s => s.a !== id && s.b !== id); mapState.sel = null; saveJob(j); drawMap(j); renderSheet(j); };
 window.locate = silent => {
   if (!navigator.geolocation) return toast('อุปกรณ์ไม่รองรับ GPS');
