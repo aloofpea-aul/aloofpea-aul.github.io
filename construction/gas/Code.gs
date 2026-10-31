@@ -11,7 +11,7 @@
  * ชีต Jobs / Prices / Deleted จะถูกสร้างให้อัตโนมัติ
  * ติดตั้งแล้ว: ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก" · โครงการ Apps Script "สำรวจงานก่อสร้าง API"
  */
-const SH = { jobs: 'Jobs', prices: 'Prices', del: 'Deleted' };
+const SH = { jobs: 'Jobs', prices: 'Prices', del: 'Deleted', photos: 'Photos' };
 
 function sheet_(name, header) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -22,13 +22,15 @@ function sheet_(name, header) {
 const jobsSheet_ = () => sheet_(SH.jobs, ['id', 'name', 'status', 'place', 'customer', 'updated', 'json']);
 const pricesSheet_ = () => sheet_(SH.prices, ['code', 'price', 'updated']);
 const delSheet_ = () => sheet_(SH.del, ['id', 'deletedAt']);
+const photosSheet_ = () => sheet_(SH.photos, ['id', 'jobId', 'poleId', 'created', 'thumb', 'data']);
 /** กด Run ครั้งแรก เพื่อสร้างชีตและอนุญาตสิทธิ์ */
-function setup() { jobsSheet_(); pricesSheet_(); delSheet_(); }
+function setup() { jobsSheet_(); pricesSheet_(); delSheet_(); photosSheet_(); }
 const out_ = o => ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 
 function doGet(e) {
   try {
     const action = (e.parameter && e.parameter.action) || 'list';
+    if (action === 'photo') return out_(getPhoto_(e.parameter.id));
     if (action !== 'list') return out_({ ok: false, error: 'unknown action' });
     const jobs = [];
     const jv = jobsSheet_().getDataRange().getValues();
@@ -52,6 +54,8 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     if (body.action === 'saveJob') return out_(saveJob_(body.job));
     if (body.action === 'deleteJob') return out_(deleteJob_(body.id));
+    if (body.action === 'savePhoto') return out_(savePhoto_(body));
+    if (body.action === 'deletePhoto') return out_(deletePhoto_(body.id));
     if (body.action === 'savePrices') return out_(savePrices_(body.prices || {}));
     return out_({ ok: false, error: 'unknown action' });
   } catch (err) { return out_({ ok: false, error: String(err) });
@@ -95,4 +99,31 @@ function savePrices_(prices) {
     sh.getRange(2, 1, rows.length, 3).setValues(rows);
   }
   return { ok: true, n: rows.length };
+}
+
+/* ---------- รูปถ่ายหัวเสา: เก็บเป็นข้อความ base64 แบ่งหลายช่อง (ช่องละไม่เกิน 45,000 ตัวอักษร) ---------- */
+function photoRow_(sh, id) {
+  if (sh.getLastRow() < 2) return 0;
+  const ids = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(r => String(r[0]));
+  return ids.indexOf(String(id)) + 1;
+}
+function savePhoto_(b) {
+  if (!b.id || !b.data) return { ok: false, error: 'no photo' };
+  const sh = photosSheet_();
+  let row = photoRow_(sh, b.id);
+  const vals = [b.id, b.jobId || '', b.poleId || '', new Date(), String(b.thumb || '').slice(0, 45000)].concat(chunks_(String(b.data), 45000));
+  if (row < 2) row = sh.getLastRow() + 1;
+  sh.getRange(row, 1, 1, vals.length).setValues([vals]);
+  return { ok: true };
+}
+function getPhoto_(id) {
+  const sh = photosSheet_(), row = photoRow_(sh, id);
+  if (row < 2) return { ok: false, error: 'not found' };
+  const v = sh.getRange(row, 1, 1, sh.getLastColumn()).getValues()[0];
+  return { ok: true, thumb: v[4], data: v.slice(5).join('') };
+}
+function deletePhoto_(id) {
+  const sh = photosSheet_(), row = photoRow_(sh, id);
+  if (row > 1) sh.deleteRow(row);
+  return { ok: true };
 }

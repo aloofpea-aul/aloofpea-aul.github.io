@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.2.2';
+const VERSION = '1.3.0';
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
 const NET_BASE = '/sld-ala/';
@@ -319,6 +319,16 @@ window.delJob = () => {
   if (S.cfg.gasUrl) gas('deleteJob', { id }).catch(() => {}); go('home');
 };
 
+/* ---------- สัญลักษณ์เสา: สีตามขนาด + หัวเสา ---------- */
+const PCOL = { lv: '#1E9E4A', mv: '#D62828', hv: '#7B2CBF', na: '#8E8794' };
+const PCLS_TXT = { lv: 'แรงต่ำ 8–9 ม.', mv: '12 ม. ขึ้นไป', hv: '22 ม. ระบบ 115 kV', na: 'ไม่ทราบขนาด' };
+function poleCls(h, volt) { h = +h || 0; if (volt === 'HV' || h >= 22) return 'hv'; if (h >= 12) return 'mv'; if (h > 0) return 'lv'; if (volt === 'LV') return 'lv'; if (/^MV/.test(volt || '')) return 'mv'; return 'na'; }
+function poleH(p) { if (+p.h) return +p.h; const m = iname(p.pole || '').match(/(\d+(?:\.\d+)?)\s*M/i); return m ? +m[1] : 0; }
+const HEAD_RE = /\b(2DE|DDP|DDE|CCB|CTB|CSC|SP|DP|DE|BA)\b(\s?\d+-\d+)?/;
+function poleHead(p) { if (p.head) return p.head; for (const x of p.sets || []) { const m = (DB.sets[x.c]?.n || '').match(HEAD_RE); if (m) return m[1] + (m[2] ? ' ' + m[2].trim() : ''); } return ''; }
+const HEAD_OPTS = ['SP', 'SP 0-5', 'SP 5-30', 'DP', 'DDP', 'DE', 'DDE', '2DE', 'BA', 'CCB', 'CCB 5-60', 'CTB', 'CSC', 'SP (TR)'];
+const fH = h => +h ? (String(+h) + ' ม.') : '';
+
 /* ---------- map ---------- */
 const mapState = { tool: 'sel', kind: 'HV', sel: null, spanA: null, auto: true, layer: 'osm', history: [], net: true };
 function vMap(job) {
@@ -327,6 +337,8 @@ function vMap(job) {
   <div class="mapwrap"><div id="map"></div>
     <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
     <div class="tools" id="tools"></div>
+    <div id="xhair"></div><div id="dist"></div>
+    <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span></div>
     <div class="hint" id="hint"></div>
   </div>
   <div class="sheet" id="sheet"></div>${navbar(job, 'map')}`;
@@ -339,6 +351,11 @@ function vMap(job) {
   if (mapState.net) { cur.netLines.addTo(m); cur.netPts.addTo(m); }
   cur.lyr = L.layerGroup().addTo(m);
   m.on('moveend', () => drawNetPts(job));
+  cur.rubber = L.polyline([], { color: '#E07B00', weight: 3, dashArray: '6 6', interactive: false }).addTo(m);
+  cur.hover = null;
+  m.on('move', () => updateAim(job));
+  m.on('mousemove', e => { if (matchMedia('(hover:hover)').matches) { cur.hover = e.latlng; updateAim(job); } });
+  m.on('mouseout', () => { cur.hover = null; updateAim(job); });
   loadNet().then(() => { drawNetLines(); drawNetPts(job); });
   m.on('click', e => onMapClick(job, e.latlng));
   m.on('moveend', () => { job.center = [m.getCenter().lat, m.getCenter().lng]; S.jobs[job.id] = job; saveLocal('jobs'); });
@@ -350,9 +367,27 @@ const TOOLS = [['sel', '☝', 'เลือก'], ['pole', '●', 'ปักเ�
 const HINTS = { sel: 'แตะเสาเพื่อเลือก · ลากหมุดเพื่อย้ายตำแหน่ง', pole: 'แตะแผนที่เพื่อปักเสาใหม่ (ต่อสายจากเสาที่เลือกอัตโนมัติ)', expole: 'แตะตำแหน่งเสาเดิมของระบบ (จุดเชื่อม)', span: 'แตะเสาต้นแรก แล้วแตะเสาต้นถัดไป', tr: 'แตะเสาที่จะติดตั้งหม้อแปลง', guy: 'แตะเสาที่จะยึดโยง', meter: 'แตะเสาที่จะติดตั้งมิเตอร์' };
 function renderTools() {
   $('#tools').innerHTML = TOOLS.map(([k, ic, l]) => `<button class="${mapState.tool === k ? 'on' : ''}" onclick="setTool('${k}')" aria-label="${l}"><b>${ic}</b>${l}</button>`).join('');
-  $('#hint').textContent = (mapState.tool === 'span' && mapState.spanA ? 'แตะเสาปลายทาง · ' : '') + HINTS[mapState.tool] + (['pole', 'span'].includes(mapState.tool) ? ` · สาย ${mapState.kind}` : '');
+  const hn = $('#hint'); hn.textContent = (mapState.tool === 'span' && mapState.spanA ? 'แตะเสาปลายทาง · ' : '') + HINTS[mapState.tool] + (['pole', 'span'].includes(mapState.tool) ? ` · สาย ${mapState.kind}` : '');
+  hn.classList.remove('off'); clearTimeout(cur.hintT); cur.hintT = setTimeout(() => hn.classList.add('off'), 4000);
 }
-window.setTool = t => { mapState.tool = t; mapState.spanA = null; renderTools(); drawMap(cur.job); };
+window.setTool = t => { mapState.tool = t; mapState.spanA = null; renderTools(); drawMap(cur.job); renderSheet(cur.job); updateAim(cur.job); };
+function aimFrom(job) { const id = mapState.tool === 'span' ? mapState.spanA : mapState.sel; const p = id && poleById(job, id); return p && p.lat != null ? p : null; }
+function updateAim(job) {
+  if (!cur.map) return;
+  const aim = ['pole', 'expole', 'span'].includes(mapState.tool);
+  const w = $('.mapwrap'); w && w.classList.toggle('aim', aim && !cur.hover && mapState.tool !== 'span');
+  const d = $('#dist'), from = aim ? aimFrom(job) : null;
+  if (!aim || !from) { cur.rubber.setLatLngs([]); if (d) d.style.display = 'none'; return; }
+  const to = cur.hover || cur.map.getCenter();
+  cur.rubber.setLatLngs([[from.lat, from.lng], [to.lat, to.lng]]);
+  const m = Math.round(hav(from, to));
+  if (d) {
+    d.textContent = `ห่าง ${m.toLocaleString('th-TH')} ม. จาก ${from.label}`; d.style.display = 'block';
+    if (cur.hover) { const pt = cur.map.latLngToContainerPoint(cur.hover); d.style.left = pt.x + 'px'; d.style.top = pt.y + 'px'; }
+    else { d.style.left = '50%'; d.style.top = '50%'; }
+  }
+}
+window.placeAtAim = () => { const j = cur.job; onMapClick(j, cur.map.getCenter()); };
 function pushHist(job) { mapState.history.push(JSON.stringify({ poles: job.poles, spans: job.spans })); if (mapState.history.length > 30) mapState.history.shift(); }
 window.undo = () => { const h = mapState.history.pop(); if (!h) return toast('ไม่มีอะไรให้ย้อน'); const j = cur.job, o = JSON.parse(h); j.poles = o.poles; j.spans = o.spans; saveJob(j); drawMap(j); renderSheet(j); };
 function onMapClick(job, ll) {
@@ -362,7 +397,7 @@ function onMapClick(job, ll) {
   const p = newPole(job, +ll.lat.toFixed(7), +ll.lng.toFixed(7), t === 'expole');
   job.poles.push(p);
   if (mapState.auto && mapState.sel && poleById(job, mapState.sel)) job.spans.push(newSpan(job, mapState.sel, p.id, mapState.kind));
-  mapState.sel = p.id; saveJob(job); drawMap(job); renderSheet(job);
+  mapState.sel = p.id; saveJob(job); drawMap(job); renderSheet(job); updateAim(job);
 }
 function onPoleClick(job, p) {
   const t = mapState.tool;
@@ -389,22 +424,27 @@ function drawMap(job) {
   });
   job.poles.forEach(p => {
     if (p.lat == null) return;
-    const tr = p.sets.some(s => groupOfSet(s.c) === 'tr'), sel = mapState.sel === p.id || mapState.spanA === p.id;
-    const html = `<div style="display:flex;align-items:center;gap:3px"><div class="pmark ${p.ex ? 'ex' : ''} ${sel ? 'sel' : ''}"></div><span class="plabel">${esc(p.label)}</span>${tr ? '<span class="trbadge">TR</span>' : ''}</div>`;
-    const mk = L.marker([p.lat, p.lng], { draggable: mapState.tool === 'sel', icon: L.divIcon({ className: '', html, iconSize: [90, 24], iconAnchor: [11, 11] }) }).addTo(cur.lyr);
+    const tr = p.sets.some(s => groupOfSet(s.c) === 'tr') || p.items.some(i => groupOfItem(i.c) === 'tr'), sel = mapState.sel === p.id || mapState.spanA === p.id;
+    const h = poleH(p), hd = poleHead(p), col = PCOL[poleCls(h, p.volt)], info = [fH(h), hd].filter(Boolean).join(' · ');
+    const html = `<div class="pm"><i class="sq ${p.ex ? 'ex' : ''} ${sel ? 'sel' : ''}" style="background:${col}"></i>${tr ? '<i class="tri"></i>' : ''}<span class="pl">${esc(p.label)}${info ? `<small>${esc(info)}</small>` : ''}${p.photos?.length ? `<small>รูป ${p.photos.length}</small>` : ''}</span></div>`;
+    const mk = L.marker([p.lat, p.lng], { draggable: mapState.tool === 'sel', icon: L.divIcon({ className: '', html, iconSize: [130, 30], iconAnchor: [9, 9] }) }).addTo(cur.lyr);
     mk.on('click', e => { L.DomEvent.stopPropagation(e); onPoleClick(job, p); });
     mk.on('dragstart', () => pushHist(job));
-    mk.on('dragend', e => { const ll = e.target.getLatLng(); p.lat = +ll.lat.toFixed(7); p.lng = +ll.lng.toFixed(7); saveJob(job); drawMap(job); renderSheet(job); });
+    mk.on('drag', e => { const ll = e.target.getLatLng(), d = $('#dist'); const near = job.spans.filter(x => x.a === p.id || x.b === p.id).map(x => poleById(job, x.a === p.id ? x.b : x.a)).filter(q => q && q.lat != null);
+      if (d && near.length) { const pt = cur.map.latLngToContainerPoint(ll); d.style.display = 'block'; d.style.left = pt.x + 'px'; d.style.top = pt.y + 'px'; d.textContent = near.map(q => `${q.label} ${Math.round(hav(q, ll))} ม.`).join(' · '); } });
+    mk.on('dragend', e => { const ll = e.target.getLatLng(); p.lat = +ll.lat.toFixed(7); p.lng = +ll.lng.toFixed(7); saveJob(job); drawMap(job); renderSheet(job); updateAim(job); });
   });
+  updateAim(job);
 }
 function renderSheet(job) {
   const c = jobCounts(job), p = mapState.sel && poleById(job, mapState.sel);
   let html = `<div class="grab"></div>`;
   if (p) {
     const ang = poleAngle(job, p);
-    html += `<div class="row"><div class="grow" style="flex:1;min-width:0"><b>${esc(p.label)}</b> <span class="s13 muted">${p.ex ? 'เสาเดิม' : esc(iname(p.pole) || 'ไม่ระบุเสา')}${ang.dev != null ? ` · มุม ${ang.dev}°` : ''}</span><div class="s12 muted">${p.sets.length ? p.sets.map(s => s.c + (s.q > 1 ? '×' + s.q : '')).join(', ') : 'ยังไม่มีชุด Set'}</div></div>
+    html += `<div class="row"><i class="sq" style="background:${PCOL[poleCls(poleH(p), p.volt)]}"></i><div class="grow" style="flex:1;min-width:0"><b>${esc(p.label)}</b> <span class="s13 muted">${p.ex ? 'เสาเดิม' : 'เสาใหม่'}${poleH(p) ? ' ' + fH(poleH(p)) : ''}${poleHead(p) ? ' · ' + esc(poleHead(p)) : ''}${ang.dev != null ? ` · มุม ${ang.dev}°` : ''}${p.photos?.length ? ` · รูป ${p.photos.length}` : ''}</span><div class="s12 muted">${p.sets.length ? p.sets.map(s => s.c + (s.q > 1 ? '×' + s.q : '')).join(', ') : 'ยังไม่มีชุด Set'}</div></div>
       <button class="btn sm g" onclick="delPole('${p.id}')">ลบ</button><a class="btn sm p" href="#pole/${job.id}/${p.id}">แก้ไขเสา</a></div>`;
   }
+  if (['pole', 'expole'].includes(mapState.tool)) html += `<button class="btn p" onclick="placeAtAim()">${mapState.tool === 'pole' ? 'ปักเสาใหม่' : 'วางเสาเดิม'}ที่จุดเล็ง (กากบาทกลางจอ)</button>`;
   html += `<div class="sum4"><div><b>${c.np}</b><span class="s12 muted">เสาใหม่</span></div><div><b>${c.hv}</b><span class="s12 muted">ม. HV</span></div><div><b>${c.lv}</b><span class="s12 muted">ม. LV</span></div><div><b>${c.tr}</b><span class="s12 muted">หม้อแปลง</span></div></div>
   <div class="row"><div class="seg" style="flex:1">${['HV', 'LV'].map(k => `<button class="${mapState.kind === k ? 'on' : ''}" onclick="mapState.kind='${k}';renderSheet(cur.job);renderTools()">สาย ${k === 'HV' ? 'แรงสูง' : 'แรงต่ำ'}</button>`).join('')}</div>
   <a class="btn p" href="#bom/${job.id}">ถอดแบบ →</a></div>`;
@@ -450,15 +490,16 @@ function drawNetPts(job) {
   if (z >= 16 && NET.poles) {
     let n = 0;
     for (const p of NET.poles.poles) {
-      if (!b.contains([p[0], p[1]])) continue; if (++n > 2500) break;
-      const volt = NET.poles.volt[p[2]];
-      const mk = L.circleMarker([p[0], p[1]], { renderer: cur.cv, radius: z >= 18 ? 6 : 4.5, color: '#fff', weight: 1.5, fillColor: volt === 'LV' ? '#0F7C8C' : '#5E5664', fillOpacity: 0.95 }).addTo(cur.netPts);
+      if (!b.contains([p[0], p[1]])) continue; if (++n > 1500) break;
+      const volt = NET.poles.volt[p[2]], col = PCOL[poleCls(p[6], volt)], asm = NET.poles.assembly[p[5]] || '';
+      const lab = z >= 19 ? `<span class="pl" style="font-weight:600"><small>${[fH(p[6]), asm].filter(Boolean).join(' · ')}</small></span>` : '';
+      const mk = L.marker([p[0], p[1]], { icon: L.divIcon({ className: '', html: `<div class="pm"><i class="sq ${z >= 19 ? '' : 'n'}" style="background:${col};opacity:.9"></i>${lab}</div>`, iconSize: [110, 20], iconAnchor: z >= 19 ? [9, 9] : [6, 6] }) }).addTo(cur.netPts);
       mk.on('click', e => { L.DomEvent.stopPropagation(e); onNetPole(job, p); });
     }
   }
   if (z >= 15 && NET.trs) {
     NET.trs.forEach(t => { const ll = [+t.Lat, +t.Lon]; if (!b.contains(ll)) return;
-      L.circleMarker(ll, { renderer: cur.cv, radius: 7, color: '#fff', weight: 2, fillColor: '#E07B00', fillOpacity: 1 }).addTo(cur.netPts)
+      L.marker(ll, { icon: L.divIcon({ className: '', html: '<i class="tri"></i>', iconSize: [18, 16], iconAnchor: [9, 12] }) }).addTo(cur.netPts)
         .bindTooltip(`หม้อแปลงเดิม ${esc(t.TransformerID)} · ${esc(t.RatedKVA)} kVA · ${esc(t.Feeder)}<br>${esc(t.Location || '')}`); });
   }
 }
@@ -476,7 +517,9 @@ window.useNetPole = (lat, lng, quiet, no, info) => {
   const job = cur.job; let ex = job.poles.find(q => q.lat === lat && q.lng === lng);
   if (!ex) {
     if (no === undefined) { const p = NET.poles?.poles.find(q => q[0] === lat && q[1] === lng); no = p ? poleNo(p) : ''; info = p ? `${NET.poles.volt[p[2]]}${p[6] ? ' ' + p[6] + ' ม.' : ''} ${NET.poles.assembly[p[5]] || ''}`.trim() : ''; }
-    pushHist(job); ex = newPole(job, lat, lng, true); ex.note = (no ? 'เลขเสา ' + no + ' · ' : '') + (info || '').replace(/^เสาเดิม\s*\S*\s*·?\s*/, ''); ex.no = no || ''; job.poles.push(ex); saveJob(job);
+    pushHist(job); ex = newPole(job, lat, lng, true); ex.note = (no ? 'เลขเสา ' + no + ' · ' : '') + (info || '').replace(/^เสาเดิม\s*\S*\s*·?\s*/, ''); ex.no = no || '';
+    const np = NET.poles?.poles.find(q => q[0] === lat && q[1] === lng); if (np) { ex.h = np[6] || 0; ex.volt = NET.poles.volt[np[2]]; ex.head = NET.poles.assembly[np[5]] || ''; }
+    job.poles.push(ex); saveJob(job);
   }
   if (!quiet) { cur.map.closePopup(); mapState.sel = ex.id; drawMap(job); renderSheet(job); }
   return ex;
@@ -566,6 +609,44 @@ function showSet(code, job) {
 }
 window.showSet = showSet;
 
+/* ---------- รูปถ่ายหัวเสา ---------- */
+const IDB = (() => { let dbp; const open = () => dbp || (dbp = new Promise((res, rej) => { const r = indexedDB.open('ccs_photos', 1); r.onupgradeneeded = () => r.result.createObjectStore('p'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+  const tx = (m, f) => open().then(db => new Promise((res, rej) => { const t = db.transaction('p', m), st = t.objectStore('p'), q = f(st); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }));
+  return { get: k => tx('readonly', st => st.get(k)), put: (k, v) => tx('readwrite', st => st.put(v, k)), del: k => tx('readwrite', st => st.delete(k)) }; })();
+function shrink(file, max, q) { return new Promise((res, rej) => { const img = new Image(), u = URL.createObjectURL(file); img.onload = () => { const s = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', q)); }; img.onerror = () => rej(new Error('เปิดรูปไม่ได้')); img.src = u; }); }
+async function photoData(ph, full) {
+  let v = await IDB.get(ph.id).catch(() => null);
+  if (v) return full ? v.full || v.thumb : v.thumb || v.full;
+  if (!S.cfg.gasUrl) return '';
+  try { const j = await (await fetch(S.cfg.gasUrl + '?action=photo&id=' + encodeURIComponent(ph.id))).json(); if (j.ok && j.data) { const th = j.thumb || j.data; await IDB.put(ph.id, { full: j.data, thumb: th }); return full ? j.data : th; } } catch (e) {}
+  return '';
+}
+const upBusy = new Set();
+async function uploadPending(job) {
+  if (!S.cfg.gasUrl || upBusy.has(job.id)) return; upBusy.add(job.id); let ch = false;
+  try {
+  for (const p of job.poles) for (const ph of p.photos || []) {
+    if (ph.up) continue; const v = await IDB.get(ph.id).catch(() => null); if (!v) continue;
+    try { await gas('savePhoto', { id: ph.id, jobId: job.id, poleId: p.id, data: v.full, thumb: v.thumb }); ph.up = true; ch = true; } catch (e) { break; }
+  }
+  } finally { upBusy.delete(job.id); }
+  if (ch) saveJob(job);
+}
+window.addPhotos = async files => {
+  const j = cur.job, p = cur.pole; if (!files || !files.length) return; p.photos = p.photos || [];
+  toast('กำลังบันทึกรูป…');
+  for (const f of files) { try { const full = await shrink(f, 1600, 0.72), thumb = await shrink(f, 320, 0.7), id = 'ph_' + uid(); await IDB.put(id, { full, thumb }); p.photos.push({ id, t: Date.now(), up: false }); } catch (e) { toast(e.message); } }
+  saveJob(j); upBusy.delete('_'); vPole(j, p.id); setTimeout(() => uploadPending(j).then(() => { if (cur.pole === p && location.hash.startsWith('#pole/')) vPole(j, p.id); }), 300);
+};
+window.viewPhoto = async i => {
+  const p = cur.pole, ph = p.photos[i]; const src = await photoData(ph, true);
+  modal(`รูป ${p.label} (${i + 1}/${p.photos.length})`, src ? `<img src="${src}" alt="รูปหัวเสา ${esc(p.label)}" style="width:100%;border-radius:10px"><p class="s12 muted">${new Date(ph.t).toLocaleString('th-TH')}${ph.up ? ' · อยู่บน Google Sheet แล้ว' : ' · ยังไม่ได้อัปโหลด'}</p>` : '<div class="empty">โหลดรูปไม่ได้</div>',
+    `<button class="btn d" id="ph_del">ลบรูป</button><span style="flex:1"></span>${src ? `<a class="btn g" href="${src}" download="${esc(p.label)}_${i + 1}.jpg">บันทึกไฟล์</a>` : ''}`, box => {
+    $('#ph_del', box).onclick = async () => { if (!confirm('ลบรูปนี้?')) return; p.photos.splice(i, 1); IDB.del(ph.id).catch(() => {}); if (S.cfg.gasUrl && ph.up) gas('deletePhoto', { id: ph.id }).catch(() => {}); saveJob(cur.job); closeModal(); vPole(cur.job, p.id); };
+  });
+};
+async function fillThumbs(p) { for (const [i, ph] of (p.photos || []).entries()) { const el = $(`#th_${i}`); if (!el) return; const d = await photoData(ph, false); if (d && el.isConnected) el.src = d; } }
+
 /* ---------- pole editor ---------- */
 function vPole(job, pid) {
   const p = poleById(job, pid); if (!p) return go((job.kind === 'quick' ? 'list/' : 'map/') + job.id);
@@ -581,7 +662,16 @@ function vPole(job, pid) {
     <div class="card stack">
       <div class="grid2"><div class="fld"><label for="p_lab">ชื่อเสา/รายการ</label><input id="p_lab" class="in" value="${esc(p.label)}" onchange="pset('label',this.value)"></div>
       <div class="fld"><label>ประเภท</label><div class="seg"><button class="${!p.ex ? 'on' : ''}" onclick="pset('ex',false)">เสาใหม่</button><button class="${p.ex ? 'on' : ''}" onclick="pset('ex',true)">เสาเดิม</button></div></div></div>
-      ${p.ex ? '<span class="s13 muted">เสาเดิม: ไม่คิดค่าเสา คิดเฉพาะชุด Set/พัสดุที่เพิ่ม</span>' : `<div class="fld"><label for="p_pole">ชนิดเสา</label><select id="p_pole" class="in" onchange="pset('pole',this.value)"><option value="">— ไม่ปักเสา —</option>${poles.map(([c, i]) => `<option value="${c}" ${p.pole === c ? 'selected' : ''}>${esc(i[0])} (ค่าแรง ${fm(labourRate(c, job.case).rate)})</option>`).join('')}</select></div>`}
+      ${p.ex ? `<span class="s13 muted">เสาเดิม: ไม่คิดค่าเสา คิดเฉพาะชุด Set/พัสดุที่เพิ่ม${p.no ? ' · เลขเสา ' + esc(p.no) : ''}</span>` : `<div class="fld"><label for="p_pole">ชนิดเสา</label><select id="p_pole" class="in" onchange="pset('pole',this.value)"><option value="">— ไม่ปักเสา —</option>${poles.map(([c, i]) => `<option value="${c}" ${p.pole === c ? 'selected' : ''}>${esc(i[0])} (ค่าแรง ${fm(labourRate(c, job.case).rate)})</option>`).join('')}</select></div>`}
+      <div class="grid2">
+        <div class="fld"><label for="p_h">ขนาดเสา</label><select id="p_h" class="in" onchange="pset('h',num(this.value))"><option value="0">${!p.ex && p.pole ? 'ตามชนิดเสา (' + (fH(poleH({ pole: p.pole })) || '—') + ')' : 'ไม่ทราบ'}</option>${[8, 9, 12, 12.2, 14, 14.3, 16, 22].map(v => `<option value="${v}" ${+p.h === v ? 'selected' : ''}>${v} ม.${v === 22 ? ' (115 kV)' : ''}</option>`).join('')}</select></div>
+        <div class="fld"><label for="p_head">หัวเสา</label><select id="p_head" class="in" onchange="pset('head',this.value)"><option value="">${(() => { const t = poleHead({ ...p, head: '' }); return t ? 'ตามชุด Set (' + esc(t) + ')' : 'ไม่ระบุ'; })()}</option>${[...new Set([...HEAD_OPTS, p.head].filter(Boolean))].map(v => `<option ${p.head === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+      </div>
+      <div class="row s13"><i class="sq" style="background:${PCOL[poleCls(poleH(p), p.volt)]}"></i><span>${PCLS_TXT[poleCls(poleH(p), p.volt)]}${poleHead(p) ? ' · หัวเสา ' + esc(poleHead(p)) : ''}</span></div>
+    </div>
+    <div class="card stack"><div class="row" style="justify-content:space-between"><b>รูปถ่ายหัวเสา (${(p.photos || []).length})</b>
+      <div class="row"><label class="btn sm p" for="p_cam">ถ่ายรูป</label><input id="p_cam" type="file" accept="image/*" capture="environment" class="sr" onchange="addPhotos(this.files)"><label class="btn sm g" for="p_file">เลือกรูป</label><input id="p_file" type="file" accept="image/*" multiple class="sr" onchange="addPhotos(this.files)"></div></div>
+      ${(p.photos || []).length ? `<div class="ph">${p.photos.map((ph, i) => `<button onclick="viewPhoto(${i})" aria-label="ดูรูปที่ ${i + 1}"><img id="th_${i}" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="><span class="pend" ${ph.up ? 'hidden' : ''}>รออัปโหลด</span></button>`).join('')}</div>` : '<span class="s13 muted">ถ่ายหัวเสาเพื่อดูว่าเป็นแบบไหน มีอุปกรณ์อะไรติดอยู่</span>'}
     </div>
     ${sug.length ? `<div class="card stack"><b class="s14">ชุด Set ที่แนะนำ ${ang.n <= 1 ? '(เสาปลายสาย)' : ang.dev != null ? `(มุม ${ang.dev}°)` : ''}</b><div class="tabs">${sug.map(c => `<button onclick="addSet('${c}')" title="${esc(DB.sets[c].n)}">+ ${c} ${esc(DB.sets[c].n.slice(0, 38))}</button>`).join('')}</div></div>` : ''}
     <div class="card"><div class="row" style="justify-content:space-between"><b>ชุด Set (${p.sets.length})</b><div class="row"><a class="btn sm g" href="/pea-drawings/index.html" target="_blank" rel="noopener">คลังแบบ ↗</a><button class="btn sm" onclick="pick('set')">+ ชุด Set</button></div></div>
@@ -593,9 +683,9 @@ function vPole(job, pid) {
       <div class="kv"><span class="muted">ค่าวัสดุ (${lab.mats.length} รายการ${lab.noPrice ? `, ยังไม่มีราคา ${lab.noPrice}` : ''})</span><b>${fm(lab.mat)} บาท</b></div></div>
     <a class="btn p" href="${back}">เสร็จ</a>
   </div></div>${navbar(job, job.kind === 'quick' ? 'list' : 'map')}`;
-  cur.pole = p;
+  cur.pole = p; fillThumbs(p); uploadPending(job);
 }
-window.pset = (k, v) => { cur.pole[k] = v; saveJob(cur.job); vPole(cur.job, cur.pole.id); };
+window.pset = (k, v) => { if ((k === 'h' && !v) || (k === 'head' && !v)) delete cur.pole[k]; else cur.pole[k] = v; saveJob(cur.job); vPole(cur.job, cur.pole.id); };
 window.addSet = c => { const p = cur.pole, ex = p.sets.find(x => x.c === c); ex ? ex.q++ : p.sets.push({ c, q: 1 }); saveJob(cur.job); vPole(cur.job, p.id); };
 window.pq = (kind, i, d, v) => { const arr = kind === 'set' ? cur.pole.sets : cur.pole.items; const x = arr[i]; x.q = v != null ? num(v) : Math.round((num(x.q) + d) * 1000) / 1000; if (x.q <= 0) arr.splice(i, 1); saveJob(cur.job); vPole(cur.job, cur.pole.id); };
 window.pick = preset => openPicker({ job: cur.job, pole: cur.pole, preset, after: () => vPole(cur.job, cur.pole.id) });
@@ -606,7 +696,7 @@ function vList(job) {
   app.innerHTML = topbar(job.name, job.kind === 'quick' ? 'ประมาณราคาด่วน' : 'รายการเสาและช่วงสาย', back, `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
   <div class="main"><div class="wrap stack" style="max-width:760px">
     <div class="card"><div class="row" style="justify-content:space-between"><b>เสา / จุดติดตั้ง (${job.poles.length})</b><button class="btn sm" onclick="addListPole()">+ เพิ่ม</button></div>
-      <div class="list">${job.poles.map(p => `<a class="li" href="#pole/${job.id}/${p.id}" style="text-decoration:none;color:inherit"><span class="chip st1">${esc(p.label)}</span><div class="grow"><div class="s14">${p.ex ? 'เสาเดิม' : esc(p.pole ? iname(p.pole) : 'ไม่ปักเสา')}</div><div class="s12 muted">${p.sets.map(s => s.c + (s.q > 1 ? '×' + s.q : '')).join(', ') || '—'}${p.items.length ? ' · พัสดุ ' + p.items.length : ''}</div></div><span class="muted">›</span></a>`).join('') || '<div class="empty s13">ยังไม่มีรายการ</div>'}</div></div>
+      <div class="list">${job.poles.map(p => `<a class="li" href="#pole/${job.id}/${p.id}" style="text-decoration:none;color:inherit"><span class="chip st1">${esc(p.label)}</span><div class="grow"><div class="s14 row" style="gap:6px"><i class="sq" style="background:${PCOL[poleCls(poleH(p), p.volt)]};width:12px;height:12px"></i>${p.ex ? 'เสาเดิม' : esc(p.pole ? iname(p.pole) : 'ไม่ปักเสา')}${poleHead(p) ? ' · ' + esc(poleHead(p)) : ''}${p.photos?.length ? ' · รูป ' + p.photos.length : ''}</div><div class="s12 muted">${p.sets.map(s => s.c + (s.q > 1 ? '×' + s.q : '')).join(', ') || '—'}${p.items.length ? ' · พัสดุ ' + p.items.length : ''}</div></div><span class="muted">›</span></a>`).join('') || '<div class="empty s13">ยังไม่มีรายการ</div>'}</div></div>
     <div class="card"><div class="row" style="justify-content:space-between"><b>ช่วงสาย (${job.spans.length})</b><button class="btn sm" onclick="addListSpan()">+ สาย</button></div>
       <div class="list">${job.spans.map((s, i) => { const a = poleById(job, s.a), b = poleById(job, s.b); return `<button class="li" style="width:100%;border:0;background:none;text-align:left;cursor:pointer" onclick="editListSpan(${i})"><span class="chip ${s.k === 'HV' ? 'st1' : 'st2'}">${s.k}</span><div class="grow"><div class="s14">${a ? esc(a.label) + '–' + esc(b?.label || '') + ' · ' : ''}${spanLen(job, s)} ม. × ${s.n} เส้น</div><div class="s12 muted">${s.w} ${esc(iname(s.w))}</div></div><span class="muted">›</span></button>`; }).join('') || '<div class="empty s13">ยังไม่มีช่วงสาย</div>'}</div></div>
     <a class="btn p" href="#bom/${job.id}">ถอดแบบประมาณการ →</a>
@@ -654,8 +744,9 @@ function schematic(job, w = 340, h = 200) {
   job.spans.forEach(sp => { const a = poleById(job, sp.a), b = poleById(job, sp.b); if (!a || !b || a.lat == null || b.lat == null) return; const [x1, y1] = P(a), [x2, y2] = P(b);
     s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sp.k === 'HV' ? '#5B1A63' : '#0F7C8C'}" stroke-width="${sp.k === 'HV' ? 3 : 2.5}" ${sp.k === 'LV' ? 'stroke-dasharray="6 4"' : ''}/><text x="${(x1 + x2) / 2 + 4}" y="${(y1 + y2) / 2 - 4}" font-size="9" fill="#5E5664">${spanLen(job, sp)} ม.</text>`; });
   pts.forEach(p => { const [x, y] = P(p), tr = p.sets.some(z => groupOfSet(z.c) === 'tr');
-    s += `<circle cx="${x}" cy="${y}" r="5" fill="${p.ex ? '#fff' : '#5B1A63'}" stroke="${p.ex ? '#9A929F' : '#fff'}" stroke-width="2"/><text x="${x + 7}" y="${y + 12}" font-size="10" font-weight="700" fill="#1F1A24">${esc(p.label)}</text>${tr ? `<rect x="${x + 6}" y="${y - 18}" width="18" height="12" rx="2" fill="#E07B00"/><text x="${x + 15}" y="${y - 9}" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">TR</text>` : ''}`; });
-  s += `<g font-size="9" fill="#5E5664"><line x1="10" y1="${h - 12}" x2="26" y2="${h - 12}" stroke="#5B1A63" stroke-width="3"/><text x="30" y="${h - 9}">แรงสูง</text><line x1="70" y1="${h - 12}" x2="86" y2="${h - 12}" stroke="#0F7C8C" stroke-width="2.5" stroke-dasharray="6 4"/><text x="90" y="${h - 9}">แรงต่ำ</text><circle cx="135" cy="${h - 12}" r="4" fill="#fff" stroke="#9A929F" stroke-width="2"/><text x="142" y="${h - 9}">เสาเดิม</text></g></svg>`;
+    const col = PCOL[poleCls(poleH(p), p.volt)], inf = [fH(poleH(p)), poleHead(p)].filter(Boolean).join(' ');
+    s += `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" fill="${col}" stroke="${p.ex ? '#1E1A22' : '#fff'}" stroke-width="1.5" ${p.ex ? 'stroke-dasharray="2 2"' : ''}/><text x="${x + 8}" y="${y + 12}" font-size="10" font-weight="700" fill="#1F1A24">${esc(p.label)}${inf ? `<tspan font-size="8" font-weight="400"> ${esc(inf)}</tspan>` : ''}</text>${tr ? `<path d="M${x + 8} ${y - 8} l7 -12 l7 12 z" fill="#D62828"/>` : ''}`; });
+  s += `<g font-size="9" fill="#5E5664"><line x1="10" y1="${h - 12}" x2="26" y2="${h - 12}" stroke="#5B1A63" stroke-width="3"/><text x="30" y="${h - 9}">แรงสูง</text><line x1="70" y1="${h - 12}" x2="86" y2="${h - 12}" stroke="#0F7C8C" stroke-width="2.5" stroke-dasharray="6 4"/><text x="90" y="${h - 9}">แรงต่ำ</text><rect x="131" y="${h - 16}" width="8" height="8" fill="#fff" stroke="#1E1A22" stroke-dasharray="2 2"/><text x="142" y="${h - 9}">เสาเดิม</text><path d="M185 ${h - 7} l5 -9 l5 9 z" fill="#D62828"/><text x="198" y="${h - 9}">หม้อแปลง</text></g></svg>`;
   return s;
 }
 
@@ -907,4 +998,5 @@ window.restore = async f => { if (!f) return; try { const o = JSON.parse(await f
   try { await loadData(); } catch (e) { app.innerHTML = `<div class="empty" style="margin-top:30vh">โหลดฐานข้อมูลไม่สำเร็จ (${esc(e.message)})<br>ตรวจว่ามีโฟลเดอร์ data/ อยู่ข้าง index.html</div>`; return; }
   if (S.cfg.gasUrl) await syncPull(true);
   route();
+  setTimeout(() => Object.values(S.jobs).forEach(j => uploadPending(j)), 3000);
 })();
