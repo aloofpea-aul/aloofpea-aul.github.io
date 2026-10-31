@@ -1,7 +1,8 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
+const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
 const NET_BASE = '/sld-ala/';
 const BOOK_API = 'https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec';   // ระบบออกเลขหนังสือ V4 (ตัวเดียวกับระบบงานจัดซื้อ)
@@ -49,8 +50,9 @@ const LS = { jobs: 'ccs_jobs', prices: 'ccs_prices', cfg: 'ccs_cfg' };
 const S = {
   jobs: JSON.parse(localStorage.getItem(LS.jobs) || '{}'),
   prices: JSON.parse(localStorage.getItem(LS.prices) || '{}'),
-  cfg: Object.assign({ gasUrl: '', lineDiv: 1000, branch: 'กฟส.อ่าวลึก', addr: '', tel: '', manager: '', hvWire: '1020060101', lvWire: '1020070003', ohPct: 0, valid: 30 }, JSON.parse(localStorage.getItem(LS.cfg) || '{}'))
+  cfg: Object.assign({ gasUrl: DEFAULT_GAS, lineDiv: 1000, branch: 'กฟส.อ่าวลึก', addr: '', tel: '', manager: '', hvWire: '1020060101', lvWire: '1020070003', ohPct: 0, valid: 30 }, JSON.parse(localStorage.getItem(LS.cfg) || '{}'))
 };
+if (!S.cfg.gasUrl) S.cfg.gasUrl = DEFAULT_GAS;
 const saveLocal = k => localStorage.setItem(LS[k], JSON.stringify(S[k]));
 let pushTimer = {};
 function saveJob(job) {
