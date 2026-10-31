@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -351,7 +351,7 @@ function vMap(job) {
     <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
     <div class="tools" id="tools"></div>
     <div id="xhair"></div><div id="dist"></div>
-    <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span></div>
+    <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span><span><i class="mtr" style="width:12px;height:12px;font-size:8px">M</i>มิเตอร์แรงสูง</span></div>
     <div class="hint" id="hint"></div>
   </div>
   <div class="sheet" id="sheet"></div>${navbar(job, 'map')}`;
@@ -504,12 +504,13 @@ window.saveArea = async () => {
 window.fitJob = () => { const pts = cur.job.poles.filter(p => p.lat != null).map(p => [p.lat, p.lng]); if (pts.length) cur.map.fitBounds(pts, { padding: [60, 60], maxZoom: 18 }); };
 
 /* ---------- ระบบไฟฟ้าเดิม (ข้อมูลร่วมจาก SLD/GIS) ---------- */
-const NET = { p: null, lines: null, poles: null, trs: null, err: '' };
+const NET = { p: null, lines: null, poles: null, trs: null, mvm: null, err: '' };
 function parseCsv(t) { const rows = t.replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean).map(l => l.split(',')); const h = rows.shift(); return rows.map(r => Object.fromEntries(h.map((k, i) => [k.trim(), r[i]]))); }
 function loadNet() {
   if (NET.p) return NET.p;
   const get = (f, txt) => fetch(NET_BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(f); return txt ? r.text() : r.json(); });
-  NET.p = Promise.allSettled([get('mv-lines.json'), get('poles.json'), get('gis_transformers.csv', true)]).then(([a, b, c]) => {
+  NET.p = Promise.allSettled([get('mv-lines.json'), get('poles.json'), get('gis_transformers.csv', true), get('gis_mv_meters.csv', true), get('gis_mv_meter_accounts.csv', true)]).then(([a, b, c, d, e]) => {
+    if (d.status === 'fulfilled') { const acc = e.status === 'fulfilled' ? parseCsv(e.value) : []; NET.mvm = parseCsv(d.value).filter(x => +x.Lat && +x.Lon).map(x => ({ ...x, acc: acc.filter(y => y.Lat === x.Lat && y.Lon === x.Lon).map(y => y.CustomerAccount) })); }
     if (a.status === 'fulfilled') NET.lines = a.value; if (b.status === 'fulfilled') NET.poles = b.value;
     if (c.status === 'fulfilled') NET.trs = parseCsv(c.value).filter(x => +x.Lat && +x.Lon);
     if (!NET.lines && !NET.poles) NET.err = 'โหลดข้อมูลระบบเดิมไม่ได้';
@@ -536,6 +537,11 @@ function drawNetPts(job) {
       const mk = L.marker([p[0], p[1]], { icon: L.divIcon({ className: '', html: `<div class="pm"><i class="sq ${z >= 19 ? '' : 'n'}" style="background:${col};opacity:.9"></i>${lab}</div>`, iconSize: [110, 20], iconAnchor: z >= 19 ? [9, 9] : [6, 6] }) }).addTo(cur.netPts);
       mk.on('click', e => { L.DomEvent.stopPropagation(e); onNetPole(job, p); });
     }
+  }
+  if (z >= 14 && NET.mvm) {
+    NET.mvm.forEach(t => { const ll = [+t.Lat, +t.Lon]; if (!b.contains(ll)) return;
+      L.marker(ll, { icon: L.divIcon({ className: '', html: '<i class="mtr">M</i>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 800 }).addTo(cur.netPts)
+        .bindTooltip(`มิเตอร์แรงสูง ${esc(t.Tag)} · ${esc(t.Feeder)}${+t.TotalKVA ? ' · ' + esc(t.TotalKVA) + ' kVA' : ''}<br>${esc(t.Location || '')}${t.acc.length ? '<br>บัญชี ' + t.acc.map(esc).join(', ') : ''}`); });
   }
   if (z >= 15 && NET.trs) {
     NET.trs.forEach(t => { const ll = [+t.Lat, +t.Lon]; if (!b.contains(ll)) return;

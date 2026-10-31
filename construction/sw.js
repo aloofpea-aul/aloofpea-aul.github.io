@@ -5,11 +5,12 @@
  *  - ภาพแผนที่ (Longdo / ดาวเทียม / OSM): เก็บทุกแผ่นที่เคยเปิดดู + ที่กด "บันทึกแผนที่บริเวณนี้"
  *  - Google Apps Script: ไม่ยุ่ง (แอปมีคิวรอส่งของตัวเอง)
  */
-const V = 'ccs-v1.4.0';
+const V = 'ccs-v1.4.1';
 const APP = 'ccs-app-' + V, DATA = 'ccs-data', TILES = 'ccs-tiles';
-const SHELL = ['./', './index.html', './app.js?v=1.4.0', './manifest.json', './icon.svg?v=1', './icon-192.png', './apple-touch-icon.png?v=1'];
-const DATA_FILES = ['./data/items.json?v=1.4.0', './data/sets.json?v=1.4.0', './data/labour.json?v=1.4.0', './data/drawings.json?v=1.4.0',
-  '/sld-ala/mv-lines.json', '/sld-ala/poles.json', '/sld-ala/gis_transformers.csv'];
+const SHELL = ['./', './index.html', './app.js?v=1.4.1', './manifest.json', './icon.svg?v=1', './icon-192.png', './apple-touch-icon.png?v=1'];
+const DATA_FILES = ['./data/items.json?v=1.4.1', './data/sets.json?v=1.4.1', './data/labour.json?v=1.4.1', './data/drawings.json?v=1.4.1',
+  '/sld-ala/mv-lines.json', '/sld-ala/poles.json', '/sld-ala/gis_transformers.csv',
+  '/sld-ala/gis_mv_meters.csv', '/sld-ala/gis_mv_meter_accounts.csv'];
 const TILE_HOST = /(^|\.)(ms\.longdo\.com|tile\.openstreetmap\.org|server\.arcgisonline\.com)$/;
 const LIB_HOST = /(^|\.)(unpkg\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|api\.longdo\.com)$/;
 const MAX_TILES = 6000;
