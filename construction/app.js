@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
 const NET_BASE = '/sld-ala/';
@@ -259,8 +259,8 @@ function vHome() {
   const jobs = Object.values(S.jobs).sort((a, b) => b.updated - a.updated);
   const cnt = i => jobs.filter(j => j.status === i).length;
   app.innerHTML = `
-  <div class="top"><a class="ib" href="/index.html" aria-label="กลับศูนย์รวมงาน">${I.home}</a><div class="t"><small>${esc(S.cfg.branch)} · ศูนย์รวมงาน${HUB_USER() ? ' · ' + esc(HUB_USER()) : ''}</small><b>สำรวจออกแบบงานก่อสร้าง</b></div>${S.cfg.gasUrl ? `<button class="ib" aria-label="ซิงค์" onclick="syncPull().then(route)">↻</button>` : ''}</div>
-  <div class="hero"><div class="grid3"><div class="stat"><b>${cnt(0)}</b><span class="s12">กำลังสำรวจ</span></div><div class="stat"><b>${cnt(1)}</b><span class="s12">รอถอดแบบ</span></div><div class="stat"><b>${cnt(2)}</b><span class="s12">ส่งใบเสนอราคาแล้ว</span></div></div></div>
+  <div class="top"><a href="/index.html" aria-label="กลับศูนย์รวมงาน" style="display:flex"><img src="icon.svg?v=1" alt="" class="hlogo" width="28" height="28"></a><div class="t"><b>สำรวจงานก่อสร้าง</b><small>${HUB_USER() ? 'สวัสดี คุณ' + esc(HUB_USER().split(/\s+/)[0]) : esc(S.cfg.branch)}</small></div>${S.cfg.gasUrl ? `<button class="pill" onclick="this.disabled=true;syncPull().then(route)"><span class="dt"></span>ซิงค์</button>` : ''}</div>
+  <div class="hero" style="padding:0 12px 12px"><div class="grid3"><div class="stat"><b>${cnt(0)}</b><span class="s12">กำลังสำรวจ</span></div><div class="stat"><b>${cnt(1)}</b><span class="s12">รอถอดแบบ</span></div><div class="stat"><b>${cnt(2)}</b><span class="s12">ส่งใบเสนอราคาแล้ว</span></div></div></div>
   <div class="main"><div class="wrap stack">
     <div class="grid2">
       <button class="tile" onclick="newMapJob()">${I.map}<b>สำรวจงานใหม่</b><span class="s12 muted">วาดผังบนแผนที่ ปักเสา พาดสาย</span></button>
@@ -325,7 +325,7 @@ function vMap(job) {
   const c = jobCounts(job);
   app.innerHTML = topbar(job.name, `${job.volt} kV ${job.phase} เฟส · กรณีที่ ${job.case + 1}`, '#home', `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
   <div class="mapwrap"><div id="map"></div>
-    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#74045F;color:#fff' : ''}">เดิม</button></div>
+    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
     <div class="tools" id="tools"></div>
     <div class="hint" id="hint"></div>
   </div>
@@ -382,7 +382,7 @@ function drawMap(job) {
   if (!cur.map) return; cur.lyr.clearLayers();
   job.spans.forEach(s => {
     const a = poleById(job, s.a), b = poleById(job, s.b); if (!a || !b || a.lat == null || b.lat == null) return;
-    const line = L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color: s.k === 'HV' ? '#74045F' : '#0F7C8C', weight: s.k === 'HV' ? 5 : 4, dashArray: s.k === 'LV' ? '8 6' : null }).addTo(cur.lyr);
+    const line = L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color: s.k === 'HV' ? '#5B1A63' : '#0F7C8C', weight: s.k === 'HV' ? 5 : 4, dashArray: s.k === 'LV' ? '8 6' : null }).addTo(cur.lyr);
     line.on('click', e => { L.DomEvent.stopPropagation(e); openSpan(job, s); });
     const mid = [(a.lat + b.lat) / 2, (a.lng + b.lng) / 2];
     L.marker(mid, { interactive: false, icon: L.divIcon({ className: '', html: `<span class="slabel">${spanLen(job, s)} ม.</span>`, iconSize: [50, 16], iconAnchor: [-6, 8] }) }).addTo(cur.lyr);
@@ -481,7 +481,7 @@ window.useNetPole = (lat, lng, quiet, no, info) => {
   if (!quiet) { cur.map.closePopup(); mapState.sel = ex.id; drawMap(job); renderSheet(job); }
   return ex;
 };
-window.toggleNet = () => { mapState.net = !mapState.net; const m = cur.map; if (mapState.net) { cur.netLines.addTo(m); cur.netPts.addTo(m); drawNetPts(cur.job); } else { m.removeLayer(cur.netLines); m.removeLayer(cur.netPts); } const b = $('#netBtn'); b.style.background = mapState.net ? '#74045F' : '#fff'; b.style.color = mapState.net ? '#fff' : ''; };
+window.toggleNet = () => { mapState.net = !mapState.net; const m = cur.map; if (mapState.net) { cur.netLines.addTo(m); cur.netPts.addTo(m); drawNetPts(cur.job); } else { m.removeLayer(cur.netLines); m.removeLayer(cur.netPts); } const b = $('#netBtn'); b.style.background = mapState.net ? '#5B1A63' : '#fff'; b.style.color = mapState.net ? '#fff' : ''; };
 
 /* ---------- span editor ---------- */
 function wireOptions(sel, k) {
@@ -652,10 +652,10 @@ function schematic(job, w = 340, h = 200) {
   const P = p => [ox + (p.lng * kx - minx) * sc, oy + (-p.lat - miny) * sc];
   let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="ผังงานก่อสร้าง ${esc(job.name)}" style="background:#F7F5F8;border-radius:8px;font-family:Sarabun">`;
   job.spans.forEach(sp => { const a = poleById(job, sp.a), b = poleById(job, sp.b); if (!a || !b || a.lat == null || b.lat == null) return; const [x1, y1] = P(a), [x2, y2] = P(b);
-    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sp.k === 'HV' ? '#74045F' : '#0F7C8C'}" stroke-width="${sp.k === 'HV' ? 3 : 2.5}" ${sp.k === 'LV' ? 'stroke-dasharray="6 4"' : ''}/><text x="${(x1 + x2) / 2 + 4}" y="${(y1 + y2) / 2 - 4}" font-size="9" fill="#5E5664">${spanLen(job, sp)} ม.</text>`; });
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sp.k === 'HV' ? '#5B1A63' : '#0F7C8C'}" stroke-width="${sp.k === 'HV' ? 3 : 2.5}" ${sp.k === 'LV' ? 'stroke-dasharray="6 4"' : ''}/><text x="${(x1 + x2) / 2 + 4}" y="${(y1 + y2) / 2 - 4}" font-size="9" fill="#5E5664">${spanLen(job, sp)} ม.</text>`; });
   pts.forEach(p => { const [x, y] = P(p), tr = p.sets.some(z => groupOfSet(z.c) === 'tr');
-    s += `<circle cx="${x}" cy="${y}" r="5" fill="${p.ex ? '#fff' : '#74045F'}" stroke="${p.ex ? '#9A929F' : '#fff'}" stroke-width="2"/><text x="${x + 7}" y="${y + 12}" font-size="10" font-weight="700" fill="#1F1A24">${esc(p.label)}</text>${tr ? `<rect x="${x + 6}" y="${y - 18}" width="18" height="12" rx="2" fill="#E07B00"/><text x="${x + 15}" y="${y - 9}" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">TR</text>` : ''}`; });
-  s += `<g font-size="9" fill="#5E5664"><line x1="10" y1="${h - 12}" x2="26" y2="${h - 12}" stroke="#74045F" stroke-width="3"/><text x="30" y="${h - 9}">แรงสูง</text><line x1="70" y1="${h - 12}" x2="86" y2="${h - 12}" stroke="#0F7C8C" stroke-width="2.5" stroke-dasharray="6 4"/><text x="90" y="${h - 9}">แรงต่ำ</text><circle cx="135" cy="${h - 12}" r="4" fill="#fff" stroke="#9A929F" stroke-width="2"/><text x="142" y="${h - 9}">เสาเดิม</text></g></svg>`;
+    s += `<circle cx="${x}" cy="${y}" r="5" fill="${p.ex ? '#fff' : '#5B1A63'}" stroke="${p.ex ? '#9A929F' : '#fff'}" stroke-width="2"/><text x="${x + 7}" y="${y + 12}" font-size="10" font-weight="700" fill="#1F1A24">${esc(p.label)}</text>${tr ? `<rect x="${x + 6}" y="${y - 18}" width="18" height="12" rx="2" fill="#E07B00"/><text x="${x + 15}" y="${y - 9}" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">TR</text>` : ''}`; });
+  s += `<g font-size="9" fill="#5E5664"><line x1="10" y1="${h - 12}" x2="26" y2="${h - 12}" stroke="#5B1A63" stroke-width="3"/><text x="30" y="${h - 9}">แรงสูง</text><line x1="70" y1="${h - 12}" x2="86" y2="${h - 12}" stroke="#0F7C8C" stroke-width="2.5" stroke-dasharray="6 4"/><text x="90" y="${h - 9}">แรงต่ำ</text><circle cx="135" cy="${h - 12}" r="4" fill="#fff" stroke="#9A929F" stroke-width="2"/><text x="142" y="${h - 9}">เสาเดิม</text></g></svg>`;
   return s;
 }
 
@@ -817,9 +817,9 @@ function vQuote(job) {
   app.innerHTML = topbar('ใบเสนอราคา', job.name, `#bom/${job.id}`, `<button class="ib" aria-label="พิมพ์" onclick="markSent();window.print()">⎙</button>`) + `
   <div class="main"><div class="noprint wrap" style="max-width:794px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${job.qRef ? '' : '<button class="btn g" onclick="issueQuoteNo(this)">ออกเลขจากระบบออกเลขหนังสือ</button>'}<span class="s13 muted" style="flex:1">ข้อความที่มีเส้นประแก้ไขได้ตรงหน้าเลย · ${B.noPrice ? `<b style="color:#8A4B00">ยังไม่มีราคาวัสดุ ${B.noPrice} รายการ</b>` : 'ราคาครบ'}</span><button class="btn p" onclick="markSent();window.print()">พิมพ์ / บันทึก PDF</button></div>
   <div class="paper">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #74045F;padding-bottom:12px;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #5B1A63;padding-bottom:12px;gap:16px">
       <div><div style="font-size:20px;font-weight:700" contenteditable data-k="branch">การไฟฟ้าส่วนภูมิภาค${esc(cfg.branch.replace(/^กฟส\./, 'สาขา'))}</div><div class="s14 muted" contenteditable data-k="addr">${esc(cfg.addr || 'ที่อยู่สำนักงาน · โทร')}${cfg.tel ? ' · โทร ' + esc(cfg.tel) : ''}</div></div>
-      <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:#74045F">ใบเสนอราคา</div><div class="s14">เลขที่ <span ${job.qRef ? '' : 'contenteditable data-j="qNo"'}>${esc(job.qNo || '…………')}</span></div><div class="s14">วันที่ ${thDate(job.qDate || Date.now())}</div></div>
+      <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:#5B1A63">ใบเสนอราคา</div><div class="s14">เลขที่ <span ${job.qRef ? '' : 'contenteditable data-j="qNo"'}>${esc(job.qNo || '…………')}</span></div><div class="s14">วันที่ ${thDate(job.qDate || Date.now())}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:15px">
       <div><b>ผู้ขอใช้ไฟ</b><div contenteditable data-c="n">${esc(job.cust.n || '[ชื่อลูกค้า]')}</div><div contenteditable data-c="a">${esc(job.cust.a || '[ที่อยู่]')}</div><div>โทร <span contenteditable data-c="t">${esc(job.cust.t || '-')}</span></div></div>
@@ -832,7 +832,7 @@ function vQuote(job) {
       <div class="kv"><span>รวมค่าวัสดุและค่าแรง</span><span>${fm(B.sub)}</span></div>
       ${B.oh ? `<div class="kv"><span>ค่าดำเนินการ ${job.ohPct}%</span><span>${fm(B.oh)}</span></div>` : ''}
       <div class="kv"><span>ภาษีมูลค่าเพิ่ม ${job.vat}%</span><span>${fm(B.vat)}</span></div>
-      <div class="kv total" style="border-top:2px solid #74045F"><span>รวมทั้งสิ้น</span><span>${fm(B.grand)}</span></div>
+      <div class="kv total" style="border-top:2px solid #5B1A63"><span>รวมทั้งสิ้น</span><span>${fm(B.grand)}</span></div>
       <div class="s14 muted" style="text-align:right">(${bahtText(B.grand)})</div></div></div>
     <div style="display:flex;gap:16px;align-items:flex-start">${sch ? `<div style="width:300px;flex-shrink:0">${sch}</div>` : ''}
       <div style="flex:1;font-size:14px" contenteditable data-j="terms"><b>เงื่อนไข</b><br>${job.terms ? esc(job.terms).replace(/\n/g, '<br>') : `1. ใบเสนอราคานี้มีอายุ ${job.valid} วัน นับจากวันที่ออก<br>2. ราคาประมาณการจากการสำรวจ อาจปรับตามสภาพหน้างานจริง<br>3. ชำระเงินได้ที่ ${esc(cfg.branch)}`}</div></div>
