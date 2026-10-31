@@ -705,13 +705,16 @@ function listView() {
   const rt = $('#retry'); if (rt) rt.onclick = () => boot();
   history.replaceState(null, '', location.pathname);
 }
-async function newJob() {
-  const choice = await choose('สร้างงานใหม่ — เลือกแผนก', Object.keys(DEPTS));
+async function newJob(pre) {
+  pre = pre && Array.isArray(pre.items) ? pre : null;   // มาจากระบบสำรวจงานก่อสร้าง (ส่งรายการวัสดุมา) · กดปุ่มเอง = null
+  const choice = await choose(pre ? 'รับรายการวัสดุจากระบบสำรวจงานก่อสร้าง — เลือกแผนก' : 'สร้างงานใหม่ — เลือกแผนก', Object.keys(DEPTS));
   if (choice < 0) return;
   const j = blankJob(), last = store.get('procure_last', null);
   setDept(j, Object.keys(DEPTS)[choice]);
   if (last) { j.officer = Object.assign({}, last.officer); j.approver = Object.assign({}, last.approver || j.approver); j.committee = (last.committee || j.committee).map(x => Object.assign({}, x));
     if (last.dept === j.dept) j.head = Object.assign({}, last.head); }
+  if (pre) { j.title = pre.title || ''; j.purpose = pre.purpose || ''; j.vatIncl = false;
+    j.items = pre.items.map(i => ({ name: String(i.name || ''), qty: +i.qty || 0, unit: String(i.unit || ''), price: +i.price || 0, spec: String(i.spec || '') })); }
   busy(true);
   try { const r = await api('save', { job: j }); j.id = r.job.id; j.rev = r.rev; upsertList(r.summary); cur = j; tab = 'info'; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + j.id); }
   catch (e) { toast('สร้างงานไม่สำเร็จ: ' + e.message); }
@@ -770,7 +773,13 @@ async function boot() {
     store.set('procure_list_cache', LIST);
   } catch (e) { LIST = store.get('procure_list_cache', []); loadErr = 'โหลดรายการงานไม่สำเร็จ: ' + e.message; }
   finally { busy(false); }
-  const id = new URLSearchParams(location.search).get('id');
+  const qs = new URLSearchParams(location.search), id = qs.get('id');
+  if (qs.get('import') && !loadErr) {   // รับรายการวัสดุจากระบบสำรวจงานก่อสร้าง (โหลดหลังบ้านไม่ได้ = เก็บไว้ก่อน)
+    const pre = store.get('procure_import', null); localStorage.removeItem('procure_import');
+    listView();
+    if (pre && Date.now() - (pre.ts || 0) < 864e5) newJob(pre);
+    return;
+  }
   if (id && !loadErr) openJob(id); else listView();
 }
 fillStaff();
