@@ -1,4 +1,4 @@
-# ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก (v1.0.0)
+# ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก (v1.2.0)
 
 ใช้สำรวจหน้างาน วาดผังบนแผนที่ เลือกชุด Set ถอดแบบประมาณการ และออกใบเสนอราคาให้ลูกค้า
 
@@ -10,17 +10,13 @@
 | `data/items.json` | รายการพัสดุ 3,103 รายการ |
 | `data/sets.json` | ชุด Set 1,067 ชุด (33 kV / แรงต่ำ / หม้อแปลง-มิเตอร์) |
 | `data/labour.json` | ราคาค่าแรงกรณีที่ 1/2/3 |
-| `Code.gs` | (ไม่บังคับ) เก็บงานลง Google Sheet เพื่อใช้ข้ามเครื่อง |
+| `gas/Code.gs` | (ไม่บังคับ) เก็บงานลง Google Sheet เพื่อใช้ข้ามเครื่อง |
 
-## ขึ้น GitHub Pages
-1. สร้าง repo ใหม่ เช่น `construction-survey` ใน aloofpea-aul
-2. Add file → Upload files → ลาก `index.html`, `app.js`, `README.md` และโฟลเดอร์ `data` ขึ้นไป → Commit
-3. Settings → Pages → Branch `main` / root → Save
-4. เปิดที่ `https://aloofpea-aul.github.io/construction-survey/`
-5. ในศูนย์รวมงาน เพิ่มปุ่มลิงก์ไปที่ URL นี้
+## ที่อยู่
+`https://aloofpea-aul.github.io/construction/` (อยู่ในศูนย์รวมงาน หมวดงานก่อสร้าง)
 
 ## ใช้ข้ามเครื่อง (มือถือ ↔ คอม) — ไม่บังคับ
-1. สร้าง Google Sheet ใหม่ → ส่วนขยาย → Apps Script → วาง `Code.gs` → บันทึก
+1. สร้าง Google Sheet ใหม่ → ส่วนขยาย → Apps Script → วาง `gas/Code.gs` → บันทึก
 2. ทำให้ใช้งานได้ → เว็บแอป → เรียกใช้ในฐานะ "ฉัน" / ผู้มีสิทธิ์ "ทุกคน" → คัดลอก URL `/exec`
 3. ในแอป: ตั้งค่า → วาง URL → ทดสอบ → "ส่งงานทั้งหมดขึ้น Sheet"
 ถ้าไม่ตั้งค่า งานจะเก็บในเครื่องนั้นอย่างเดียว (มีปุ่มสำรอง/กู้คืนไฟล์)
@@ -33,3 +29,11 @@
 
 ## อัปเดตฐานข้อมูลพัสดุ/ชุด Set/ค่าแรง
 ส่งไฟล์ Excel ชุดใหม่ให้ Claude แปลงเป็น `data/*.json` แล้วอัปโหลดทับในโฟลเดอร์ `data`
+
+## เชื่อมกับระบบอื่นในศูนย์รวมงาน
+- ล็อกอิน: `pea-hub.js` (data-perm="login") — ชื่อ/รหัสเดียวกับศูนย์รวมงาน
+- ระบบไฟฟ้าเดิมบนแผนที่: อ่าน `/sld-ala/mv-lines.json`, `/sld-ala/poles.json`, `/sld-ala/gis_transformers.csv`
+- เลขที่ใบเสนอราคา: ระบบออกเลขหนังสือ V4 หมวดหนังสือทั่วไป (ใช้ token เดียวกับระบบงานจัดซื้อ)
+- ส่งรายการวัสดุ → `/procure/index.html?import=1` (localStorage `procure_import`)
+- เปิดงานก่อสร้าง → `/ccl/index.html?import=1` (localStorage `ccl_import` เติมฟอร์มเพิ่มงาน ผู้ใช้กดบันทึกเอง)
+- แบบประกอบ: `/pea-drawings/d/<ไฟล์>` ตาม `data/drawings.json`

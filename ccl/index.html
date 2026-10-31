@@ -9383,5 +9383,38 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script src="mobile.js?v=2"></script>
 <script src="branch.js?v=3"></script>
+<script>
+/* รับข้อมูลจากระบบสำรวจงานก่อสร้าง (construction/ → ?import=1) — เติมฟอร์ม "เพิ่มงาน" ให้ ผู้ใช้ตรวจแล้วกดบันทึกเอง */
+(function () {
+  if (!/[?&]import=1/.test(location.search)) return;
+  var d = null; try { d = JSON.parse(localStorage.getItem('ccl_import') || 'null'); } catch (e) {}
+  if (!d || Date.now() - (d.ts || 0) > 864e5) return;
+  var n = 0;
+  (function wait() {
+    var f = document.getElementById('constructionForm');
+    var ready = f && typeof currentUser !== 'undefined' && currentUser && currentUser.role !== 'Guest';
+    if (!ready) { if (++n < 600) setTimeout(wait, 500); return; }
+    localStorage.removeItem('ccl_import');
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    try { showPage('add'); } catch (e) {}
+    var set = function (name, v) { var el = f.querySelector('[name="' + name + '"]'); if (el && v != null && v !== '') { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } };
+    set('jobName', d.jobName); set('location', d.location); set('coordinates', d.coordinates); set('details', d.details);
+    var fillRows = function (cont, addFn, rows, a, b) {
+      if (!rows || !rows.length) return;
+      var c = document.getElementById(cont); if (!c) return;
+      while (c.children.length < rows.length) { try { addFn(); } catch (e) { break; } }
+      rows.forEach(function (r, i) { var row = c.children[i]; if (!row) return; var s = row.querySelector('[name="' + a + '"]'), q = row.querySelector('[name="' + b + '"]');
+        if (s) { s.value = r.size; if (s.value !== r.size && s.querySelector('option[value="other"]')) { s.value = 'other'; try { toggleOtherInput(s); } catch (e) {} var o = row.querySelector('[name="transformerOther"]'); if (o) o.value = r.size; } }
+        if (q) q.value = r.qty; });
+    };
+    fillRows('poleContainer', addPoleField, d.poles, 'poleSize', 'poleQty');
+    fillRows('cableContainer', addCableField, d.cables, 'cableSize', 'cableQty');
+    fillRows('transformerContainer', addTransformerField, d.transformers, 'transformerSize', 'transformerQty');
+    var lab = f.querySelector('#networkContainer [name="laborCost"]');
+    if (lab && d.laborCost) { lab.value = Number(d.laborCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    try { Swal.fire({ icon: 'info', title: 'รับข้อมูลจากระบบสำรวจงานก่อสร้าง', text: 'เติมข้อมูลในฟอร์มเพิ่มงานให้แล้ว ตรวจสอบ/เพิ่มหมายเลขงาน แล้วกดบันทึก', confirmButtonText: 'ตกลง' }); } catch (e) {}
+  })();
+})();
+</script>
 </body>
 </html>

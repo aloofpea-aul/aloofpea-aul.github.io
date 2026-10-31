@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
 const NET_BASE = '/sld-ala/';
 const BOOK_API = 'https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec';   // ระบบออกเลขหนังสือ V4 (ตัวเดียวกับระบบงานจัดซื้อ)
@@ -670,7 +670,7 @@ function vBom(job) {
      <div class="fld" style="width:120px"><label for="b_oh">ค่าดำเนินการ %</label><input id="b_oh" class="in" type="number" step="0.01" value="${job.ohPct}" onchange="bset('ohPct',num(this.value))"></div>
      <div class="fld" style="width:100px"><label for="b_vat">VAT %</label><input id="b_vat" class="in" type="number" step="0.01" value="${job.vat}" onchange="bset('vat',num(this.value))"></div>
      <span style="flex:1"></span>
-     <button class="btn g" onclick="exportXlsx()">ส่งออก Excel</button><button class="btn g" onclick="toProcure()">ส่งไประบบงานจัดซื้อ</button><a class="btn p" href="#quote/${job.id}">ออกใบเสนอราคา</a>
+     <button class="btn g" onclick="exportXlsx()">ส่งออก Excel</button><button class="btn g" onclick="toProcure()">ส่งไประบบงานจัดซื้อ</button><button class="btn g" onclick="toCCL()">เปิดงานใน CCL</button><a class="btn p" href="#quote/${job.id}">ออกใบเสนอราคา</a>
    </div>
    <div class="cols">
     <aside class="side stack">
@@ -727,6 +727,32 @@ window.toProcure = () => {
   const items = list.map(m => ({ name: `${m.name} (รหัส ${m.code})`, qty: Math.round(m.qty * 1000) / 1000, unit: m.unit, price: m.hasPrice ? m.price : 0, spec: `รหัสพัสดุ กฟภ. ${m.code}` }));
   localStorage.setItem('procure_import', JSON.stringify({ from: 'construction', jobId: j.id, title: `วัสดุก่อสร้างระบบจำหน่าย ${j.name}`, purpose: `ใช้ในงาน${j.name}${j.place ? ' ' + j.place : ''}`, items, ts: Date.now() }));
   location.href = '/procure/index.html?import=1';
+};
+
+const POLE_CCL = { '1000010001': '8 เมตร', '1000010002': '9 เมตร', '1000010004': '12 เมตร', '1000010003': '12 เมตร', '1000010012': '12.20 เมตร', '1000010006': '14 เมตร', '1000010005': '14 เมตร', '1000010013': '14.30 เมตร', '1000010011': '22 เมตร' };
+function cableCCL(code) {
+  const n = iname(code).toUpperCase(), sz = (n.match(/(\d+)(?:\/\d+)?\s*SQ/) || [])[1];
+  if (/TAC|TWISTED/.test(n)) return 'TAC';
+  if (/CABLE,AERIAL/.test(n) && sz) return 'SAC ' + sz;
+  if (/ACSR/.test(n) && sz) return 'ACSR ' + sz;
+  if (/AL\.BARE|AL-ALLOY|AL,BARE/.test(n) && sz) return 'AW' + sz;
+  return '';
+}
+window.toCCL = () => {
+  const j = cur.job, B = computeBOM(j), c = jobCounts(j);
+  if (!B.mats.length) return toast('ยังไม่มีรายการ');
+  const poles = {}, cables = {}, trs = {}, other = [];
+  j.poles.forEach(p => { if (p.pole && !p.ex) { const k = POLE_CCL[p.pole]; if (k) poles[k] = (poles[k] || 0) + 1; else other.push(iname(p.pole)); }
+    p.items.forEach(it => { const n = iname(it.c); if (/^TRANSFORMER/i.test(n)) { const kva = (n.replace(/,/g, '').match(/(\d+)\s*K[VA]{2}/i) || [])[1]; const k = kva ? kva + ' Kva' : n; trs[k] = (trs[k] || 0) + num(it.q); } }); });
+  j.spans.forEach(s => { const k = cableCCL(s.w), q = spanLen(j, s) * num(s.n); if (k) cables[k] = (cables[k] || 0) + q; else other.push(`${iname(s.w)} ${q} ม.`); });
+  const first = j.poles.find(p => !p.ex && p.lat != null) || j.poles.find(p => p.lat != null);
+  const det = [`จากระบบสำรวจงานก่อสร้าง: ${j.name}`, j.cust.n ? `ผู้ขอใช้ไฟ ${j.cust.n}${j.cust.t ? ' โทร ' + j.cust.t : ''}` : '', j.reqNo ? `เลขที่คำร้อง ${j.reqNo}` : '', j.qNo ? `ใบเสนอราคา ${j.qNo}` : '',
+    `เสาใหม่ ${c.np} ต้น · แนวสาย HV ${c.hv} ม. · LV ${c.lv} ม. · หม้อแปลง ${c.tr}`, `ประมาณการรวม ${fm(B.grand)} บาท (วัสดุ ${fm(B.mat)} · ค่าแรง ${fm(B.lab)})`, other.length ? 'อื่นๆ: ' + other.join(', ') : ''].filter(Boolean).join('\n');
+  const toRows = o => Object.entries(o).map(([size, qty]) => ({ size, qty: Math.round(qty) }));
+  if (!confirm('เปิดฟอร์ม "เพิ่มงาน" ใน CCL พร้อมเติมข้อมูลงานนี้ให้ (ตรวจแล้วกดบันทึกที่ CCL)?')) return;
+  localStorage.setItem('ccl_import', JSON.stringify({ ts: Date.now(), jobName: j.name, location: j.place, coordinates: first ? `${first.lat}, ${first.lng}` : '', details: det, poles: toRows(poles), cables: toRows(cables), transformers: toRows(trs), laborCost: Math.round(B.lab * 100) / 100 }));
+  if (j.status < 3) { j.status = 3; saveJob(j); }
+  location.href = '/ccl/index.html?import=1';
 };
 
 /* ---------- ระบบออกเลขหนังสือ ---------- */
