@@ -1,7 +1,8 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
+const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
 const NET_BASE = '/sld-ala/';
@@ -57,8 +58,13 @@ const saveLocal = k => localStorage.setItem(LS[k], JSON.stringify(S[k]));
 let pushTimer = {};
 function saveJob(job) {
   job.updated = Date.now(); S.jobs[job.id] = job; saveLocal('jobs');
-  if (S.cfg.gasUrl) { clearTimeout(pushTimer[job.id]); pushTimer[job.id] = setTimeout(() => gas('saveJob', { job }).catch(() => {}), 1500); }
+  if (S.cfg.gasUrl) { markDirty(job.id, true); clearTimeout(pushTimer[job.id]); pushTimer[job.id] = setTimeout(() => pushJob(job.id), 1500); }
 }
+/* งานที่ยังไม่ได้ส่งขึ้น Sheet (เช่น ตอนไม่มีสัญญาณ) — ส่งให้เองเมื่อกลับมามีสัญญาณ */
+function dirtySet() { try { return new Set(JSON.parse(localStorage.getItem('ccs_dirty') || '[]')); } catch (e) { return new Set(); } }
+function markDirty(id, on) { const d = dirtySet(); on ? d.add(id) : d.delete(id); localStorage.setItem('ccs_dirty', JSON.stringify([...d])); }
+async function pushJob(id) { const j = S.jobs[id]; if (!j || !S.cfg.gasUrl || !navigator.onLine) return; try { await gas('saveJob', { job: j }); markDirty(id, false); } catch (e) {} }
+async function pushDirty() { for (const id of dirtySet()) await pushJob(id); }
 function savePrice(code, price) {
   if (price === '' || price == null) delete S.prices[code]; else S.prices[code] = num(price);
   saveLocal('prices');
@@ -329,13 +335,20 @@ function poleHead(p) { if (p.head) return p.head; for (const x of p.sets || []) 
 const HEAD_OPTS = ['SP', 'SP 0-5', 'SP 5-30', 'DP', 'DDP', 'DE', 'DDE', '2DE', 'BA', 'CCB', 'CCB 5-60', 'CTB', 'CSC', 'SP (TR)'];
 const fH = h => +h ? (String(+h) + ' ม.') : '';
 
+/* ---------- แผนที่พื้นหลัง ---------- */
+const BASES = {
+  longdo: { name: 'Longdo Map', desc: 'แผนที่ไทย ชื่อถนน ซอย สถานที่ภาษาไทย (เหมือนงานพาโทรล)', url: 'https://ms.longdo.com/mmmap/tile.php?key=' + LONGDO_KEY + '&proj=epsg3857&zoom={z}&x={x}&y={y}&HD=1', max: 20, attr: '© Longdo Map' },
+  sat: { name: 'ภาพดาวเทียม', desc: 'ภาพถ่ายดาวเทียม Esri — ดูแนวต้นไม้ หลังคาบ้าน', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max: 19, attr: 'Esri' },
+  osm: { name: 'OpenStreetMap', desc: 'แผนที่สากล (สำรอง)', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: '© OpenStreetMap' }
+};
+
 /* ---------- map ---------- */
-const mapState = { tool: 'sel', kind: 'HV', sel: null, spanA: null, auto: true, layer: 'osm', history: [], net: true };
+const mapState = { tool: 'sel', kind: 'HV', sel: null, spanA: null, auto: true, layer: localStorage.getItem('ccs_layer') || 'longdo', history: [], net: true };
 function vMap(job) {
   const c = jobCounts(job);
   app.innerHTML = topbar(job.name, `${job.volt} kV ${job.phase} เฟส · กรณีที่ ${job.case + 1}`, '#home', `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
   <div class="mapwrap"><div id="map"></div>
-    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
+    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
     <div class="tools" id="tools"></div>
     <div id="xhair"></div><div id="dist"></div>
     <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span></div>
@@ -343,9 +356,9 @@ function vMap(job) {
   </div>
   <div class="sheet" id="sheet"></div>${navbar(job, 'map')}`;
   const m = cur.map = L.map('map', { zoomControl: false, attributionControl: true }).setView(job.center || [8.3755, 98.7280], job.center ? 17 : 14);
-  cur.osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, maxNativeZoom: 19, attribution: '© OpenStreetMap' });
-  cur.sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, maxNativeZoom: 19, attribution: 'Esri' });
-  (mapState.layer === 'sat' ? cur.sat : cur.osm).addTo(m);
+  cur.bases = {};
+  for (const [k, b] of Object.entries(BASES)) cur.bases[k] = L.tileLayer(b.url, { maxZoom: 21, maxNativeZoom: b.max, attribution: b.attr });
+  (cur.bases[mapState.layer] || cur.bases.longdo).addTo(m);
   cur.cv = L.canvas({ padding: 0.3 });
   cur.netLines = L.layerGroup(); cur.netPts = L.layerGroup();
   if (mapState.net) { cur.netLines.addTo(m); cur.netPts.addTo(m); }
@@ -460,7 +473,34 @@ window.locate = silent => {
     if (!silent) toast(`GPS ±${Math.round(pos.coords.accuracy)} ม.`);
   }, e => { if (!silent) toast('อ่านตำแหน่งไม่ได้: ' + e.message); }, { enableHighAccuracy: true, timeout: 12000 });
 };
-window.toggleLayer = () => { const m = cur.map; if (mapState.layer === 'osm') { m.removeLayer(cur.osm); cur.sat.addTo(m); mapState.layer = 'sat'; } else { m.removeLayer(cur.sat); cur.osm.addTo(m); mapState.layer = 'osm'; } };
+window.toggleLayer = () => {
+  modal('แผนที่พื้นหลัง', `<div class="list">${Object.entries(BASES).map(([k, b]) => `<button class="li" style="width:100%;border:0;background:none;text-align:left;cursor:pointer" data-k="${k}"><span class="chip ${mapState.layer === k ? 'st1' : 'st2'}">${mapState.layer === k ? 'ใช้อยู่' : 'เลือก'}</span><div class="grow"><b>${b.name}</b><div class="s12 muted">${b.desc}</div></div></button>`).join('')}</div>`, '', box => {
+    $('.bd', box).onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; const m = cur.map, k = b.dataset.k;
+      Object.values(cur.bases).forEach(l => m.hasLayer(l) && m.removeLayer(l)); cur.bases[k].addTo(m); cur.bases[k].bringToBack(); mapState.layer = k; localStorage.setItem('ccs_layer', k); closeModal(); };
+  });
+};
+/* บันทึกภาพแผนที่บริเวณที่เห็นไว้ใช้ตอนไม่มีสัญญาณ */
+function tileUrls(base, bounds, z0, z1) {
+  const out = [], t = (lat, lng, z) => [Math.floor((lng + 180) / 360 * 2 ** z), Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * 2 ** z)];
+  for (let z = z0; z <= z1; z++) {
+    const [x0, y0] = t(bounds.getNorth(), bounds.getWest(), z), [x1, y1] = t(bounds.getSouth(), bounds.getEast(), z);
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) out.push(base.url.replace('{s}', 'a').replace('{z}', z).replace('{x}', x).replace('{y}', y));
+  }
+  return out;
+}
+window.saveArea = async () => {
+  if (!navigator.onLine) return toast('ต้องมีสัญญาณก่อนจึงบันทึกแผนที่ได้');
+  const sw = navigator.serviceWorker && (navigator.serviceWorker.controller || (await navigator.serviceWorker.ready).active);
+  if (!sw) return toast('ยังเตรียมโหมดออฟไลน์ไม่เสร็จ ลองใหม่อีกครั้ง');
+  const m = cur.map, z = Math.round(m.getZoom()), b = m.getBounds().pad(0.15), base = BASES[mapState.layer] || BASES.longdo;
+  if (z < 14) return toast('ซูมเข้าให้เห็นพื้นที่หน้างานก่อน (ไม่เกินประมาณ 3 กม.)');
+  const z1 = Math.min(base.max, Math.max(z + 2, 18)), urls = tileUrls(base, b, Math.max(13, z - 2), z1);
+  if (urls.length > 1500) return toast(`พื้นที่กว้างเกินไป (${urls.length} แผ่น) ซูมเข้าอีกนิด`);
+  if (!confirm(`บันทึกแผนที่ "${base.name}" บริเวณที่เห็นบนจอไว้ใช้ตอนไม่มีสัญญาณ\nประมาณ ${urls.length} แผ่น (~${Math.round(urls.length * 25 / 1024)} MB)`)) return;
+  const ch = new MessageChannel(); const t = document.createElement('div'); t.className = 'toast'; t.textContent = 'กำลังบันทึกแผนที่…'; document.body.appendChild(t);
+  ch.port1.onmessage = ev => { const d = ev.data; t.textContent = `บันทึกแผนที่ ${d.done}/${d.total}${d.fail ? ` (พลาด ${d.fail})` : ''}`; if (d.end) { setTimeout(() => t.remove(), 2500); localStorage.setItem('ccs_saved_area', JSON.stringify({ t: Date.now(), n: d.done, name: base.name })); } };
+  sw.postMessage({ type: 'saveTiles', urls }, [ch.port2]);
+};
 window.fitJob = () => { const pts = cur.job.poles.filter(p => p.lat != null).map(p => [p.lat, p.lng]); if (pts.length) cur.map.fitBounds(pts, { padding: [60, 60], maxZoom: 18 }); };
 
 /* ---------- ระบบไฟฟ้าเดิม (ข้อมูลร่วมจาก SLD/GIS) ---------- */
@@ -992,11 +1032,18 @@ window.exportPrices = () => { const ws = XLSX.utils.aoa_to_sheet([['รหัส
 window.backup = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ v: VERSION, jobs: S.jobs, prices: S.prices, cfg: S.cfg })], { type: 'application/json' })); a.download = `สำรอง_สำรวจออกแบบ_${new Date().toISOString().slice(0, 10)}.json`; a.click(); };
 window.restore = async f => { if (!f) return; try { const o = JSON.parse(await f.text()); Object.assign(S.jobs, o.jobs || {}); Object.assign(S.prices, o.prices || {}); saveLocal('jobs'); saveLocal('prices'); toast('กู้คืนแล้ว'); go('home'); } catch (e) { toast('ไฟล์ไม่ถูกต้อง'); } };
 
+/* ---------- ออฟไลน์ ---------- */
+function netBadge() { let b = $('#offb'); if (navigator.onLine) { b && b.remove(); return; } if (!b) { b = document.createElement('div'); b.id = 'offb'; b.textContent = 'ออฟไลน์ · งานและรูปเก็บในเครื่อง ส่งเองเมื่อมีสัญญาณ'; b.style.cssText = 'position:fixed;left:50%;top:calc(54px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2500;background:#8A4B00;color:#fff;font-size:12px;font-weight:600;border-radius:12px;padding:3px 10px;white-space:nowrap;pointer-events:none'; document.body.appendChild(b); } }
+addEventListener('online', () => { netBadge(); pushDirty().then(() => syncPull(true)).then(() => Object.values(S.jobs).forEach(j => uploadPending(j))); });
+addEventListener('offline', netBadge);
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {}));
+
 /* ---------- boot ---------- */
 (async function boot() {
   app.innerHTML = '<div class="empty" style="margin-top:40vh">กำลังโหลดฐานข้อมูลพัสดุ…</div>';
   try { await loadData(); } catch (e) { app.innerHTML = `<div class="empty" style="margin-top:30vh">โหลดฐานข้อมูลไม่สำเร็จ (${esc(e.message)})<br>ตรวจว่ามีโฟลเดอร์ data/ อยู่ข้าง index.html</div>`; return; }
-  if (S.cfg.gasUrl) await syncPull(true);
+  netBadge();
+  if (S.cfg.gasUrl && navigator.onLine) await syncPull(true);
   route();
-  setTimeout(() => Object.values(S.jobs).forEach(j => uploadPending(j)), 3000);
+  setTimeout(() => { pushDirty(); Object.values(S.jobs).forEach(j => uploadPending(j)); }, 3000);
 })();
