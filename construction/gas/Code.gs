@@ -9,6 +9,7 @@
  *    - ผู้ที่มีสิทธิ์เข้าถึง: ทุกคน
  * 3) คัดลอก URL ที่ลงท้ายด้วย /exec ไปใส่ในหน้า "ตั้งค่า" ของแอป
  * ชีต Jobs / Prices / Deleted จะถูกสร้างให้อัตโนมัติ
+ * ติดตั้งแล้ว: ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก" · โครงการ Apps Script "สำรวจงานก่อสร้าง API"
  */
 const SH = { jobs: 'Jobs', prices: 'Prices', del: 'Deleted' };
 
@@ -21,6 +22,8 @@ function sheet_(name, header) {
 const jobsSheet_ = () => sheet_(SH.jobs, ['id', 'name', 'status', 'place', 'customer', 'updated', 'json']);
 const pricesSheet_ = () => sheet_(SH.prices, ['code', 'price', 'updated']);
 const delSheet_ = () => sheet_(SH.del, ['id', 'deletedAt']);
+/** กด Run ครั้งแรก เพื่อสร้างชีตและอนุญาตสิทธิ์ */
+function setup() { jobsSheet_(); pricesSheet_(); delSheet_(); }
 const out_ = o => ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 
 function doGet(e) {
