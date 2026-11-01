@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -267,7 +267,7 @@ function vHome() {
   const jobs = Object.values(S.jobs).sort((a, b) => b.updated - a.updated);
   const cnt = i => jobs.filter(j => j.status === i).length;
   app.innerHTML = `
-  <div class="top"><a href="/index.html" aria-label="กลับศูนย์รวมงาน" style="display:flex"><img src="icon.svg?v=1" alt="" class="hlogo" width="28" height="28"></a><div class="t"><b>สำรวจงานก่อสร้าง</b><small>${HUB_USER() ? 'สวัสดี คุณ' + esc(HUB_USER().split(/\s+/)[0]) : esc(S.cfg.branch)}</small></div>${S.cfg.gasUrl ? `<button class="pill" onclick="this.disabled=true;syncPull().then(route)"><span class="dt"></span>ซิงค์</button>` : ''}</div>
+  <div class="top"><a href="/index.html" aria-label="กลับศูนย์รวมงาน" style="display:flex"><img src="icon.svg?v=1" alt="" class="hlogo" width="28" height="28"></a><div class="t"><b>สำรวจงานก่อสร้าง</b><small>${HUB_USER() ? 'สวัสดี คุณ' + esc(HUB_USER().split(/\s+/)[0]) : esc(S.cfg.branch)}</small></div>${S.cfg.gasUrl ? `<button class="pill" onclick="this.disabled=true;syncPull().then(route)"><span class="dt"></span>ซิงค์</button>` : ''}<a class="pill" href="guide.html" aria-label="คู่มือการใช้งาน">คู่มือ</a></div>
   <div class="hero" style="padding:0 12px 12px"><div class="grid3"><div class="stat"><b>${cnt(0)}</b><span class="s12">กำลังสำรวจ</span></div><div class="stat"><b>${cnt(1)}</b><span class="s12">รอถอดแบบ</span></div><div class="stat"><b>${cnt(2)}</b><span class="s12">ส่งใบเสนอราคาแล้ว</span></div></div></div>
   <div class="main"><div class="wrap stack">
     <div class="grid2">
@@ -1137,6 +1137,7 @@ function vSettings() {
     </div>
     <div class="card stack"><b>สำรองข้อมูล</b><div class="row" style="flex-wrap:wrap"><button class="btn g" onclick="backup()">ดาวน์โหลดไฟล์สำรอง</button><label class="btn g" for="c_rs">กู้คืนจากไฟล์</label><input id="c_rs" type="file" accept=".json" class="sr" onchange="restore(this.files[0])"></div></div>
     <button class="btn p" onclick="saveCfg()">บันทึกการตั้งค่า</button>
+    <a class="btn g" href="guide.html">คู่มือการใช้งาน</a>
   </div></div>${navbar(null, 'settings')}`;
 }
 window.saveCfg = () => {
