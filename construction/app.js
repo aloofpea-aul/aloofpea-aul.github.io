@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.5.1';
+const VERSION = '1.6.0';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -247,6 +247,7 @@ function route() {
   if (v === 'pole') return vPole(job, sub);
   if (v === 'bom') return vBom(job);
   if (v === 'quote') return vQuote(job);
+  if (v === 'plan') return vPlan(job);
   if (v === 'info') return vInfo(job);
   go('home');
 }
@@ -606,7 +607,7 @@ function drawNetPts(job) {
   }
   if (z >= 15 && NET.trs) {
     NET.trs.forEach(t => { const ll = [+t.Lat, +t.Lon]; if (!b.contains(ll)) return;
-      L.marker(ll, { icon: L.divIcon({ className: '', html: '<i class="tri"></i>', iconSize: [18, 16], iconAnchor: [9, 12] }) }).addTo(cur.netPts)
+      L.marker(ll, { zIndexOffset: 600, icon: L.divIcon({ className: '', html: `<div class="pm"><i class="tri"></i>${z >= 17 ? `<span class="trno">${esc(t.TransformerID)}<small>${esc(t.RatedKVA)} kVA</small></span>` : ''}</div>`, iconSize: [120, 26], iconAnchor: [9, 12] }) }).addTo(cur.netPts)
         .bindTooltip(`หม้อแปลงเดิม ${esc(t.TransformerID)} · ${esc(t.RatedKVA)} kVA · ${esc(t.Feeder)}<br>${esc(t.Location || '')}`); });
   }
 }
@@ -870,7 +871,7 @@ function vBom(job) {
      <div class="fld" style="width:120px"><label for="b_oh">ค่าดำเนินการ %</label><input id="b_oh" class="in" type="number" step="0.01" value="${job.ohPct}" onchange="bset('ohPct',num(this.value))"></div>
      <div class="fld" style="width:100px"><label for="b_vat">VAT %</label><input id="b_vat" class="in" type="number" step="0.01" value="${job.vat}" onchange="bset('vat',num(this.value))"></div>
      <span style="flex:1"></span>
-     <button class="btn g" onclick="exportXlsx()">ส่งออก Excel</button><button class="btn g" onclick="toProcure()">ส่งไประบบงานจัดซื้อ</button><button class="btn g" onclick="toCCL()">เปิดงานใน CCL</button><a class="btn p" href="#quote/${job.id}">ออกใบเสนอราคา</a>
+     <button class="btn g" onclick="exportXlsx()">ส่งออก Excel</button><button class="btn g" onclick="toProcure()">ส่งไประบบงานจัดซื้อ</button><button class="btn g" onclick="toCCL()">เปิดงานใน CCL</button><a class="btn g" href="#plan/${job.id}">ผังงาน</a><a class="btn p" href="#quote/${job.id}">ออกใบเสนอราคา</a>
    </div>
    <div class="cols">
     <aside class="side stack">
@@ -1013,7 +1014,7 @@ function vQuote(job) {
   if (job.status === 0 && B.sub > 0) { job.status = 1; saveJob(job); }
   const sch = schematic(job, 300, 170);
   app.innerHTML = topbar('ใบเสนอราคา', job.name, `#bom/${job.id}`, `<button class="ib" aria-label="พิมพ์" onclick="markSent();window.print()">⎙</button>`) + `
-  <div class="main"><div class="noprint wrap" style="max-width:794px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${job.qRef ? '' : '<button class="btn g" onclick="issueQuoteNo(this)">ออกเลขจากระบบออกเลขหนังสือ</button>'}<span class="s13 muted" style="flex:1">ข้อความที่มีเส้นประแก้ไขได้ตรงหน้าเลย · ${B.noPrice ? `<b style="color:#8A4B00">ยังไม่มีราคาวัสดุ ${B.noPrice} รายการ</b>` : 'ราคาครบ'}</span><button class="btn p" onclick="markSent();window.print()">พิมพ์ / บันทึก PDF</button></div>
+  <div class="main"><div class="noprint wrap" style="max-width:794px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${job.qRef ? '' : '<button class="btn g" onclick="issueQuoteNo(this)">ออกเลขจากระบบออกเลขหนังสือ</button>'}<span class="s13 muted" style="flex:1">ข้อความที่มีเส้นประแก้ไขได้ตรงหน้าเลย · ${B.noPrice ? `<b style="color:#8A4B00">ยังไม่มีราคาวัสดุ ${B.noPrice} รายการ</b>` : 'ราคาครบ'}</span><a class="btn g" href="#plan/${job.id}">ผังงาน</a><button class="btn p" onclick="markSent();window.print()">พิมพ์ / บันทึก PDF</button></div>
   <div class="noprint" style="display:flex;justify-content:center;margin-bottom:8px"><button class="btn sm g" id="pz" onclick="toggleQuoteZoom()">${localStorage.getItem('ccs_qzoom') === '1' ? 'ย่อให้เห็นเต็มหน้า' : 'ขยายเท่าขนาดจริง'}</button></div>
   <div class="pwrap" id="pwrap"><div class="paper" id="paper">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #5B1A63;padding-bottom:12px;gap:16px">
@@ -1040,7 +1041,7 @@ function vQuote(job) {
       <div><div style="margin-top:48px">ลงชื่อ ........................................</div><div contenteditable data-k="manager">(${esc(cfg.manager || '........................................')})</div><div>ผู้จัดการ${esc(cfg.branch)}</div></div>
     </div>
   </div></div></div>${navbar(job, 'quote')}`;
-  fitQuote(); setTimeout(fitQuote, 300); document.fonts && document.fonts.ready.then(fitQuote);
+  setPageSize('A4 portrait'); fitQuote(); setTimeout(fitQuote, 300); document.fonts && document.fonts.ready.then(fitQuote);
   $$('.paper [contenteditable]').forEach(el => el.addEventListener('blur', () => {
     const t = el.innerText.trim().replace(/^\(|\)$/g, '');
     if (el.dataset.c) job.cust[el.dataset.c] = t;
