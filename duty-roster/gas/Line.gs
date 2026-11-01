@@ -104,6 +104,7 @@ function webUrl_(view, extra) {
   const q = [];
   if (view) q.push('view=' + view);
   Object.keys(extra || {}).forEach(function (k) { q.push(k + '=' + encodeURIComponent(extra[k])); });
+  q.push('openExternalBrowser=1');            // LINE: เปิดนอกหน้าต่าง LINE (Android เข้าแอปที่ติดตั้งไว้ · iPhone เปิดใน Safari)
   return u + (q.length ? (u.indexOf('?') < 0 ? '?' : '&') + q.join('&') : '');
 }
 
