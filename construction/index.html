@@ -48,6 +48,8 @@ a{color:var(--brand)}
 .btn.sm{min-height:36px;border-radius:10px;font-size:14px;padding:0 10px}
 .btn.d{border-color:#B3261E;color:#B3261E}
 .btn:disabled{opacity:.45}
+.lkch{border:1px solid #CFC6D3;background:#fff;border-radius:16px;padding:6px 14px;font-size:13px;color:var(--brand);cursor:pointer;font-family:inherit}
+.lkch.on{background:var(--soft);border-color:var(--brand);font-weight:700}
 .chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
 .st0{background:#FFF1E0;color:#8A4B00}.st1{background:var(--soft);color:#5A1050}.st2{background:#E3F0FA;color:#0B4F80}.st3{background:#E2F3EC;color:#0B6E4F}
 .fld{display:flex;flex-direction:column;gap:4px}
@@ -56,6 +58,7 @@ a{color:var(--brand)}
 textarea.in{height:auto;padding:8px 10px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
 .seg button{min-height:42px;border-radius:10px;border:1px solid #CFC6D3;background:#fff;cursor:pointer}
+.seg.sm button{min-height:34px;font-size:14px}
 .seg button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
 .list>*+*{border-top:1px solid #EEE9F0}
 .li{display:flex;gap:10px;padding:10px 0;align-items:center}
@@ -173,8 +176,8 @@ textarea.in{height:auto;padding:8px 10px}
 <div id="app"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="app.js?v=1.6.2"></script>
-<script src="plan.js?v=1.6.2"></script>
+<script src="app.js?v=1.7.0"></script>
+<script src="plan.js?v=1.7.0"></script>
 <script async src="https://api.longdo.com/map/?key=f61a87ff70c39e610385809783d5a1b3"></script>
 </body>
 </html>
