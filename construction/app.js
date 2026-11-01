@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.6.0';
+const VERSION = '1.6.1';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -349,8 +349,8 @@ function vMap(job) {
   const c = jobCounts(job);
   app.innerHTML = topbar(job.name, `${job.volt} kV ${job.phase} เฟส · กรณีที่ ${job.case + 1}`, '#home', `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
   <div class="mapwrap"><div id="map"></div>
-    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ค้นหามิเตอร์ หม้อแปลง เสา" onclick="openSearch()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F1A24" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
-    <div class="tools" id="tools"></div>
+    <div class="mtl${localStorage.getItem('ccs_lcol')==='1'?' col':''}" id="mtl"><button class="colbtn" aria-label="ย่อหรือขยายเมนูซ้าย" onclick="toggleCol('l')">${localStorage.getItem('ccs_lcol')==='1'?'›':'‹'}</button><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ค้นหามิเตอร์ หม้อแปลง เสา" onclick="openSearch()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F1A24" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
+    <div class="tools${localStorage.getItem('ccs_rcol')==='1'?' col':''}" id="tools"></div>
     <div id="xhair"></div><div id="dist"></div>
     <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span><span><i class="mtr" style="width:12px;height:12px;font-size:8px">M</i>มิเตอร์แรงสูง</span><span><i class="b" style="background:#0F8F7E;border-radius:50%"></i>มิเตอร์แรงต่ำ</span></div>
     <div class="hint" id="hint"></div>
@@ -380,7 +380,8 @@ function vMap(job) {
 const TOOLS = [['sel', '☝', 'เลือก'], ['pole', '●', 'ปักเสา'], ['expole', '◌', 'เสาเดิม'], ['span', '⟋', 'พาดสาย'], ['tr', 'TR', 'หม้อแปลง'], ['guy', '↘', 'ยึดโยง'], ['meter', 'M', 'มิเตอร์']];
 const HINTS = { sel: 'แตะเสาเพื่อเลือก · ลากหมุดเพื่อย้ายตำแหน่ง', pole: 'แตะแผนที่เพื่อปักเสาใหม่ (ต่อสายจากเสาที่เลือกอัตโนมัติ)', expole: 'แตะตำแหน่งเสาเดิมของระบบ (จุดเชื่อม)', span: 'แตะเสาต้นแรก แล้วแตะเสาต้นถัดไป', tr: 'แตะเสาที่จะติดตั้งหม้อแปลง', guy: 'แตะเสาที่จะยึดโยง', meter: 'แตะเสาที่จะติดตั้งมิเตอร์' };
 function renderTools() {
-  $('#tools').innerHTML = TOOLS.map(([k, ic, l]) => `<button class="${mapState.tool === k ? 'on' : ''}" onclick="setTool('${k}')" aria-label="${l}"><b>${ic}</b>${l}</button>`).join('');
+  const rc = localStorage.getItem('ccs_rcol') === '1';
+  $('#tools').innerHTML = `<button class="colbtn" aria-label="ย่อหรือขยายเมนูขวา" onclick="toggleCol('r')">${rc ? '‹' : '›'}</button>` + TOOLS.map(([k, ic, l]) => `<button class="${mapState.tool === k ? 'on' : ''}" onclick="setTool('${k}')" aria-label="${l}"><b>${ic}</b>${l}</button>`).join('');
   const hn = $('#hint'); hn.textContent = (mapState.tool === 'span' && mapState.spanA ? 'แตะเสาปลายทาง · ' : '') + HINTS[mapState.tool] + (['pole', 'span'].includes(mapState.tool) ? ` · สาย ${mapState.kind}` : '');
   hn.classList.remove('off'); clearTimeout(cur.hintT); cur.hintT = setTimeout(() => hn.classList.add('off'), 4000);
 }
@@ -471,6 +472,13 @@ function renderSheet(job) {
   <a class="btn p" href="#bom/${job.id}">ถอดแบบ →</a></div>`;
   $('#sheet').innerHTML = html;
 }
+window.toggleCol = side => {
+  const k = side === 'l' ? 'ccs_lcol' : 'ccs_rcol', on = localStorage.getItem(k) !== '1';
+  localStorage.setItem(k, on ? '1' : '0');
+  const el = $(side === 'l' ? '#mtl' : '#tools'); if (!el) return;
+  el.classList.toggle('col', on);
+  const b = el.querySelector('.colbtn'); if (b) b.textContent = side === 'l' ? (on ? '›' : '‹') : (on ? '‹' : '›');
+};
 window.toggleSheet = () => { const on = localStorage.getItem('ccs_sheet_min') !== '1'; localStorage.setItem('ccs_sheet_min', on ? '1' : '0'); renderSheet(cur.job); setTimeout(() => { cur.map && cur.map.invalidateSize(); updateAim(cur.job); }, 60); };
 function sheetSwipe() { const el = $('#sheet'); if (!el) return; let y0 = null;
   el.addEventListener('touchstart', e => { if (e.target.closest('.grabbtn')) y0 = e.touches[0].clientY; }, { passive: true });
@@ -1127,3 +1135,8 @@ if ('serviceWorker' in navigator) addEventListener('load', () => navigator.servi
   route();
   setTimeout(() => { pushDirty(); Object.values(S.jobs).forEach(j => uploadPending(j)); }, 3000);
 })();
+
+// iOS: ความสูงจอตอนเปิดแอปครั้งแรกบางครั้งยังไม่ถูก — วัดใหม่หลังโหลดเสร็จ
+(() => { const fix = () => { window.scrollTo(0, 0); cur && cur.map && cur.map.invalidateSize(); };
+  ['load', 'pageshow', 'orientationchange', 'resize'].forEach(e => window.addEventListener(e, () => { fix(); setTimeout(fix, 250); setTimeout(fix, 800); }));
+  window.visualViewport && visualViewport.addEventListener('resize', fix); })();
