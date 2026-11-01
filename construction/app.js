@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -552,6 +552,7 @@ function drawLv(b, z) {
     if (!b.contains([m[0], m[1]])) continue; if (++n > 1500) break;
     L.circleMarker([m[0], m[1]], { renderer: cur.cv, radius: z >= 19 ? 6 : 4.5, color: m[9] ? '#E07B00' : '#fff', weight: m[9] ? 2.5 : 1.5, fillColor: LV_COL[lvOffice(m)] || '#0F8F7E', fillOpacity: 1 }).addTo(cur.netPts)
       .bindPopup(lvInfo(m) + `<br><a href="https://www.google.com/maps/dir/?api=1&destination=${m[0]},${m[1]}" target="_blank" rel="noopener">นำทาง</a>`);
+    if (z >= 19 && m[7] && n <= 400) L.marker([m[0], m[1]], { interactive: false, icon: L.divIcon({ className: '', html: `<span class="lvno">${esc(m[7])}</span>`, iconSize: [90, 14], iconAnchor: [-8, 7] }) }).addTo(cur.netPts);
   }
 }
 
@@ -1013,7 +1014,8 @@ function vQuote(job) {
   const sch = schematic(job, 300, 170);
   app.innerHTML = topbar('ใบเสนอราคา', job.name, `#bom/${job.id}`, `<button class="ib" aria-label="พิมพ์" onclick="markSent();window.print()">⎙</button>`) + `
   <div class="main"><div class="noprint wrap" style="max-width:794px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${job.qRef ? '' : '<button class="btn g" onclick="issueQuoteNo(this)">ออกเลขจากระบบออกเลขหนังสือ</button>'}<span class="s13 muted" style="flex:1">ข้อความที่มีเส้นประแก้ไขได้ตรงหน้าเลย · ${B.noPrice ? `<b style="color:#8A4B00">ยังไม่มีราคาวัสดุ ${B.noPrice} รายการ</b>` : 'ราคาครบ'}</span><button class="btn p" onclick="markSent();window.print()">พิมพ์ / บันทึก PDF</button></div>
-  <div class="paper">
+  <div class="noprint" style="display:flex;justify-content:center;margin-bottom:8px"><button class="btn sm g" id="pz" onclick="toggleQuoteZoom()">${localStorage.getItem('ccs_qzoom') === '1' ? 'ย่อให้เห็นเต็มหน้า' : 'ขยายเท่าขนาดจริง'}</button></div>
+  <div class="pwrap" id="pwrap"><div class="paper" id="paper">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #5B1A63;padding-bottom:12px;gap:16px">
       <div><div style="font-size:20px;font-weight:700" contenteditable data-k="branch">การไฟฟ้าส่วนภูมิภาค${esc(cfg.branch.replace(/^กฟส\./, 'สาขา'))}</div><div class="s14 muted" contenteditable data-k="addr">${esc(cfg.addr || 'ที่อยู่สำนักงาน · โทร')}${cfg.tel ? ' · โทร ' + esc(cfg.tel) : ''}</div></div>
       <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:#5B1A63">ใบเสนอราคา</div><div class="s14">เลขที่ <span ${job.qRef ? '' : 'contenteditable data-j="qNo"'}>${esc(job.qNo || '…………')}</span></div><div class="s14">วันที่ ${thDate(job.qDate || Date.now())}</div></div>
@@ -1037,7 +1039,8 @@ function vQuote(job) {
       <div><div style="margin-top:48px">ลงชื่อ ........................................</div><div contenteditable data-j="surveyor">(${esc(job.surveyor || HUB_USER() || '........................................')})</div><div>ผู้สำรวจ/ประมาณราคา</div></div>
       <div><div style="margin-top:48px">ลงชื่อ ........................................</div><div contenteditable data-k="manager">(${esc(cfg.manager || '........................................')})</div><div>ผู้จัดการ${esc(cfg.branch)}</div></div>
     </div>
-  </div></div>${navbar(job, 'quote')}`;
+  </div></div></div>${navbar(job, 'quote')}`;
+  fitQuote(); setTimeout(fitQuote, 300); document.fonts && document.fonts.ready.then(fitQuote);
   $$('.paper [contenteditable]').forEach(el => el.addEventListener('blur', () => {
     const t = el.innerText.trim().replace(/^\(|\)$/g, '');
     if (el.dataset.c) job.cust[el.dataset.c] = t;
@@ -1048,6 +1051,16 @@ function vQuote(job) {
     saveJob(job);
   }));
 }
+function fitQuote() {
+  const w = $('#pwrap'), p = $('#paper'); if (!w || !p) return;
+  const real = localStorage.getItem('ccs_qzoom') === '1';
+  const par = w.parentElement, cs = getComputedStyle(par), avail = par.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const s = real ? 1 : Math.min(1, (avail - 2) / 794);
+  p.style.transform = s < 1 ? `scale(${s})` : ''; p.style.transformOrigin = 'top left';
+  w.style.width = Math.ceil(794 * s) + 'px'; w.style.height = Math.ceil(p.offsetHeight * s) + 'px';
+}
+window.toggleQuoteZoom = () => { localStorage.setItem('ccs_qzoom', localStorage.getItem('ccs_qzoom') === '1' ? '0' : '1'); $('#pz').textContent = localStorage.getItem('ccs_qzoom') === '1' ? 'ย่อให้เห็นเต็มหน้า' : 'ขยายเท่าขนาดจริง'; fitQuote(); };
+addEventListener('resize', () => fitQuote());
 window.markSent = () => { const j = cur.job; if (j.status < 2) { j.status = 2; saveJob(j); } };
 
 /* ---------- settings ---------- */

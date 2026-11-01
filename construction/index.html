@@ -91,6 +91,7 @@ textarea.in{height:auto;padding:8px 10px}
 .sq.sel{outline:3px solid #E07B00;outline-offset:1px}
 .sq.n{width:10px;height:10px;border-width:1.5px}
 .tri{display:block;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:16px solid #D62828;filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff);flex:none}
+.lvno{font-size:10.5px;font-weight:700;color:#0B4F80;background:rgba(255,255,255,.85);border-radius:4px;padding:0 3px;white-space:nowrap;font-family:ui-monospace,Consolas,monospace}
 .mtr{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#1A56DB;color:#fff;font-size:10px;font-weight:700;font-style:normal;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
 .tri.n{border-left-width:7px;border-right-width:7px;border-bottom-width:12px}
 .pl{font-weight:700;font-size:12px;color:#1E1A22;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;line-height:1.1}
@@ -139,7 +140,9 @@ textarea.in{height:auto;padding:8px 10px}
 .sr{position:absolute;left:-9999px}
 @media (max-width:820px){input,select,textarea{font-size:16px!important}}
 /* quote print */
-.paper{background:#fff;width:794px;max-width:100%;min-height:1123px;margin:0 auto;padding:48px 56px;box-shadow:0 2px 12px rgba(0,0,0,.08);font-size:16px;display:flex;flex-direction:column;gap:16px}
+.pwrap{margin:0 auto;overflow:hidden}
+.pwrap.real{overflow:visible}
+.paper{background:#fff;width:794px;min-height:1123px;margin:0;box-sizing:border-box;padding:48px 56px;box-shadow:0 2px 12px rgba(0,0,0,.08);font-size:16px;display:flex;flex-direction:column;gap:16px}
 .paper table{width:100%;border-collapse:collapse;font-size:15px}
 .paper th{background:var(--brand);color:#fff;padding:8px 10px;text-align:left}
 .paper td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -151,7 +154,8 @@ textarea.in{height:auto;padding:8px 10px}
   .top,.nav,.noprint{display:none!important}
   .main{padding:0;overflow:visible}
   #app{height:auto}
-  .paper{box-shadow:none;width:210mm;min-height:297mm;padding:14mm 16mm;margin:0}
+  .pwrap{width:auto!important;height:auto!important;overflow:visible}
+  .paper{box-shadow:none;width:210mm;min-height:297mm;padding:14mm 16mm;margin:0;transform:none!important}
   .paper [contenteditable]{outline:0}
 }
 </style>
@@ -160,7 +164,7 @@ textarea.in{height:auto;padding:8px 10px}
 <div id="app"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="app.js?v=1.5.0"></script>
+<script src="app.js?v=1.5.1"></script>
 <script async src="https://api.longdo.com/map/?key=f61a87ff70c39e610385809783d5a1b3"></script>
 </body>
 </html>
