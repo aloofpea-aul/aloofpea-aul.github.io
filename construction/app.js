@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.4.2';
+const VERSION = '1.5.0';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -348,10 +348,10 @@ function vMap(job) {
   const c = jobCounts(job);
   app.innerHTML = topbar(job.name, `${job.volt} kV ${job.phase} เฟส · กรณีที่ ${job.case + 1}`, '#home', `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
   <div class="mapwrap"><div id="map"></div>
-    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
+    <div class="mtl"><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ค้นหามิเตอร์ หม้อแปลง เสา" onclick="openSearch()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F1A24" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
     <div class="tools" id="tools"></div>
     <div id="xhair"></div><div id="dist"></div>
-    <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span><span><i class="mtr" style="width:12px;height:12px;font-size:8px">M</i>มิเตอร์แรงสูง</span></div>
+    <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span><span><i class="mtr" style="width:12px;height:12px;font-size:8px">M</i>มิเตอร์แรงสูง</span><span><i class="b" style="background:#0F8F7E;border-radius:50%"></i>มิเตอร์แรงต่ำ</span></div>
     <div class="hint" id="hint"></div>
   </div>
   <div class="sheet" id="sheet"></div>${navbar(job, 'map')}`;
@@ -535,6 +535,54 @@ function drawNetLines() {
     arr.forEach(l => L.polyline(l.v, { color: col, weight: 2.5, opacity: 0.6, renderer: cur.cv, interactive: false }).addTo(cur.netLines));
   }
 }
+/* ---------- มิเตอร์แรงต่ำ (lvmeters.json ใน sld-ala) ---------- */
+const LV = { d: null, p: null };
+const LV_PHASE = { 1: '1 เฟส', 2: '2 เฟส', 4: '3 เฟส', 7: '3 เฟส (แรงสูง)' };
+const LV_COL = { ALA: '#0F8F7E', PPY: '#3F6FD8' };
+function loadLv() { return LV.p || (LV.p = fetch(NET_BASE + 'lvmeters.json', { cache: 'force-cache' }).then(r => { if (!r.ok) throw 0; return r.json(); }).then(d => { LV.d = d; return d; }).catch(() => { LV.p = null; return null; })); }
+const lvCA = m => LV.d.caPrefix + String(m[6]).padStart(8, '0');
+const lvOffice = m => LV.d.office[m[3]] || '';
+function lvInfo(m) {
+  return `<b>มิเตอร์ ${esc(m[7] || '-')}</b>${m[9] ? ' <span style="color:#E07B00;font-weight:700">EV</span>' : ''}<br>${lvOffice(m) === 'PPY' ? 'กฟส.ปลายพระยา' : 'กฟส.อ่าวลึก'} · ${esc(LV.d.feeder[m[2]] || '-')} · ${esc(LV_PHASE[m[5]] || 'เฟส ' + m[5])}<br>CA ${esc(lvCA(m))}${m[8] ? '<br>บัญชี ' + esc(m[8]) : ''}<br>สายจดหน่วย ${esc(LV.d.route[m[4]] || '-')}`;
+}
+function drawLv(b, z) {
+  if (!LV.d) { if (z >= 17) loadLv().then(() => cur.job && drawNetPts(cur.job)); return; }
+  if (z < 17) return; let n = 0;
+  for (const m of LV.d.meters) {
+    if (!b.contains([m[0], m[1]])) continue; if (++n > 1500) break;
+    L.circleMarker([m[0], m[1]], { renderer: cur.cv, radius: z >= 19 ? 6 : 4.5, color: m[9] ? '#E07B00' : '#fff', weight: m[9] ? 2.5 : 1.5, fillColor: LV_COL[lvOffice(m)] || '#0F8F7E', fillOpacity: 1 }).addTo(cur.netPts)
+      .bindPopup(lvInfo(m) + `<br><a href="https://www.google.com/maps/dir/?api=1&destination=${m[0]},${m[1]}" target="_blank" rel="noopener">นำทาง</a>`);
+  }
+}
+
+/* ---------- ค้นหา: มิเตอร์แรงต่ำ / มิเตอร์แรงสูง / หม้อแปลง / เสา ---------- */
+window.openSearch = () => {
+  loadNet(); loadLv();
+  modal('ค้นหา', `<div class="stack"><label class="sr" for="sq">ค้นหา</label><input id="sq" class="in" placeholder="เลขมิเตอร์ / CA / บัญชี / เลขหม้อแปลง / เลขเสา / สถานที่" autocomplete="off" inputmode="search">
+    <div class="s12 muted" id="sq_info">พิมพ์อย่างน้อย 3 ตัวอักษร · มิเตอร์แรงต่ำ ${LV.d ? LV.d.meters.length.toLocaleString('th-TH') : '(กำลังโหลด)'} เครื่อง</div><div id="sq_res" class="list"></div></div>`, '', box => {
+    const inp = $('#sq', box), res = $('#sq_res', box); let t;
+    const run = async () => {
+      const q = inp.value.trim().toLowerCase().replace(/\s+/g, ''); if (q.length < 3) { res.innerHTML = ''; return; }
+      await Promise.all([loadNet(), loadLv()]); const out = [];
+      if (LV.d) for (const m of LV.d.meters) { if (out.length >= 40) break; const k = (String(m[7]) + ' ' + lvCA(m) + ' ' + String(m[6]) + ' ' + (m[8] || '')).toLowerCase(); if (k.includes(q)) out.push({ t: 'มิเตอร์แรงต่ำ', n: m[7] || lvCA(m), d: `CA ${lvCA(m)}${m[8] ? ' · บัญชี ' + m[8] : ''} · ${LV.d.feeder[m[2]] || ''}`, ll: [m[0], m[1]], html: lvInfo(m) }); }
+      (NET.mvm || []).forEach(x => { if (out.length >= 60) return; const k = [x.Tag, x.Code, x.Location, ...(x.acc || [])].join(' ').toLowerCase().replace(/\s+/g, ''); if (k.includes(q)) out.push({ t: 'มิเตอร์แรงสูง', n: x.Tag, d: `${x.Location || ''} · ${x.Feeder}`, ll: [+x.Lat, +x.Lon], html: `<b>มิเตอร์แรงสูง ${esc(x.Tag)}</b><br>${esc(x.Location || '')}${x.acc?.length ? '<br>บัญชี ' + x.acc.map(esc).join(', ') : ''}` }); });
+      (NET.trs || []).forEach(x => { if (out.length >= 80) return; const k = [x.TransformerID, x.Location].join(' ').toLowerCase().replace(/\s+/g, ''); if (k.includes(q)) out.push({ t: 'หม้อแปลง', n: x.TransformerID, d: `${x.RatedKVA} kVA · ${x.Feeder} · ${x.Location || ''}`, ll: [+x.Lat, +x.Lon], html: `<b>หม้อแปลง ${esc(x.TransformerID)}</b><br>${esc(x.RatedKVA)} kVA · ${esc(x.Feeder)}<br>${esc(x.Location || '')}` }); });
+      if (NET.poles && /\d{4,}/.test(q)) for (const p of NET.poles.poles) { if (out.length >= 100) break; if (!p[4]) continue; const no = poleNo(p); if (no.toLowerCase().includes(q)) out.push({ t: 'เสา', n: no, d: [fH(p[6]), NET.poles.assembly[p[5]], NET.poles.volt[p[2]]].filter(Boolean).join(' · '), ll: [p[0], p[1]], html: `<b>เสา ${esc(no)}</b><br>${esc([fH(p[6]), NET.poles.assembly[p[5]]].filter(Boolean).join(' · '))}` }); }
+      cur.sq = out;
+      res.innerHTML = out.length ? out.map((r, i) => `<button class="li" style="width:100%;border:0;background:none;text-align:left;cursor:pointer" data-i="${i}"><span class="chip st${r.t === 'หม้อแปลง' ? 0 : r.t === 'เสา' ? 1 : 2}">${r.t}</span><div class="grow"><div class="b s14">${esc(r.n)}</div><div class="s12 muted">${esc(r.d)}</div></div><span class="muted">›</span></button>`).join('') : '<div class="empty s13">ไม่พบ</div>';
+    };
+    inp.oninput = () => { clearTimeout(t); t = setTimeout(run, 250); };
+    res.onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; const r = cur.sq[+b.dataset.i]; closeModal(); flyToHit(r); };
+    setTimeout(() => inp.focus(), 50);
+  });
+};
+function flyToHit(r) {
+  if (!cur.map) return; cur.map.setView(r.ll, 19);
+  if (cur.hitMk) cur.hitMk.remove();
+  cur.hitMk = L.circleMarker(r.ll, { radius: 16, color: '#E07B00', weight: 4, fill: false, interactive: false }).addTo(cur.map);
+  setTimeout(() => L.popup({ offset: [0, -6] }).setLatLng(r.ll).setContent(r.html + `<br><a href="https://www.google.com/maps/dir/?api=1&destination=${r.ll[0]},${r.ll[1]}" target="_blank" rel="noopener">นำทาง</a>`).openOn(cur.map), 350);
+}
+
 function poleNo(p) { const pre = NET.poles.prefix[p[3]] || ''; return p[4] ? pre + String(p[4]).padStart(9, '0') : ''; }
 function drawNetPts(job) {
   if (!cur.map || !mapState.net) return; cur.netPts.clearLayers();
@@ -549,6 +597,7 @@ function drawNetPts(job) {
       mk.on('click', e => { L.DomEvent.stopPropagation(e); onNetPole(job, p); });
     }
   }
+  drawLv(b, z);
   if (z >= 14 && NET.mvm) {
     NET.mvm.forEach(t => { const ll = [+t.Lat, +t.Lon]; if (!b.contains(ll)) return;
       L.marker(ll, { icon: L.divIcon({ className: '', html: '<i class="mtr">M</i>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 800 }).addTo(cur.netPts)
