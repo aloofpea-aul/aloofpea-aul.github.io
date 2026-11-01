@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.7.1';
+const VERSION = '1.8.0';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -51,7 +51,7 @@ const LS = { jobs: 'ccs_jobs', prices: 'ccs_prices', cfg: 'ccs_cfg' };
 const S = {
   jobs: JSON.parse(localStorage.getItem(LS.jobs) || '{}'),
   prices: JSON.parse(localStorage.getItem(LS.prices) || '{}'),
-  cfg: Object.assign({ gasUrl: DEFAULT_GAS, lineDiv: 1000, branch: 'กฟส.อ่าวลึก', addr: '', tel: '', manager: '', hvWire: '1020060101', lvWire: '1020070003', ohPct: 0, valid: 30 }, JSON.parse(localStorage.getItem(LS.cfg) || '{}'))
+  cfg: Object.assign({ gasUrl: DEFAULT_GAS, lineDiv: 1000, branch: 'กฟส.อ่าวลึก', addr: '', tel: '', manager: '', hvWire: '1020060101', lvWire: '1020070003', ohPct: 0, valid: 30, volt: '33' }, JSON.parse(localStorage.getItem(LS.cfg) || '{}'))
 };
 if (!S.cfg.gasUrl) S.cfg.gasUrl = DEFAULT_GAS;
 const saveLocal = k => localStorage.setItem(LS[k], JSON.stringify(S[k]));
@@ -92,7 +92,7 @@ async function syncPull(silent) {
 const STATUS = ['กำลังสำรวจ', 'รอถอดแบบ', 'ส่งใบเสนอราคาแล้ว', 'ชำระเงินแล้ว'];
 function newJob(kind = 'map') {
   return { id: uid(), kind, name: kind === 'quick' ? 'ประมาณราคาด่วน' : 'งานสำรวจใหม่', status: 0, cust: { n: '', a: '', t: '' }, place: '', reqNo: '', qNo: '',
-    phase: 3, volt: '33', case: 0, hvT: T.HVRURAL, lvT: T.LVPOLE, ohPct: S.cfg.ohPct, vat: 7, valid: S.cfg.valid, poles: [], spans: [], created: Date.now(), updated: Date.now(), center: null, note: '', surveyor: HUB_USER() };
+    phase: 3, volt: S.cfg.volt || '33', case: 0, hvT: T.HVRURAL, lvT: T.LVPOLE, ohPct: S.cfg.ohPct, vat: 7, valid: S.cfg.valid, poles: [], spans: [], created: Date.now(), updated: Date.now(), center: null, note: '', surveyor: HUB_USER() };
 }
 function newPole(job, lat, lng, ex = false) {
   const n = job.poles.filter(p => !!p.ex === ex).length + 1;
@@ -135,13 +135,19 @@ function suggestTerms(job, p) {
   if (a.n <= 1 || a.dev > 30) out.push('GUY, GY-');
   return { angle: a, terms: out };
 }
+/* ---------- แยกอุปกรณ์ระบบ 22 kV / 33 kV ---------- */
+const RE22 = /(^|[^\d])(22|24)\s*(K\s?V|-\s?0\.|\/\s?0\.|\/4\.)|12\.7\s*KV/i;
+const RE33 = /(^|[^\d])(33|36)\s*(K\s?V|-\s?0\.|\/\s?0\.|GRD)|(^|[^\d])19\s*(K\s?V|-\s?0\.|\/\s?0\.)/i;
+const _sys = {};
+function sysOf(name) { if (_sys[name] !== undefined) return _sys[name]; const a = RE22.test(name), b = RE33.test(name); return (_sys[name] = a && !b ? '22' : b && !a ? '33' : ''); }
+const otherSys = (name, volt) => { const v = sysOf(name); return !!v && v !== (volt || S.cfg.volt || '33'); };
 function suggestSets(job, p) {
   const { terms } = suggestTerms(job, p); const res = [];
   const hv = job.spans.some(s => (s.a === p.id || s.b === p.id) && s.k === 'HV') || !job.spans.some(s => s.a === p.id || s.b === p.id);
   for (const t of terms) {
     if (t.startsWith('RACK') || t.endsWith('DEGREE') || t === 'DE') continue;
     const cat = hv && job.volt === '33' ? 'HV33' : (t.startsWith('GUY') ? 'LV' : null);
-    const m = Object.entries(DB.sets).filter(([c, s]) => s.n.toUpperCase().includes(t.toUpperCase()) && (!cat || s.c === cat) && s.i.length).slice(0, t.startsWith('GUY') ? 2 : 3);
+    const m = Object.entries(DB.sets).filter(([c, s]) => s.n.toUpperCase().includes(t.toUpperCase()) && (!cat || s.c === cat) && s.i.length && !otherSys(s.n, job.volt)).slice(0, t.startsWith('GUY') ? 2 : 3);
     m.forEach(([c]) => { if (!res.includes(c)) res.push(c); });
   }
   if (terms.some(t => t.startsWith('RACK'))) {
@@ -680,8 +686,8 @@ window.useNetPole = (lat, lng, quiet, no, info) => {
 window.toggleNet = () => { mapState.net = !mapState.net; const m = cur.map; if (mapState.net) { cur.netLines.addTo(m); cur.netPts.addTo(m); drawNetPts(cur.job); } else { m.removeLayer(cur.netLines); m.removeLayer(cur.netPts); } const b = $('#netBtn'); b.style.background = mapState.net ? '#5B1A63' : '#fff'; b.style.color = mapState.net ? '#fff' : ''; };
 
 /* ---------- span editor ---------- */
-function wireOptions(sel, k) {
-  const list = Object.keys(DB.rates).filter(c => LINE_TYPES.some(t => DB.rates[c][t]) && DB.items[c]?.[2] !== 0 && /CABLE|COND|WIRE,AL|CONDUCTOR/.test(iname(c)) && !/STEEL/.test(iname(c)));
+function wireOptions(sel, k, volt) {
+  const list = Object.keys(DB.rates).filter(c => (c === sel || !otherSys(iname(c), volt)) && LINE_TYPES.some(t => DB.rates[c][t]) && DB.items[c]?.[2] !== 0 && /CABLE|COND|WIRE,AL|CONDUCTOR/.test(iname(c)) && !/STEEL/.test(iname(c)));
   const pri = c => (k === 'HV' ? /33 KV|22 KV|PARTIALLY|ACSR|AL.BARE|AL-ALLOY|SPACER|TAC|TWISTED/i : /750 V|LV|AL.BARE|ABC|COMPACT/i).test(iname(c)) ? 0 : 1;
   return list.sort((a, b) => pri(a) - pri(b) || iname(a).localeCompare(iname(b))).map(c => `<option value="${c}" ${c === sel ? 'selected' : ''}>${c} · ${esc(iname(c))}</option>`).join('');
 }
@@ -690,7 +696,7 @@ function openSpan(job, s, after) {
   modal(`ช่วงสาย ${a?.label || ''}${a ? '–' : ''}${b?.label || ''}`, `
     <div class="stack">
       <div class="fld"><label>ชนิด</label><div class="seg" id="sp_k">${['HV', 'LV'].map(k => `<button type="button" data-v="${k}" class="${s.k === k ? 'on' : ''}">${k === 'HV' ? 'แรงสูง' : 'แรงต่ำ'}</button>`).join('')}</div></div>
-      <div class="fld"><label for="sp_w">สายไฟ (รหัสพัสดุ)</label><select id="sp_w" class="in">${wireOptions(s.w, s.k)}</select></div>
+      <div class="fld"><label for="sp_w">สายไฟ (รหัสพัสดุ)</label><select id="sp_w" class="in">${wireOptions(s.w, s.k, job.volt)}</select></div>
       <div class="grid2"><div class="fld"><label for="sp_n">จำนวนเส้น</label><input id="sp_n" class="in" type="number" min="1" step="1" value="${s.n}"></div>
       <div class="fld"><label for="sp_len">ความยาว (ม.)${auto != null ? ` · แผนที่ ${auto}` : ''}</label><input id="sp_len" class="in" type="number" min="0" step="1" value="${s.len ?? ''}" placeholder="${auto ?? 'ระบุความยาว'}"></div></div>
       <div class="fld"><label for="sp_lt">อัตราค่าแรงพาดสาย</label><select id="sp_lt" class="in"><option value="">ตามค่าตั้งของงาน</option>${LINE_TYPES.filter(t => DB.rates[s.w]?.[t]).map(t => `<option value="${t}" ${s.lt === t ? 'selected' : ''}>${DB.types[t]}</option>`).join('')}</select></div>
@@ -715,26 +721,27 @@ window.closeModal = () => $('#modal')?.remove();
 /* ---------- picker (sets / items) ---------- */
 const PRESET = { tr: { tab: 'set', q: 'TR.INST', cat: 'TRM', title: 'เลือกชุดติดตั้งหม้อแปลง' }, guy: { tab: 'set', q: 'GUY', title: 'เลือกชุดยึดโยง' }, meter: { tab: 'set', q: 'METER INS', cat: 'TRM', title: 'เลือกชุดติดตั้งมิเตอร์' }, set: { tab: 'set', q: '', title: 'เพิ่มชุด Set' }, item: { tab: 'item', q: '', title: 'เพิ่มพัสดุเดี่ยว' }, transformer: { tab: 'item', q: 'TRANSFORMER', title: 'เลือกหม้อแปลง' } };
 function openPicker({ job, pole, preset = 'set', after }) {
-  const P = PRESET[preset]; const st = { tab: P.tab, q: P.q, cat: P.cat || (job.volt === '33' ? '' : '') };
+  const P = PRESET[preset]; const st = { tab: P.tab, q: P.q, cat: P.cat || '', all: false }; const ov = (job.volt || '33') === '33' ? '22' : '33';
   modal(P.title + ` · ${pole.label}`, `
     <div class="stack">
       <div class="tabs" id="pk_tab"><button data-v="set" class="${st.tab === 'set' ? 'on' : ''}">ชุด Set</button><button data-v="item" class="${st.tab === 'item' ? 'on' : ''}">พัสดุเดี่ยว</button></div>
       <div class="row"><label class="sr" for="pk_q">ค้นหา</label><input id="pk_q" class="in" placeholder="ค้นหารหัสหรือชื่อ เช่น 30213, GUY, TR.INST" value="${esc(st.q)}"><select id="pk_cat" class="in" style="max-width:130px" aria-label="หมวด"><option value="">ทุกหมวด</option><option value="HV33" ${st.cat === 'HV33' ? 'selected' : ''}>ระบบ 33 kV</option><option value="LV" ${st.cat === 'LV' ? 'selected' : ''}>ระบบแรงต่ำ</option><option value="TRM" ${st.cat === 'TRM' ? 'selected' : ''}>หม้อแปลง/มิเตอร์</option></select></div>
+      <label class="row s13 muted" style="gap:6px;cursor:pointer"><input type="checkbox" id="pk_all"> แสดงอุปกรณ์ระบบ ${ov} kV ด้วย</label>
       <div id="pk_res" class="list"></div>
     </div>`, '', box => {
     const res = $('#pk_res', box);
     const render = () => {
       const q = $('#pk_q', box).value.trim().toUpperCase(), cat = $('#pk_cat', box).value, words = q.split(/\s+/).filter(Boolean);
       $('#pk_cat', box).style.display = st.tab === 'set' ? '' : 'none';
-      let rows = [];
+      let rows = []; const all = $('#pk_all', box).checked;
       if (st.tab === 'set') {
-        for (const [c, s] of Object.entries(DB.sets)) { if (!s.i.length) continue; if (cat && s.c !== cat) continue; const hay = (c + ' ' + s.n).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, s.n, `${s.i.length} รายการ · ค่าแรง ${fm(setLabour(c, job.case))}`]); if (rows.length >= 80) break; }
+        for (const [c, s] of Object.entries(DB.sets)) { if (!s.i.length) continue; if (cat && s.c !== cat) continue; if (!all && otherSys(s.n, job.volt)) continue; const hay = (c + ' ' + s.n).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, s.n, `${s.i.length} รายการ · ค่าแรง ${fm(setLabour(c, job.case))}`]); if (rows.length >= 80) break; }
       } else {
-        for (const [c, it] of Object.entries(DB.items)) { if (it[2] === 0) continue; const hay = (c + ' ' + it[0]).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, it[0], `${it[1]} · ค่าแรง ${fm(labourRate(c, job.case).rate)}${S.prices[c] != null ? ' · ราคา ' + fm(S.prices[c]) : ''}`]); if (rows.length >= 80) break; }
+        for (const [c, it] of Object.entries(DB.items)) { if (it[2] === 0) continue; if (!all && otherSys(it[0], job.volt)) continue; const hay = (c + ' ' + it[0]).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, it[0], `${it[1]} · ค่าแรง ${fm(labourRate(c, job.case).rate)}${S.prices[c] != null ? ' · ราคา ' + fm(S.prices[c]) : ''}`]); if (rows.length >= 80) break; }
       }
       res.innerHTML = rows.length ? rows.map(([c, n, m]) => `<div class="li"><div class="grow"><div class="code">${c}</div><div class="s14">${esc(n)}</div><div class="s12 muted">${m}</div></div>${st.tab === 'set' ? `<button class="btn sm g" data-view="${c}">ดู</button>` : ''}<button class="btn sm p" data-add="${c}">เพิ่ม</button></div>`).join('') : '<div class="empty">ไม่พบรายการ</div>';
     };
-    $('#pk_q', box).oninput = render; $('#pk_cat', box).onchange = render;
+    $('#pk_q', box).oninput = render; $('#pk_cat', box).onchange = render; $('#pk_all', box).onchange = render;
     $('#pk_tab', box).onclick = e => { const b = e.target.closest('button'); if (!b) return; st.tab = b.dataset.v; $$('#pk_tab button', box).forEach(x => x.classList.toggle('on', x === b)); render(); };
     res.onclick = e => {
       const v = e.target.closest('[data-view]'), a = e.target.closest('[data-add]');
@@ -805,7 +812,7 @@ function vPole(job, pid) {
   const p = poleById(job, pid); if (!p) return go((job.kind === 'quick' ? 'list/' : 'map/') + job.id);
   const back = job.kind === 'quick' ? `#list/${job.id}` : `#map/${job.id}`;
   const ang = poleAngle(job, p), sug = suggestSets(job, p);
-  const poles = Object.entries(DB.items).filter(([c, i]) => /^POLE,\s?(CONCRETE|STEEL)/.test(i[0]) && i[2] !== 0);
+  const poles = Object.entries(DB.items).filter(([c, i]) => /^POLE,\s?(CONCRETE|STEEL)/.test(i[0]) && i[2] !== 0 && (c === p.pole || !otherSys(i[0], job.volt)));
   const lab = (() => { const tmp = { ...job, poles: [p], spans: [] }; return computeBOM(tmp); })();
   const qrow = (arr, i, x, kind) => `<div class="li"><div class="grow"><div class="code">${x.c}</div><div class="s14">${esc(iname(x.c))}</div><div class="s12 muted">${kind === 'set' ? `${DB.sets[x.c]?.i.length || 0} รายการ · ค่าแรง ${fm(setLabour(x.c, job.case) * x.q)}` : `${esc(iunit(x.c))} · ค่าแรง ${fm(labourOf(x.c, num(x.q), job.case).lab)}`}</div></div>
     ${kind === 'set' ? `<button class="btn sm g" onclick="showSet('${x.c}',cur.job)">ดู</button>` : ''}
@@ -1120,8 +1127,9 @@ function vSettings() {
       <div class="grid2"><div class="fld"><label for="c_tel">โทร</label><input id="c_tel" class="in" value="${esc(cfg.tel)}"></div><div class="fld"><label for="c_mg">ชื่อผู้จัดการ</label><input id="c_mg" class="in" value="${esc(cfg.manager)}"></div></div>
     </div>
     <div class="card stack"><b>ค่าเริ่มต้นการคำนวณ</b>
-      <div class="fld"><label for="c_hv">สายแรงสูงเริ่มต้น</label><select id="c_hv" class="in">${wireOptions(cfg.hvWire, 'HV')}</select></div>
-      <div class="fld"><label for="c_lv">สายแรงต่ำเริ่มต้น</label><select id="c_lv" class="in">${wireOptions(cfg.lvWire, 'LV')}</select></div>
+      <div class="fld"><label for="c_volt">ระบบไฟฟ้าในพื้นที่ (งานใหม่ + รายการอุปกรณ์ที่แสดง)</label><select id="c_volt" class="in"><option value="33" ${(cfg.volt || '33') === '33' ? 'selected' : ''}>33 kV (ซ่อนอุปกรณ์ 22 kV)</option><option value="22" ${cfg.volt === '22' ? 'selected' : ''}>22 kV (ซ่อนอุปกรณ์ 33 kV)</option></select></div>
+      <div class="fld"><label for="c_hv">สายแรงสูงเริ่มต้น</label><select id="c_hv" class="in">${wireOptions(cfg.hvWire, 'HV', cfg.volt)}</select></div>
+      <div class="fld"><label for="c_lv">สายแรงต่ำเริ่มต้น</label><select id="c_lv" class="in">${wireOptions(cfg.lvWire, 'LV', cfg.volt)}</select></div>
       <div class="grid2"><div class="fld"><label for="c_div">หน่วยอัตราค่าแรงพาดสาย</label><select id="c_div" class="in"><option value="1000" ${cfg.lineDiv == 1000 ? 'selected' : ''}>บาท ต่อ กม. ต่อเส้น</option><option value="100" ${cfg.lineDiv == 100 ? 'selected' : ''}>บาท ต่อ 100 ม. ต่อเส้น</option><option value="1" ${cfg.lineDiv == 1 ? 'selected' : ''}>บาท ต่อ ม. ต่อเส้น</option></select></div>
       <div class="fld"><label for="c_oh">ค่าดำเนินการเริ่มต้น %</label><input id="c_oh" class="in" type="number" step="0.01" value="${cfg.ohPct}"></div></div>
       <div class="fld"><label for="c_val">อายุใบเสนอราคา (วัน)</label><input id="c_val" class="in" type="number" value="${cfg.valid}"></div>
@@ -1141,7 +1149,7 @@ function vSettings() {
   </div></div>${navbar(null, 'settings')}`;
 }
 window.saveCfg = () => {
-  Object.assign(S.cfg, { branch: $('#c_br').value.trim(), addr: $('#c_ad').value.trim(), tel: $('#c_tel').value.trim(), manager: $('#c_mg').value.trim(), hvWire: $('#c_hv').value, lvWire: $('#c_lv').value, lineDiv: +$('#c_div').value, ohPct: num($('#c_oh').value), valid: num($('#c_val').value) || 30, gasUrl: $('#c_gas').value.trim() });
+  Object.assign(S.cfg, { volt: $('#c_volt').value, branch: $('#c_br').value.trim(), addr: $('#c_ad').value.trim(), tel: $('#c_tel').value.trim(), manager: $('#c_mg').value.trim(), hvWire: $('#c_hv').value, lvWire: $('#c_lv').value, lineDiv: +$('#c_div').value, ohPct: num($('#c_oh').value), valid: num($('#c_val').value) || 30, gasUrl: $('#c_gas').value.trim() });
   saveLocal('cfg'); toast('บันทึกแล้ว');
 };
 window.testGas = async () => { saveCfg(); if (!S.cfg.gasUrl) return toast('ยังไม่ได้ใส่ URL'); await syncPull(); };
