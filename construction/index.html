@@ -14,11 +14,12 @@
 <style>
 :root{--brand:#5B1A63;--brand-d:#3E0F45;--ink:#1E1A22;--muted:#5E5666;--line:#E2DCE8;--bg:#F5F3F7;--soft:#EDE4F0;--warn:#E07B00;--ok:#0B6E4F}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',Sarabun,system-ui,sans-serif;font-size:15px;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',Sarabun,system-ui,sans-serif;font-size:15px;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 button,input,select,textarea{font-family:inherit;font-size:15px;color:inherit}
 a{color:var(--brand)}
-#app{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;overflow:hidden}
-.top{background:var(--brand);color:#fff;padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));min-height:50px;display:flex;align-items:center;gap:8px;flex-shrink:0;z-index:5}
+#app{min-height:100vh;display:flex;flex-direction:column;padding-bottom:64px}
+#app.full{height:100vh;min-height:0;overflow:hidden}
+.top{background:var(--brand);color:#fff;padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));min-height:50px;display:flex;align-items:center;gap:8px;flex-shrink:0;z-index:700;position:sticky;top:0}
 .top .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15}
 .top .t b{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .t small{font-size:12px;font-weight:400;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
@@ -27,9 +28,9 @@ a{color:var(--brand)}
 .ib svg{width:20px;height:20px}
 .pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px 0 10px;border-radius:16px;background:rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;flex:none;text-decoration:none;border:0;cursor:pointer}
 .pill .dt{width:8px;height:8px;border-radius:4px;background:#4ADE80}
-.main{flex:1;overflow:auto;padding:14px 16px 20px}
+.main{flex:1;padding:14px 16px 20px}
 .wrap{max-width:1360px;margin:0 auto}
-.nav{height:64px;background:#fff;border-top:1px solid var(--line);display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);flex-shrink:0;z-index:6}
+.nav{position:fixed;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid var(--line);display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);flex-shrink:0;z-index:900}
 .nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:#6B6372;text-decoration:none;position:relative}
 .nav a.on{color:var(--brand);font-weight:700}
 .nav svg{width:20px;height:20px}
@@ -159,7 +160,8 @@ textarea.in{height:auto;padding:8px 10px}
   body{background:#fff}
   .top,.nav,.noprint{display:none!important}
   .main{padding:0;overflow:visible}
-  #app{position:static;height:auto;overflow:visible}
+  #app,#app.full{position:static;height:auto;min-height:0;padding:0;overflow:visible}
+  .nav,.top{position:static!important}
   .pwrap{width:auto!important;height:auto!important;overflow:visible}
   .plan-paper{box-shadow:none;transform:none!important}
   .paper{box-shadow:none;width:210mm;min-height:297mm;padding:14mm 16mm;margin:0;transform:none!important}
@@ -171,8 +173,8 @@ textarea.in{height:auto;padding:8px 10px}
 <div id="app"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="app.js?v=1.6.1"></script>
-<script src="plan.js?v=1.6.1"></script>
+<script src="app.js?v=1.6.2"></script>
+<script src="plan.js?v=1.6.2"></script>
 <script async src="https://api.longdo.com/map/?key=f61a87ff70c39e610385809783d5a1b3"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.6.1';
+const VERSION = '1.6.2';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -237,6 +237,7 @@ function route() {
   const h = location.hash.replace(/^#\/?/, '') || 'home';
   const [v, id, sub] = h.split('/');
   if (cur.map && v !== 'map') { cur.map.remove(); cur.map = null; }
+  app.classList.toggle('full', v === 'map'); window.scrollTo(0, 0);
   if (v === 'home') return vHome();
   if (v === 'settings') return vSettings();
   if (v === 'quick') return vQuick();
@@ -913,7 +914,7 @@ function vBom(job) {
 }
 window.num = num;
 window.bset = (k, v) => { cur.job[k] = v; saveJob(cur.job); vBom(cur.job); };
-window.setPrice = (c, v) => { savePrice(c, v.trim() === '' ? null : num(v.replace(/,/g, ''))); const y = $('.main').scrollTop; vBom(cur.job); $('.main').scrollTop = y; };
+window.setPrice = (c, v) => { savePrice(c, v.trim() === '' ? null : num(v.replace(/,/g, ''))); const y = window.scrollY; vBom(cur.job); window.scrollTo(0, y); };
 window.exportXlsx = () => {
   if (!window.XLSX) return toast('โหลดตัวส่งออก Excel ไม่สำเร็จ');
   const j = cur.job, B = computeBOM(j);
@@ -1137,6 +1138,6 @@ if ('serviceWorker' in navigator) addEventListener('load', () => navigator.servi
 })();
 
 // iOS: ความสูงจอตอนเปิดแอปครั้งแรกบางครั้งยังไม่ถูก — วัดใหม่หลังโหลดเสร็จ
-(() => { const fix = () => { window.scrollTo(0, 0); cur && cur.map && cur.map.invalidateSize(); };
+(() => { const fix = () => { cur && cur.map && cur.map.invalidateSize(); };
   ['load', 'pageshow', 'orientationchange', 'resize'].forEach(e => window.addEventListener(e, () => { fix(); setTimeout(fix, 250); setTimeout(fix, 800); }));
   window.visualViewport && visualViewport.addEventListener('resize', fix); })();
