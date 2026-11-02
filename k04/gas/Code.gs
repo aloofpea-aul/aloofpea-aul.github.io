@@ -3,6 +3,8 @@
  * - ซิงค์ค่าจากต้นฉบับวันละครั้ง (อ่านต้นฉบับอย่างเดียว ไม่เขียนกลับ)
  * - ค่าที่ลงผ่านมือถือเก็บในชีต "_บันทึกของเรา" ซึ่งการซิงค์ไม่แตะเลย
  * - หน้าเว็บอยู่บน GitHub Pages: aloofpea-aul.github.io/k04/ (ศูนย์รวมงาน) เรียก API นี้
+ * - โปรเจกต์ Apps Script (แบบแยก ไม่ผูกชีต): https://script.google.com/home/projects/1seQsn_Dgrt6LXYl7FNjVUxD6HLPWrvJwNlDK3-qExtyf6jXbGj0IVUWA/edit
+ *   ในโปรเจกต์รวม Code.gs + Parser.gs ไว้ไฟล์เดียว · ตั้ง PIN: Script Properties → EDIT_PIN
  */
 
 var CONFIG = {

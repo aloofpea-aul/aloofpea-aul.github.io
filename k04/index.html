@@ -85,7 +85,7 @@ input.f{font-size:20px}
 
 <script>
 /* URL ของ Web app หลังบ้าน (k04/gas/Code.gs) — ใส่ครั้งเดียวที่นี่ หรือเปิดหน้านี้ด้วย ?api=URL */
-var DEFAULT_API = '';
+var DEFAULT_API = 'https://script.google.com/macros/s/AKfycbzPHT_oHJEDbCXQAIswkwOeSEWtSYuMb1xtG3KdgVYIJuzFJ_9qbVHqw8myYG9rtbpHiQ/exec';
 (function(){ var p=new URLSearchParams(location.search); if(p.get('api')){ try{localStorage.setItem('k04_api',p.get('api'));}catch(e){} p.delete('api');
   try{history.replaceState(null,'',location.pathname+(p.toString()?'?'+p:''));}catch(e){} } })();
 var API = DEFAULT_API || (function(){try{return localStorage.getItem('k04_api')||'';}catch(e){return '';}})();
