@@ -119,5 +119,10 @@ _tw = '<script src="https://cdn.tailwindcss.com"></script>'
 assert s.count(_tw) == 1
 s = s.replace(_tw, '<link rel="stylesheet" href="tw.css?v=1">', 1)
 s = s.replace('<script src="mobile.js?v=2"></script>', '<script src="perf.js?v=1"></script>\n<script src="mobile.js?v=2"></script>', 1)
+# ส่วนรับข้อมูลจากระบบสำรวจงานก่อสร้าง (?import=1) — อยู่ใน ccl/gas/import-block.html
+import os
+_blk = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'import-block.html')
+if not os.path.exists(_blk): _blk = '/home/claude/aloofpea-aul.github.io/ccl/gas/import-block.html'
+_j = s.rindex('</body>'); s = s[:_j] + open(_blk, encoding='utf-8').read() + s[_j:]
 open(dst, 'w', encoding='utf-8').write(s)
 print('ok', len(s))
