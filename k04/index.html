@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="/pea-hub.js?v=2026110201" data-app="k04" data-gate="off" data-name="แผนปฏิบัติการ K04"></script>
+<title>K04 แผนปฏิบัติการ 2569 · กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#6a1b9a">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d1d1f;--sub:#6b6f76;--muted:#9a9ea6;--line:#e6e8eb;
+--pea:#6a1b9a;--pea-bg:#f3e8fa;--ok:#1e7d45;--ok-bg:#e5f5ec;--low:#9a5b00;--low-bg:#fff2dc;
+--na:#5f636b;--na-bg:#eef0f2;--mine:#1557b0;--mine-bg:#e6effc;--bad:#b3261e;--bad-bg:#fde8e7}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Sarabun,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.top{position:sticky;top:0;z-index:5;background:var(--pea);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
+.hback{color:#fff;text-decoration:none;font-size:24px;line-height:1;padding:0 6px 0 0}
+.top h1{font-size:16px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px}
+.top .sync{font-size:12px;opacity:.85}
+.iconbtn{background:none;border:0;color:inherit;font-size:20px;padding:4px 6px;cursor:pointer;line-height:1}
+.bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+select.office{font:inherit;font-size:14px;border:0;border-radius:16px;padding:4px 10px;background:#fff;color:var(--pea);max-width:60%}
+.qchip{border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:14px;padding:2px 10px;font:inherit;font-size:13px;cursor:pointer}
+.qchip.on{background:#fff;color:var(--pea);border-color:#fff}
+main{padding:12px 12px 90px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--line)}
+.big{font-size:28px;font-weight:600}
+.small{font-size:12.5px;color:var(--sub)}
+.muted{color:var(--muted)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.stat{border-radius:10px;padding:6px 4px;text-align:center;cursor:pointer}
+.stat b{display:block;font-size:18px;font-weight:600}
+.stat span{font-size:11.5px}
+.chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap;font-weight:500}
+.ok{background:var(--ok-bg);color:var(--ok)}.low{background:var(--low-bg);color:var(--low)}
+.na,.none{background:var(--na-bg);color:var(--na)}.pending{background:var(--na-bg);color:var(--na)}
+.mine{background:var(--mine-bg);color:var(--mine)}.bad{background:var(--bad-bg);color:var(--bad)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.row:first-child{border-top:0}
+.row .t{flex:1;min-width:0}
+.sec{font-size:13px;color:var(--sub);margin:14px 4px 6px;font-weight:500}
+.search{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.filters{display:flex;gap:6px;overflow-x:auto;margin:8px 0 4px;padding-bottom:2px}
+.filters button{flex:none;border:1px solid var(--line);background:#fff;border-radius:14px;padding:3px 10px;font:inherit;font-size:13px;color:var(--sub);cursor:pointer}
+.filters button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+table.q{width:100%;border-collapse:collapse;font-size:14px}
+table.q th{font-weight:500;color:var(--sub);font-size:12.5px;text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+table.q td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
+table.q th:first-child,table.q td:first-child{text-align:left}
+table.q tr.cur td{background:#faf6fd}
+.cmp{display:grid;grid-template-columns:92px 1fr 54px;gap:5px 8px;align-items:center;font-size:13px}
+.cmp .b{height:8px;border-radius:4px;background:#c9b3dc}
+.cmp .b.me{background:var(--pea)}
+.btn{display:block;width:100%;font:inherit;font-weight:500;border-radius:12px;padding:11px;border:1px solid var(--line);background:#fff;cursor:pointer;margin-top:10px}
+.btn.primary{background:var(--pea);border-color:var(--pea);color:#fff}
+.btn.danger{color:var(--bad)}
+label.f{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
+input.f,textarea.f{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input.f{font-size:20px}
+.err{color:var(--bad);font-size:13px;margin-top:4px;min-height:18px}
+.note{font-size:12.5px;border-radius:10px;padding:8px 10px;margin-top:8px}
+.back{display:flex;align-items:center;gap:6px;font-weight:600;font-size:16px;margin:2px 0 6px;cursor:pointer}
+.desc{font-size:13.5px;color:var(--sub);margin:4px 0 0;padding-left:0;list-style:none}
+.desc li{margin:2px 0}
+.loading{text-align:center;color:var(--sub);padding:40px 0}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:.92}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1><a class="hback" href="/index.html" aria-label="กลับศูนย์รวมงาน">‹</a><span style="flex:1">K04 แผนปฏิบัติการ 2569</span>
+    <button class="iconbtn" id="btnSync" aria-label="ซิงค์จากต้นฉบับ" title="ซิงค์จากต้นฉบับ">⟳</button></h1>
+  <div class="sync" id="syncText">กำลังโหลด…</div>
+  <div class="bar">
+    <select class="office" id="office" aria-label="เลือก กฟฟ."></select>
+    <span id="qchips"></span>
+  </div>
+</div>
+<main id="app"><div class="loading">กำลังโหลดข้อมูล…</div></main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* URL ของ Web app หลังบ้าน (k04/gas/Code.gs) — ใส่ครั้งเดียวที่นี่ หรือเปิดหน้านี้ด้วย ?api=URL */
+var DEFAULT_API = '';
+(function(){ var p=new URLSearchParams(location.search); if(p.get('api')){ try{localStorage.setItem('k04_api',p.get('api'));}catch(e){} p.delete('api');
+  try{history.replaceState(null,'',location.pathname+(p.toString()?'?'+p:''));}catch(e){} } })();
+var API = DEFAULT_API || (function(){try{return localStorage.getItem('k04_api')||'';}catch(e){return '';}})();
+function apiGet(){ return fetch(API+'?action=data').then(function(r){return r.json();}).then(function(r){ if(r&&r.error) throw new Error(r.error); return r; }); }
+function apiPost(body){ return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
+  .then(function(r){return r.json();}).then(function(r){ if(r&&r.error) throw new Error(r.error); return r; }); }
+function myName(){ try{return localStorage.getItem('pea_aoluek_username')||'';}catch(e){return '';} }
+
+var D = null, OV = {}, ST = { office: '', q: 3, view: 'home', sheet: null, act: null, filter: 'all', search: '', showAll: false };
+var LS_KEY = 'k04_aoluek_cache_v1', LS_PREF = 'k04_aoluek_pref_v1';
+var QN = ['Q1', 'Q2', 'Q3', 'Q4'];
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?null:n;}
+function blank(v){v=String(v==null?'':v).trim();return v===''||v==='-'||v==='–';}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+function fmtDate(iso){if(!iso)return '—';var d=new Date(isNaN(iso)?iso:Number(iso));if(isNaN(d))return iso;
+  return d.toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+
+/* ---------- โหลดข้อมูล ---------- */
+function load(){
+  var cached = lsGet(LS_KEY), pref = lsGet(LS_PREF) || {};
+  if (pref.office) ST.office = pref.office;
+  if (cached) { setData(cached, true); }
+  if (!API) { document.getElementById('app').innerHTML='<div class="card">ยังไม่ได้ตั้งค่า URL หลังบ้าน<br><span class="small">เปิดหน้านี้ด้วย ?api=URL ของ Web app ครั้งเดียว</span></div>'; return; }
+  apiGet().then(function(d){ lsSet(LS_KEY,d); setData(d,false); })
+    .catch(function(e){ if(!D) document.getElementById('app').innerHTML='<div class="card bad">โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</div>'; else toast('ออฟไลน์ — แสดงข้อมูลที่เก็บไว้'); });
+}
+function setData(d, fromCache){
+  var first = !D; D = d; OV = d.overrides || {};
+  if (!ST.office || D.offices.indexOf(ST.office) < 0) ST.office = D.offices.indexOf(D.defaultOffice) >= 0 ? D.defaultOffice : D.offices[0];
+  if (first) ST.q = latestQuarter();
+  document.getElementById('syncText').textContent = 'ข้อมูลต้นฉบับ ณ ' + fmtDate(D.srcUpdated) + ' · ซิงค์ ' + fmtDate(D.lastSync) + (fromCache ? ' · กำลังอัปเดต…' : '');
+  var sel = document.getElementById('office');
+  sel.innerHTML = D.offices.map(function(o){return '<option'+(o===ST.office?' selected':'')+'>'+esc(o)+'</option>';}).join('');
+  renderQ(); render();
+}
+function latestQuarter(){
+  var best = 1;
+  D.sheets.forEach(function(s){s.activities.forEach(function(a){a.rows.forEach(function(r){
+    if (r.scope !== 'office') return;
+    r.q.forEach(function(q,i){ if(!blank(q.r) && i+1>best) best=i+1; });
+  });});});
+  return best;
+}
+
+/* ---------- ตรรกะสถานะ ---------- */
+function ovKey(act, row, qi){ return act.key + '|' + row.office + '|' + (row.gk||'') + '|Q' + (qi+1); }
+function cellInfo(act, row, qi){
+  var q = row.q[qi];
+  var o = row.scope === 'office' ? OV[ovKey(act, row, qi)] : null;
+  var info = { t:q.t, r:q.r, score:q.score, full:q.full, note:q.note, mine:false, conflict:false, status:'none' };
+  if (o) {
+    info.mine = true; info.r = o.value; info.ov = o;
+    info.conflict = String(o.srcAtEdit||'') !== String(q.r||'');
+    info.status = 'mine';
+    return info;
+  }
+  if (blank(q.t) && blank(q.r)) { info.status = 'none'; return info; }
+  if (blank(q.r)) { info.status = blank(q.t) ? 'none' : 'pending'; return info; }
+  var s = num(q.score), f = num(q.full);
+  if (s !== null && f !== null && f > 0) info.status = s + 1e-9 >= f ? 'ok' : 'low';
+  else info.status = 'ok';
+  return info;
+}
+function rowsFor(act){
+  var mine = act.rows.filter(function(r){return r.scope==='office' && r.office===ST.office;});
+  if (mine.length) return { rows: mine, level: 'office' };
+  var prov = act.rows.filter(function(r){return r.scope==='province';});
+  if (prov.length) return { rows: prov, level: 'province' };
+  return { rows: act.rows.filter(function(r){return r.scope==='all';}), level: 'all' };
+}
+function actStatus(act, qi){
+  var rf = rowsFor(act);
+  if (!rf.rows.length) return { status:'none', level:rf.level };
+  var order = { mine:5, low:4, pending:3, ok:2, none:1 }, best = 'none', info = null;
+  rf.rows.forEach(function(r){ var i = cellInfo(act, r, qi); if (order[i.status] > order[best]) { best = i.status; info = i; } });
+  return { status: best, level: rf.level, info: info || cellInfo(act, rf.rows[0], qi) };
+}
+var LABEL = { ok:'ผ่าน', low:'ต่ำกว่าเป้า', pending:'ยังไม่รายงาน', none:'ไม่มีเป้ารอบนี้', mine:'แก้โดยเรา' };
+function chip(st, text){ return '<span class="chip '+st+'">'+esc(text||LABEL[st])+'</span>'; }
+function relevant(act){ return ST.showAll || rowsFor(act).level !== 'all'; }
+
+/* ---------- หน้าจอ ---------- */
+function renderQ(){
+  document.getElementById('qchips').innerHTML = QN.map(function(q,i){
+    return '<button class="qchip'+(ST.q===i+1?' on':'')+'" onclick="setQ('+(i+1)+')">'+q+'</button>';}).join(' ');
+}
+function setQ(q){ ST.q=q; renderQ(); render(); }
+function go(view, sheet, act, push, ri){
+  ST.view=view; ST.sheet=sheet; ST.act=act; ST.ri=ri;
+  if (push!==false) history.pushState({view:view,sheet:sheet,act:act,ri:ri},'');
+  render(); window.scrollTo(0,0);
+}
+window.onpopstate = function(e){ var s=e.state||{view:'home'}; ST.view=s.view; ST.sheet=s.sheet; ST.act=s.act; ST.ri=s.ri; render(); };
+
+function render(){
+  if (!D) return;
+  var el = document.getElementById('app');
+  if (ST.view==='list') el.innerHTML = viewList();
+  else if (ST.view==='detail') el.innerHTML = viewDetail();
+  else if (ST.view==='edit') el.innerHTML = viewEdit();
+  else el.innerHTML = viewHome();
+}
+function openSheet(si){ go('list', D.sheets[si].name, null); }
+function openAct(si, ai, view, ri){ var s=D.sheets[si]; go(view, s.name, s.activities[ai].key, true, ri); }
+function findSheet(n){ return D.sheets.filter(function(s){return s.name===n;})[0]; }
+function findAct(s,k){ return s && s.activities.filter(function(a){return a.key===k;})[0]; }
+function countFor(s, qi){
+  var c = { ok:0, low:0, pending:0, mine:0, none:0, total:0 };
+  s.activities.forEach(function(a){ if (!relevant(a) || a.flag==='ยกเลิก') return; var st=actStatus(a,qi).status; c[st]++; c.total++; });
+  return c;
+}
+
+function viewHome(){
+  var qi = ST.q-1, h = '';
+  var sm = D.summary;
+  if (sm && sm.total) {
+    var col = Math.min(qi, 3), label = (sm.header[col]||'').replace('ไตรมาส','Q');
+    var val = sm.total[col];
+    h += '<div class="card"><div class="small">ความสำเร็จภาพรวม กฟจ.กระบี่ และสังกัด (สะสม '+esc(label)+')</div>';
+    h += '<div class="big">'+(blank(val)?'<span class="muted">ยังไม่ประเมิน</span>':esc(val)+'%')+'</div>';
+    h += '<div class="small" style="margin-top:4px">'+sm.items.map(function(it){return esc(it.code)+' '+(blank(it.q[col])?'—':esc(it.q[col]));}).join(' · ')+'</div></div>';
+  }
+  var tot = { ok:0, low:0, pending:0, mine:0 };
+  D.sheets.forEach(function(s){ var c=countFor(s,qi); tot.ok+=c.ok; tot.low+=c.low; tot.pending+=c.pending; tot.mine+=c.mine; });
+  h += '<div class="card"><div class="small">'+esc(ST.office)+' · '+QN[qi]+'</div><div class="grid4">';
+  ['low','pending','ok','mine'].forEach(function(k){
+    h += '<div class="stat '+k+'" onclick="ST.filter=\''+k+'\';go(\'list\',null,null)"><b>'+tot[k]+'</b><span>'+LABEL[k]+'</span></div>';
+  });
+  h += '</div></div>';
+  h += '<div class="sec">มุมมอง BSC</div><div class="card">';
+  D.sheets.forEach(function(s){
+    var c = countFor(s, qi);
+    var badge = c.low ? chip('low', c.low+' ต่ำกว่าเป้า') : (c.pending ? chip('pending', c.pending+' รอรายงาน') : (c.total ? chip('ok','ครบ') : chip('none','ระดับเขต/จังหวัด')));
+    h += '<div class="row" onclick="ST.filter=\'all\';openSheet('+D.sheets.indexOf(s)+')"><div class="t"><div>'+esc(s.name)+'</div><div class="small">'+c.total+' กิจกรรมที่เกี่ยวข้อง</div></div>'+badge+' ›</div>';
+  });
+  h += '</div>';
+  if (D.report && D.report.length) {
+    h += '<div class="sec">สถานะการรายงานผล (%)</div><div class="card"><table class="q"><tr><th>ด้าน</th>'+['Q1','Q1-2','Q1-3','Q1-4'].map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr>';
+    D.report.forEach(function(r){ h += '<tr><td>'+esc(r.code||'ภาพรวม')+'</td>'+r.q.map(function(v){return '<td>'+(blank(v)?'—':esc(v))+'</td>';}).join('')+'</tr>'; });
+    h += '</table></div>';
+  }
+  h += '<label class="small" style="display:flex;gap:6px;align-items:center;margin:8px 4px"><input type="checkbox" '+(ST.showAll?'checked':'')+' onchange="ST.showAll=this.checked;render()"> นับรวมกิจกรรมระดับเขตที่ไม่มีแถว กฟฟ.</label>';
+  return h;
+}
+
+function viewList(){
+  var qi = ST.q-1, sheets = ST.sheet ? [findSheet(ST.sheet)] : D.sheets, h = '';
+  h += '<div class="back" onclick="history.back()">‹ '+esc(ST.sheet || 'ทุกด้าน')+'</div>';
+  h += '<input class="search" placeholder="ค้นหา เช่น WMS, SAIFI, 1.2.3" value="'+esc(ST.search)+'" oninput="ST.search=this.value;document.getElementById(\'lst\').innerHTML=listBody()">';
+  h += '<div class="filters">'+[['all','ทั้งหมด'],['low','ต่ำกว่าเป้า'],['pending','ยังไม่รายงาน'],['ok','ผ่าน'],['mine','แก้โดยเรา']].map(function(f){
+    return '<button class="'+(ST.filter===f[0]?'on':'')+'" onclick="ST.filter=\''+f[0]+'\';render()">'+f[1]+'</button>';}).join('')+'</div>';
+  h += '<div id="lst">'+listBody()+'</div>';
+  return h;
+}
+function listBody(){
+  var term = ST.search.trim().toLowerCase();
+  var qi = ST.q-1, sheets = ST.sheet && !term ? [findSheet(ST.sheet)] : D.sheets, h = '', n = 0;   // ค้นหา = ค้นทุกด้าน
+  sheets.forEach(function(s){
+    var plan = null, block = '';
+    s.activities.forEach(function(a){
+      if (!relevant(a)) return;
+      var st = actStatus(a, qi);
+      if (ST.filter !== 'all' && st.status !== ST.filter) return;
+      if (term && (a.code+' '+a.title+' '+a.plan+' '+a.desc.join(' ')).toLowerCase().indexOf(term) < 0) return;
+      if (a.plan !== plan) { plan = a.plan; block += '</div><div class="sec">'+esc(plan||s.name)+'</div><div class="card">'; }
+      var i = st.info || {}, unit = (rowsFor(a).rows[0]||{}).unit || '';
+      var line = blank(i.t) && blank(i.r) ? 'ไม่มีเป้ารอบ '+QN[qi] : QN[qi]+' ผล '+(blank(i.r)?'—':esc(i.r))+' / เป้า '+(blank(i.t)?'—':esc(i.t))+' '+esc(unit);
+      var lvl = st.level==='province' ? ' · ระดับจังหวัด' : (st.level==='all' ? ' · ระดับเขต' : '');
+      var badge = a.flag==='ยกเลิก' ? chip('bad','ยกเลิก') : (st.status==='ok'||st.status==='low') && !blank(i.score) ? chip(st.status, i.score) : chip(st.status);
+      block += '<div class="row" onclick="openAct('+D.sheets.indexOf(s)+','+s.activities.indexOf(a)+',\'detail\')"><div class="t"><div>'+esc(a.code)+' '+esc(a.title.length>90?a.title.slice(0,90)+'…':a.title)+'</div><div class="small">'+line+lvl+(i.conflict?' · <b style="color:var(--bad)">ต้นฉบับเปลี่ยน</b>':'')+'</div></div>'+badge+'</div>';
+      n++;
+    });
+    if (block) h += (ST.sheet && !term ? '' : '<div class="sec" style="font-size:14px;color:var(--pea)">'+esc(s.name)+'</div>') + block.replace(/^<\/div>/,'') + '</div>';
+  });
+  return n ? h : '<div class="card muted">ไม่พบกิจกรรมตามเงื่อนไข</div>';
+}
+
+function viewDetail(){
+  var s = findSheet(ST.sheet), a = findAct(s, ST.act), qi = ST.q-1;
+  if (!a) return '<div class="card">ไม่พบกิจกรรม (ต้นฉบับอาจเปลี่ยนชื่อ) <button class="btn" onclick="go(\'home\')">กลับหน้าแรก</button></div>';
+  var h = '<div class="back" onclick="history.back()">‹ '+esc(a.code)+'</div>';
+  h += '<div class="card"><div style="font-weight:500">'+esc(a.code)+' '+esc(a.title)+(a.flag?' '+chip(a.flag==='ยกเลิก'?'bad':'mine',a.flag):'')+'</div>';
+  if (a.plan) h += '<div class="small" style="margin-top:4px">'+esc(a.plan)+'</div>';
+  if (a.desc.length) h += '<ul class="desc">'+a.desc.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul>';
+  h += '<div class="small" style="margin-top:6px">ผู้รับผิดชอบ: '+esc(a.resp||'—')+(a.doer?' · ผู้ปฏิบัติ: '+esc(a.doer):'')+'</div>';
+  h += '<div class="small muted">ชีต '+esc(s.name)+' แถว '+a.row+'</div></div>';
+
+  var rf = rowsFor(a);
+  rf.rows.forEach(function(r){
+    h += '<div class="card">'+(r.group?'<div style="font-size:13.5px;font-weight:500;margin-bottom:2px">'+esc(r.group)+'</div>':'')+'<div class="small" style="margin-bottom:4px">'+esc(r.label)+(r.unit?' · หน่วย '+esc(r.unit):'')+(rf.level==='province'?' (ระดับจังหวัด)':rf.level==='all'?' (ระดับเขต)':'')+'</div>';
+    h += '<table class="q"><tr><th></th><th>เป้า</th><th>ผล</th><th>คะแนน</th></tr>';
+    r.q.forEach(function(q,i){
+      var c = cellInfo(a, r, i);
+      var res = blank(c.r) ? '<span class="muted">—</span>' : esc(c.r);
+      if (c.mine) res = '<span class="chip mine">'+esc(c.r)+'</span>';
+      var sc = c.mine ? '<span class="small">รอต้นฉบับ</span>' : (blank(q.score)||blank(q.r) ? '—' : '<span style="color:var(--'+(c.status==='low'?'low':'ok')+')">'+esc(q.score)+'</span>'+(blank(q.full)||q.full==='1.00'?'':'/'+esc(q.full)));
+      h += '<tr class="'+(i===qi?'cur':'')+'"><td>'+QN[i]+(q.note?' <span class="chip none">'+esc(q.note)+'</span>':'')+'</td><td>'+(blank(q.t)?'—':esc(q.t))+'</td><td>'+res+'</td><td>'+sc+'</td></tr>';
+      if (c.mine) h += '<tr><td colspan="4" class="small" style="text-align:left">'+(c.conflict?'<b style="color:var(--bad)">ต้นฉบับตอนนี้ = '+(blank(q.r)?'ว่าง':esc(q.r))+'</b> (ตอนเราบันทึก = '+(blank(c.ov.srcAtEdit)?'ว่าง':esc(c.ov.srcAtEdit))+') · ':'ต้นฉบับ: '+(blank(q.r)?'ว่าง':esc(q.r))+' · ')+'บันทึก '+esc(c.ov.at)+(c.ov.note?'<br>'+linkify(c.ov.note):'')+'</td></tr>';
+    });
+    h += '</table>';
+    if (r.scope==='office') h += '<button class="btn primary" onclick="openAct('+D.sheets.indexOf(s)+','+s.activities.indexOf(a)+',\'edit\','+a.rows.indexOf(r)+')">✎ บันทึกผล '+QN[qi]+' ของ '+esc(ST.office)+'</button>';
+    h += '</div>';
+  });
+
+  var g0 = rf.level==='office' ? rf.rows[0].group : null;
+  var others = a.rows.filter(function(r){return r.scope==='office' && (g0===null || r.group===g0);});
+  if (others.length > 1) {
+    var vals = others.map(function(r){ var c=cellInfo(a,r,qi); return { o:r.office, v:num(c.r), raw:c.r, mine:c.mine }; });
+    var max = Math.max.apply(null, vals.map(function(x){return Math.abs(x.v||0);}).concat([1e-9]));
+    vals.sort(function(x,y){return (y.v==null?-1e18:y.v)-(x.v==null?-1e18:x.v);});
+    h += '<div class="sec">เทียบ กฟฟ. ในสังกัด (ผล '+QN[qi]+')</div><div class="card"><div class="cmp">';
+    vals.forEach(function(x){
+      var w = x.v==null ? 0 : Math.max(2, Math.round(Math.abs(x.v)/max*100));
+      h += '<span style="'+(x.o===ST.office?'font-weight:600':'')+'">'+esc(x.o.replace('กฟส.',''))+'</span><div class="b'+(x.o===ST.office?' me':'')+'" style="width:'+w+'%"></div><span style="text-align:right">'+(x.v==null?'—':esc(x.raw))+'</span>';
+    });
+    h += '</div><div class="small" style="margin-top:6px">บางตัวชี้วัด (เช่น SAIFI/SAIDI) ค่าน้อยคือดี ให้ดูคะแนนประกอบ</div></div>';
+  }
+  var extra = a.rows.filter(function(r){return rf.rows.indexOf(r)<0 && r.scope!=='office';});
+  if (extra.length) {
+    h += '<div class="sec">แถวอื่นในกิจกรรมนี้</div><div class="card"><table class="q"><tr><th></th>'+QN.map(function(q){return '<th>'+q+'</th>';}).join('')+'</tr>';
+    extra.forEach(function(r){ h += '<tr><td style="max-width:120px">'+esc(r.label)+'</td>'+r.q.map(function(q){return '<td>'+(blank(q.t)?'—':esc(q.t))+(blank(q.r)?'':'<br><span class="small">ผล '+esc(q.r)+'</span>')+'</td>';}).join('')+'</tr>'; });
+    h += '</table></div>';
+  }
+  return h;
+}
+function linkify(t){ return esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">เปิดลิงก์</a>'); }
+
+function viewEdit(){
+  var s = findSheet(ST.sheet), a = findAct(s, ST.act), qi = ST.q-1;
+  var r = a && a.rows[ST.ri];
+  if (!r || r.scope!=='office' || r.office!==ST.office) return '<div class="card">ไม่มีแถวของ '+esc(ST.office)+' ในกิจกรรมนี้ <button class="btn" onclick="history.back()">กลับ</button></div>';
+  var q = r.q[qi], o = OV[ovKey(a, r, qi)];
+  var h = '<div class="back" onclick="history.back()">✕ บันทึกผล '+QN[qi]+' · '+esc(a.code)+'</div>';
+  h += '<div class="card">'+(r.group?'<div style="font-weight:500">'+esc(r.group)+'</div>':'')+'<div class="small">'+esc(ST.office)+' · หน่วย '+esc(r.unit||'—')+' · เป้า '+(blank(q.t)?'—':esc(q.t))+'</div>';
+  h += '<div class="small">ค่าในต้นฉบับตอนนี้: <b>'+(blank(q.r)?'ว่าง':esc(q.r))+'</b>'+(blank(q.score)||blank(q.r)?'':' · คะแนน '+esc(q.score))+'</div>';
+  h += '<label class="f" for="v">ผลการดำเนินงาน</label><input class="f" id="v" inputmode="decimal" placeholder="'+(blank(q.t)?'0':esc(q.t))+'" value="'+esc(o?o.value:'')+'" oninput="hint()">';
+  h += '<div class="err" id="verr"></div><div class="small" id="hint"></div>';
+  h += '<label class="f" for="n">หมายเหตุ / ลิงก์หลักฐาน</label><textarea class="f" id="n" rows="3" placeholder="ลิงก์ Google Drive หรือคำอธิบาย">'+esc(o?o.note:'')+'</textarea>';
+  if (D.needPin) h += '<label class="f" for="pin">PIN</label><input class="f" id="pin" type="password" inputmode="numeric" value="'+esc(sessionPin())+'">';
+  h += '<div class="note mine">🔒 บันทึกในไฟล์ของเราเท่านั้น ไม่แตะต้นฉบับ · คะแนนจริงดูจากต้นฉบับหลังมีการรายงาน</div>';
+  h += '<button class="btn primary" id="save" onclick="save()">บันทึก</button>';
+  if (o) h += '<button class="btn danger" onclick="removeOv()">ลบค่าของเรา (กลับไปใช้ค่าต้นฉบับ)</button>';
+  h += '</div>';
+  setTimeout(hint, 0);
+  return h;
+}
+function sessionPin(){ try{return sessionStorage.getItem('k04pin')||'';}catch(e){return '';} }
+function hint(){
+  var el=document.getElementById('v'); if(!el) return;
+  var s=findSheet(ST.sheet), a=findAct(s,ST.act), r=a.rows[ST.ri], q=r.q[ST.q-1];
+  var v=num(el.value), t=num(q.t);
+  document.getElementById('verr').textContent='';
+  document.getElementById('hint').textContent = (v!==null && t!==null && t!==0) ? 'ผล ÷ เป้า = '+(v/t).toFixed(2)+' (ประมาณการ ไม่ใช่คะแนนทางการ)' : '';
+}
+function save(){
+  var s=findSheet(ST.sheet), a=findAct(s,ST.act), qi=ST.q-1;
+  var r=a.rows[ST.ri];
+  var v=document.getElementById('v').value.trim().replace(/,/g,'');
+  var err=document.getElementById('verr');
+  if (v==='') { err.textContent='กรอกผลก่อนบันทึก'; return; }
+  if (!/^-?\d+(\.\d+)?$/.test(v)) { err.textContent='ใส่เป็นตัวเลข เช่น 24.5'; return; }
+  var pinEl=document.getElementById('pin'), pin=pinEl?pinEl.value:'';
+  if (D.needPin && !pin) { err.textContent='ใส่ PIN ก่อน'; return; }
+  var btn=document.getElementById('save'); btn.disabled=true; btn.textContent='กำลังบันทึก…';
+  apiPost({ action:'save', sheet:s.name, actKey:a.key, gk:r.gk||'', group:r.group||'', code:a.code, title:a.title, office:r.office, q:ST.q, value:v,
+    note:document.getElementById('n').value, srcValue:r.q[qi].r, pin:pin, by:myName() }).then(function(res){
+    OV[res.key]=res.rec; D.overrides=OV; lsSet(LS_KEY,D);
+    try{ if(pin) sessionStorage.setItem('k04pin',pin);}catch(e){}
+    toast('บันทึกแล้ว'); history.back();
+  }).catch(function(e){ btn.disabled=false; btn.textContent='บันทึก'; err.textContent=e.message; });
+}
+function removeOv(){
+  var s=findSheet(ST.sheet), a=findAct(s,ST.act), key=ovKey(a,a.rows[ST.ri],ST.q-1);
+  if (!confirm('ลบค่าที่เราบันทึกไว้ของ '+QN[ST.q-1]+' ?')) return;
+  var pinEl=document.getElementById('pin'), pin=pinEl?pinEl.value:'';
+  apiPost({ action:'delete', key:key, pin:pin }).then(function(){ delete OV[key]; lsSet(LS_KEY,D); toast('ลบแล้ว'); history.back(); })
+    .catch(function(e){ document.getElementById('verr').textContent=e.message; });
+}
+
+document.getElementById('office').onchange=function(){ ST.office=this.value; lsSet(LS_PREF,{office:ST.office}); render(); };
+document.getElementById('btnSync').onclick=function(){
+  var pin = D && D.needPin ? (sessionPin() || prompt('PIN')) : '';
+  if (D && D.needPin && !pin) return;
+  toast('กำลังเช็กต้นฉบับ…');
+  apiPost({ action:'sync', pin:pin }).then(function(r){ toast(r.status==='unchanged'?'ต้นฉบับยังไม่เปลี่ยน':'ซิงค์แล้ว'); load(); })
+    .catch(function(e){ toast('ซิงค์ไม่สำเร็จ: '+e.message); });
+};
+history.replaceState({view:'home'},'');
+load();
+</script>
+</body>
+</html>
