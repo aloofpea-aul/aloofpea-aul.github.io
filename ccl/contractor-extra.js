@@ -164,6 +164,14 @@
   wrap('switchMainTab', function (t) { syncNav(t); });
   wrap('openUpdateSheet', function () { progressChips(); });
   wrap('updateBadges', function () { if (window._curTab === 'dashboard' && typeof renderDashboard === 'function') renderDashboard(); syncNav(window._curTab || 'all'); });
+  // เช็กการแจ้งเตือนทุก 2 นาที (เดิม 30 วินาที) และหยุดเช็กเมื่อไม่ได้เปิดหน้าจออยู่ — ลดภาระหลังบ้าน เปิดกลับมาเช็กทันที
+  window.startNotificationPolling = function () {
+    if (window._notifInterval) clearInterval(window._notifInterval);
+    window._notifInterval = setInterval(function () { if (document.visibilityState === 'visible') checkNotifications(); }, 120000);
+  };
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && window._user && window._notifInterval) { try { checkNotifications(); } catch (e) {} }
+  });
   var firstLoad = true;
   wrap('loadJobs', function () { setHeader(); buildNav(); if (firstLoad) { firstLoad = false; switchMainTab('dashboard'); } });
 
