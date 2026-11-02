@@ -1817,6 +1817,7 @@ function signPage(key,data,next,d,cfg,part,rp,sg,OL){
     <div>และความพร้อมยานพาหนะ,เครื่องมือ/เครื่องใช้แก้ไฟฟ้าขัดข้อง</div>
     <div style="display:flex;justify-content:space-between"><div><span class="bx ${ins.ready===true?'on':''}" style="margin-left:0"></span>พร้อม ${bx(ins.ready===false)}ไม่พร้อม${ins.notready?T(ins.notready):dots(40)}</div><div class="sig" style="width:75mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${esc(String(sg.name||''))||dots(48)} )<br>${sgT(sg.title||'')}</div></div>
     <div class="sig" style="width:80mm;margin-left:10mm;margin-top:-4mm;text-align:center">(ลงชื่อ) ..............................................<br>( ${inspName?esc(inspName):dots(48)} )<br>ผู้ตรวจสอบเวรฯ</div>
+    <div style="position:absolute;left:18mm;bottom:6mm;font-size:14pt">บษ.๐๕ ร๕๙</div>
   </div></div>`;
 }
 async function monthReports(key){
