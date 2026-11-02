@@ -104,7 +104,8 @@
   }
 
   // ───── เปิดฟอร์ม ─────
-  function open(jobId) {
+  function open(jobId, opts) {
+    opts = opts || {};
     var job = jobs().find(function (j) { return String(j.id) === String(jobId); });
     if (!job) { if (window.Swal) Swal.fire({ icon: 'error', title: 'ไม่พบงาน' }); return; }
     css();
@@ -112,13 +113,14 @@
     run().withSuccessHandler(function (r) {
       var raw = (r && r.data) || '{}', obj = {};
       try { obj = JSON.parse(raw) || {}; } catch (e) { obj = {}; }
-      init(job, obj); render();
+      init(job, obj, opts); render();
     }).withFailureHandler(function (e) {
       shell('<div class="sx-res ng">โหลดข้อมูลไม่สำเร็จ<small>' + esc(e && e.message || e) + '</small></div>', job, '');
     }).getStdFormData(job.id);
   }
 
-  function init(job, obj) {
+  function init(job, obj, opts) {
+    opts = opts || {};
     var it = items(), data = {}, meta = obj._meta || {}, rounds = obj._rounds || [];
     SEC.forEach(function (s) {
       it[s.k].forEach(function (_, i) {
@@ -143,7 +145,7 @@
     var recheck = !!(meta.draft && meta.recheck);          // ร่างของการตรวจซ้ำ → ทำต่อรอบเดิม
     var fails = recheck ? (meta.recheckKeys || []) : [];
     var newRound = false;
-    if (!meta.draft && last === 'fail') {                    // ตรวจไม่ผ่านแล้ว → เริ่มตรวจซ้ำรอบใหม่
+    if (!opts.view && !meta.draft && last === 'fail') {                    // ตรวจไม่ผ่านแล้ว → เริ่มตรวจซ้ำรอบใหม่
       fails = Object.keys(data).filter(function (k) { return data[k].result === 'fail'; });
       if (fails.length) {
         recheck = true; newRound = true; round = (meta.round || rounds.length || 1) + 1;
@@ -159,6 +161,20 @@
     if (!m.jobNo) m.jobNo = job.jobIds || '';
     if (!m.supervisor) m.supervisor = job.assignee || '';
     if (!m.supSign) m.supSign = m.supervisor;
+    // ข้อมูลรุ่นเก่าไม่มีชื่อผู้ตรวจ/วันที่ในฟอร์ม → อ่านจากประวัติงาน ("ผู้ตรวจ: X · วันที่: Y")
+    if (!newRound && (!m.inspector || !m.inspDate)) {
+      var le = (job.jobTimeline || []).slice().reverse().find(function (h) { return h.status === 'ตรวจมาตรฐาน'; });
+      if (le && le.details) {
+        var pi = /ผู้ตรวจ:\s*([^·]+)/.exec(le.details), pd = /วันที่:\s*([^·\s]+)/.exec(le.details);
+        if (!m.inspector && pi) m.inspector = pi[1].trim();
+        if (!m.inspDate && pd) m.inspDate = pd[1].trim();
+      }
+    }
+    if (opts.view) {   // ดูอย่างเดียว: ไม่เติมค่าที่ไม่มีจริง
+      S = { job: job, data: data, meta: m, sections: sections, rounds: rounds, round: round, recheck: false, fails: [],
+        lastResult: last, view: 'ro', ro: true, showAll: true, saving: false, dirty: false };
+      return;
+    }
     if (!m.inspDate) m.inspDate = today();
     if (!m.supDate) m.supDate = today();
     if (!m.inspector) {
@@ -170,7 +186,7 @@
     if (recheck && !m.fixSign) { m.fixSign = m.inspector; m.fixPosition = m.inspPosition; }
     if (recheck && !m.fixDate) m.fixDate = m.inspDate;
     S = { job: job, data: data, meta: m, sections: sections, rounds: rounds, round: round, recheck: recheck, fails: fails,
-      lastResult: last, view: 'items', showAll: !recheck, saving: false, dirty: false };
+      lastResult: last, view: opts.view ? 'ro' : 'items', ro: !!opts.view, showAll: !recheck, saving: false, dirty: false };
   }
 
   // ───── วาดหน้าจอ ─────
@@ -181,8 +197,8 @@
     var sub = job ? esc((job.receiveNo || '-') + ' · ' + (job.jobName || '')) : '';
     var rd = S && S.job === job ? (S.recheck ? ' · ตรวจซ้ำรอบที่ ' + S.round : (S.round > 1 ? ' · รอบที่ ' + S.round : '')) : '';
     box.innerHTML = '<div class="sx-box" role="dialog" aria-label="ตรวจมาตรฐาน">' +
-      '<div class="sx-hd"><i class="fa-solid fa-star-half-stroke" style="font-size:18px"></i><div style="flex:1;min-width:0"><h3>ตรวจมาตรฐาน' + esc(rd) + esc(q) + '</h3><small>' + sub + '</small></div>' +
-      (S && S.job === job && hasAnything() ? '<button class="sx-ic" data-a="print" title="พิมพ์ใบตรวจ" aria-label="พิมพ์"><i class="fa-solid fa-print"></i></button>' : '') +
+      '<div class="sx-hd"><i class="fa-solid fa-star-half-stroke" style="font-size:18px"></i><div style="flex:1;min-width:0"><h3>' + (S && S.ro ? 'ใบตรวจมาตรฐาน (ดูอย่างเดียว)' : 'ตรวจมาตรฐาน' + esc(rd) + esc(q)) + '</h3><small>' + sub + '</small></div>' +
+      (S && S.job === job && !S.ro && hasAnything() ? '<button class="sx-ic" data-a="print" title="พิมพ์ใบตรวจ" aria-label="พิมพ์"><i class="fa-solid fa-print"></i></button>' : '') +
       '<button class="sx-ic" data-a="close" title="ปิด" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button></div>' +
       '<div class="sx-bd" id="sxBody">' + body + '</div>' + (foot ? '<div class="sx-ft">' + foot + '</div>' : '') + '</div>';
     box.onclick = onClick; box.oninput = onInput; box.onchange = onChange;
@@ -206,7 +222,7 @@
   function render() {
     if (!S) return;
     var bd = $('sxBody'), keepTop = bd ? bd.scrollTop : 0;
-    if (S.view === 'sum') renderSum(); else renderItems();
+    if (S.view === 'ro') renderView(); else if (S.view === 'sum') renderSum(); else renderItems();
     var nb = $('sxBody'); if (nb && S._keep) nb.scrollTop = keepTop; S._keep = false;
   }
 
@@ -286,6 +302,42 @@
     if (!showRem && r !== 'fail') h += '<button class="sx-link" data-a="rem" data-k="' + k + '">+ หมายเหตุ</button>';
     h += '</div></div>';
     return h;
+  }
+
+  // ───── ดูอย่างเดียว (งานที่ส่งปิดงาน/ปิดงานแล้ว) ─────
+  function renderView() {
+    var it = items(), m = S.meta, h = '', last = S.lastResult;
+    var stdLog = (S.job.jobTimeline || []).filter(function (x) { return x.status === 'ตรวจมาตรฐาน'; });
+    if (last === 'pass') h += '<div class="sx-res ok"><i class="fa-solid fa-circle-check"></i> ผ่านการตรวจมาตรฐาน' + (S.round > 1 ? ' (ตรวจซ้ำรอบที่ ' + S.round + ')' : '') + '<small>ผู้ตรวจ ' + esc(m.inspector || '-') + ' · ' + esc(thDate(m.inspDate) || '-') + '</small></div>';
+    else if (last === 'fail') h += '<div class="sx-res ng"><i class="fa-solid fa-circle-xmark"></i> ไม่ผ่านการตรวจมาตรฐาน<small>ผู้ตรวจ ' + esc(m.inspector || '-') + ' · ' + esc(thDate(m.inspDate) || '-') + '</small></div>';
+    else h += '<div class="sx-res wait">ยังไม่มีผลการตรวจมาตรฐาน</div>';
+    if (!hasAnything()) {
+      h += '<div class="sx-card"><div class="sx-lb">งานนี้บันทึกแบบสั้น (มีเฉพาะผลรวม ไม่มีผลรายข้อ)</div>' +
+        (stdLog.length ? stdLog.map(function (x) { return '<div class="sx-hist">' + esc(thDate(x.timestamp)) + ' · ' + esc(x.details || '') + '</div>'; }).join('') : '<div class="sx-note">ไม่พบประวัติ</div>') + '</div>';
+      shell(h, S.job, '<button class="sx-btn" data-a="close">ปิด</button>');
+      return;
+    }
+    var info = [['หมายเลขงาน', m.jobNo], ['อนุมัติเลขที่', m.approveNo], ['ผู้ควบคุมงาน', m.supervisor], ['สถานี/ฟีดเดอร์', [m.station, m.feeder].filter(Boolean).join(' / ')], ['ประเภท', m.jobType === 'self' ? 'กฟภ.ดำเนินการ' : m.jobType === 'contractor' ? 'งานจ้างฯบริษัท' : '']]
+      .filter(function (x) { return x[1]; });
+    if (info.length) h += '<div class="sx-card">' + info.map(function (x) { return '<div style="display:flex;gap:8px;font-size:13px;padding:2px 0"><span style="color:#64748b;min-width:110px">' + x[0] + '</span><span>' + esc(x[1]) + '</span></div>'; }).join('') + '</div>';
+    if (S.rounds.length) h += '<div class="sx-card"><div class="sx-lb">ประวัติการตรวจ</div>' + S.rounds.map(function (r) {
+      return '<div class="sx-hist">รอบที่ ' + r.round + ' · ' + esc(thDate(r.date)) + ' · ' + esc(r.inspector || '') + ' · <b style="color:' + (r.result === 'pass' ? '#15803d' : '#b91c1c') + '">' + (r.result === 'pass' ? 'ผ่าน' : 'ไม่ผ่าน') + '</b>' +
+        ((r.fails || []).length ? '<div>' + r.fails.map(function (f) { return '• ' + esc(f.label) + (f.detail ? ' — ' + esc(f.detail) : ''); }).join('<br>') + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+    var SYM = { pass: '<b style="color:#15803d">✓ ถูกต้อง</b>', fail: '<b style="color:#b91c1c">✗ ต้องแก้ไข</b>', na: '<span style="color:#64748b">— ไม่มี</span>' };
+    SEC.forEach(function (s) {
+      if (!S.sections[s.k]) return;
+      h += '<div class="sx-sec"><b>' + s.t + '</b></div><div class="sx-card" style="padding:4px 12px">';
+      it[s.k].forEach(function (t, i) {
+        var d = S.data[s.k + '_' + i];
+        h += '<div style="display:flex;gap:10px;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px"><div style="min-width:0">' + esc(title1(t)) +
+          (d.detail ? '<div class="sx-note" style="color:#b91c1c">' + esc(d.detail) + '</div>' : '') + (d.remark ? '<div class="sx-note">' + esc(d.remark) + '</div>' : '') +
+          (d.photos.length ? '<div class="sx-ph" style="margin-top:4px">' + d.photos.map(function (p) { return '<a href="' + esc(p.fileUrl) + '" target="_blank" rel="noopener"><img alt="รูป" src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(p.fileId) + '&sz=w160" onerror="this.style.display=\'none\'"></a>'; }).join('') + '</div>' : '') +
+          '</div><div style="white-space:nowrap;text-align:right">' + (SYM[d.result] || '<span style="color:#94a3b8">-</span>') + (d.fixed ? '<div class="sx-note" style="color:#15803d">แก้ไขแล้ว ' + esc(thDateShort(d.fixed)) + '</div>' : '') + '</div></div>';
+      });
+      h += '</div>';
+    });
+    shell(h, S.job, '<button class="sx-btn" data-a="close">ปิด</button><button class="sx-btn blue" data-a="print"><i class="fa-solid fa-print"></i> พิมพ์ใบตรวจ</button>');
   }
 
   function renderSum() {
@@ -564,7 +616,32 @@
   // ───── เชื่อมกับของเดิม ─────
   window.openStdFormModal = open;
   window.standardInspectJob = open;
-  window.cclStd = { open: open, close: close };
+  window.cclStd = { open: open, close: close, view: function (id) { open(id, { view: true }); } };
+
+  // ปุ่ม "ใบตรวจมาตรฐาน" ในหน้า ปิดงาน (รอปิดงาน / ปิดงานแล้ว) — ดูและพิมพ์ย้อนหลังได้
+  function decorate(tb) {
+    if (!tb) return;
+    Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) {
+      if (tr.querySelector('.sx-view')) return;
+      var b = tr.querySelector('button[onclick*="completeJob("],button[onclick*="openDetailModal("]'); if (!b) return;
+      var mm = /\((\d+)\)/.exec(b.getAttribute('onclick') || ''); if (!mm) return;
+      var job = jobs().find(function (j) { return String(j.id) === mm[1]; });
+      if (!job || !(job.jobTimeline || []).some(function (x) { return x.status === 'ตรวจมาตรฐาน'; })) return;
+      var v = document.createElement('button'); v.type = 'button'; v.className = 'sx-view';
+      v.innerHTML = '<i class="fa-solid fa-star-half-stroke"></i> ใบตรวจมาตรฐาน';
+      v.style.cssText = 'display:block;width:100%;margin-top:4px;padding:5px 8px;border-radius:6px;border:1px solid #5eead4;background:#f0fdfa;color:#0f766e;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap';
+      v.addEventListener('click', function (e) { e.stopPropagation(); open(job.id, { view: true }); });
+      b.parentNode.appendChild(v);
+    });
+  }
+  function watch() {
+    ['closeTableBody', 'completedTableBody'].forEach(function (id) {
+      var tb = $(id); if (!tb || tb.__sx) return; tb.__sx = true;
+      new MutationObserver(function () { decorate(tb); }).observe(tb, { childList: true });
+      decorate(tb);
+    });
+  }
+  watch(); document.addEventListener('DOMContentLoaded', watch);
 
   // แผนที่ตรวจรับ: ปุ่ม "ตรวจมาตรฐาน" เดิมแค่ขึ้นว่าสำเร็จแต่ไม่ได้บันทึกอะไร → เปิดฟอร์มตรวจทีละงานตามลำดับที่เลือก
   function hookMap() {
