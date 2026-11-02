@@ -113,16 +113,18 @@ s = s[:idx] + AUTO + s[idx + len('</body>'):]
 # ชั้นปรับหน้าจอมือถือ/iPad (ccl/mobile.css + ccl/mobile.js)
 s = s.replace('<meta name="viewport" content="width=device-width, initial-scale=1.0">', '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">', 1)
 _i = s.index('</head>'); s = s[:_i] + '<link rel="stylesheet" href="mobile.css?v=2">\n' + s[_i:]
-_j = s.rindex('</body>'); s = s[:_j] + '<script src="mobile.js?v=2"></script>\n<script src="branch.js?v=3"></script>\n' + s[_j:]
+_j = s.rindex('</body>'); s = s[:_j] + '<script src="mobile.js?v=3"></script>\n<script src="branch.js?v=3"></script>\n' + s[_j:]
 # Tailwind แบบสร้างไว้ล่วงหน้า (ccl/tw.css) แทน CDN ที่ต้องประมวลผลในเบราว์เซอร์ทุกครั้ง
 _tw = '<script src="https://cdn.tailwindcss.com"></script>'
 assert s.count(_tw) == 1
 s = s.replace(_tw, '<link rel="stylesheet" href="tw.css?v=1">', 1)
-s = s.replace('<script src="mobile.js?v=2"></script>', '<script src="perf.js?v=1"></script>\n<script src="mobile.js?v=2"></script>', 1)
+s = s.replace('<script src="mobile.js?v=3"></script>', '<script src="perf.js?v=1"></script>\n<script src="mobile.js?v=3"></script>', 1)
 # ส่วนรับข้อมูลจากระบบสำรวจงานก่อสร้าง (?import=1) — อยู่ใน ccl/gas/import-block.html
 import os
 _blk = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'import-block.html')
 if not os.path.exists(_blk): _blk = '/home/claude/aloofpea-aul.github.io/ccl/gas/import-block.html'
 _j = s.rindex('</body>'); s = s[:_j] + open(_blk, encoding='utf-8').read() + s[_j:]
+# ติดตั้งเป็นแอป (PWA)
+s = s.replace('<link rel="stylesheet" href="tw.css?v=1">', '<link rel="stylesheet" href="tw.css?v=1">\n  <link rel="manifest" href="manifest.webmanifest">\n  <meta name="theme-color" content="#0D1B4B">\n  <link rel="apple-touch-icon" href="apple-touch-icon.png">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-title" content="CCL">\n  <script src="pwa.js?v=1"></script>', 1)
 open(dst, 'w', encoding='utf-8').write(s)
 print('ok', len(s))

@@ -127,10 +127,12 @@
         '<div class="row"><span>ชื่อผู้ใช้</span><b>' + esc(u.username) + '</b></div>' +
         '<button type="button" class="ct-btn" id="ctPw" style="background:#E0F2F1;color:#00695C"><i class="fa-solid fa-key"></i> เปลี่ยนรหัสผ่าน</button>' +
         '<button type="button" class="ct-btn" id="ctReload" style="background:#F1F5F9;color:#334155"><i class="fa-solid fa-rotate-right"></i> โหลดข้อมูลใหม่</button>' +
+        (window.cclPwa && window.cclPwa.available() ? '<button type="button" class="ct-btn" id="ctInstall" style="background:#E0F2F1;color:#00695C"><i class="fa-solid fa-mobile-screen-button"></i> ติดตั้งเป็นแอปบนมือถือ</button>' : '') +
         '<button type="button" class="ct-btn" id="ctOut" style="background:#FEE2E2;color:#B91C1C"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button></div>',
       didOpen: function () {
         $('ctPw').onclick = changePassword;
         $('ctReload').onclick = function () { Swal.close(); loadJobs(); };
+        if ($('ctInstall')) $('ctInstall').onclick = function () { Swal.close(); setTimeout(function () { window.cclPwa.install(); }, 200); };
         $('ctOut').onclick = function () { Swal.close(); setTimeout(doLogout, 150); };
       },
       willClose: function () { syncNav(window._curTab || 'all'); }

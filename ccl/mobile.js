@@ -73,6 +73,7 @@
     html += '</div><div class="ccl-sheet-title">อื่นๆ</div><div class="ccl-sheet-grid">' +
       '<a href="/index.html"><i class="fa-solid fa-house"></i><span>ศูนย์รวมงาน</span></a>' +
       '<button type="button" data-act="reload"><i class="fa-solid fa-rotate-right"></i><span>โหลดใหม่</span></button>' +
+      (window.cclPwa && window.cclPwa.available() ? '<button type="button" data-act="install"><i class="fa-solid fa-mobile-screen-button"></i><span>ติดตั้งเป็นแอป</span></button>' : '') +
       '<button type="button" data-act="logout" class="ccl-danger"><i class="fa-solid fa-power-off"></i><span>ออกจากระบบ</span></button>' +
       '</div>';
     sh.innerHTML = html;
@@ -80,6 +81,7 @@
       b.addEventListener('click', function () { closeMore(); go(b.dataset.page); });
     });
     sh.querySelector('[data-act="reload"]').addEventListener('click', function () { location.reload(); });
+    var ib = sh.querySelector('[data-act="install"]'); if (ib) ib.addEventListener('click', function () { closeMore(); window.cclPwa.install(); });
     sh.querySelector('[data-act="logout"]').addEventListener('click', function () { closeMore(); var lb = $('cclLogoutBtn'); if (lb) lb.click(); });
     sh.classList.add('open'); $('cclMoreBackdrop').classList.add('open');
     var mb = document.querySelector('#cclBottomNav [data-page="__more"]'); if (mb) mb.classList.add('on');

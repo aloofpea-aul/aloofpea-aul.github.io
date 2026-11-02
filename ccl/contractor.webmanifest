@@ -1,0 +1,18 @@
+{
+  "id": "./contractor.html",
+  "name": "Contractor Portal — PEA CCL",
+  "short_name": "ผู้รับจ้าง",
+  "description": "ระบบติดตามงานผู้รับจ้างงานก่อสร้าง PEA",
+  "start_url": "./contractor.html?source=pwa",
+  "scope": "./contractor",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F0F4F8",
+  "theme_color": "#0D2B5E",
+  "lang": "th",
+  "icons": [
+    { "src": "ct-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "ct-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "ct-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
