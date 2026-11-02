@@ -3,7 +3,7 @@
    - หน้าต่างตรวจรับ: ช่อง "วันที่ส่งมอบงาน" เดิมไม่ถูกบันทึก → บันทึกแล้ว
    - ไม่ผ่านการตรวจรับ: "หมายเหตุ (บังคับ)" เดิมหายไป → บันทึกลงประวัติงาน + แจ้งผู้รับจ้างใน Portal
    - แผนที่ตรวจรับ: ปุ่ม "ตรวจรับงาน" และ "วันส่งมอบ" เดิมขึ้นว่าสำเร็จแต่ไม่ได้บันทึก → บันทึกจริงทีละหลายงาน
-   ใช้คำสั่งหลังบ้านที่มีอยู่แล้ว (updateInspectionStatus, saveDeliveryDate, addPEAReply) */
+   หลังบ้าน: updateInspectionStatus(rowId, status, user, remarks) — remarks ใช้เมื่อไม่ผ่าน */
 (function () {
   'use strict';
 
@@ -91,10 +91,8 @@
         return p.then(function () {
           var d = v.dates[j.id], steps = Promise.resolve();
           if (d && d !== ymd(j.payDate)) steps = steps.then(function () { return call('saveDeliveryDate', j.id, d, me()); });
-          steps = steps.then(function () { return call('updateInspectionStatus', j.id, result, me()); });
-          if (result === 'ไม่ผ่านการตรวจรับ') steps = steps.then(function () {
-            return call('addPEAReply', j.id, { message: 'ไม่ผ่านการตรวจรับ' + (com.length ? ' (ประธาน: ' + chair + ')' : '') + ' — ต้องแก้ไข: ' + v.rem, peaName: me().name || '', replyTo: j.responsibleEntity || '' });
-          });
+          // หลังบ้านบันทึกสิ่งที่ต้องแก้ลงประวัติ + Portal ผู้รับจ้าง และส่ง LINE ข้อความเดียว
+          steps = steps.then(function () { return call('updateInspectionStatus', j.id, result, me(), result === 'ไม่ผ่านการตรวจรับ' ? v.rem : ''); });
           return steps.then(function () { done++; }, function (e) { errs.push((j.receiveNo || j.id) + ': ' + e.message); })
             .then(function () { var t = Swal.getTitle(); if (t) t.textContent = 'กำลังบันทึก… ' + (done + errs.length) + '/' + list.length; });
         });
