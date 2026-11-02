@@ -193,7 +193,7 @@ function migrateEmp_() {
   if (props.getProperty('MIG_EMP1')) return;
   const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
   const si = h.indexOf('short'), ei = h.indexOf('empId'), pi = h.indexOf('position'), ii = h.indexOf('inspPos');
-  const d = { 'ธวัชชัย': ['501389', 'พชง.6 กฟส.ปลายพระยา รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'],
+  const d = { 'ธวัชชัย': ['501389', 'พชง.6 รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'],
     'นทีธร': ['499491', 'ชผ.บค.กฟส.อ่าวลึก'], 'พุทธภงค์': ['511753', 'พชง.4 ผปร.กฟส.อ่าวลึก'],
     'กัมปนาทท์': ['513793', 'พชง.3 ผบค.กฟส.อ่าวลึก'], 'พงศธร': ['514400', 'พชง.3 ผปร.กฟส.อ่าวลึก'],
     'อติวิทย์': ['514601', 'พชง.3 ผปร.กฟส.อ่าวลึก'], 'สุรเชษฐ์': ['9008385', 'ชชค.กฟส.อ่าวลึก'] };
@@ -206,6 +206,15 @@ function migrateEmp_() {
   props.setProperty('MIG_EMP1', '1');
 }
 
+/** ตำแหน่งธวัชชัยใหม่ (หผ.ปร. แจ้ง 2 พ.ย. 69) — ครั้งเดียว */
+function migrateEmp2_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('MIG_EMP2')) return;
+  const c = peopleCols_(), sh = c.sh, h = c.h, v = sh.getDataRange().getValues();
+  const si = h.indexOf('short'), pi = h.indexOf('position');
+  for (let i = 1; i < v.length; i++) if (v[i][si] === 'ธวัชชัย') { sh.getRange(i + 1, pi + 1).setValue('พชง.6 รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'); log_('system', 'แก้ตำแหน่ง', '', 'ธวัชชัย → พชง.6 รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'); }
+  props.setProperty('MIG_EMP2', '1');
+}
 /** คืนตาราง ต.ค. 69 ของพุทธภงค์/นทีธร (คำขอถูกลบแบบไม่คืนตาราง 22 ต.ค.) — ทำเฉพาะเมื่อช่องยังเป็นแบบที่เปลี่ยนค้างไว้ */
 function fixPN2610_() {
   const props = PropertiesService.getScriptProperties();
@@ -380,7 +389,7 @@ function doGet(e) {
   try {
     const q = e.parameter || {}, a = q.action || 'bootstrap';
     if (a === 'bootstrap') {
-      try { migrateInsp_(); migrateEmp_(); migrateOut_(); fixPN2610_(); cleanSwap2610_(); } catch (e) {}
+      try { migrateInsp_(); migrateEmp_(); migrateEmp2_(); migrateOut_(); fixPN2610_(); cleanSwap2610_(); } catch (e) {}
       try { sbPairFix2610_(); } catch (e) { log_('system', 'ปรับเตรียมพร้อมย้อนหลังไม่สำเร็จ', '2026-10', String(e)); }
       const cfg = getConfig_();
       delete cfg.lineRegCode;
@@ -409,7 +418,7 @@ function doPost(e) {
   if (b.events) return lineWebhook_(b);            // มาจาก LINE
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    try { migrate_(); migrateInsp_(); migrateEmp_(); migrateOut_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
+    try { migrate_(); migrateInsp_(); migrateEmp_(); migrateEmp2_(); migrateOut_(); } catch (e) { log_('system', 'migrate error', '', String(e)); }
     // ---- รับแจ้งไฟดับ: ผู้ใช้ไฟแจ้งได้เลย · รายการ/สถานะงานต้องเป็นเจ้าหน้าที่ ----
     if (b.action === 'ticket') return json_({ ok: true, ticket: createTicket_(b) });
     if (b.action === 'tickets') return json_({ ok: true, tickets: listTickets_(b) });
@@ -648,7 +657,7 @@ function peopleCols_() {
   });
   if (added) {                                              // ค่าตั้งต้นจากเอกสารจริง (แก้ได้ที่หน้าตั้งค่า)
     const seed = { 'ราชภัฎ': ['515597', 'พชง.3 ผบค.กฟส.อ่าวลึก'], 'กลวัชร': ['509913', 'พชง.5 ผบค.กฟส.อ่าวลึก'],
-      'ธวัชชัย': ['', 'พชง.6 กฟส.ปพย. รักษาการแทน ชผ.ปร.กฟส.อล.'] };
+      'ธวัชชัย': ['', 'พชง.6 รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'] };
     const v = sh.getDataRange().getValues(), si = h.indexOf('short'), ei = h.indexOf('empId'), pi = h.indexOf('position');
     sh.getRange(2, ei + 1, Math.max(v.length - 1, 1), 1).setNumberFormat('@');
     for (let i = 1; i < v.length; i++) {
