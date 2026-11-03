@@ -36,7 +36,7 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
 /* ───────── มือถือ ───────── */
 @media (max-width: 767px) {
   html, body { overflow-x: hidden; max-width: 100%; }
-  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+  body { padding-bottom: 72px !important; }
   /* กัน iPhone ซูมเองตอนแตะช่องกรอก (ตัวอักษรเล็กกว่า 16px จะซูมค้าง ทำให้ทั้งหน้าเลื่อนซ้ายขวาได้)
      ต้องชนะคลาส .text-sm / .text-xs ... ที่ใส่ !important ไว้ จึงใช้ตัวเลือกที่เจาะจงกว่า */
   html body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(#ccl-x),
@@ -68,13 +68,13 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
   /* แถบเมนูล่าง */
   #cclBottomNav {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+    height: 64px; box-sizing: border-box;   /* สูงรวม 64 รวมพื้นที่แถบโฮม iPhone แบบเดียวกับระบบงานเวรแก้ไฟ = ชิดขอบล่าง */
     background: #fff; border-top: 1px solid #E2E8F0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -4px 16px rgba(13,27,75,0.06);
   }
   #cclBottomNav button {
-    flex: 1; height: 60px; border: 0; background: none; padding: 6px 0 4px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    flex: 1; height: 100%; border: 0; background: none; padding: max(7px, calc(13px - env(safe-area-inset-bottom, 0px) / 4)) 0 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
     color: #94A3B8; font-family: 'Sarabun', sans-serif; font-size: 11.5px; font-weight: 700;
     position: relative; -webkit-tap-highlight-color: transparent;
   }
@@ -161,8 +161,8 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
 
   /* แผนที่ตรวจรับ : แผนที่ด้านบน รายการด้านล่าง */
   #page-inspectMap {
-    height: calc(100vh - 140px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
-    height: calc(100dvh - 140px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(100vh - 140px - env(safe-area-inset-top, 0px)) !important;
+    height: calc(100dvh - 140px - env(safe-area-inset-top, 0px)) !important;
     margin: 0 !important; width: 100% !important;
   }
   #imap-list > div { padding: 10px 12px !important; }

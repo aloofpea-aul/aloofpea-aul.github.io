@@ -112,7 +112,7 @@ s = s[:idx] + AUTO + s[idx + len('</body>'):]
 
 # ชั้นปรับหน้าจอมือถือ/iPad (ccl/mobile.css + ccl/mobile.js)
 s = s.replace('<meta name="viewport" content="width=device-width, initial-scale=1.0">', '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">', 1)
-_i = s.index('</head>'); s = s[:_i] + '<link rel="stylesheet" href="mobile.css?v=3">\n' + s[_i:]
+_i = s.index('</head>'); s = s[:_i] + '<link rel="stylesheet" href="mobile.css?v=4">\n' + s[_i:]
 _j = s.rindex('</body>'); s = s[:_j] + '<script src="mobile.js?v=3"></script>\n<script src="branch.js?v=3"></script>\n' + s[_j:]
 # Tailwind แบบสร้างไว้ล่วงหน้า (ccl/tw.css) แทน CDN ที่ต้องประมวลผลในเบราว์เซอร์ทุกครั้ง
 _tw = '<script src="https://cdn.tailwindcss.com"></script>'
