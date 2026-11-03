@@ -99,6 +99,8 @@ var LS_KEY = 'k04_aoluek_cache_v1', LS_PREF = 'k04_aoluek_pref_v1';
 var QN = ['Q1', 'Q2', 'Q3', 'Q4'];
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function sameNum(a,b){ var x=num(a), y=num(b); return (x===null||y===null) ? String(a||'').trim()===String(b||'').trim() : Math.abs(x-y)<1e-9; }
+function pendingKeys(){ return Object.keys(OV).filter(function(k){ var o=OV[k]; return o && o.value!=='' && o.push!=='ส่งแล้ว' && o.push!=='คงต้นฉบับ'; }); }
 function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?null:n;}
 function blank(v){v=String(v==null?'':v).trim();return v===''||v==='-'||v==='–';}
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
@@ -140,6 +142,7 @@ function cellInfo(act, row, qi){
   var q = row.q[qi];
   var o = row.scope === 'office' ? OV[ovKey(act, row, qi)] : null;
   var info = { t:q.t, r:q.r, score:q.score, full:q.full, note:q.note, mine:false, conflict:false, status:'none' };
+  if (o && o.push === 'ส่งแล้ว' && sameNum(o.value, q.r)) o = null;   // ส่งต้นฉบับแล้วและซิงค์กลับมาตรงกัน = ใช้ค่าต้นฉบับตามปกติ
   if (o) {
     info.mine = true; info.r = o.value; info.ov = o;
     info.conflict = String(o.srcAtEdit||'') !== String(q.r||'');
@@ -190,6 +193,7 @@ function render(){
   if (ST.view==='list') el.innerHTML = viewList();
   else if (ST.view==='detail') el.innerHTML = viewDetail();
   else if (ST.view==='edit') el.innerHTML = viewEdit();
+  else if (ST.view==='push') el.innerHTML = viewPush();
   else el.innerHTML = viewHome();
 }
 function openSheet(si){ go('list', D.sheets[si].name, null); }
@@ -204,6 +208,14 @@ function countFor(s, qi){
 
 function viewHome(){
   var qi = ST.q-1, h = '';
+  var pk = pendingKeys();
+  if (pk.length) {
+    var last = pk.map(function(k){return OV[k].at||'';}).sort().pop();
+    h += '<div class="card" style="background:var(--mine-bg);border-color:#c9dbf5"><div style="font-weight:600;color:var(--mine)">☁︎ ค่าของเรารอส่งต้นฉบับ '+pk.length+' รายการ</div>'+
+      '<div class="small">บันทึกล่าสุด '+esc(last)+'</div>'+
+      '<button class="btn primary" onclick="PUSH={step:\'pin\'};go(\'push\')">ตรวจก่อนส่งต้นฉบับ</button>'+
+      '<div class="small" style="margin-top:6px">ระบบจะอ่านต้นฉบับสดๆ ตอนตรวจ ยังไม่เขียนอะไรจนกว่าจะกดยืนยัน</div></div>';
+  }
   var sm = D.summary;
   if (sm && sm.total) {
     var col = Math.min(qi, 3), label = (sm.header[col]||'').replace('ไตรมาส','Q');
@@ -285,7 +297,7 @@ function viewDetail(){
       var c = cellInfo(a, r, i);
       var res = blank(c.r) ? '<span class="muted">—</span>' : esc(c.r);
       if (c.mine) res = '<span class="chip mine">'+esc(c.r)+'</span>';
-      var sc = c.mine ? '<span class="small">รอต้นฉบับ</span>' : (blank(q.score)||blank(q.r) ? '—' : '<span style="color:var(--'+(c.status==='low'?'low':'ok')+')">'+esc(q.score)+'</span>'+(blank(q.full)||q.full==='1.00'?'':'/'+esc(q.full)));
+      var sc = c.mine ? '<span class="small">'+(c.ov.push==='ส่งแล้ว'?'ส่งแล้ว รอซิงค์':'รอส่งต้นฉบับ')+'</span>' : (blank(q.score)||blank(q.r) ? '—' : '<span style="color:var(--'+(c.status==='low'?'low':'ok')+')">'+esc(q.score)+'</span>'+(blank(q.full)||q.full==='1.00'?'':'/'+esc(q.full)));
       h += '<tr class="'+(i===qi?'cur':'')+'"><td>'+QN[i]+(q.note?' <span class="chip none">'+esc(q.note)+'</span>':'')+'</td><td>'+(blank(q.t)?'—':esc(q.t))+'</td><td>'+res+'</td><td>'+sc+'</td></tr>';
       if (c.mine) h += '<tr><td colspan="4" class="small" style="text-align:left">'+(c.conflict?'<b style="color:var(--bad)">ต้นฉบับตอนนี้ = '+(blank(q.r)?'ว่าง':esc(q.r))+'</b> (ตอนเราบันทึก = '+(blank(c.ov.srcAtEdit)?'ว่าง':esc(c.ov.srcAtEdit))+') · ':'ต้นฉบับ: '+(blank(q.r)?'ว่าง':esc(q.r))+' · ')+'บันทึก '+esc(c.ov.at)+(c.ov.note?'<br>'+linkify(c.ov.note):'')+'</td></tr>';
     });
@@ -367,6 +379,101 @@ function removeOv(){
   var pinEl=document.getElementById('pin'), pin=pinEl?pinEl.value:'';
   apiPost({ action:'delete', key:key, pin:pin }).then(function(){ delete OV[key]; lsSet(LS_KEY,D); toast('ลบแล้ว'); history.back(); })
     .catch(function(e){ document.getElementById('verr').textContent=e.message; });
+}
+
+/* ---------- ส่งค่าของเรากลับต้นฉบับ ---------- */
+var PUSH = { step:'pin' };
+function pushPin(){ try{return sessionStorage.getItem('k04pushpin')||'';}catch(e){return '';} }
+var ST_LABEL = { diff:'ไม่ตรงกัน', empty:'ช่องว่างในต้นฉบับ', same:'เท่ากันแล้ว', blocked:'ส่งไม่ได้' };
+function viewPush(){
+  var h = '<div class="back" onclick="history.back()">‹ ส่งค่าของเรากลับต้นฉบับ</div>';
+  if (PUSH.step==='pin' || PUSH.step==='loading') {
+    h += '<div class="card"><div class="small">รอส่ง '+pendingKeys().length+' รายการ · ไฟล์ต้นฉบับของ กฟจ.กระบี่</div>';
+    if (D.needPushPin) h += '<label class="f" for="ppin">PIN สำหรับส่งต้นฉบับ</label><input class="f" id="ppin" type="password" inputmode="numeric" value="'+esc(pushPin())+'">';
+    else h += '<div class="note bad">ยังไม่ได้ตั้ง PIN สำหรับส่งต้นฉบับ — ส่งไม่ได้จนกว่าจะตั้ง</div>';
+    h += '<div class="err" id="perr">'+esc(PUSH.err||'')+'</div>';
+    h += '<button class="btn primary" onclick="pushPreview()">'+(PUSH.step==='loading'?'กำลังอ่านต้นฉบับ…':'ตรวจกับต้นฉบับ')+'</button></div>';
+    return h;
+  }
+  if (PUSH.step==='review') {
+    var g = { diff:[], empty:[], same:[], blocked:[] };
+    PUSH.items.forEach(function(it){ (g[it.status]||g.blocked).push(it); });
+    var nSend = g.empty.length + g.diff.filter(function(it){return PUSH.dec[it.key]==='ours';}).length;
+    h += '<div class="small" style="margin:0 4px 8px">ตรวจกับต้นฉบับเมื่อ '+fmtDate(PUSH.checkedAt)+' · ยังไม่มีการเขียน</div>';
+    function name(it){ return '<div style="font-weight:500">'+esc(it.code)+' '+esc(String(it.title).slice(0,70))+'</div><div class="small">'+esc(it.office)+' · Q'+it.q+(it.cell?' · '+esc(it.cell):'')+(it.target?' · เป้า '+esc(it.target):'')+'</div>'; }
+    if (g.diff.length) {
+      h += '<div class="sec">ไม่ตรงกัน — เลือกค่าที่จะใช้ ('+g.diff.length+')</div><div class="card">';
+      g.diff.forEach(function(it){
+        var d = PUSH.dec[it.key]||'';
+        h += '<div class="row" style="cursor:default;display:block">'+name(it)+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">'+
+          '<div class="note '+(d==='keep'?'ok':'none')+'" style="margin:0;cursor:pointer" onclick="pushDec('+PUSH.items.indexOf(it)+',\'keep\')"><div class="small">ต้นฉบับตอนนี้</div><div style="font-size:18px;font-weight:600">'+esc(it.src)+'</div>'+
+            (it.changedSince?'<div class="small" style="color:var(--bad)">เปลี่ยนหลังเราบันทึก (เดิม '+(blank(it.srcAtEdit)?'ว่าง':esc(it.srcAtEdit))+')</div>':'')+'<div class="small">'+(d==='keep'?'✓ คงค่าต้นฉบับ':'แตะเพื่อคงค่านี้')+'</div></div>'+
+          '<div class="note '+(d==='ours'?'mine':'none')+'" style="margin:0;cursor:pointer" onclick="pushDec('+PUSH.items.indexOf(it)+',\'ours\')"><div class="small">ค่าของเรา</div><div style="font-size:18px;font-weight:600">'+esc(it.ours)+'</div>'+
+            '<div class="small">'+(d==='ours'?'✓ ใช้ค่าของเรา':'แตะเพื่อใช้ค่านี้')+'</div></div></div></div>';
+      });
+      h += '</div>';
+    }
+    if (g.empty.length) {
+      h += '<div class="sec">ช่องว่างในต้นฉบับ — จะเขียนให้ ('+g.empty.length+')</div><div class="card">';
+      g.empty.forEach(function(it){ h += '<div class="row" style="cursor:default"><div class="t">'+name(it)+'</div><b>'+esc(it.ours)+'</b></div>'; });
+      h += '</div>';
+    }
+    if (g.same.length) {
+      h += '<div class="sec">เท่ากันแล้ว — ข้าม ('+g.same.length+')</div><div class="card">';
+      g.same.forEach(function(it){ h += '<div class="row" style="cursor:default"><div class="t">'+name(it)+'</div>'+chip('ok',esc(it.src)+' = '+esc(it.ours))+'</div>'; });
+      h += '</div>';
+    }
+    if (g.blocked.length) {
+      h += '<div class="sec">ส่งไม่ได้ ('+g.blocked.length+')</div><div class="card">';
+      g.blocked.forEach(function(it){ h += '<div class="row" style="cursor:default;display:block">'+name(it)+'<div class="small" style="color:var(--bad)">'+esc(it.reason)+'</div></div>'; });
+      h += '</div>';
+    }
+    h += '<div class="err" id="perr">'+esc(PUSH.err||'')+'</div>';
+    if (g.diff.length || g.empty.length || g.same.length)
+      h += '<button class="btn primary" id="pgo" onclick="pushCommit()">'+(nSend?'ยืนยันส่ง '+nSend+' รายการ':'ยืนยัน')+'</button>';
+    h += '<button class="btn" onclick="history.back()">ยกเลิก (ไม่เขียนอะไร)</button>';
+    return h;
+  }
+  if (PUSH.step==='sending') return h + '<div class="card loading">กำลังเขียนต้นฉบับ… อย่าเพิ่งปิดหน้านี้</div>';
+  if (PUSH.step==='done') {
+    var lbl = { written:['ok','เขียนแล้ว'], same:['none','ตรงกันอยู่แล้ว'], kept:['none','คงค่าต้นฉบับ'], changed:['low','ต้นฉบับเปลี่ยน'], error:['bad','ไม่สำเร็จ'], skip:['none','ข้าม'] };
+    var byKey = {}; (PUSH.items||[]).forEach(function(it){ byKey[it.key]=it; });
+    h += '<div class="card"><div style="font-weight:600">'+(PUSH.res.wrote?'ส่งต้นฉบับแล้ว '+PUSH.res.wrote+' รายการ':'ไม่มีการเขียนต้นฉบับ')+'</div>';
+    PUSH.res.results.forEach(function(r){
+      var it = byKey[r.key]||{}, l = lbl[r.status]||['none',r.status];
+      h += '<div class="row" style="cursor:default;display:block"><div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(it.code||'')+' · '+esc(it.office||'')+' · Q'+(it.q||'')+(r.status==='written'?' → '+esc(r.after):'')+'</span>'+chip(l[0],l[1])+'</div>'+
+        (r.reason?'<div class="small" style="color:var(--bad)">'+esc(r.reason)+'</div>':'')+(r.status==='written'?'<div class="small">เดิม '+(blank(r.before)?'ว่าง':esc(r.before))+' · '+esc(r.cell)+'</div>':'')+'</div>';
+    });
+    h += '<div class="small" style="margin-top:8px">ค่าเดิมของต้นฉบับเก็บไว้ในชีต _ประวัติส่งต้นฉบับ · ไฟล์ของเราจะดึงค่าที่ส่งกลับมาในอีกราว 1-2 นาที</div>';
+    h += '<button class="btn primary" onclick="load();go(\'home\')">กลับหน้าแรก</button></div>';
+    return h;
+  }
+  return h;
+}
+function pushDec(i, d){ PUSH.dec[PUSH.items[i].key]=d; PUSH.err=''; var y=window.scrollY; render(); window.scrollTo(0,y); }
+function pushPreview(){
+  var el=document.getElementById('ppin'), pin=el?el.value.trim():'';
+  if (D.needPushPin && !pin) { PUSH.err='ใส่ PIN ก่อน'; render(); return; }
+  PUSH = { step:'loading', pin:pin }; render();
+  apiPost({ action:'pushPreview', pin:pin }).then(function(r){
+    try{ sessionStorage.setItem('k04pushpin',pin);}catch(e){}
+    PUSH = { step:'review', pin:pin, items:r.items, checkedAt:r.checkedAt, dec:{} }; render();
+  }).catch(function(e){ PUSH = { step:'pin', err:e.message }; render(); });
+}
+function pushCommit(){
+  var undecided = PUSH.items.filter(function(it){ return it.status==='diff' && !PUSH.dec[it.key]; });
+  if (undecided.length) { PUSH.err='เลือกค่าที่จะใช้ให้ครบทุกรายการที่ไม่ตรงกันก่อน ('+undecided.length+' รายการ)'; render(); return; }
+  var items = PUSH.items.filter(function(it){ return it.status!=='blocked'; }).map(function(it){
+    return { key:it.key, expect:it.src, decision: it.status==='diff' ? PUSH.dec[it.key] : (it.status==='same' ? 'same' : 'ours') };
+  });
+  var keepItems = PUSH.items; PUSH.step='sending'; render();
+  apiPost({ action:'pushCommit', pin:PUSH.pin, by:myName(), items:items }).then(function(r){
+    PUSH = { step:'done', res:r, items:keepItems };
+    r.results.forEach(function(x){ var o=OV[x.key]; if(!o) return;
+      if (x.status==='written'||x.status==='same') o.push='ส่งแล้ว'; else if (x.status==='kept') delete OV[x.key]; });
+    lsSet(LS_KEY,D); render();
+  }).catch(function(e){ PUSH.step='review'; PUSH.err=e.message; render(); });
 }
 
 document.getElementById('office').onchange=function(){ ST.office=this.value; lsSet(LS_PREF,{office:ST.office}); render(); };

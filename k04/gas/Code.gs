@@ -19,7 +19,8 @@ var CONFIG = {
 };
 
 var OVERLAY_HEADER = ['key', 'ชีต', 'รหัส', 'กิจกรรม', 'กฟฟ.', 'ไตรมาส', 'ผล (ของเรา)', 'หมายเหตุ/ลิงก์',
-  'ค่าต้นฉบับตอนบันทึก', 'ผู้บันทึก', 'เวลาบันทึก'];
+  'ค่าต้นฉบับตอนบันทึก', 'ผู้บันทึก', 'เวลาบันทึก', 'สถานะส่งต้นฉบับ', 'ค่าต้นฉบับก่อนส่ง', 'เวลาส่ง'];
+var PUSH_LOG = '_ประวัติส่งต้นฉบับ';
 
 /* ======================= ติดตั้งครั้งแรก ======================= */
 
@@ -41,8 +42,11 @@ function ensureOwnSheets_(ss) {
     ov = ss.insertSheet(CONFIG.OVERLAY);
     ov.getRange(1, 1, 1, OVERLAY_HEADER.length).setValues([OVERLAY_HEADER]).setFontWeight('bold').setBackground('#e8f0fe');
     ov.setFrozenRows(1);
-    ov.getRange('A:K').setNumberFormat('@'); // เก็บเป็นข้อความ กันตัวเลข/วันที่ถูกแปลง
   }
+  if (ov.getRange(1, 12).getDisplayValue() !== OVERLAY_HEADER[11]) {   // ชีตรุ่นแรกยังไม่มีคอลัมน์สถานะส่ง
+    ov.getRange(1, 1, 1, OVERLAY_HEADER.length).setValues([OVERLAY_HEADER]).setFontWeight('bold').setBackground('#e8f0fe');
+  }
+  ov.getRange('A:N').setNumberFormat('@'); // เก็บเป็นข้อความ กันตัวเลข/วันที่ถูกแปลง
   var lg = ss.getSheetByName(CONFIG.LOG);
   if (!lg) {
     lg = ss.insertSheet(CONFIG.LOG);
@@ -76,7 +80,7 @@ function syncFromSource(force) {
     }
     var src = SpreadsheetApp.openById(CONFIG.SRC_ID);
     var srcSheets = src.getSheets();
-    var ownNames = [CONFIG.OVERLAY, CONFIG.LOG];
+    var ownNames = [CONFIG.OVERLAY, CONFIG.LOG, PUSH_LOG];
 
     // เก็บกวาดชีตชั่วคราวที่อาจค้างจากรอบก่อน
     dst.getSheets().forEach(function (sh) {
@@ -183,6 +187,8 @@ function doPost(e) {
     if (body.action === 'save') return jsonOut_(apiSaveEntry(body));
     if (body.action === 'delete') return jsonOut_(apiDeleteEntry(body.key, body.pin));
     if (body.action === 'sync') return jsonOut_(apiSyncNow(body.pin));
+    if (body.action === 'pushPreview') return jsonOut_(apiPushPreview(body.pin));
+    if (body.action === 'pushCommit') return jsonOut_(apiPushCommit(body));
     throw new Error('ไม่รู้จักคำสั่ง ' + body.action);
   } catch (err) {
     return jsonOut_(JSON.stringify({ error: String(err && err.message || err) }));
@@ -198,6 +204,7 @@ function apiGetData() {
   var data = getParsedCached_();
   data.overrides = readOverlay_();
   data.needPin = !!PropertiesService.getScriptProperties().getProperty('EDIT_PIN');
+  data.needPushPin = !!PropertiesService.getScriptProperties().getProperty('PUSH_PIN');
   return JSON.stringify(data);
 }
 
@@ -265,8 +272,8 @@ function readOverlay_() {
   var vals = sh.getRange(2, 1, sh.getLastRow() - 1, OVERLAY_HEADER.length).getDisplayValues();
   var map = {};
   vals.forEach(function (r) {
-    if (!r[0]) return;
-    map[r[0]] = { value: r[6], note: r[7], srcAtEdit: r[8], by: r[9], at: r[10] };
+    if (!r[0] || r[11] === 'คงต้นฉบับ') return;   // เลือกใช้ค่าต้นฉบับแล้ว = ไม่ทับอีก
+    map[r[0]] = { value: r[6], note: r[7], srcAtEdit: r[8], by: r[9], at: r[10], push: r[11], before: r[12], pushedAt: r[13] };
   });
   return map;
 }
@@ -292,7 +299,7 @@ function apiSaveEntry(e) {
     var row = findOverlayRow_(sh, key);
     var rec = [key, e.sheet, e.code, (String(e.title || '').slice(0, 60) + (e.group ? ' › ' + String(e.group).slice(0, 40) : '')), e.office, 'Q' + e.q, value,
       String(e.note || '').slice(0, 1000), String(e.srcValue || ''), String(e.by || '').slice(0, 60) || 'หน้าเว็บ',
-      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm')];
+      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm'), '', '', ''];   // แก้ค่าใหม่ = ต้องส่งใหม่
     if (row) sh.getRange(row, 1, 1, rec.length).setValues([rec]);
     else sh.appendRow(rec);
     return JSON.stringify({ ok: true, key: key, rec: { value: rec[6], note: rec[7], srcAtEdit: rec[8], by: rec[9], at: rec[10] } });
@@ -323,6 +330,156 @@ function apiSyncNow(pin) {
   checkPin_(pin);
   var r = syncFromSource(false);
   return JSON.stringify(r);
+}
+
+/* ======================= ส่งค่าของเรากลับต้นฉบับ ======================= */
+/*
+ * ขั้นที่ 1 apiPushPreview: อ่านต้นฉบับสดๆ เทียบกับค่าของเราที่ยังไม่ได้ส่ง — ไม่เขียนอะไร
+ * ขั้นที่ 2 apiPushCommit : เขียนเฉพาะช่อง "ผล Qx" ที่ผู้ใช้ยืนยัน และเช็กซ้ำว่าค่าในต้นฉบับยังเท่าตอนตรวจ
+ * กันพลาด: ช่องที่เป็นสูตร/หาแถวไม่เจอ = ไม่เขียน · เก็บค่าเดิมไว้ในชีต _ประวัติส่งต้นฉบับ
+ */
+
+function checkPushPin_(pin) {
+  var need = PropertiesService.getScriptProperties().getProperty('PUSH_PIN');
+  if (!need) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับส่งต้นฉบับ');
+  if (String(pin || '') !== String(need)) throw new Error('PIN ไม่ถูกต้อง');
+}
+
+function sameNum_(a, b) {
+  var x = parseFloat(String(a).replace(/,/g, '')), y = parseFloat(String(b).replace(/,/g, ''));
+  if (isNaN(x) || isNaN(y)) return String(a).trim() === String(b).trim();
+  return Math.abs(x - y) < 1e-9;
+}
+
+/** รายการค่าของเราที่ยังต้องส่ง: [{row(ในชีตของเรา), key, sheet, code, title, office, q, gk, value, note, srcAtEdit}] */
+function pendingEntries_() {
+  var sh = ensureOwnSheets_(SpreadsheetApp.openById(CONFIG.DST_ID)).overlay;
+  if (sh.getLastRow() < 2) return [];
+  var vals = sh.getRange(2, 1, sh.getLastRow() - 1, OVERLAY_HEADER.length).getDisplayValues();
+  var out = [];
+  vals.forEach(function (r, i) {
+    if (!r[0] || r[6] === '' || r[11] === 'ส่งแล้ว' || r[11] === 'คงต้นฉบับ') return;
+    var m = /^(.*)\|([^|]*)\|([^|]*)\|Q([1-4])$/.exec(r[0]);
+    if (!m) return;
+    out.push({ ovRow: i + 2, key: r[0], actKey: m[1], office: m[2], gk: m[3], q: Number(m[4]),
+      sheet: r[1], code: r[2], title: r[3], value: r[6], note: r[7], srcAtEdit: r[8] });
+  });
+  return out;
+}
+
+/** หาเซลล์ผลในต้นฉบับ: คืน {sheet, row, col, a1, display, formula} หรือ {error} */
+function locateInSource_(src, cacheBySheet, it) {
+  var sh = src.getSheetByName(it.sheet);
+  if (!sh) return { error: 'ไม่พบชีต ' + it.sheet + ' ในต้นฉบับ' };
+  var parsed = cacheBySheet[it.sheet];
+  if (!parsed) {
+    var vals = sh.getRange(1, 1, sh.getLastRow(), Math.min(sh.getLastColumn(), 45)).getDisplayValues();
+    parsed = cacheBySheet[it.sheet] = k04ParseSheet(it.sheet, vals);
+  }
+  var act = parsed && parsed.activities.filter(function (a) { return a.key === it.actKey; })[0];
+  if (!act) return { error: 'หากิจกรรมไม่เจอ (ต้นฉบับอาจเปลี่ยนชื่อ/รหัส)' };
+  var row = act.rows.filter(function (r) { return r.scope === 'office' && r.office === it.office && (r.gk || '') === it.gk; })[0];
+  if (!row) return { error: 'หาแถว ' + it.office + ' ไม่เจอ' };
+  var col = 5 + (it.q - 1) * 2;   // E=ผล Q1, G=ผล Q2, I=ผล Q3, K=ผล Q4
+  var cell = sh.getRange(row.row, col);
+  return { sheetObj: sh, row: row.row, col: col, a1: it.sheet + '!' + cell.getA1Notation(),
+    display: cell.getDisplayValue(), formula: cell.getFormula(), target: row.q[it.q - 1].t };
+}
+
+function apiPushPreview(pin) {
+  checkPushPin_(pin);
+  var items = pendingEntries_();
+  var src = SpreadsheetApp.openById(CONFIG.SRC_ID), cache = {};
+  var out = items.map(function (it) {
+    var loc = locateInSource_(src, cache, it);
+    var res = { key: it.key, sheet: it.sheet, code: it.code, title: it.title, office: it.office, q: it.q,
+      ours: it.value, srcAtEdit: it.srcAtEdit, note: it.note };
+    if (loc.error) { res.status = 'blocked'; res.reason = loc.error; return res; }
+    res.src = loc.display; res.cell = loc.a1; res.target = loc.target;
+    res.changedSince = String(loc.display) !== String(it.srcAtEdit);
+    if (loc.formula) { res.status = 'blocked'; res.reason = 'ช่องนี้ในต้นฉบับเป็นสูตร — ไม่เขียนทับ'; }
+    else if (sameNum_(loc.display, it.value)) res.status = 'same';
+    else if (String(loc.display).trim() === '') res.status = 'empty';
+    else res.status = 'diff';
+    return res;
+  });
+  return JSON.stringify({ ok: true, items: out, checkedAt: new Date().toISOString() });
+}
+
+/**
+ * body = {pin, by, items:[{key, decision:'ours'|'keep', expect:<ค่าต้นฉบับที่เห็นตอนตรวจ>}]}
+ * รายการที่ "เท่ากันแล้ว" ส่งมาด้วย decision 'same' เพื่อปิดรายการ
+ */
+function apiPushCommit(body) {
+  checkPushPin_(body.pin);
+  var lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    var dst = SpreadsheetApp.openById(CONFIG.DST_ID);
+    var ov = ensureOwnSheets_(dst).overlay;
+    var logSh = dst.getSheetByName(PUSH_LOG);
+    if (!logSh) {
+      logSh = dst.insertSheet(PUSH_LOG);
+      logSh.getRange(1, 1, 1, 9).setValues([['เวลา', 'ผล', 'เซลล์ต้นฉบับ', 'กิจกรรม', 'กฟฟ.', 'ไตรมาส', 'ค่าเดิมในต้นฉบับ', 'ค่าที่เขียน', 'ผู้ส่ง']]).setFontWeight('bold');
+      logSh.setFrozenRows(1);
+      logSh.getRange('A:I').setNumberFormat('@');
+    }
+    var pend = {}; pendingEntries_().forEach(function (p) { pend[p.key] = p; });
+    var src = SpreadsheetApp.openById(CONFIG.SRC_ID), cache = {};
+    var now = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm');
+    var by = String(body.by || '').slice(0, 60) || 'หน้าเว็บ';
+    var results = [], wrote = 0, logs = [];
+
+    (body.items || []).forEach(function (d) {
+      var it = pend[d.key];
+      if (!it) { results.push({ key: d.key, status: 'skip', reason: 'ไม่อยู่ในรายการรอส่งแล้ว' }); return; }
+      if (d.decision === 'keep') {
+        ov.getRange(it.ovRow, 12, 1, 3).setValues([['คงต้นฉบับ', '', now]]);
+        results.push({ key: d.key, status: 'kept' });
+        return;
+      }
+      var loc = locateInSource_(src, cache, it);
+      if (loc.error) { results.push({ key: d.key, status: 'error', reason: loc.error }); return; }
+      if (loc.formula) { results.push({ key: d.key, status: 'error', reason: 'ช่องเป็นสูตร' }); return; }
+      if (String(loc.display) !== String(d.expect == null ? '' : d.expect)) {
+        results.push({ key: d.key, status: 'changed', reason: 'ต้นฉบับเปลี่ยนระหว่างตรวจ (ตอนนี้ = ' + (loc.display || 'ว่าง') + ') กรุณาตรวจใหม่', src: loc.display });
+        return;
+      }
+      if (sameNum_(loc.display, it.value)) {
+        ov.getRange(it.ovRow, 12, 1, 3).setValues([['ส่งแล้ว', loc.display, now]]);
+        results.push({ key: d.key, status: 'same' });
+        return;
+      }
+      try {
+        loc.sheetObj.getRange(loc.row, loc.col).setValue(Number(String(it.value).replace(/,/g, '')));
+        SpreadsheetApp.flush();
+        var after = loc.sheetObj.getRange(loc.row, loc.col).getDisplayValue();
+        if (!sameNum_(after, it.value)) throw new Error('เขียนแล้วอ่านกลับไม่ตรง (' + after + ')');
+        ov.getRange(it.ovRow, 12, 1, 3).setValues([['ส่งแล้ว', loc.display, now]]);
+        logs.push([now, 'เขียนแล้ว', loc.a1, it.code + ' ' + it.title, it.office, 'Q' + it.q, loc.display, String(it.value), by]);
+        wrote++;
+        results.push({ key: d.key, status: 'written', cell: loc.a1, before: loc.display, after: after });
+      } catch (err) {
+        logs.push([now, 'ผิดพลาด', loc.a1, it.code + ' ' + it.title, it.office, 'Q' + it.q, loc.display, String(it.value), by]);
+        results.push({ key: d.key, status: 'error', reason: String(err && err.message || err) });
+      }
+    });
+    if (logs.length) {
+      logSh.insertRowsAfter(1, logs.length);
+      logSh.getRange(2, 1, logs.length, 9).setValues(logs);
+    }
+    if (wrote) scheduleSyncSoon_();   // ให้ไฟล์ของเราดึงค่าที่เพิ่งเขียนกลับมาในอีก ~1 นาที
+    return JSON.stringify({ ok: true, wrote: wrote, results: results });
+  } finally { lock.releaseLock(); }
+}
+
+function scheduleSyncSoon_() {
+  var has = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'syncSoon'; });
+  if (!has) ScriptApp.newTrigger('syncSoon').timeBased().after(60 * 1000).create();
+}
+
+function syncSoon() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'syncSoon') ScriptApp.deleteTrigger(t); });
+  syncFromSource(false);
 }
 
 /** เมนูในไฟล์ Sheets */
