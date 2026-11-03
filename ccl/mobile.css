@@ -37,7 +37,10 @@ input[type="date"], input[type="month"], input[type="time"] { min-width: 0; max-
 @media (max-width: 767px) {
   html, body { overflow-x: hidden; max-width: 100%; }
   body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
-  input, select, textarea { font-size: 16px !important; } /* กัน iPhone ซูมเองตอนแตะช่องกรอก */
+  /* กัน iPhone ซูมเองตอนแตะช่องกรอก (ตัวอักษรเล็กกว่า 16px จะซูมค้าง ทำให้ทั้งหน้าเลื่อนซ้ายขวาได้)
+     ต้องชนะคลาส .text-sm / .text-xs ... ที่ใส่ !important ไว้ จึงใช้ตัวเลือกที่เจาะจงกว่า */
+  html body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(#ccl-x),
+  html body select:not(#ccl-x), html body textarea:not(#ccl-x) { font-size: 16px !important; }
   input[type="date"], input[type="month"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 40px; background-color: #fff; }
   input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 
