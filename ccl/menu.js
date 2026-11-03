@@ -38,6 +38,8 @@
       document.head.appendChild(st);
     }
     setLabel($('nav-close'), 'ปิดงาน');
+    // แผ่นเมนู "อื่นๆ" บนมือถืออ่านจาก style ของปุ่ม — ซ่อนแบบ inline ด้วย จะได้ไม่โผล่ซ้ำ
+    ['nav-inspectMap', 'nav-completed'].forEach(function (id) { var b = $(id); if (b) b.style.display = 'none'; });
     placeTabs();
     var sp = window.showPage;
     if (typeof sp === 'function' && !sp.__menu) {
