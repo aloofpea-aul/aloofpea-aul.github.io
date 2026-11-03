@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>แชร์รายงานเวรค้าง</title>
+<style>
+body{margin:0;font-family:Sarabun,'Noto Sans Thai',sans-serif;background:#F3F1F7;color:#2A2236;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.c{background:#fff;border-radius:16px;padding:18px;max-width:420px;width:calc(100% - 32px);box-shadow:0 2px 10px rgba(60,20,80,.1)}
+pre{white-space:pre-wrap;font:15px/1.5 Sarabun,sans-serif;background:#FAF8FC;border-radius:10px;padding:10px;margin:10px 0;max-height:50vh;overflow:auto}
+a.b,button{display:block;width:100%;box-sizing:border-box;text-align:center;border:0;border-radius:12px;padding:12px;font:700 16px Sarabun,sans-serif;margin-top:8px;text-decoration:none;cursor:pointer}
+a.b{background:#06C755;color:#fff}button{background:#fff;color:#5C1A63;border:1.5px solid #5C1A63}
+.m{color:#6B6478;font-size:14px}
+</style></head><body><div class="c">
+<b style="font-size:18px">แชร์รายงานเวรค้าง</b>
+<div id="st" class="m">กำลังเตรียมข้อความ…</div>
+<pre id="tx" hidden></pre>
+<a id="go" class="b" hidden>แชร์ทาง LINE</a>
+<button id="cp" hidden>คัดลอกข้อความ</button>
+</div>
+<script>
+/* หน้าเตรียมข้อความ "รายงานเวรค้าง" จากระบบตารางเวร (อ่านอย่างเดียว) แล้วเปิดหน้าเลือกห้อง/คนของ LINE เพื่อส่งต่อ */
+const API='https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec';
+const APP='https://aloofpea-aul.github.io/duty-roster/?view=viewReport&kind=track&openExternalBrowser=1';
+const TH_MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const $=id=>document.getElementById(id);
+const today=new Date(Date.now()+7*36e5).toISOString().slice(0,10);
+const prevM=new Date(Date.parse(today.slice(0,7)+'-01T00:00:00Z')-864e5).toISOString().slice(0,7);
+async function get(m){
+  for(let k=0;k<3;k++){ try{ const j=JSON.parse(await (await fetch(API+'?action=repTrack&m='+m)).text()); if(j.ok) return j.items||[]; }catch(e){} await new Promise(r=>setTimeout(r,1200*(k+1))); }
+  throw new Error('เชื่อมต่อระบบไม่สำเร็จ ลองใหม่อีกครั้ง');
+}
+(async()=>{
+  try{
+    const L=[].concat(await get(prevM),await get(today.slice(0,7))).filter(x=>x.over).sort((a,b)=>a.k<b.k?-1:1);
+    const d=k=>+k.slice(8,10)+' '+TH_MS[+k.slice(5,7)-1];
+    const lines=L.map(x=>'• '+d(x.k)+' '+x.label+' — '+(x.st==='fill'?x.names.join(', '):'ผู้ตรวจ '+(x.insp||'-'))+' (เกิน '+(-x.left)+' วัน)');
+    const text=L.length?'📋 รายงานการอยู่เวรค้าง '+L.length+' รายการ (ข้อมูล '+d(today)+')\n'+lines.join('\n')+'\n\nกรอกรายงาน: พิมพ์ "รายงานเวร" หาบอท LINE ตารางเวร\nดูทั้งหมด: '+APP
+      :'✅ ไม่มีรายงานการอยู่เวรค้าง (ข้อมูล '+d(today)+')';
+    $('tx').textContent=text; $('tx').hidden=false; $('st').textContent=L.length?'ตรวจข้อความ แล้วกดแชร์ เลือกกลุ่มหรือคนที่จะส่ง':'ตอนนี้ไม่มีรายการค้าง';
+    $('go').href='https://line.me/R/share?text='+encodeURIComponent(text); $('go').hidden=false;
+    $('cp').hidden=false; $('cp').onclick=async()=>{ try{ await navigator.clipboard.writeText(text); $('cp').textContent='คัดลอกแล้ว ✓'; }catch(e){ alert('คัดลอกไม่ได้ — กดค้างที่ข้อความเพื่อคัดลอกเอง'); } };
+  }catch(e){ $('st').textContent=e.message; }
+})();
+</script></body></html>

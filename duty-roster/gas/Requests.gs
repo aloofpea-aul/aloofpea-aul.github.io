@@ -1003,6 +1003,8 @@ function repRemindDaily_() {
   if (over.length) {
     const L = over.map(function (x) { return '• ' + thShortD_(x.k.slice(0, 10)) + ' ' + x.label + ' — ' + (x.st === 'fill' ? x.names.join(', ') : 'ผู้ตรวจ ' + (x.insp || '-')) + ' (เกิน ' + (-x.left) + ' วัน)'; });
     const u = webUrl_('viewReport', { kind: 'track', m: today.slice(0, 7) }), btn = u ? [{ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูทั้งหมดในแอป', uri: u } }] : null;
+    const base = String(getConfig_().webUrl || ''), su = /^https:\/\//.test(base) ? base.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'share-overdue.html' : '';   // เปิดในหน้าต่าง LINE เพื่อเลือกห้องที่จะส่งต่อ
+    if (btn && su) btn.push({ type: 'button', style: 'primary', color: '#06C755', height: 'sm', margin: 'sm', action: { type: 'uri', label: 'แชร์ต่อทาง LINE', uri: su } });
     approverList_().forEach(function (a) { const id = lineIdOf_(a.short); if (id) push_(id, [flex_('รายงานเวรเกินกำหนด', bubble_('สรุปรายงานเวรเกินกำหนด', '#C92A2A', 'ค้าง ' + over.length + ' รายการ', L.slice(0, 15), btn))], 'change'); });
   }
   log_('system', 'เตือนรายงานเวร', today.slice(0, 7), 'เกินกำหนด ' + over.length);
