@@ -41,3 +41,26 @@ function getSubCaps() {
   });
   return o;
 }
+
+/* เติม MVA จาก GIS (Export_Output_43) — เฉพาะสถานีที่จับคู่รหัสได้ชัวร์ · เติมเฉพาะช่องว่าง ไม่ทับค่าเดิม */
+function fillMvaFromGis() {
+  var GIS = { KMA:[50,50], KMB:[50,50], KCD:[50,50], CAY:[50,50], WSA:[50,50], PPB:[50,50], NTB:[50,50], PPN:[50,50], TYI:[50,50],
+    PAT:[50,50,50], KRN:[50,50], GTU:[50,50], TMG:[50,50], KBB:[50,50], KBA:[50,50], KTM:[50,50], AOA:[50,50], TRA:[50,50], YTK:[50,50], KNA:[50] };
+  var NOTE = 'จาก GIS (Export_Output_43)';
+  var sh = getSS_().getSheetByName(SUBCAP_SHEET); if (!sh) throw new Error('ไม่มีชีต ' + SUBCAP_SHEET);
+  var n = sh.getLastRow() - 1, vals = n > 0 ? sh.getRange(2, 1, n, 6).getValues() : [];
+  var idx = {}, prov = {}; vals.forEach(function (r, i) { var k = String(r[0]).trim(); idx[k + '|' + String(r[2]).trim()] = i; if (r[1]) prov[k] = r[1]; });
+  var filled = 0, kept = 0, add = [];
+  Object.keys(GIS).forEach(function (k) {
+    GIS[k].forEach(function (m, j) {
+      var tp = 'TP' + (j + 1), i = idx[k + '|' + tp];
+      if (i == null) { add.push([k, prov[k] || '', tp, m, '', NOTE]); return; }
+      if (String(vals[i][3]).trim() !== '') { kept++; return; }
+      vals[i][3] = m; if (!String(vals[i][5]).trim()) vals[i][5] = NOTE; filled++;
+    });
+  });
+  if (n > 0) sh.getRange(2, 1, n, 6).setValues(vals);
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 6).setValues(add);
+  var msg = 'GIS: เติม ' + filled + ' ช่อง · เพิ่ม ' + add.length + ' แถว · ข้ามเพราะมีค่าอยู่แล้ว ' + kept;
+  log_('INFO', msg); Logger.log(msg); return msg;
+}
