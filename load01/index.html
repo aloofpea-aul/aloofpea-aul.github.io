@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script src="/pea-hub.js?v=2026110401" data-app="load01" data-name="วิเคราะห์โหลด Load01"></script>
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<script>
+/* หน้าเว็บนี้อยู่บน GitHub (ศูนย์รวมงาน) — เรียกหลังบ้าน GAS ผ่าน fetch แทน google.script.run */
+(function(){
+  var API = "https://script.google.com/macros/s/AKfycbxL9UA6FHRLeemR_1xHu5WDih4POHR0lKkZQOhJlywuXhUtgkVHoyNs_18mteoGf1Yu/exec";
+  function call(fn, args, ok, fail){
+    fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if (j && j.ok) { if (ok) ok(j.result); } else throw new Error((j && j.error) || "เรียกหลังบ้านไม่สำเร็จ"); })
+      .catch(function(e){ if (fail) fail(e); else console.error(fn, e); });
+  }
+  function runner(ok, fail){ return new Proxy({}, { get: function(_, k){
+    if (k === "withSuccessHandler") return function(f){ return runner(f, fail); };
+    if (k === "withFailureHandler") return function(f){ return runner(ok, f); };
+    if (k === "withUserObject") return function(){ return runner(ok, fail); };
+    return function(){ call(k, Array.prototype.slice.call(arguments), ok, fail); };
+  } }); }
+  window.google = { script: { run: runner() } };
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>วิเคราะห์โหลด Load01 กฟต.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+color-scheme:light;
+--brand:#74045f; --brand-2:#9c1f83;
+--bg:#f4f3f1; --surface-1:#fcfcfb; --surface-2:#f0efec; --line:#e2e0db;
+--text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7a7873;
+--s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6;
+--good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+--grid:#e7e5e0;
+}
+@media (prefers-color-scheme: dark){
+:root{
+color-scheme:dark;
+--bg:#121211; --surface-1:#1a1a19; --surface-2:#242422; --line:#33332f;
+--text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8f8d86;
+--s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+--grid:#2c2c29;
+}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:'Sarabun',system-ui,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+button,select,input{font:inherit;color:inherit}
+header.top{background:linear-gradient(120deg,var(--brand),var(--brand-2));color:#fff;padding:14px 16px 0;position:sticky;top:0;z-index:20}
+header.top h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.2px}
+header.top .sub{opacity:.85;font-size:12.5px;margin-top:2px}
+nav.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{background:none;border:0;color:#fff;opacity:.75;padding:9px 12px 10px;border-bottom:3px solid transparent;white-space:nowrap;cursor:pointer;font-weight:600}
+nav.tabs button.on{opacity:1;border-bottom-color:#fff}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;background:var(--surface-1);border-bottom:1px solid var(--line);position:sticky;top:96px;z-index:15}
+.filters label{font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:2px}
+.filters select{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:110px}
+.chk{flex-direction:row!important;align-items:center;gap:6px!important;font-size:13px!important;color:var(--text-primary)!important;margin-top:14px}
+main{padding:14px 16px 40px;max-width:1280px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi .lab{font-size:12.5px;color:var(--text-secondary)}
+.kpi .val{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .val small{font-size:14px;font-weight:500;color:var(--text-secondary);margin-left:3px}
+.kpi .note{font-size:12px;color:var(--text-muted);margin-top:2px}
+.kpi.click{cursor:pointer}.kpi.click:hover{border-color:var(--brand-2)}
+.delta-up{color:var(--critical)} .delta-down{color:var(--good)}
+h2{font-size:16px;margin:0 0 2px}
+.cap{font-size:12.5px;color:var(--text-muted);margin:0 0 10px}
+.two{grid-template-columns:1fr}
+@media(min-width:900px){.two{grid-template-columns:3fr 2fr}}
+@media(max-width:700px){.filters{position:static}header.top{position:static}}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--text-secondary);margin:4px 0 6px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+svg text{font-family:'Sarabun',sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:10px;padding:8px 10px;font-size:12.5px;min-width:140px;display:none;z-index:5}
+.tip b{display:block;margin-bottom:3px}
+.tip .r{display:flex;justify-content:space-between;gap:12px}
+.tip .r i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{font-size:12px;color:var(--text-secondary);font-weight:600;position:sticky;top:0;background:var(--surface-1);cursor:pointer;user-select:none}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--surface-2)}
+.tbl-wrap{overflow:auto;max-height:70vh;border-radius:10px}
+.search{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;max-width:320px;margin-bottom:10px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--text-secondary)}
+.st{display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.st.crit{color:var(--critical)} .st.warn{color:#b07800} .st.good{color:var(--good)}
+@media (prefers-color-scheme: dark){.st.warn{color:var(--warning)}}
+.issues{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.issue h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+.issue .count{margin-left:auto;font-size:20px;font-weight:700}
+.issue ul{list-style:none;padding:0;margin:8px 0 0;max-height:300px;overflow:auto}
+.issue li{display:flex;justify-content:space-between;gap:8px;padding:6px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.issue li:hover{background:var(--surface-2)}
+.issue li span:last-child{font-variant-numeric:tabular-nums;color:var(--text-secondary)}
+.muted{color:var(--text-muted)}
+.drawer{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:50;align-items:flex-end;justify-content:center}
+.drawer.on{display:flex}
+.drawer .panel{background:var(--bg);width:100%;max-width:980px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+@media(min-width:900px){.drawer{align-items:center}.drawer .panel{border-radius:18px}}
+.panel .hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.panel .hd h2{font-size:18px}
+.close{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 12px;cursor:pointer}
+.spark{vertical-align:middle}
+.loading{padding:60px 20px;text-align:center;color:var(--text-secondary)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:auto}
+.seg button{background:var(--surface-2);border:0;padding:4px 10px;font-size:12.5px;cursor:pointer}
+.seg button.on{background:var(--brand);color:#fff}
+.row-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="top">
+<h1>⚡ วิเคราะห์โหลด Load01 · กฟต.2</h1>
+<div class="sub" id="sub">กำลังโหลดข้อมูล…</div>
+<nav class="tabs" id="tabs">
+<button data-v="overview" class="on">ภาพรวม</button>
+<button data-v="feeders">ฟีดเดอร์</button>
+<button data-v="issues">จุดที่ต้องดูแล</button>
+<button data-v="quality">คุณภาพข้อมูล</button>
+</nav>
+</header>
+<div class="filters">
+<label>จังหวัด<select id="fProv"></select></label>
+<label>สถานี<select id="fSub"></select></label>
+<label>ประเภท<select id="fType"></select></label>
+<label>เดือน<select id="fMonth"></select></label>
+<label class="chk"><input type="checkbox" id="fCopy" checked> ตัดค่าที่คัดลอกจากเดือนก่อน</label>
+</div>
+<main>
+<div id="loading" class="loading">กำลังโหลดข้อมูล…</div>
+<section class="view on" id="v-overview">
+<div class="grid kpis" id="kpis"></div>
+<div class="grid two" style="margin-top:12px">
+<div class="card">
+<div class="row-h"><h2 id="trendTitle">แนวโน้ม Peak รายเดือน</h2>
+<div class="seg" id="trendRange"><button data-r="24">2 ปี</button><button data-r="0" class="on">ทั้งหมด</button></div></div>
+<p class="cap" id="trendCap"></p>
+<div class="legend" id="trendLegend"></div>
+<div class="chart" id="trend"></div>
+</div>
+<div class="card">
+<h2>ช่วงเวลาที่เกิด Peak</h2>
+<p class="cap" id="hourCap"></p>
+<div class="chart" id="hours"></div>
+</div>
+</div>
+<div class="card" style="margin-top:12px">
+<h2>10 อันดับโหลดสูงสุด</h2>
+<p class="cap" id="topCap"></p>
+<div class="chart" id="top"></div>
+</div>
+</section>
+<section class="view" id="v-feeders">
+<div class="card">
+<input class="search" id="q" placeholder="ค้นหา: ชื่อฟีดเดอร์ / สถานี / พื้นที่จ่ายไฟ">
+<p class="cap" id="tblCap"></p>
+<div class="tbl-wrap"><table id="tbl"></table></div>
+</div>
+</section>
+<section class="view" id="v-issues">
+<p class="cap" id="issueCap"></p>
+<div class="grid issues" id="issues"></div>
+</section>
+<section class="view" id="v-quality">
+<div class="card">
+<h2>ความครบถ้วนของข้อมูลรายเดือน</h2>
+<p class="cap">ทุกเดือนดึงจากไฟล์ในโฟลเดอร์ Load01 · "คัดลอก" = ค่า Peak และกระแสทุกเฟสเหมือนเดือนก่อนทุกตัว (ต้นทางยกค่าเดิมมา) · "MW ผิดรูป" = MW ไม่สอดคล้องกับกระแสและแรงดัน</p>
+<div class="tbl-wrap"><table id="qtbl"></table></div>
+</div>
+</section>
+</main>
+<div class="drawer" id="drawer"><div class="panel" id="panel"></div></div>
+<script>
+/* ===== ค่าเกณฑ์ (แก้ได้) ===== */
+var TH = { UB: 20, UB_MIN_IAVG: 50, PF: 0.90, PF_MIN_MW: 1, IMAX: 320, KV_LO: 31.35, KV_HI: 34.65, GROWTH: 20, GROWTH_MIN_MW: 2 };
+var PROV_TH = { 'Krabi':'กระบี่','Phuket':'ภูเก็ต','Phang Nga':'พังงา','Surat Thani':'สุราษฎร์ธานี','Nakhon Si Thammarat':'นครศรีธรรมราช','Trang':'ตรัง' };
+var TYPE_TH = { Feeder:'ฟีดเดอร์ 33 kV', Incoming:'Incoming', Transformer:'หม้อแปลง', Line:'สายส่ง 115 kV' };
+var MTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+var SERIES = ['--s1','--s2','--s3','--s4','--s5','--s6'];
+var D, F, M, byM, S = { prov:'', sub:'', type:'Feeder', m:0, copy:true, range:0, sort:'mw', dir:-1, q:'' };
+var C = function(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+function mLabel(ym){ var p=ym.split('-'); return MTH[+p[1]-1]+' '+String(+p[0]+543).slice(2); }
+function mLabelLong(ym){ var p=ym.split('-'); return MTH[+p[1]-1]+' '+(+p[0]+543); }
+function fmt(v,d){ return v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function hhmm(h){ if(h==null) return '–'; var H=Math.floor(h), mi=Math.round((h-H)*60); return (H<10?'0':'')+H+':'+(mi<10?'0':'')+mi; }
+/* ===== โหลดข้อมูล ===== */
+function boot(){
+if (window.__DATA__) return init(window.__DATA__);
+if (window.google && google.script && google.script.run) {
+google.script.run.withSuccessHandler(function(s){ if(!s){ $('loading').textContent='ยังไม่มีข้อมูล — ให้รัน setup() ในสคริปต์ก่อน'; return;} init(JSON.parse(s)); })
+.withFailureHandler(function(e){ $('loading').textContent='โหลดข้อมูลไม่สำเร็จ: '+e.message; }).getDashboardData();
+} else if (window.DATA_URL) {
+fetch(window.DATA_URL).then(function(r){return r.json();}).then(init).catch(function(e){ $('loading').textContent='โหลดข้อมูลไม่สำเร็จ: '+e; });
+}
+}
+function init(data){
+D = data; M = data.months;
+F = data.feeders.map(function(f,i){ return { i:i, prov:f[0], sub:f[1], type:f[2], name:f[3], area:f[4] }; });
+byM = M.map(function(){ return []; });
+data.rows.forEach(function(r){
+byM[r[0]].push({ m:r[0], f:r[1], mw:r[2], mvar:r[3], kv:r[4], ia:r[5], ib:r[6], ic:r[7], lmw:r[8], ph:r[9], lh:r[10], ub:r[11], pf:r[12], lf:r[13], q:r[14] });
+});
+S.m = M.length-1;
+$('loading').style.display='none';
+var gen = new Date(data.generated);
+$('sub').textContent = 'ข้อมูล '+mLabelLong(M[0])+' – '+mLabelLong(M[M.length-1])+' · '+M.length+' เดือน · '+F.length+' จุดวัด · อัปเดต '+gen.toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+buildFilters(); bind(); render();
+}
+/* ===== ตัวกรอง ===== */
+function opt(v,t,sel){ return '<option value="'+esc(v)+'"'+(sel?' selected':'')+'>'+esc(t)+'</option>'; }
+function buildFilters(){
+var provs = Array.from(new Set(F.map(function(f){return f.prov;}))).sort(function(a,b){return (PROV_TH[a]||a).localeCompare(PROV_TH[b]||b,'th');});
+$('fProv').innerHTML = opt('','ทุกจังหวัด',!S.prov)+provs.map(function(p){return opt(p,PROV_TH[p]||p,S.prov===p);}).join('');
+fillSubs();
+$('fType').innerHTML = ['Feeder','Incoming','Transformer','Line'].map(function(t){return opt(t,TYPE_TH[t],S.type===t);}).join('')+opt('','ทุกประเภท',!S.type);
+$('fMonth').innerHTML = M.map(function(m,i){return opt(i,mLabelLong(m),i===S.m);}).reverse().join('');
+}
+function fillSubs(){
+var subs = Array.from(new Set(F.filter(function(f){return !S.prov||f.prov===S.prov;}).map(function(f){return f.sub;}))).sort();
+if (S.sub && subs.indexOf(S.sub)<0) S.sub='';
+$('fSub').innerHTML = opt('','ทุกสถานี',!S.sub)+subs.map(function(s){return opt(s,s,S.sub===s);}).join('');
+}
+function bind(){
+$('fProv').onchange=function(){S.prov=this.value; fillSubs(); render();};
+$('fSub').onchange=function(){S.sub=this.value; render();};
+$('fType').onchange=function(){S.type=this.value; render();};
+$('fMonth').onchange=function(){S.m=+this.value; render();};
+$('fCopy').onchange=function(){S.copy=this.checked; render();};
+$('q').oninput=function(){S.q=this.value.trim().toLowerCase(); renderTable();};
+document.querySelectorAll('#tabs button').forEach(function(b){ b.onclick=function(){
+document.querySelectorAll('#tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+b.dataset.v);});
+render();
+};});
+document.querySelectorAll('#trendRange button').forEach(function(b){ b.onclick=function(){
+S.range=+b.dataset.r; document.querySelectorAll('#trendRange button').forEach(function(x){x.classList.toggle('on',x===b);}); renderTrend();
+};});
+$('drawer').onclick=function(e){ if(e.target===this) closeDetail(); };
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDetail(); });
+var t; window.addEventListener('resize',function(){ clearTimeout(t); t=setTimeout(render,150); });
+}
+function fOk(f){ return (!S.prov||f.prov===S.prov)&&(!S.sub||f.sub===S.sub)&&(!S.type||f.type===S.type); }
+function rOk(r){ return fOk(F[r.f]) && !(S.copy && r.q===1); }
+function valid(r){ return r.q!==2 && r.mw!=null; }
+function imax(r){ var a=[r.ia,r.ib,r.ic].filter(function(x){return x!=null;}); return a.length?Math.max.apply(null,a):null; }
+function iavg(r){ var a=[r.ia,r.ib,r.ic].filter(function(x){return x!=null;}); return a.length===3?(a[0]+a[1]+a[2])/3:null; }
+function rowsAt(m){ return byM[m].filter(rOk); }
+function prevYear(m){ var p=M[m].split('-'); var k=(+p[0]-1)+'-'+p[1]; return M.indexOf(k); }
+function scopeName(){ return S.sub ? 'สถานี '+S.sub : S.prov ? 'จ.'+(PROV_TH[S.prov]||S.prov) : 'กฟต.2 ทั้งหมด'; }
+/* ===== render ===== */
+function render(){
+if(!D) return;
+var v = document.querySelector('#tabs button.on').dataset.v;
+if (v==='overview'){ renderKpis(); renderTrend(); renderHours(); renderTop(); }
+if (v==='feeders') renderTable();
+if (v==='issues') renderIssues();
+if (v==='quality') renderQuality();
+}
+function issueSets(m){
+var R = rowsAt(m), py = prevYear(m), prevMap = {};
+if (py>=0) byM[py].forEach(function(r){ if(valid(r) && !(S.copy&&r.q===1)) prevMap[r.f]=r; });
+var out = { ub:[], pf:[], imax:[], kv:[], growth:[], bad:[] };
+R.forEach(function(r){
+var f=F[r.f], ia=iavg(r), im=imax(r);
+if (r.q===2) out.bad.push([r, r.mw]);
+if (r.ub!=null && ia!=null && ia>=TH.UB_MIN_IAVG && r.ub>TH.UB) out.ub.push([r, r.ub]);
+if (valid(r) && r.pf!=null && r.mw>=TH.PF_MIN_MW && r.pf<TH.PF) out.pf.push([r, r.pf]);
+if (f.type!=='Line' && f.type!=='Transformer' && im!=null && im>=TH.IMAX && f.type==='Feeder') out.imax.push([r, im]);
+if (r.kv!=null && r.kv>20 && r.kv<40 && (r.kv<TH.KV_LO||r.kv>TH.KV_HI)) out.kv.push([r, r.kv]);
+var p=prevMap[r.f];
+if (p && valid(r) && p.mw>=TH.GROWTH_MIN_MW){ var g=(r.mw-p.mw)/p.mw*100; if(g>TH.GROWTH) out.growth.push([r,g]); }
+});
+out.ub.sort(function(a,b){return b[1]-a[1];}); out.pf.sort(function(a,b){return a[1]-b[1];});
+out.imax.sort(function(a,b){return b[1]-a[1];}); out.growth.sort(function(a,b){return b[1]-a[1];});
+out.kv.sort(function(a,b){return Math.abs(b[1]-33)-Math.abs(a[1]-33);});
+return out;
+}
+function renderKpis(){
+var m=S.m, R=rowsAt(m).filter(valid), py=prevYear(m);
+var tot=R.reduce(function(s,r){return s+r.mw;},0);
+// เทียบปีก่อนแบบจุดวัดเดียวกัน
+var dTxt='ไม่มีข้อมูลเดือนเดียวกันปีก่อน', dCls='';
+if (py>=0){
+var pm={}; byM[py].forEach(function(r){ if(valid(r)&&rOk(r)) pm[r.f]=r.mw; });
+var a=0,b=0,n=0; R.forEach(function(r){ if(pm[r.f]!=null){a+=r.mw;b+=pm[r.f];n++;} });
+if (b>0){ var g=(a-b)/b*100; dTxt=(g>=0?'▲ ':'▼ ')+fmt(Math.abs(g),1)+'% เทียบ '+mLabel(M[py])+' ('+n+' จุดเดียวกัน)'; dCls=g>=0?'delta-up':'delta-down'; }
+}
+var I=issueSets(m);
+var k=[
+{lab:'Peak รวม ('+scopeName()+')', val:fmt(tot,1), unit:'MW', note:'<span class="'+dCls+'">'+dTxt+'</span>'},
+{lab:'จุดวัดที่มีข้อมูล', val:fmt(R.length,0), unit:'จุด', note:mLabelLong(M[m])},
+{lab:'Unbalance > '+TH.UB+'%', val:I.ub.length, unit:'จุด', note:'กระแสเฉลี่ย ≥ '+TH.UB_MIN_IAVG+' A', go:'ub', st:I.ub.length?'warn':'good'},
+{lab:'PF < '+TH.PF.toFixed(2), val:I.pf.length, unit:'จุด', note:'โหลด ≥ '+TH.PF_MIN_MW+' MW', go:'pf', st:I.pf.length?'warn':'good'},
+{lab:'กระแสสูง ≥ '+TH.IMAX+' A', val:I.imax.length, unit:'ฟีดเดอร์', note:'≈80% ของ 400 A', go:'imax', st:I.imax.length?'crit':'good'},
+{lab:'แรงดันนอกช่วง 33 kV ±5%', val:I.kv.length, unit:'จุด', note:TH.KV_LO+'–'+TH.KV_HI+' kV', go:'kv', st:I.kv.length?'warn':'good'}
+];
+$('kpis').innerHTML=k.map(function(x){
+var ic = x.st==='crit'?'<span class="st crit">⛔</span> ':x.st==='warn'?'<span class="st warn">⚠</span> ':x.st==='good'?'<span class="st good">✓</span> ':'';
+return '<div class="card kpi'+(x.go?' click':'')+'"'+(x.go?' data-go="'+x.go+'"':'')+'><div class="lab">'+ic+esc(x.lab)+'</div><div class="val">'+x.val+'<small>'+x.unit+'</small></div><div class="note">'+x.note+'</div></div>';
+}).join('');
+document.querySelectorAll('.kpi.click').forEach(function(el){ el.onclick=function(){ document.querySelector('#tabs button[data-v=issues]').click(); setTimeout(function(){ var t=$('iss-'+el.dataset.go); if(t) t.scrollIntoView({behavior:'smooth'}); },50); }; });
+}
+/* ===== กราฟเส้น (SVG) ===== */
+function lineChart(el, labels, series, opt){
+opt=opt||{};
+var W=el.clientWidth||600, H=opt.h||260, P={l:46,r:12,t:10,b:28};
+var all=[]; series.forEach(function(s){ s.v.forEach(function(x){ if(x!=null) all.push(x); }); });
+if(!all.length){ el.innerHTML='<p class="muted">ไม่มีข้อมูล</p>'; return; }
+var mx=Math.max.apply(null,all), mn=opt.zero===false?Math.min.apply(null,all):0;
+var nice=niceScale(mn,mx,5);
+var x=function(i){ return P.l+(labels.length<2?0:i*(W-P.l-P.r)/(labels.length-1)); };
+var y=function(v){ return P.t+(H-P.t-P.b)*(1-(v-nice.min)/(nice.max-nice.min)); };
+var g='';
+nice.ticks.forEach(function(t){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="'+C('--grid')+'" stroke-width="1"/><text x="'+(P.l-6)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="11" fill="'+C('--text-muted')+'">'+fmt(t,nice.dec)+'</text>'; });
+var step=Math.max(1,Math.ceil(labels.length/(W/62)));
+labels.forEach(function(l,i){ var isLast=i===labels.length-1; if(isLast&&i%step!==0&&(labels.length-1)%step<step*0.6) return; if(i%step===0||isLast) g+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="'+(isLast?'end':i===0?'start':'middle')+'" font-size="11" fill="'+C('--text-muted')+'">'+esc(l)+'</text>'; });
+series.forEach(function(s){
+var d='', pen=false;
+s.v.forEach(function(v,i){ if(v==null){pen=false;return;} d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1); pen=true; });
+g+='<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="5 4"':'')+'/>';
+s.v.forEach(function(v,i){ var lone=v!=null&&(i===0||s.v[i-1]==null)&&(i===s.v.length-1||s.v[i+1]==null); if(lone) g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+s.c+'"/>'; });
+});
+g+='<line class="xh" x1="0" x2="0" y1="'+P.t+'" y2="'+(H-P.b)+'" stroke="'+C('--text-muted')+'" stroke-width="1" style="display:none"/><g class="dots"></g>';
+el.innerHTML='<svg width="'+W+'" height="'+H+'" role="img" aria-label="'+esc(opt.aria||'กราฟเส้น')+'">'+g+'<rect x="'+P.l+'" y="0" width="'+(W-P.l-P.r)+'" height="'+H+'" fill="transparent" class="hit"/></svg><div class="tip"></div>';
+var svg=el.querySelector('svg'), tip=el.querySelector('.tip'), xh=svg.querySelector('.xh'), dots=svg.querySelector('.dots');
+function hide(){ tip.style.display='none'; xh.style.display='none'; dots.innerHTML=''; }
+svg.querySelector('.hit').addEventListener('pointermove',function(e){
+var r=svg.getBoundingClientRect(), px=e.clientX-r.left;
+var i=Math.round((px-P.l)/((W-P.l-P.r)/Math.max(1,labels.length-1))); i=Math.max(0,Math.min(labels.length-1,i));
+xh.setAttribute('x1',x(i)); xh.setAttribute('x2',x(i)); xh.style.display='';
+var rows=series.map(function(s){return {s:s,v:s.v[i]};}).filter(function(o){return o.v!=null;}).sort(function(a,b){return b.v-a.v;});
+dots.innerHTML=rows.map(function(o){return '<circle cx="'+x(i)+'" cy="'+y(o.v)+'" r="4.5" fill="'+o.s.c+'" stroke="'+C('--surface-1')+'" stroke-width="2"/>';}).join('');
+tip.innerHTML='<b>'+esc(opt.tipLabels?opt.tipLabels[i]:labels[i])+'</b>'+(rows.length?rows.map(function(o){return '<div class="r"><span><i style="background:'+o.s.c+'"></i>'+esc(o.s.n)+'</span><span>'+fmt(o.v,opt.dec==null?1:opt.dec)+(opt.unit?' '+opt.unit:'')+'</span></div>';}).join(''):'<span class="muted">ไม่มีข้อมูลเดือนนี้</span>');
+tip.style.display='block';
+var tx=x(i)+14; if(tx+tip.offsetWidth>W) tx=x(i)-14-tip.offsetWidth;
+tip.style.left=tx+'px'; tip.style.top=Math.max(0,(e.clientY-r.top)-tip.offsetHeight/2)+'px';
+});
+svg.querySelector('.hit').addEventListener('pointerleave',hide);
+}
+function niceScale(mn,mx,n){
+if(mx===mn){ mx=mn+1; }
+var span=mx-mn, step=Math.pow(10,Math.floor(Math.log10(span/n))), e=span/n/step;
+step*= e>=5?10: e>=2?5: e>=1?2:1;
+var lo=Math.floor(mn/step)*step, hi=Math.ceil(mx/step)*step, t=[];
+for(var v=lo; v<=hi+step/2; v+=step) t.push(+v.toFixed(6));
+return {min:lo,max:hi,ticks:t,dec:step<1?(step<0.1?2:1):0};
+}
+function renderTrend(){
+var from = S.range ? Math.max(0,M.length-S.range) : 0;
+var idx=[]; for(var i=from;i<M.length;i++) idx.push(i);
+// กลุ่มเส้น: ทุกจังหวัด → แยกจังหวัด / เลือกจังหวัด → แยกสถานี (6 อันดับแรก + อื่นๆ) / เลือกสถานี → เส้นเดียว
+var keyOf, names;
+if (S.sub){ keyOf=function(){return S.sub;}; names=[S.sub]; }
+else if (S.prov){
+var last={}; rowsAt(S.m).filter(valid).forEach(function(r){ var s=F[r.f].sub; last[s]=(last[s]||0)+r.mw; });
+var top=Object.keys(last).sort(function(a,b){return last[b]-last[a];});
+var keep=top.slice(0, top.length>6?5:6);
+keyOf=function(f){ return keep.indexOf(f.sub)>=0?f.sub:'อื่นๆ'; };
+names=keep.concat(top.length>6?['อื่นๆ']:[]);
+} else {
+var ps={}; F.forEach(function(f){ps[f.prov]=1;});
+names=['Krabi','Phuket','Phang Nga','Surat Thani','Nakhon Si Thammarat','Trang'].filter(function(p){return ps[p];});
+keyOf=function(f){return f.prov;};
+}
+var series=names.map(function(n,k){ return { n: PROV_TH[n]||n, key:n, c: C(SERIES[k%SERIES.length]), v: [] }; });
+idx.forEach(function(m){
+var sum={}, cnt={};
+rowsAt(m).filter(valid).forEach(function(r){ var k=keyOf(F[r.f]); sum[k]=(sum[k]||0)+r.mw; cnt[k]=1; });
+series.forEach(function(s){ s.v.push(cnt[s.key]?sum[s.key]:null); });
+});
+$('trendTitle').textContent='แนวโน้ม Peak รวม ('+(S.type?TYPE_TH[S.type]:'ทุกประเภท')+') · '+scopeName();
+$('trendCap').textContent='ผลรวม Peak MW ของแต่ละจุดวัดในเดือน (ไม่ใช่ Peak พร้อมกัน) · จำนวนจุดวัดในไฟล์ต้นทางเพิ่มขึ้นตามปี ช่วงต่อรูปแบบไฟล์ (ก.ย. 67) อาจกระโดด · เส้นขาด = ไม่มีไฟล์เดือนนั้น';
+$('trendLegend').innerHTML = series.length>1 ? series.map(function(s){return '<span><i style="background:'+s.c+'"></i>'+esc(s.n)+'</span>';}).join('') : '';
+lineChart($('trend'), idx.map(function(m){return mLabel(M[m]);}), series, {unit:'MW', tipLabels: idx.map(function(m){return mLabelLong(M[m]);}), aria:'แนวโน้ม Peak รวมรายเดือน'});
+}
+function barChart(el, labels, vals, opt){
+opt=opt||{};
+var W=el.clientWidth||400, H=opt.h||220, P={l:34,r:8,t:10,b:26};
+var mx=Math.max.apply(null,vals.concat([1])), nice=niceScale(0,mx,4);
+var bw=(W-P.l-P.r)/vals.length, y=function(v){return P.t+(H-P.t-P.b)*(1-v/nice.max);};
+var g='';
+nice.ticks.forEach(function(t){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="'+C('--grid')+'"/><text x="'+(P.l-5)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="11" fill="'+C('--text-muted')+'">'+t+'</text>'; });
+vals.forEach(function(v,i){
+var x0=P.l+i*bw+1, w=Math.max(2,bw-2), h=H-P.b-y(v), r=Math.min(4,w/2,h);
+if(v>0) g+='<path d="M'+x0+' '+(H-P.b)+'V'+(y(v)+r)+'Q'+x0+' '+y(v)+' '+(x0+r)+' '+y(v)+'H'+(x0+w-r)+'Q'+(x0+w)+' '+y(v)+' '+(x0+w)+' '+(y(v)+r)+'V'+(H-P.b)+'Z" fill="'+(opt.hi&&opt.hi(i)?C('--s2'):C('--s1'))+'"/>';
+if(i%3===0) g+='<text x="'+(x0+w/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="'+C('--text-muted')+'">'+labels[i]+'</text>';
+g+='<rect x="'+(P.l+i*bw)+'" y="'+P.t+'" width="'+bw+'" height="'+(H-P.t-P.b)+'" fill="transparent" data-i="'+i+'"/>';
+});
+el.innerHTML='<svg width="'+W+'" height="'+H+'" role="img" aria-label="'+esc(opt.aria||'')+'">'+g+'</svg><div class="tip"></div>';
+var tip=el.querySelector('.tip');
+el.querySelectorAll('rect[data-i]').forEach(function(rc){
+rc.addEventListener('pointerenter',function(){ var i=+rc.dataset.i; tip.innerHTML='<b>'+opt.tip(i)+'</b>'; tip.style.display='block'; var tx=P.l+i*bw+bw+6; if(tx+tip.offsetWidth>W) tx=P.l+i*bw-6-tip.offsetWidth; tip.style.left=tx+'px'; tip.style.top='10px'; });
+rc.addEventListener('pointerleave',function(){ tip.style.display='none'; });
+});
+}
+function renderHours(){
+var R=rowsAt(S.m).filter(function(r){return valid(r)&&r.ph!=null;});
+var h=new Array(24).fill(0); R.forEach(function(r){ h[Math.min(23,Math.floor(r.ph))]++; });
+var top=h.indexOf(Math.max.apply(null,h));
+$('hourCap').textContent=mLabelLong(M[S.m])+' · '+R.length+' จุดวัด · ช่วงที่พบมากสุด '+(top<10?'0':'')+top+':00–'+(top<9?'0':'')+(top+1)+':00 น. ('+h[top]+' จุด)';
+barChart($('hours'), h.map(function(_,i){return (i<10?'0':'')+i;}), h, { aria:'จำนวนจุดวัดตามชั่วโมงที่เกิด Peak', hi:function(i){return i>=18&&i<=21;}, tip:function(i){ return (i<10?'0':'')+i+':00–'+(i<9?'0':'')+(i+1)+':00 น. : '+h[i]+' จุด'; } });
+}
+function renderTop(){
+var R=rowsAt(S.m).filter(valid).sort(function(a,b){return b.mw-a.mw;}).slice(0,10);
+$('topCap').textContent=mLabelLong(M[S.m])+' · '+(S.type?TYPE_TH[S.type]:'ทุกประเภท')+' · '+scopeName()+' · กดแถบเพื่อดูประวัติ';
+var el=$('top'), W=el.clientWidth||600, rowH=26, H=R.length*rowH+6, L=Math.min(150,W*0.32), mx=Math.max.apply(null,R.map(function(r){return r.mw;}).concat([1]));
+var g='';
+R.forEach(function(r,i){
+var f=F[r.f], w=(W-L-70)*r.mw/mx, y0=i*rowH+4;
+g+='<g data-f="'+r.f+'" style="cursor:pointer"><rect x="0" y="'+y0+'" width="'+W+'" height="'+rowH+'" fill="transparent"/>'+
+'<text x="'+(L-8)+'" y="'+(y0+16)+'" text-anchor="end" font-size="12.5" fill="'+C('--text-primary')+'">'+esc(f.sub+' · '+f.name)+'</text>'+
+'<path d="M'+L+' '+(y0+4)+'H'+(L+Math.max(w-4,0))+'Q'+(L+w)+' '+(y0+4)+' '+(L+w)+' '+(y0+8)+'V'+(y0+rowH-10)+'Q'+(L+w)+' '+(y0+rowH-6)+' '+(L+Math.max(w-4,0))+' '+(y0+rowH-6)+'H'+L+'Z" fill="'+C('--s1')+'"/>'+
+'<text x="'+(L+w+6)+'" y="'+(y0+16)+'" font-size="12" fill="'+C('--text-secondary')+'">'+fmt(r.mw,2)+' MW</text></g>';
+});
+el.innerHTML=R.length?'<svg width="'+W+'" height="'+H+'" role="img" aria-label="10 อันดับโหลดสูงสุด">'+g+'</svg>':'<p class="muted">ไม่มีข้อมูล</p>';
+el.querySelectorAll('g[data-f]').forEach(function(n){ n.onclick=function(){ openDetail(+n.dataset.f); }; });
+}
+/* ===== ตารางฟีดเดอร์ ===== */
+var COLS=[
+{k:'sub',t:'สถานี',l:1},{k:'name',t:'ชื่อ',l:1},{k:'mw',t:'Peak MW',d:2},{k:'yoy',t:'เทียบปีก่อน',d:1},{k:'im',t:'Imax (A)',d:0},
+{k:'ub',t:'UB %',d:1},{k:'pf',t:'PF',d:2},{k:'kv',t:'kV',d:2},{k:'ph',t:'เวลา Peak'},{k:'lmw',t:'Light MW',d:2},{k:'sp',t:'24 เดือน',ns:1},{k:'area',t:'พื้นที่จ่ายไฟ',l:1}
+];
+function sparkline(fi, endM){
+var v=[]; for(var m=Math.max(0,endM-23); m<=endM; m++){ var r=byM[m].find(function(x){return x.f===fi;}); v.push(r&&valid(r)&&!(S.copy&&r.q===1)?r.mw:null); }
+var a=v.filter(function(x){return x!=null;}); if(a.length<2) return '';
+var mn=Math.min.apply(null,a), mx=Math.max.apply(null,a), W=80, H=20, d='', pen=false;
+v.forEach(function(x,i){ if(x==null){pen=false;return;} var X=i*W/(v.length-1), Y=H-2-(mx===mn?H/2:(x-mn)/(mx-mn)*(H-4)); d+=(pen?'L':'M')+X.toFixed(1)+' '+Y.toFixed(1); pen=true; });
+return '<svg class="spark" width="'+W+'" height="'+H+'"><path d="'+d+'" fill="none" stroke="'+C('--s1')+'" stroke-width="1.5"/></svg>';
+}
+function renderTable(){
+var m=S.m, py=prevYear(m), pm={};
+if(py>=0) byM[py].forEach(function(r){ if(valid(r)) pm[r.f]=r.mw; });
+var R=rowsAt(m).map(function(r){ var f=F[r.f]; return { r:r, f:r.f, sub:f.sub, name:f.name, area:f.area, mw:valid(r)?r.mw:null, yoy:(valid(r)&&pm[r.f]>0)?(r.mw-pm[r.f])/pm[r.f]*100:null, im:imax(r), ub:r.ub, pf:r.pf, kv:r.kv, ph:r.ph, lmw:r.lmw }; });
+if(S.q) R=R.filter(function(x){ return (x.sub+' '+x.name+' '+x.area).toLowerCase().indexOf(S.q)>=0; });
+R.sort(function(a,b){ var A=a[S.sort], B=b[S.sort]; if(A==null) return 1; if(B==null) return -1; return (A<B?-1:A>B?1:0)*S.dir; });
+$('tblCap').textContent=mLabelLong(M[m])+' · '+R.length+' จุดวัด · '+scopeName()+' · กดหัวคอลัมน์เพื่อเรียง · กดแถวเพื่อดูประวัติ';
+var th='<thead><tr>'+COLS.map(function(c){ return '<th class="'+(c.l?'l':'')+'" data-k="'+c.k+'">'+c.t+(S.sort===c.k?(S.dir<0?' ▼':' ▲'):'')+'</th>'; }).join('')+'</tr></thead>';
+var body=R.slice(0,400).map(function(x){
+return '<tr data-f="'+x.f+'">'+COLS.map(function(c){
+var v=x[c.k], s;
+if(c.k==='sp') s=sparkline(x.f,m);
+else if(c.k==='ph') s=hhmm(v);
+else if(c.k==='yoy') s=v==null?'–':'<span class="'+(v>=0?'delta-up':'delta-down')+'">'+(v>=0?'+':'')+fmt(v,1)+'%</span>';
+else if(c.k==='ub') s=v==null?'–':(v>TH.UB?'<span class="st warn">⚠ '+fmt(v,1)+'</span>':fmt(v,1));
+else if(c.k==='pf') s=v==null?'–':(v<TH.PF&&x.mw>=TH.PF_MIN_MW?'<span class="st warn">⚠ '+fmt(v,2)+'</span>':fmt(v,2));
+else if(c.k==='im') s=v==null?'–':(v>=TH.IMAX&&F[x.f].type==='Feeder'?'<span class="st crit">⛔ '+fmt(v,0)+'</span>':fmt(v,0));
+else if(c.k==='area') s='<span class="muted" title="'+esc(v)+'">'+esc(String(v||'').slice(0,40))+'</span>';
+else if(c.d!=null) s=fmt(v,c.d);
+else s=esc(v);
+if(c.k==='mw'&&x.r.q===2) s='<span class="badge" title="MW ไม่สอดคล้องกับกระแส">MW ผิดรูป</span>';
+return '<td class="'+(c.l?'l':'')+'">'+s+'</td>';
+}).join('')+'</tr>';
+}).join('');
+$('tbl').innerHTML=th+'<tbody>'+body+'</tbody>';
+$('tbl').querySelectorAll('th').forEach(function(h){ h.onclick=function(){ var k=h.dataset.k; if(k==='sp') return; if(S.sort===k) S.dir*=-1; else { S.sort=k; S.dir=(k==='sub'||k==='name'||k==='area')?1:-1; } renderTable(); }; });
+$('tbl').querySelectorAll('tbody tr').forEach(function(tr){ tr.onclick=function(){ openDetail(+tr.dataset.f); }; });
+}
+/* ===== จุดที่ต้องดูแล ===== */
+function renderIssues(){
+var I=issueSets(S.m);
+$('issueCap').textContent=mLabelLong(M[S.m])+' · '+(S.type?TYPE_TH[S.type]:'ทุกประเภท')+' · '+scopeName()+' · กดรายการเพื่อดูประวัติ';
+var cards=[
+{id:'imax',st:'crit',ic:'⛔',t:'กระแสสูง ≥ '+TH.IMAX+' A (ฟีดเดอร์)',L:I.imax,v:function(x){return fmt(x[1],0)+' A · '+fmt(x[0].mw,2)+' MW';}},
+{id:'ub',st:'warn',ic:'⚠',t:'Unbalance > '+TH.UB+'% (Iavg ≥ '+TH.UB_MIN_IAVG+' A)',L:I.ub,v:function(x){return fmt(x[1],1)+'% · '+[x[0].ia,x[0].ib,x[0].ic].join('/')+' A';}},
+{id:'pf',st:'warn',ic:'⚠',t:'Power Factor < '+TH.PF.toFixed(2),L:I.pf,v:function(x){return 'PF '+fmt(x[1],2)+' · '+fmt(x[0].mw,2)+' MW';}},
+{id:'kv',st:'warn',ic:'⚠',t:'แรงดันนอกช่วง ('+TH.KV_LO+'–'+TH.KV_HI+' kV)',L:I.kv,v:function(x){return fmt(x[1],2)+' kV';}},
+{id:'growth',st:'warn',ic:'▲',t:'โหลดโตเกิน '+TH.GROWTH+'% เทียบปีก่อน',L:I.growth,v:function(x){return '+'+fmt(x[1],1)+'% · '+fmt(x[0].mw,2)+' MW';}},
+{id:'bad',st:'',ic:'?',t:'ข้อมูล MW ผิดรูป (ตรวจต้นทาง)',L:I.bad,v:function(x){return fmt(x[0].mw,2)+' MW · '+[x[0].ia,x[0].ib,x[0].ic].join('/')+' A';}}
+];
+$('issues').innerHTML=cards.map(function(c){
+return '<div class="card issue" id="iss-'+c.id+'"><h3><span class="st '+c.st+'">'+c.ic+'</span>'+esc(c.t)+'<span class="count">'+c.L.length+'</span></h3><ul>'+
+(c.L.length?c.L.slice(0,100).map(function(x){ var f=F[x[0].f]; return '<li data-f="'+x[0].f+'"><span>'+esc(f.sub+' · '+f.name)+'</span><span>'+c.v(x)+'</span></li>'; }).join(''):'<li class="muted" style="cursor:default"><span><span class="st good">✓</span> ไม่พบ</span><span></span></li>')+'</ul></div>';
+}).join('');
+$('issues').querySelectorAll('li[data-f]').forEach(function(li){ li.onclick=function(){ openDetail(+li.dataset.f); }; });
+}
+/* ===== คุณภาพข้อมูล ===== */
+function renderQuality(){
+var rows=[];
+// เดือนที่ขาดในช่วง
+var first=M[0].split('-'), last=M[M.length-1].split('-'), y=+first[0], mo=+first[1], all=[];
+while(y<+last[0]||(y===+last[0]&&mo<=+last[1])){ all.push(y+'-'+(mo<10?'0':'')+mo); mo++; if(mo>12){mo=1;y++;} }
+all.reverse().forEach(function(ym){
+var m=M.indexOf(ym);
+if(m<0){ rows.push('<tr><td class="l">'+mLabelLong(ym)+'</td><td class="l"><span class="st crit">✕ ไม่มีไฟล์</span></td><td>–</td><td>–</td><td>–</td></tr>'); return; }
+var R=byM[m], cp=R.filter(function(r){return r.q===1;}).length, bad=R.filter(function(r){return r.q===2;}).length, pct=R.length?cp/R.length*100:0;
+rows.push('<tr><td class="l">'+mLabelLong(ym)+'</td><td class="l muted">'+esc(D.sources[m]||'')+'</td><td>'+R.length+'</td><td>'+(pct>=50?'<span class="st warn">⚠ '+fmt(pct,0)+'%</span>':fmt(pct,0)+'%')+'</td><td>'+bad+'</td></tr>');
+});
+$('qtbl').innerHTML='<thead><tr><th class="l">เดือน</th><th class="l">ไฟล์ต้นทาง</th><th>จุดวัด</th><th>คัดลอกจากเดือนก่อน</th><th>MW ผิดรูป</th></tr></thead><tbody>'+rows.join('')+'</tbody>';
+}
+/* ===== รายละเอียดจุดวัด ===== */
+function openDetail(fi){
+var f=F[fi], hist=[];
+for(var m=0;m<M.length;m++){ var r=byM[m].find(function(x){return x.f===fi;}); hist.push(r||null); }
+var ok=function(r){ return r && !(S.copy&&r.q===1); };
+var labels=M.map(mLabel), tl=M.map(mLabelLong);
+var cur=hist[S.m];
+var info=cur?('Peak '+fmt(cur.mw,2)+' MW · '+hhmm(cur.ph)+' น. · '+fmt(cur.kv,2)+' kV · PF '+fmt(cur.pf,2)+' · UB '+fmt(cur.ub,1)+'%'):'ไม่มีข้อมูลเดือนที่เลือก';
+$('panel').innerHTML='<div class="hd"><div><h2>'+esc(f.sub+' · '+f.name)+'</h2><div class="cap" style="margin:2px 0 0">'+esc((PROV_TH[f.prov]||f.prov)+' · '+(TYPE_TH[f.type]||f.type))+(f.area?' · '+esc(f.area):'')+'</div><div style="margin-top:6px;font-size:13.5px"><b>'+mLabelLong(M[S.m])+':</b> '+info+'</div></div><button class="close" onclick="closeDetail()">ปิด ✕</button></div>'+
+'<div class="card"><h2>Peak / Light (MW)</h2><div class="legend"><span><i style="background:'+C('--s1')+'"></i>Peak</span><span><i style="background:'+C('--s2')+'"></i>Light</span></div><div class="chart" id="dMW"></div></div>'+
+'<div class="card" style="margin-top:12px"><h2>กระแสแต่ละเฟสขณะ Peak (A)</h2><div class="legend"><span><i style="background:'+C('--s1')+'"></i>เฟส A</span><span><i style="background:'+C('--s2')+'"></i>เฟส B</span><span><i style="background:'+C('--s3')+'"></i>เฟส C</span></div><div class="chart" id="dI"></div></div>';
+$('drawer').classList.add('on');
+lineChart($('dMW'), labels, [
+{n:'Peak', c:C('--s1'), v:hist.map(function(r){return ok(r)&&valid(r)?r.mw:null;})},
+{n:'Light', c:C('--s2'), v:hist.map(function(r){return ok(r)&&r.q!==2?r.lmw:null;})}
+], {unit:'MW', dec:2, tipLabels:tl, h:220, aria:'Peak และ Light MW รายเดือน'});
+lineChart($('dI'), labels, [
+{n:'เฟส A', c:C('--s1'), v:hist.map(function(r){return ok(r)?r.ia:null;})},
+{n:'เฟส B', c:C('--s2'), v:hist.map(function(r){return ok(r)?r.ib:null;})},
+{n:'เฟส C', c:C('--s3'), v:hist.map(function(r){return ok(r)?r.ic:null;})}
+], {unit:'A', dec:0, tipLabels:tl, h:220, aria:'กระแสแต่ละเฟสรายเดือน'});
+}
+function closeDetail(){ $('drawer').classList.remove('on'); }
+boot();
+</script>
+<style>
+.ub-bars{display:flex;flex-direction:column;gap:3px;position:relative;min-width:150px}
+.ub-bars div{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-secondary)}
+.ub-bars span.b{height:8px;border-radius:0 4px 4px 0;display:inline-block}
+.ub-bars .avg{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text-primary)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pill.red{color:#b3261e;background:#fdecea}.pill.amb{color:#8a5a00;background:#fff3d6}.pill.gray{color:var(--text-secondary);background:var(--surface-2)}.pill.green{color:#0a6b0a;background:#e3f4e3}
+.insight{background:#fff7e6;border:1px solid #f0d9a8;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;color:#3d3c39;margin-top:12px}
+@media (prefers-color-scheme: dark){.insight{background:#2e2615;border-color:#5a4a20;color:#f0efec}.pill.red{background:#3a1d1b;color:#ff8a80}.pill.amb{background:#3a2e12;color:#ffcc66}.pill.green{background:#16301a;color:#7fd67f}}
+.ptable td,.ptable th{white-space:normal;vertical-align:middle}
+.ptable td.act{min-width:260px;max-width:380px;text-align:left;line-height:1.5}
+.ptable td.res{min-width:170px;text-align:left;font-size:12.5px;color:var(--text-secondary);line-height:1.5}
+.home{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:10px}
+.home .c{border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.home .c:hover{border-color:var(--brand-2)}
+.phase-row{display:grid;grid-template-columns:56px 1fr 60px;gap:10px;align-items:center;margin-top:10px}
+.phase-row .bar{height:20px;border-radius:0 6px 6px 0}
+.stat3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.stat3 div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.stat3 small{display:block;font-size:12px;color:var(--text-secondary)}
+.stat3 b{font-size:20px}
+.mbars{display:grid;grid-template-columns:repeat(12,minmax(52px,1fr));gap:6px;align-items:end;min-width:660px}
+.mbars .m{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--text-secondary)}
+.mbars .g{display:flex;align-items:flex-end;gap:2px;height:110px}
+.mbars .g span{width:10px;border-radius:3px 3px 0 0}
+.steps{margin:10px 0 0;padding-left:22px;line-height:1.6;font-size:14.5px}
+.steps li{margin-bottom:8px}
+.stbtn{font:inherit;font-size:14px;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface-1);cursor:pointer}
+.stbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.lbar{position:relative;width:200px;height:12px;background:var(--surface-2);border-radius:4px;display:inline-block;vertical-align:middle}
+.lbar span{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0}
+.lbar i{position:absolute;left:160px;top:-3px;bottom:-3px;border-left:2px dashed var(--text-primary)}
+.pfcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+</style>
+<script>
+(function(){
+/* ===== ค่าตั้งต้นโมดูล Unbalance / โหลดสูง ===== */
+var X = { UB: 10, UB_MIN_IAVG: 50, CHRONIC: 9, KV_PH: 19.05, RATING: 400, LIMIT: 320, WATCH: 0.6, HOME_SUB: 'ALA', TRANSFER: 1.5, PF_TARGET: 0.95 };
+var STATUS = {};           // key -> {s, t}
+var STATUS_TH = { todo: 'ยังไม่เริ่ม', doing: 'กำลังดำเนินการ', done: 'แก้แล้ว' };
+var FM = null;             // FM[m][f] = row
+
+function el(id){ return document.getElementById(id); }
+function addView(id, html){ var s=document.createElement('section'); s.className='view'; s.id='v-'+id; s.innerHTML=html; document.querySelector('main').appendChild(s); }
+function addTab(id, label, before){
+  var b=document.createElement('button'); b.dataset.v=id; b.textContent=label;
+  var ref=document.querySelector('#tabs button[data-v="'+before+'"]');
+  document.getElementById('tabs').insertBefore(b, ref);
+  b.onclick=function(){
+    document.querySelectorAll('#tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+id);});
+    render();
+  };
+}
+
+addTab('ub','Unbalance และแนวทางแก้','quality');
+addTab('load','โหลดสูง และ PF','quality');
+addView('ub',
+  '<div class="card" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:2px">เกณฑ์ Unbalance<select id="ubThr" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px"><option value="10">&gt; 10%</option><option value="20">&gt; 20%</option></select></label>'+
+  '<p class="cap" style="margin:0;max-width:640px">คิดเฉพาะฟีดเดอร์ 33 kV ที่กระแสเฉลี่ยขณะ Peak ≥ '+X.UB_MIN_IAVG+' A · %Unbalance แบบ NEMA (เบี่ยงสูงสุดจากค่าเฉลี่ย ÷ ค่าเฉลี่ย) · "ประจำ" = เกินเกณฑ์อย่างน้อย '+X.CHRONIC+' ใน 12 เดือนและเฟสหนักเป็นเฟสเดิม</p></div>'+
+  '<div class="grid kpis" id="ubKpis" style="margin-top:12px"></div><div id="ubInsight"></div>'+
+  '<div class="card" style="margin-top:12px"><h2>ลำดับงานแก้ Unbalance</h2><p class="cap" id="ubCap"></p>'+
+  '<div class="legend"><span><i style="background:var(--s1)"></i>เฟส A</span><span><i style="background:var(--s2)"></i>เฟส B</span><span><i style="background:var(--s3)"></i>เฟส C</span><span><i style="background:var(--text-primary);width:2px;height:12px"></i>ค่าเฉลี่ย</span></div>'+
+  '<div class="tbl-wrap"><table class="ptable" id="ubTbl"></table></div></div>'+
+  '<div class="card" style="margin-top:12px"><h2 id="homeTitle"></h2><p class="cap">กดการ์ดเพื่อดูแผนแก้ · เปลี่ยนสถานีได้ที่ค่า HOME_SUB ในสคริปต์</p><div class="home" id="homeCards"></div></div>'+
+  '<p class="cap" style="margin-top:12px;line-height:1.7">กระแสที่ต้องย้าย = ส่วนที่แต่ละเฟสเกินหรือขาดจากค่าเฉลี่ย 3 เฟส · kVA ≈ กระแส × 19.05 kV (แรงดันเฟส 33/√3) · กระแสนิวทรัลประมาณจากกระแส 3 เฟส (สมมติ PF ใกล้กัน) · สูญเสียที่ลดได้คิดจาก I²R ของสายเฟส</p>');
+addView('load',
+  '<div class="grid kpis" id="ldKpis"></div>'+
+  '<div class="card" style="margin-top:12px"><h2>ฟีดเดอร์โหลดสูงและเวลาที่จะถึงเกณฑ์</h2><p class="cap" id="ldCap"></p><div class="tbl-wrap"><table class="ptable" id="ldTbl"></table></div>'+
+  '<p class="cap" style="margin-top:10px">ระดับโหลด = ค่ากลางของกระแสเฟสสูงสุด 3 เดือนล่าสุด · เปลี่ยนต่อปี = ค่ากลาง 12 เดือนล่าสุดเทียบ 12 เดือนก่อน · เวลาถึง '+X.LIMIT+' A คิดแบบเส้นตรงจากอัตรานั้น · "ขั้นบันได" = 6 เดือนหลังสูงกว่า 6 เดือนแรกเกิน 40% (ปรับโครงข่าย) ไม่พยากรณ์ · "รับโหลดโอน" = Peak ปีนี้สูงแต่ระดับปัจจุบันต่ำกว่า 60% ของ Peak</p></div>'+
+  '<div class="card" style="margin-top:12px"><h2>Power Factor และคาปาซิเตอร์</h2><p class="cap" id="pfCap"></p><div class="pfcards" id="pfCards"></div></div>');
+
+el('ubThr').onchange=function(){ X.UB=+this.value; render(); };
+
+/* ===== คำนวณ PF ใหม่จาก MW/MVAr (ค่าในไฟล์ต้นทางบางจุดไม่ตรง) ===== */
+function prep(){
+  FM = byM.map(function(rows){ var o={}; rows.forEach(function(r){ o[r.f]=r; }); return o; });
+  byM.forEach(function(rows){ rows.forEach(function(r){
+    if (r.pfSrc===undefined){ r.pfSrc=r.pf; if(r.mw!=null&&r.mvar!=null&&(r.mw||r.mvar)){ r.pf=Math.abs(r.mw)/Math.sqrt(r.mw*r.mw+r.mvar*r.mvar); } }
+  }); });
+}
+var _init = init;
+init = function(d){ _init(d); prep(); render(); };
+if (typeof D !== 'undefined' && D) prep();
+
+var _render = render;
+render = function(){
+  _render();
+  if (!D) return;
+  var v=document.querySelector('#tabs button.on').dataset.v;
+  if (v==='ub') renderUB();
+  if (v==='load') renderLoad();
+};
+
+/* ===== Unbalance ===== */
+function ubOf(a,b,c){ var avg=(a+b+c)/3; return avg>0?Math.max(Math.abs(a-avg),Math.abs(b-avg),Math.abs(c-avg))/avg*100:null; }
+function heavyOf(a,b,c){ var m=Math.max(a,b,c); return m===a?'A':m===b?'B':'C'; }
+function okRow(r){ return r && r.q!==2 && !(S.copy&&r.q===1) && r.ia!=null && r.ib!=null && r.ic!=null; }
+function analyse(r){
+  var a=r.ia,b=r.ib,c=r.ic,avg=(a+b+c)/3, ub=ubOf(a,b,c), hv=heavyOf(a,b,c);
+  var cnt=0,n=0,same=0;
+  for (var m=Math.max(0,S.m-11); m<=S.m; m++){ var x=FM[m][r.f]; if(!okRow(x)) continue; n++; var u=ubOf(x.ia,x.ib,x.ic); if(u!=null&&u>X.UB) cnt++; if(heavyOf(x.ia,x.ib,x.ic)===hv) same++; }
+  var P={A:a,B:b,C:c}, give=[], take=[];
+  ['A','B','C'].forEach(function(k){ var d=P[k]-avg; if(d>=2) give.push([k,Math.round(d)]); else if(d<=-2) take.push([k,Math.round(-d)]); });
+  var moveA=give.reduce(function(s,g){return s+g[1];},0);
+  var In=Math.sqrt(Math.max(a*a+b*b+c*c-a*b-b*c-c*a,0));
+  var loss=(1-3*avg*avg/(a*a+b*b+c*c))*100;
+  var chronic = n>=6 && cnt>=Math.min(X.CHRONIC,n) && same>=Math.ceil(n*0.75);
+  return { r:r, f:F[r.f], a:a,b:b,c:c, avg:avg, ub:ub, hv:hv, cnt:cnt, n:n, same:same, give:give, take:take, kva:Math.round(moveA*X.KV_PH/10)*10, In:In, loss:loss, chronic:chronic, score:ub*(n?cnt/n:0) };
+}
+function planText(z){
+  if (!z.chronic) return z.same<Math.ceil(z.n*0.75) ? 'เฟสหนักสลับไปมา · ตรวจการสลับโหลดหรือโหลดใหญ่ที่เปิด-ปิดเป็นช่วง ยังไม่ต้องย้ายเฟสถาวร' : 'เพิ่งเกิด '+z.cnt+' เดือน · เฝ้าดูก่อน อาจมาจากการรับโหลดโอนบางช่วง';
+  var parts=[];
+  if (z.give.length===1){ z.take.forEach(function(t){ parts.push(z.give[0][0]+' → '+t[0]+' ≈ '+t[1]+' A'); }); }
+  else if (z.take.length===1){ z.give.forEach(function(g){ parts.push(g[0]+' → '+z.take[0][0]+' ≈ '+g[1]+' A'); }); }
+  return 'ย้ายโหลด 1 เฟส: '+parts.join(', ')+' (รวม ≈ '+fmt(z.kva,0)+' kVA)';
+}
+function statusKey(f){ return 'UB|'+f.sub+'|'+f.name; }
+function statusPill(f){ var s=STATUS[statusKey(f)]; if(!s||s.s==='todo') return ''; return ' <span class="pill '+(s.s==='done'?'green':'amb')+'">'+STATUS_TH[s.s]+'</span>'; }
+function bars(z,scale){
+  var w=function(v){ return Math.round(v*scale)+'px'; };
+  return '<div class="ub-bars"><div><span class="b" style="background:var(--s1);width:'+w(z.a)+'"></span>'+fmt(z.a,0)+'</div><div><span class="b" style="background:var(--s2);width:'+w(z.b)+'"></span>'+fmt(z.b,0)+'</div><div><span class="b" style="background:var(--s3);width:'+w(z.c)+'"></span>'+fmt(z.c,0)+'</div><span class="avg" style="left:'+w(z.avg)+'"></span></div>';
+}
+function ubList(){
+  return rowsAt(S.m).filter(function(r){ return F[r.f].type==='Feeder' && okRow(r) && (r.ia+r.ib+r.ic)/3>=X.UB_MIN_IAVG; }).map(analyse);
+}
+function renderUB(){
+  var all=ubList(), L=all.filter(function(z){return z.ub>X.UB;});
+  var chronic=L.filter(function(z){return z.chronic;});
+  var hc={A:0,B:0,C:0}; L.forEach(function(z){hc[z.hv]++;});
+  var top=Object.keys(hc).sort(function(a,b){return hc[b]-hc[a];})[0];
+  var lc=loadList().filter(function(x){return x.peakC>=X.RATING*X.WATCH;}).length;
+  var k=[
+    ['Unbalance > '+X.UB+'%', L.length, 'ฟีดเดอร์', 'จาก '+all.length+' ฟีดเดอร์ที่มีโหลดพอวิเคราะห์', L.length?'warn':'good'],
+    ['ไม่สมดุลเป็นประจำ', chronic.length, 'ฟีดเดอร์', 'แก้ด้วยการย้ายโหลด 1 เฟส', chronic.length?'crit':'good'],
+    ['เฟสที่หนักที่สุดคือเฟส '+top, hc[top], L.length?'จาก '+L.length+' ('+Math.round(hc[top]/L.length*100)+'%)':'', 'A '+hc.A+' · B '+hc.B+' · C '+hc.C, ''],
+    ['กระแสเกิน '+Math.round(X.WATCH*100)+'% ของ '+X.RATING+' A', lc, 'ฟีดเดอร์', 'ดูแท็บโหลดสูง และ PF', '']
+  ];
+  el('ubKpis').innerHTML=k.map(function(x){ var ic=x[4]==='crit'?'<span class="st crit">⛔</span> ':x[4]==='warn'?'<span class="st warn">⚠</span> ':x[4]==='good'?'<span class="st good">✓</span> ':''; return '<div class="card kpi"><div class="lab">'+ic+esc(x[0])+'</div><div class="val">'+x[1]+'<small>'+x[2]+'</small></div><div class="note">'+x[3]+'</div></div>'; }).join('');
+  el('ubInsight').innerHTML = (L.length>=10 && hc[top]/L.length>=0.6) ?
+    '<div class="insight"><span class="st warn" style="font-size:20px">⚠</span><div><b>ข้อค้นพบระดับระบบ: เฟส '+top+' หนักเกินใน '+Math.round(hc[top]/L.length*100)+'% ของฟีดเดอร์ที่ไม่สมดุล</b><div style="margin-top:4px;line-height:1.6">ถ้าเป็นการสุ่มควรกระจายพอๆ กันทั้ง 3 เฟส จึงน่าจะมาจากการต่อหม้อแปลงหรือโหลด 1 เฟสเข้าเฟส '+top+' เป็นประจำ หรือการเรียงเฟส/CT ที่สถานีกับใน SCADA ไม่ตรงกัน · <b>แนะนำ:</b> วัดกระแสเทียบ SCADA 2–3 ฟีดเดอร์ก่อน ถ้าตรงจริงให้ออกแนวปฏิบัติต่อหม้อแปลง 1 เฟสใหม่แบบเวียนเฟส แล้วย้ายเฟสตามตาราง</div></div></div>' : '';
+  L.sort(function(a,b){ return b.score-a.score || b.ub-a.ub; });
+  el('ubCap').textContent=mLabelLong(M[S.m])+' · '+scopeName()+' · '+L.length+' ฟีดเดอร์ · เรียงตาม %UB × ความต่อเนื่อง · กดแถวเพื่อดูแผนแก้';
+  var mx=Math.max.apply(null,L.map(function(z){return Math.max(z.a,z.b,z.c);}).concat([1])), sc=120/mx;
+  el('ubTbl').innerHTML='<thead><tr><th class="l">#</th><th class="l">ฟีดเดอร์</th><th class="l">กระแสขณะ Peak (A)</th><th>%UB</th><th class="l">ต่อเนื่อง</th><th class="l">แนวทางแก้</th><th class="l">ผลที่คาด</th></tr></thead><tbody>'+
+    L.slice(0,150).map(function(z,i){
+      var pill=z.chronic?'<span class="pill red">ประจำ '+z.cnt+'/'+z.n+'</span>':'<span class="pill gray">ชั่วคราว '+z.cnt+'/'+z.n+'</span>';
+      var res=z.chronic?'นิวทรัล '+fmt(z.In,0)+' → ~0 A · สูญเสีย −'+fmt(z.loss,1)+'%':'ถ้าเกิดต่อเนื่องจะขึ้นเป็น "ประจำ"';
+      return '<tr data-f="'+z.r.f+'"><td class="l">'+(i+1)+'</td><td class="l"><b>'+esc(z.f.name)+'</b>'+statusPill(z.f)+'<div class="muted" style="font-size:12px">'+esc((PROV_TH[z.f.prov]||z.f.prov)+' · '+z.f.sub)+'</div></td><td class="l">'+bars(z,sc)+'</td><td><b>'+fmt(z.ub,1)+'%</b></td><td class="l">'+pill+'</td><td class="act">'+esc(planText(z))+'</td><td class="res">'+res+'</td></tr>';
+    }).join('')+'</tbody>';
+  el('ubTbl').querySelectorAll('tbody tr').forEach(function(tr){ tr.onclick=function(){ openPlan(+tr.dataset.f); }; });
+  // การ์ดสถานีของฉัน
+  var home=all.filter(function(z){ return z.f.sub===X.HOME_SUB && z.ub>X.UB; }).sort(function(a,b){return b.ub-a.ub;});
+  el('homeTitle').textContent='สถานี '+X.HOME_SUB+' · ฟีดเดอร์ที่ UB เกิน '+X.UB+'%';
+  var homeAll=rowsAt(S.m).length && F.some(function(f){return f.sub===X.HOME_SUB;});
+  el('homeCards').innerHTML = home.length ? home.map(function(z){
+    return '<div class="c" data-f="'+z.r.f+'" role="button" tabindex="0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px">'+esc(z.f.name)+'</b><b style="color:'+(z.ub>15?'#b3261e':'#8a5a00')+'">UB '+fmt(z.ub,1)+'%</b></div><div class="muted" style="font-size:13px">A '+fmt(z.a,0)+' · B '+fmt(z.b,0)+' · C '+fmt(z.c,0)+' A · เกินเกณฑ์ '+z.cnt+'/'+z.n+' เดือน'+statusPill(z.f)+'</div><div style="margin-top:6px;font-size:14px">'+esc(planText(z))+'</div></div>';
+  }).join('') : '<p class="muted">'+(homeAll?'ไม่มีฟีดเดอร์ที่เกินเกณฑ์ในตัวกรองนี้':'ตัวกรองปัจจุบันไม่รวมสถานี '+X.HOME_SUB)+'</p>';
+  el('homeCards').querySelectorAll('.c').forEach(function(c){ c.onclick=function(){ openPlan(+c.dataset.f); }; c.onkeydown=function(e){ if(e.key==='Enter') openPlan(+c.dataset.f); }; });
+}
+
+/* ===== แผนแก้รายฟีดเดอร์ (เปิดในหน้าต่างรายละเอียด) ===== */
+function phaseRows(a,b,c,mx){ var w=function(v){return Math.max(2,Math.round(v/mx*100))+'%';}; return [['A',a,'--s1'],['B',b,'--s2'],['C',c,'--s3']].map(function(p){ return '<div class="phase-row"><span>เฟส '+p[0]+'</span><span class="bar" style="background:var('+p[2]+');width:'+w(p[1])+'"></span><b style="text-align:right">'+fmt(p[1],0)+' A</b></div>'; }).join(''); }
+window.openPlan = function(fi){
+  var r=FM[S.m][fi]; if(!okRow(r)){ openDetail(fi); return; }
+  var z=analyse(r), f=z.f, mx=Math.max(z.a,z.b,z.c);
+  var hist=[]; for(var m=Math.max(0,S.m-11); m<=S.m; m++) hist.push([m, FM[m][fi]]);
+  var hmx=Math.max.apply(null,hist.map(function(h){return okRow(h[1])?Math.max(h[1].ia,h[1].ib,h[1].ic):0;}).concat([1]));
+  var hp=function(v){ return Math.round(v/hmx*100)+'px'; };
+  var mb=hist.map(function(h){ var x=h[1]; if(!okRow(x)) return '<div class="m"><div class="g"></div>'+mLabel(M[h[0]])+'<span>–</span></div>'; var u=ubOf(x.ia,x.ib,x.ic); return '<div class="m"><div class="g"><span style="background:var(--s1);height:'+hp(x.ia)+'"></span><span style="background:var(--s2);height:'+hp(x.ib)+'"></span><span style="background:var(--s3);height:'+hp(x.ic)+'"></span></div>'+mLabel(M[h[0]])+'<b style="color:'+(u>X.UB?'#b3261e':'var(--text-secondary)')+'">'+fmt(u,0)+'%</b></div>'; }).join('');
+  var diag = z.chronic ? '<b>วินิจฉัย:</b> ไม่สมดุลแบบโครงสร้าง เฟส '+z.hv+' หนักเป็นเฟสเดิม '+z.same+' ใน '+z.n+' เดือน ไม่ได้มาจากการโอนโหลดชั่วคราว แก้ได้ด้วยการย้ายหม้อแปลงหรือโหลด 1 เฟสถาวร'
+    : '<b>วินิจฉัย:</b> '+esc(planText(z));
+  var moves=[]; if (z.give.length===1) z.take.forEach(function(t){ moves.push('ไปเฟส '+t[0]+' ≈ '+fmt(Math.round(t[1]*X.KV_PH/10)*10,0)+' kVA ('+t[1]+' A)'); });
+  else if (z.take.length===1) z.give.forEach(function(g){ moves.push('จากเฟส '+g[0]+' ≈ '+fmt(Math.round(g[1]*X.KV_PH/10)*10,0)+' kVA ('+g[1]+' A)'); });
+  var src = z.give.map(function(g){return g[0];}).join(', ');
+  var key=statusKey(f), st=(STATUS[key]&&STATUS[key].s)||'todo';
+  var steps = z.chronic ? '<ol class="steps"><li><b>ดึงรายการหม้อแปลง 1 เฟสที่ต่อเฟส '+src+'</b> บนฟีดเดอร์ '+esc(f.name)+' จากข้อมูลสำรวจหรือ GIS พร้อมขนาด kVA</li>'+
+      '<li><b>เลือกย้ายรวมประมาณ '+fmt(z.kva,0)+' kVA</b> '+moves.join(' และ ')+' · เลือกจุดที่อยู่ไกลสถานีก่อน และตรวจพิกัดฟิวส์/อุปกรณ์ป้องกันของเฟสที่รับเพิ่ม</li>'+
+      '<li><b>วัดกระแสหน้างานช่วง 18:00–21:00</b> ก่อนและหลังย้าย เพื่อยืนยันว่าค่าจาก SCADA ตรงกับหน้างาน</li>'+
+      '<li><b>ติดตามผล</b> เมื่อไฟล์ Load01 เดือนถัดไปเข้า ดู %UB ในหน้านี้ ถ้าต่ำกว่า '+X.UB+'% กด "แก้แล้ว"</li></ol>'
+    : '<ol class="steps"><li>เฝ้าดูเดือนถัดไป ถ้าเกินเกณฑ์ต่อเนื่อง ระบบจะเปลี่ยนเป็น "ประจำ" และคำนวณแผนย้ายเฟสให้</li><li>ถ้าเฟสหนักสลับไปมา ตรวจหาโหลดขนาดใหญ่ 1 เฟสที่ทำงานเป็นช่วง หรือการสลับจุดเชื่อมระหว่างฟีดเดอร์</li></ol>';
+  $('panel').innerHTML='<div class="hd"><div><h2>แผนแก้ Unbalance · '+esc(f.name)+'</h2><div class="cap" style="margin:2px 0 0">'+esc((PROV_TH[f.prov]||f.prov)+' · สถานี '+f.sub)+(f.area?' · '+esc(f.area):'')+' · '+mLabelLong(M[S.m])+'</div></div><button class="close" onclick="closeDetail()">ปิด ✕</button></div>'+
+    '<div class="grid two"><div class="card"><h2>ตอนนี้ · กระแสขณะ Peak</h2><div class="cap">'+fmt(r.mw,2)+' MW · ค่าเฉลี่ย 3 เฟส '+fmt(z.avg,1)+' A</div>'+phaseRows(z.a,z.b,z.c,mx)+
+      '<div class="stat3"><div><small>%Unbalance</small><b style="color:#b3261e">'+fmt(z.ub,1)+'%</b></div><div><small>นิวทรัล (ประมาณ)</small><b>'+fmt(z.In,0)+' A</b></div><div><small>เฟสที่หนัก</small><b>'+z.hv+'</b></div></div></div>'+
+    '<div class="card"><h2>หลังปรับตามแผน (คาดการณ์)</h2><div class="cap">ทุกเฟสเท่าค่าเฉลี่ย '+fmt(z.avg,0)+' A</div>'+phaseRows(z.avg,z.avg,z.avg,mx)+
+      '<div class="stat3"><div><small>%Unbalance</small><b style="color:#0a6b0a">≈ 0%</b></div><div><small>นิวทรัล</small><b style="color:#0a6b0a">≈ 0 A</b></div><div><small>สูญเสียสายเฟส</small><b style="color:#0a6b0a">−'+fmt(z.loss,1)+'%</b></div></div></div></div>'+
+    '<div class="card" style="margin-top:12px"><h2>ย้อนหลัง 12 เดือน</h2><div class="legend"><span><i style="background:var(--s1)"></i>เฟส A</span><span><i style="background:var(--s2)"></i>เฟส B</span><span><i style="background:var(--s3)"></i>เฟส C</span></div><div style="overflow-x:auto"><div class="mbars">'+mb+'</div></div><div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.6">'+diag+'</div></div>'+
+    '<div class="card" style="margin-top:12px"><h2>แผนดำเนินการ</h2>'+steps+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><span class="muted">สถานะงาน:</span>'+
+      ['todo','doing','done'].map(function(s){ return '<button type="button" class="stbtn'+(st===s?' on':'')+'" data-s="'+s+'">'+STATUS_TH[s]+'</button>'; }).join('')+
+      '<span class="muted" id="stMsg" style="font-size:12.5px">'+(STATUS[key]&&STATUS[key].t?'บันทึกล่าสุด '+esc(STATUS[key].t):'')+'</span></div>'+
+      '<p class="cap" style="margin-top:10px">kVA ≈ กระแส × 19.05 kV ใช้เป็นเป้าเบื้องต้น โหลดจริงของหม้อแปลงไม่เต็มพิกัด จึงอาจต้องย้ายมากกว่าตัวเลขนี้</p></div>';
+  $('panel').querySelectorAll('.stbtn').forEach(function(b){ b.onclick=function(){ saveStatus(key, b.dataset.s); }; });
+  $('drawer').classList.add('on');
+};
+function saveStatus(key, s){
+  STATUS[key]={ s:s, t:new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}) };
+  $('panel').querySelectorAll('.stbtn').forEach(function(b){ b.classList.toggle('on', b.dataset.s===s); });
+  var msg=el('stMsg');
+  if (window.google && google.script && google.script.run){
+    msg.textContent='กำลังบันทึก…';
+    google.script.run.withSuccessHandler(function(){ msg.textContent='บันทึกแล้ว'; renderUB(); }).withFailureHandler(function(e){ msg.textContent='บันทึกไม่สำเร็จ: '+e.message; }).setActionStatus(key, s);
+  } else { msg.textContent='(ตัวอย่าง: ไม่ได้บันทึกจริง)'; renderUB(); }
+}
+if (window.google && google.script && google.script.run){
+  google.script.run.withSuccessHandler(function(o){ STATUS=o||{}; if(D) render(); }).getActionStatus();
+}
+
+/* ===== โหลดสูง ===== */
+function median(a){ var s=a.slice().sort(function(x,y){return x-y;}); var n=s.length; return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):null; }
+function seriesImax(fi, from, to){ var out=[]; for(var m=Math.max(0,from); m<=to; m++){ var x=FM[m][fi]; if(okRow(x)) out.push(Math.max(x.ia,x.ib,x.ic)); } return out; }
+function vals(fi, from, to){ var out=[]; for(var m=Math.max(0,from); m<=to; m++){ var x=FM[m][fi]; if(okRow(x)) out.push(Math.max(x.ia,x.ib,x.ic)); } return out; }
+function loadList(){
+  return rowsAt(S.m).filter(function(r){ return F[r.f].type==='Feeder' && okRow(r); }).map(function(r){
+    var cur=vals(r.f,S.m-11,S.m), prev=vals(r.f,S.m-23,S.m-12), rec=vals(r.f,S.m-2,S.m);
+    var f6=vals(r.f,S.m-11,S.m-6), l6=vals(r.f,S.m-5,S.m);
+    var o={ r:r, f:F[r.f], now:Math.max(r.ia,r.ib,r.ic), level:median(rec), peakRaw:cur.length?Math.max.apply(null,cur):null, growth:null, eta:null, step:false, kind:'' };
+    o.step = f6.length>=3 && l6.length>=3 && median(l6) > 1.4*median(f6);
+    if (cur.length>=6 && prev.length>=6) o.growth = median(cur)-median(prev);          // A ต่อปี (ค่ากลาง)
+    if (!o.step && o.growth!=null && o.growth/12>0.5) o.eta = o.level>=X.LIMIT ? 0 : Math.round((X.LIMIT-o.level)/(o.growth/12));
+    if (o.peakRaw>=X.RATING*X.WATCH && o.level<0.6*o.peakRaw) o.kind='transfer';
+    else if (o.level>=X.RATING*0.7 || (o.eta!=null && o.eta<=12 && o.level>=X.RATING*X.WATCH)) o.kind='urgent';
+    else if (o.level>=X.RATING*X.WATCH) o.kind = o.step ? 'changed' : 'plan';
+    o.peakC = o.level;
+    return o;
+  });
+}
+var KIND = { urgent:['เร่งด่วน','red','โอนโหลดบางส่วนไปฟีดเดอร์ข้างเคียงก่อน Peak รอบถัดไป และเสนองานเพิ่มฟีดเดอร์หรือเพิ่มขนาดสาย'],
+  plan:['วางแผน','amb','ใส่ในแผนลงทุนปีถัดไป และเตรียมจุดโอนโหลดกับฟีดเดอร์ใกล้เคียง'],
+  changed:['ขั้นบันได','amb','โหลดเพิ่มแบบขั้นบันได (รับโหลดจากการปรับโครงข่าย) · ตรวจว่าเป็นการถาวรหรือไม่ ถ้าถาวรให้วางแผนเหมือนกลุ่ม "วางแผน"'],
+  transfer:['รับโหลดโอน','gray','Peak สูงช่วงสั้นๆ แล้วลดลง (รับโหลดโอนชั่วคราวหรือถูกโอนโหลดออก) · ตรวจเหตุการณ์ และกำหนดแผนสวิตชิ่งไม่ให้เกิน '+X.LIMIT+' A'] };
+function renderLoad(){
+  var L=loadList().filter(function(o){ return o.kind; });
+  var c=function(k){ return L.filter(function(o){return o.kind===k;}).length; };
+  var pf=pfList();
+  var k=[['เร่งด่วน: โหลด ≥ 70% หรือถึง '+X.LIMIT+' A ใน 12 เดือน', c('urgent'), 'ใช้ระดับโหลด 3 เดือนล่าสุด', c('urgent')?'crit':'good'],
+         ['วางแผน: โหลด 60–70%', c('plan')+c('changed'), 'รวมกลุ่มขั้นบันได '+c('changed')+' ฟีดเดอร์', ''],
+         ['Peak สูงจากรับโหลดโอนชั่วคราว', c('transfer'), 'แยกออก ไม่นับในการพยากรณ์', ''],
+         ['PF < 0.90 (ล้าหลัง) ควรติดคาปาซิเตอร์', pf.cap.length, 'คำนวณ PF ใหม่จาก MW/MVAr', pf.cap.length?'warn':'good']];
+  el('ldKpis').innerHTML=k.map(function(x){ var ic=x[3]==='crit'?'<span class="st crit">⛔</span> ':x[3]==='warn'?'<span class="st warn">⚠</span> ':x[3]==='good'?'<span class="st good">✓</span> ':''; return '<div class="card kpi"><div class="lab">'+ic+esc(x[0])+'</div><div class="val">'+x[1]+'<small>ฟีดเดอร์</small></div><div class="note">'+x[2]+'</div></div>'; }).join('');
+  var order={urgent:0,plan:1,changed:2,transfer:3};
+  L.sort(function(a,b){ return order[a.kind]-order[b.kind] || (b.level||0)-(a.level||0); });
+  el('ldCap').textContent=mLabelLong(M[S.m])+' · '+scopeName()+' · แถบ = ระดับโหลด (ค่ากลางกระแสเฟสสูงสุด 3 เดือนล่าสุด) เทียบ '+X.RATING+' A · เส้นประ = '+X.LIMIT+' A';
+  el('ldTbl').innerHTML='<thead><tr><th class="l">ฟีดเดอร์</th><th class="l">ระดับโหลดปัจจุบัน</th><th>Peak 12 เดือน</th><th>เปลี่ยนต่อปี</th><th>ถึง '+X.LIMIT+' A ใน</th><th class="l">กลุ่ม</th><th class="l">แนวทาง</th></tr></thead><tbody>'+
+    L.slice(0,150).map(function(o){
+      var pct=o.level/X.RATING, col=pct>=0.8?'var(--critical)':pct>=X.WATCH?'var(--s4)':'var(--s1)';
+      var eta=o.kind==='transfer'?'–':o.step?'ไม่พยากรณ์':o.eta==null?'ไม่โต':o.eta===0?'เกินแล้ว':'~'+o.eta+' เดือน';
+      return '<tr data-f="'+o.r.f+'"><td class="l"><b>'+esc(o.f.name)+'</b><div class="muted" style="font-size:12px">'+esc(o.f.sub)+' · เดือนนี้ '+fmt(o.now,0)+' A</div></td>'+
+        '<td class="l"><span class="lbar"><span style="background:'+col+';width:'+Math.round(Math.min(pct,1)*200)+'px"></span><i></i></span> <b>'+fmt(o.level,0)+' A</b> ('+Math.round(pct*100)+'%)</td>'+
+        '<td>'+fmt(o.peakRaw,0)+' A</td><td>'+(o.growth==null?'–':(o.growth>=0?'+':'')+fmt(o.growth,0)+' A')+'</td><td><b>'+eta+'</b></td>'+
+        '<td class="l"><span class="pill '+KIND[o.kind][1]+'">'+KIND[o.kind][0]+'</span></td><td class="act">'+esc(KIND[o.kind][2])+'</td></tr>';
+    }).join('')+'</tbody>';
+  el('ldTbl').querySelectorAll('tbody tr').forEach(function(tr){ tr.onclick=function(){ openDetail(+tr.dataset.f); }; });
+  // PF
+  var mism=pf.mism;
+  el('pfCap').textContent='PF คำนวณใหม่จาก MW/MVAr ขณะ Peak · เป้าหมาย '+X.PF_TARGET+' · ค่า PF ในไฟล์ต้นทางไม่ตรงกับ MW/MVAr '+mism+' จุดในเดือนนี้ (ระบบใช้ค่าที่คำนวณใหม่)';
+  var cards=pf.cap.map(function(o){ return '<div class="card"><h2>ติดคาปาซิเตอร์: '+esc(o.f.name)+'</h2><div class="cap">'+esc((PROV_TH[o.f.prov]||o.f.prov)+' · สถานี '+o.f.sub)+'</div><div class="stat3"><div><small>P</small><b>'+fmt(o.r.mw,2)+' MW</b></div><div><small>Q</small><b>'+fmt(o.r.mvar,2)+' MVAr</b></div><div><small>PF ล้าหลัง</small><b style="color:#8a5a00">'+fmt(o.pf,2)+'</b></div></div><p style="margin:10px 0 0;line-height:1.6"><b>แนะนำ:</b> ติดคาปาซิเตอร์ประมาณ <b>'+fmt(o.kvar,0)+' kVAr</b> ให้ PF ถึง '+X.PF_TARGET+' (เลือกชุดมาตรฐานใกล้เคียง) ติดช่วงกลางถึงปลายสาย</p><p class="cap" style="margin-top:6px">kVAr = P × (tan φ ปัจจุบัน − tan φ เป้าหมาย)</p></div>'; })
+    .concat(pf.lead.map(function(o){ return '<div class="card"><h2>ตรวจคาปาซิเตอร์เกิน: '+esc(o.f.name)+'</h2><div class="cap">'+esc((PROV_TH[o.f.prov]||o.f.prov)+' · สถานี '+o.f.sub)+'</div><div class="stat3"><div><small>P</small><b>'+fmt(o.r.mw,2)+' MW</b></div><div><small>Q</small><b>'+fmt(o.r.mvar,2)+' MVAr</b></div><div><small>PF นำหน้า</small><b>'+fmt(o.pf,2)+'</b></div></div><p style="margin:10px 0 0;line-height:1.6">MVAr ติดลบขณะ Peak แปลว่าจ่ายรีแอกทีฟเกิน ควรตรวจขนาดหรือการตัด-ต่อคาปาซิเตอร์'+(o.r.pfSrc!=null&&Math.abs(o.r.pfSrc-o.pf)>0.1?' · ไฟล์ต้นทางระบุ PF '+fmt(o.r.pfSrc,2)+' ซึ่งไม่ตรงกับ MW/MVAr':'')+'</p></div>'; }));
+  el('pfCards').innerHTML=cards.length?cards.join(''):'<p class="muted"><span class="st good">✓</span> ไม่พบฟีดเดอร์ที่ต้องติดหรือตรวจคาปาซิเตอร์ในตัวกรองนี้</p>';
+}
+function pfList(){
+  var cap=[], lead=[], mism=0, t2=Math.tan(Math.acos(X.PF_TARGET));
+  rowsAt(S.m).forEach(function(r){
+    var f=F[r.f]; if(f.type!=='Feeder'||r.q===2||r.mw==null||r.mvar==null||r.mw<1) return;
+    var pf=Math.abs(r.mw)/Math.sqrt(r.mw*r.mw+r.mvar*r.mvar);
+    if (r.pfSrc!=null && Math.abs(r.pfSrc-pf)>0.1) mism++;
+    if (r.mvar>0 && pf<0.9) cap.push({r:r,f:f,pf:pf,kvar:r.mw*1000*(Math.tan(Math.acos(pf))-t2)});
+    else if (r.mvar<-0.5) lead.push({r:r,f:f,pf:pf});
+  });
+  cap.sort(function(a,b){return b.kvar-a.kvar;}); lead.sort(function(a,b){return a.r.mvar-b.r.mvar;});
+  return {cap:cap, lead:lead.slice(0,6), mism:mism};
+}
+if (typeof D !== 'undefined' && D) render();
+})();
+</script>
+
+<style>
+.filters input.q{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:150px;font:inherit;font-size:14px;color:inherit}
+.qwrap{position:relative;display:block}
+.qdd{position:absolute;left:0;top:calc(100% + 3px);z-index:60;min-width:100%;width:max-content;max-width:280px;max-height:260px;overflow-y:auto;background:var(--surface-1,#fff);color:var(--text-primary,#222);border:1px solid var(--line,#ddd);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.14);padding:3px 0;display:none}
+.qdd.on{display:block}
+.qdd .it{display:flex;align-items:baseline;gap:10px;padding:4px 10px;font-size:13px;line-height:1.35;cursor:pointer;white-space:nowrap}
+.qdd .it b{font-weight:600;min-width:52px}
+.qdd .it span{color:var(--text-muted,#888);font-size:12px}
+.qdd .it:hover,.qdd .it.act{background:var(--surface-2,#f1f1f4)}
+.qdd .none{padding:6px 10px;font-size:12px;color:var(--text-muted,#888)}
+</style>
+<script>
+(function(){
+/* ===== ตัวกรองแบบพิมพ์ค้นหา: สถานี + ฟีดเดอร์ (รายการแบบกะทัดรัด) ===== */
+S.subQ = ''; S.fq = '';
+var sel = document.getElementById('fSub');
+var lab = sel.parentNode;
+sel.style.display = 'none';
+
+function makeBox(parent, id, ph){
+  var w = document.createElement('span'); w.className = 'qwrap';
+  var i = document.createElement('input');
+  i.type = 'search'; i.id = id; i.className = 'q'; i.placeholder = ph; i.autocomplete = 'off';
+  var d = document.createElement('div'); d.className = 'qdd';
+  w.appendChild(i); w.appendChild(d); parent.appendChild(w);
+  return { inp: i, dd: d, items: [], act: -1 };
+}
+var A = makeBox(lab, 'fSubQ', 'พิมพ์ เช่น ALA');
+var lab2 = document.createElement('label'); lab2.textContent = 'ฟีดเดอร์';
+lab.parentNode.insertBefore(lab2, lab.nextSibling);
+var B = makeBox(lab2, 'fFdQ', 'พิมพ์ เช่น ALA06');
+
+var SUBS = [], FDS = [];
+fillSubs = function(){
+  var seen = {}; SUBS = []; FDS = [];
+  F.forEach(function(f){
+    if (S.prov && f.prov !== S.prov) return;
+    var pv = PROV_TH[f.prov] || f.prov;
+    if (!seen[f.sub]) { seen[f.sub] = 1; SUBS.push([f.sub, pv]); }
+    if ((!S.subQ || f.sub.indexOf(S.subQ) === 0) && (!S.type || f.type === S.type)) FDS.push([f.name, f.sub + ' · ' + pv]);
+  });
+  SUBS.sort(function(a,b){ return a[0] < b[0] ? -1 : 1; });
+  FDS.sort(function(a,b){ return a[0] < b[0] ? -1 : 1; });
+};
+
+function show(box, list, q, prefix){
+  var Q = q.trim().toUpperCase();
+  var m = list.filter(function(o){ return !Q || (prefix ? o[0].indexOf(Q) === 0 : o[0].indexOf(Q) >= 0); }).slice(0, 80);
+  box.items = m; box.act = -1;
+  box.dd.innerHTML = m.length ? m.map(function(o, k){
+    return '<div class="it" data-k="'+k+'"><b>'+esc(o[0])+'</b><span>'+esc(o[1])+'</span></div>';
+  }).join('') : '<div class="none">ไม่พบรายการ</div>';
+  box.dd.classList.add('on');
+}
+function hide(box){ box.dd.classList.remove('on'); box.act = -1; }
+function mark(box){
+  [].forEach.call(box.dd.querySelectorAll('.it'), function(e, k){
+    e.classList.toggle('act', k === box.act);
+    if (k === box.act) e.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+var t1, t2;
+function applySub(){ S.subQ = A.inp.value.trim().toUpperCase(); S.sub = ''; fillSubs(); if (D) render(); }
+function applyFd(){ S.fq = B.inp.value.trim().toUpperCase(); if (D) render(); }
+
+function wire(box, getList, prefix, apply, tref){
+  var timer;
+  box.inp.addEventListener('focus', function(){ show(box, getList(), box.inp.value, prefix); });
+  box.inp.addEventListener('input', function(){
+    show(box, getList(), box.inp.value, prefix);
+    clearTimeout(timer); timer = setTimeout(apply, 200);
+  });
+  box.inp.addEventListener('keydown', function(e){
+    var n = box.items.length;
+    if (e.key === 'ArrowDown' && n) { e.preventDefault(); box.act = (box.act + 1) % n; mark(box); }
+    else if (e.key === 'ArrowUp' && n) { e.preventDefault(); box.act = (box.act - 1 + n) % n; mark(box); }
+    else if (e.key === 'Enter') { if (box.act >= 0) pick(box, box.act, apply); else { hide(box); apply(); } }
+    else if (e.key === 'Escape') hide(box);
+  });
+  box.inp.addEventListener('blur', function(){ setTimeout(function(){ hide(box); }, 150); });
+  box.dd.addEventListener('mousedown', function(e){
+    var it = e.target.closest('.it'); if (!it) return;
+    e.preventDefault(); pick(box, +it.getAttribute('data-k'), apply);
+  });
+}
+function pick(box, k, apply){
+  box.inp.value = box.items[k][0]; hide(box); apply(); box.inp.blur();
+}
+wire(A, function(){ return SUBS; }, true, applySub);
+wire(B, function(){ return FDS; }, false, applyFd);
+
+var _fOk = fOk;
+fOk = function(f){
+  return _fOk(f) && (!S.subQ || f.sub.indexOf(S.subQ) === 0) && (!S.fq || f.name.indexOf(S.fq) >= 0);
+};
+var _scope = scopeName;
+scopeName = function(){
+  var s = S.fq ? 'ฟีดเดอร์ "' + S.fq + '"' : S.subQ ? 'สถานี ' + S.subQ + (S.subQ.length < 3 ? '*' : '') : '';
+  return s ? s + (S.prov ? ' · จ.' + (PROV_TH[S.prov] || S.prov) : '') : _scope();
+};
+
+document.getElementById('fProv').addEventListener('change', function(){ fillSubs(); });
+document.getElementById('fType').addEventListener('change', function(){ fillSubs(); });
+
+if (typeof D !== 'undefined' && D) { fillSubs(); render(); }
+})();
+</script>
+
+<style>
+.ala-wrap{display:grid;grid-template-columns:210px 1fr;gap:12px}
+@media(max-width:820px){.ala-wrap{grid-template-columns:1fr}}
+.ala-fd{display:flex;justify-content:space-between;align-items:center;padding:7px 9px;border-radius:9px;cursor:pointer;border:1px solid transparent;margin-bottom:3px}
+.ala-fd:hover{background:var(--surface-2)}.ala-fd.on{border-color:var(--brand-2);background:var(--surface-2)}
+.ala-fd small{display:block;color:var(--text-muted);font-size:11.5px}
+.ala-row2{display:grid;grid-template-columns:320px 1fr;gap:12px;margin-top:12px}
+@media(max-width:1000px){.ala-row2{grid-template-columns:1fr}}
+.ala-bars .ph{display:grid;grid-template-columns:22px 1fr 72px;align-items:center;gap:6px;margin:5px 0;font-size:12.5px}
+.ala-bars .tr{position:relative;height:13px;background:var(--surface-2);border-radius:7px}
+.ala-bars .bb{position:absolute;left:0;top:0;height:100%;border-radius:7px;opacity:.35}
+.ala-bars .ba{position:absolute;left:0;top:3px;height:7px;border-radius:4px}
+.ala-bars .av{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text-primary)}
+.ala-chip{display:inline-block;min-width:20px;text-align:center;border-radius:5px;color:#fff;font-weight:700;font-size:12px;padding:0 3px}
+.ala-num{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--text-primary);color:var(--surface-1);font-weight:700;font-size:12px;align-items:center;justify-content:center}
+#alaMap{width:100%;height:430px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2)}
+.ala-lg{display:flex;gap:12px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap;margin-top:6px}
+.ala-lg i{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.ala-tbl td,.ala-tbl th{vertical-align:top;text-align:left}
+.ala-tbl tr.sel td{background:rgba(224,161,0,.12)}
+.ala-amp{width:64px;font:inherit;font-size:13px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:inherit}
+.ala-st{display:flex;gap:3px;flex-wrap:wrap}
+.ala-st button,.ala-btn{font:inherit;font-size:11.5px;border:1px solid var(--line);background:var(--surface-1);color:inherit;border-radius:6px;padding:2px 7px;cursor:pointer}
+.ala-st button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.ala-note{font-size:12.5px;color:var(--text-secondary);line-height:1.6;background:rgba(255,216,77,.12);border:1px solid rgba(224,161,0,.35);border-radius:9px;padding:9px 12px;margin-top:10px}
+.ala-muted{color:var(--text-muted);font-size:12px}
+.ala-help{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--brand-2);background:var(--surface-1);color:var(--brand-2);font:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;vertical-align:1px;padding:0}
+.ala-howto{display:none;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2);font-size:13px;line-height:1.7}
+.ala-howto.on{display:block}.ala-howto h3{margin:0 0 6px;font-size:14px}.ala-howto ol{margin:4px 0 8px 18px;padding:0}
+.ala-howto code{background:var(--surface-1);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.ala-calc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;padding:8px 10px;background:var(--surface-1);border:1px dashed var(--line);border-radius:8px}
+.ala-calc input{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:inherit}
+.ala-mode{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ala-mode button{font:inherit;font-size:13.5px;font-weight:600;border:1px solid var(--line);background:var(--surface-1);color:inherit;border-radius:999px;padding:6px 14px;cursor:pointer}
+.ala-mode button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.ala-bar{height:6px;border-radius:3px;background:var(--surface-2);grid-column:1/3;position:relative;margin-top:3px}.ala-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#d9822b}
+.ala-lever{border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px}
+.ala-lever .t{display:flex;justify-content:space-between;gap:8px;font-weight:600}.ala-lever .d{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.55}
+.ala-row3{display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px}
+@media(max-width:1000px){.ala-row3{grid-template-columns:1fr}}
+.ala-stn{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.ala-stn b{font-size:19px}
+#alaMap{touch-action:none;cursor:grab}#alaMap:active{cursor:grabbing}
+.ala-mapw{position:relative}
+.ala-zb{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:4px}
+.ala-zb button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--surface-1);color:inherit;font:inherit;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.ala-zb button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.ala-zh{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--text-muted);background:var(--surface-1);opacity:.85;border-radius:6px;padding:1px 6px;pointer-events:none}
+</style>
+<script>
+(function(){
+/* ===== แท็บ เจาะลึกสถานี (ข้อมูล SLD) ===== */
+var AX = { SUB: 'ALA', MONTHS: 6, MAX_MOVES: 4, GOAL: 5, MIN_KVA: 30, KV_PH: 19.05,
+  SLD_URL: 'https://aloofpea-aul.github.io/sld-ala/' };
+var SLD = null, ACT = {}, cur = '', sel = -1, loading = false, err = '', helpOn = false, mode = 'ub', lsel = -1;
+var BAHT = 3; try { BAHT = +localStorage.getItem('alaBaht') || 3; } catch (e) {}
+var PH = { A: 'var(--s1)', B: 'var(--s2)', C: 'var(--s3)' };
+var ST_TH = { todo: 'ยังไม่ทำ', doing: 'กำลังทำ', done: 'ย้ายแล้ว' };
+function el(id){ return document.getElementById(id); }
+
+var b = document.createElement('button'); b.dataset.v = 'ala'; b.textContent = 'เจาะลึกอ่าวลึก (SLD)';
+var tabs = el('tabs'); tabs.insertBefore(b, tabs.querySelector('button[data-v="quality"]'));
+b.onclick = function(){
+  tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on', v.id === 'v-ala'); });
+  render();
+};
+var sec = document.createElement('section'); sec.className = 'view'; sec.id = 'v-ala';
+sec.innerHTML = '<div id="alaBody"><div class="card">กำลังโหลดข้อมูล SLD…</div></div>';
+document.querySelector('main').appendChild(sec);
+
+function load(){
+  if (loading || SLD) return; loading = true;
+  google.script.run.withSuccessHandler(function(s){
+    SLD = JSON.parse(s); loading = false;
+    cur = cur || Object.keys(SLD.feeders).sort()[0];
+    google.script.run.withSuccessHandler(function(a){ ACT = a || {}; draw(); }).getLateralActions();
+    draw();
+  }).withFailureHandler(function(e){ loading = false; err = String(e && e.message || e); draw(); }).getSldData();
+}
+
+var _render = render;
+render = function(){
+  _render();
+  var on = tabs.querySelector('button.on');
+  if (D && on && on.dataset.v === 'ala') { if (!SLD) load(); draw(); }
+};
+
+/* ----- SCADA ของฟีดเดอร์ในสถานี: เฉลี่ยกระแสขณะ Peak N เดือนล่าสุด (ถึงเดือนที่เลือก) ----- */
+function scada(name, mEnd, n, mMin){
+  mMin = mMin || 0;
+  var fi = -1; F.forEach(function(f){ if (f.sub === AX.SUB && f.name === name && f.type === 'Feeder') fi = f.i; });
+  if (fi < 0) return null;
+  var s = [0,0,0], k = 0, from = '', to = '', ms = [], pw = 0, qv = 0, lf = 0, nl = 0;
+  for (var m = mEnd; m >= mMin && k < n; m--){
+    var r = null; byM[m].forEach(function(x){ if (x.f === fi) r = x; });
+    if (!r || r.q === 2 || r.q === 1 || r.ia == null || r.ib == null || r.ic == null) continue;
+    s[0] += r.ia; s[1] += r.ib; s[2] += r.ic; k++; to = to || M[m]; from = M[m]; ms.push(M[m]);
+    pw += Math.abs(r.mw || 0); qv += Math.abs(r.mvar || 0); if (r.lf) { lf += r.lf; nl++; }
+  }
+  return k ? { I: [s[0]/k, s[1]/k, s[2]/k], n: k, from: from, to: to, months: ms, mw: pw/k, mvar: qv/k, lf: nl ? lf/nl : 0.6 } : null;
+}
+function ubOf(I){ var a = (I[0]+I[1]+I[2])/3; return a > 0 ? Math.max(Math.abs(I[0]-a), Math.abs(I[1]-a), Math.abs(I[2]-a))/a*100 : 0; }
+function monthIdx(ym){ for (var i = 0; i < M.length; i++) if (M[i] >= ym) return i; return M.length - 1; }
+
+function plan(fd, sc){
+  var tot = fd.kva.A + fd.kva.B + fd.kva.C + fd.kva['3P'];
+  var u = (sc.I[0]+sc.I[1]+sc.I[2]) * AX.KV_PH / tot;
+  fd.laterals.forEach(function(x){
+    var a = ACT[x.id];
+    x.est = Math.round(x.kva * u / AX.KV_PH * 10) / 10;
+    x.amp = a && a.amp != null ? a.amp : x.est; x.measured = !!(a && a.amp != null);
+    x.st = a ? a.s : 'todo';
+  });
+  var c = { A: sc.I[0], B: sc.I[1], C: sc.I[2] }, used = {}, mv = [];
+  // ไลน์ที่ย้ายแล้ว: ถ้า SCADA ช่วงที่ใช้ยังเป็นก่อนย้าย ให้ปรับกระแสตามสัดส่วนเดือนที่ยังไม่สะท้อนผล
+  fd.laterals.forEach(function(x){
+    var a = ACT[x.id]; if (!a || a.s !== 'done' || !a.to || a.to === x.ph) return;
+    var dm = (a.t || '').slice(0,7), before = 0;
+    (sc.months || []).forEach(function(ym){ if (ym <= dm) before++; });
+    var fr = sc.n ? before / sc.n : 0;
+    c[x.ph] -= x.amp * fr; c[a.to] += x.amp * fr;
+  });
+  sc.adj = [c.A, c.B, c.C];
+  while (mv.length < AX.MAX_MOVES){
+    var base = ubOf([c.A, c.B, c.C]), best = null;
+    fd.laterals.forEach(function(x, i){
+      if (used[i] || x.st === 'done' || x.kva < AX.MIN_KVA) return;
+      ['A','B','C'].forEach(function(to){
+        if (to === x.ph) return;
+        var y = { A: c.A, B: c.B, C: c.C }; y[x.ph] -= x.amp; y[to] += x.amp;
+        var v = ubOf([y.A, y.B, y.C]);
+        if (v < base - 0.8 && (!best || v < best.ub)) best = { i: i, to: to, ub: v, y: y };
+      });
+    });
+    if (!best) break;
+    used[best.i] = 1; c = best.y;
+    mv.push({ i: best.i, frm: fd.laterals[best.i].ph, to: best.to, ub: best.ub, I: [c.A, c.B, c.C] });
+    if (best.ub < AX.GOAL) break;
+  }
+  return mv;
+}
+function pill(v){ return '<span class="pill '+(v >= 15 ? 'red' : v >= 10 ? 'amb' : 'green')+'">'+fmt(v,1)+'%</span>'; }
+function big(v){ return '<span style="color:'+(v >= 15 ? '#c0392b' : v >= 10 ? '#b7791f' : '#1f9d55')+'">'+fmt(v,1)+'%</span>'; }
+function chip(p){ return '<span class="ala-chip" style="background:'+PH[p]+'">'+p+'</span>'; }
+
+function draw(){
+  var box = el('alaBody'); if (!box) return;
+  if (err) { box.innerHTML = '<div class="card">ดึงข้อมูล SLD ไม่ได้: '+esc(err)+'</div>'; return; }
+  if (!SLD || !D) { box.innerHTML = '<div class="card">กำลังโหลดข้อมูล SLD…</div>'; return; }
+  var names = Object.keys(SLD.feeders).sort(), info = {};
+  names.forEach(function(n){ var sc = scada(n, S.m, AX.MONTHS); if (sc) info[n] = { sc: sc, mv: plan(SLD.feeders[n], sc) }; });
+  if (!info[cur]) cur = names.filter(function(n){ return info[n]; })[0];
+  if (!cur) { box.innerHTML = '<div class="card">ไม่มีข้อมูล SCADA ของฟีดเดอร์สถานี '+AX.SUB+' ในช่วงที่เลือก</div>'; return; }
+  if (mode === 'loss') { drawLoss(box, names, info); return; }
+  var fd = SLD.feeders[cur], sc = info[cur].sc, mv = info[cur].mv, L = fd.laterals;
+  var last = mv.length ? mv[mv.length-1] : null, ia = last ? last.I : sc.adj, ub0 = ubOf(sc.I), ub1 = last ? last.ub : ubOf(sc.adj);
+  var mk = 0; mv.forEach(function(m){ mk += L[m.i].kva; });
+  var side = names.map(function(n){
+    var z = info[n]; if (!z) return '';
+    var u0 = ubOf(z.sc.I), u1 = z.mv.length ? z.mv[z.mv.length-1].ub : ubOf(z.sc.adj);
+    return '<div class="ala-fd'+(n === cur ? ' on' : '')+'" data-k="'+n+'"><div><b>'+n+'</b><small>'+(z.mv.length ? 'ย้าย '+z.mv.length+' ไลน์' : 'ไม่ต้องย้าย')+'</small></div><div style="text-align:right">'+pill(u0)+'<small style="font-size:11px;color:var(--text-muted)">→ '+fmt(u1,1)+'%</small></div></div>';
+  }).join('');
+  var mx = Math.max.apply(null, sc.I.concat(ia)) * 1.12, avg = (sc.I[0]+sc.I[1]+sc.I[2])/3;
+  var bars = ['A','B','C'].map(function(p, j){ return '<div class="ph">'+chip(p)+'<div class="tr"><div class="bb" style="width:'+(sc.I[j]/mx*100)+'%;background:'+PH[p]+'"></div><div class="ba" style="width:'+(ia[j]/mx*100)+'%;background:'+PH[p]+'"></div><div class="av" style="left:'+(avg/mx*100)+'%"></div></div><span>'+fmt(sc.I[j],0)+'→'+fmt(ia[j],0)+' A</span></div>'; }).join('');
+  var km = Math.max(fd.kva.A, fd.kva.B, fd.kva.C) || 1;
+  var kbar = ['A','B','C'].map(function(p){ return '<div class="ph">'+chip(p)+'<div class="tr"><div class="ba" style="top:2px;height:9px;width:'+(fd.kva[p]/km*100)+'%;background:'+PH[p]+'"></div></div><span>'+fmt(fd.kva[p],0)+'</span></div>'; }).join('');
+  var rows = mv.length ? mv.map(function(m, n){ return row(L[m.i], n, m); }).join('') : '<tr><td colspan="9" class="ala-muted">ฟีดเดอร์นี้ไม่ต้องย้ายเฟส (หรือย้ายแล้วครบ)</td></tr>';
+  var done = L.filter(function(x){ return x.st === 'done'; });
+  var doneRows = done.map(function(x){
+    var a = ACT[x.id], dm = a.t.slice(0,7), mi = monthIdx(dm); if (M[mi] === dm) mi++; var b4 = scada(cur, mi-1, 3), af = mi < M.length ? scada(cur, M.length-1, 3, mi) : null;
+    var res = b4 && af ? pill(ubOf(b4.I))+' → '+pill(ubOf(af.I)) : '<span class="ala-muted">รอข้อมูล SCADA เดือนถัดไป</span>';
+    return '<tr><td>'+esc(x.devdesc || '(ไม่มีชื่อใน SLD)')+'<br><span class="ala-muted">'+esc(x.dev || '')+'</span></td><td>'+chip(x.ph)+' → '+chip(a.to || '?')+'</td><td>'+x.kva+' kVA</td><td>'+esc(a.t)+'</td><td>'+res+'</td></tr>';
+  }).join('');
+  box.innerHTML = modeBar() +
+    '<div class="ala-wrap"><div class="card"><h2>ฟีดเดอร์ '+AX.SUB+'</h2>'+side+'<p class="ala-muted" style="line-height:1.5">%UB เฉลี่ยขณะ Peak '+AX.MONTHS+' เดือน ถึงเดือนที่เลือก → หลังย้ายตามแผน</p></div><div>'+
+    '<div class="grid kpis">'+
+      kpi('%Unbalance ตอนนี้', big(ub0), 'A '+fmt(sc.I[0],0)+' · B '+fmt(sc.I[1],0)+' · C '+fmt(sc.I[2],0)+' A ('+sc.n+' เดือน)')+
+      kpi('หลังย้ายตามแผน', big(ub1), 'เป้าหมาย < 10% (ดีมาก < 5%)')+
+      kpi('ต้องย้าย', mv.length+'<small>ไลน์</small>', 'รวม '+fmt(mk,0)+' kVA')+
+      kpi('ไลน์แยก 1 เฟส', L.length+'<small>ไลน์</small>', 'ย้ายแล้ว '+done.length+' · วัดกระแสแล้ว '+L.filter(function(x){return x.measured;}).length)+
+    '</div>'+
+    '<div class="ala-row2"><div class="card"><h2>กระแสแต่ละเฟส: ตอนนี้ → หลังย้าย</h2><div class="ala-bars">'+bars+'</div>'+
+      '<h2 style="margin-top:14px">หม้อแปลง 1 เฟสที่ต่ออยู่ (kVA)</h2><div class="ala-bars">'+kbar+'</div><p class="ala-muted">หม้อแปลง 3 เฟส '+fmt(fd.kva['3P'],0)+' kVA</p></div>'+
+      '<div class="card"><h2>แผนที่ฟีดเดอร์ '+cur+'</h2><div class="ala-mapw"><svg id="alaMap"></svg><div class="ala-zb"><button data-z="in" title="ซูมเข้า">+</button><button data-z="out" title="ซูมออก">−</button><button data-z="reset" title="ดูทั้งฟีดเดอร์">⟲</button><button data-z="bg" title="พื้นหลังแผนที่จริง (กดสลับ: ไม่มี → ถนน → ดาวเทียม)">🗺</button></div><div class="ala-zh">เลื่อนลูกกลิ้งเมาส์ / ถ่างสองนิ้ว = ซูม · ลาก = เลื่อน</div></div><div class="ala-lg"><span><i style="background:#9a929e"></i>3 เฟส</span><span><i style="background:var(--s1)"></i>เฟส A</span><span><i style="background:var(--s2)"></i>เฟส B</span><span><i style="background:var(--s3)"></i>เฟส C</span><span><i style="background:var(--text-primary);height:6px"></i>ไลน์ที่ต้องย้าย (เลขที่ต้นทาง)</span></div></div></div>'+
+    '<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">แผนย้ายเฟส (เรียงตามลำดับที่ควรทำ)</h2><button class="ala-btn" id="alaPrint">🖨 พิมพ์ใบสั่งงาน</button></div>'+
+      '<div class="tbl-wrap"><table class="ptable ala-tbl"><thead><tr><th>#</th><th>ไลน์แยก / จุดตัดใกล้สุดใน SLD</th><th>ย้ายเฟส</th><th>หม้อแปลง</th><th>สาย</th><th>กระแส (A) <button class="ala-help" title="วิธีหาค่ากระแส">?</button></th><th>%UB หลังทำ</th><th>สถานะ</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div class="ala-howto'+(helpOn ? ' on' : '')+'" id="alaHowto"><h3>วิธีหาค่า "กระแส (A)" ของไลน์แยก — ไม่ต้องวัดฝั่งแรงสูง</h3>'+'<ol><li><b>วัดฝั่งแรงต่ำ</b> ของหม้อแปลง<u>ทุกลูก</u>ในไลน์นั้น (จำนวนลูกดูที่คอลัมน์ "หม้อแปลง") ด้วยแคลมป์มิเตอร์แรงต่ำธรรมดา ช่วง Peak ประมาณ 18:00–21:00 น. — วัดทุกสายเส้นไฟ จดค่านิวทรัลแยกไว้</li>'+'<li><b>คำนวณ</b> <code>กระแสแรงสูง = (แรงดัน × ผลรวมกระแสสายเส้นไฟทุกสาย ทุกลูก) ÷ 19,050</code> — ไม่ต้องรวมนิวทรัล</li>'+'<li><b>กรอก</b> ผลลัพธ์ของทั้งไลน์ในช่อง "กระแส (A)" แล้วกด Enter — ระบบคิดแผนใหม่ทันทีและบันทึกไว้ (ลบตัวเลขออก = กลับไปใช้ค่าประมาณ)</li></ol>'+'<div>ตัวอย่าง: หม้อแปลง 50 kVA วัดได้ 120 A และ 115 A ที่ 230 V → 230 × 235 ÷ 19,050 ≈ <b>2.8 A</b> · ถ้าไลน์มี 3 ลูก ให้รวมกระแสทุกสายของทั้ง 3 ลูกก่อนคำนวณ</div>'+'<div class="ala-calc"><b>เครื่องคิด:</b> แรงดัน <input id="alaCv" type="number" value="230" style="width:64px"> V · กระแสที่วัดได้ทุกสาย (คั่นด้วยเว้นวรรค) <input id="alaCi" placeholder="เช่น 120 115 80 95" style="width:210px"> → <b id="alaCo">–</b> A ฝั่ง 19 kV</div>'+'<div class="ala-muted" style="margin-top:6px">ค่านิวทรัลสูงเกินครึ่งของสายเส้นไฟ = ฝั่งแรงต่ำของหม้อแปลงลูกนั้นไม่สมดุล ควรจัดเฟสลูกค้าแรงต่ำด้วย · ไม่มีเครื่องวัด: ใช้ข้อมูลวัดโหลดหม้อแปลงจากงานบำรุงรักษาประจำปีได้</div></div>'+
+      '<div class="ala-note"><b>ก่อนสั่งงาน:</b> กระแสรายไลน์เป็นค่าประมาณ (แบ่งกระแส SCADA ตามสัดส่วน kVA หม้อแปลง) — วัดกระแสจริงช่วง Peak แล้วกรอกในช่อง "กระแส" (กด <b>?</b> ที่หัวคอลัมน์ดูวิธีวัดจากฝั่งแรงต่ำ) ระบบจะคำนวณแผนใหม่ทันทีและจำค่าไว้ · หม้อแปลงที่ยังจับคู่กับสายไม่ได้ '+fmt(fd.unmatched,0)+' kVA (ไม่ได้นำมาคิด)</div></div>'+
+    (done.length ? '<div class="card" style="margin-top:12px"><h2>ย้ายแล้ว · เทียบผลจาก SCADA</h2><div class="tbl-wrap"><table class="ptable ala-tbl"><thead><tr><th>ไลน์</th><th>ย้าย</th><th>ขนาด</th><th>วันที่</th><th>%UB 3 เดือนก่อน → หลัง</th></tr></thead><tbody>'+doneRows+'</tbody></table></div></div>' : '')+
+    '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">ไลน์แยก 1 เฟสทั้งหมดของ '+cur+' ('+L.length+') · กรอกกระแสที่วัดได้</summary><div class="tbl-wrap"><table class="ptable ala-tbl"><thead><tr><th>ไลน์ / จุดตัด</th><th>เฟส</th><th>หม้อแปลง</th><th>สาย</th><th>กระแส (A) <button class="ala-help" title="วิธีหาค่ากระแส">?</button></th><th></th></tr></thead><tbody>'+
+      L.map(function(x){ return '<tr><td>'+esc(x.devdesc || '(ไม่มีชื่อใน SLD)')+'<br><span class="ala-muted">'+esc(x.dev || '')+'</span></td><td>'+chip(x.ph)+'</td><td>'+x.n+' ลูก · '+x.kva+' kVA</td><td>'+x.km+' กม.</td><td>'+ampBox(x)+'</td><td><a class="ala-btn" target="_blank" href="https://www.google.com/maps?q='+x.tap[0]+','+x.tap[1]+'">แผนที่</a></td></tr>'; }).join('')+
+    '</tbody></table></div></details>'+
+    '<p class="ala-muted" style="margin-top:10px">ข้อมูลโครงข่ายจากระบบ SLD อ่าวลึก (อ่านอย่างเดียว อัปเดตวันละครั้ง · ล่าสุด '+new Date(SLD.built).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})+') · SCADA '+M[monthIdx(sc.from)].slice(0,7)+' ถึง '+sc.to+'</p>'+
+    '</div></div>';
+  box.querySelectorAll('.ala-fd').forEach(function(e){ e.onclick = function(){ cur = e.dataset.k; sel = -1; draw(); }; });
+  box.querySelectorAll('tr[data-n]').forEach(function(e){ e.onclick = function(ev){ if (/INPUT|BUTTON|A/.test(ev.target.tagName)) return; sel = +e.dataset.n; var mm = info[cur].mv[sel]; if (mm) FOCUS = L[mm.i].tap; draw(); }; });
+  box.querySelectorAll('.ala-amp').forEach(function(e){ e.onchange = function(){ var x = L[+e.dataset.i], v = e.value.trim(); save(x, x.st, v === '' ? null : +v, (ACT[x.id] || {}).to || ''); }; });
+  box.querySelectorAll('.ala-st button').forEach(function(e){ e.onclick = function(){ var x = L[+e.dataset.i]; save(x, e.dataset.s, ACT[x.id] && ACT[x.id].amp != null ? ACT[x.id].amp : null, e.dataset.to); }; });
+  box.querySelectorAll('.ala-help').forEach(function(e){ e.onclick = function(ev){ ev.stopPropagation(); helpOn = !helpOn; var h = el('alaHowto'); h.classList.toggle('on', helpOn); if (helpOn) h.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }; });
+  var calc = function(){ var v = +el('alaCv').value || 0, t = 0; (el('alaCi').value.match(/[\d.]+/g) || []).forEach(function(x){ t += +x; }); el('alaCo').textContent = t ? fmt(v * t / 19050, 2) : '–'; };
+  el('alaCv').oninput = calc; el('alaCi').oninput = calc;
+  el('alaPrint').onclick = function(){ printOrder(cur, sc, mv, L, ub0, ub1); };
+  bindMode(box);
+  map(fd, mv);
+}
+
+function modeBar(){ return '<div class="ala-mode"><button data-m="ub"'+(mode==='ub'?' class="on"':'')+'>⚖️ Unbalance รายไลน์แยก</button><button data-m="loss"'+(mode==='loss'?' class="on"':'')+'>🔥 ค่าสูญเสีย · แรงดันตก · Capacitor</button></div>'; }
+function bindMode(box){ box.querySelectorAll('.ala-mode button').forEach(function(e){ e.onclick = function(){ mode = e.dataset.m; sel = -1; lsel = -1; draw(); }; }); }
+/* ----- ค่าสูญเสีย / แรงดันตก / Capacitor (สัมประสิทธิ์คำนวณไว้แล้วฝั่งเซิร์ฟเวอร์ คูณกระแส SCADA ตรงนี้) ----- */
+function lossOf(fl, I){ var t = 0; fl.sections.forEach(function(s){ t += I[0]*I[0]*s[4][0] + I[1]*I[1]*s[4][1] + I[2]*I[2]*s[4][2]; }); return t/1000; }
+function flowCalc(n, z){
+  var fl = SLD.feeders[n].flow; if (!fl) return null;
+  var sc = z.sc, I = sc.I, pf = sc.mw ? sc.mw/Math.sqrt(sc.mw*sc.mw + sc.mvar*sc.mvar) : 1, sn = Math.sqrt(Math.max(0, 1-pf*pf));
+  var lsf = 0.3*sc.lf + 0.7*sc.lf*sc.lf;
+  var secs = fl.sections.map(function(s, i){
+    var kw = (I[0]*I[0]*s[4][0] + I[1]*I[1]*s[4][1] + I[2]*I[2]*s[4][2]) / 1000;
+    return { i: i, c: s[0], ph: s[1], km: s[2], R: s[3], kw: kw, imax: Math.max(I[0]*s[5][0], I[1]*s[5][1], I[2]*s[5][2]), up: (s[1].length > 1 && s[3] > 0.2) ? kw*(1 - 0.18/s[3]) : 0, pts: s[6] };
+  });
+  var kw = 0, up = 0; secs.forEach(function(s){ kw += s.kw; up += s.up; });
+  var vd = 0, wp = null;
+  fl.vd.forEach(function(v){ for (var j = 0; j < 3; j++){ var x = I[j]*(v[2+j]*pf + v[5+j]*sn)/19050*100; if (x > vd) { vd = x; wp = [v[0], v[1]]; } } });
+  var cap = null;
+  if (pf < 0.97 && sc.mvar > 0) {
+    var q = sc.mvar*1000/(3*AX.KV_PH), best = null;
+    [300, 600, 900, 1200].forEach(function(sz){
+      if (sz > sc.mvar*1000*0.7) return;
+      var Ic = sz/(3*AX.KV_PH);
+      fl.cap.forEach(function(c){ var d = 3*(2*Ic*q*c[3] - Ic*Ic*c[2]); if (!best || d > best.w) best = { w: d, kvar: sz, pt: [c[0], c[1]] }; });
+    });
+    if (best && best.w > 0) cap = { kvar: best.kvar, kw: best.w/1000, pt: best.pt, pf2: sc.mw/Math.sqrt(sc.mw*sc.mw + Math.pow(Math.max(0, sc.mvar - best.kvar/1000), 2)) };
+  }
+  var aft = z.mv.length ? z.mv[z.mv.length-1].I : (sc.adj || I);
+  var ubs = Math.max(0, kw - lossOf(fl, aft));
+  secs.sort(function(a, b){ return b.kw - a.kw; });
+  return { secs: secs, kw: kw, pct: sc.mw ? kw/(sc.mw*10) : 0, kwh: kw*lsf*8760, lsf: lsf, vd: vd, wp: wp, pf: pf, cap: cap, up: up, ubs: ubs, mw: sc.mw, lf: sc.lf };
+}
+function lever(t, val, d, col){ return '<div class="ala-lever"><div class="t"><span>'+t+'</span><span style="white-space:nowrap;color:'+col+'">'+val+'</span></div><div class="d">'+d+'</div></div>'; }
+function drawLoss(box, names, info){
+  var R = {}, tk = 0, tkwh = 0, tmw = 0, tvd = 0;
+  names.forEach(function(n){ if (!info[n]) return; var r = flowCalc(n, info[n]); if (!r) return; R[n] = r; tk += r.kw; tkwh += r.kwh; tmw += r.mw; tvd = Math.max(tvd, r.vd); });
+  if (!R[cur]) { box.innerHTML = modeBar()+'<div class="card">ยังไม่มีข้อมูลโครงข่ายของ '+cur+' — กด "อัปเดตข้อมูล SLD" ในสคริปต์ (rebuildSldCache)</div>'; bindMode(box); return; }
+  var F = R[cur], mxk = 0; Object.keys(R).forEach(function(n){ mxk = Math.max(mxk, R[n].kw); });
+  var yr = function(kw){ return kw*F.lsf*8760; }, g = '#1f9d55', o = '#b7791f', m = 'var(--text-muted)';
+  var side = names.filter(function(n){ return R[n]; }).map(function(n){ var r = R[n]; return '<div class="ala-fd'+(n === cur ? ' on' : '')+'" data-k="'+n+'" style="display:grid;grid-template-columns:1fr auto"><b>'+n+'</b><span><b>'+fmt(r.kw,1)+'</b> kW <small style="display:inline">'+fmt(r.pct,2)+'%</small></span><div class="ala-bar"><i style="width:'+(r.kw/mxk*100)+'%"></i></div></div>'; }).join('');
+  var mv = info[cur].mv.length;
+  var lev =
+    lever('1. ย้ายเฟสตามแผน Unbalance', F.ubs >= 0.5 ? '−'+fmt(F.ubs,1)+' kW' : 'น้อยมาก', mv ? 'ย้าย '+mv+' ไลน์ ลดสูญเสียสายเฟส '+fmt(F.ubs,1)+' kW ('+fmt(yr(F.ubs),0)+' หน่วย/ปี) — <b>ผลหลักของการแก้ Unbalance ไม่ใช่ค่าสูญเสีย</b> แต่คือลดกระแสนิวทรัล รีเลย์กราวด์ทริปน้อยลง และเฟสที่หนักมีที่ว่างรับโหลดเพิ่ม' : 'ฟีดเดอร์นี้สมดุลดีแล้ว', m)+
+    lever('2. ติด Capacitor', F.cap ? '−'+fmt(F.cap.kw,1)+' kW' : 'ไม่จำเป็น', F.cap ? 'ขนาด <b>'+F.cap.kvar+' kVAr</b> ที่ ⚡ ('+F.cap.pt[0].toFixed(4)+', '+F.cap.pt[1].toFixed(4)+') <a class="ala-btn" target="_blank" href="https://www.google.com/maps?q='+F.cap.pt[0]+','+F.cap.pt[1]+'">แผนที่</a> · PF '+fmt(F.pf,3)+' → '+fmt(F.cap.pf2,3)+' · ประหยัด ≈ '+fmt(yr(F.cap.kw)*BAHT,0)+' บาท/ปี · ตรวจช่วงโหลดต่ำก่อน กันแรงดันเกิน' : 'PF '+fmt(F.pf,3)+' สูงอยู่แล้ว ติดเพิ่มได้ผลไม่คุ้ม', F.cap ? g : m)+
+    lever('3. เปลี่ยนสายเส้นเล็กเป็น 185 SAC', F.up >= 1 ? '−'+fmt(F.up,1)+' kW' : 'น้อยมาก', F.up >= 1 ? 'เฉพาะช่วง 3 เฟสที่เป็นสาย 35/50 mm² · ประหยัด ≈ '+fmt(yr(F.up),0)+' หน่วย ('+fmt(yr(F.up)*BAHT,0)+' บาท)/ปี · เหมาะทำพร้อมงานปรับปรุงระบบ มากกว่าลงทุนเพื่อลดสูญเสียอย่างเดียว' : 'สายหลักเป็นสายใหญ่อยู่แล้ว', o)+
+    lever('4. โอนโหลดไปฟีดเดอร์ข้างเคียง', 'ขั้นถัดไป', 'สูญเสียแปรตาม I² — ฟีดเดอร์ที่กระแสสูงและสายยาว ถ้าโอนโหลดบางส่วนไปฟีดเดอร์ที่เบากว่าจะลดได้มากที่สุด · ต้องใช้ข้อมูลจุดเชื่อม (Tie)', m);
+  var rows = F.secs.slice(0, 10).map(function(s, i){
+    var a = s.pts[0], e = s.pts[s.pts.length-1];
+    var tip = s.up >= 0.5 ? 'เปลี่ยนเป็น 185 SAC ลด '+fmt(s.up,1)+' kW' : (/185|240|400/.test(s.c) ? 'สายใหญ่แล้ว · ลดได้ด้วยการโอนโหลด/ย้ายเฟส' : '—');
+    return '<tr data-l="'+i+'"'+(lsel === i ? ' class="sel"' : '')+' style="cursor:pointer"><td><span class="ala-num" style="background:#b42318;color:#fff">'+(i+1)+'</span></td><td><b>'+esc(s.c)+'</b> <span class="ala-muted">'+(s.ph.length > 1 ? '3 เฟส' : '1 เฟส '+s.ph)+'</span><br><span class="ala-muted">'+a[0].toFixed(4)+', '+a[1].toFixed(4)+' → '+e[0].toFixed(4)+', '+e[1].toFixed(4)+'</span></td><td>'+fmt(s.km,2)+' กม.</td><td>'+fmt(s.imax,1)+' A</td><td><b>'+fmt(s.kw,2)+' kW</b></td><td>'+fmt(yr(s.kw),0)+' หน่วย<br><span class="ala-muted">≈ '+fmt(yr(s.kw)*BAHT,0)+' บาท</span></td><td>'+tip+'</td><td><a class="ala-btn" target="_blank" href="https://www.google.com/maps/dir/'+a[0]+','+a[1]+'/'+e[0]+','+e[1]+'">แผนที่</a></td></tr>';
+  }).join('');
+  box.innerHTML = modeBar()+
+    '<div class="card ala-stn" style="margin-bottom:12px">'+
+      '<div><div class="ala-muted">ทั้งสถานี '+AX.SUB+' · สูญเสียขณะ Peak</div><b>'+fmt(tk,1)+' kW</b> <span class="ala-muted">('+fmt(tk/(tmw*10),2)+'% ของ '+fmt(tmw,1)+' MW)</span></div>'+
+      '<div><div class="ala-muted">พลังงานสูญเสียต่อปี (สายแรงกลาง)</div><b>'+fmt(tkwh/1e6,2)+' ล้านหน่วย</b></div>'+
+      '<div><div class="ala-muted">คิดเป็นเงินต่อปี (ค่าไฟ <input id="alaBaht" type="number" step="0.1" value="'+BAHT+'" style="width:52px" class="ala-amp"> บาท/หน่วย)</div><b>≈ '+fmt(tkwh*BAHT/1e6,1)+' ล้านบาท</b></div>'+
+      '<div><div class="ala-muted">แรงดันตกสูงสุดในสถานี</div><b>'+fmt(tvd,1)+'%</b> <span class="ala-muted">เกณฑ์ทั่วไป ≤ 5%</span></div></div>'+
+    '<div class="ala-wrap"><div class="card"><h2>ฟีดเดอร์ · สูญเสียขณะ Peak</h2>'+side+'<p class="ala-muted" style="line-height:1.5">แถบ = kW สูญเสีย · % = ต่อโหลด</p></div><div>'+
+    '<div class="grid kpis">'+
+      kpi('สูญเสียขณะ Peak', fmt(F.kw,1)+'<small>kW</small>', fmt(F.pct,2)+'% ของโหลด '+fmt(F.mw,2)+' MW')+
+      kpi('พลังงานสูญเสียต่อปี', fmt(F.kwh,0)+'<small>หน่วย</small>', '≈ '+fmt(F.kwh*BAHT,0)+' บาท/ปี (LF '+fmt(F.lf,2)+')')+
+      kpi('แรงดันตกสูงสุด', '<span style="color:'+(F.vd > 5 ? '#c0392b' : F.vd > 3 ? '#b7791f' : '#1f9d55')+'">'+fmt(F.vd,1)+'%</span>', 'ที่ ▼ บนแผนที่ · เกณฑ์ ≤ 5%')+
+      kpi('Power Factor ขณะ Peak', '<span style="color:'+(F.pf < 0.95 ? '#c0392b' : F.pf < 0.97 ? '#b7791f' : '#1f9d55')+'">'+fmt(F.pf,3)+'</span>', F.cap ? 'ควรติด Capacitor' : 'ไม่ต้องติด Capacitor')+
+    '</div>'+
+    '<div class="ala-row3"><div class="card"><h2>แผนที่: สายช่วงไหนเสียมาก</h2><div class="ala-mapw"><svg id="alaMap"></svg><div class="ala-zb"><button data-z="in" title="ซูมเข้า">+</button><button data-z="out" title="ซูมออก">−</button><button data-z="reset" title="ดูทั้งฟีดเดอร์">⟲</button><button data-z="bg" title="พื้นหลังแผนที่จริง (กดสลับ: ไม่มี → ถนน → ดาวเทียม)">🗺</button></div><div class="ala-zh">เลื่อนลูกกลิ้งเมาส์ / ถ่างสองนิ้ว = ซูม · ลาก = เลื่อน</div></div><div class="ala-lg"><span><i style="background:#cfc8d3"></i>น้อย</span><span><i style="background:#f2b350"></i>ปานกลาง</span><span><i style="background:#e0662b"></i>มาก</span><span><i style="background:#b42318;height:6px"></i>มากที่สุด (kW/กม.)</span><span>▼ แรงดันตกมากสุด</span><span>⚡ จุดติด Capacitor</span></div></div>'+
+      '<div class="card"><h2>ลดสูญเสียได้ด้วยวิธีไหน</h2>'+lev+'</div></div>'+
+    '<div class="card" style="margin-top:12px"><h2>ช่วงสายที่สูญเสียมากที่สุด</h2><div class="tbl-wrap"><table class="ptable ala-tbl"><thead><tr><th>#</th><th>ช่วงสาย</th><th>ระยะ</th><th>กระแส Peak</th><th>สูญเสีย Peak</th><th>ต่อปี</th><th>คำแนะนำ</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div class="ala-note"><b>วิธีคิด:</b> แบ่งกระแส SCADA ของแต่ละเฟสลงหม้อแปลงตาม kVA → ไล่รวมกระแสย้อนจากปลายสายถึงสถานีตามสายจริงใน SLD → สูญเสีย = I²R × ระยะ (R ตามชนิดสาย: 185 mm² 0.18, 50 mm² 0.66, 35 mm² 0.95 Ω/กม.) · ต่อปีใช้ Loss factor = 0.3·LF + 0.7·LF² · สาย 1 เฟสคิดสายกลับทางนิวทรัลด้วย · ไม่รวมสูญเสียในหม้อแปลงและฝั่งแรงต่ำ · กดแถวเพื่อไฮไลต์บนแผนที่</div></div>'+
+    '<p class="ala-muted" style="margin-top:10px">SCADA '+info[cur].sc.from+' ถึง '+info[cur].sc.to+' ('+info[cur].sc.n+' เดือน) · โครงข่ายจาก SLD อ่าวลึก ล่าสุด '+new Date(SLD.built).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})+'</p>'+
+    '</div></div>';
+  bindMode(box);
+  box.querySelectorAll('.ala-fd').forEach(function(e){ e.onclick = function(){ cur = e.dataset.k; lsel = -1; draw(); }; });
+  box.querySelectorAll('tr[data-l]').forEach(function(e){ e.onclick = function(ev){ if (ev.target.tagName === 'A') return; lsel = +e.dataset.l; var ss = F.secs[lsel]; if (ss) FOCUS = ss.pts[Math.floor(ss.pts.length/2)]; draw(); }; });
+  el('alaBaht').onchange = function(){ BAHT = +this.value || 3; try { localStorage.setItem('alaBaht', BAHT); } catch (e) {} draw(); };
+  lossMap(F);
+}
+function lossMap(F){
+  var svg = el('alaMap'); if (!svg) return;
+  var W = svg.clientWidth || 700, H = 430; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var a1 = 90, a2 = -90, o1 = 180, o2 = -180;
+  F.secs.forEach(function(s){ s.pts.forEach(function(v){ a1 = Math.min(a1, v[0]); a2 = Math.max(a2, v[0]); o1 = Math.min(o1, v[1]); o2 = Math.max(o2, v[1]); }); });
+  var k = Math.min((W-30)/(o2-o1), (H-30)/(a2-a1)), ox = (W-(o2-o1)*k)/2, oy = (H-(a2-a1)*k)/2;
+  var zz = zs(), RP = function(v){ return [ox+(v[1]-o1)*k, oy+(a2-v[0])*k]; };
+  if (FOCUS) { var fb = RP(FOCUS); zz.z = Math.max(zz.z, 4); zz.x = -(fb[0]-W/2)*zz.z; zz.y = -(fb[1]-H/2)*zz.z; FOCUS = null; }
+  var P = function(v){ var r = RP(v); return [((r[0]-W/2)*zz.z + W/2 + zz.x).toFixed(1), ((r[1]-H/2)*zz.z + H/2 + zz.y).toFixed(1)]; };
+  var BGS = bgTiles(W, H, ox, oy, o1, a2, k, zz);
+  var dens = F.secs.map(function(s){ return s.km > 0 ? s.kw/s.km : 0; }).sort(function(a, b){ return b - a; });
+  var t1 = dens[Math.floor(dens.length*0.02)] || 1, t2 = dens[Math.floor(dens.length*0.08)] || 1, t3 = dens[Math.floor(dens.length*0.25)] || 1;
+  var lo = '', hi = '', lab = '';
+  F.secs.slice().reverse().forEach(function(s){
+    var d = 'M'+s.pts.map(function(v){ return P(v).join(','); }).join('L'), q = s.km > 0 ? s.kw/s.km : 0;
+    var col = q >= t1 ? '#b42318' : q >= t2 ? '#e0662b' : q >= t3 ? '#f2b350' : '#bdb5c2', w = q >= t1 ? 4.5 : q >= t2 ? 3.5 : q >= t3 ? 2.6 : (s.ph.length > 1 ? 1.6 : 1);
+    var p = '<path d="'+d+'" stroke="'+col+'" stroke-width="'+w+'" fill="none" stroke-linecap="round"/>';
+    if (q >= t3) hi += p; else lo += p;
+  });
+  F.secs.slice(0, 10).forEach(function(s, i){
+    var mpt = s.pts[Math.floor(s.pts.length/2)], p = P(mpt);
+    if (lsel === i) hi += '<path d="M'+s.pts.map(function(v){ return P(v).join(','); }).join('L')+'" stroke="var(--brand)" stroke-width="8" fill="none" opacity=".45" stroke-linecap="round"/>';
+    lab += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="'+(lsel === i ? 'var(--brand)' : '#b42318')+'" stroke="#fff" stroke-width="2"/><text x="'+p[0]+'" y="'+(+p[1]+4)+'" fill="#fff" font-size="10.5" font-weight="700" text-anchor="middle">'+(i+1)+'</text>';
+  });
+  if (F.wp) { var w = P(F.wp); lab += '<text x="'+w[0]+'" y="'+(+w[1]+5)+'" font-size="18" text-anchor="middle" fill="var(--brand)">▼</text>'; }
+  if (F.cap) { var c = P(F.cap.pt); lab += '<circle cx="'+c[0]+'" cy="'+c[1]+'" r="11" fill="#1f9d55" stroke="#fff" stroke-width="2"/><text x="'+c[0]+'" y="'+(+c[1]+5)+'" font-size="13" text-anchor="middle" fill="#fff">⚡</text>'; }
+  var sp = P(SUB_POS); lab += '<rect x="'+(sp[0]-6)+'" y="'+(sp[1]-6)+'" width="12" height="12" fill="var(--text-primary)"/><text x="'+(+sp[0]+9)+'" y="'+(+sp[1]+4)+'" font-size="11" fill="var(--text-primary)">สถานี '+AX.SUB+'</text>';
+  svg.innerHTML = BGS + lo + hi + lab; bgBtn(svg);
+  bindZoom(svg, function(){ lossMap(F); });
+}
+var SUB_POS = [8.42033, 98.7397];
+
+/* ----- ซูม/เลื่อนแผนที่ (ล้อเมาส์, ลาก, ถ่างสองนิ้ว, ปุ่ม +/−) ----- */
+var ZM = {}, FOCUS = null;
+function zs(){ var k = mode + '|' + cur; return ZM[k] || (ZM[k] = { z: 1, x: 0, y: 0 }); }
+function bindZoom(svg, redraw){
+  if (svg._zb) return; svg._zb = 1;
+  var raf = 0, req = function(){ if (!raf) raf = requestAnimationFrame(function(){ raf = 0; redraw(); }); };
+  var W = function(){ return svg.clientWidth || 700; }, H = 430;
+  var zoomAt = function(mx, my, f){
+    var s = zs(), nz = Math.min(60, Math.max(1, s.z * f)); if (nz === s.z) return;
+    var cx = W()/2, cy = H/2;
+    s.x = mx - cx - (mx - cx - s.x) * nz / s.z; s.y = my - cy - (my - cy - s.y) * nz / s.z; s.z = nz;
+    if (nz === 1) { s.x = 0; s.y = 0; }
+    req();
+  };
+  var pt = function(e){ var r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  svg.addEventListener('wheel', function(e){ e.preventDefault(); var p = pt(e); zoomAt(p[0], p[1], e.deltaY < 0 ? 1.3 : 1/1.3); }, { passive: false });
+  var ptrs = {}, last = null, pinch = null;
+  svg.addEventListener('pointerdown', function(e){ ptrs[e.pointerId] = pt(e); try { svg.setPointerCapture(e.pointerId); } catch (x) {} last = pt(e); pinch = null; });
+  svg.addEventListener('pointermove', function(e){
+    if (!ptrs[e.pointerId]) return;
+    ptrs[e.pointerId] = pt(e);
+    var ids = Object.keys(ptrs);
+    if (ids.length >= 2) {
+      var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a[0]-b[0], a[1]-b[1]), m = [(a[0]+b[0])/2, (a[1]+b[1])/2];
+      if (pinch) { zoomAt(m[0], m[1], d / pinch.d); var s = zs(); s.x += m[0] - pinch.m[0]; s.y += m[1] - pinch.m[1]; }
+      pinch = { d: d, m: m }; return;
+    }
+    var p = pt(e); if (last) { var s2 = zs(); s2.x += p[0] - last[0]; s2.y += p[1] - last[1]; req(); } last = p;
+  });
+  var up = function(e){ delete ptrs[e.pointerId]; last = null; pinch = null; };
+  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+  var box = svg.parentNode;
+  box.querySelectorAll('.ala-zb button').forEach(function(b){ b.onclick = function(){
+    var z = b.dataset.z;
+    if (z === 'bg') { BG = BG === '' ? 'osm' : BG === 'osm' ? 'sat' : ''; req(); return; }
+    if (z === 'reset') { var s = zs(); s.z = 1; s.x = 0; s.y = 0; req(); }
+    else zoomAt(W()/2, H/2, z === 'in' ? 1.6 : 1/1.6);
+  }; });
+}
+/* ----- พื้นหลังแผนที่จริง (โหลดเมื่อกดปุ่ม 🗺 เท่านั้น) ----- */
+var BG = '';
+function bgBtn(svg){ var b = svg.parentNode.querySelector('[data-z="bg"]'); if (b) { b.classList.toggle('on', !!BG); b.title = BG === 'osm' ? 'ตอนนี้: แผนที่ถนน (กดเพื่อเปลี่ยนเป็นดาวเทียม)' : BG === 'sat' ? 'ตอนนี้: ดาวเทียม (กดเพื่อปิด)' : 'พื้นหลังแผนที่จริง (กดสลับ: ไม่มี → ถนน → ดาวเทียม)'; } }
+function bgTiles(W, H, ox, oy, o1, a2, k, zz){
+  if (!BG) return '';
+  var inv = function(sx, sy){ var rx = (sx - W/2 - zz.x)/zz.z + W/2, ry = (sy - H/2 - zz.y)/zz.z + H/2; return [a2 - (ry - oy)/k, o1 + (rx - ox)/k]; };
+  var scr = function(lat, lon){ var rx = ox + (lon - o1)*k, ry = oy + (a2 - lat)*k; return [(rx - W/2)*zz.z + W/2 + zz.x, (ry - H/2)*zz.z + H/2 + zz.y]; };
+  var tl = inv(0, 0), br = inv(W, H), Z = Math.max(5, Math.min(18, Math.round(Math.log(360*k*zz.z/256)/Math.LN2))), n = Math.pow(2, Z);
+  var tx = function(lon){ return Math.floor((lon + 180)/360*n); }, ty = function(lat){ var r = lat*Math.PI/180; return Math.floor((1 - Math.log(Math.tan(r) + 1/Math.cos(r))/Math.PI)/2*n); };
+  var lon2 = function(x){ return x/n*360 - 180; }, lat2 = function(y){ var t = Math.PI - 2*Math.PI*y/n; return 180/Math.PI*Math.atan(0.5*(Math.exp(t) - Math.exp(-t))); };
+  var x0 = tx(tl[1]), x1 = tx(br[1]), y0 = ty(tl[0]), y1 = ty(br[0]);
+  while ((x1 - x0 + 1)*(y1 - y0 + 1) > 80 && Z > 5) { Z--; n = Math.pow(2, Z); x0 = tx(tl[1]); x1 = tx(br[1]); y0 = ty(tl[0]); y1 = ty(br[0]); }
+  var out = '';
+  for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
+    var a = scr(lat2(y), lon2(x)), b = scr(lat2(y + 1), lon2(x + 1));
+    var url = BG === 'osm' ? 'https://tile.openstreetmap.org/'+Z+'/'+x+'/'+y+'.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+Z+'/'+y+'/'+x;
+    out += '<image href="'+url+'" x="'+a[0].toFixed(1)+'" y="'+a[1].toFixed(1)+'" width="'+(b[0] - a[0] + 0.6).toFixed(1)+'" height="'+(b[1] - a[1] + 0.6).toFixed(1)+'" preserveAspectRatio="none"/>';
+  }
+  out += '<rect width="'+W+'" height="'+H+'" fill="#fff" opacity="'+(BG === 'sat' ? 0.12 : 0.35)+'"/>';
+  out += '<text x="'+(W - 46)+'" y="'+(H - 6)+'" text-anchor="end" font-size="10" fill="#333">'+(BG === 'osm' ? '© OpenStreetMap contributors' : 'Imagery © Esri')+'</text>';
+  return out;
+}
+function kpi(lab, val, note){ return '<div class="card kpi"><div class="lab">'+lab+'</div><div class="val">'+val+'</div><div class="note">'+note+'</div></div>'; }
+function ampBox(x){ var i = SLD.feeders[cur].laterals.indexOf(x); return '<input class="ala-amp" data-i="'+i+'" type="number" step="0.1" min="0" placeholder="≈'+x.est+'" value="'+(x.measured ? x.amp : '')+'"'+(x.measured ? ' title="ค่าที่วัดได้"' : '')+'>'; }
+function row(x, n, m){
+  var i = SLD.feeders[cur].laterals.indexOf(x);
+  var st = '<div class="ala-st">'+['todo','doing','done'].map(function(s){ return '<button data-i="'+i+'" data-s="'+s+'" data-to="'+m.to+'"'+(x.st === s ? ' class="on"' : '')+'>'+ST_TH[s]+'</button>'; }).join('')+'</div>';
+  return '<tr data-n="'+n+'"'+(sel === n ? ' class="sel"' : '')+'><td><span class="ala-num">'+(n+1)+'</span></td>'+
+    '<td><b>'+esc(x.devdesc || '(ไม่มีชื่อใน SLD)')+'</b><br><span class="ala-muted">'+esc(x.dev || '—')+(x.devrating ? ' · '+esc(x.devrating) : '')+' · '+x.tap[0].toFixed(4)+', '+x.tap[1].toFixed(4)+'</span></td>'+
+    '<td>'+chip(m.frm)+' → '+chip(m.to)+'</td><td>'+x.n+' ลูก<br><span class="ala-muted">'+x.kva+' kVA</span></td><td>'+x.km+' กม.<br><span class="ala-muted">'+esc(x.cond || '')+'</span></td>'+
+    '<td>'+ampBox(x)+(x.measured ? '<br><span class="ala-muted">วัดจริง</span>' : '<br><span class="ala-muted">ประมาณ</span>')+'</td><td>'+pill(m.ub)+'</td><td>'+st+'</td>'+
+    '<td><a class="ala-btn" target="_blank" href="https://www.google.com/maps?q='+x.tap[0]+','+x.tap[1]+'">แผนที่</a> <a class="ala-btn" target="_blank" href="'+AX.SLD_URL+'">SLD</a></td></tr>';
+}
+function save(x, s, amp, to){
+  ACT[x.id] = { s: s, amp: amp, to: to, t: new Date().toISOString().slice(0,10) }; draw();
+  google.script.run.withSuccessHandler(function(a){ ACT = a || ACT; draw(); })
+    .withFailureHandler(function(e){ alert('บันทึกไม่สำเร็จ: '+(e && e.message || e)); }).setLateralAction(x.id, s, amp, to);
+}
+function map(fd, mv){
+  var svg = el('alaMap'); if (!svg) return;
+  var W = svg.clientWidth || 700, H = 430; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var a1 = 90, a2 = -90, o1 = 180, o2 = -180;
+  fd.segs.forEach(function(s){ s[3].forEach(function(v){ a1 = Math.min(a1, v[0]); a2 = Math.max(a2, v[0]); o1 = Math.min(o1, v[1]); o2 = Math.max(o2, v[1]); }); });
+  var k = Math.min((W-30)/(o2-o1), (H-30)/(a2-a1)), ox = (W-(o2-o1)*k)/2, oy = (H-(a2-a1)*k)/2;
+  var zz = zs(), RP = function(v){ return [ox+(v[1]-o1)*k, oy+(a2-v[0])*k]; };
+  if (FOCUS) { var fb = RP(FOCUS); zz.z = Math.max(zz.z, 4); zz.x = -(fb[0]-W/2)*zz.z; zz.y = -(fb[1]-H/2)*zz.z; FOCUS = null; }
+  var P = function(v){ var r = RP(v); return [((r[0]-W/2)*zz.z + W/2 + zz.x).toFixed(1), ((r[1]-H/2)*zz.z + H/2 + zz.y).toFixed(1)]; };
+  var BGS = bgTiles(W, H, ox, oy, o1, a2, k, zz);
+  var hi = {}; mv.forEach(function(m, n){ hi[m.i] = n; });
+  var base = '', top = '', lab = '';
+  fd.segs.forEach(function(s){
+    var d = 'M'+s[3].map(function(v){ return P(v).join(','); }).join('L');
+    if (s[0].length > 1) base += '<path d="'+d+'" stroke="#9a929e" stroke-width="'+(s[1] ? 2.6 : 1.6)+'" fill="none"/>';
+    else if (s[2] in hi) top += '<path d="'+d+'" stroke="var(--text-primary)" stroke-width="'+(sel === hi[s[2]] ? 6 : 4.5)+'" fill="none" stroke-linecap="round"/><path d="'+d+'" stroke="'+PH[s[0]]+'" stroke-width="2" fill="none"/>';
+    else base += '<path d="'+d+'" stroke="'+PH[s[0]]+'" stroke-width="1.2" fill="none" opacity=".8"/>';
+  });
+  mv.forEach(function(m, n){ var p = P(fd.laterals[m.i].tap); lab += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="10" fill="'+(sel === n ? 'var(--brand)' : 'var(--text-primary)')+'" stroke="#fff" stroke-width="2"/><text x="'+p[0]+'" y="'+(+p[1]+4)+'" fill="var(--surface-1)" font-size="11" font-weight="700" text-anchor="middle">'+(n+1)+'</text>'; });
+  svg.innerHTML = BGS + base + top + lab; bgBtn(svg);
+  bindZoom(svg, function(){ map(fd, mv); });
+}
+function printOrder(f, sc, mv, L, ub0, ub1){
+  var w = window.open('', '_blank'); if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่'); return; }
+  var tr = mv.map(function(m, n){ var x = L[m.i]; return '<tr><td>'+(n+1)+'</td><td>'+esc(x.devdesc || '(ไม่มีชื่อ)')+'<br><small>'+esc(x.dev || '')+' · พิกัด '+x.tap[0]+', '+x.tap[1]+'</small></td><td>'+m.frm+' → '+m.to+'</td><td>'+x.n+' ลูก / '+x.kva+' kVA</td><td>'+x.km+' กม. '+esc(x.cond || '')+'</td><td>'+x.amp+(x.measured ? ' (วัดจริง)' : ' (ประมาณ)')+'</td><td></td><td></td></tr>'; }).join('');
+  w.document.write('<html><head><meta charset="utf-8"><title>ใบสั่งงานย้ายเฟส '+f+'</title><style>body{font-family:Sarabun,sans-serif;padding:24px;font-size:14px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:6px;text-align:left;vertical-align:top}small{color:#555}</style></head><body>'+
+    '<h2>ใบสั่งงานย้ายเฟสไลน์แยก 1 เฟส · ฟีดเดอร์ '+f+'</h2><p>%Unbalance ปัจจุบัน '+fmt(ub0,1)+'% (A '+fmt(sc.I[0],0)+' / B '+fmt(sc.I[1],0)+' / C '+fmt(sc.I[2],0)+' A) · คาดว่าหลังย้าย '+fmt(ub1,1)+'%</p>'+
+    '<table><tr><th>#</th><th>ไลน์แยก / จุดตัด</th><th>ย้ายเฟส</th><th>หม้อแปลง</th><th>สาย</th><th>กระแส (A)</th><th>กระแสวัดก่อนย้าย</th><th>ผู้ปฏิบัติ / วันที่</th></tr>'+tr+'</table>'+
+    '<p style="margin-top:16px">ก่อนย้าย: วัดกระแสไลน์แยกและกระแส 3 เฟสที่ต้นทางช่วง Peak · ตรวจลำดับเฟสและป้ายเฟสหลังย้าย · แจ้งผลเพื่อบันทึกสถานะในระบบ</p><p style="margin-top:40px">ผู้สั่งงาน ................................................ &nbsp;&nbsp; ผู้รับงาน ................................................</p></body></html>');
+  w.document.close(); setTimeout(function(){ w.print(); }, 300);
+}
+window.addEventListener('resize', function(){ if (SLD && cur && el('alaMap')) draw(); });
+})();
+</script>
+
+<style>
+.pl-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){.pl-g2{grid-template-columns:1fr}}
+.pl-ins{background:rgba(255,216,77,.12);border:1px solid rgba(224,161,0,.35);border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.6;margin-top:8px;color:var(--text-secondary)}
+.pl-lg{display:flex;gap:12px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap;margin-top:4px}.pl-lg i{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.pl-tbl td,.pl-tbl th{text-align:left}
+.pl-tbl tr.cl{cursor:pointer}.pl-tbl tr.cl:hover td{background:var(--surface-2)}
+.pl-up{color:#c0392b;font-weight:700}.pl-dn{color:#1f9d55;font-weight:700}
+.pl-scroll{max-height:320px;overflow:auto}
+</style>
+<script>
+(function(){
+/* ===== แท็บ วางแผนระบบ: การเติบโต ฤดูกาล เวลา Peak Load Factor (ทั้ง กฟต.2 / ตามตัวกรอง) ===== */
+function el(id){ return document.getElementById(id); }
+var tabs = el('tabs'), b = document.createElement('button'); b.dataset.v = 'plan'; b.textContent = 'วางแผนระบบ';
+tabs.insertBefore(b, tabs.querySelector('button[data-v="quality"]'));
+b.onclick = function(){
+  tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on', v.id === 'v-plan'); });
+  render();
+};
+var sec = document.createElement('section'); sec.className = 'view'; sec.id = 'v-plan'; sec.innerHTML = '<div id="plBody"></div>';
+document.querySelector('main').appendChild(sec);
+var _render = render;
+render = function(){ _render(); var on = tabs.querySelector('button.on'); if (D && on && on.dataset.v === 'plan') draw(); };
+
+var COLS = ['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)','var(--s6)','var(--s7)'];
+var TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function med(a){ if (!a.length) return null; var s = a.slice().sort(function(x, y){ return x - y; }), n = s.length; return n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2; }
+function okF(f){ if (f.type !== 'Feeder') return false; var t = S.type; S.type = ''; var ok = fOk(f); S.type = t; return ok; }
+function sum(a, i, j){ var t = 0; for (var k = i; k < j; k++) t += a[k] || 0; return t; }
+
+function compute(){
+  var e = S.m, s12 = Math.max(0, e - 11), p0 = Math.max(0, e - 23), p1 = s12 - 1;
+  var byF = {};
+  for (var m = p0; m <= e; m++) byM[m].forEach(function(r){
+    var f = F[r.f]; if (r.q || !r.mw || r.mw <= 0 || !okF(f)) return;
+    (byF[r.f] = byF[r.f] || []).push(r);
+  });
+  var feeders = [], h0 = new Array(24).fill(0), h1 = new Array(24).fill(0), n0 = 0, n1 = 0;
+  Object.keys(byF).forEach(function(fi){
+    var rs = byF[fi], L = rs.filter(function(r){ return r.m >= s12 && r.mw > 0.3; }), P = rs.filter(function(r){ return r.m <= p1; });
+    rs.forEach(function(r){ if (r.ph >= 1 && r.ph < 24) { if (r.m >= s12) { h1[Math.floor(r.ph)]++; n1++; } else { h0[Math.floor(r.ph)]++; n0++; } } });
+    if (L.length < 8) return;
+    var mws = L.map(function(r){ return r.mw; }), md = med(mws), top = L.reduce(function(a, r){ return r.mw > a.mw ? r : a; }, L[0]);
+    var phs = L.filter(function(r){ return r.ph >= 1; }), pph = P.filter(function(r){ return r.ph >= 1; });
+    var day = phs.length ? phs.filter(function(r){ return r.ph >= 9 && r.ph < 17; }).length / phs.length : null;
+    var dayp = pph.length >= 6 ? pph.filter(function(r){ return r.ph >= 9 && r.ph < 17; }).length / pph.length : null;
+    var lfs = L.filter(function(r){ return r.lf; }).map(function(r){ return r.lf; });
+    var pfs = L.filter(function(r){ return r.mvar != null; }).map(function(r){ return Math.abs(r.mw) / Math.sqrt(r.mw*r.mw + r.mvar*r.mvar); });
+    var pf = med(pfs), q = med(L.filter(function(r){ return r.mvar != null; }).map(function(r){ return Math.abs(r.mvar); })) || 0;
+    var kvar = pf && pf < 0.95 ? Math.max(0, (q - md * Math.tan(Math.acos(0.98))) * 1000) : 0;
+    feeders.push({ fi: +fi, f: F[fi], med: md, mx: top.mw, mxm: M[top.m], seas: md ? top.mw / md : null, day: day, dayp: dayp, lf: med(lfs), pf: pf, kvar: kvar });
+  });
+  // กลุ่มสำหรับกราฟ: ทั้ง กฟต.2 → รายจังหวัด, เลือกจังหวัด → รายสถานี (6 อันดับแรก)
+  var grpOf = function(f){ return S.prov || S.subQ ? f.sub : f.prov; };
+  var win = []; for (var m2 = p0; m2 <= e; m2++) win.push(m2);
+  var cnt = {}; Object.keys(byF).forEach(function(fi){ cnt[fi] = {}; byF[fi].forEach(function(r){ cnt[fi][r.m] = 1; }); });
+  var full = Object.keys(byF).filter(function(fi){ return Object.keys(cnt[fi]).length >= win.length - 2; });
+  var seasOK = {}; feeders.forEach(function(o){ seasOK[o.fi] = o.seas && o.seas < 2.5; });
+  var G = {};
+  full.forEach(function(fi){ if (seasOK[fi] === false) return; var g = grpOf(F[fi]); var a = G[g] || (G[g] = new Array(win.length).fill(0)); byF[fi].forEach(function(r){ a[r.m - p0] += r.mw; }); });
+  var gk = Object.keys(G).sort(function(a, b2){ return sum(G[b2], 0, win.length) - sum(G[a], 0, win.length); });
+  if (gk.length > 6) { var oth = new Array(win.length).fill(0); gk.slice(6).forEach(function(k){ G[k].forEach(function(v, i){ oth[i] += v; }); }); gk = gk.slice(0, 6); G['อื่นๆ'] = oth; gk.push('อื่นๆ'); }
+  var half = win.length >= 24 ? 12 : Math.floor(win.length / 2);
+  var growth = {}, ta = 0, tb = 0;
+  gk.forEach(function(k){ var a = G[k].slice(-12), bb = G[k].slice(0, win.length - 12); var ma = Math.max.apply(null, a), mb = bb.length ? Math.max.apply(null, bb) : 0; growth[k] = mb ? (ma / mb - 1) * 100 : null; ta += ma; tb += mb; });
+  var pm = {}; feeders.forEach(function(o){ if (o.seas && o.seas < 2.5) { var k = o.mxm.slice(5); pm[k] = (pm[k] || 0) + 1; } });
+  return { feeders: feeders, win: win, G: G, gk: gk, growth: growth, gall: tb ? (ta / tb - 1) * 100 : null, h0: h0.map(function(v){ return n0 ? v / n0 * 100 : 0; }), h1: h1.map(function(v){ return n1 ? v / n1 * 100 : 0; }), hasPrev: n0 > 0,
+    pm: Object.keys(pm).map(function(k){ return [k, pm[k]]; }).sort(function(a, b2){ return b2[1] - a[1]; }) };
+}
+function gname(k){ return PROV_TH[k] || k; }
+function draw(){
+  var box = el('plBody'); if (!box || !D) return;
+  var R = compute(), FE = R.feeders;
+  if (!FE.length) { box.innerHTML = '<div class="card">ไม่มีฟีดเดอร์ที่มีข้อมูลพอในขอบเขตนี้</div>'; return; }
+  var shift = FE.filter(function(o){ return o.dayp != null && o.day != null && o.dayp >= 0.5 && o.day < 0.3; }).sort(function(a, b2){ return (a.day - a.dayp) - (b2.day - b2.dayp); });
+  var lowlf = FE.filter(function(o){ return o.lf && o.seas && o.seas < 2.5; }).sort(function(a, b2){ return a.lf - b2.lf; }).slice(0, 12);
+  var pfl = FE.filter(function(o){ return o.pf && o.pf < 0.95; }), pfk = pfl.reduce(function(a, o){ return a + o.kvar; }, 0);
+  var dd = FE.filter(function(o){ return o.day != null; }), dayshare = dd.length ? dd.filter(function(o){ return o.day >= 0.5; }).length / dd.length * 100 : 0;
+  var lfv = FE.filter(function(o){ return o.lf; }).map(function(o){ return o.lf; }), lfm = med(lfv), lflow = lfv.filter(function(x){ return x < 0.5; }).length;
+  var ntr = FE.filter(function(o){ return o.seas && o.seas >= 2.5; }).length;
+  var ev = sum(R.h1, 18, 23), ev0 = sum(R.h0, 18, 23), d1 = sum(R.h1, 9, 17), d0 = sum(R.h0, 9, 17);
+  var g = R.gall, topg = R.gk.filter(function(k){ return R.growth[k] != null && k !== 'อื่นๆ'; }).sort(function(a, b2){ return R.growth[b2] - R.growth[a]; });
+  var kp = function(l, v, s2){ return '<div class="card kpi"><div class="lab">'+l+'</div><div class="val">'+v+'</div><div class="note">'+s2+'</div></div>'; };
+  var html = '<p class="cap">ขอบเขต: <b>'+esc(scopeName())+'</b> · ฟีดเดอร์ 33 kV '+FE.length+' ฟีดเดอร์ · 12 เดือนถึง '+mLabelLong(M[S.m])+' เทียบ 12 เดือนก่อนหน้า · ไม่นับเดือนที่เป็นค่าคัดลอก</p>'+
+    '<div class="grid kpis">'+
+      kp('โหลดสูงสุดรวม เทียบปีก่อน', g == null ? '–' : '<span class="'+(g > 0 ? 'pl-up' : 'pl-dn')+'">'+(g > 0 ? '+' : '')+fmt(g,1)+'%</span>', topg.length ? 'โตเร็วสุด '+esc(gname(topg[0]))+' '+(R.growth[topg[0]] > 0 ? '+' : '')+fmt(R.growth[topg[0]],1)+'%' : '')+
+      kp('Peak ช่วงหัวค่ำ 18–22 น.', fmt(ev,0)+'<small>%</small>', (R.hasPrev ? 'ปีก่อน '+fmt(ev0,0)+'% · ' : '')+'ฟีดเดอร์ Peak กลางวัน '+fmt(dayshare,0)+'%')+
+      kp('Peak ย้ายกลางวัน → ค่ำ', shift.length+'<small>ฟีดเดอร์</small>', 'สัญญาณโซลาร์รูฟท็อป')+
+      kp('Load Factor ต่ำกว่า 0.5', lflow+'<small>ฟีดเดอร์</small>', 'จาก '+FE.length+' · ค่ากลาง '+fmt(lfm,2))+
+      kp('PF ขณะ Peak ต่ำกว่า 0.95', pfl.length+'<small>ฟีดเดอร์</small>', 'ต้องการ ≈ '+fmt(pfk/1000,1)+' MVAr ถึง PF 0.98 · รายการอยู่แท็บ "โหลดสูง และ PF"')+
+    '</div>'+
+    '<div class="card" style="margin-top:12px"><h2>โหลดสูงสุดรวม'+(S.prov || S.subQ ? 'รายสถานี' : 'รายจังหวัด')+' ('+R.win.length+' เดือน)</h2><p class="cap">รวม Peak ของฟีดเดอร์ที่มีข้อมูลครบ (ไม่นับฟีดเดอร์ที่รับโหลดโอน) · ใช้ดูแนวโน้มและฤดูกาล ไม่ใช่ Peak จริงของพื้นที่ (Peak แต่ละฟีดเดอร์ไม่ได้เกิดพร้อมกัน)</p><svg id="plCh1" width="100%" height="300"></svg><div class="pl-lg" id="plLg1"></div><div class="pl-ins" id="plIns1"></div></div>'+
+    '<div class="pl-g2"><div class="card"><h2>Peak เกิดตอนกี่โมง</h2><p class="cap">สัดส่วนเดือนที่ Peak เกิดในแต่ละชั่วโมง · ปีก่อน เทียบ ปีล่าสุด</p><svg id="plCh2" width="100%" height="240"></svg><div class="pl-lg"><span><i style="background:#c9bfd0;height:8px"></i>ปีก่อน</span><span><i style="background:var(--brand);height:8px"></i>ปีล่าสุด</span></div>'+
+      '<div class="pl-ins">Peak หัวค่ำ 18–22 น. '+(R.hasPrev ? fmt(ev0,0)+'% → ' : '')+'<b>'+fmt(ev,0)+'%</b> · กลางวัน 09–17 น. '+(R.hasPrev ? fmt(d0,0)+'% → ' : '')+fmt(d1,0)+'%</div></div>'+
+      '<div class="card"><h2>ฟีดเดอร์ที่ Peak ย้ายจากกลางวันไปหัวค่ำ</h2><p class="cap">ปีก่อน Peak กลางวัน (09–17 น.) ≥ 50% ของเดือน แต่ปีล่าสุด &lt; 30% · กดแถวเพื่อดูประวัติ</p><div class="pl-scroll"><table class="ptable pl-tbl"><thead><tr><th>ฟีดเดอร์</th><th>จังหวัด</th><th>Peak กลางวัน ปีก่อน → ล่าสุด</th><th>MW</th></tr></thead><tbody>'+
+      (shift.length ? shift.map(function(o){ return '<tr class="cl" data-fi="'+o.fi+'"><td><b>'+esc(o.f.name)+'</b></td><td>'+esc(PROV_TH[o.f.prov] || o.f.prov)+'</td><td>'+fmt(o.dayp*100,0)+'% → <b>'+fmt(o.day*100,0)+'%</b></td><td>'+fmt(o.med,1)+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="cap">ไม่มี</td></tr>')+
+      '</tbody></table></div><div class="pl-ins"><b>ใช้ทำอะไร:</b> ฟีดเดอร์กลุ่มนี้ต้องวางแผนจาก Peak <u>หัวค่ำ</u> · วันฟ้าครึ้มโหลดกลางวันจะกลับมาเต็ม ห้ามลดขนาดอุปกรณ์ตามโหลดกลางวันที่ดูต่ำลง · ถ้าโซลาร์มากขึ้นอีก อาจเกิดไฟย้อนช่วงเที่ยง</div></div></div>'+
+    '<div class="pl-g2"><div class="card"><h2>Load Factor ต่ำ (โหลดพุ่งเป็นช่วงสั้น)</h2><p class="cap">LF = โหลดเฉลี่ย ÷ Peak · ค่ากลาง <b>'+fmt(lfm,2)+'</b> · กดแถวเพื่อดูประวัติ</p><div class="pl-scroll"><table class="ptable pl-tbl"><thead><tr><th>ฟีดเดอร์</th><th>จังหวัด</th><th>LF</th><th>Peak (MW)</th></tr></thead><tbody>'+
+      lowlf.map(function(o){ return '<tr class="cl" data-fi="'+o.fi+'"><td><b>'+esc(o.f.sub+' · '+o.f.name)+'</b></td><td>'+esc(PROV_TH[o.f.prov] || o.f.prov)+'</td><td><span class="pl-up">'+fmt(o.lf,2)+'</span></td><td>'+fmt(o.mx,1)+'</td></tr>'; }).join('')+
+      '</tbody></table></div><div class="pl-ins"><b>ใช้ทำอะไร:</b> ฟีดเดอร์ LF ต่ำเหมาะกับการโอนโหลดชั่วคราวช่วง Peak มากกว่าลงทุนเพิ่มสาย/หม้อแปลง · ตรวจลูกค้ารายใหญ่ที่เปิดเครื่องพร้อมกัน (โรงงาน ฟาร์ม ปั๊มน้ำ)</div></div>'+
+      '<div class="card"><h2>สรุปสิ่งที่ควรทำ</h2><div id="plTodo" style="font-size:13.5px;line-height:1.75"></div></div></div>';
+  box.innerHTML = html;
+  box.querySelectorAll('tr.cl').forEach(function(t){ t.onclick = function(){ openDetail(+t.dataset.fi); }; });
+  chart1(R); chart2(R);
+  var pmTxt = R.pm.slice(0, 3).map(function(x){ return TH[+x[0]-1]+' ('+x[1]+')'; }).join(', ');
+  var fast = topg.filter(function(k){ return R.growth[k] >= 8; }).map(gname), dec = topg.filter(function(k){ return R.growth[k] <= -3; }).map(gname);
+  el('plIns1').innerHTML = '<b>อ่านกราฟ:</b> เดือนที่ฟีดเดอร์ส่วนใหญ่ทำ Peak คือ '+(pmTxt || '–')+(fast.length ? ' · <b>'+esc(fast.join(', '))+'</b> โตเกิน 8% ต่อปี ควรเร่งตรวจหม้อแปลงสถานีและฟีดเดอร์ใกล้เต็ม' : '')+(dec.length ? ' · '+esc(dec.join(', '))+' ลดลง (อาจมีการโอนโหลดออก)' : '');
+  var peakM = R.pm.length ? TH[+R.pm[0][0]-1] : 'เม.ย.';
+  el('plTodo').innerHTML = '<ol style="margin:0;padding-left:18px">'+
+    '<li><b>ก่อนเดือน '+peakM+'</b> ตรวจฟีดเดอร์/หม้อแปลงที่ใกล้เต็ม และเลี่ยงดับไฟวางแผนช่วงนั้น</li>'+
+    (fast.length ? '<li><b>'+esc(fast.join(', '))+'</b> โหลดโต ≥ 8%/ปี → ให้ความสำคัญในแผนลงทุนก่อน</li>' : '')+
+    (pfl.length ? '<li><b>'+pfl.length+' ฟีดเดอร์ PF ต่ำ</b> รวมต้องการ ≈ '+fmt(pfk/1000,1)+' MVAr → ติด Capacitor ที่ฟีดเดอร์ใหญ่ก่อน (ดูแท็บ "โหลดสูง และ PF")</li>' : '')+
+    (shift.length ? '<li><b>'+shift.length+' ฟีดเดอร์ Peak ย้ายไปค่ำ</b> → วางแผนจาก Peak หัวค่ำ และเฝ้าระวังไฟย้อนช่วงเที่ยง</li>' : '')+
+    (ntr ? '<li><b>'+ntr+' ฟีดเดอร์</b> บางเดือน Peak สูงกว่าปกติเกิน 2.5 เท่า = รับโหลดโอน · ไม่นำมาคิดการเติบโต</li>' : '')+'</ol>';
+}
+function chart1(R){
+  var svg = el('plCh1'); if (!svg) return;
+  var W = svg.clientWidth || 1000, H = 300, Lm = 46, Rm = 12, T = 10, B = 28; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var mx = 0; R.gk.forEach(function(k){ R.G[k].forEach(function(v){ mx = Math.max(mx, v); }); });
+  var stp = mx > 400 ? 100 : mx > 100 ? 50 : mx > 40 ? 10 : 5; mx = Math.ceil(mx / stp) * stp || 1;
+  var n = R.win.length, x = function(i){ return Lm + i * (W - Lm - Rm) / Math.max(1, n - 1); }, y = function(v){ return T + (1 - v / mx) * (H - T - B); }, s = '', cw = (W - Lm - Rm) / Math.max(1, n - 1);
+  for (var t = 0; t <= mx; t += stp) s += '<line x1="'+Lm+'" x2="'+(W-Rm)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(Lm-6)+'" y="'+(y(t)+4)+'" font-size="11" text-anchor="end" fill="var(--text-muted)">'+t+'</text>';
+  R.win.forEach(function(mi, i){ var m = M[mi]; if (m.slice(5) === '04') s += '<rect x="'+(x(i)-cw/2)+'" y="'+T+'" width="'+cw+'" height="'+(H-T-B)+'" fill="#e8590c" opacity=".08"/>';
+    if (i % 3 === 0 || i === n - 1) s += '<text x="'+x(i)+'" y="'+(H-8)+'" font-size="11" text-anchor="middle" fill="var(--text-muted)">'+mLabel(m)+'</text>'; });
+  R.gk.forEach(function(k, j){ var c = COLS[j % COLS.length];
+    s += '<polyline fill="none" stroke="'+c+'" stroke-width="2.2" points="'+R.G[k].map(function(v, i){ return x(i)+','+y(v); }).join(' ')+'"/>';
+    var v = R.G[k][n-1]; s += '<text x="'+(x(n-1)-4)+'" y="'+(y(v)-5)+'" font-size="11" text-anchor="end" fill="'+c+'" font-weight="700">'+esc(gname(k))+'</text>'; });
+  s += '<text x="'+(Lm+4)+'" y="'+(T+12)+'" font-size="11" fill="var(--text-muted)">MW</text>';
+  svg.innerHTML = s;
+  el('plLg1').innerHTML = R.gk.map(function(k, j){ var gr = R.growth[k]; return '<span><i style="background:'+COLS[j % COLS.length]+'"></i>'+esc(gname(k))+(gr == null ? '' : ' '+(gr > 0 ? '+' : '')+fmt(gr,1)+'%/ปี')+'</span>'; }).join('')+'<span><i style="background:#e8590c;opacity:.25;height:10px"></i>เดือนเมษายน</span>';
+}
+function chart2(R){
+  var svg = el('plCh2'); if (!svg) return;
+  var W = svg.clientWidth || 600, H = 240, Lm = 30, Rm = 8, T = 10, B = 24; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var mx = Math.max(10, Math.ceil(Math.max.apply(null, R.h0.concat(R.h1)) / 5) * 5), bw = (W - Lm - Rm) / 23, s = '', y = function(v){ return T + (1 - v / mx) * (H - T - B); };
+  for (var t = 0; t <= mx; t += 5) s += '<line x1="'+Lm+'" x2="'+(W-Rm)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(Lm-4)+'" y="'+(y(t)+4)+'" font-size="10" text-anchor="end" fill="var(--text-muted)">'+t+'%</text>';
+  for (var h = 1; h < 24; h++) { var x = Lm + (h - 1) * bw;
+    s += '<rect x="'+(x+1)+'" y="'+y(R.h0[h])+'" width="'+Math.max(1, bw/2-1)+'" height="'+(y(0)-y(R.h0[h]))+'" fill="#c9bfd0"/><rect x="'+(x+bw/2)+'" y="'+y(R.h1[h])+'" width="'+Math.max(1, bw/2-1)+'" height="'+(y(0)-y(R.h1[h]))+'" fill="var(--brand)"/>';
+    if (h % 3 === 0) s += '<text x="'+(x+bw/2)+'" y="'+(H-8)+'" font-size="10" text-anchor="middle" fill="var(--text-muted)">'+h+':00</text>'; }
+  svg.innerHTML = s;
+}
+window.addEventListener('resize', function(){ var on = tabs.querySelector('button.on'); if (D && on && on.dataset.v === 'plan') draw(); });
+if (typeof D !== 'undefined' && D) { /* แท็บจะวาดเมื่อถูกเลือก */ }
+})();
+</script>
+
+<style>
+.n1-tbl td,.n1-tbl th{text-align:left;vertical-align:top}
+.n1-tbl tr.cl{cursor:pointer}.n1-tbl tr.cl:hover td,.n1-tbl tr.sel td{background:var(--surface-2)}
+.n1-bar{position:relative;height:10px;background:var(--surface-2);border-radius:5px;min-width:110px}
+.n1-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.n1-bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text-primary)}
+.n1-ins{background:rgba(255,216,77,.12);border:1px solid rgba(224,161,0,.35);border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.6;margin-top:10px;color:var(--text-secondary)}
+.n1-btn{display:inline-block;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:8px;padding:6px 12px;text-decoration:none}
+</style>
+<script>
+(function(){
+/* ===== แท็บ N-1 สถานี: หม้อแปลงลูกใหญ่สุดเสีย 1 ลูก ที่เหลือรับ Peak ไหวไหม ===== */
+var NX = { PF_DEF: 0.95, G_DEF: 5, G_MIN: -5, G_MAX: 15, WARN_Y: 3 };
+function el(id){ return document.getElementById(id); }
+var tabs = el('tabs'), b = document.createElement('button'); b.dataset.v = 'n1'; b.textContent = 'N-1 สถานี';
+tabs.insertBefore(b, tabs.querySelector('button[data-v="quality"]'));
+b.onclick = function(){
+  tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on', v.id === 'v-n1'); });
+  render();
+};
+var sec = document.createElement('section'); sec.className = 'view'; sec.id = 'v-n1'; sec.innerHTML = '<div id="n1Body"><div class="card">กำลังโหลดข้อมูลหม้อแปลง…</div></div>';
+document.querySelector('main').appendChild(sec);
+var CAP = null, loading = false, selSub = '';
+function load(){
+  if (loading || CAP) return; loading = true;
+  google.script.run.withSuccessHandler(function(o){ CAP = o || { subs: {} }; loading = false; draw(); })
+    .withFailureHandler(function(e){ CAP = { subs: {}, err: String(e && e.message || e) }; loading = false; draw(); }).getSubCaps();
+}
+var _render = render;
+render = function(){ _render(); var on = tabs.querySelector('button.on'); if (D && on && on.dataset.v === 'n1') { if (!CAP) load(); draw(); } };
+
+function okSub(f){ return (!S.prov || f.prov === S.prov) && (!S.subQ || f.sub.indexOf(S.subQ) === 0); }
+/* โหลดสถานีรายเดือน: รวมจุดวัดหม้อแปลง (Transformer) → ถ้าไม่มีใช้ Incoming → ถ้าไม่มีใช้ผลรวมฟีดเดอร์ */
+function subLoads(){
+  var subs = {}, e = S.m, p0 = Math.max(0, e - 23);
+  F.forEach(function(f){ if (!okSub(f)) return; var s = subs[f.sub] || (subs[f.sub] = { sub: f.sub, prov: f.prov, pts: { Transformer: [], Incoming: [], Feeder: [] } }); if (s.pts[f.type]) s.pts[f.type].push(f.i); });
+  Object.keys(subs).forEach(function(k){
+    var s = subs[k];
+    ['Transformer', 'Incoming', 'Feeder'].some(function(src){
+      if (!s.pts[src].length) return false;
+      var ids = {}, mw = [], mv = [], recent = 0; s.pts[src].forEach(function(i){ ids[i] = 1; });
+      for (var m = p0; m <= e; m++) {
+        var t = 0, q = 0, n = 0;
+        byM[m].forEach(function(r){ if (ids[r.f] && r.q !== 2 && !(S.copy && r.q === 1) && r.mw > 0) { t += r.mw; if (r.mvar != null) q += Math.abs(r.mvar); n++; } });
+        mw.push(n ? t : null); mv.push(n ? q : null); if (n && m > e - 12) recent++;
+      }
+      if (!recent) return false;
+      s.src = src; s.mw = mw; s.mvar = mv; return true;
+    });
+    if (!s.mw) delete subs[k]; else s.p0 = p0;
+  });
+  return subs;
+}
+function analyse(s){
+  var last = s.mw.slice(-12).filter(function(v){ return v != null; }), prev = s.mw.slice(0, -12).filter(function(v){ return v != null; });
+  if (!last.length) return null;
+  var pk = Math.max.apply(null, last), pi = s.mw.lastIndexOf(pk), pq = s.mvar[pi];
+  var pf = pq != null && pk ? pk / Math.sqrt(pk*pk + pq*pq) : NX.PF_DEF; if (pf < 0.8 || pf > 1) pf = NX.PF_DEF;
+  var g = prev.length >= 6 ? (pk / Math.max.apply(null, prev) - 1) * 100 : null;
+  var gu = g == null ? NX.G_DEF : Math.max(NX.G_MIN, Math.min(NX.G_MAX, g));
+  var trs = (CAP && CAP.subs[s.sub] || []).filter(function(t){ return t.mva > 0; });
+  var r = { s: s, pk: pk, pkva: pk / pf, pf: pf, g: g, gu: gu, trs: trs, n: trs.length };
+  if (!trs.length) { r.st = 'nodata'; return r; }
+  var tot = 0, mx = 0, em = 100; trs.forEach(function(t){ tot += t.mva; mx = Math.max(mx, t.mva); if (t.em) em = Math.max(em, t.em); });
+  r.tot = tot; r.firm = trs.length >= 2 ? (tot - mx) * em / 100 : 0; r.em = em; r.util = r.pkva / tot;
+  if (r.firm <= 0) { r.st = 'single'; r.short = pk; return r; }
+  r.ratio = r.pkva / r.firm;
+  if (r.ratio > 1) { r.st = 'fail'; r.short = (r.pkva - r.firm) * pf; }
+  else { r.st = 'pass'; r.yrs = gu > 0 ? Math.log(r.firm / r.pkva) / Math.log(1 + gu / 100) : null; r.st = r.yrs != null && r.yrs <= NX.WARN_Y ? 'soon' : 'pass'; }
+  return r;
+}
+var ST = { fail: ['ไม่ผ่าน N-1', 'red', 0], single: ['หม้อแปลงลูกเดียว', 'red', 1], soon: ['ใกล้เต็ม', 'amb', 2], pass: ['ผ่าน', 'green', 3], nodata: ['รอข้อมูล MVA', 'gray', 4] };
+function yearTH(y){ return new Date().getFullYear() + 543 + Math.floor(y); }
+function draw(){
+  var box = el('n1Body'); if (!box || !D) return;
+  if (!CAP) { box.innerHTML = '<div class="card">กำลังโหลดข้อมูลหม้อแปลง…</div>'; return; }
+  var subs = subLoads(), R = Object.keys(subs).map(function(k){ return analyse(subs[k]); }).filter(Boolean);
+  R.sort(function(a, b2){ return ST[a.st][2] - ST[b2.st][2] || (b2.ratio || b2.pk) - (a.ratio || a.pk); });
+  var cnt = function(st){ return R.filter(function(r){ return r.st === st; }).length; };
+  var have = R.filter(function(r){ return r.st !== 'nodata'; }).length;
+  var kp = function(l, v, s2){ return '<div class="card kpi"><div class="lab">'+l+'</div><div class="val">'+v+'</div><div class="note">'+s2+'</div></div>'; };
+  var rows = R.map(function(r){
+    var st = ST[r.st], s = r.s, cap = r.trs.length ? r.trs.map(function(t){ return esc(t.tr)+' '+fmt(t.mva,0); }).join(' + ')+' MVA' : '<span class="cap">—</span>';
+    var bar = '';
+    if (r.tot) { var w = Math.min(100, r.pkva / r.tot * 100), fw = r.firm / r.tot * 100; bar = '<div class="n1-bar"><i style="width:'+w+'%;background:'+(r.st === 'fail' || r.st === 'single' ? '#c0392b' : r.st === 'soon' ? '#d9822b' : '#1f9d55')+'"></i>'+(r.firm > 0 ? '<b style="left:'+Math.min(100, fw)+'%" title="Firm capacity"></b>' : '')+'</div><span class="cap">'+fmt(r.pkva / r.tot * 100, 0)+'% ของรวม</span>'; }
+    var res = r.st === 'fail' ? 'ขาด <b>'+fmt(r.short,1)+' MW</b> ถ้าหม้อแปลงลูกใหญ่สุดเสีย' : r.st === 'single' ? 'ถ้าหม้อแปลงเสีย ต้องโอนโหลดทั้งหมด <b>'+fmt(r.pk,1)+' MW</b>' : r.st === 'soon' || r.st === 'pass' ? (r.yrs != null ? 'เต็ม Firm ประมาณปี <b>'+yearTH(r.yrs)+'</b> ('+fmt(r.yrs,1)+' ปี)' : 'โหลดไม่โต') : 'กรอกขนาดหม้อแปลงในชีต';
+    return '<tr class="cl'+(selSub === s.sub ? ' sel' : '')+'" data-s="'+esc(s.sub)+'"><td><b>'+esc(s.sub)+'</b><br><span class="cap">'+esc(PROV_TH[s.prov] || s.prov)+'</span></td><td>'+cap+'</td><td><b>'+fmt(r.pk,1)+'</b> MW<br><span class="cap">≈ '+fmt(r.pkva,1)+' MVA'+(s.src !== 'Transformer' ? ' · จาก'+(s.src === 'Incoming' ? ' Incoming' : 'ผลรวมฟีดเดอร์') : '')+'</span></td><td>'+(r.firm > 0 ? fmt(r.firm,1)+' MVA'+(r.em > 100 ? '<br><span class="cap">รวมรับเกิน '+r.em+'%</span>' : '') : r.tot ? '0' : '—')+'</td><td>'+bar+'</td><td>'+(r.g == null ? '<span class="cap">ใช้ '+NX.G_DEF+'%</span>' : (r.g > 0 ? '+' : '')+fmt(r.g,1)+'%')+'</td><td><span class="pill '+st[1]+'">'+st[0]+'</span><br><span class="cap">'+res+'</span></td></tr>';
+  }).join('');
+  box.innerHTML = '<p class="cap">ขอบเขต: <b>'+esc(scopeName())+'</b> · Peak = ค่าสูงสุด 12 เดือนถึง '+mLabelLong(M[S.m])+' (รวมจุดวัดหม้อแปลงของสถานี) · โตต่อปีเทียบ 12 เดือนก่อนหน้า</p>'+
+    '<div class="grid kpis">'+
+      kp('ไม่ผ่าน N-1', (cnt('fail') + cnt('single'))+'<small>สถานี</small>', cnt('single')+' สถานีมีหม้อแปลงลูกเดียว')+
+      kp('จะเต็มภายใน '+NX.WARN_Y+' ปี', cnt('soon')+'<small>สถานี</small>', 'ตามอัตราโหลดโตจริงของแต่ละสถานี')+
+      kp('ผ่าน N-1', cnt('pass')+'<small>สถานี</small>', 'มีที่ว่างเกิน '+NX.WARN_Y+' ปี')+
+      kp('กรอกขนาดหม้อแปลงแล้ว', have+'<small>/ '+R.length+'</small>', '<a href="'+esc(CAP.url || '#')+'" target="_blank">เปิดชีต Substations</a>')+
+    '</div>'+
+    (have === 0 ? '<div class="card" style="margin-top:12px"><h2>ยังไม่มีขนาดหม้อแปลง</h2><p class="cap" style="line-height:1.7">กรอกขนาด MVA ของหม้อแปลงทุกลูกในชีต <b>Substations</b> (ผมใส่รายชื่อสถานีและหม้อแปลงจาก SCADA ไว้แล้ว) — กรอกเสร็จกลับมากด refresh หน้านี้ ระบบจะคำนวณ N-1 ให้ทันที · ระหว่างนี้ตารางด้านล่างแสดง Peak และอัตราโตของแต่ละสถานีไว้ก่อน</p><a class="n1-btn" href="'+esc(CAP.url || '#')+'" target="_blank">เปิดชีต Substations เพื่อกรอก</a></div>' : '')+
+    '<div class="card" style="margin-top:12px"><h2>สถานีไฟฟ้า · เรียงตามความเสี่ยง</h2><p class="cap">กดแถวเพื่อดูกราฟโหลดเทียบขนาดหม้อแปลง</p><div id="n1Chart"></div><div class="tbl-wrap"><table class="ptable n1-tbl"><thead><tr><th>สถานี</th><th>หม้อแปลง</th><th>Peak</th><th>Firm capacity</th><th>ใช้งานปกติ</th><th>โต/ปี</th><th>N-1</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="n1-ins"><b>วิธีคิด:</b> Firm capacity = ขนาดรวม − หม้อแปลงลูกใหญ่สุด (× % รับเกินฉุกเฉินถ้ากรอก) · ผ่าน N-1 เมื่อ Peak (MVA) ≤ Firm · Peak ใช้ผลรวม Peak ของหม้อแปลงแต่ละลูกในเดือนนั้น (อาจสูงกว่า Peak จริงของสถานีเล็กน้อย = เผื่อไว้) · แปลง MW เป็น MVA ด้วย PF จาก SCADA (ไม่มีใช้ '+NX.PF_DEF+') · ปีที่เต็มคิดจากอัตราโตจริง จำกัด '+NX.G_MIN+'% ถึง +'+NX.G_MAX+'% ต่อปี · ยังไม่รวมการโอนโหลดผ่านจุดเชื่อม (Tie) ไปสถานีข้างเคียง</div></div>';
+  box.querySelectorAll('tr.cl').forEach(function(t){ t.onclick = function(){ selSub = selSub === t.dataset.s ? '' : t.dataset.s; draw(); }; });
+  if (selSub) { var r0 = R.filter(function(r){ return r.s.sub === selSub; })[0]; if (r0) chart(r0); }
+}
+function chart(r){
+  var host = el('n1Chart'); if (!host) return;
+  host.innerHTML = '<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px"><b>'+esc(r.s.sub)+'</b> · โหลดรายเดือน (MVA) เทียบขนาดหม้อแปลง <svg id="n1Svg" width="100%" height="220"></svg><div class="cap">เส้นทึบเทา = ขนาดรวม · เส้นประแดง = Firm capacity (N-1)'+(r.tot ? '' : ' · ยังไม่มีขนาดหม้อแปลง')+'</div></div>';
+  var svg = el('n1Svg'), W = svg.clientWidth || 800, H = 220, L = 44, Rm = 10, T = 10, B = 24; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var v = r.s.mw.map(function(x){ return x == null ? null : x / r.pf; }), mx = Math.max(r.tot || 0, Math.max.apply(null, v.filter(function(x){ return x != null; }))) * 1.1 || 1;
+  var n = v.length, x = function(i){ return L + i * (W - L - Rm) / Math.max(1, n - 1); }, y = function(q){ return T + (1 - q / mx) * (H - T - B); }, s = '';
+  var stp = mx > 200 ? 50 : mx > 80 ? 20 : mx > 30 ? 10 : 5;
+  for (var t = 0; t <= mx; t += stp) s += '<line x1="'+L+'" x2="'+(W-Rm)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(L-5)+'" y="'+(y(t)+4)+'" font-size="10" text-anchor="end" fill="var(--text-muted)">'+t+'</text>';
+  for (var i = 0; i < n; i++) if (i % 3 === 0 || i === n - 1) s += '<text x="'+x(i)+'" y="'+(H-6)+'" font-size="10" text-anchor="middle" fill="var(--text-muted)">'+mLabel(M[r.s.p0 + i])+'</text>';
+  if (r.tot) s += '<line x1="'+L+'" x2="'+(W-Rm)+'" y1="'+y(r.tot)+'" y2="'+y(r.tot)+'" stroke="#8c8392" stroke-width="2"/>';
+  if (r.firm > 0) s += '<line x1="'+L+'" x2="'+(W-Rm)+'" y1="'+y(r.firm)+'" y2="'+y(r.firm)+'" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 4"/>';
+  var pts = []; v.forEach(function(q, i){ if (q != null) pts.push(x(i)+','+y(q)); });
+  s += '<polyline fill="none" stroke="var(--brand)" stroke-width="2.4" points="'+pts.join(' ')+'"/>';
+  v.forEach(function(q, i){ if (q != null) s += '<circle cx="'+x(i)+'" cy="'+y(q)+'" r="2.5" fill="var(--brand)"/>'; });
+  svg.innerHTML = s;
+}
+})();
+</script>
+
+</body>
+</html>

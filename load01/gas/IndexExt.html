@@ -1,0 +1,275 @@
+<style>
+.ub-bars{display:flex;flex-direction:column;gap:3px;position:relative;min-width:150px}
+.ub-bars div{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-secondary)}
+.ub-bars span.b{height:8px;border-radius:0 4px 4px 0;display:inline-block}
+.ub-bars .avg{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text-primary)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pill.red{color:#b3261e;background:#fdecea}.pill.amb{color:#8a5a00;background:#fff3d6}.pill.gray{color:var(--text-secondary);background:var(--surface-2)}.pill.green{color:#0a6b0a;background:#e3f4e3}
+.insight{background:#fff7e6;border:1px solid #f0d9a8;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;color:#3d3c39;margin-top:12px}
+@media (prefers-color-scheme: dark){.insight{background:#2e2615;border-color:#5a4a20;color:#f0efec}.pill.red{background:#3a1d1b;color:#ff8a80}.pill.amb{background:#3a2e12;color:#ffcc66}.pill.green{background:#16301a;color:#7fd67f}}
+.ptable td,.ptable th{white-space:normal;vertical-align:middle}
+.ptable td.act{min-width:260px;max-width:380px;text-align:left;line-height:1.5}
+.ptable td.res{min-width:170px;text-align:left;font-size:12.5px;color:var(--text-secondary);line-height:1.5}
+.home{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:10px}
+.home .c{border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.home .c:hover{border-color:var(--brand-2)}
+.phase-row{display:grid;grid-template-columns:56px 1fr 60px;gap:10px;align-items:center;margin-top:10px}
+.phase-row .bar{height:20px;border-radius:0 6px 6px 0}
+.stat3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.stat3 div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.stat3 small{display:block;font-size:12px;color:var(--text-secondary)}
+.stat3 b{font-size:20px}
+.mbars{display:grid;grid-template-columns:repeat(12,minmax(52px,1fr));gap:6px;align-items:end;min-width:660px}
+.mbars .m{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--text-secondary)}
+.mbars .g{display:flex;align-items:flex-end;gap:2px;height:110px}
+.mbars .g span{width:10px;border-radius:3px 3px 0 0}
+.steps{margin:10px 0 0;padding-left:22px;line-height:1.6;font-size:14.5px}
+.steps li{margin-bottom:8px}
+.stbtn{font:inherit;font-size:14px;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface-1);cursor:pointer}
+.stbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.lbar{position:relative;width:200px;height:12px;background:var(--surface-2);border-radius:4px;display:inline-block;vertical-align:middle}
+.lbar span{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0}
+.lbar i{position:absolute;left:160px;top:-3px;bottom:-3px;border-left:2px dashed var(--text-primary)}
+.pfcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+</style>
+<script>
+(function(){
+/* ===== ค่าตั้งต้นโมดูล Unbalance / โหลดสูง ===== */
+var X = { UB: 10, UB_MIN_IAVG: 50, CHRONIC: 9, KV_PH: 19.05, RATING: 400, LIMIT: 320, WATCH: 0.6, HOME_SUB: 'ALA', TRANSFER: 1.5, PF_TARGET: 0.95 };
+var STATUS = {};           // key -> {s, t}
+var STATUS_TH = { todo: 'ยังไม่เริ่ม', doing: 'กำลังดำเนินการ', done: 'แก้แล้ว' };
+var FM = null;             // FM[m][f] = row
+
+function el(id){ return document.getElementById(id); }
+function addView(id, html){ var s=document.createElement('section'); s.className='view'; s.id='v-'+id; s.innerHTML=html; document.querySelector('main').appendChild(s); }
+function addTab(id, label, before){
+  var b=document.createElement('button'); b.dataset.v=id; b.textContent=label;
+  var ref=document.querySelector('#tabs button[data-v="'+before+'"]');
+  document.getElementById('tabs').insertBefore(b, ref);
+  b.onclick=function(){
+    document.querySelectorAll('#tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+id);});
+    render();
+  };
+}
+
+addTab('ub','Unbalance และแนวทางแก้','quality');
+addTab('load','โหลดสูง และ PF','quality');
+addView('ub',
+  '<div class="card" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:2px">เกณฑ์ Unbalance<select id="ubThr" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px"><option value="10">&gt; 10%</option><option value="20">&gt; 20%</option></select></label>'+
+  '<p class="cap" style="margin:0;max-width:640px">คิดเฉพาะฟีดเดอร์ 33 kV ที่กระแสเฉลี่ยขณะ Peak ≥ '+X.UB_MIN_IAVG+' A · %Unbalance แบบ NEMA (เบี่ยงสูงสุดจากค่าเฉลี่ย ÷ ค่าเฉลี่ย) · "ประจำ" = เกินเกณฑ์อย่างน้อย '+X.CHRONIC+' ใน 12 เดือนและเฟสหนักเป็นเฟสเดิม</p></div>'+
+  '<div class="grid kpis" id="ubKpis" style="margin-top:12px"></div><div id="ubInsight"></div>'+
+  '<div class="card" style="margin-top:12px"><h2>ลำดับงานแก้ Unbalance</h2><p class="cap" id="ubCap"></p>'+
+  '<div class="legend"><span><i style="background:var(--s1)"></i>เฟส A</span><span><i style="background:var(--s2)"></i>เฟส B</span><span><i style="background:var(--s3)"></i>เฟส C</span><span><i style="background:var(--text-primary);width:2px;height:12px"></i>ค่าเฉลี่ย</span></div>'+
+  '<div class="tbl-wrap"><table class="ptable" id="ubTbl"></table></div></div>'+
+  '<div class="card" style="margin-top:12px"><h2 id="homeTitle"></h2><p class="cap">กดการ์ดเพื่อดูแผนแก้ · เปลี่ยนสถานีได้ที่ค่า HOME_SUB ในสคริปต์</p><div class="home" id="homeCards"></div></div>'+
+  '<p class="cap" style="margin-top:12px;line-height:1.7">กระแสที่ต้องย้าย = ส่วนที่แต่ละเฟสเกินหรือขาดจากค่าเฉลี่ย 3 เฟส · kVA ≈ กระแส × 19.05 kV (แรงดันเฟส 33/√3) · กระแสนิวทรัลประมาณจากกระแส 3 เฟส (สมมติ PF ใกล้กัน) · สูญเสียที่ลดได้คิดจาก I²R ของสายเฟส</p>');
+addView('load',
+  '<div class="grid kpis" id="ldKpis"></div>'+
+  '<div class="card" style="margin-top:12px"><h2>ฟีดเดอร์โหลดสูงและเวลาที่จะถึงเกณฑ์</h2><p class="cap" id="ldCap"></p><div class="tbl-wrap"><table class="ptable" id="ldTbl"></table></div>'+
+  '<p class="cap" style="margin-top:10px">ระดับโหลด = ค่ากลางของกระแสเฟสสูงสุด 3 เดือนล่าสุด · เปลี่ยนต่อปี = ค่ากลาง 12 เดือนล่าสุดเทียบ 12 เดือนก่อน · เวลาถึง '+X.LIMIT+' A คิดแบบเส้นตรงจากอัตรานั้น · "ขั้นบันได" = 6 เดือนหลังสูงกว่า 6 เดือนแรกเกิน 40% (ปรับโครงข่าย) ไม่พยากรณ์ · "รับโหลดโอน" = Peak ปีนี้สูงแต่ระดับปัจจุบันต่ำกว่า 60% ของ Peak</p></div>'+
+  '<div class="card" style="margin-top:12px"><h2>Power Factor และคาปาซิเตอร์</h2><p class="cap" id="pfCap"></p><div class="pfcards" id="pfCards"></div></div>');
+
+el('ubThr').onchange=function(){ X.UB=+this.value; render(); };
+
+/* ===== คำนวณ PF ใหม่จาก MW/MVAr (ค่าในไฟล์ต้นทางบางจุดไม่ตรง) ===== */
+function prep(){
+  FM = byM.map(function(rows){ var o={}; rows.forEach(function(r){ o[r.f]=r; }); return o; });
+  byM.forEach(function(rows){ rows.forEach(function(r){
+    if (r.pfSrc===undefined){ r.pfSrc=r.pf; if(r.mw!=null&&r.mvar!=null&&(r.mw||r.mvar)){ r.pf=Math.abs(r.mw)/Math.sqrt(r.mw*r.mw+r.mvar*r.mvar); } }
+  }); });
+}
+var _init = init;
+init = function(d){ _init(d); prep(); render(); };
+if (typeof D !== 'undefined' && D) prep();
+
+var _render = render;
+render = function(){
+  _render();
+  if (!D) return;
+  var v=document.querySelector('#tabs button.on').dataset.v;
+  if (v==='ub') renderUB();
+  if (v==='load') renderLoad();
+};
+
+/* ===== Unbalance ===== */
+function ubOf(a,b,c){ var avg=(a+b+c)/3; return avg>0?Math.max(Math.abs(a-avg),Math.abs(b-avg),Math.abs(c-avg))/avg*100:null; }
+function heavyOf(a,b,c){ var m=Math.max(a,b,c); return m===a?'A':m===b?'B':'C'; }
+function okRow(r){ return r && r.q!==2 && !(S.copy&&r.q===1) && r.ia!=null && r.ib!=null && r.ic!=null; }
+function analyse(r){
+  var a=r.ia,b=r.ib,c=r.ic,avg=(a+b+c)/3, ub=ubOf(a,b,c), hv=heavyOf(a,b,c);
+  var cnt=0,n=0,same=0;
+  for (var m=Math.max(0,S.m-11); m<=S.m; m++){ var x=FM[m][r.f]; if(!okRow(x)) continue; n++; var u=ubOf(x.ia,x.ib,x.ic); if(u!=null&&u>X.UB) cnt++; if(heavyOf(x.ia,x.ib,x.ic)===hv) same++; }
+  var P={A:a,B:b,C:c}, give=[], take=[];
+  ['A','B','C'].forEach(function(k){ var d=P[k]-avg; if(d>=2) give.push([k,Math.round(d)]); else if(d<=-2) take.push([k,Math.round(-d)]); });
+  var moveA=give.reduce(function(s,g){return s+g[1];},0);
+  var In=Math.sqrt(Math.max(a*a+b*b+c*c-a*b-b*c-c*a,0));
+  var loss=(1-3*avg*avg/(a*a+b*b+c*c))*100;
+  var chronic = n>=6 && cnt>=Math.min(X.CHRONIC,n) && same>=Math.ceil(n*0.75);
+  return { r:r, f:F[r.f], a:a,b:b,c:c, avg:avg, ub:ub, hv:hv, cnt:cnt, n:n, same:same, give:give, take:take, kva:Math.round(moveA*X.KV_PH/10)*10, In:In, loss:loss, chronic:chronic, score:ub*(n?cnt/n:0) };
+}
+function planText(z){
+  if (!z.chronic) return z.same<Math.ceil(z.n*0.75) ? 'เฟสหนักสลับไปมา · ตรวจการสลับโหลดหรือโหลดใหญ่ที่เปิด-ปิดเป็นช่วง ยังไม่ต้องย้ายเฟสถาวร' : 'เพิ่งเกิด '+z.cnt+' เดือน · เฝ้าดูก่อน อาจมาจากการรับโหลดโอนบางช่วง';
+  var parts=[];
+  if (z.give.length===1){ z.take.forEach(function(t){ parts.push(z.give[0][0]+' → '+t[0]+' ≈ '+t[1]+' A'); }); }
+  else if (z.take.length===1){ z.give.forEach(function(g){ parts.push(g[0]+' → '+z.take[0][0]+' ≈ '+g[1]+' A'); }); }
+  return 'ย้ายโหลด 1 เฟส: '+parts.join(', ')+' (รวม ≈ '+fmt(z.kva,0)+' kVA)';
+}
+function statusKey(f){ return 'UB|'+f.sub+'|'+f.name; }
+function statusPill(f){ var s=STATUS[statusKey(f)]; if(!s||s.s==='todo') return ''; return ' <span class="pill '+(s.s==='done'?'green':'amb')+'">'+STATUS_TH[s.s]+'</span>'; }
+function bars(z,scale){
+  var w=function(v){ return Math.round(v*scale)+'px'; };
+  return '<div class="ub-bars"><div><span class="b" style="background:var(--s1);width:'+w(z.a)+'"></span>'+fmt(z.a,0)+'</div><div><span class="b" style="background:var(--s2);width:'+w(z.b)+'"></span>'+fmt(z.b,0)+'</div><div><span class="b" style="background:var(--s3);width:'+w(z.c)+'"></span>'+fmt(z.c,0)+'</div><span class="avg" style="left:'+w(z.avg)+'"></span></div>';
+}
+function ubList(){
+  return rowsAt(S.m).filter(function(r){ return F[r.f].type==='Feeder' && okRow(r) && (r.ia+r.ib+r.ic)/3>=X.UB_MIN_IAVG; }).map(analyse);
+}
+function renderUB(){
+  var all=ubList(), L=all.filter(function(z){return z.ub>X.UB;});
+  var chronic=L.filter(function(z){return z.chronic;});
+  var hc={A:0,B:0,C:0}; L.forEach(function(z){hc[z.hv]++;});
+  var top=Object.keys(hc).sort(function(a,b){return hc[b]-hc[a];})[0];
+  var lc=loadList().filter(function(x){return x.peakC>=X.RATING*X.WATCH;}).length;
+  var k=[
+    ['Unbalance > '+X.UB+'%', L.length, 'ฟีดเดอร์', 'จาก '+all.length+' ฟีดเดอร์ที่มีโหลดพอวิเคราะห์', L.length?'warn':'good'],
+    ['ไม่สมดุลเป็นประจำ', chronic.length, 'ฟีดเดอร์', 'แก้ด้วยการย้ายโหลด 1 เฟส', chronic.length?'crit':'good'],
+    ['เฟสที่หนักที่สุดคือเฟส '+top, hc[top], L.length?'จาก '+L.length+' ('+Math.round(hc[top]/L.length*100)+'%)':'', 'A '+hc.A+' · B '+hc.B+' · C '+hc.C, ''],
+    ['กระแสเกิน '+Math.round(X.WATCH*100)+'% ของ '+X.RATING+' A', lc, 'ฟีดเดอร์', 'ดูแท็บโหลดสูง และ PF', '']
+  ];
+  el('ubKpis').innerHTML=k.map(function(x){ var ic=x[4]==='crit'?'<span class="st crit">⛔</span> ':x[4]==='warn'?'<span class="st warn">⚠</span> ':x[4]==='good'?'<span class="st good">✓</span> ':''; return '<div class="card kpi"><div class="lab">'+ic+esc(x[0])+'</div><div class="val">'+x[1]+'<small>'+x[2]+'</small></div><div class="note">'+x[3]+'</div></div>'; }).join('');
+  el('ubInsight').innerHTML = (L.length>=10 && hc[top]/L.length>=0.6) ?
+    '<div class="insight"><span class="st warn" style="font-size:20px">⚠</span><div><b>ข้อค้นพบระดับระบบ: เฟส '+top+' หนักเกินใน '+Math.round(hc[top]/L.length*100)+'% ของฟีดเดอร์ที่ไม่สมดุล</b><div style="margin-top:4px;line-height:1.6">ถ้าเป็นการสุ่มควรกระจายพอๆ กันทั้ง 3 เฟส จึงน่าจะมาจากการต่อหม้อแปลงหรือโหลด 1 เฟสเข้าเฟส '+top+' เป็นประจำ หรือการเรียงเฟส/CT ที่สถานีกับใน SCADA ไม่ตรงกัน · <b>แนะนำ:</b> วัดกระแสเทียบ SCADA 2–3 ฟีดเดอร์ก่อน ถ้าตรงจริงให้ออกแนวปฏิบัติต่อหม้อแปลง 1 เฟสใหม่แบบเวียนเฟส แล้วย้ายเฟสตามตาราง</div></div></div>' : '';
+  L.sort(function(a,b){ return b.score-a.score || b.ub-a.ub; });
+  el('ubCap').textContent=mLabelLong(M[S.m])+' · '+scopeName()+' · '+L.length+' ฟีดเดอร์ · เรียงตาม %UB × ความต่อเนื่อง · กดแถวเพื่อดูแผนแก้';
+  var mx=Math.max.apply(null,L.map(function(z){return Math.max(z.a,z.b,z.c);}).concat([1])), sc=120/mx;
+  el('ubTbl').innerHTML='<thead><tr><th class="l">#</th><th class="l">ฟีดเดอร์</th><th class="l">กระแสขณะ Peak (A)</th><th>%UB</th><th class="l">ต่อเนื่อง</th><th class="l">แนวทางแก้</th><th class="l">ผลที่คาด</th></tr></thead><tbody>'+
+    L.slice(0,150).map(function(z,i){
+      var pill=z.chronic?'<span class="pill red">ประจำ '+z.cnt+'/'+z.n+'</span>':'<span class="pill gray">ชั่วคราว '+z.cnt+'/'+z.n+'</span>';
+      var res=z.chronic?'นิวทรัล '+fmt(z.In,0)+' → ~0 A · สูญเสีย −'+fmt(z.loss,1)+'%':'ถ้าเกิดต่อเนื่องจะขึ้นเป็น "ประจำ"';
+      return '<tr data-f="'+z.r.f+'"><td class="l">'+(i+1)+'</td><td class="l"><b>'+esc(z.f.name)+'</b>'+statusPill(z.f)+'<div class="muted" style="font-size:12px">'+esc((PROV_TH[z.f.prov]||z.f.prov)+' · '+z.f.sub)+'</div></td><td class="l">'+bars(z,sc)+'</td><td><b>'+fmt(z.ub,1)+'%</b></td><td class="l">'+pill+'</td><td class="act">'+esc(planText(z))+'</td><td class="res">'+res+'</td></tr>';
+    }).join('')+'</tbody>';
+  el('ubTbl').querySelectorAll('tbody tr').forEach(function(tr){ tr.onclick=function(){ openPlan(+tr.dataset.f); }; });
+  // การ์ดสถานีของฉัน
+  var home=all.filter(function(z){ return z.f.sub===X.HOME_SUB && z.ub>X.UB; }).sort(function(a,b){return b.ub-a.ub;});
+  el('homeTitle').textContent='สถานี '+X.HOME_SUB+' · ฟีดเดอร์ที่ UB เกิน '+X.UB+'%';
+  var homeAll=rowsAt(S.m).length && F.some(function(f){return f.sub===X.HOME_SUB;});
+  el('homeCards').innerHTML = home.length ? home.map(function(z){
+    return '<div class="c" data-f="'+z.r.f+'" role="button" tabindex="0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px">'+esc(z.f.name)+'</b><b style="color:'+(z.ub>15?'#b3261e':'#8a5a00')+'">UB '+fmt(z.ub,1)+'%</b></div><div class="muted" style="font-size:13px">A '+fmt(z.a,0)+' · B '+fmt(z.b,0)+' · C '+fmt(z.c,0)+' A · เกินเกณฑ์ '+z.cnt+'/'+z.n+' เดือน'+statusPill(z.f)+'</div><div style="margin-top:6px;font-size:14px">'+esc(planText(z))+'</div></div>';
+  }).join('') : '<p class="muted">'+(homeAll?'ไม่มีฟีดเดอร์ที่เกินเกณฑ์ในตัวกรองนี้':'ตัวกรองปัจจุบันไม่รวมสถานี '+X.HOME_SUB)+'</p>';
+  el('homeCards').querySelectorAll('.c').forEach(function(c){ c.onclick=function(){ openPlan(+c.dataset.f); }; c.onkeydown=function(e){ if(e.key==='Enter') openPlan(+c.dataset.f); }; });
+}
+
+/* ===== แผนแก้รายฟีดเดอร์ (เปิดในหน้าต่างรายละเอียด) ===== */
+function phaseRows(a,b,c,mx){ var w=function(v){return Math.max(2,Math.round(v/mx*100))+'%';}; return [['A',a,'--s1'],['B',b,'--s2'],['C',c,'--s3']].map(function(p){ return '<div class="phase-row"><span>เฟส '+p[0]+'</span><span class="bar" style="background:var('+p[2]+');width:'+w(p[1])+'"></span><b style="text-align:right">'+fmt(p[1],0)+' A</b></div>'; }).join(''); }
+window.openPlan = function(fi){
+  var r=FM[S.m][fi]; if(!okRow(r)){ openDetail(fi); return; }
+  var z=analyse(r), f=z.f, mx=Math.max(z.a,z.b,z.c);
+  var hist=[]; for(var m=Math.max(0,S.m-11); m<=S.m; m++) hist.push([m, FM[m][fi]]);
+  var hmx=Math.max.apply(null,hist.map(function(h){return okRow(h[1])?Math.max(h[1].ia,h[1].ib,h[1].ic):0;}).concat([1]));
+  var hp=function(v){ return Math.round(v/hmx*100)+'px'; };
+  var mb=hist.map(function(h){ var x=h[1]; if(!okRow(x)) return '<div class="m"><div class="g"></div>'+mLabel(M[h[0]])+'<span>–</span></div>'; var u=ubOf(x.ia,x.ib,x.ic); return '<div class="m"><div class="g"><span style="background:var(--s1);height:'+hp(x.ia)+'"></span><span style="background:var(--s2);height:'+hp(x.ib)+'"></span><span style="background:var(--s3);height:'+hp(x.ic)+'"></span></div>'+mLabel(M[h[0]])+'<b style="color:'+(u>X.UB?'#b3261e':'var(--text-secondary)')+'">'+fmt(u,0)+'%</b></div>'; }).join('');
+  var diag = z.chronic ? '<b>วินิจฉัย:</b> ไม่สมดุลแบบโครงสร้าง เฟส '+z.hv+' หนักเป็นเฟสเดิม '+z.same+' ใน '+z.n+' เดือน ไม่ได้มาจากการโอนโหลดชั่วคราว แก้ได้ด้วยการย้ายหม้อแปลงหรือโหลด 1 เฟสถาวร'
+    : '<b>วินิจฉัย:</b> '+esc(planText(z));
+  var moves=[]; if (z.give.length===1) z.take.forEach(function(t){ moves.push('ไปเฟส '+t[0]+' ≈ '+fmt(Math.round(t[1]*X.KV_PH/10)*10,0)+' kVA ('+t[1]+' A)'); });
+  else if (z.take.length===1) z.give.forEach(function(g){ moves.push('จากเฟส '+g[0]+' ≈ '+fmt(Math.round(g[1]*X.KV_PH/10)*10,0)+' kVA ('+g[1]+' A)'); });
+  var src = z.give.map(function(g){return g[0];}).join(', ');
+  var key=statusKey(f), st=(STATUS[key]&&STATUS[key].s)||'todo';
+  var steps = z.chronic ? '<ol class="steps"><li><b>ดึงรายการหม้อแปลง 1 เฟสที่ต่อเฟส '+src+'</b> บนฟีดเดอร์ '+esc(f.name)+' จากข้อมูลสำรวจหรือ GIS พร้อมขนาด kVA</li>'+
+      '<li><b>เลือกย้ายรวมประมาณ '+fmt(z.kva,0)+' kVA</b> '+moves.join(' และ ')+' · เลือกจุดที่อยู่ไกลสถานีก่อน และตรวจพิกัดฟิวส์/อุปกรณ์ป้องกันของเฟสที่รับเพิ่ม</li>'+
+      '<li><b>วัดกระแสหน้างานช่วง 18:00–21:00</b> ก่อนและหลังย้าย เพื่อยืนยันว่าค่าจาก SCADA ตรงกับหน้างาน</li>'+
+      '<li><b>ติดตามผล</b> เมื่อไฟล์ Load01 เดือนถัดไปเข้า ดู %UB ในหน้านี้ ถ้าต่ำกว่า '+X.UB+'% กด "แก้แล้ว"</li></ol>'
+    : '<ol class="steps"><li>เฝ้าดูเดือนถัดไป ถ้าเกินเกณฑ์ต่อเนื่อง ระบบจะเปลี่ยนเป็น "ประจำ" และคำนวณแผนย้ายเฟสให้</li><li>ถ้าเฟสหนักสลับไปมา ตรวจหาโหลดขนาดใหญ่ 1 เฟสที่ทำงานเป็นช่วง หรือการสลับจุดเชื่อมระหว่างฟีดเดอร์</li></ol>';
+  $('panel').innerHTML='<div class="hd"><div><h2>แผนแก้ Unbalance · '+esc(f.name)+'</h2><div class="cap" style="margin:2px 0 0">'+esc((PROV_TH[f.prov]||f.prov)+' · สถานี '+f.sub)+(f.area?' · '+esc(f.area):'')+' · '+mLabelLong(M[S.m])+'</div></div><button class="close" onclick="closeDetail()">ปิด ✕</button></div>'+
+    '<div class="grid two"><div class="card"><h2>ตอนนี้ · กระแสขณะ Peak</h2><div class="cap">'+fmt(r.mw,2)+' MW · ค่าเฉลี่ย 3 เฟส '+fmt(z.avg,1)+' A</div>'+phaseRows(z.a,z.b,z.c,mx)+
+      '<div class="stat3"><div><small>%Unbalance</small><b style="color:#b3261e">'+fmt(z.ub,1)+'%</b></div><div><small>นิวทรัล (ประมาณ)</small><b>'+fmt(z.In,0)+' A</b></div><div><small>เฟสที่หนัก</small><b>'+z.hv+'</b></div></div></div>'+
+    '<div class="card"><h2>หลังปรับตามแผน (คาดการณ์)</h2><div class="cap">ทุกเฟสเท่าค่าเฉลี่ย '+fmt(z.avg,0)+' A</div>'+phaseRows(z.avg,z.avg,z.avg,mx)+
+      '<div class="stat3"><div><small>%Unbalance</small><b style="color:#0a6b0a">≈ 0%</b></div><div><small>นิวทรัล</small><b style="color:#0a6b0a">≈ 0 A</b></div><div><small>สูญเสียสายเฟส</small><b style="color:#0a6b0a">−'+fmt(z.loss,1)+'%</b></div></div></div></div>'+
+    '<div class="card" style="margin-top:12px"><h2>ย้อนหลัง 12 เดือน</h2><div class="legend"><span><i style="background:var(--s1)"></i>เฟส A</span><span><i style="background:var(--s2)"></i>เฟส B</span><span><i style="background:var(--s3)"></i>เฟส C</span></div><div style="overflow-x:auto"><div class="mbars">'+mb+'</div></div><div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.6">'+diag+'</div></div>'+
+    '<div class="card" style="margin-top:12px"><h2>แผนดำเนินการ</h2>'+steps+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><span class="muted">สถานะงาน:</span>'+
+      ['todo','doing','done'].map(function(s){ return '<button type="button" class="stbtn'+(st===s?' on':'')+'" data-s="'+s+'">'+STATUS_TH[s]+'</button>'; }).join('')+
+      '<span class="muted" id="stMsg" style="font-size:12.5px">'+(STATUS[key]&&STATUS[key].t?'บันทึกล่าสุด '+esc(STATUS[key].t):'')+'</span></div>'+
+      '<p class="cap" style="margin-top:10px">kVA ≈ กระแส × 19.05 kV ใช้เป็นเป้าเบื้องต้น โหลดจริงของหม้อแปลงไม่เต็มพิกัด จึงอาจต้องย้ายมากกว่าตัวเลขนี้</p></div>';
+  $('panel').querySelectorAll('.stbtn').forEach(function(b){ b.onclick=function(){ saveStatus(key, b.dataset.s); }; });
+  $('drawer').classList.add('on');
+};
+function saveStatus(key, s){
+  STATUS[key]={ s:s, t:new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}) };
+  $('panel').querySelectorAll('.stbtn').forEach(function(b){ b.classList.toggle('on', b.dataset.s===s); });
+  var msg=el('stMsg');
+  if (window.google && google.script && google.script.run){
+    msg.textContent='กำลังบันทึก…';
+    google.script.run.withSuccessHandler(function(){ msg.textContent='บันทึกแล้ว'; renderUB(); }).withFailureHandler(function(e){ msg.textContent='บันทึกไม่สำเร็จ: '+e.message; }).setActionStatus(key, s);
+  } else { msg.textContent='(ตัวอย่าง: ไม่ได้บันทึกจริง)'; renderUB(); }
+}
+if (window.google && google.script && google.script.run){
+  google.script.run.withSuccessHandler(function(o){ STATUS=o||{}; if(D) render(); }).getActionStatus();
+}
+
+/* ===== โหลดสูง ===== */
+function median(a){ var s=a.slice().sort(function(x,y){return x-y;}); var n=s.length; return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):null; }
+function seriesImax(fi, from, to){ var out=[]; for(var m=Math.max(0,from); m<=to; m++){ var x=FM[m][fi]; if(okRow(x)) out.push(Math.max(x.ia,x.ib,x.ic)); } return out; }
+function vals(fi, from, to){ var out=[]; for(var m=Math.max(0,from); m<=to; m++){ var x=FM[m][fi]; if(okRow(x)) out.push(Math.max(x.ia,x.ib,x.ic)); } return out; }
+function loadList(){
+  return rowsAt(S.m).filter(function(r){ return F[r.f].type==='Feeder' && okRow(r); }).map(function(r){
+    var cur=vals(r.f,S.m-11,S.m), prev=vals(r.f,S.m-23,S.m-12), rec=vals(r.f,S.m-2,S.m);
+    var f6=vals(r.f,S.m-11,S.m-6), l6=vals(r.f,S.m-5,S.m);
+    var o={ r:r, f:F[r.f], now:Math.max(r.ia,r.ib,r.ic), level:median(rec), peakRaw:cur.length?Math.max.apply(null,cur):null, growth:null, eta:null, step:false, kind:'' };
+    o.step = f6.length>=3 && l6.length>=3 && median(l6) > 1.4*median(f6);
+    if (cur.length>=6 && prev.length>=6) o.growth = median(cur)-median(prev);          // A ต่อปี (ค่ากลาง)
+    if (!o.step && o.growth!=null && o.growth/12>0.5) o.eta = o.level>=X.LIMIT ? 0 : Math.round((X.LIMIT-o.level)/(o.growth/12));
+    if (o.peakRaw>=X.RATING*X.WATCH && o.level<0.6*o.peakRaw) o.kind='transfer';
+    else if (o.level>=X.RATING*0.7 || (o.eta!=null && o.eta<=12 && o.level>=X.RATING*X.WATCH)) o.kind='urgent';
+    else if (o.level>=X.RATING*X.WATCH) o.kind = o.step ? 'changed' : 'plan';
+    o.peakC = o.level;
+    return o;
+  });
+}
+var KIND = { urgent:['เร่งด่วน','red','โอนโหลดบางส่วนไปฟีดเดอร์ข้างเคียงก่อน Peak รอบถัดไป และเสนองานเพิ่มฟีดเดอร์หรือเพิ่มขนาดสาย'],
+  plan:['วางแผน','amb','ใส่ในแผนลงทุนปีถัดไป และเตรียมจุดโอนโหลดกับฟีดเดอร์ใกล้เคียง'],
+  changed:['ขั้นบันได','amb','โหลดเพิ่มแบบขั้นบันได (รับโหลดจากการปรับโครงข่าย) · ตรวจว่าเป็นการถาวรหรือไม่ ถ้าถาวรให้วางแผนเหมือนกลุ่ม "วางแผน"'],
+  transfer:['รับโหลดโอน','gray','Peak สูงช่วงสั้นๆ แล้วลดลง (รับโหลดโอนชั่วคราวหรือถูกโอนโหลดออก) · ตรวจเหตุการณ์ และกำหนดแผนสวิตชิ่งไม่ให้เกิน '+X.LIMIT+' A'] };
+function renderLoad(){
+  var L=loadList().filter(function(o){ return o.kind; });
+  var c=function(k){ return L.filter(function(o){return o.kind===k;}).length; };
+  var pf=pfList();
+  var k=[['เร่งด่วน: โหลด ≥ 70% หรือถึง '+X.LIMIT+' A ใน 12 เดือน', c('urgent'), 'ใช้ระดับโหลด 3 เดือนล่าสุด', c('urgent')?'crit':'good'],
+         ['วางแผน: โหลด 60–70%', c('plan')+c('changed'), 'รวมกลุ่มขั้นบันได '+c('changed')+' ฟีดเดอร์', ''],
+         ['Peak สูงจากรับโหลดโอนชั่วคราว', c('transfer'), 'แยกออก ไม่นับในการพยากรณ์', ''],
+         ['PF < 0.90 (ล้าหลัง) ควรติดคาปาซิเตอร์', pf.cap.length, 'คำนวณ PF ใหม่จาก MW/MVAr', pf.cap.length?'warn':'good']];
+  el('ldKpis').innerHTML=k.map(function(x){ var ic=x[3]==='crit'?'<span class="st crit">⛔</span> ':x[3]==='warn'?'<span class="st warn">⚠</span> ':x[3]==='good'?'<span class="st good">✓</span> ':''; return '<div class="card kpi"><div class="lab">'+ic+esc(x[0])+'</div><div class="val">'+x[1]+'<small>ฟีดเดอร์</small></div><div class="note">'+x[2]+'</div></div>'; }).join('');
+  var order={urgent:0,plan:1,changed:2,transfer:3};
+  L.sort(function(a,b){ return order[a.kind]-order[b.kind] || (b.level||0)-(a.level||0); });
+  el('ldCap').textContent=mLabelLong(M[S.m])+' · '+scopeName()+' · แถบ = ระดับโหลด (ค่ากลางกระแสเฟสสูงสุด 3 เดือนล่าสุด) เทียบ '+X.RATING+' A · เส้นประ = '+X.LIMIT+' A';
+  el('ldTbl').innerHTML='<thead><tr><th class="l">ฟีดเดอร์</th><th class="l">ระดับโหลดปัจจุบัน</th><th>Peak 12 เดือน</th><th>เปลี่ยนต่อปี</th><th>ถึง '+X.LIMIT+' A ใน</th><th class="l">กลุ่ม</th><th class="l">แนวทาง</th></tr></thead><tbody>'+
+    L.slice(0,150).map(function(o){
+      var pct=o.level/X.RATING, col=pct>=0.8?'var(--critical)':pct>=X.WATCH?'var(--s4)':'var(--s1)';
+      var eta=o.kind==='transfer'?'–':o.step?'ไม่พยากรณ์':o.eta==null?'ไม่โต':o.eta===0?'เกินแล้ว':'~'+o.eta+' เดือน';
+      return '<tr data-f="'+o.r.f+'"><td class="l"><b>'+esc(o.f.name)+'</b><div class="muted" style="font-size:12px">'+esc(o.f.sub)+' · เดือนนี้ '+fmt(o.now,0)+' A</div></td>'+
+        '<td class="l"><span class="lbar"><span style="background:'+col+';width:'+Math.round(Math.min(pct,1)*200)+'px"></span><i></i></span> <b>'+fmt(o.level,0)+' A</b> ('+Math.round(pct*100)+'%)</td>'+
+        '<td>'+fmt(o.peakRaw,0)+' A</td><td>'+(o.growth==null?'–':(o.growth>=0?'+':'')+fmt(o.growth,0)+' A')+'</td><td><b>'+eta+'</b></td>'+
+        '<td class="l"><span class="pill '+KIND[o.kind][1]+'">'+KIND[o.kind][0]+'</span></td><td class="act">'+esc(KIND[o.kind][2])+'</td></tr>';
+    }).join('')+'</tbody>';
+  el('ldTbl').querySelectorAll('tbody tr').forEach(function(tr){ tr.onclick=function(){ openDetail(+tr.dataset.f); }; });
+  // PF
+  var mism=pf.mism;
+  el('pfCap').textContent='PF คำนวณใหม่จาก MW/MVAr ขณะ Peak · เป้าหมาย '+X.PF_TARGET+' · ค่า PF ในไฟล์ต้นทางไม่ตรงกับ MW/MVAr '+mism+' จุดในเดือนนี้ (ระบบใช้ค่าที่คำนวณใหม่)';
+  var cards=pf.cap.map(function(o){ return '<div class="card"><h2>ติดคาปาซิเตอร์: '+esc(o.f.name)+'</h2><div class="cap">'+esc((PROV_TH[o.f.prov]||o.f.prov)+' · สถานี '+o.f.sub)+'</div><div class="stat3"><div><small>P</small><b>'+fmt(o.r.mw,2)+' MW</b></div><div><small>Q</small><b>'+fmt(o.r.mvar,2)+' MVAr</b></div><div><small>PF ล้าหลัง</small><b style="color:#8a5a00">'+fmt(o.pf,2)+'</b></div></div><p style="margin:10px 0 0;line-height:1.6"><b>แนะนำ:</b> ติดคาปาซิเตอร์ประมาณ <b>'+fmt(o.kvar,0)+' kVAr</b> ให้ PF ถึง '+X.PF_TARGET+' (เลือกชุดมาตรฐานใกล้เคียง) ติดช่วงกลางถึงปลายสาย</p><p class="cap" style="margin-top:6px">kVAr = P × (tan φ ปัจจุบัน − tan φ เป้าหมาย)</p></div>'; })
+    .concat(pf.lead.map(function(o){ return '<div class="card"><h2>ตรวจคาปาซิเตอร์เกิน: '+esc(o.f.name)+'</h2><div class="cap">'+esc((PROV_TH[o.f.prov]||o.f.prov)+' · สถานี '+o.f.sub)+'</div><div class="stat3"><div><small>P</small><b>'+fmt(o.r.mw,2)+' MW</b></div><div><small>Q</small><b>'+fmt(o.r.mvar,2)+' MVAr</b></div><div><small>PF นำหน้า</small><b>'+fmt(o.pf,2)+'</b></div></div><p style="margin:10px 0 0;line-height:1.6">MVAr ติดลบขณะ Peak แปลว่าจ่ายรีแอกทีฟเกิน ควรตรวจขนาดหรือการตัด-ต่อคาปาซิเตอร์'+(o.r.pfSrc!=null&&Math.abs(o.r.pfSrc-o.pf)>0.1?' · ไฟล์ต้นทางระบุ PF '+fmt(o.r.pfSrc,2)+' ซึ่งไม่ตรงกับ MW/MVAr':'')+'</p></div>'; }));
+  el('pfCards').innerHTML=cards.length?cards.join(''):'<p class="muted"><span class="st good">✓</span> ไม่พบฟีดเดอร์ที่ต้องติดหรือตรวจคาปาซิเตอร์ในตัวกรองนี้</p>';
+}
+function pfList(){
+  var cap=[], lead=[], mism=0, t2=Math.tan(Math.acos(X.PF_TARGET));
+  rowsAt(S.m).forEach(function(r){
+    var f=F[r.f]; if(f.type!=='Feeder'||r.q===2||r.mw==null||r.mvar==null||r.mw<1) return;
+    var pf=Math.abs(r.mw)/Math.sqrt(r.mw*r.mw+r.mvar*r.mvar);
+    if (r.pfSrc!=null && Math.abs(r.pfSrc-pf)>0.1) mism++;
+    if (r.mvar>0 && pf<0.9) cap.push({r:r,f:f,pf:pf,kvar:r.mw*1000*(Math.tan(Math.acos(pf))-t2)});
+    else if (r.mvar<-0.5) lead.push({r:r,f:f,pf:pf});
+  });
+  cap.sort(function(a,b){return b.kvar-a.kvar;}); lead.sort(function(a,b){return a.r.mvar-b.r.mvar;});
+  return {cap:cap, lead:lead.slice(0,6), mism:mism};
+}
+if (typeof D !== 'undefined' && D) render();
+})();
+</script>

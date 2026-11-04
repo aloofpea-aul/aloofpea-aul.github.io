@@ -1,0 +1,108 @@
+<style>
+.filters input.q{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:150px;font:inherit;font-size:14px;color:inherit}
+.qwrap{position:relative;display:block}
+.qdd{position:absolute;left:0;top:calc(100% + 3px);z-index:60;min-width:100%;width:max-content;max-width:280px;max-height:260px;overflow-y:auto;background:var(--surface-1,#fff);color:var(--text-primary,#222);border:1px solid var(--line,#ddd);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.14);padding:3px 0;display:none}
+.qdd.on{display:block}
+.qdd .it{display:flex;align-items:baseline;gap:10px;padding:4px 10px;font-size:13px;line-height:1.35;cursor:pointer;white-space:nowrap}
+.qdd .it b{font-weight:600;min-width:52px}
+.qdd .it span{color:var(--text-muted,#888);font-size:12px}
+.qdd .it:hover,.qdd .it.act{background:var(--surface-2,#f1f1f4)}
+.qdd .none{padding:6px 10px;font-size:12px;color:var(--text-muted,#888)}
+</style>
+<script>
+(function(){
+/* ===== ตัวกรองแบบพิมพ์ค้นหา: สถานี + ฟีดเดอร์ (รายการแบบกะทัดรัด) ===== */
+S.subQ = ''; S.fq = '';
+var sel = document.getElementById('fSub');
+var lab = sel.parentNode;
+sel.style.display = 'none';
+
+function makeBox(parent, id, ph){
+  var w = document.createElement('span'); w.className = 'qwrap';
+  var i = document.createElement('input');
+  i.type = 'search'; i.id = id; i.className = 'q'; i.placeholder = ph; i.autocomplete = 'off';
+  var d = document.createElement('div'); d.className = 'qdd';
+  w.appendChild(i); w.appendChild(d); parent.appendChild(w);
+  return { inp: i, dd: d, items: [], act: -1 };
+}
+var A = makeBox(lab, 'fSubQ', 'พิมพ์ เช่น ALA');
+var lab2 = document.createElement('label'); lab2.textContent = 'ฟีดเดอร์';
+lab.parentNode.insertBefore(lab2, lab.nextSibling);
+var B = makeBox(lab2, 'fFdQ', 'พิมพ์ เช่น ALA06');
+
+var SUBS = [], FDS = [];
+fillSubs = function(){
+  var seen = {}; SUBS = []; FDS = [];
+  F.forEach(function(f){
+    if (S.prov && f.prov !== S.prov) return;
+    var pv = PROV_TH[f.prov] || f.prov;
+    if (!seen[f.sub]) { seen[f.sub] = 1; SUBS.push([f.sub, pv]); }
+    if ((!S.subQ || f.sub.indexOf(S.subQ) === 0) && (!S.type || f.type === S.type)) FDS.push([f.name, f.sub + ' · ' + pv]);
+  });
+  SUBS.sort(function(a,b){ return a[0] < b[0] ? -1 : 1; });
+  FDS.sort(function(a,b){ return a[0] < b[0] ? -1 : 1; });
+};
+
+function show(box, list, q, prefix){
+  var Q = q.trim().toUpperCase();
+  var m = list.filter(function(o){ return !Q || (prefix ? o[0].indexOf(Q) === 0 : o[0].indexOf(Q) >= 0); }).slice(0, 80);
+  box.items = m; box.act = -1;
+  box.dd.innerHTML = m.length ? m.map(function(o, k){
+    return '<div class="it" data-k="'+k+'"><b>'+esc(o[0])+'</b><span>'+esc(o[1])+'</span></div>';
+  }).join('') : '<div class="none">ไม่พบรายการ</div>';
+  box.dd.classList.add('on');
+}
+function hide(box){ box.dd.classList.remove('on'); box.act = -1; }
+function mark(box){
+  [].forEach.call(box.dd.querySelectorAll('.it'), function(e, k){
+    e.classList.toggle('act', k === box.act);
+    if (k === box.act) e.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+var t1, t2;
+function applySub(){ S.subQ = A.inp.value.trim().toUpperCase(); S.sub = ''; fillSubs(); if (D) render(); }
+function applyFd(){ S.fq = B.inp.value.trim().toUpperCase(); if (D) render(); }
+
+function wire(box, getList, prefix, apply, tref){
+  var timer;
+  box.inp.addEventListener('focus', function(){ show(box, getList(), box.inp.value, prefix); });
+  box.inp.addEventListener('input', function(){
+    show(box, getList(), box.inp.value, prefix);
+    clearTimeout(timer); timer = setTimeout(apply, 200);
+  });
+  box.inp.addEventListener('keydown', function(e){
+    var n = box.items.length;
+    if (e.key === 'ArrowDown' && n) { e.preventDefault(); box.act = (box.act + 1) % n; mark(box); }
+    else if (e.key === 'ArrowUp' && n) { e.preventDefault(); box.act = (box.act - 1 + n) % n; mark(box); }
+    else if (e.key === 'Enter') { if (box.act >= 0) pick(box, box.act, apply); else { hide(box); apply(); } }
+    else if (e.key === 'Escape') hide(box);
+  });
+  box.inp.addEventListener('blur', function(){ setTimeout(function(){ hide(box); }, 150); });
+  box.dd.addEventListener('mousedown', function(e){
+    var it = e.target.closest('.it'); if (!it) return;
+    e.preventDefault(); pick(box, +it.getAttribute('data-k'), apply);
+  });
+}
+function pick(box, k, apply){
+  box.inp.value = box.items[k][0]; hide(box); apply(); box.inp.blur();
+}
+wire(A, function(){ return SUBS; }, true, applySub);
+wire(B, function(){ return FDS; }, false, applyFd);
+
+var _fOk = fOk;
+fOk = function(f){
+  return _fOk(f) && (!S.subQ || f.sub.indexOf(S.subQ) === 0) && (!S.fq || f.name.indexOf(S.fq) >= 0);
+};
+var _scope = scopeName;
+scopeName = function(){
+  var s = S.fq ? 'ฟีดเดอร์ "' + S.fq + '"' : S.subQ ? 'สถานี ' + S.subQ + (S.subQ.length < 3 ? '*' : '') : '';
+  return s ? s + (S.prov ? ' · จ.' + (PROV_TH[S.prov] || S.prov) : '') : _scope();
+};
+
+document.getElementById('fProv').addEventListener('change', function(){ fillSubs(); });
+document.getElementById('fType').addEventListener('change', function(){ fillSubs(); });
+
+if (typeof D !== 'undefined' && D) { fillSubs(); render(); }
+})();
+</script>

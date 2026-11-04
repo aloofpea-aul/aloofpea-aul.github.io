@@ -1,0 +1,120 @@
+<style>
+.n1-tbl td,.n1-tbl th{text-align:left;vertical-align:top}
+.n1-tbl tr.cl{cursor:pointer}.n1-tbl tr.cl:hover td,.n1-tbl tr.sel td{background:var(--surface-2)}
+.n1-bar{position:relative;height:10px;background:var(--surface-2);border-radius:5px;min-width:110px}
+.n1-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.n1-bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text-primary)}
+.n1-ins{background:rgba(255,216,77,.12);border:1px solid rgba(224,161,0,.35);border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.6;margin-top:10px;color:var(--text-secondary)}
+.n1-btn{display:inline-block;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:8px;padding:6px 12px;text-decoration:none}
+</style>
+<script>
+(function(){
+/* ===== แท็บ N-1 สถานี: หม้อแปลงลูกใหญ่สุดเสีย 1 ลูก ที่เหลือรับ Peak ไหวไหม ===== */
+var NX = { PF_DEF: 0.95, G_DEF: 5, G_MIN: -5, G_MAX: 15, WARN_Y: 3 };
+function el(id){ return document.getElementById(id); }
+var tabs = el('tabs'), b = document.createElement('button'); b.dataset.v = 'n1'; b.textContent = 'N-1 สถานี';
+tabs.insertBefore(b, tabs.querySelector('button[data-v="quality"]'));
+b.onclick = function(){
+  tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on', v.id === 'v-n1'); });
+  render();
+};
+var sec = document.createElement('section'); sec.className = 'view'; sec.id = 'v-n1'; sec.innerHTML = '<div id="n1Body"><div class="card">กำลังโหลดข้อมูลหม้อแปลง…</div></div>';
+document.querySelector('main').appendChild(sec);
+var CAP = null, loading = false, selSub = '';
+function load(){
+  if (loading || CAP) return; loading = true;
+  google.script.run.withSuccessHandler(function(o){ CAP = o || { subs: {} }; loading = false; draw(); })
+    .withFailureHandler(function(e){ CAP = { subs: {}, err: String(e && e.message || e) }; loading = false; draw(); }).getSubCaps();
+}
+var _render = render;
+render = function(){ _render(); var on = tabs.querySelector('button.on'); if (D && on && on.dataset.v === 'n1') { if (!CAP) load(); draw(); } };
+
+function okSub(f){ return (!S.prov || f.prov === S.prov) && (!S.subQ || f.sub.indexOf(S.subQ) === 0); }
+/* โหลดสถานีรายเดือน: รวมจุดวัดหม้อแปลง (Transformer) → ถ้าไม่มีใช้ Incoming → ถ้าไม่มีใช้ผลรวมฟีดเดอร์ */
+function subLoads(){
+  var subs = {}, e = S.m, p0 = Math.max(0, e - 23);
+  F.forEach(function(f){ if (!okSub(f)) return; var s = subs[f.sub] || (subs[f.sub] = { sub: f.sub, prov: f.prov, pts: { Transformer: [], Incoming: [], Feeder: [] } }); if (s.pts[f.type]) s.pts[f.type].push(f.i); });
+  Object.keys(subs).forEach(function(k){
+    var s = subs[k];
+    ['Transformer', 'Incoming', 'Feeder'].some(function(src){
+      if (!s.pts[src].length) return false;
+      var ids = {}, mw = [], mv = [], recent = 0; s.pts[src].forEach(function(i){ ids[i] = 1; });
+      for (var m = p0; m <= e; m++) {
+        var t = 0, q = 0, n = 0;
+        byM[m].forEach(function(r){ if (ids[r.f] && r.q !== 2 && !(S.copy && r.q === 1) && r.mw > 0) { t += r.mw; if (r.mvar != null) q += Math.abs(r.mvar); n++; } });
+        mw.push(n ? t : null); mv.push(n ? q : null); if (n && m > e - 12) recent++;
+      }
+      if (!recent) return false;
+      s.src = src; s.mw = mw; s.mvar = mv; return true;
+    });
+    if (!s.mw) delete subs[k]; else s.p0 = p0;
+  });
+  return subs;
+}
+function analyse(s){
+  var last = s.mw.slice(-12).filter(function(v){ return v != null; }), prev = s.mw.slice(0, -12).filter(function(v){ return v != null; });
+  if (!last.length) return null;
+  var pk = Math.max.apply(null, last), pi = s.mw.lastIndexOf(pk), pq = s.mvar[pi];
+  var pf = pq != null && pk ? pk / Math.sqrt(pk*pk + pq*pq) : NX.PF_DEF; if (pf < 0.8 || pf > 1) pf = NX.PF_DEF;
+  var g = prev.length >= 6 ? (pk / Math.max.apply(null, prev) - 1) * 100 : null;
+  var gu = g == null ? NX.G_DEF : Math.max(NX.G_MIN, Math.min(NX.G_MAX, g));
+  var trs = (CAP && CAP.subs[s.sub] || []).filter(function(t){ return t.mva > 0; });
+  var r = { s: s, pk: pk, pkva: pk / pf, pf: pf, g: g, gu: gu, trs: trs, n: trs.length };
+  if (!trs.length) { r.st = 'nodata'; return r; }
+  var tot = 0, mx = 0, em = 100; trs.forEach(function(t){ tot += t.mva; mx = Math.max(mx, t.mva); if (t.em) em = Math.max(em, t.em); });
+  r.tot = tot; r.firm = trs.length >= 2 ? (tot - mx) * em / 100 : 0; r.em = em; r.util = r.pkva / tot;
+  if (r.firm <= 0) { r.st = 'single'; r.short = pk; return r; }
+  r.ratio = r.pkva / r.firm;
+  if (r.ratio > 1) { r.st = 'fail'; r.short = (r.pkva - r.firm) * pf; }
+  else { r.st = 'pass'; r.yrs = gu > 0 ? Math.log(r.firm / r.pkva) / Math.log(1 + gu / 100) : null; r.st = r.yrs != null && r.yrs <= NX.WARN_Y ? 'soon' : 'pass'; }
+  return r;
+}
+var ST = { fail: ['ไม่ผ่าน N-1', 'red', 0], single: ['หม้อแปลงลูกเดียว', 'red', 1], soon: ['ใกล้เต็ม', 'amb', 2], pass: ['ผ่าน', 'green', 3], nodata: ['รอข้อมูล MVA', 'gray', 4] };
+function yearTH(y){ return new Date().getFullYear() + 543 + Math.floor(y); }
+function draw(){
+  var box = el('n1Body'); if (!box || !D) return;
+  if (!CAP) { box.innerHTML = '<div class="card">กำลังโหลดข้อมูลหม้อแปลง…</div>'; return; }
+  var subs = subLoads(), R = Object.keys(subs).map(function(k){ return analyse(subs[k]); }).filter(Boolean);
+  R.sort(function(a, b2){ return ST[a.st][2] - ST[b2.st][2] || (b2.ratio || b2.pk) - (a.ratio || a.pk); });
+  var cnt = function(st){ return R.filter(function(r){ return r.st === st; }).length; };
+  var have = R.filter(function(r){ return r.st !== 'nodata'; }).length;
+  var kp = function(l, v, s2){ return '<div class="card kpi"><div class="lab">'+l+'</div><div class="val">'+v+'</div><div class="note">'+s2+'</div></div>'; };
+  var rows = R.map(function(r){
+    var st = ST[r.st], s = r.s, cap = r.trs.length ? r.trs.map(function(t){ return esc(t.tr)+' '+fmt(t.mva,0); }).join(' + ')+' MVA' : '<span class="cap">—</span>';
+    var bar = '';
+    if (r.tot) { var w = Math.min(100, r.pkva / r.tot * 100), fw = r.firm / r.tot * 100; bar = '<div class="n1-bar"><i style="width:'+w+'%;background:'+(r.st === 'fail' || r.st === 'single' ? '#c0392b' : r.st === 'soon' ? '#d9822b' : '#1f9d55')+'"></i>'+(r.firm > 0 ? '<b style="left:'+Math.min(100, fw)+'%" title="Firm capacity"></b>' : '')+'</div><span class="cap">'+fmt(r.pkva / r.tot * 100, 0)+'% ของรวม</span>'; }
+    var res = r.st === 'fail' ? 'ขาด <b>'+fmt(r.short,1)+' MW</b> ถ้าหม้อแปลงลูกใหญ่สุดเสีย' : r.st === 'single' ? 'ถ้าหม้อแปลงเสีย ต้องโอนโหลดทั้งหมด <b>'+fmt(r.pk,1)+' MW</b>' : r.st === 'soon' || r.st === 'pass' ? (r.yrs != null ? 'เต็ม Firm ประมาณปี <b>'+yearTH(r.yrs)+'</b> ('+fmt(r.yrs,1)+' ปี)' : 'โหลดไม่โต') : 'กรอกขนาดหม้อแปลงในชีต';
+    return '<tr class="cl'+(selSub === s.sub ? ' sel' : '')+'" data-s="'+esc(s.sub)+'"><td><b>'+esc(s.sub)+'</b><br><span class="cap">'+esc(PROV_TH[s.prov] || s.prov)+'</span></td><td>'+cap+'</td><td><b>'+fmt(r.pk,1)+'</b> MW<br><span class="cap">≈ '+fmt(r.pkva,1)+' MVA'+(s.src !== 'Transformer' ? ' · จาก'+(s.src === 'Incoming' ? ' Incoming' : 'ผลรวมฟีดเดอร์') : '')+'</span></td><td>'+(r.firm > 0 ? fmt(r.firm,1)+' MVA'+(r.em > 100 ? '<br><span class="cap">รวมรับเกิน '+r.em+'%</span>' : '') : r.tot ? '0' : '—')+'</td><td>'+bar+'</td><td>'+(r.g == null ? '<span class="cap">ใช้ '+NX.G_DEF+'%</span>' : (r.g > 0 ? '+' : '')+fmt(r.g,1)+'%')+'</td><td><span class="pill '+st[1]+'">'+st[0]+'</span><br><span class="cap">'+res+'</span></td></tr>';
+  }).join('');
+  box.innerHTML = '<p class="cap">ขอบเขต: <b>'+esc(scopeName())+'</b> · Peak = ค่าสูงสุด 12 เดือนถึง '+mLabelLong(M[S.m])+' (รวมจุดวัดหม้อแปลงของสถานี) · โตต่อปีเทียบ 12 เดือนก่อนหน้า</p>'+
+    '<div class="grid kpis">'+
+      kp('ไม่ผ่าน N-1', (cnt('fail') + cnt('single'))+'<small>สถานี</small>', cnt('single')+' สถานีมีหม้อแปลงลูกเดียว')+
+      kp('จะเต็มภายใน '+NX.WARN_Y+' ปี', cnt('soon')+'<small>สถานี</small>', 'ตามอัตราโหลดโตจริงของแต่ละสถานี')+
+      kp('ผ่าน N-1', cnt('pass')+'<small>สถานี</small>', 'มีที่ว่างเกิน '+NX.WARN_Y+' ปี')+
+      kp('กรอกขนาดหม้อแปลงแล้ว', have+'<small>/ '+R.length+'</small>', '<a href="'+esc(CAP.url || '#')+'" target="_blank">เปิดชีต Substations</a>')+
+    '</div>'+
+    (have === 0 ? '<div class="card" style="margin-top:12px"><h2>ยังไม่มีขนาดหม้อแปลง</h2><p class="cap" style="line-height:1.7">กรอกขนาด MVA ของหม้อแปลงทุกลูกในชีต <b>Substations</b> (ผมใส่รายชื่อสถานีและหม้อแปลงจาก SCADA ไว้แล้ว) — กรอกเสร็จกลับมากด refresh หน้านี้ ระบบจะคำนวณ N-1 ให้ทันที · ระหว่างนี้ตารางด้านล่างแสดง Peak และอัตราโตของแต่ละสถานีไว้ก่อน</p><a class="n1-btn" href="'+esc(CAP.url || '#')+'" target="_blank">เปิดชีต Substations เพื่อกรอก</a></div>' : '')+
+    '<div class="card" style="margin-top:12px"><h2>สถานีไฟฟ้า · เรียงตามความเสี่ยง</h2><p class="cap">กดแถวเพื่อดูกราฟโหลดเทียบขนาดหม้อแปลง</p><div id="n1Chart"></div><div class="tbl-wrap"><table class="ptable n1-tbl"><thead><tr><th>สถานี</th><th>หม้อแปลง</th><th>Peak</th><th>Firm capacity</th><th>ใช้งานปกติ</th><th>โต/ปี</th><th>N-1</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="n1-ins"><b>วิธีคิด:</b> Firm capacity = ขนาดรวม − หม้อแปลงลูกใหญ่สุด (× % รับเกินฉุกเฉินถ้ากรอก) · ผ่าน N-1 เมื่อ Peak (MVA) ≤ Firm · Peak ใช้ผลรวม Peak ของหม้อแปลงแต่ละลูกในเดือนนั้น (อาจสูงกว่า Peak จริงของสถานีเล็กน้อย = เผื่อไว้) · แปลง MW เป็น MVA ด้วย PF จาก SCADA (ไม่มีใช้ '+NX.PF_DEF+') · ปีที่เต็มคิดจากอัตราโตจริง จำกัด '+NX.G_MIN+'% ถึง +'+NX.G_MAX+'% ต่อปี · ยังไม่รวมการโอนโหลดผ่านจุดเชื่อม (Tie) ไปสถานีข้างเคียง</div></div>';
+  box.querySelectorAll('tr.cl').forEach(function(t){ t.onclick = function(){ selSub = selSub === t.dataset.s ? '' : t.dataset.s; draw(); }; });
+  if (selSub) { var r0 = R.filter(function(r){ return r.s.sub === selSub; })[0]; if (r0) chart(r0); }
+}
+function chart(r){
+  var host = el('n1Chart'); if (!host) return;
+  host.innerHTML = '<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px"><b>'+esc(r.s.sub)+'</b> · โหลดรายเดือน (MVA) เทียบขนาดหม้อแปลง <svg id="n1Svg" width="100%" height="220"></svg><div class="cap">เส้นทึบเทา = ขนาดรวม · เส้นประแดง = Firm capacity (N-1)'+(r.tot ? '' : ' · ยังไม่มีขนาดหม้อแปลง')+'</div></div>';
+  var svg = el('n1Svg'), W = svg.clientWidth || 800, H = 220, L = 44, Rm = 10, T = 10, B = 24; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var v = r.s.mw.map(function(x){ return x == null ? null : x / r.pf; }), mx = Math.max(r.tot || 0, Math.max.apply(null, v.filter(function(x){ return x != null; }))) * 1.1 || 1;
+  var n = v.length, x = function(i){ return L + i * (W - L - Rm) / Math.max(1, n - 1); }, y = function(q){ return T + (1 - q / mx) * (H - T - B); }, s = '';
+  var stp = mx > 200 ? 50 : mx > 80 ? 20 : mx > 30 ? 10 : 5;
+  for (var t = 0; t <= mx; t += stp) s += '<line x1="'+L+'" x2="'+(W-Rm)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(L-5)+'" y="'+(y(t)+4)+'" font-size="10" text-anchor="end" fill="var(--text-muted)">'+t+'</text>';
+  for (var i = 0; i < n; i++) if (i % 3 === 0 || i === n - 1) s += '<text x="'+x(i)+'" y="'+(H-6)+'" font-size="10" text-anchor="middle" fill="var(--text-muted)">'+mLabel(M[r.s.p0 + i])+'</text>';
+  if (r.tot) s += '<line x1="'+L+'" x2="'+(W-Rm)+'" y1="'+y(r.tot)+'" y2="'+y(r.tot)+'" stroke="#8c8392" stroke-width="2"/>';
+  if (r.firm > 0) s += '<line x1="'+L+'" x2="'+(W-Rm)+'" y1="'+y(r.firm)+'" y2="'+y(r.firm)+'" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 4"/>';
+  var pts = []; v.forEach(function(q, i){ if (q != null) pts.push(x(i)+','+y(q)); });
+  s += '<polyline fill="none" stroke="var(--brand)" stroke-width="2.4" points="'+pts.join(' ')+'"/>';
+  v.forEach(function(q, i){ if (q != null) s += '<circle cx="'+x(i)+'" cy="'+y(q)+'" r="2.5" fill="var(--brand)"/>'; });
+  svg.innerHTML = s;
+}
+})();
+</script>

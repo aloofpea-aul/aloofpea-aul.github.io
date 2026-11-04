@@ -1,0 +1,147 @@
+<style>
+.pl-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){.pl-g2{grid-template-columns:1fr}}
+.pl-ins{background:rgba(255,216,77,.12);border:1px solid rgba(224,161,0,.35);border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.6;margin-top:8px;color:var(--text-secondary)}
+.pl-lg{display:flex;gap:12px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap;margin-top:4px}.pl-lg i{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.pl-tbl td,.pl-tbl th{text-align:left}
+.pl-tbl tr.cl{cursor:pointer}.pl-tbl tr.cl:hover td{background:var(--surface-2)}
+.pl-up{color:#c0392b;font-weight:700}.pl-dn{color:#1f9d55;font-weight:700}
+.pl-scroll{max-height:320px;overflow:auto}
+</style>
+<script>
+(function(){
+/* ===== แท็บ วางแผนระบบ: การเติบโต ฤดูกาล เวลา Peak Load Factor (ทั้ง กฟต.2 / ตามตัวกรอง) ===== */
+function el(id){ return document.getElementById(id); }
+var tabs = el('tabs'), b = document.createElement('button'); b.dataset.v = 'plan'; b.textContent = 'วางแผนระบบ';
+tabs.insertBefore(b, tabs.querySelector('button[data-v="quality"]'));
+b.onclick = function(){
+  tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('on', v.id === 'v-plan'); });
+  render();
+};
+var sec = document.createElement('section'); sec.className = 'view'; sec.id = 'v-plan'; sec.innerHTML = '<div id="plBody"></div>';
+document.querySelector('main').appendChild(sec);
+var _render = render;
+render = function(){ _render(); var on = tabs.querySelector('button.on'); if (D && on && on.dataset.v === 'plan') draw(); };
+
+var COLS = ['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)','var(--s6)','var(--s7)'];
+var TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function med(a){ if (!a.length) return null; var s = a.slice().sort(function(x, y){ return x - y; }), n = s.length; return n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2; }
+function okF(f){ if (f.type !== 'Feeder') return false; var t = S.type; S.type = ''; var ok = fOk(f); S.type = t; return ok; }
+function sum(a, i, j){ var t = 0; for (var k = i; k < j; k++) t += a[k] || 0; return t; }
+
+function compute(){
+  var e = S.m, s12 = Math.max(0, e - 11), p0 = Math.max(0, e - 23), p1 = s12 - 1;
+  var byF = {};
+  for (var m = p0; m <= e; m++) byM[m].forEach(function(r){
+    var f = F[r.f]; if (r.q || !r.mw || r.mw <= 0 || !okF(f)) return;
+    (byF[r.f] = byF[r.f] || []).push(r);
+  });
+  var feeders = [], h0 = new Array(24).fill(0), h1 = new Array(24).fill(0), n0 = 0, n1 = 0;
+  Object.keys(byF).forEach(function(fi){
+    var rs = byF[fi], L = rs.filter(function(r){ return r.m >= s12 && r.mw > 0.3; }), P = rs.filter(function(r){ return r.m <= p1; });
+    rs.forEach(function(r){ if (r.ph >= 1 && r.ph < 24) { if (r.m >= s12) { h1[Math.floor(r.ph)]++; n1++; } else { h0[Math.floor(r.ph)]++; n0++; } } });
+    if (L.length < 8) return;
+    var mws = L.map(function(r){ return r.mw; }), md = med(mws), top = L.reduce(function(a, r){ return r.mw > a.mw ? r : a; }, L[0]);
+    var phs = L.filter(function(r){ return r.ph >= 1; }), pph = P.filter(function(r){ return r.ph >= 1; });
+    var day = phs.length ? phs.filter(function(r){ return r.ph >= 9 && r.ph < 17; }).length / phs.length : null;
+    var dayp = pph.length >= 6 ? pph.filter(function(r){ return r.ph >= 9 && r.ph < 17; }).length / pph.length : null;
+    var lfs = L.filter(function(r){ return r.lf; }).map(function(r){ return r.lf; });
+    var pfs = L.filter(function(r){ return r.mvar != null; }).map(function(r){ return Math.abs(r.mw) / Math.sqrt(r.mw*r.mw + r.mvar*r.mvar); });
+    var pf = med(pfs), q = med(L.filter(function(r){ return r.mvar != null; }).map(function(r){ return Math.abs(r.mvar); })) || 0;
+    var kvar = pf && pf < 0.95 ? Math.max(0, (q - md * Math.tan(Math.acos(0.98))) * 1000) : 0;
+    feeders.push({ fi: +fi, f: F[fi], med: md, mx: top.mw, mxm: M[top.m], seas: md ? top.mw / md : null, day: day, dayp: dayp, lf: med(lfs), pf: pf, kvar: kvar });
+  });
+  // กลุ่มสำหรับกราฟ: ทั้ง กฟต.2 → รายจังหวัด, เลือกจังหวัด → รายสถานี (6 อันดับแรก)
+  var grpOf = function(f){ return S.prov || S.subQ ? f.sub : f.prov; };
+  var win = []; for (var m2 = p0; m2 <= e; m2++) win.push(m2);
+  var cnt = {}; Object.keys(byF).forEach(function(fi){ cnt[fi] = {}; byF[fi].forEach(function(r){ cnt[fi][r.m] = 1; }); });
+  var full = Object.keys(byF).filter(function(fi){ return Object.keys(cnt[fi]).length >= win.length - 2; });
+  var seasOK = {}; feeders.forEach(function(o){ seasOK[o.fi] = o.seas && o.seas < 2.5; });
+  var G = {};
+  full.forEach(function(fi){ if (seasOK[fi] === false) return; var g = grpOf(F[fi]); var a = G[g] || (G[g] = new Array(win.length).fill(0)); byF[fi].forEach(function(r){ a[r.m - p0] += r.mw; }); });
+  var gk = Object.keys(G).sort(function(a, b2){ return sum(G[b2], 0, win.length) - sum(G[a], 0, win.length); });
+  if (gk.length > 6) { var oth = new Array(win.length).fill(0); gk.slice(6).forEach(function(k){ G[k].forEach(function(v, i){ oth[i] += v; }); }); gk = gk.slice(0, 6); G['อื่นๆ'] = oth; gk.push('อื่นๆ'); }
+  var half = win.length >= 24 ? 12 : Math.floor(win.length / 2);
+  var growth = {}, ta = 0, tb = 0;
+  gk.forEach(function(k){ var a = G[k].slice(-12), bb = G[k].slice(0, win.length - 12); var ma = Math.max.apply(null, a), mb = bb.length ? Math.max.apply(null, bb) : 0; growth[k] = mb ? (ma / mb - 1) * 100 : null; ta += ma; tb += mb; });
+  var pm = {}; feeders.forEach(function(o){ if (o.seas && o.seas < 2.5) { var k = o.mxm.slice(5); pm[k] = (pm[k] || 0) + 1; } });
+  return { feeders: feeders, win: win, G: G, gk: gk, growth: growth, gall: tb ? (ta / tb - 1) * 100 : null, h0: h0.map(function(v){ return n0 ? v / n0 * 100 : 0; }), h1: h1.map(function(v){ return n1 ? v / n1 * 100 : 0; }), hasPrev: n0 > 0,
+    pm: Object.keys(pm).map(function(k){ return [k, pm[k]]; }).sort(function(a, b2){ return b2[1] - a[1]; }) };
+}
+function gname(k){ return PROV_TH[k] || k; }
+function draw(){
+  var box = el('plBody'); if (!box || !D) return;
+  var R = compute(), FE = R.feeders;
+  if (!FE.length) { box.innerHTML = '<div class="card">ไม่มีฟีดเดอร์ที่มีข้อมูลพอในขอบเขตนี้</div>'; return; }
+  var shift = FE.filter(function(o){ return o.dayp != null && o.day != null && o.dayp >= 0.5 && o.day < 0.3; }).sort(function(a, b2){ return (a.day - a.dayp) - (b2.day - b2.dayp); });
+  var lowlf = FE.filter(function(o){ return o.lf && o.seas && o.seas < 2.5; }).sort(function(a, b2){ return a.lf - b2.lf; }).slice(0, 12);
+  var pfl = FE.filter(function(o){ return o.pf && o.pf < 0.95; }), pfk = pfl.reduce(function(a, o){ return a + o.kvar; }, 0);
+  var dd = FE.filter(function(o){ return o.day != null; }), dayshare = dd.length ? dd.filter(function(o){ return o.day >= 0.5; }).length / dd.length * 100 : 0;
+  var lfv = FE.filter(function(o){ return o.lf; }).map(function(o){ return o.lf; }), lfm = med(lfv), lflow = lfv.filter(function(x){ return x < 0.5; }).length;
+  var ntr = FE.filter(function(o){ return o.seas && o.seas >= 2.5; }).length;
+  var ev = sum(R.h1, 18, 23), ev0 = sum(R.h0, 18, 23), d1 = sum(R.h1, 9, 17), d0 = sum(R.h0, 9, 17);
+  var g = R.gall, topg = R.gk.filter(function(k){ return R.growth[k] != null && k !== 'อื่นๆ'; }).sort(function(a, b2){ return R.growth[b2] - R.growth[a]; });
+  var kp = function(l, v, s2){ return '<div class="card kpi"><div class="lab">'+l+'</div><div class="val">'+v+'</div><div class="note">'+s2+'</div></div>'; };
+  var html = '<p class="cap">ขอบเขต: <b>'+esc(scopeName())+'</b> · ฟีดเดอร์ 33 kV '+FE.length+' ฟีดเดอร์ · 12 เดือนถึง '+mLabelLong(M[S.m])+' เทียบ 12 เดือนก่อนหน้า · ไม่นับเดือนที่เป็นค่าคัดลอก</p>'+
+    '<div class="grid kpis">'+
+      kp('โหลดสูงสุดรวม เทียบปีก่อน', g == null ? '–' : '<span class="'+(g > 0 ? 'pl-up' : 'pl-dn')+'">'+(g > 0 ? '+' : '')+fmt(g,1)+'%</span>', topg.length ? 'โตเร็วสุด '+esc(gname(topg[0]))+' '+(R.growth[topg[0]] > 0 ? '+' : '')+fmt(R.growth[topg[0]],1)+'%' : '')+
+      kp('Peak ช่วงหัวค่ำ 18–22 น.', fmt(ev,0)+'<small>%</small>', (R.hasPrev ? 'ปีก่อน '+fmt(ev0,0)+'% · ' : '')+'ฟีดเดอร์ Peak กลางวัน '+fmt(dayshare,0)+'%')+
+      kp('Peak ย้ายกลางวัน → ค่ำ', shift.length+'<small>ฟีดเดอร์</small>', 'สัญญาณโซลาร์รูฟท็อป')+
+      kp('Load Factor ต่ำกว่า 0.5', lflow+'<small>ฟีดเดอร์</small>', 'จาก '+FE.length+' · ค่ากลาง '+fmt(lfm,2))+
+      kp('PF ขณะ Peak ต่ำกว่า 0.95', pfl.length+'<small>ฟีดเดอร์</small>', 'ต้องการ ≈ '+fmt(pfk/1000,1)+' MVAr ถึง PF 0.98 · รายการอยู่แท็บ "โหลดสูง และ PF"')+
+    '</div>'+
+    '<div class="card" style="margin-top:12px"><h2>โหลดสูงสุดรวม'+(S.prov || S.subQ ? 'รายสถานี' : 'รายจังหวัด')+' ('+R.win.length+' เดือน)</h2><p class="cap">รวม Peak ของฟีดเดอร์ที่มีข้อมูลครบ (ไม่นับฟีดเดอร์ที่รับโหลดโอน) · ใช้ดูแนวโน้มและฤดูกาล ไม่ใช่ Peak จริงของพื้นที่ (Peak แต่ละฟีดเดอร์ไม่ได้เกิดพร้อมกัน)</p><svg id="plCh1" width="100%" height="300"></svg><div class="pl-lg" id="plLg1"></div><div class="pl-ins" id="plIns1"></div></div>'+
+    '<div class="pl-g2"><div class="card"><h2>Peak เกิดตอนกี่โมง</h2><p class="cap">สัดส่วนเดือนที่ Peak เกิดในแต่ละชั่วโมง · ปีก่อน เทียบ ปีล่าสุด</p><svg id="plCh2" width="100%" height="240"></svg><div class="pl-lg"><span><i style="background:#c9bfd0;height:8px"></i>ปีก่อน</span><span><i style="background:var(--brand);height:8px"></i>ปีล่าสุด</span></div>'+
+      '<div class="pl-ins">Peak หัวค่ำ 18–22 น. '+(R.hasPrev ? fmt(ev0,0)+'% → ' : '')+'<b>'+fmt(ev,0)+'%</b> · กลางวัน 09–17 น. '+(R.hasPrev ? fmt(d0,0)+'% → ' : '')+fmt(d1,0)+'%</div></div>'+
+      '<div class="card"><h2>ฟีดเดอร์ที่ Peak ย้ายจากกลางวันไปหัวค่ำ</h2><p class="cap">ปีก่อน Peak กลางวัน (09–17 น.) ≥ 50% ของเดือน แต่ปีล่าสุด &lt; 30% · กดแถวเพื่อดูประวัติ</p><div class="pl-scroll"><table class="ptable pl-tbl"><thead><tr><th>ฟีดเดอร์</th><th>จังหวัด</th><th>Peak กลางวัน ปีก่อน → ล่าสุด</th><th>MW</th></tr></thead><tbody>'+
+      (shift.length ? shift.map(function(o){ return '<tr class="cl" data-fi="'+o.fi+'"><td><b>'+esc(o.f.name)+'</b></td><td>'+esc(PROV_TH[o.f.prov] || o.f.prov)+'</td><td>'+fmt(o.dayp*100,0)+'% → <b>'+fmt(o.day*100,0)+'%</b></td><td>'+fmt(o.med,1)+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="cap">ไม่มี</td></tr>')+
+      '</tbody></table></div><div class="pl-ins"><b>ใช้ทำอะไร:</b> ฟีดเดอร์กลุ่มนี้ต้องวางแผนจาก Peak <u>หัวค่ำ</u> · วันฟ้าครึ้มโหลดกลางวันจะกลับมาเต็ม ห้ามลดขนาดอุปกรณ์ตามโหลดกลางวันที่ดูต่ำลง · ถ้าโซลาร์มากขึ้นอีก อาจเกิดไฟย้อนช่วงเที่ยง</div></div></div>'+
+    '<div class="pl-g2"><div class="card"><h2>Load Factor ต่ำ (โหลดพุ่งเป็นช่วงสั้น)</h2><p class="cap">LF = โหลดเฉลี่ย ÷ Peak · ค่ากลาง <b>'+fmt(lfm,2)+'</b> · กดแถวเพื่อดูประวัติ</p><div class="pl-scroll"><table class="ptable pl-tbl"><thead><tr><th>ฟีดเดอร์</th><th>จังหวัด</th><th>LF</th><th>Peak (MW)</th></tr></thead><tbody>'+
+      lowlf.map(function(o){ return '<tr class="cl" data-fi="'+o.fi+'"><td><b>'+esc(o.f.sub+' · '+o.f.name)+'</b></td><td>'+esc(PROV_TH[o.f.prov] || o.f.prov)+'</td><td><span class="pl-up">'+fmt(o.lf,2)+'</span></td><td>'+fmt(o.mx,1)+'</td></tr>'; }).join('')+
+      '</tbody></table></div><div class="pl-ins"><b>ใช้ทำอะไร:</b> ฟีดเดอร์ LF ต่ำเหมาะกับการโอนโหลดชั่วคราวช่วง Peak มากกว่าลงทุนเพิ่มสาย/หม้อแปลง · ตรวจลูกค้ารายใหญ่ที่เปิดเครื่องพร้อมกัน (โรงงาน ฟาร์ม ปั๊มน้ำ)</div></div>'+
+      '<div class="card"><h2>สรุปสิ่งที่ควรทำ</h2><div id="plTodo" style="font-size:13.5px;line-height:1.75"></div></div></div>';
+  box.innerHTML = html;
+  box.querySelectorAll('tr.cl').forEach(function(t){ t.onclick = function(){ openDetail(+t.dataset.fi); }; });
+  chart1(R); chart2(R);
+  var pmTxt = R.pm.slice(0, 3).map(function(x){ return TH[+x[0]-1]+' ('+x[1]+')'; }).join(', ');
+  var fast = topg.filter(function(k){ return R.growth[k] >= 8; }).map(gname), dec = topg.filter(function(k){ return R.growth[k] <= -3; }).map(gname);
+  el('plIns1').innerHTML = '<b>อ่านกราฟ:</b> เดือนที่ฟีดเดอร์ส่วนใหญ่ทำ Peak คือ '+(pmTxt || '–')+(fast.length ? ' · <b>'+esc(fast.join(', '))+'</b> โตเกิน 8% ต่อปี ควรเร่งตรวจหม้อแปลงสถานีและฟีดเดอร์ใกล้เต็ม' : '')+(dec.length ? ' · '+esc(dec.join(', '))+' ลดลง (อาจมีการโอนโหลดออก)' : '');
+  var peakM = R.pm.length ? TH[+R.pm[0][0]-1] : 'เม.ย.';
+  el('plTodo').innerHTML = '<ol style="margin:0;padding-left:18px">'+
+    '<li><b>ก่อนเดือน '+peakM+'</b> ตรวจฟีดเดอร์/หม้อแปลงที่ใกล้เต็ม และเลี่ยงดับไฟวางแผนช่วงนั้น</li>'+
+    (fast.length ? '<li><b>'+esc(fast.join(', '))+'</b> โหลดโต ≥ 8%/ปี → ให้ความสำคัญในแผนลงทุนก่อน</li>' : '')+
+    (pfl.length ? '<li><b>'+pfl.length+' ฟีดเดอร์ PF ต่ำ</b> รวมต้องการ ≈ '+fmt(pfk/1000,1)+' MVAr → ติด Capacitor ที่ฟีดเดอร์ใหญ่ก่อน (ดูแท็บ "โหลดสูง และ PF")</li>' : '')+
+    (shift.length ? '<li><b>'+shift.length+' ฟีดเดอร์ Peak ย้ายไปค่ำ</b> → วางแผนจาก Peak หัวค่ำ และเฝ้าระวังไฟย้อนช่วงเที่ยง</li>' : '')+
+    (ntr ? '<li><b>'+ntr+' ฟีดเดอร์</b> บางเดือน Peak สูงกว่าปกติเกิน 2.5 เท่า = รับโหลดโอน · ไม่นำมาคิดการเติบโต</li>' : '')+'</ol>';
+}
+function chart1(R){
+  var svg = el('plCh1'); if (!svg) return;
+  var W = svg.clientWidth || 1000, H = 300, Lm = 46, Rm = 12, T = 10, B = 28; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var mx = 0; R.gk.forEach(function(k){ R.G[k].forEach(function(v){ mx = Math.max(mx, v); }); });
+  var stp = mx > 400 ? 100 : mx > 100 ? 50 : mx > 40 ? 10 : 5; mx = Math.ceil(mx / stp) * stp || 1;
+  var n = R.win.length, x = function(i){ return Lm + i * (W - Lm - Rm) / Math.max(1, n - 1); }, y = function(v){ return T + (1 - v / mx) * (H - T - B); }, s = '', cw = (W - Lm - Rm) / Math.max(1, n - 1);
+  for (var t = 0; t <= mx; t += stp) s += '<line x1="'+Lm+'" x2="'+(W-Rm)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(Lm-6)+'" y="'+(y(t)+4)+'" font-size="11" text-anchor="end" fill="var(--text-muted)">'+t+'</text>';
+  R.win.forEach(function(mi, i){ var m = M[mi]; if (m.slice(5) === '04') s += '<rect x="'+(x(i)-cw/2)+'" y="'+T+'" width="'+cw+'" height="'+(H-T-B)+'" fill="#e8590c" opacity=".08"/>';
+    if (i % 3 === 0 || i === n - 1) s += '<text x="'+x(i)+'" y="'+(H-8)+'" font-size="11" text-anchor="middle" fill="var(--text-muted)">'+mLabel(m)+'</text>'; });
+  R.gk.forEach(function(k, j){ var c = COLS[j % COLS.length];
+    s += '<polyline fill="none" stroke="'+c+'" stroke-width="2.2" points="'+R.G[k].map(function(v, i){ return x(i)+','+y(v); }).join(' ')+'"/>';
+    var v = R.G[k][n-1]; s += '<text x="'+(x(n-1)-4)+'" y="'+(y(v)-5)+'" font-size="11" text-anchor="end" fill="'+c+'" font-weight="700">'+esc(gname(k))+'</text>'; });
+  s += '<text x="'+(Lm+4)+'" y="'+(T+12)+'" font-size="11" fill="var(--text-muted)">MW</text>';
+  svg.innerHTML = s;
+  el('plLg1').innerHTML = R.gk.map(function(k, j){ var gr = R.growth[k]; return '<span><i style="background:'+COLS[j % COLS.length]+'"></i>'+esc(gname(k))+(gr == null ? '' : ' '+(gr > 0 ? '+' : '')+fmt(gr,1)+'%/ปี')+'</span>'; }).join('')+'<span><i style="background:#e8590c;opacity:.25;height:10px"></i>เดือนเมษายน</span>';
+}
+function chart2(R){
+  var svg = el('plCh2'); if (!svg) return;
+  var W = svg.clientWidth || 600, H = 240, Lm = 30, Rm = 8, T = 10, B = 24; svg.setAttribute('viewBox', '0 0 '+W+' '+H);
+  var mx = Math.max(10, Math.ceil(Math.max.apply(null, R.h0.concat(R.h1)) / 5) * 5), bw = (W - Lm - Rm) / 23, s = '', y = function(v){ return T + (1 - v / mx) * (H - T - B); };
+  for (var t = 0; t <= mx; t += 5) s += '<line x1="'+Lm+'" x2="'+(W-Rm)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--grid)"/><text x="'+(Lm-4)+'" y="'+(y(t)+4)+'" font-size="10" text-anchor="end" fill="var(--text-muted)">'+t+'%</text>';
+  for (var h = 1; h < 24; h++) { var x = Lm + (h - 1) * bw;
+    s += '<rect x="'+(x+1)+'" y="'+y(R.h0[h])+'" width="'+Math.max(1, bw/2-1)+'" height="'+(y(0)-y(R.h0[h]))+'" fill="#c9bfd0"/><rect x="'+(x+bw/2)+'" y="'+y(R.h1[h])+'" width="'+Math.max(1, bw/2-1)+'" height="'+(y(0)-y(R.h1[h]))+'" fill="var(--brand)"/>';
+    if (h % 3 === 0) s += '<text x="'+(x+bw/2)+'" y="'+(H-8)+'" font-size="10" text-anchor="middle" fill="var(--text-muted)">'+h+':00</text>'; }
+  svg.innerHTML = s;
+}
+window.addEventListener('resize', function(){ var on = tabs.querySelector('button.on'); if (D && on && on.dataset.v === 'plan') draw(); });
+if (typeof D !== 'undefined' && D) { /* แท็บจะวาดเมื่อถูกเลือก */ }
+})();
+</script>

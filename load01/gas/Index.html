@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>วิเคราะห์โหลด Load01 กฟต.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+color-scheme:light;
+--brand:#74045f; --brand-2:#9c1f83;
+--bg:#f4f3f1; --surface-1:#fcfcfb; --surface-2:#f0efec; --line:#e2e0db;
+--text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7a7873;
+--s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6;
+--good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+--grid:#e7e5e0;
+}
+@media (prefers-color-scheme: dark){
+:root{
+color-scheme:dark;
+--bg:#121211; --surface-1:#1a1a19; --surface-2:#242422; --line:#33332f;
+--text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#8f8d86;
+--s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+--grid:#2c2c29;
+}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:'Sarabun',system-ui,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+button,select,input{font:inherit;color:inherit}
+header.top{background:linear-gradient(120deg,var(--brand),var(--brand-2));color:#fff;padding:14px 16px 0;position:sticky;top:0;z-index:20}
+header.top h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.2px}
+header.top .sub{opacity:.85;font-size:12.5px;margin-top:2px}
+nav.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{background:none;border:0;color:#fff;opacity:.75;padding:9px 12px 10px;border-bottom:3px solid transparent;white-space:nowrap;cursor:pointer;font-weight:600}
+nav.tabs button.on{opacity:1;border-bottom-color:#fff}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;background:var(--surface-1);border-bottom:1px solid var(--line);position:sticky;top:96px;z-index:15}
+.filters label{font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:2px}
+.filters select{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:110px}
+.chk{flex-direction:row!important;align-items:center;gap:6px!important;font-size:13px!important;color:var(--text-primary)!important;margin-top:14px}
+main{padding:14px 16px 40px;max-width:1280px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi .lab{font-size:12.5px;color:var(--text-secondary)}
+.kpi .val{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .val small{font-size:14px;font-weight:500;color:var(--text-secondary);margin-left:3px}
+.kpi .note{font-size:12px;color:var(--text-muted);margin-top:2px}
+.kpi.click{cursor:pointer}.kpi.click:hover{border-color:var(--brand-2)}
+.delta-up{color:var(--critical)} .delta-down{color:var(--good)}
+h2{font-size:16px;margin:0 0 2px}
+.cap{font-size:12.5px;color:var(--text-muted);margin:0 0 10px}
+.two{grid-template-columns:1fr}
+@media(min-width:900px){.two{grid-template-columns:3fr 2fr}}
+@media(max-width:700px){.filters{position:static}header.top{position:static}}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--text-secondary);margin:4px 0 6px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+svg text{font-family:'Sarabun',sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:10px;padding:8px 10px;font-size:12.5px;min-width:140px;display:none;z-index:5}
+.tip b{display:block;margin-bottom:3px}
+.tip .r{display:flex;justify-content:space-between;gap:12px}
+.tip .r i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{font-size:12px;color:var(--text-secondary);font-weight:600;position:sticky;top:0;background:var(--surface-1);cursor:pointer;user-select:none}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--surface-2)}
+.tbl-wrap{overflow:auto;max-height:70vh;border-radius:10px}
+.search{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;max-width:320px;margin-bottom:10px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--text-secondary)}
+.st{display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.st.crit{color:var(--critical)} .st.warn{color:#b07800} .st.good{color:var(--good)}
+@media (prefers-color-scheme: dark){.st.warn{color:var(--warning)}}
+.issues{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.issue h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+.issue .count{margin-left:auto;font-size:20px;font-weight:700}
+.issue ul{list-style:none;padding:0;margin:8px 0 0;max-height:300px;overflow:auto}
+.issue li{display:flex;justify-content:space-between;gap:8px;padding:6px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.issue li:hover{background:var(--surface-2)}
+.issue li span:last-child{font-variant-numeric:tabular-nums;color:var(--text-secondary)}
+.muted{color:var(--text-muted)}
+.drawer{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:50;align-items:flex-end;justify-content:center}
+.drawer.on{display:flex}
+.drawer .panel{background:var(--bg);width:100%;max-width:980px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+@media(min-width:900px){.drawer{align-items:center}.drawer .panel{border-radius:18px}}
+.panel .hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.panel .hd h2{font-size:18px}
+.close{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 12px;cursor:pointer}
+.spark{vertical-align:middle}
+.loading{padding:60px 20px;text-align:center;color:var(--text-secondary)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:auto}
+.seg button{background:var(--surface-2);border:0;padding:4px 10px;font-size:12.5px;cursor:pointer}
+.seg button.on{background:var(--brand);color:#fff}
+.row-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="top">
+<h1>⚡ วิเคราะห์โหลด Load01 · กฟต.2</h1>
+<div class="sub" id="sub">กำลังโหลดข้อมูล…</div>
+<nav class="tabs" id="tabs">
+<button data-v="overview" class="on">ภาพรวม</button>
+<button data-v="feeders">ฟีดเดอร์</button>
+<button data-v="issues">จุดที่ต้องดูแล</button>
+<button data-v="quality">คุณภาพข้อมูล</button>
+</nav>
+</header>
+<div class="filters">
+<label>จังหวัด<select id="fProv"></select></label>
+<label>สถานี<select id="fSub"></select></label>
+<label>ประเภท<select id="fType"></select></label>
+<label>เดือน<select id="fMonth"></select></label>
+<label class="chk"><input type="checkbox" id="fCopy" checked> ตัดค่าที่คัดลอกจากเดือนก่อน</label>
+</div>
+<main>
+<div id="loading" class="loading">กำลังโหลดข้อมูล…</div>
+<section class="view on" id="v-overview">
+<div class="grid kpis" id="kpis"></div>
+<div class="grid two" style="margin-top:12px">
+<div class="card">
+<div class="row-h"><h2 id="trendTitle">แนวโน้ม Peak รายเดือน</h2>
+<div class="seg" id="trendRange"><button data-r="24">2 ปี</button><button data-r="0" class="on">ทั้งหมด</button></div></div>
+<p class="cap" id="trendCap"></p>
+<div class="legend" id="trendLegend"></div>
+<div class="chart" id="trend"></div>
+</div>
+<div class="card">
+<h2>ช่วงเวลาที่เกิด Peak</h2>
+<p class="cap" id="hourCap"></p>
+<div class="chart" id="hours"></div>
+</div>
+</div>
+<div class="card" style="margin-top:12px">
+<h2>10 อันดับโหลดสูงสุด</h2>
+<p class="cap" id="topCap"></p>
+<div class="chart" id="top"></div>
+</div>
+</section>
+<section class="view" id="v-feeders">
+<div class="card">
+<input class="search" id="q" placeholder="ค้นหา: ชื่อฟีดเดอร์ / สถานี / พื้นที่จ่ายไฟ">
+<p class="cap" id="tblCap"></p>
+<div class="tbl-wrap"><table id="tbl"></table></div>
+</div>
+</section>
+<section class="view" id="v-issues">
+<p class="cap" id="issueCap"></p>
+<div class="grid issues" id="issues"></div>
+</section>
+<section class="view" id="v-quality">
+<div class="card">
+<h2>ความครบถ้วนของข้อมูลรายเดือน</h2>
+<p class="cap">ทุกเดือนดึงจากไฟล์ในโฟลเดอร์ Load01 · "คัดลอก" = ค่า Peak และกระแสทุกเฟสเหมือนเดือนก่อนทุกตัว (ต้นทางยกค่าเดิมมา) · "MW ผิดรูป" = MW ไม่สอดคล้องกับกระแสและแรงดัน</p>
+<div class="tbl-wrap"><table id="qtbl"></table></div>
+</div>
+</section>
+</main>
+<div class="drawer" id="drawer"><div class="panel" id="panel"></div></div>
+<script>
+/* ===== ค่าเกณฑ์ (แก้ได้) ===== */
+var TH = { UB: 20, UB_MIN_IAVG: 50, PF: 0.90, PF_MIN_MW: 1, IMAX: 320, KV_LO: 31.35, KV_HI: 34.65, GROWTH: 20, GROWTH_MIN_MW: 2 };
+var PROV_TH = { 'Krabi':'กระบี่','Phuket':'ภูเก็ต','Phang Nga':'พังงา','Surat Thani':'สุราษฎร์ธานี','Nakhon Si Thammarat':'นครศรีธรรมราช','Trang':'ตรัง' };
+var TYPE_TH = { Feeder:'ฟีดเดอร์ 33 kV', Incoming:'Incoming', Transformer:'หม้อแปลง', Line:'สายส่ง 115 kV' };
+var MTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+var SERIES = ['--s1','--s2','--s3','--s4','--s5','--s6'];
+var D, F, M, byM, S = { prov:'', sub:'', type:'Feeder', m:0, copy:true, range:0, sort:'mw', dir:-1, q:'' };
+var C = function(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+function mLabel(ym){ var p=ym.split('-'); return MTH[+p[1]-1]+' '+String(+p[0]+543).slice(2); }
+function mLabelLong(ym){ var p=ym.split('-'); return MTH[+p[1]-1]+' '+(+p[0]+543); }
+function fmt(v,d){ return v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function hhmm(h){ if(h==null) return '–'; var H=Math.floor(h), mi=Math.round((h-H)*60); return (H<10?'0':'')+H+':'+(mi<10?'0':'')+mi; }
+/* ===== โหลดข้อมูล ===== */
+function boot(){
+if (window.__DATA__) return init(window.__DATA__);
+if (window.google && google.script && google.script.run) {
+google.script.run.withSuccessHandler(function(s){ if(!s){ $('loading').textContent='ยังไม่มีข้อมูล — ให้รัน setup() ในสคริปต์ก่อน'; return;} init(JSON.parse(s)); })
+.withFailureHandler(function(e){ $('loading').textContent='โหลดข้อมูลไม่สำเร็จ: '+e.message; }).getDashboardData();
+} else if (window.DATA_URL) {
+fetch(window.DATA_URL).then(function(r){return r.json();}).then(init).catch(function(e){ $('loading').textContent='โหลดข้อมูลไม่สำเร็จ: '+e; });
+}
+}
+function init(data){
+D = data; M = data.months;
+F = data.feeders.map(function(f,i){ return { i:i, prov:f[0], sub:f[1], type:f[2], name:f[3], area:f[4] }; });
+byM = M.map(function(){ return []; });
+data.rows.forEach(function(r){
+byM[r[0]].push({ m:r[0], f:r[1], mw:r[2], mvar:r[3], kv:r[4], ia:r[5], ib:r[6], ic:r[7], lmw:r[8], ph:r[9], lh:r[10], ub:r[11], pf:r[12], lf:r[13], q:r[14] });
+});
+S.m = M.length-1;
+$('loading').style.display='none';
+var gen = new Date(data.generated);
+$('sub').textContent = 'ข้อมูล '+mLabelLong(M[0])+' – '+mLabelLong(M[M.length-1])+' · '+M.length+' เดือน · '+F.length+' จุดวัด · อัปเดต '+gen.toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+buildFilters(); bind(); render();
+}
+/* ===== ตัวกรอง ===== */
+function opt(v,t,sel){ return '<option value="'+esc(v)+'"'+(sel?' selected':'')+'>'+esc(t)+'</option>'; }
+function buildFilters(){
+var provs = Array.from(new Set(F.map(function(f){return f.prov;}))).sort(function(a,b){return (PROV_TH[a]||a).localeCompare(PROV_TH[b]||b,'th');});
+$('fProv').innerHTML = opt('','ทุกจังหวัด',!S.prov)+provs.map(function(p){return opt(p,PROV_TH[p]||p,S.prov===p);}).join('');
+fillSubs();
+$('fType').innerHTML = ['Feeder','Incoming','Transformer','Line'].map(function(t){return opt(t,TYPE_TH[t],S.type===t);}).join('')+opt('','ทุกประเภท',!S.type);
+$('fMonth').innerHTML = M.map(function(m,i){return opt(i,mLabelLong(m),i===S.m);}).reverse().join('');
+}
+function fillSubs(){
+var subs = Array.from(new Set(F.filter(function(f){return !S.prov||f.prov===S.prov;}).map(function(f){return f.sub;}))).sort();
+if (S.sub && subs.indexOf(S.sub)<0) S.sub='';
+$('fSub').innerHTML = opt('','ทุกสถานี',!S.sub)+subs.map(function(s){return opt(s,s,S.sub===s);}).join('');
+}
+function bind(){
+$('fProv').onchange=function(){S.prov=this.value; fillSubs(); render();};
+$('fSub').onchange=function(){S.sub=this.value; render();};
+$('fType').onchange=function(){S.type=this.value; render();};
+$('fMonth').onchange=function(){S.m=+this.value; render();};
+$('fCopy').onchange=function(){S.copy=this.checked; render();};
+$('q').oninput=function(){S.q=this.value.trim().toLowerCase(); renderTable();};
+document.querySelectorAll('#tabs button').forEach(function(b){ b.onclick=function(){
+document.querySelectorAll('#tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+b.dataset.v);});
+render();
+};});
+document.querySelectorAll('#trendRange button').forEach(function(b){ b.onclick=function(){
+S.range=+b.dataset.r; document.querySelectorAll('#trendRange button').forEach(function(x){x.classList.toggle('on',x===b);}); renderTrend();
+};});
+$('drawer').onclick=function(e){ if(e.target===this) closeDetail(); };
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDetail(); });
+var t; window.addEventListener('resize',function(){ clearTimeout(t); t=setTimeout(render,150); });
+}
+function fOk(f){ return (!S.prov||f.prov===S.prov)&&(!S.sub||f.sub===S.sub)&&(!S.type||f.type===S.type); }
+function rOk(r){ return fOk(F[r.f]) && !(S.copy && r.q===1); }
+function valid(r){ return r.q!==2 && r.mw!=null; }
+function imax(r){ var a=[r.ia,r.ib,r.ic].filter(function(x){return x!=null;}); return a.length?Math.max.apply(null,a):null; }
+function iavg(r){ var a=[r.ia,r.ib,r.ic].filter(function(x){return x!=null;}); return a.length===3?(a[0]+a[1]+a[2])/3:null; }
+function rowsAt(m){ return byM[m].filter(rOk); }
+function prevYear(m){ var p=M[m].split('-'); var k=(+p[0]-1)+'-'+p[1]; return M.indexOf(k); }
+function scopeName(){ return S.sub ? 'สถานี '+S.sub : S.prov ? 'จ.'+(PROV_TH[S.prov]||S.prov) : 'กฟต.2 ทั้งหมด'; }
+/* ===== render ===== */
+function render(){
+if(!D) return;
+var v = document.querySelector('#tabs button.on').dataset.v;
+if (v==='overview'){ renderKpis(); renderTrend(); renderHours(); renderTop(); }
+if (v==='feeders') renderTable();
+if (v==='issues') renderIssues();
+if (v==='quality') renderQuality();
+}
+function issueSets(m){
+var R = rowsAt(m), py = prevYear(m), prevMap = {};
+if (py>=0) byM[py].forEach(function(r){ if(valid(r) && !(S.copy&&r.q===1)) prevMap[r.f]=r; });
+var out = { ub:[], pf:[], imax:[], kv:[], growth:[], bad:[] };
+R.forEach(function(r){
+var f=F[r.f], ia=iavg(r), im=imax(r);
+if (r.q===2) out.bad.push([r, r.mw]);
+if (r.ub!=null && ia!=null && ia>=TH.UB_MIN_IAVG && r.ub>TH.UB) out.ub.push([r, r.ub]);
+if (valid(r) && r.pf!=null && r.mw>=TH.PF_MIN_MW && r.pf<TH.PF) out.pf.push([r, r.pf]);
+if (f.type!=='Line' && f.type!=='Transformer' && im!=null && im>=TH.IMAX && f.type==='Feeder') out.imax.push([r, im]);
+if (r.kv!=null && r.kv>20 && r.kv<40 && (r.kv<TH.KV_LO||r.kv>TH.KV_HI)) out.kv.push([r, r.kv]);
+var p=prevMap[r.f];
+if (p && valid(r) && p.mw>=TH.GROWTH_MIN_MW){ var g=(r.mw-p.mw)/p.mw*100; if(g>TH.GROWTH) out.growth.push([r,g]); }
+});
+out.ub.sort(function(a,b){return b[1]-a[1];}); out.pf.sort(function(a,b){return a[1]-b[1];});
+out.imax.sort(function(a,b){return b[1]-a[1];}); out.growth.sort(function(a,b){return b[1]-a[1];});
+out.kv.sort(function(a,b){return Math.abs(b[1]-33)-Math.abs(a[1]-33);});
+return out;
+}
+function renderKpis(){
+var m=S.m, R=rowsAt(m).filter(valid), py=prevYear(m);
+var tot=R.reduce(function(s,r){return s+r.mw;},0);
+// เทียบปีก่อนแบบจุดวัดเดียวกัน
+var dTxt='ไม่มีข้อมูลเดือนเดียวกันปีก่อน', dCls='';
+if (py>=0){
+var pm={}; byM[py].forEach(function(r){ if(valid(r)&&rOk(r)) pm[r.f]=r.mw; });
+var a=0,b=0,n=0; R.forEach(function(r){ if(pm[r.f]!=null){a+=r.mw;b+=pm[r.f];n++;} });
+if (b>0){ var g=(a-b)/b*100; dTxt=(g>=0?'▲ ':'▼ ')+fmt(Math.abs(g),1)+'% เทียบ '+mLabel(M[py])+' ('+n+' จุดเดียวกัน)'; dCls=g>=0?'delta-up':'delta-down'; }
+}
+var I=issueSets(m);
+var k=[
+{lab:'Peak รวม ('+scopeName()+')', val:fmt(tot,1), unit:'MW', note:'<span class="'+dCls+'">'+dTxt+'</span>'},
+{lab:'จุดวัดที่มีข้อมูล', val:fmt(R.length,0), unit:'จุด', note:mLabelLong(M[m])},
+{lab:'Unbalance > '+TH.UB+'%', val:I.ub.length, unit:'จุด', note:'กระแสเฉลี่ย ≥ '+TH.UB_MIN_IAVG+' A', go:'ub', st:I.ub.length?'warn':'good'},
+{lab:'PF < '+TH.PF.toFixed(2), val:I.pf.length, unit:'จุด', note:'โหลด ≥ '+TH.PF_MIN_MW+' MW', go:'pf', st:I.pf.length?'warn':'good'},
+{lab:'กระแสสูง ≥ '+TH.IMAX+' A', val:I.imax.length, unit:'ฟีดเดอร์', note:'≈80% ของ 400 A', go:'imax', st:I.imax.length?'crit':'good'},
+{lab:'แรงดันนอกช่วง 33 kV ±5%', val:I.kv.length, unit:'จุด', note:TH.KV_LO+'–'+TH.KV_HI+' kV', go:'kv', st:I.kv.length?'warn':'good'}
+];
+$('kpis').innerHTML=k.map(function(x){
+var ic = x.st==='crit'?'<span class="st crit">⛔</span> ':x.st==='warn'?'<span class="st warn">⚠</span> ':x.st==='good'?'<span class="st good">✓</span> ':'';
+return '<div class="card kpi'+(x.go?' click':'')+'"'+(x.go?' data-go="'+x.go+'"':'')+'><div class="lab">'+ic+esc(x.lab)+'</div><div class="val">'+x.val+'<small>'+x.unit+'</small></div><div class="note">'+x.note+'</div></div>';
+}).join('');
+document.querySelectorAll('.kpi.click').forEach(function(el){ el.onclick=function(){ document.querySelector('#tabs button[data-v=issues]').click(); setTimeout(function(){ var t=$('iss-'+el.dataset.go); if(t) t.scrollIntoView({behavior:'smooth'}); },50); }; });
+}
+/* ===== กราฟเส้น (SVG) ===== */
+function lineChart(el, labels, series, opt){
+opt=opt||{};
+var W=el.clientWidth||600, H=opt.h||260, P={l:46,r:12,t:10,b:28};
+var all=[]; series.forEach(function(s){ s.v.forEach(function(x){ if(x!=null) all.push(x); }); });
+if(!all.length){ el.innerHTML='<p class="muted">ไม่มีข้อมูล</p>'; return; }
+var mx=Math.max.apply(null,all), mn=opt.zero===false?Math.min.apply(null,all):0;
+var nice=niceScale(mn,mx,5);
+var x=function(i){ return P.l+(labels.length<2?0:i*(W-P.l-P.r)/(labels.length-1)); };
+var y=function(v){ return P.t+(H-P.t-P.b)*(1-(v-nice.min)/(nice.max-nice.min)); };
+var g='';
+nice.ticks.forEach(function(t){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="'+C('--grid')+'" stroke-width="1"/><text x="'+(P.l-6)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="11" fill="'+C('--text-muted')+'">'+fmt(t,nice.dec)+'</text>'; });
+var step=Math.max(1,Math.ceil(labels.length/(W/62)));
+labels.forEach(function(l,i){ var isLast=i===labels.length-1; if(isLast&&i%step!==0&&(labels.length-1)%step<step*0.6) return; if(i%step===0||isLast) g+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="'+(isLast?'end':i===0?'start':'middle')+'" font-size="11" fill="'+C('--text-muted')+'">'+esc(l)+'</text>'; });
+series.forEach(function(s){
+var d='', pen=false;
+s.v.forEach(function(v,i){ if(v==null){pen=false;return;} d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1); pen=true; });
+g+='<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="5 4"':'')+'/>';
+s.v.forEach(function(v,i){ var lone=v!=null&&(i===0||s.v[i-1]==null)&&(i===s.v.length-1||s.v[i+1]==null); if(lone) g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+s.c+'"/>'; });
+});
+g+='<line class="xh" x1="0" x2="0" y1="'+P.t+'" y2="'+(H-P.b)+'" stroke="'+C('--text-muted')+'" stroke-width="1" style="display:none"/><g class="dots"></g>';
+el.innerHTML='<svg width="'+W+'" height="'+H+'" role="img" aria-label="'+esc(opt.aria||'กราฟเส้น')+'">'+g+'<rect x="'+P.l+'" y="0" width="'+(W-P.l-P.r)+'" height="'+H+'" fill="transparent" class="hit"/></svg><div class="tip"></div>';
+var svg=el.querySelector('svg'), tip=el.querySelector('.tip'), xh=svg.querySelector('.xh'), dots=svg.querySelector('.dots');
+function hide(){ tip.style.display='none'; xh.style.display='none'; dots.innerHTML=''; }
+svg.querySelector('.hit').addEventListener('pointermove',function(e){
+var r=svg.getBoundingClientRect(), px=e.clientX-r.left;
+var i=Math.round((px-P.l)/((W-P.l-P.r)/Math.max(1,labels.length-1))); i=Math.max(0,Math.min(labels.length-1,i));
+xh.setAttribute('x1',x(i)); xh.setAttribute('x2',x(i)); xh.style.display='';
+var rows=series.map(function(s){return {s:s,v:s.v[i]};}).filter(function(o){return o.v!=null;}).sort(function(a,b){return b.v-a.v;});
+dots.innerHTML=rows.map(function(o){return '<circle cx="'+x(i)+'" cy="'+y(o.v)+'" r="4.5" fill="'+o.s.c+'" stroke="'+C('--surface-1')+'" stroke-width="2"/>';}).join('');
+tip.innerHTML='<b>'+esc(opt.tipLabels?opt.tipLabels[i]:labels[i])+'</b>'+(rows.length?rows.map(function(o){return '<div class="r"><span><i style="background:'+o.s.c+'"></i>'+esc(o.s.n)+'</span><span>'+fmt(o.v,opt.dec==null?1:opt.dec)+(opt.unit?' '+opt.unit:'')+'</span></div>';}).join(''):'<span class="muted">ไม่มีข้อมูลเดือนนี้</span>');
+tip.style.display='block';
+var tx=x(i)+14; if(tx+tip.offsetWidth>W) tx=x(i)-14-tip.offsetWidth;
+tip.style.left=tx+'px'; tip.style.top=Math.max(0,(e.clientY-r.top)-tip.offsetHeight/2)+'px';
+});
+svg.querySelector('.hit').addEventListener('pointerleave',hide);
+}
+function niceScale(mn,mx,n){
+if(mx===mn){ mx=mn+1; }
+var span=mx-mn, step=Math.pow(10,Math.floor(Math.log10(span/n))), e=span/n/step;
+step*= e>=5?10: e>=2?5: e>=1?2:1;
+var lo=Math.floor(mn/step)*step, hi=Math.ceil(mx/step)*step, t=[];
+for(var v=lo; v<=hi+step/2; v+=step) t.push(+v.toFixed(6));
+return {min:lo,max:hi,ticks:t,dec:step<1?(step<0.1?2:1):0};
+}
+function renderTrend(){
+var from = S.range ? Math.max(0,M.length-S.range) : 0;
+var idx=[]; for(var i=from;i<M.length;i++) idx.push(i);
+// กลุ่มเส้น: ทุกจังหวัด → แยกจังหวัด / เลือกจังหวัด → แยกสถานี (6 อันดับแรก + อื่นๆ) / เลือกสถานี → เส้นเดียว
+var keyOf, names;
+if (S.sub){ keyOf=function(){return S.sub;}; names=[S.sub]; }
+else if (S.prov){
+var last={}; rowsAt(S.m).filter(valid).forEach(function(r){ var s=F[r.f].sub; last[s]=(last[s]||0)+r.mw; });
+var top=Object.keys(last).sort(function(a,b){return last[b]-last[a];});
+var keep=top.slice(0, top.length>6?5:6);
+keyOf=function(f){ return keep.indexOf(f.sub)>=0?f.sub:'อื่นๆ'; };
+names=keep.concat(top.length>6?['อื่นๆ']:[]);
+} else {
+var ps={}; F.forEach(function(f){ps[f.prov]=1;});
+names=['Krabi','Phuket','Phang Nga','Surat Thani','Nakhon Si Thammarat','Trang'].filter(function(p){return ps[p];});
+keyOf=function(f){return f.prov;};
+}
+var series=names.map(function(n,k){ return { n: PROV_TH[n]||n, key:n, c: C(SERIES[k%SERIES.length]), v: [] }; });
+idx.forEach(function(m){
+var sum={}, cnt={};
+rowsAt(m).filter(valid).forEach(function(r){ var k=keyOf(F[r.f]); sum[k]=(sum[k]||0)+r.mw; cnt[k]=1; });
+series.forEach(function(s){ s.v.push(cnt[s.key]?sum[s.key]:null); });
+});
+$('trendTitle').textContent='แนวโน้ม Peak รวม ('+(S.type?TYPE_TH[S.type]:'ทุกประเภท')+') · '+scopeName();
+$('trendCap').textContent='ผลรวม Peak MW ของแต่ละจุดวัดในเดือน (ไม่ใช่ Peak พร้อมกัน) · จำนวนจุดวัดในไฟล์ต้นทางเพิ่มขึ้นตามปี ช่วงต่อรูปแบบไฟล์ (ก.ย. 67) อาจกระโดด · เส้นขาด = ไม่มีไฟล์เดือนนั้น';
+$('trendLegend').innerHTML = series.length>1 ? series.map(function(s){return '<span><i style="background:'+s.c+'"></i>'+esc(s.n)+'</span>';}).join('') : '';
+lineChart($('trend'), idx.map(function(m){return mLabel(M[m]);}), series, {unit:'MW', tipLabels: idx.map(function(m){return mLabelLong(M[m]);}), aria:'แนวโน้ม Peak รวมรายเดือน'});
+}
+function barChart(el, labels, vals, opt){
+opt=opt||{};
+var W=el.clientWidth||400, H=opt.h||220, P={l:34,r:8,t:10,b:26};
+var mx=Math.max.apply(null,vals.concat([1])), nice=niceScale(0,mx,4);
+var bw=(W-P.l-P.r)/vals.length, y=function(v){return P.t+(H-P.t-P.b)*(1-v/nice.max);};
+var g='';
+nice.ticks.forEach(function(t){ g+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="'+C('--grid')+'"/><text x="'+(P.l-5)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="11" fill="'+C('--text-muted')+'">'+t+'</text>'; });
+vals.forEach(function(v,i){
+var x0=P.l+i*bw+1, w=Math.max(2,bw-2), h=H-P.b-y(v), r=Math.min(4,w/2,h);
+if(v>0) g+='<path d="M'+x0+' '+(H-P.b)+'V'+(y(v)+r)+'Q'+x0+' '+y(v)+' '+(x0+r)+' '+y(v)+'H'+(x0+w-r)+'Q'+(x0+w)+' '+y(v)+' '+(x0+w)+' '+(y(v)+r)+'V'+(H-P.b)+'Z" fill="'+(opt.hi&&opt.hi(i)?C('--s2'):C('--s1'))+'"/>';
+if(i%3===0) g+='<text x="'+(x0+w/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="'+C('--text-muted')+'">'+labels[i]+'</text>';
+g+='<rect x="'+(P.l+i*bw)+'" y="'+P.t+'" width="'+bw+'" height="'+(H-P.t-P.b)+'" fill="transparent" data-i="'+i+'"/>';
+});
+el.innerHTML='<svg width="'+W+'" height="'+H+'" role="img" aria-label="'+esc(opt.aria||'')+'">'+g+'</svg><div class="tip"></div>';
+var tip=el.querySelector('.tip');
+el.querySelectorAll('rect[data-i]').forEach(function(rc){
+rc.addEventListener('pointerenter',function(){ var i=+rc.dataset.i; tip.innerHTML='<b>'+opt.tip(i)+'</b>'; tip.style.display='block'; var tx=P.l+i*bw+bw+6; if(tx+tip.offsetWidth>W) tx=P.l+i*bw-6-tip.offsetWidth; tip.style.left=tx+'px'; tip.style.top='10px'; });
+rc.addEventListener('pointerleave',function(){ tip.style.display='none'; });
+});
+}
+function renderHours(){
+var R=rowsAt(S.m).filter(function(r){return valid(r)&&r.ph!=null;});
+var h=new Array(24).fill(0); R.forEach(function(r){ h[Math.min(23,Math.floor(r.ph))]++; });
+var top=h.indexOf(Math.max.apply(null,h));
+$('hourCap').textContent=mLabelLong(M[S.m])+' · '+R.length+' จุดวัด · ช่วงที่พบมากสุด '+(top<10?'0':'')+top+':00–'+(top<9?'0':'')+(top+1)+':00 น. ('+h[top]+' จุด)';
+barChart($('hours'), h.map(function(_,i){return (i<10?'0':'')+i;}), h, { aria:'จำนวนจุดวัดตามชั่วโมงที่เกิด Peak', hi:function(i){return i>=18&&i<=21;}, tip:function(i){ return (i<10?'0':'')+i+':00–'+(i<9?'0':'')+(i+1)+':00 น. : '+h[i]+' จุด'; } });
+}
+function renderTop(){
+var R=rowsAt(S.m).filter(valid).sort(function(a,b){return b.mw-a.mw;}).slice(0,10);
+$('topCap').textContent=mLabelLong(M[S.m])+' · '+(S.type?TYPE_TH[S.type]:'ทุกประเภท')+' · '+scopeName()+' · กดแถบเพื่อดูประวัติ';
+var el=$('top'), W=el.clientWidth||600, rowH=26, H=R.length*rowH+6, L=Math.min(150,W*0.32), mx=Math.max.apply(null,R.map(function(r){return r.mw;}).concat([1]));
+var g='';
+R.forEach(function(r,i){
+var f=F[r.f], w=(W-L-70)*r.mw/mx, y0=i*rowH+4;
+g+='<g data-f="'+r.f+'" style="cursor:pointer"><rect x="0" y="'+y0+'" width="'+W+'" height="'+rowH+'" fill="transparent"/>'+
+'<text x="'+(L-8)+'" y="'+(y0+16)+'" text-anchor="end" font-size="12.5" fill="'+C('--text-primary')+'">'+esc(f.sub+' · '+f.name)+'</text>'+
+'<path d="M'+L+' '+(y0+4)+'H'+(L+Math.max(w-4,0))+'Q'+(L+w)+' '+(y0+4)+' '+(L+w)+' '+(y0+8)+'V'+(y0+rowH-10)+'Q'+(L+w)+' '+(y0+rowH-6)+' '+(L+Math.max(w-4,0))+' '+(y0+rowH-6)+'H'+L+'Z" fill="'+C('--s1')+'"/>'+
+'<text x="'+(L+w+6)+'" y="'+(y0+16)+'" font-size="12" fill="'+C('--text-secondary')+'">'+fmt(r.mw,2)+' MW</text></g>';
+});
+el.innerHTML=R.length?'<svg width="'+W+'" height="'+H+'" role="img" aria-label="10 อันดับโหลดสูงสุด">'+g+'</svg>':'<p class="muted">ไม่มีข้อมูล</p>';
+el.querySelectorAll('g[data-f]').forEach(function(n){ n.onclick=function(){ openDetail(+n.dataset.f); }; });
+}
+/* ===== ตารางฟีดเดอร์ ===== */
+var COLS=[
+{k:'sub',t:'สถานี',l:1},{k:'name',t:'ชื่อ',l:1},{k:'mw',t:'Peak MW',d:2},{k:'yoy',t:'เทียบปีก่อน',d:1},{k:'im',t:'Imax (A)',d:0},
+{k:'ub',t:'UB %',d:1},{k:'pf',t:'PF',d:2},{k:'kv',t:'kV',d:2},{k:'ph',t:'เวลา Peak'},{k:'lmw',t:'Light MW',d:2},{k:'sp',t:'24 เดือน',ns:1},{k:'area',t:'พื้นที่จ่ายไฟ',l:1}
+];
+function sparkline(fi, endM){
+var v=[]; for(var m=Math.max(0,endM-23); m<=endM; m++){ var r=byM[m].find(function(x){return x.f===fi;}); v.push(r&&valid(r)&&!(S.copy&&r.q===1)?r.mw:null); }
+var a=v.filter(function(x){return x!=null;}); if(a.length<2) return '';
+var mn=Math.min.apply(null,a), mx=Math.max.apply(null,a), W=80, H=20, d='', pen=false;
+v.forEach(function(x,i){ if(x==null){pen=false;return;} var X=i*W/(v.length-1), Y=H-2-(mx===mn?H/2:(x-mn)/(mx-mn)*(H-4)); d+=(pen?'L':'M')+X.toFixed(1)+' '+Y.toFixed(1); pen=true; });
+return '<svg class="spark" width="'+W+'" height="'+H+'"><path d="'+d+'" fill="none" stroke="'+C('--s1')+'" stroke-width="1.5"/></svg>';
+}
+function renderTable(){
+var m=S.m, py=prevYear(m), pm={};
+if(py>=0) byM[py].forEach(function(r){ if(valid(r)) pm[r.f]=r.mw; });
+var R=rowsAt(m).map(function(r){ var f=F[r.f]; return { r:r, f:r.f, sub:f.sub, name:f.name, area:f.area, mw:valid(r)?r.mw:null, yoy:(valid(r)&&pm[r.f]>0)?(r.mw-pm[r.f])/pm[r.f]*100:null, im:imax(r), ub:r.ub, pf:r.pf, kv:r.kv, ph:r.ph, lmw:r.lmw }; });
+if(S.q) R=R.filter(function(x){ return (x.sub+' '+x.name+' '+x.area).toLowerCase().indexOf(S.q)>=0; });
+R.sort(function(a,b){ var A=a[S.sort], B=b[S.sort]; if(A==null) return 1; if(B==null) return -1; return (A<B?-1:A>B?1:0)*S.dir; });
+$('tblCap').textContent=mLabelLong(M[m])+' · '+R.length+' จุดวัด · '+scopeName()+' · กดหัวคอลัมน์เพื่อเรียง · กดแถวเพื่อดูประวัติ';
+var th='<thead><tr>'+COLS.map(function(c){ return '<th class="'+(c.l?'l':'')+'" data-k="'+c.k+'">'+c.t+(S.sort===c.k?(S.dir<0?' ▼':' ▲'):'')+'</th>'; }).join('')+'</tr></thead>';
+var body=R.slice(0,400).map(function(x){
+return '<tr data-f="'+x.f+'">'+COLS.map(function(c){
+var v=x[c.k], s;
+if(c.k==='sp') s=sparkline(x.f,m);
+else if(c.k==='ph') s=hhmm(v);
+else if(c.k==='yoy') s=v==null?'–':'<span class="'+(v>=0?'delta-up':'delta-down')+'">'+(v>=0?'+':'')+fmt(v,1)+'%</span>';
+else if(c.k==='ub') s=v==null?'–':(v>TH.UB?'<span class="st warn">⚠ '+fmt(v,1)+'</span>':fmt(v,1));
+else if(c.k==='pf') s=v==null?'–':(v<TH.PF&&x.mw>=TH.PF_MIN_MW?'<span class="st warn">⚠ '+fmt(v,2)+'</span>':fmt(v,2));
+else if(c.k==='im') s=v==null?'–':(v>=TH.IMAX&&F[x.f].type==='Feeder'?'<span class="st crit">⛔ '+fmt(v,0)+'</span>':fmt(v,0));
+else if(c.k==='area') s='<span class="muted" title="'+esc(v)+'">'+esc(String(v||'').slice(0,40))+'</span>';
+else if(c.d!=null) s=fmt(v,c.d);
+else s=esc(v);
+if(c.k==='mw'&&x.r.q===2) s='<span class="badge" title="MW ไม่สอดคล้องกับกระแส">MW ผิดรูป</span>';
+return '<td class="'+(c.l?'l':'')+'">'+s+'</td>';
+}).join('')+'</tr>';
+}).join('');
+$('tbl').innerHTML=th+'<tbody>'+body+'</tbody>';
+$('tbl').querySelectorAll('th').forEach(function(h){ h.onclick=function(){ var k=h.dataset.k; if(k==='sp') return; if(S.sort===k) S.dir*=-1; else { S.sort=k; S.dir=(k==='sub'||k==='name'||k==='area')?1:-1; } renderTable(); }; });
+$('tbl').querySelectorAll('tbody tr').forEach(function(tr){ tr.onclick=function(){ openDetail(+tr.dataset.f); }; });
+}
+/* ===== จุดที่ต้องดูแล ===== */
+function renderIssues(){
+var I=issueSets(S.m);
+$('issueCap').textContent=mLabelLong(M[S.m])+' · '+(S.type?TYPE_TH[S.type]:'ทุกประเภท')+' · '+scopeName()+' · กดรายการเพื่อดูประวัติ';
+var cards=[
+{id:'imax',st:'crit',ic:'⛔',t:'กระแสสูง ≥ '+TH.IMAX+' A (ฟีดเดอร์)',L:I.imax,v:function(x){return fmt(x[1],0)+' A · '+fmt(x[0].mw,2)+' MW';}},
+{id:'ub',st:'warn',ic:'⚠',t:'Unbalance > '+TH.UB+'% (Iavg ≥ '+TH.UB_MIN_IAVG+' A)',L:I.ub,v:function(x){return fmt(x[1],1)+'% · '+[x[0].ia,x[0].ib,x[0].ic].join('/')+' A';}},
+{id:'pf',st:'warn',ic:'⚠',t:'Power Factor < '+TH.PF.toFixed(2),L:I.pf,v:function(x){return 'PF '+fmt(x[1],2)+' · '+fmt(x[0].mw,2)+' MW';}},
+{id:'kv',st:'warn',ic:'⚠',t:'แรงดันนอกช่วง ('+TH.KV_LO+'–'+TH.KV_HI+' kV)',L:I.kv,v:function(x){return fmt(x[1],2)+' kV';}},
+{id:'growth',st:'warn',ic:'▲',t:'โหลดโตเกิน '+TH.GROWTH+'% เทียบปีก่อน',L:I.growth,v:function(x){return '+'+fmt(x[1],1)+'% · '+fmt(x[0].mw,2)+' MW';}},
+{id:'bad',st:'',ic:'?',t:'ข้อมูล MW ผิดรูป (ตรวจต้นทาง)',L:I.bad,v:function(x){return fmt(x[0].mw,2)+' MW · '+[x[0].ia,x[0].ib,x[0].ic].join('/')+' A';}}
+];
+$('issues').innerHTML=cards.map(function(c){
+return '<div class="card issue" id="iss-'+c.id+'"><h3><span class="st '+c.st+'">'+c.ic+'</span>'+esc(c.t)+'<span class="count">'+c.L.length+'</span></h3><ul>'+
+(c.L.length?c.L.slice(0,100).map(function(x){ var f=F[x[0].f]; return '<li data-f="'+x[0].f+'"><span>'+esc(f.sub+' · '+f.name)+'</span><span>'+c.v(x)+'</span></li>'; }).join(''):'<li class="muted" style="cursor:default"><span><span class="st good">✓</span> ไม่พบ</span><span></span></li>')+'</ul></div>';
+}).join('');
+$('issues').querySelectorAll('li[data-f]').forEach(function(li){ li.onclick=function(){ openDetail(+li.dataset.f); }; });
+}
+/* ===== คุณภาพข้อมูล ===== */
+function renderQuality(){
+var rows=[];
+// เดือนที่ขาดในช่วง
+var first=M[0].split('-'), last=M[M.length-1].split('-'), y=+first[0], mo=+first[1], all=[];
+while(y<+last[0]||(y===+last[0]&&mo<=+last[1])){ all.push(y+'-'+(mo<10?'0':'')+mo); mo++; if(mo>12){mo=1;y++;} }
+all.reverse().forEach(function(ym){
+var m=M.indexOf(ym);
+if(m<0){ rows.push('<tr><td class="l">'+mLabelLong(ym)+'</td><td class="l"><span class="st crit">✕ ไม่มีไฟล์</span></td><td>–</td><td>–</td><td>–</td></tr>'); return; }
+var R=byM[m], cp=R.filter(function(r){return r.q===1;}).length, bad=R.filter(function(r){return r.q===2;}).length, pct=R.length?cp/R.length*100:0;
+rows.push('<tr><td class="l">'+mLabelLong(ym)+'</td><td class="l muted">'+esc(D.sources[m]||'')+'</td><td>'+R.length+'</td><td>'+(pct>=50?'<span class="st warn">⚠ '+fmt(pct,0)+'%</span>':fmt(pct,0)+'%')+'</td><td>'+bad+'</td></tr>');
+});
+$('qtbl').innerHTML='<thead><tr><th class="l">เดือน</th><th class="l">ไฟล์ต้นทาง</th><th>จุดวัด</th><th>คัดลอกจากเดือนก่อน</th><th>MW ผิดรูป</th></tr></thead><tbody>'+rows.join('')+'</tbody>';
+}
+/* ===== รายละเอียดจุดวัด ===== */
+function openDetail(fi){
+var f=F[fi], hist=[];
+for(var m=0;m<M.length;m++){ var r=byM[m].find(function(x){return x.f===fi;}); hist.push(r||null); }
+var ok=function(r){ return r && !(S.copy&&r.q===1); };
+var labels=M.map(mLabel), tl=M.map(mLabelLong);
+var cur=hist[S.m];
+var info=cur?('Peak '+fmt(cur.mw,2)+' MW · '+hhmm(cur.ph)+' น. · '+fmt(cur.kv,2)+' kV · PF '+fmt(cur.pf,2)+' · UB '+fmt(cur.ub,1)+'%'):'ไม่มีข้อมูลเดือนที่เลือก';
+$('panel').innerHTML='<div class="hd"><div><h2>'+esc(f.sub+' · '+f.name)+'</h2><div class="cap" style="margin:2px 0 0">'+esc((PROV_TH[f.prov]||f.prov)+' · '+(TYPE_TH[f.type]||f.type))+(f.area?' · '+esc(f.area):'')+'</div><div style="margin-top:6px;font-size:13.5px"><b>'+mLabelLong(M[S.m])+':</b> '+info+'</div></div><button class="close" onclick="closeDetail()">ปิด ✕</button></div>'+
+'<div class="card"><h2>Peak / Light (MW)</h2><div class="legend"><span><i style="background:'+C('--s1')+'"></i>Peak</span><span><i style="background:'+C('--s2')+'"></i>Light</span></div><div class="chart" id="dMW"></div></div>'+
+'<div class="card" style="margin-top:12px"><h2>กระแสแต่ละเฟสขณะ Peak (A)</h2><div class="legend"><span><i style="background:'+C('--s1')+'"></i>เฟส A</span><span><i style="background:'+C('--s2')+'"></i>เฟส B</span><span><i style="background:'+C('--s3')+'"></i>เฟส C</span></div><div class="chart" id="dI"></div></div>';
+$('drawer').classList.add('on');
+lineChart($('dMW'), labels, [
+{n:'Peak', c:C('--s1'), v:hist.map(function(r){return ok(r)&&valid(r)?r.mw:null;})},
+{n:'Light', c:C('--s2'), v:hist.map(function(r){return ok(r)&&r.q!==2?r.lmw:null;})}
+], {unit:'MW', dec:2, tipLabels:tl, h:220, aria:'Peak และ Light MW รายเดือน'});
+lineChart($('dI'), labels, [
+{n:'เฟส A', c:C('--s1'), v:hist.map(function(r){return ok(r)?r.ia:null;})},
+{n:'เฟส B', c:C('--s2'), v:hist.map(function(r){return ok(r)?r.ib:null;})},
+{n:'เฟส C', c:C('--s3'), v:hist.map(function(r){return ok(r)?r.ic:null;})}
+], {unit:'A', dec:0, tipLabels:tl, h:220, aria:'กระแสแต่ละเฟสรายเดือน'});
+}
+function closeDetail(){ $('drawer').classList.remove('on'); }
+boot();
+</script>
+</body>
+</html>
