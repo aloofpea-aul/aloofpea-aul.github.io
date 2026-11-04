@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ค้นหากฎหมายและระเบียบ กฟภ.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pea:#74045F;--pea2:#9b1b83;--pea-bg:#f7eef5;--ink:#1d1726;--sub:#6b6475;--line:#e8e2ea;
+  --bg:#f5f3f7;--card:#fff;--amber:#b7791f;--amber-bg:#fdf3e1;--red:#c0392b;--red-bg:#fdecea;
+  --green:#1e7b4f;--green-bg:#e6f4ec;--hl:#ffe58a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Sarabun',system-ui,sans-serif;font-size:15px}
+button{font-family:inherit;cursor:pointer}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:760px;margin:0 auto;background:var(--bg)}
+/* header */
+header{background:linear-gradient(135deg,var(--pea),var(--pea2));color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 14px 12px;flex:none}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.top .back{background:rgba(255,255,255,.16);border:0;color:#fff;width:34px;height:34px;border-radius:10px;font-size:18px;display:grid;place-items:center;text-decoration:none}
+.top h1{font-size:17px;margin:0;font-weight:600;line-height:1.2;flex:1}
+.top h1 small{display:block;font-weight:400;font-size:12px;opacity:.8}
+.sbox{position:relative}
+.sbox input{width:100%;border:0;border-radius:14px;padding:13px 44px 13px 42px;font:inherit;font-size:16px;color:var(--ink);outline:none;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.sbox .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.5}
+.sbox .clr{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:#eee;border-radius:50%;width:28px;height:28px;color:#555;display:none}
+.sbox.has .clr{display:block}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;border-radius:99px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.chip.on{background:#fff;color:var(--pea);border-color:#fff;font-weight:600}
+.chip .n{opacity:.7;font-size:11px;margin-left:3px}
+/* main */
+main{flex:1;overflow-y:auto;padding:12px 12px 90px;-webkit-overflow-scrolling:touch}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 10px;font-size:13px;color:var(--sub)}
+.bar b{color:var(--ink)}
+.bar select{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:#fff;color:var(--ink)}
+.notice{background:var(--amber-bg);color:#7a5210;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(30,10,40,.06);border:1px solid var(--line);cursor:pointer;transition:transform .08s}
+.card:active{transform:scale(.99)}
+.meta{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:6px;font-size:12px}
+.tag{border-radius:6px;padding:1px 7px;background:#f1edf3;color:var(--sub);white-space:nowrap}
+.tag.no{font-family:ui-monospace,monospace;font-size:11px;background:var(--pea-bg);color:var(--pea)}
+.tag.ext{background:#e8f0fb;color:#2457a5}
+.tag.int{background:var(--pea-bg);color:var(--pea)}
+.tag.cx{background:var(--red-bg);color:var(--red);font-weight:600}
+.tag.old{background:var(--amber-bg);color:var(--amber)}
+.title{font-size:15px;line-height:1.55;font-weight:500}
+.card.cxd .title{color:#8d8794;text-decoration:line-through;text-decoration-color:#c9c3cf}
+mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
+.cat{font-size:12px;color:var(--sub);margin-top:5px}
+.more{display:block;margin:10px auto;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 18px;color:var(--pea);font-weight:600}
+.empty{text-align:center;color:var(--sub);padding:40px 20px}
+.empty .big{font-size:40px}
+/* home */
+.sec{margin:6px 2px 8px;font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.sec span{font-weight:400;font-size:12px;color:var(--sub)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:#fff;border-radius:14px;padding:10px;border:1px solid var(--line);text-align:center;cursor:pointer}
+.stat b{display:block;font-size:22px;color:var(--pea)}
+.stat small{font-size:12px;color:var(--sub)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+.cbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;cursor:pointer;text-align:left;font-size:13px;line-height:1.3}
+.cbox .e{font-size:20px;flex:none}
+.cbox .c{flex:1}
+.cbox .c small{display:block;color:var(--sub);font-size:11px}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.sugg button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:13px;color:var(--ink)}
+/* bottom nav */
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav .in{display:flex;width:100%;max-width:760px}
+nav button{flex:1;border:0;background:none;padding:8px 0 9px;font-size:11px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .i{font-size:20px;line-height:1}
+nav button.on{color:var(--pea);font-weight:600}
+/* sheet */
+.ov{position:fixed;inset:0;background:rgba(20,10,30,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.ov.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:760px;margin:0 auto;background:#fff;border-radius:20px 20px 0 0;max-height:88dvh;overflow-y:auto;transform:translateY(100%);transition:transform .25s ease;z-index:11;padding:8px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet.show{transform:none}
+.grab{width:40px;height:5px;background:#ddd;border-radius:9px;margin:4px auto 12px}
+.sheet h2{font-size:18px;line-height:1.5;margin:6px 0 12px}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:6px 10px;font-size:14px;margin-bottom:14px}
+.kv dt{color:var(--sub)}
+.kv dd{margin:0}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:12px;font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.btn.pri{background:var(--pea);border-color:var(--pea);color:#fff;grid-column:1/-1}
+.btn.fav.on{background:#fff7d6;border-color:#f0d36b}
+.rel h3{font-size:14px;margin:6px 0 8px}
+.rel .card{padding:9px 12px}
+.rel .title{font-size:14px}
+.ftbar{font-size:12px;opacity:.9;margin-top:8px;display:flex;align-items:center;gap:8px}
+.ftbar .trk{flex:1;height:4px;background:rgba(255,255,255,.25);border-radius:9px;overflow:hidden}
+.ftbar .fil{height:100%;background:#ffd84d;width:0;transition:width .3s}
+.snip{font-size:13px;color:#4a4352;background:#faf7fb;border-left:3px solid var(--pea2);border-radius:6px;padding:6px 9px;margin-top:7px;line-height:1.6}
+.hits{font-size:11px;background:#fff3c4;color:#7a5a00;border-radius:6px;padding:1px 7px}
+.snips .snip{margin-bottom:6px}
+.flist a{display:block;padding:7px 0;border-bottom:1px solid var(--line);color:var(--pea);text-decoration:none;font-size:14px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:99px;font-size:13px;opacity:0;transition:opacity .2s;z-index:20;pointer-events:none}
+.toast.show{opacity:.92}
+/* filter sheet */
+.fgrp{margin-bottom:14px}
+.fgrp h4{margin:0 0 6px;font-size:13px;color:var(--sub);font-weight:600}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:13px;color:var(--ink)}
+.opt.on{background:var(--pea);border-color:var(--pea);color:#fff}
+.yr{display:flex;gap:8px;align-items:center}
+.yr select{flex:1;font:inherit;padding:8px;border:1px solid var(--line);border-radius:10px}
+.sw{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.sw input{width:20px;height:20px;accent-color:var(--pea)}
+@media(min-width:620px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="top">
+    <a class="back" href="#" id="hubBtn" title="กลับศูนย์รวมงาน">⌂</a>
+    <h1>ค้นหากฎหมายและระเบียบ<small>กฟภ. · <span id="totalTxt"></span> เอกสาร · ข้อมูลจากรายงานส่วนกลาง</small></h1>
+  </div>
+  <div class="sbox" id="sbox">
+    <span class="ico">🔍</span>
+    <input id="q" type="text" placeholder="พิมพ์คำค้น เช่น พรบ จัดซื้อ, ค่าเช่าบ้าน, PDPA" autocomplete="off" enterkeyhint="search">
+    <button class="clr" id="clr" aria-label="ล้าง">✕</button>
+  </div>
+  <div class="chips" id="quick"></div>
+  <div class="ftbar" id="ftbar"><span id="fttxt">กำลังเตรียมค้นในเนื้อหา…</span><span class="trk"><span class="fil" id="ftfil"></span></span></div>
+</header>
+<main id="main"></main>
+<nav><div class="in">
+  <button data-v="search" class="on"><span class="i">🔍</span>ค้นหา</button>
+  <button data-v="cats"><span class="i">🗂️</span>หมวด</button>
+  <button data-v="filter"><span class="i">⚙️</span>ตัวกรอง</button>
+  <button data-v="fav"><span class="i">⭐</span>ที่บันทึก</button>
+</div></nav>
+</div>
+<div class="ov" id="ov"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+window.onerror=function(m,s,l,c){var d=document.getElementById('main');if(d)d.innerHTML='<div class="empty"><div class="big">⚠️</div>เกิดข้อผิดพลาด: '+String(m).replace(/</g,'&lt;')+' ('+l+':'+c+')</div>'};
+document.getElementById('main').innerHTML='<div class="empty"><div class="big">⏳</div>กำลังเปิดระบบค้นหา…</div>';
+google.script.run.withSuccessHandler(function(code){var s=document.createElement('script');s.text=code;document.body.appendChild(s)})
+  .withFailureHandler(function(e){document.getElementById('main').innerHTML='<div class="empty">โหลดไม่สำเร็จ: '+e.message+'</div>'}).getAppJs();
+</script>
+
+</body>
+</html>
