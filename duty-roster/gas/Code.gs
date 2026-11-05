@@ -216,12 +216,14 @@ function migrateEmp2_() {
   props.setProperty('MIG_EMP2', '1');
 }
 /** เคลียร์คำขอลาเวรวันที่ 5 พ.ย. 69 (นทีธร↔ธวัชชัย เปลี่ยนแล้วเปลี่ยนคืน) ตามที่ หผ.ปร. สั่ง 5 พ.ย. 69 — ครั้งเดียว */
-function clear0511_() {
+function clear0511_() { clearReqs_('CLR0511', ['R261104095152I4C', 'R261104094541Y89']); clearReqs_('CLR0511B', ['R261105110836J7U']); }
+/** ลบคำขอตามรายการ (เรียงใหม่→เก่า) ครั้งเดียวต่อ flag — คืนตารางตามปกติของการลบ ไม่ส่ง LINE */
+function clearReqs_(flag, ids) {
   const props = PropertiesService.getScriptProperties();
-  if (props.getProperty('CLR0511')) return;
-  props.setProperty('CLR0511', 'run');
+  if (props.getProperty(flag)) return;
+  props.setProperty(flag, 'run');
   const who = { name: 'ระบบ (ตามคำสั่ง หผ.ปร.)', role: 'เคลียร์เวรวันที่ 5' }, out = [];
-  ['R261104095152I4C', 'R261104094541Y89'].forEach(function (id) {   // ลบรายการใหม่กว่าก่อน
+  ids.forEach(function (id) {   // ลบรายการใหม่กว่าก่อน
     reqDirty_();
     const r = reqRows_().filter(function (x) { return x.id === id; })[0];
     if (!r || r.status === 'ลบแล้ว') { out.push(id + ': ไม่มี/ลบแล้ว'); return; }
@@ -229,8 +231,8 @@ function clear0511_() {
     out.push(id + ': ' + (res.blocked ? 'ติด ' + res.blocked.map(function (b) { return b.id; }).join(',') : res.mismatch ? 'ตารางไม่ตรง' : res.note));
   });
   reqDirty_();
-  props.setProperty('CLR0511', out.join(' | '));
-  log_('system', 'เคลียร์เวร 5 พ.ย.', '2026-11', out.join(' | '));
+  props.setProperty(flag, out.join(' | '));
+  log_('system', 'เคลียร์คำขอ (' + flag + ')', '', out.join(' | '));
 }
 /** คืนตาราง ต.ค. 69 ของพุทธภงค์/นทีธร (คำขอถูกลบแบบไม่คืนตาราง 22 ต.ค.) — ทำเฉพาะเมื่อช่องยังเป็นแบบที่เปลี่ยนค้างไว้ */
 function fixPN2610_() {
