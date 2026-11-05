@@ -585,7 +585,7 @@ function outPerm_(b, k) {
   return { by: by, appr: false };
 }
 function outAuth_(b, k) { return outPerm_(b, k).by; }
-const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place'];
+const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew'];
 /** แก้ข้อมูลเวรที่ล็อกแล้ว (ผู้อนุมัติ) → ยกเลิก "รับแล้ว" ให้พิมพ์บัญชีลงนามใหม่ */
 function outUnlock_(k, P) { if (!P.appr) return; const R = reportsOf_(k.slice(0, 7))[k]; if (R && R.received) { repSetMeta_(k, { received: null }); log_(P.by, 'ยกเลิกรับเอกสาร (แก้ไฟดับ)', k.slice(0, 7), k); } }
 const OUT_HIST_F_ = { lvl: 'แรงดัน', off: 'เวลาไฟดับ', on: 'เวลาจ่ายไฟ', ws: 'เริ่มปฏิบัติงาน', we: 'เสร็จงาน', feeder: 'ฟีดเดอร์', place: 'สถานที่', cType: 'สาเหตุ', cData: 'สาเหตุย่อย', fix: 'การแก้ไข', cust: 'ผู้ใช้ไฟ', detail: 'รายละเอียด' };
@@ -607,6 +607,7 @@ function saveOutage_(b) {
   OUT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
   if (!Array.isArray(d.mats)) d.mats = [];
   d.mats = d.mats.filter(function (m) { return m && m.n && Number(m.q) > 0; }).map(function (m) { return { n: String(m.n).slice(0, 80), q: Number(m.q), u: String(m.u || '') }; });
+  d.crew = (Array.isArray(d.crew) ? d.crew : []).filter(function (c) { return c && c.n; }).slice(0, 12).map(function (c) { return { n: String(c.n).slice(0, 80), p: String(c.p || '').slice(0, 120) }; });   // ผู้ปฏิบัติงาน
   d.updated = new Date().toISOString(); d.by = by;
   const isNew = !cur;
   if (isNew) outHist_(d, by, 'new');
@@ -614,6 +615,7 @@ function saveOutage_(b) {
     const ch = [];
     Object.keys(OUT_HIST_F_).forEach(function (f) { const a = before[f] == null ? '' : String(before[f]), z = d[f] == null ? '' : String(d[f]); if (a !== z) ch.push({ f: f, from: a.slice(0, 60), to: z.slice(0, 60) }); });
     const da = (before.dev && before.dev.id) || '', dz = (d.dev && d.dev.id) || ''; if (da !== dz) ch.push({ f: 'dev', from: da, to: dz });
+    if (JSON.stringify(before.crew || []) !== JSON.stringify(d.crew)) ch.push({ f: 'crew', from: (before.crew || []).map(function (c) { return c.n; }).join(', ').slice(0, 60), to: d.crew.map(function (c) { return c.n; }).join(', ').slice(0, 60) });
     if (JSON.stringify(before.mats || []) !== JSON.stringify(d.mats)) ch.push({ f: 'mats', from: '', to: d.mats.map(function (m) { return m.n + '×' + m.q; }).join(', ').slice(0, 60) });
     if (ch.length) outHist_(d, by, 'edit', { ch: ch });
   }
