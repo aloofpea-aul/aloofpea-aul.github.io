@@ -136,6 +136,11 @@ main .card,.tkc{scroll-margin-top:62px}.tkc{padding:10px 12px;border-left:4px so
 .mini td,.mini th{border:1px solid var(--line);padding:2px 3px;text-align:center;min-width:22px;white-space:nowrap}
 .mini td.nm{text-align:left;min-width:80px;position:sticky;left:0;background:#fff}
 .mini .off{background:var(--off)}.mini .hol{background:#DCE5F6}
+.dwrap{position:relative;display:block;width:100%;min-width:0}
+.dwrap>input[type=date]{color:transparent!important}
+.dwrap>input[type=date]::-webkit-datetime-edit{color:transparent}
+.dwrap>.dtx{position:absolute;left:11px;right:34px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dwrap>.dtx.ph{color:#9A93A6}
 input[type=text],input[type=date],input[type=number],input[type=password],select{height:42px;border-radius:10px;border:1px solid #CFC6D6;padding:0 10px;background:#fff;color:var(--ink);width:100%}
 label.f,div.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}
 .hrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #F0ECF3}
@@ -1673,7 +1678,13 @@ async function drawDocs(k){
     PA.innerHTML=(mo.data.insp&&mo.data.insp.length)?inspOrderPage(key,mo.data,cfg,signerOf()):'<div class="note">เดือนนี้ยังไม่มีตารางผู้ตรวจเวร</div>';
     return;
   }
-  const L=await leaveItems(key);
+  let L=await leaveItems(key);
+  /* เปิดเอกสารฉบับที่ระบุ (จาก LINE / ประวัติ) แต่ข้อมูลในเครื่องยังเก่า (เพิ่งอนุมัติจากเครื่องอื่น) → ดึงใหม่จากระบบทันที */
+  if(want.id&&!L.items.concat(L.drafts).some(x=>x.req.id===want.id)){
+    PA.innerHTML='<div class="note">กำลังโหลดเอกสารล่าสุด…</div>';
+    forgetMonth(key); forgetMonth(nextKey(key)); if(S.mr) delete S.mr[key]; LS.del('mr_'+key); S.pending=null;
+    L=await leaveItems(key);
+  }
   if(k==='leavelog'){ PA.innerHTML=leaveLogPages(key,L.items,cfg); return; }
   $$('.rLeave').forEach(e=>e.classList.remove('hide'));
   const ap=(L.mo.data.approval)||{}; if(document.activeElement!==$('rApNo')) $('rApNo').value=ap.no||''; if(document.activeElement!==$('rApDate')) $('rApDate').value=ap.date||'';
@@ -1711,7 +1722,7 @@ function memoPage(key,x,ap,cfg,sgn,draft){
     <div class="ck">${bx(w.k==='sick')}ลาป่วย ${bx(w.k==='errand')}ลากิจ ${bx(w.k==='vacation')}ลาพักผ่อน ${bx(w.k==='private')}ธุระส่วนตัว</div>
     <div class="ck">${bx(w.k==='official')}ปฏิบัติงานราชการตามคำสั่งที่ ${w.k==='official'?V(THD(w.order))+' ลงวันที่ '+V(THD(isoLong(w.orderDate))):V('',40)+' ลงวันที่ '+V('',35)}</div>
     <div>ทำให้ไม่มีพนักงานปฏิบัติงานในช่วงเวลาดังกล่าว</div>
-    <p class="ind">ดังนั้น เพื่อให้งานปฏิบัติการระบบไฟฟ้าเป็นไปด้วยความเรียบร้อย แผนกปฏิบัติการระบบไฟฟ้ามีความประสงค์ให้พนักงานปฏิบัติงานแทนเวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามรายชื่อดังต่อไปนี้ โดยมีสิทธิ์เบิกค่าตอบแทนการอยู่เวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามระเบียบของ กฟภ.</p>
+    <p class="ind">ดังนั้น เพื่อให้งานปฏิบัติการระบบไฟฟ้าเป็นไปด้วยความเรียบร้อย แผนกปฏิบัติการระบบไฟฟ้า มีความประสงค์ให้พนักงานปฏิบัติงานแทนเวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามรายชื่อดังต่อไปนี้ โดยมีสิทธิ์เบิกค่าตอบแทนการอยู่เวรปฏิบัติการระบบไฟฟ้ารูปแบบ Standby ตามระเบียบของ กฟภ.</p>
     <div class="it"><span class="no">๑.</span><div>ชื่อ-สกุล ${V(B.full)} &nbsp;เลขประจำตัว ${V(THD(B.id),18)}<br>ตำแหน่ง ${V(THD(B.pos),45)}<br>ปฏิบัติงานแทน${x.sb?' <b>เวรเตรียมพร้อม</b> (ต่อจากช่วง ๓)':''} ในวันที่ ${V(THD(rangeLong(x.a,x.b)))} &nbsp;ระหว่างเวลา ${V(tm(x.s)+' – '+tm(x.e)+' น.')}</div></div>
     <p class="ind">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</p>
     <div class="sig" style="margin-left:72mm;margin-top:7mm">(ลงชื่อ) ..............................................<br>( ${esc(A.full)} )<br>${A.pos?esc(THD(A.pos))+'<br>':''}ผู้มอบเวร</div>
@@ -2170,6 +2181,21 @@ $('sSave').onclick=async()=>{
     if(!S.boot){ use(j); show(view); }
     else if(JSON.stringify(j)!==JSON.stringify(cached)){ use(j); $('dMonth').innerHTML=''; refreshView(); }
   }catch(e){ if(!S.boot) $('boot').innerHTML='โหลดข้อมูลไม่ได้: '+esc(e.message)+'<br><small>ลองรีเฟรชอีกครั้ง</small>'; }
+})();
+</script>
+<script>
+/* ช่องวันที่: แสดงแบบ วัน เดือน ปี (พ.ศ.) แทนรูปแบบของเครื่อง (บางเครื่องเป็น เดือน/วัน/ปี) — กดแล้วยังเปิดปฏิทินของเครื่องเหมือนเดิม */
+(function(){
+  const TM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const fmt=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');return m?(+m[3])+' '+TM[+m[2]-1]+' '+(+m[1]+543):'';};
+  const paint=i=>{const t=i.parentNode&&i.parentNode.querySelector(':scope>.dtx');if(!t)return;const f=fmt(i.value);if(t.textContent!==(f||'วัน เดือน ปี')){t.textContent=f||'วัน เดือน ปี';t.classList.toggle('ph',!f);}};
+  const wrap=i=>{if(i.dataset.thd)return;i.dataset.thd=1;const w=document.createElement('span');w.className='dwrap';
+    if(i.style.flex){w.style.flex=i.style.flex;i.style.flex='';}
+    i.parentNode.insertBefore(w,i);w.appendChild(i);const t=document.createElement('span');t.className='dtx';w.appendChild(t);try{t.style.fontSize=getComputedStyle(i).fontSize;}catch(e){}
+    ['input','change'].forEach(e=>i.addEventListener(e,()=>paint(i)));paint(i);};
+  const scan=()=>document.querySelectorAll('input[type=date]:not([data-thd])').forEach(wrap);
+  new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); scan();
+  setInterval(()=>document.querySelectorAll('input[type=date][data-thd]').forEach(paint),600);   // ค่าที่โปรแกรมตั้งให้
 })();
 </script>
 </body>
