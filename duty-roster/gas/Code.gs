@@ -215,6 +215,23 @@ function migrateEmp2_() {
   for (let i = 1; i < v.length; i++) if (v[i][si] === 'ธวัชชัย') { sh.getRange(i + 1, pi + 1).setValue('พชง.6 รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'); log_('system', 'แก้ตำแหน่ง', '', 'ธวัชชัย → พชง.6 รักษาการแทน ชผ.ปร.กฟส.อ่าวลึก'); }
   props.setProperty('MIG_EMP2', '1');
 }
+/** เคลียร์คำขอลาเวรวันที่ 5 พ.ย. 69 (นทีธร↔ธวัชชัย เปลี่ยนแล้วเปลี่ยนคืน) ตามที่ หผ.ปร. สั่ง 5 พ.ย. 69 — ครั้งเดียว */
+function clear0511_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('CLR0511')) return;
+  props.setProperty('CLR0511', 'run');
+  const who = { name: 'ระบบ (ตามคำสั่ง หผ.ปร.)', role: 'เคลียร์เวรวันที่ 5' }, out = [];
+  ['R261104095152I4C', 'R261104094541Y89'].forEach(function (id) {   // ลบรายการใหม่กว่าก่อน
+    reqDirty_();
+    const r = reqRows_().filter(function (x) { return x.id === id; })[0];
+    if (!r || r.status === 'ลบแล้ว') { out.push(id + ': ไม่มี/ลบแล้ว'); return; }
+    const res = deleteRequest_(id, false, who);
+    out.push(id + ': ' + (res.blocked ? 'ติด ' + res.blocked.map(function (b) { return b.id; }).join(',') : res.mismatch ? 'ตารางไม่ตรง' : res.note));
+  });
+  reqDirty_();
+  props.setProperty('CLR0511', out.join(' | '));
+  log_('system', 'เคลียร์เวร 5 พ.ย.', '2026-11', out.join(' | '));
+}
 /** คืนตาราง ต.ค. 69 ของพุทธภงค์/นทีธร (คำขอถูกลบแบบไม่คืนตาราง 22 ต.ค.) — ทำเฉพาะเมื่อช่องยังเป็นแบบที่เปลี่ยนค้างไว้ */
 function fixPN2610_() {
   const props = PropertiesService.getScriptProperties();
@@ -391,6 +408,7 @@ function doGet(e) {
     if (a === 'bootstrap') {
       try { migrateInsp_(); migrateEmp_(); migrateEmp2_(); migrateOut_(); fixPN2610_(); cleanSwap2610_(); } catch (e) {}
       try { sbPairFix2610_(); } catch (e) { log_('system', 'ปรับเตรียมพร้อมย้อนหลังไม่สำเร็จ', '2026-10', String(e)); }
+      try { clear0511_(); } catch (e) { log_('system', 'เคลียร์เวร 5 พ.ย. ไม่สำเร็จ', '2026-11', String(e)); }
       const cfg = getConfig_();
       delete cfg.lineRegCode;
       return json_({ ok: true, config: cfg, people: getPeople_(), holidays: getHolidays_(), months: monthList_(),

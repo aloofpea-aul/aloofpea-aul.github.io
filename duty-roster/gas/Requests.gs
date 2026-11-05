@@ -201,6 +201,7 @@ function createRequest_(b, who) {
   const test = JSON.parse(JSON.stringify(mo.data));
   const dup = dupOf_(b.month, b.type, b.payload);
   if (dup) throw new Error('มีรายการนี้อยู่แล้ว: ' + dup.text + ' — ' + (dup.status === 'อนุมัติ' ? 'อนุมัติเมื่อ ' + fmtTime_(dup.decidedAt) : 'รออนุมัติอยู่') + ' · ไม่ต้องยื่นซ้ำ (ถ้าต้องการยกเลิก ให้ลบรายการนั้น)');
+  const lk = lockOf_(b.month, b.type, b.payload); if (lk) throw new Error(lk);
   const nx = b.payload.g === 'emp' ? getMonth_(nextKey_(b.month)) : null;
   const tch = applyOps_(test, ops, nx && JSON.parse(JSON.stringify(nx.data)));   // ตรวจก่อนบันทึก
   const text = describe_(b.month, b.type, b.payload, mo.data) + sbNote_(b.month, tch);
@@ -219,6 +220,7 @@ function decideRequest_(id, approve, who, note) {
   if (r.status !== 'รออนุมัติ') throw new Error('คำขอนี้' + r.status + 'ไปแล้ว');
   let changes = [];
   if (approve) {
+    const lk = lockOf_(r.month, r.type, r.payload, r.id); if (lk) throw new Error(lk);
     const mo = getMonth_(r.month), nk = nextKey_(r.month), nx = r.payload.g === 'emp' ? getMonth_(nk) : null;
     changes = applyOps_(mo.data, buildOps_(r.type, r.payload), nx && nx.data);   // ตรวจซ้ำกับตารางล่าสุด
     const stamp = function (c) { return Object.assign({ req: id, by: who.name, at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') }, c); };
@@ -384,6 +386,25 @@ function saveReport_(b) {
 function slotKey_(type, p) {
   const sl = type === 'swap' ? [p.a + '@' + Number(p.da), p.b + '@' + Number(p.db)].sort().join('&') : p.a + '@' + Number(p.d) + (p.part ? '#' + p.part : '') + '>' + p.r;
   return type + '|' + p.g + '|' + sl;
+}
+/** วันละครั้ง: วัน/คนเดียวกันที่มีคำขอ (รออนุมัติ/อนุมัติ) อยู่แล้ว ห้ามเปลี่ยนซ้ำ — ต้องให้ผู้อนุมัติลบคำขอเดิมก่อน */
+function reqSlots_(type, p) {
+  const ppl = type === 'swap' ? [p.a, p.b] : [p.a, p.r];
+  const days = type === 'swap' ? [Number(p.da), Number(p.db)] : [Number(p.d)];
+  const parts = type === 'leave' && p.part ? [String(p.part)] : ['1', '2', '3'];   // ลาเฉพาะช่วง 2/3 ไม่ทับช่วงอื่นของวันเดียวกัน
+  return { g: p.g, ppl: ppl, parts: parts, days: days.filter(function (d, i, a) { return a.indexOf(d) === i; }) };
+}
+function lockOf_(month, type, p, exceptId) {
+  const me = reqSlots_(type, p);
+  const hit = reqRows_().filter(function (r) {
+    if (r.id === exceptId || r.month !== month || (r.status !== 'อนุมัติ' && r.status !== 'รออนุมัติ')) return false;
+    const o = reqSlots_(r.type, r.payload);
+    return o.g === me.g && o.days.some(function (d) { return me.days.indexOf(d) >= 0; }) && o.ppl.some(function (n) { return me.ppl.indexOf(n) >= 0; })
+      && o.parts.some(function (x) { return me.parts.indexOf(x) >= 0; });
+  })[0];
+  if (!hit) return null;
+  const o = reqSlots_(hit.type, hit.payload), d = o.days.filter(function (x) { return me.days.indexOf(x) >= 0; })[0];
+  return 'วันที่ ' + d + ' มีการเปลี่ยนเวรไปแล้ว 1 ครั้ง (' + hit.text + ' — ' + hit.status + ') · วันหนึ่งเปลี่ยนได้ครั้งเดียว ถ้าต้องการแก้ ให้ผู้อนุมัติลบคำขอเดิมก่อน แล้วยื่นใหม่';
 }
 function dupOf_(month, type, p) {
   const k = slotKey_(type, p);
