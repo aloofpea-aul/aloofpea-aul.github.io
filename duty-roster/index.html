@@ -163,6 +163,13 @@ nav.bot button.pop svg{animation:navPop .32s ease-out}
 @media (prefers-reduced-motion:reduce){nav.bot button.pop svg{animation:none}}
 .dot{position:absolute;top:6px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:#C0392B;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
 .rq{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.btn.ret{background:#FFF6E3;color:#8A5A00;border:1.5px solid #E0A23A}.dlg .btn.ret,#rtGo{background:#E0A23A;color:#fff;border:0}
+.st.rt,.st.rs{border-radius:999px;padding:1px 9px}
+.st.rt{align-self:flex-start;background:#FFF0D2;color:#8A5A00}.st.rs{align-self:flex-start;background:#EEDDF3;color:#5C1A63}
+.rhist{border-left:3px solid #E3DCEA;padding-left:9px;font-size:12.5px;line-height:1.6;color:#4A4356}
+.dlg .chips{display:flex;flex-wrap:wrap;gap:6px}.dlg .ch{border:1.5px solid #E2C27F;border-radius:999px;padding:5px 10px;background:#fff;font:inherit;font-size:13px}.dlg .ch.on{background:#E0A23A;color:#fff;border-color:#E0A23A}
+.dlg textarea{width:100%;box-sizing:border-box;border:1px solid #CFC6D6;border-radius:10px;padding:8px;font:inherit}
 .rq .tx{font-size:14px;font-weight:600;line-height:1.5}
 .st{font-size:12px;font-weight:700}
 .st.ok{color:#1F5A2A}.st.no{color:#8A2B2B}
@@ -400,7 +407,8 @@ fieldset:disabled{opacity:.55}
   <!-- ============ คำขอเปลี่ยน/ลาเวร ============ -->
   <main id="viewReq" class="hide">
     <div class="card">
-      <h3>ยื่นคำขอ</h3>
+      <h3 id="qTitle">ยื่นคำขอ</h3>
+      <div id="qRetBox" class="note warn hide" style="margin-bottom:8px"></div>
       <div class="seg light" id="qType"><button data-t="leave" class="on">ลาเวร · หาคนแทน</button><button data-t="swap">แลกเวร</button></div>
       <div class="grid2" style="margin-top:10px">
         <label class="f">เดือน<select id="qMonth"></select></label>
@@ -428,6 +436,10 @@ fieldset:disabled{opacity:.55}
       <label class="f hide" id="qPinWrap" style="margin-top:6px">PIN ผู้อนุมัติ<input type="password" id="qPin" inputmode="numeric" autocomplete="off"></label>
       <button class="btn" id="qSubmit" style="width:100%;margin-top:10px">ส่งคำขอ</button>
       <div id="qMsg" style="margin-top:8px"></div>
+    </div>
+    <div class="card hide" id="rtCard">
+      <h3 style="margin:0 0 8px">↩ ตีกลับ — รอผู้ขอแก้ไข</h3>
+      <div id="rtList" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between"><h3 style="margin:0">รออนุมัติ</h3><span class="muted" id="pnApprovers"></span></div>
@@ -2046,12 +2058,14 @@ $('qSubmit').onclick=async()=>{
   const det=$('qReason').value.trim();
   const reason=WHY[wk]+(wk==='official'?' ตามคำสั่งที่ '+payload.why.order:'')+(det?' — '+det:'');
   const body={action:'request',month:key,type:S.qType,payload,requester:a,reason};
-  if($('qNow').checked){body.approveNow=true;body.pin=$('qPin').value;}
+  if(S.retId){ body.action='resubmitRequest'; body.id=S.retId; }
+  else if($('qNow').checked){body.approveNow=true;body.pin=$('qPin').value;}
   $('qSubmit').disabled=true; msg('qMsg','กำลังส่ง…');
   const before=new Set(Object.keys(S.reqAll||{}));
   const t0=Date.now(), tick=setInterval(()=>msg('qMsg','กำลังส่ง… '+Math.round((Date.now()-t0)/1000)+' วินาที'+(Date.now()-t0>20e3?' (Google ตอบช้ากว่าปกติ รอสักครู่)':'')),1000);
   try{ const j=await apiPost(body); clearInterval(tick); forgetMonth(key);
-    msg('qMsg',j.request.status==='อนุมัติ'?'แก้ไขตารางแล้ว และแจ้ง LINE ผู้เกี่ยวข้อง':'ส่งคำขอแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ');
+    if(S.retId){ retClear(); }
+    msg('qMsg',body.action==='resubmitRequest'?'ส่งคำขอที่แก้ไขแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ':j.request.status==='อนุมัติ'?'แก้ไขตารางแล้ว และแจ้ง LINE ผู้เกี่ยวข้อง':'ส่งคำขอแล้ว — รอ หผ.ปร. / ชผ. อนุมัติ');
     $('qReason').value=''; $('qOrder').value=''; $('qOrderDate').value=''; LS.del('mr_'+key); if(S.mr) delete S.mr[key];
     loadRequests(j.requests).catch(()=>{}); qForm('month').catch(()=>{});
   }catch(e){ clearInterval(tick);
@@ -2071,13 +2085,24 @@ async function loadRequests(pre){
 }
 function paintRequests(R){
   setDot(R.pending.length); S.pending=R.pending;
-  $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq"><div class="tx">${esc(r.text)}</div>
+  $('pnList').innerHTML=R.pending.length?R.pending.map(r=>`<div class="rq">${r.payload&&r.payload.rs?`<span class="st rs">รออนุมัติ · ส่งใหม่ครั้งที่ ${r.payload.rs}</span>`:''}<div class="tx">${esc(r.text)}</div>
       <div class="muted">ผู้ขอ ${esc(r.requester)} · ${r.payload&&r.payload.docDate?'วันที่เสนอ '+esc(thDate(r.payload.docDate))+' · ':''}ยื่นในระบบ ${esc(r.createdAt)}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
       ${r.payload&&r.payload.g==='emp'&&(r.type==='leave'||r.type==='swap')?`<button class="btn ghost" style="height:38px;width:100%;margin-bottom:6px" data-prev="${esc(r.id)}" data-pm="${esc(r.month)}">👁 ดูตัวอย่างบันทึกลาเวร (ร่าง)</button>`:''}
-      <div class="grid2"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div>
+      ${retHist(r)}
+      <div class="grid3"><button class="btn red" data-id="${esc(r.id)}" data-ok="0">ไม่อนุมัติ</button><button class="btn ret" data-ret="${esc(r.id)}">↩ ตีกลับแก้ไข</button><button class="btn" data-id="${esc(r.id)}" data-ok="1">อนุมัติ</button></div>
       <button class="btn ghost" style="height:34px;font-size:12px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบรายการ</button></div>`).join('')
     :'<div class="muted">ไม่มีคำขอค้าง</div>';
   $('pnList').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.ok==='1'));
+  $('pnList').querySelectorAll('button[data-ret]').forEach(b=>b.onclick=()=>retDialog(R.pending.find(x=>x.id===b.dataset.ret)));
+  const RT=R.returned||[]; S.returned=RT; $('rtCard').classList.toggle('hide',!RT.length);
+  $('rtList').innerHTML=RT.map(r=>`<div class="rq"><span class="st rt">↩ ตีกลับ — รอ ${esc(r.requester)} แก้ไข</span><div class="tx">${esc(r.text)}</div>
+      <div class="note warn" style="margin:0">${esc(r.note||'')}<div class="muted">โดย ${esc(r.decidedBy)} · ${esc(r.decidedAt)}</div></div>
+      <div class="grid2"><button class="btn ghost red" data-rtc="${esc(r.id)}">ยกเลิกคำขอนี้</button><button class="btn" data-rte="${esc(r.id)}">✎ แก้ไขแล้วส่งใหม่</button></div></div>`).join('');
+  $('rtList').querySelectorAll('[data-rte]').forEach(b=>b.onclick=()=>retEdit(RT.find(x=>x.id===b.dataset.rte)));
+  $('rtList').querySelectorAll('[data-rtc]').forEach(b=>b.onclick=async()=>{ const r=RT.find(x=>x.id===b.dataset.rtc);
+    if(!confirm('ยกเลิกคำขอนี้?\n'+r.text)) return; b.disabled=true;
+    try{ const j=await apiPost({action:'cancelReturned',id:r.id,by:r.requester}); if(S.retId===r.id) retClear(); toast('ยกเลิกคำขอแล้ว'); loadRequests(j.requests); }catch(e){ b.disabled=false; alert(e.message); } });
+  if(S.retWant){ const w=RT.find(x=>x.id===S.retWant); S.retWant=null; if(w) setTimeout(()=>retEdit(w),50); }
   $('pnList').querySelectorAll('button[data-prev]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.prev};show('viewReport');});
   setTimeout(()=>$('hsList').querySelectorAll('button[data-pid]').forEach(b=>b.onclick=()=>{S.rPreset={kind:'leave',m:b.dataset.pm,id:b.dataset.pid};show('viewReport');}),0);
   S.reqAll={}; [...R.pending,...R.done].forEach(r=>S.reqAll[r.id]=r);
@@ -2163,6 +2188,46 @@ function editReq(r){
   };
   bg.onclick=e=>{if(e.target===bg)bg.remove();}; draw();
 }
+/* ---------- ตีกลับให้แก้ไข ---------- */
+const RET_IT={r:'เปลี่ยนคนแทน',d:'วัน/ช่วงไม่ถูก',why:'เหตุผลไม่ชัด',doc:'วันที่เสนอ/ผู้ลงนาม',o:'อื่น ๆ'};
+function retHist(r){ const H=(r.payload&&r.payload.hist)||[]; if(!H.length) return '';
+  return `<div class="rhist">${H.map(h=>`<div>${esc((+h.at.slice(8,10))+'/'+(+h.at.slice(5,7))+' '+h.at.slice(11,16))} ${h.act==='ret'?'↩ ตีกลับ: '+esc((h.items||[]).map(k=>RET_IT[k]).filter(Boolean).join(' · ')||'')+(h.note?' — '+esc(h.note):'')+' ('+esc(h.by)+')':'✎ แก้ไขแล้วส่งใหม่ ('+esc(h.by)+')'+((h.ch||[]).length?'<br><b>เปลี่ยน: '+esc(h.ch.join(' · '))+'</b>':' · ไม่ได้เปลี่ยนรายการเวร')}</div>`).join('')}</div>`; }
+function retDialog(r){
+  if(!r) return; const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');$('pnPin').focus();return;}
+  const sel=new Set(), bg=document.createElement('div'); bg.className='dlgBg';
+  bg.innerHTML=`<div class="dlg" role="dialog" aria-modal="true"><h3>↩ ตีกลับให้แก้ไข</h3><div class="tx">${esc(r.text)}</div>
+    <div class="muted">ต้องแก้อะไร (เลือกได้หลายข้อ)</div><div class="chips">${Object.entries(RET_IT).map(([k,l])=>`<button type="button" class="ch" data-k="${k}">${l}</button>`).join('')}</div>
+    <textarea id="rtNote" rows="3" placeholder="อธิบายสิ่งที่ต้องแก้ เช่น ${esc(r.payload&&r.payload.r?r.payload.r:'คนแทน')}มีเวรต่อกัน ให้หาคนแทนคนอื่น"></textarea>
+    <div class="muted" style="font-size:12px">ส่ง LINE ถึง ${esc(r.payload&&r.payload.a||r.requester)} · ตารางเวรยังไม่เปลี่ยน · ไม่แก้ภายใน 3 วันระบบยกเลิกให้</div>
+    <div id="rtMsg"></div><div class="grid2"><button class="btn ghost" id="rtNo">ปิด</button><button class="btn ret" id="rtGo">ส่งกลับให้แก้ไข</button></div></div>`;
+  document.body.appendChild(bg);
+  bg.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ sel.has(b.dataset.k)?sel.delete(b.dataset.k):sel.add(b.dataset.k); b.classList.toggle('on'); });
+  const close=()=>bg.remove(); $('rtNo').onclick=close; bg.onclick=e=>{if(e.target===bg)close();};
+  $('rtGo').onclick=async()=>{ const note=$('rtNote').value.trim(); if(!note){msg('rtMsg','พิมพ์สิ่งที่ต้องแก้ไขก่อน','warn');return;}
+    $('rtGo').disabled=true; $('rtGo').innerHTML='<span class="spin"></span>กำลังส่ง…';
+    try{ const j=await apiPost({action:'returnRequest',id:r.id,pin,items:[...sel],note}); close(); toast('ตีกลับแล้ว — แจ้ง LINE ผู้ขอแล้ว'); loadRequests(j.requests); }
+    catch(e){ $('rtGo').disabled=false; $('rtGo').textContent='ส่งกลับให้แก้ไข'; msg('rtMsg',e.message,'err'); } };
+}
+function retClear(){ S.retId=null; $('qRetBox').classList.add('hide'); $('qTitle').textContent='ยื่นคำขอ'; $('qSubmit').textContent='ส่งคำขอ'; $('qNow').closest('label').classList.remove('hide'); }
+async function retEdit(r){
+  if(!r) return; const p=r.payload||{};
+  if(currentView()!=='viewReq') show('viewReq');
+  await new Promise(x=>setTimeout(x,300));   // รอฟอร์มตั้งต้นเสร็จก่อนเติมค่า
+  S.retId=r.id; S.qType=r.type; document.querySelectorAll('#qType button').forEach(x=>x.classList.toggle('on',x.dataset.t===r.type));
+  if(![...$('qMonth').options].some(o=>o.value===r.month)) $('qMonth').add(new Option(monthLabel(r.month),r.month));
+  $('qMonth').value=r.month; $('qGroup').value=p.g||'emp';
+  await qForm('month'); $('qA').value=p.a; await qForm('a');
+  $('qDa').value=String(r.type==='swap'?p.da:p.d); S.qPart=p.part||''; await qForm('da');
+  if(r.type==='swap'){ $('qB').value=p.b; await qForm('b'); $('qDb').value=String(p.db); await qForm('db'); }
+  else { $('qCont').checked=!!p.cont; await qForm('cont'); if([...$('qR').options].some(o=>o.value===p.r)) $('qR').value=p.r; await qForm('r'); }
+  const w=p.why||{}; if(w.k) $('qWhy').value=w.k; $$('.qOrd').forEach(e=>e.classList.toggle('hide',$('qWhy').value!=='official'));
+  $('qOrder').value=w.order||''; $('qOrderDate').value=w.orderDate||''; $('qDocDate').value=p.docDate||todayIso();
+  const det=String(r.reason||'').split(' — ').slice(1).join(' — '); $('qReason').value=det;
+  $('qTitle').textContent='✎ แก้ไขคำขอที่ถูกตีกลับ'; $('qSubmit').textContent='ส่งคำขอที่แก้แล้ว'; $('qNow').checked=false; $('qPinWrap').classList.add('hide'); $('qNow').closest('label').classList.add('hide');
+  $('qRetBox').innerHTML=`<b>ต้องแก้:</b> ${esc(String(r.note||'').replace(/^ต้องแก้: /,''))}<div class="muted">โดย ${esc(r.decidedBy)} · แก้แล้วกด "ส่งคำขอที่แก้แล้ว" ด้านล่าง</div><button type="button" class="lnk" id="qRetX">ยกเลิกการแก้ไข</button>`;
+  $('qRetBox').classList.remove('hide'); $('qRetX').onclick=()=>{ retClear(); qForm('month'); };
+  $('qTitle').scrollIntoView({behavior:'smooth',block:'start'});
+}
 async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}
   let note=''; if(!ok){note=prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)')||'';}
@@ -2238,6 +2303,7 @@ $('sSave').onclick=async()=>{
     if(k.length>10) S.repOpen=k; else S.repOpen=k10+'|p1';
     if(qs.get('out')==='1'&&k.length>10) S.openOut=k; }
   if(qs.get('tk')) S.tkFocus=1;
+  if(qs.get('ret')) S.retWant=qs.get('ret');
   if(view==='viewDaily'&&qs.get('m')&&qs.get('day')&&!qs.get('rep')){ S.dMonthWant=qs.get('m'); S.dDayWant=+qs.get('day'); }
   if(qs.get('g')==='wk'){ S.dGroup='wk'; document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x.dataset.g==='wk')); }
   const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };

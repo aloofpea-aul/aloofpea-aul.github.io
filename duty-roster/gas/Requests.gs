@@ -177,7 +177,8 @@ function listRequests_() {
   const all = reqRows_();
   return {
     pending: all.filter(function (r) { return r.status === 'รออนุมัติ'; }).map(pubReq_),
-    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ลบแล้ว' && r.status !== 'ล้างแล้ว'; }).slice(-30).reverse().map(pubReq_),
+    returned: all.filter(function (r) { return r.status === 'ตีกลับ'; }).map(pubReq_),
+    done: all.filter(function (r) { return r.status !== 'รออนุมัติ' && r.status !== 'ตีกลับ' && r.status !== 'ลบแล้ว' && r.status !== 'ล้างแล้ว'; }).slice(-30).reverse().map(pubReq_),
     deleted: all.filter(function (r) { return r.status === 'ลบแล้ว'; }).slice(-20).reverse().map(pubReq_)
   };
 }
@@ -212,6 +213,78 @@ function createRequest_(b, who) {
   if (who && b.approveNow) return decideRequest_(id, true, who, 'แก้ไขโดยผู้อนุมัติ');
   try { notifyApprovers_('มีคำขอใหม่รออนุมัติ', text + (b.reason ? '\nเหตุผล: ' + b.reason : '')); } catch (e) { log_('system', 'LINE error', b.month, String(e)); }
   return pubReq_(reqRows_().filter(function (r) { return r.id === id; })[0]);
+}
+
+/* ======================================================================
+ *  ตีกลับให้แก้ไข: รออนุมัติ → ตีกลับ → (ผู้ขอแก้ในรายการเดิม) → รออนุมัติ
+ *  ระหว่างตีกลับตารางไม่เปลี่ยน · ไม่นับในล็อกวันละครั้ง · ค้างเกิน RET_DAYS_ วัน → ยกเลิกอัตโนมัติ
+ * ====================================================================== */
+const RET_ITEMS_ = { r: 'เปลี่ยนคนแทน', d: 'วัน/ช่วงไม่ถูก', why: 'เหตุผลไม่ชัด', doc: 'วันที่เสนอ/ผู้ลงนาม', o: 'อื่น ๆ' };
+const RET_DAYS_ = 3;
+function nowTxt_() { return Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'); }
+function returnRequest_(id, who, items, note) {
+  const r = reqRows_().filter(function (x) { return x.id === id; })[0];
+  if (!r) throw new Error('ไม่พบคำขอ ' + id);
+  if (r.status !== 'รออนุมัติ') throw new Error('คำขอนี้' + r.status + 'ไปแล้ว');
+  items = (items || []).filter(function (k) { return RET_ITEMS_[k]; });
+  note = String(note || '').trim().slice(0, 300);
+  if (!note) throw new Error('พิมพ์สิ่งที่ต้องแก้ไขก่อน');
+  const what = items.map(function (k) { return RET_ITEMS_[k]; }).join(' · ');
+  const p = r.payload; p.hist = (p.hist || []).concat([{ at: nowTxt_(), act: 'ret', by: who.name, items: items, note: note }]);
+  reqDirty_(); const sh = sheet_(SH.REQ);
+  sh.getRange(r.row, 5).setValue(JSON.stringify(p));
+  sh.getRange(r.row, 8, 1, 4).setValues([['ตีกลับ', who.name + ' (' + who.role + ')', new Date(), 'ต้องแก้: ' + (what ? what + ' — ' : '') + note]]);
+  log_(who.name, 'ตีกลับ', r.month, r.text + ' | ' + note);
+  try {
+    const u = webUrl_('viewReq', { ret: id }), btn = u ? [{ type: 'button', style: 'primary', color: '#5B1A63', height: 'sm', action: { type: 'uri', label: 'แก้ไขแล้วส่งใหม่', uri: u } }] : null;
+    notifyPeople_([r.payload.a], 'คำขอถูกตีกลับให้แก้ไข', r.text + '\n\nต้องแก้: ' + (what ? what + '\n' : '') + note + '\nโดย ' + who.name +
+      '\n(แก้แล้วส่งใหม่ภายใน ' + RET_DAYS_ + ' วัน ไม่เช่นนั้นคำขอจะถูกยกเลิก)', '#C26A00', 'ตีกลับให้แก้ไข', btn);
+  } catch (e) { log_('system', 'LINE error', r.month, String(e)); }
+  return pubReq_(reqRows_().filter(function (x) { return x.id === id; })[0]);
+}
+/** ผู้ขอแก้คำขอที่ถูกตีกลับแล้วส่งกลับ (รายการเดิม) — ตรวจเหมือนยื่นใหม่ */
+function resubmitRequest_(b) {
+  const r = reqRows_().filter(function (x) { return x.id === String(b.id); })[0];
+  if (!r) throw new Error('ไม่พบคำขอ');
+  if (r.status !== 'ตีกลับ') throw new Error('คำขอนี้' + r.status + 'แล้ว — แก้ไขไม่ได้');
+  if (b.month !== r.month) throw new Error('เปลี่ยนเดือนไม่ได้ — ยกเลิกคำขอนี้แล้วยื่นใหม่');
+  const mo = getMonth_(b.month);
+  const dup = dupOf_(b.month, b.type, b.payload);
+  if (dup) throw new Error('มีรายการนี้อยู่แล้ว: ' + dup.text);
+  const lk = lockOf_(b.month, b.type, b.payload, r.id); if (lk) throw new Error(lk);
+  const nx = b.payload.g === 'emp' ? getMonth_(nextKey_(b.month)) : null;
+  const tch = applyOps_(JSON.parse(JSON.stringify(mo.data)), buildOps_(b.type, b.payload), nx && JSON.parse(JSON.stringify(nx.data)));
+  const text = describe_(b.month, b.type, b.payload, mo.data) + sbNote_(b.month, tch);
+  const o = r.payload, p = b.payload, ch = [];
+  const lab = { a: 'ผู้ขอ', r: 'คนแทน', b: 'คู่แลก', d: 'วัน', da: 'วัน', db: 'วันของคู่', part: 'ช่วง' };
+  Object.keys(lab).forEach(function (k) { if (String(o[k] == null ? '' : o[k]) !== String(p[k] == null ? '' : p[k])) ch.push(lab[k] + ' ' + (o[k] || '-') + ' → ' + (p[k] || '-')); });
+  if (r.type !== b.type) ch.unshift('ประเภท ' + (r.type === 'swap' ? 'แลกเวร' : 'ลาเวร') + ' → ' + (b.type === 'swap' ? 'แลกเวร' : 'ลาเวร'));
+  if (String(r.reason) !== String(b.reason || '')) ch.push('เหตุผล');
+  if (String(o.docDate || '') !== String(p.docDate || '')) ch.push('วันที่เสนอ');
+  if (o.signer && o.signer.name && String(o.signer.name) !== String((p.signer || {}).name || '')) ch.push('ผู้ลงนาม');
+  p.hist = (o.hist || []).concat([{ at: nowTxt_(), act: 're', by: b.requester || p.a, ch: ch }]);
+  p.rs = (o.rs || 0) + 1;
+  reqDirty_(); sheet_(SH.REQ).getRange(r.row, 4, 1, 9).setValues([[b.type, JSON.stringify(p), b.requester || p.a, b.reason || '', 'รออนุมัติ', '', '', '', text]]);
+  log_(b.requester || p.a, 'แก้ไขแล้วส่งใหม่', r.month, text + (ch.length ? ' | ' + ch.join(', ') : ''));
+  try { notifyApprovers_('คำขอแก้ไขแล้วส่งใหม่ (ครั้งที่ ' + p.rs + ')', text + (ch.length ? '\nเปลี่ยน: ' + ch.join(' · ') : '\n(ไม่ได้เปลี่ยนรายการเวร)') + (b.reason ? '\nเหตุผล: ' + b.reason : '')); } catch (e) { log_('system', 'LINE error', r.month, String(e)); }
+  return pubReq_(reqRows_().filter(function (x) { return x.id === r.id; })[0]);
+}
+function cancelReturned_(id, by) {
+  const r = reqRows_().filter(function (x) { return x.id === String(id); })[0];
+  if (!r) throw new Error('ไม่พบคำขอ');
+  if (r.status !== 'ตีกลับ') throw new Error('คำขอนี้' + r.status + 'แล้ว');
+  reqDirty_(); sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([['ยกเลิก', String(by || r.requester), new Date(), 'ผู้ขอยกเลิกหลังถูกตีกลับ']]);
+  log_(String(by || r.requester), 'ยกเลิกคำขอ (ตีกลับ)', r.month, r.text);
+  return true;
+}
+/** เรียกจาก tkCheck: ตีกลับค้างเกินกำหนด → ยกเลิก */
+function retExpire_() {
+  const lim = Date.now() - RET_DAYS_ * 864e5;
+  reqRows_().filter(function (r) { return r.status === 'ตีกลับ' && r.decidedAt instanceof Date && r.decidedAt.getTime() < lim; }).forEach(function (r) {
+    sheet_(SH.REQ).getRange(r.row, 8, 1, 4).setValues([['ยกเลิก', 'ระบบ', new Date(), 'ค้างตีกลับเกิน ' + RET_DAYS_ + ' วัน — ยกเลิกอัตโนมัติ']]);
+    log_('system', 'ยกเลิกคำขอตีกลับค้าง', r.month, r.text);
+  });
+  reqDirty_();
 }
 
 function decideRequest_(id, approve, who, note) {
@@ -906,6 +979,7 @@ function tkNotify_(d, again) {
 /** ทุก 5 นาที: รายการที่ยังไม่มีคนรับเกิน 10 นาที → เตือนซ้ำครั้งเดียว */
 function tkCheck() {
   try { repRemindDaily_(); } catch (e) { log_('system', 'เตือนรายงานเวรไม่สำเร็จ', '', String(e)); }
+  try { retExpire_(); } catch (e) {}
   try { wxTick_(); } catch (e) {}
   const now = Date.now();
   tkRows_().forEach(function (x) {
