@@ -120,7 +120,7 @@ assert s.count(_tw) == 1
 s = s.replace(_tw, '<link rel="stylesheet" href="tw.css?v=1">', 1)
 s = s.replace('<script src="mobile.js?v=3"></script>', '<script src="perf.js?v=1"></script>\n<script src="mobile.js?v=3"></script>', 1)
 # ตรวจมาตรฐานแบบใหม่ + จัดเมนูให้กระชับ
-s = s.replace('<script src="branch.js?v=4"></script>', '<script src="branch.js?v=4"></script>\n<script src="fm-tpl.js?v=1"></script>\n<script src="std.js?v=4"></script>\n<script src="inspect.js?v=2"></script>\n<script src="menu.js?v=2"></script>', 1)
+s = s.replace('<script src="branch.js?v=4"></script>', '<script src="branch.js?v=4"></script>\n<script src="fm-tpl.js?v=1"></script>\n<script src="std.js?v=4"></script>\n<script src="poles.js?v=1"></script>\n<script src="inspect.js?v=2"></script>\n<script src="menu.js?v=2"></script>', 1)
 # ส่วนรับข้อมูลจากระบบสำรวจงานก่อสร้าง (?import=1) — อยู่ใน ccl/gas/import-block.html
 import os
 _blk = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'import-block.html')
