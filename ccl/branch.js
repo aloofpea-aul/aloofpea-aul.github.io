@@ -102,6 +102,10 @@
     if (title && !$('cbBrandChip')) { var c = document.createElement('span'); c.id = 'cbBrandChip'; c.className = 'cb-chip'; title.parentNode.appendChild(c); }
     var chip = $('cbBrandChip'); if (chip) { chip.textContent = bname; chip.style.display = 'none'; }
     document.title = 'CCL · ' + bname;
+    // เมนู Admin: แสดงเฉพาะ Admin ของหน่วยงาน / ผู้ดูแลสูงสุด (เดิมผู้ใช้ทั่วไปกดแล้วขึ้น "ไม่มีสิทธิ์")
+    var isAdm = u.role === 'Admin' || !!u.superAdmin;
+    ['nav-admin', 'mnav-admin'].forEach(function (id) { var b = $(id); if (b) { if (isAdm) b.style.removeProperty('display'); else b.style.setProperty('display', 'none', 'important'); } });
+    document.body.classList.toggle('cb-noadmin', !isAdm);
     var role = $('navUserRole');
     if (role) role.innerText = (u.superAdmin && u.branchId === u.homeBranchId ? 'ผู้ดูแลสูงสุด' : u.role) + ' · ' + bname;
 
@@ -317,6 +321,43 @@
     }, function (err) { box.innerHTML = '<span style="color:#B91C1C">' + esc(err.message) + '</span>'; });
   }
 
+  // ───── หมายเลขงาน: รหัสหน่วยงานตามข้อมูลของหน่วยงานนั้น (เดิมล็อก AUL ของอ่าวลึกไว้) ─────
+  // ดูจากหมายเลขงานที่หน่วยงานนี้บันทึกไว้แล้ว ถ้าส่วนใหญ่ใช้รหัสเดียวกัน (≥3 งาน) จะล็อกรหัสนั้นให้เหมือนเดิม
+  // หน่วยงานที่ยังไม่มีงาน / รหัสไม่ชัด = พิมพ์ตัวอักษรรหัสหน่วยงานเองได้
+  function jobCodes() {
+    var rows = []; try { rows = (typeof allData !== 'undefined' && Array.isArray(allData)) ? allData : []; } catch (e) {}
+    var code = {}, reg = {}, n = 0;
+    rows.forEach(function (r) {
+      String(r.jobIds || '').split(',').forEach(function (s) {
+        s = s.trim().toUpperCase(); var m;
+        if ((m = /^C-\d{2}-([A-Z])-([A-Z]{3})\d/.exec(s))) { reg[m[1]] = (reg[m[1]] || 0) + 1; code[m[2]] = (code[m[2]] || 0) + 1; n++; }
+        else if ((m = /^P-[0-9A-Z]{5}\.[0-9A-Z]-[0-9A-Z]-([A-Z]{3})\d/.exec(s)) || (m = /^I-[0-9A-Z]{2}-[0-9A-Z]-([A-Z]{3})\d/.exec(s))) { code[m[1]] = (code[m[1]] || 0) + 1; n++; }
+      });
+    });
+    function top(o) { var best = '', c = 0, t = 0; for (var k in o) { t += o[k]; if (o[k] > c) { c = o[k]; best = k; } } return c >= 3 && c / t >= 0.6 ? best : ''; }
+    return { code: top(code), reg: top(reg) };
+  }
+  function jobMask() {
+    var type = ($('budgetType') && $('budgetType').value) || '';
+    var jc = jobCodes();
+    var lit = function (s) { return s.replace(/[0a*#]/g, function (c) { return '\\' + c; }); };
+    var C = jc.code ? lit(jc.code) : 'aaa', K = jc.reg ? lit(jc.reg) : 'a';
+    var pattern = '', ex = '';
+    if (type.indexOf('C') >= 0) { pattern = 'C-##-' + K + '-' + C + '##.####.##.#'; ex = 'C-69-' + (jc.reg || 'K') + '-' + (jc.code || 'XXX') + '01.…'; }
+    else if (type.indexOf('P') >= 0) { pattern = 'P-#####.#-#-' + C + '##.####'; ex = 'P-…-' + (jc.code || 'XXX') + '01.…'; }
+    else if (type.indexOf('I') >= 0) { pattern = 'I-##-#-' + C + '##.##.####'; ex = 'I-69-…-' + (jc.code || 'XXX') + '01.…'; }
+    Array.prototype.forEach.call(document.querySelectorAll('.job-number-input'), function (el) {
+      var key = pattern;
+      if (el.imask && el.__cbMask === key) return;
+      if (el.imask) { el.imask.destroy(); el.imask = null; }
+      el.__cbMask = key;
+      if (ex) el.placeholder = ex;
+      if (pattern && window.IMask) el.imask = IMask(el, { mask: pattern, definitions: { '#': /[0-9A-Za-z]/, 'a': /[A-Za-z]/ }, prepare: function (s) { return s.toUpperCase(); } });
+    });
+  }
+  window.updateJobNumberMask = jobMask;
+  document.addEventListener('focusin', function (e) { if (e.target && e.target.classList && e.target.classList.contains('job-number-input') && !e.target.value) jobMask(); });
+
   // ───── เชื่อมกับ showPage / enterApp เดิม ─────
   function hook() {
     var sp = window.showPage;
@@ -325,7 +366,7 @@
         var r = sp.apply(this, arguments);
         Array.prototype.forEach.call(document.querySelectorAll('#cclNavTabs .ccl-nav-btn'), function (b) { b.classList.toggle('active', b.id === 'nav-' + id); });
         if (id === 'branches') { if (user().superAdmin) loadAdminBranches(); else sp('dashboard'); }
-        if (id === 'admin') setTimeout(loadUsers, 50);
+        if (id === 'admin' && (user().role === 'Admin' || user().superAdmin)) setTimeout(loadUsers, 50);
         return r;
       };
       w.__cb = true; Object.keys(sp).forEach(function (k) { w[k] = sp[k]; });

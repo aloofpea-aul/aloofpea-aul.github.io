@@ -219,6 +219,7 @@
     if (!m.jobNo) m.jobNo = job.jobIds || '';
     if (!m.supervisor) m.supervisor = job.assignee || '';
     if (!m.supSign) m.supSign = m.supervisor;
+    if (!m.supDept && !opts.view) { try { m.supDept = (JSON.parse(localStorage.getItem('ccl_user_v1') || '{}').branchName) || ''; } catch (e) {} }   // สังกัด = หน่วยงานที่ใช้อยู่
     // ข้อมูลรุ่นเก่าไม่มีชื่อผู้ตรวจ/วันที่ในฟอร์ม → อ่านจากประวัติงาน ("ผู้ตรวจ: X · วันที่: Y")
     if (!newRound && (!m.inspector || !m.inspDate)) {
       var le = (job.jobTimeline || []).slice().reverse().find(function (h) { return h.status === 'ตรวจมาตรฐาน'; });

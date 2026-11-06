@@ -113,14 +113,14 @@ s = s[:idx] + AUTO + s[idx + len('</body>'):]
 # ชั้นปรับหน้าจอมือถือ/iPad (ccl/mobile.css + ccl/mobile.js)
 s = s.replace('<meta name="viewport" content="width=device-width, initial-scale=1.0">', '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">', 1)
 _i = s.index('</head>'); s = s[:_i] + '<link rel="stylesheet" href="mobile.css?v=4">\n' + s[_i:]
-_j = s.rindex('</body>'); s = s[:_j] + '<script src="mobile.js?v=3"></script>\n<script src="branch.js?v=3"></script>\n' + s[_j:]
+_j = s.rindex('</body>'); s = s[:_j] + '<script src="mobile.js?v=3"></script>\n<script src="branch.js?v=4"></script>\n' + s[_j:]
 # Tailwind แบบสร้างไว้ล่วงหน้า (ccl/tw.css) แทน CDN ที่ต้องประมวลผลในเบราว์เซอร์ทุกครั้ง
 _tw = '<script src="https://cdn.tailwindcss.com"></script>'
 assert s.count(_tw) == 1
 s = s.replace(_tw, '<link rel="stylesheet" href="tw.css?v=1">', 1)
 s = s.replace('<script src="mobile.js?v=3"></script>', '<script src="perf.js?v=1"></script>\n<script src="mobile.js?v=3"></script>', 1)
 # ตรวจมาตรฐานแบบใหม่ + จัดเมนูให้กระชับ
-s = s.replace('<script src="branch.js?v=3"></script>', '<script src="branch.js?v=3"></script>\n<script src="fm-tpl.js?v=1"></script>\n<script src="std.js?v=3"></script>\n<script src="inspect.js?v=2"></script>\n<script src="menu.js?v=2"></script>', 1)
+s = s.replace('<script src="branch.js?v=4"></script>', '<script src="branch.js?v=4"></script>\n<script src="fm-tpl.js?v=1"></script>\n<script src="std.js?v=4"></script>\n<script src="inspect.js?v=2"></script>\n<script src="menu.js?v=2"></script>', 1)
 # ส่วนรับข้อมูลจากระบบสำรวจงานก่อสร้าง (?import=1) — อยู่ใน ccl/gas/import-block.html
 import os
 _blk = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'import-block.html')
