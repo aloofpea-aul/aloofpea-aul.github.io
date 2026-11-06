@@ -1388,6 +1388,43 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
     .swal2-confirm.m-swal-del { background: #dc2626 !important; box-shadow: none !important; }
 
   </style>
+<style>
+  /* v3.8: ตารางรายการรอตรวจสอบ/อนุมัติ จัดคอลัมน์ใหม่ */
+  .pend-tbl { font-size: 13.5px; }
+  .pend-tbl th { white-space: nowrap; }
+  .pend-tbl th.c-dt, .pend-tbl td.c-dt { width: 120px; }
+  .pend-tbl th.c-org { width: 96px; }
+  .pend-tbl th.c-acc { width: 190px; }
+  .pend-tbl th.c-amt, .pend-tbl td.c-amt { width: 100px; text-align: right; }
+  .pend-tbl th.c-who { width: 180px; }
+  .pend-tbl th.c-st { width: 136px; }
+  .pend-tbl th.c-act, .pend-tbl td.c-act { width: 104px; text-align: center; }
+  .pend-tbl td.c-det { min-width: 210px; line-height: 1.4; }
+  .pend-tbl .who-cell b { max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 1399px) {
+    .pend-tbl { font-size: 13px; }
+    .pend-tbl th, .pend-tbl td { padding-left: 6px !important; padding-right: 6px !important; }
+    .pend-tbl th.c-dt, .pend-tbl td.c-dt { width: 104px; } .pend-tbl th.c-org { width: 82px; } .pend-tbl th.c-acc { width: 150px; }
+    .pend-tbl th.c-amt, .pend-tbl td.c-amt { width: 88px; } .pend-tbl th.c-who { width: 150px; } .pend-tbl th.c-act, .pend-tbl td.c-act { width: 92px; }
+    .pend-tbl td.c-det { min-width: 160px; }
+    .pend-tbl .who-cell b { max-width: 120px; }
+    .pend-tbl td.c-act .btn { padding-left: 10px !important; padding-right: 10px !important; }
+  }
+  @media (min-width: 1600px) { #oldMain:has(#list-pane.active) { max-width: 1560px; } }   /* จอใหญ่: ตารางรอตรวจกว้างขึ้น ช่องรายการหักไม่ต้องตัดหลายบรรทัด */
+  .pend-tbl td.c-dt b.sd { display: block; white-space: nowrap; font-weight: 700; }
+  .pend-tbl td.c-dt b.sd i { font-style: normal; color: #7A3E94; }
+  .pend-tbl td.c-dt small, .pend-tbl td.c-org small { display: block; color: #6c757d; font-size: 12px; }
+  .pend-tbl td.c-org b { display: block; white-space: nowrap; font-weight: 600; }
+  .pend-tbl .acc-code { display: inline-block; background: #efe6f5; color: #6b2f86; border-radius: 6px; padding: 0 7px; font-size: 12px; font-weight: 700; }
+  .pend-tbl td.c-acc div { font-weight: 600; line-height: 1.3; margin-top: 2px; }
+  .pend-tbl td.c-amt { font-weight: 800; font-size: 14.5px; white-space: nowrap; }
+  .pend-tbl .who-cell { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .pend-tbl .who-cell b { display: block; font-weight: 600; }
+  .pend-tbl .who-cell small { display: block; color: #6c757d; font-size: 11.5px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .pend-tbl .st-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .pend-tbl .st-stack .badge { white-space: nowrap; margin: 0 !important; }
+  .pend-tbl td.c-act .btn { white-space: nowrap; }
+</style>
 </head><body>
 
 <!-- v3.2.0: หน้าเข้าระบบ (ใช้ Username/Password เดิมของระบบ) -->
@@ -1632,17 +1669,17 @@ select#accountCode option[data-dept="ประจำ กฟฟ."] { background-c
           <i class="bi bi-list-check"></i> รายการรอตรวจสอบ/อนุมัติ
         </h5>
         <div class="table-responsive">
-          <table class="table table-hover align-middle small">
+          <table class="table table-hover align-middle small pend-tbl">
             <thead class="table-light sticky-header">
               <tr>
-                <th><i class="bi bi-calendar3"></i> วันที่</th>
-                <th><i class="bi bi-geo-alt"></i> กฟฟ./แผนก</th>
-                <th><i class="bi bi-card-text"></i> รหัสบัญชี : รายการงบ</th>
+                <th class="c-dt"><i class="bi bi-calendar3"></i> วันที่</th>
+                <th class="c-org"><i class="bi bi-geo-alt"></i> กฟฟ./แผนก</th>
+                <th class="c-acc"><i class="bi bi-card-text"></i> รหัสบัญชี : รายการงบ</th>
                 <th><i class="bi bi-file-text"></i> รายการหัก</th>
-                <th><i class="bi bi-currency-dollar"></i> จำนวนเงิน</th>
-                <th><i class="bi bi-person"></i> ผู้เสนอ</th>
-                <th><i class="bi bi-flag"></i> สถานะ</th>
-                <th><i class="bi bi-gear"></i> จัดการ</th>
+                <th class="c-amt"><i class="bi bi-currency-dollar"></i> จำนวนเงิน</th>
+                <th class="c-who"><i class="bi bi-person"></i> ผู้เสนอ</th>
+                <th class="c-st"><i class="bi bi-flag"></i> สถานะ</th>
+                <th class="c-act"><i class="bi bi-gear"></i> จัดการ</th>
               </tr>
             </thead>
             <tbody id="pendingTableBody">
@@ -2735,6 +2772,18 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   }
 
   // ==================== DATE FORMATTING ====================
+  // v3.8: วันที่แบบสั้นในตาราง "พ. 28 ต.ค. 69" + เวลาบรรทัดล่าง
+  function shortThaiDateHtml(dateStr) {
+    if (!dateStr) return '-';
+    const full = getThaiDateDisplay(String(dateStr));
+    const m = full.match(/^วัน(\S+?) ที่ (\d+) (\S+) (\d{4})(?: (\d{1,2}\.\d{2}) น\.)?$/);
+    if (!m) return escHtml(full);
+    const dShort = { 'อาทิตย์': 'อา.', 'จันทร์': 'จ.', 'อังคาร': 'อ.', 'พุธ': 'พ.', 'พฤหัสบดี': 'พฤ.', 'ศุกร์': 'ศ.', 'เสาร์': 'ส.' }[m[1]] || '';
+    const mons = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    const mShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][mons.indexOf(m[3])] || m[3];
+    return `<b class="sd"><i>${dShort}</i> ${m[2]} ${mShort} ${m[4].slice(-2)}</b>` + (m[5] ? `<small>${m[5]} น.</small>` : '');
+  }
+
   function getThaiDateDisplay(dateStr) {
     if (!dateStr) return "-";
     
@@ -3379,21 +3428,17 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       
       tbody.innerHTML += `
         <tr class="account-row ${statusClass} ${rowNegativeClass}" onclick="showDetailModal(${i}, 'pending')">
-          <td>${getThaiDateDisplay(item.date)}</td>
-          <td><small>${item.branch} / ${item.dept}</small></td>
-          <td class="fw-bold"><small>
-  ${item.accountCode} : ${
-    (allBudgetInfo.find(b => 
+          <td class="c-dt">${shortThaiDateHtml(item.date)}</td>
+          <td class="c-org"><b>${escHtml(item.branch)}</b>${normalize(item.branch) === normalize(item.dept) ? '' : '<small>' + escHtml(item.dept) + '</small>'}</td>
+          <td class="c-acc"><span class="acc-code">${escHtml(item.accountCode)}</span><div>${escHtml((allBudgetInfo.find(b => 
       normalize(b.code) === normalize(item.accountCode) && 
       normalize(b.dept) === normalize(item.dept)
-    ) || {}).name || item.accountCode
-  }
-</small></td>
-          <td>${item.detail}</td>
-          <td class="fw-bold ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
-          <td>${personCell(item.requester)}</td>
-          <td>${statusBadge}</td>
-          <td>${actionButton}</td>
+    ) || {}).name || '')}</div></td>
+          <td class="c-det">${item.detail}</td>
+          <td class="c-amt ${item.isNegative ? 'text-danger' : 'text-success'}">${fNum(item.amount)}</td>
+          <td class="c-who">${personCellFull(item.requester, item.dept)}</td>
+          <td class="c-st"><div class="st-stack">${statusBadge}</div></td>
+          <td class="c-act">${actionButton}</td>
         </tr>
       `;
     });
@@ -5512,6 +5557,10 @@ renderUserChip = function () {
 };
 
 // ตารางบนคอมพิวเตอร์: ใส่รูปหน้าชื่อผู้เสนอ
+function personCellFull(name, fallbackSub) {   // v3.8: ชื่อ-นามสกุลบรรทัดเดียว + ตำแหน่ง/แผนกตัวเล็ก
+  const p = person(name), sub = personPos(p) || fallbackSub || '';
+  return `<span class="who-cell">${avatar(name, 32)}<span><b title="${escHtml(normName(name) || name || '')}">${escHtml(normName(name) || name || '')}</b>${sub ? '<small>' + escHtml(sub) + '</small>' : ''}</span></span>`;
+}
 function personCell(name) {
   return `<span class="d-inline-flex align-items-center gap-2">${avatar(name, 30)}<span>${escHtml(name)}</span></span>`;
 }
