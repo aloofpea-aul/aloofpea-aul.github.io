@@ -457,6 +457,14 @@ fieldset:disabled{opacity:.55}
 
   <!-- ============ ตั้งค่า ============ -->
   <main id="viewSet" class="hide">
+    <div class="card" id="bellCard">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">🔔 กระดิ่งหน้าห้องเวร</h3><span id="bellSt" class="muted">กำลังตรวจ…</span></div>
+      <div class="muted" style="margin:4px 0 8px">ดังเมื่อมีงานรับแจ้งไฟดับนอกเวลาทำการ (16:30–08:30 และวันหยุด) จนกว่าจะกดรับทราบ · 3 นาทีดังยาว + LINE ซ้ำ · 8 นาทีแจ้ง หผ.ปร./ชผ. · 20 นาทีหยุด</div>
+      <div id="bellRing"></div>
+      <label class="f">PIN ผู้อนุมัติ<input type="password" id="bellPin" inputmode="numeric" autocomplete="off"></label>
+      <div class="grid3" style="margin-top:8px"><button class="btn ghost" id="bellTestB">🔔 ทดสอบ</button><button class="btn ret" id="bellCallB">📣 เรียกเวร</button><button class="btn ghost" id="bellInfoB">⚙ ติดตั้งกล่อง</button></div>
+      <div id="bellMsg" style="margin-top:6px"></div>
+    </div>
     <div class="card">
       <div class="row" style="justify-content:space-between"><h3 style="margin:0">วันหยุดประจำปี กฟภ.</h3><select id="sYear" style="width:110px"></select></div>
       <div class="muted" style="margin:4px 0 6px">เปิด = กฟภ. หยุด (สีฟ้าในรายงาน · ช่วง 2+3 ได้ค่าตอบแทน)</div>
@@ -2265,7 +2273,24 @@ function renderInsp(){
   $('sInsp').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const i=+b.dataset.del; if(confirm('ลบ '+L[i].full+' ออกจากผู้ตรวจเวร?')){L.splice(i,1); renderInsp();}});
 }
 $('sInspAdd').onclick=()=>{(S.inspEdit=S.inspEdit||[]).push({short:'',full:'',pos:''}); renderInsp();};
+async function paintBell(){
+  try{ const st=(await apiGet({action:'bellStatus'})).status, ago=st.lastSeen?Math.round((Date.now()-Date.parse(st.lastSeen))/60000):null;
+    $('bellSt').innerHTML=st.online?'<span style="color:#1E7B45;font-weight:700">● ออนไลน์</span>':(st.lastSeen?'<span style="color:#A12A2A;font-weight:700">● ขาดการติดต่อ</span> · ล่าสุด '+ago+' นาทีก่อน':'<span class="muted">ยังไม่ได้ติดตั้งกล่อง</span>');
+    $('bellRing').innerHTML=st.ringing.length?`<div class="note err" style="margin-bottom:8px">🔔 กำลังดัง: ${st.ringing.map(r=>esc(r.id)+' ('+r.min+' นาที)').join(', ')}<button class="btn" id="bellAckB" style="margin-top:6px;width:100%">✋ รับทราบ (หยุดกระดิ่ง)</button></div>`:'';
+    const ab=$('bellAckB'); if(ab) ab.onclick=async()=>{ const c=hubCreds(), body=$('bellPin').value?{action:'bellAck',pin:$('bellPin').value}:{action:'bellAckApp',hubUser:c.user,hubPass:c.pass};
+      try{ await apiPost(body); toast('รับทราบแล้ว — กระดิ่งหยุด'); paintBell(); }catch(e){ msg('bellMsg',e.message,'err'); } };
+  }catch(e){ $('bellSt').textContent='ตรวจสถานะไม่ได้'; }
+}
+function bellBind(){
+  const pin=()=>{ const p=$('bellPin').value.trim(); if(!p){ msg('bellMsg','ใส่ PIN ผู้อนุมัติก่อน','warn'); $('bellPin').focus(); } return p; };
+  $('bellTestB').onclick=async()=>{ const p=pin(); if(!p) return; try{ await apiPost({action:'bellTest',pin:p}); msg('bellMsg','สั่งทดสอบแล้ว — กระดิ่งจะดังสั้น ๆ ภายใน 10 วินาที'); }catch(e){ msg('bellMsg',e.message,'err'); } };
+  $('bellCallB').onclick=async()=>{ const p=pin(); if(!p) return; const t=prompt('ข้อความเรียกเวร (ส่ง LINE ถึงคนอยู่เวรด้วย)','หผ.ปร. เรียกเวร — ติดต่อกลับด่วน'); if(t===null) return;
+    try{ await apiPost({action:'bellCall',pin:p,text:t}); msg('bellMsg','เรียกเวรแล้ว — กระดิ่งดังจนกว่าจะกดรับทราบ'); setTimeout(paintBell,1500); }catch(e){ msg('bellMsg',e.message,'err'); } };
+  $('bellInfoB').onclick=async()=>{ const p=pin(); if(!p) return; try{ const j=await apiPost({action:'bellInfo',pin:p});
+    $('bellMsg').innerHTML=`<div class="note" style="font-size:13px;line-height:1.6"><b>ค่าที่ใส่ในโปรแกรมกล่อง (bell.ino)</b><br>BELL_URL = <code style="word-break:break-all">${esc(API_URL)}</code><br>BELL_KEY = <code>${esc(j.key)}</code><br><a href="https://github.com/aloofpea-aul/aloofpea-aul.github.io/tree/main/duty-roster/bell" target="_blank" rel="noopener">โปรแกรมกล่อง + วิธีต่อสาย</a> · อย่าเผยแพร่ BELL_KEY</div>`; }catch(e){ msg('bellMsg',e.message,'err'); } };
+}
 function renderSet(){
+  if(!S.bellBound){ S.bellBound=1; bellBind(); } paintBell();
   setBadge('');
   const ys=[...new Set(S.boot.holidays.map(h=>h.date.slice(0,4)).concat([todayIso().slice(0,4)]))].sort();
   const yr=$('sYear'); if(!yr.options.length){ys.forEach(y=>yr.add(new Option(+y+543,y)));yr.value=todayIso().slice(0,4);yr.onchange=renderSet;}

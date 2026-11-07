@@ -861,6 +861,108 @@ function patrolStatus_(ids) {
   return m;
 }
 
+/* ===================== กระดิ่งปลุกเวร (กล่อง ESP32 หน้าห้องเวร) =====================
+ * กล่องถาม GET ?action=bell&k=KEY ทุก ~10 วิ → { ring: 0 เงียบ | 1 ดังเป็นจังหวะ | 2 ดังยาว | 3 ทดสอบ }
+ * ดังเมื่อมีงานรับแจ้งใหม่ที่เข้ามานอกเวลาทำการ (หรือ หผ.ปร. กด "เรียกเวร") และยังไม่มีคนรับทราบ/รับงาน
+ * 0–3 นาที จังหวะ · 3–20 นาที ดังยาว (+ LINE ซ้ำถึงเวร) · 8 นาที LINE ถึง หผ.ปร./ชผ. · เกิน 20 นาที หยุด
+ * ปุ่มที่กล่อง = รับทราบ (หยุดกระดิ่ง) · กด "✋ รับงาน" ใน LINE/แอป ก็หยุดเช่นกัน */
+const BELL_ = { e1: 3, e2: 8, stop: 20 };   // นาที
+function bellHours_(d) {   // นอกเวลาทำการ: วันหยุดทั้งวัน · วันทำการ 16:30–08:30
+  d = d || new Date(); const ymd = bkkYmd_(d), hm = Utilities.formatDate(d, TZ, 'HH:mm');
+  return !isWorkday_(ymd) || hm < '08:30' || hm >= '16:30';
+}
+function bellFlag_() { CacheService.getScriptCache().put('bellOn', '1', 1500); }
+function bellKey_() {
+  const props = PropertiesService.getScriptProperties(); let k = props.getProperty('BELL_KEY');
+  if (!k) { k = Utilities.getUuid().replace(/-/g, '').slice(0, 16); props.setProperty('BELL_KEY', k); }
+  return k;
+}
+function bellCall_() { return JSON.parse(PropertiesService.getScriptProperties().getProperty('BELL_CALL') || 'null'); }
+/** รายการที่กำลังปลุก (เก่าสุดก่อน) */
+function bellActive_() {
+  const now = Date.now(), out = [];
+  const c = bellCall_(); if (c && !c.ackAt && now - c.at < BELL_.stop * 60000) out.push({ kind: 'call', id: c.id, at: c.at, text: c.text || 'หผ.ปร. เรียกเวร' });
+  if (CacheService.getScriptCache().get('bellOn')) tkRows_().forEach(function (x) {
+    if (x.st !== 'new' || !x.d.bell || x.d.bellAck) return;
+    const t = new Date(x.d.at).getTime(); if (now - t >= BELL_.stop * 60000) return;
+    out.push({ kind: 'tk', id: x.id, at: t, text: (TK_TYPES_[x.d.type] || 'แจ้งไฟดับ') + (x.d.place ? ' ' + x.d.place : ''), x: x });
+  });
+  return out.sort(function (a, b) { return a.at - b.at; });
+}
+function dutyShorts_() {
+  const td = dayData_(bkkYmd_()), yd = dayData_(addDays_(bkkYmd_(), -1)), emp = Object.assign({}, yd ? yd.emp : {}, td ? td.emp : {});
+  return Object.keys(onDutyNow_()).filter(function (n) { return n in emp; });
+}
+function bellPushText_(shorts, text) {
+  const sent = [];
+  shorts.forEach(function (n) { const id = lineIdOf_(n); if (id && push_(id, [{ type: 'text', text: text }], 'ticket')) sent.push(n); });
+  return sent;
+}
+/** ขั้นไล่แจ้ง — เรียกจากการถามของกล่อง (ทุก 10 วิ) และ tkCheck (ทุก 5 นาที เผื่อกล่องดับ) */
+function bellEscalate_(L) {
+  const now = Date.now();
+  L.forEach(function (a) {
+    const m = (now - a.at) / 60000;
+    if (a.kind !== 'tk') return;
+    const d = a.x.d; let ch = false;
+    if (m >= BELL_.e1 && !d.bellE1) { d.bellE1 = new Date().toISOString(); ch = true; try { tkNotify_(d, false); } catch (e) {} }
+    if (m >= BELL_.e2 && !d.bellE2) { d.bellE2 = d.again = new Date().toISOString(); ch = true; try { tkNotify_(d, true); } catch (e) {}
+      log_('system', 'กระดิ่ง: ยังไม่มีคนรับเรื่อง ' + BELL_.e2 + ' นาที', '', d.id); }
+    if (ch) tkWrite_(a.x);
+  });
+}
+/** API ของกล่องกระดิ่ง */
+function bellPoll_(q) {
+  if (String(q.k || '') !== bellKey_()) throw new Error('กุญแจกล่องกระดิ่งไม่ถูกต้อง');
+  const cache = CacheService.getScriptCache(), now = Date.now();
+  cache.put('bellHB', String(now), 21600);
+  if (q.ack) return bellAck_('ปุ่มหน้าห้องเวร');
+  if (cache.get('bellTest')) { cache.remove('bellTest'); return { ring: 3, text: 'ทดสอบกระดิ่ง' }; }
+  if (!cache.get('bellOn') && !bellCall_()) return { ring: 0 };
+  const L = bellActive_();
+  if (!L.length) return { ring: 0 };
+  bellEscalate_(L);
+  const m = (now - L[0].at) / 60000;
+  return { ring: m < BELL_.e1 ? 1 : 2, n: L.length, id: L[0].id, text: L[0].text.slice(0, 60), min: Math.floor(m) };
+}
+/** รับทราบ (หยุดกระดิ่ง) — จากปุ่มที่กล่อง หรือในแอป */
+function bellAck_(by) {
+  const L = bellActive_(), at = new Date().toISOString(), t = Utilities.formatDate(new Date(), TZ, 'HH:mm');
+  L.forEach(function (a) {
+    if (a.kind === 'call') { const c = bellCall_(); c.ackAt = Date.now(); c.ackBy = by; PropertiesService.getScriptProperties().setProperty('BELL_CALL', JSON.stringify(c)); }
+    else { a.x.d.bellAck = { at: at, by: by }; tkWrite_(a.x); }
+  });
+  if (L.length) {
+    log_(by, 'กระดิ่ง: รับทราบ', '', L.map(function (a) { return a.id; }).join(', '));
+    try { bellPushText_(dutyShorts_(), '🔔 รับทราบแล้ว ' + t + ' น. (' + by + ')\n' + L.map(function (a) { return '• ' + a.id + ' ' + a.text; }).join('\n') +
+      (L.some(function (a) { return a.kind === 'tk'; }) ? '\nอย่าลืมกด "✋ รับงาน" ในการ์ดรับแจ้ง' : '')); } catch (e) {}
+  }
+  return { ring: 0, acked: L.length };
+}
+/** หผ.ปร. กดเรียกเวร (PIN) — กระดิ่งดังแม้ไม่มีงานรับแจ้ง */
+function bellCallNow_(who, text) {
+  const c = { id: 'C' + Utilities.formatDate(new Date(), TZ, 'HHmm'), at: Date.now(), by: who.name, text: String(text || 'หผ.ปร. เรียกเวร').slice(0, 60) };
+  PropertiesService.getScriptProperties().setProperty('BELL_CALL', JSON.stringify(c));
+  log_(who.name, 'กระดิ่ง: เรียกเวร', '', c.text);
+  try { bellPushText_(dutyShorts_(), '🔔 ' + c.text + ' (' + who.name + ')\nกดรับทราบที่ปุ่มหน้าห้องเวร หรือในแอป'); } catch (e) {}
+  return c;
+}
+function bellStatus_() {
+  const hb = Number(CacheService.getScriptCache().get('bellHB') || 0), L = bellActive_();
+  return { online: hb && Date.now() - hb < 5 * 60000, lastSeen: hb ? new Date(hb).toISOString() : '', hours: bellHours_(),
+    ringing: L.map(function (a) { return { id: a.id, text: a.text, min: Math.floor((Date.now() - a.at) / 60000) }; }) };
+}
+/** tkCheck: ไล่แจ้งแทนกล่อง (ถ้ากล่องดับ) + เตือนเมื่อกล่องขาดการติดต่อเกิน 5 นาที (เฉพาะช่วงเวลาปลุก) */
+function bellWatch_() {
+  const props = PropertiesService.getScriptProperties(); if (!props.getProperty('BELL_KEY')) return;   // ยังไม่ได้ติดตั้งกล่อง
+  try { bellEscalate_(bellActive_()); } catch (e) {}
+  const hb = Number(CacheService.getScriptCache().get('bellHB') || 0), off = !hb || Date.now() - hb > 5 * 60000, was = props.getProperty('BELL_OFF');
+  if (off && !was && bellHours_() && hb) { props.setProperty('BELL_OFF', '1');
+    try { notifyApprovers_('🔕 กระดิ่งหน้าห้องเวรขาดการติดต่อ', 'ไม่ได้รับสัญญาณจากกล่องกระดิ่งเกิน 5 นาที (ล่าสุด ' + Utilities.formatDate(new Date(hb), TZ, 'HH:mm') + ' น.) — ตรวจไฟ/Wi-Fi ที่ห้องเวร'); } catch (e) {} }
+  if (!off && was) { props.deleteProperty('BELL_OFF'); try { notifyApprovers_('🔔 กระดิ่งหน้าห้องเวรกลับมาออนไลน์', 'กล่องกระดิ่งเชื่อมต่อได้ตามปกติแล้ว'); } catch (e) {} }
+}
+/** ticketAct 'acc' ก็หยุดกระดิ่ง (st ไม่ใช่ new) — ไม่ต้องทำเพิ่ม */
+
 /* ===================== รับแจ้งไฟดับจากผู้ใช้ไฟ (หน้าเว็บ /fire หรือส่งต่อข้อความให้บอต) =====================
  * Tickets: id | createdAt | data(JSON) | status | updatedAt
  * status: new (ยังไม่มีคนรับ) · acc (รับงานแล้ว) · done (แก้เสร็จ → เชื่อมเหตุการณ์ไฟดับ) · dup (ซ้ำ) · cancel */
@@ -927,6 +1029,7 @@ function createTicket_(b) {
     detail: String(b.detail || '').trim().slice(0, 500), lat: hasGps ? Math.round(lat * 1e6) / 1e6 : null, lon: hasGps ? Math.round(lon * 1e6) / 1e6 : null,
     src: b.src === 'line' ? 'line' : 'web', key: Utilities.getUuid().slice(0, 8), st: 'new', notified: [] };
   if (hasGps) d.near = tkNear_(lat, lon);
+  if (bellHours_(now)) { d.bell = 1; bellFlag_(); }
   tkSheet_().appendRow([id, now, JSON.stringify(d), 'new', now]);
   log_('ผู้ใช้ไฟ', 'รับแจ้งไฟดับ', bkkYmd_().slice(0, 7), id + ' ' + TK_TYPES_[type] + ' ' + (place || ''));
   try { tkNotify_(d, false); } catch (e) { log_('system', 'แจ้งเวรไม่สำเร็จ', '', String(e)); }
@@ -981,9 +1084,10 @@ function tkCheck() {
   try { repRemindDaily_(); } catch (e) { log_('system', 'เตือนรายงานเวรไม่สำเร็จ', '', String(e)); }
   try { retExpire_(); } catch (e) {}
   try { wxTick_(); } catch (e) {}
+  try { bellWatch_(); } catch (e) {}
   const now = Date.now();
   tkRows_().forEach(function (x) {
-    if (x.st !== 'new' || x.d.again) return;
+    if (x.st !== 'new' || x.d.again || x.d.bellAck) return;
     if (now - new Date(x.d.at).getTime() < 10 * 60000) return;
     x.d.again = new Date().toISOString(); tkWrite_(x);
     try { tkNotify_(x.d, true); } catch (e) {}
@@ -1038,6 +1142,7 @@ function tkFromLine_(text, by) {
   const id = tkNextId_(), now = new Date();
   const d = { id: id, at: now.toISOString(), type: /สาย.*ขาด|เสา.*ล้ม|ไฟไหม้|ประกาย|ระเบิด/.test(t) ? 'danger' : /ตก|กระพริบ|หรี่/.test(t) ? 'low' : /ซอย|หมู่บ้าน|ทั้งหมู่|ทั้งตำบล|แถว/.test(t) ? 'area' : 'home',
     phone: ph, name: '', place: '', detail: t, lat: null, lon: null, src: 'line', fwdBy: by, key: Utilities.getUuid().slice(0, 8), st: 'new' };
+  if (bellHours_(now)) { d.bell = 1; bellFlag_(); }
   tkSheet_().appendRow([id, now, JSON.stringify(d), 'new', now]);
   log_(by, 'รับแจ้งไฟดับ (ส่งต่อจาก LINE)', bkkYmd_().slice(0, 7), id);
   try { tkNotify_(d, false); } catch (e) {}

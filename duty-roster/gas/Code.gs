@@ -422,6 +422,8 @@ function doGet(e) {
     if (a === 'preview') return json_({ ok: true, preview: previewMonth_(q.m, q.pair || 'continue') });
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
+    if (a === 'bell') return json_(Object.assign({ ok: true }, bellPoll_(q)));
+    if (a === 'bellStatus') { const st = bellStatus_(); return json_({ ok: true, status: { online: st.online, lastSeen: st.lastSeen, hours: st.hours, ringing: st.ringing.map(function (r) { return { id: r.id, min: r.min }; }) } }); }
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
     if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
@@ -443,6 +445,7 @@ function doPost(e) {
     if (b.action === 'ticket') return json_({ ok: true, ticket: createTicket_(b) });
     if (b.action === 'tickets') return json_({ ok: true, tickets: listTickets_(b) });
     if (b.action === 'ticketAct') return json_({ ok: true, ticket: ticketAct_(b) });
+    if (b.action === 'bellAckApp') return json_({ ok: true, result: bellAck_(tkAuth_(b)) });
     // ---- เบอร์ติดต่อ: ต้องเป็นผู้ใช้ศูนย์รวมงานที่มีสิทธิ์ (ไม่ใช้ PIN) ----
     if (b.action === 'contacts') return json_(contactsFor_(b.user, b.pass));
     // ---- รายงานเวร: ลิงก์มีลายเซ็นจาก LINE หรือ PIN ผู้อนุมัติ ----
@@ -468,6 +471,10 @@ function doPost(e) {
     if (b.action === 'request') { const rq = createRequest_(b, who); return json_({ ok: true, request: rq }); }
     if (b.action === 'decide') { const rq = decideRequest_(b.id, !!b.approve, who, b.note || ''); return json_({ ok: true, request: rq }); }
     if (b.action === 'returnRequest') { const rq = returnRequest_(b.id, who, b.items, b.note); return json_({ ok: true, request: rq, requests: listRequests_() }); }
+    if (b.action === 'bellInfo') return json_({ ok: true, key: bellKey_(), status: bellStatus_() });
+    if (b.action === 'bellTest') { bellKey_(); CacheService.getScriptCache().put('bellTest', '1', 120); return json_({ ok: true }); }
+    if (b.action === 'bellCall') return json_({ ok: true, call: bellCallNow_(who, b.text) });
+    if (b.action === 'bellAck') return json_({ ok: true, result: bellAck_(who.short || who.name) });
     if (b.action === 'checkPin') return json_({ ok: true, who: who });
     if (b.action === 'deleteRequest') { const rs = deleteRequest_(b.id, !!b.revert, who); return json_({ ok: true, result: rs }); }
     if (b.action === 'editRequest') { const rq = editRequest_(b, who); return json_({ ok: true, request: rq }); }
