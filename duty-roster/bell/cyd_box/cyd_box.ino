@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.4"
+#define FW_VER "1.5"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -103,6 +103,7 @@ struct Net {
   String duty[6]; int nDuty = 0; String crew[6]; int nCrew = 0; int open = 0, today = 0; Job jobs[6]; int nJobs = 0; String app;
   bool wxOk = false; int wxLv = 0, wxT = 0, wxRh = 0, wxGust = 0; String wxLabel, wxCond, wxAt; String wxH[6]; int wxP[6]; int wxN = 0;
   String mkAt; String mkN[4], mkP[4]; float mkC[4]; int mkCount = 0;
+  int rot[3] = {20, 10, 5};   // วินาที: หน้าเวร / อากาศ / ตลาด (ระบบตั้งได้ · 0 = ไม่แสดงหน้านั้น)
 } net;
 SemaphoreHandle_t mtx;
 volatile bool reqAck = false, reqLight = false, reqPoll = false;
@@ -162,6 +163,7 @@ void doPoll(bool ack, const String& by, bool light) {
       net.wxN = 0;
       for (JsonObject h : w["hrs"].as<JsonArray>()) { if (net.wxN >= 6) break; net.wxH[net.wxN] = String((const char*)(h["h"] | "")); net.wxP[net.wxN] = h["p"] | -1; net.wxN++; }
     }
+    { JsonArray ra = doc["rot"]; if (ra.size() == 3) for (int i = 0; i < 3; i++) net.rot[i] = ra[i] | net.rot[i]; }
     JsonObject mk = doc["mk"];
     net.mkCount = 0; net.mkAt = String((const char*)(mk["at"] | ""));
     for (JsonObject it : mk["items"].as<JsonArray>()) {
@@ -610,15 +612,15 @@ void showMk() {
   }
   loadScr(s);
 }
-// วนหน้า: หน้าเวร 20 วิ → อากาศ 10 วิ → ตลาด 10 วิ (ข้ามหน้าที่ไม่มีข้อมูล)
+// วนหน้า: หน้าเวร 20 วิ → อากาศ 10 วิ → ตลาด 5 วิ (เวลาตั้งได้จากระบบ: Config boxRot · ข้ามหน้าที่ไม่มีข้อมูล)
 void rotateTick() {
   if (scr != S_HOME && scr != S_WX && scr != S_MK) return;
   if (!roomBright) { if (scr != S_HOME) showHome(); return; }                     // กลางคืน ค้างหน้าเวร
   if (lv_disp_get_inactive_time(NULL) < 60000 && scr == S_HOME) { pageAt = millis(); return; }   // เพิ่งแตะ → หยุดวน 1 นาที
-  uint32_t dur = scr == S_HOME ? 20000 : 10000;
+  uint32_t dur = 1000UL * (scr == S_HOME ? max(5, snap.rot[0]) : scr == S_WX ? snap.rot[1] : snap.rot[2]);
   if (millis() - pageAt < dur) return;
-  if (scr == S_HOME && snap.wxOk) showWx();
-  else if ((scr == S_HOME || scr == S_WX) && snap.mkCount) showMk();
+  if (scr == S_HOME && snap.wxOk && snap.rot[1] > 0) showWx();
+  else if ((scr == S_HOME || scr == S_WX) && snap.mkCount && snap.rot[2] > 0) showMk();
   else showHome();
 }
 

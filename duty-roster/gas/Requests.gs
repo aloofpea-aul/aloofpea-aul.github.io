@@ -983,11 +983,12 @@ function boxWx_() {
   } catch (e) { return null; }
 }
 /** ตลาด 4 ตัว (Yahoo Finance ฟรี · จำไว้ 10 นาที) */
-const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 0 }, { n: 'บิตคอยน์', s: 'BTC-USD', d: 0 }, { n: 'USD/THB', s: 'THB=X', d: 2 }, { n: 'SET', s: '^SET.BK', d: 2 }];
+const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 0, off: 'boxGoldOffset' }, { n: 'บิตคอยน์', s: 'BTC-USD', d: 0 }, { n: 'USD/THB', s: 'THB=X', d: 2 }, { n: 'SET', s: '^SET.BK', d: 2 }];
 function boxMk_() {
   const cache = CacheService.getScriptCache(), hit = cache.get('boxMk');
   if (hit) return JSON.parse(hit);
   let out = [];
+  const cfg = getConfig_();
   try {
     const res = UrlFetchApp.fetchAll(BOX_MK_.map(function (m) {
       return { url: 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(m.s) + '?range=1d&interval=1d', muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } };
@@ -996,8 +997,9 @@ function boxMk_() {
       try {
         const meta = JSON.parse(res[i].getContentText()).chart.result[0].meta, p = Number(meta.regularMarketPrice), pc = Number(meta.chartPreviousClose || meta.previousClose);
         if (!isFinite(p)) return null;
+        const off = m.off ? Number(cfg[m.off]) || 0 : 0;   // ทองฟิวเจอร์ส → หัก offset ให้ใกล้ราคาสปอต (ตั้งใน Config: boxGoldOffset)
         const pct = isFinite(pc) && pc ? (p - pc) / pc * 100 : 0;
-        return { n: m.n, p: p.toFixed(m.d).replace(/\B(?=(\d{3})+(?!\d))/g, ','), c: Math.round(pct * 10) / 10 };
+        return { n: m.n, p: (p - off).toFixed(m.d).replace(/\B(?=(\d{3})+(?!\d))/g, ','), c: Math.round(pct * 10) / 10 };
       } catch (e) { return null; }
     }).filter(function (x) { return x; });
   } catch (e) { out = []; }
@@ -1024,7 +1026,8 @@ function boxInfo_() {
     });
   const out = { duty: dutyShorts_(), crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
-    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_() };
+    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(),
+    rot: String(getConfig_().boxRot || '20,10,5').split(',').map(function (x) { return Math.max(0, Math.min(120, Number(x) || 0)); }) };
   cache.put('boxInfo', JSON.stringify(out), 30);
   return out;
 }
