@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#5B1A63">
+<title>ลงโปรแกรมกล่องกระดิ่งเวรแก้ไฟ (จอทัช)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+<style>
+:root{--pri:#5B1A63;--pri2:#3E0F45;--bg:#F5F3F7;--ink:#1E1A22;--mut:#5E5666;--line:#E2DCE8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',sans-serif;line-height:1.6}
+header{background:var(--pri);color:#fff;padding:18px 20px}
+header h1{margin:0;font-size:22px}
+header p{margin:2px 0 0;opacity:.9;font-size:15px}
+main{max-width:760px;margin:0 auto;padding:18px 16px 40px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+h2{margin:0 0 8px;font-size:18px;color:var(--pri2)}
+ol{margin:0;padding-left:22px}
+li{margin:4px 0}
+.mut{color:var(--mut);font-size:14px}
+.go{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+esp-web-install-button button{font:inherit;font-size:18px;font-weight:700;background:var(--pri);color:#fff;border:0;border-radius:12px;padding:12px 22px;cursor:pointer}
+.warn{background:#FBEFD9;border-color:#F0D9A8;color:#6B4500}
+code{background:#F1EDF5;border-radius:6px;padding:1px 6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ลงโปรแกรมกล่องกระดิ่งเวรแก้ไฟ (จอทัช)</h1>
+  <p>บอร์ด ESP32-2432S028 (HW-458) · เวอร์ชัน 1.0 · เฟส 1 ทดลอง</p>
+</header>
+<main>
+  <div class="card">
+    <h2>ก่อนเริ่ม</h2>
+    <ol>
+      <li>ใช้ <b>Chrome หรือ Edge บนคอมพิวเตอร์</b> (มือถือ/iPad/Safari ใช้ไม่ได้)</li>
+      <li>เสียบสาย USB-C จากบอร์ดเข้าคอม — ใช้สายที่ส่งข้อมูลได้ (สายชาร์จอย่างเดียวจะมองไม่เห็นบอร์ด)</li>
+    </ol>
+  </div>
+
+  <div class="card go">
+    <h2>ลงโปรแกรม</h2>
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">ติดตั้งลงบอร์ด</button>
+      <span slot="unsupported">เบราว์เซอร์นี้ลงโปรแกรมไม่ได้ — เปิดหน้านี้ด้วย Chrome หรือ Edge บนคอมพิวเตอร์</span>
+      <span slot="not-allowed">ต้องเปิดหน้านี้ผ่าน https</span>
+    </esp-web-install-button>
+    <div class="mut">กดแล้วเลือกพอร์ตที่ชื่อมี <code>USB</code> / <code>CH340</code> / <code>CP210x</code> → Connect → Install · ครั้งแรกให้ติ๊ก <b>ล้างข้อมูลในบอร์ด (Erase)</b> · ใช้เวลาราว 1–2 นาที</div>
+  </div>
+
+  <div class="card warn">
+    <h2>ถ้าไม่เห็นพอร์ต / เชื่อมต่อไม่ได้</h2>
+    <ol>
+      <li>ลองสายเส้นอื่น หรือช่อง USB อื่นของคอม</li>
+      <li>Windows อาจต้องลงไดรเวอร์ <b>CH340</b> ก่อน (ค้นคำว่า "CH340 driver" จากเว็บผู้ผลิต WCH)</li>
+      <li>กดค้างปุ่ม <b>BOOT</b> บนบอร์ด แล้วกด <b>RST</b> 1 ครั้ง ปล่อย BOOT แล้วกดติดตั้งใหม่</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>ลงเสร็จแล้ว — ทำตามจอบนบอร์ด</h2>
+    <ol>
+      <li><b>ตรวจสีจอ</b> — ถ้าช่องแดง/เขียว/น้ำเงินตรงชื่อ แตะจอ 1 ครั้ง · ถ้าไม่ตรง กดปุ่ม BOOT เพื่อเปลี่ยนแบบ (เครื่องจะเริ่มใหม่เอง)</li>
+      <li><b>ตั้งการแตะ</b> — แตะที่ปลายลูกศรตามมุมจอ ครบ 4 มุม</li>
+      <li><b>เลือก Wi-Fi</b> สำนักงาน แล้วพิมพ์รหัสบนแป้นในจอ</li>
+      <li><b>ใส่กุญแจกล่อง</b> 16 ตัว — ดูได้ในแอปงานเวรแก้ไฟ → ตั้งค่า → กระดิ่งหน้าห้องเวร → ติดตั้งกล่อง</li>
+      <li>หน้าหลักขึ้น "ออนไลน์" สีเขียว = พร้อมใช้ · ลองกดค้างปุ่ม "จำลองเรื่อง" 3 วินาที เพื่อดูการปลุก</li>
+    </ol>
+    <p class="mut">เฟส 1 ยังไม่มีเสียง — เวลามีเรื่องเข้า จอแดงกะพริบ + ไฟบนบอร์ดกะพริบแดง · LINE ยังไล่แจ้งตามขั้นเดิม</p>
+  </div>
+</main>
+</body>
+</html>

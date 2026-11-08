@@ -949,8 +949,46 @@ function bellCallNow_(who, text) {
 }
 function bellStatus_() {
   const hb = Number(CacheService.getScriptCache().get('bellHB') || 0), L = bellActive_();
-  return { online: hb && Date.now() - hb < 5 * 60000, lastSeen: hb ? new Date(hb).toISOString() : '', hours: bellHours_(),
+  return { online: hb && Date.now() - hb < 5 * 60000, lastSeen: hb ? new Date(hb).toISOString() : '', hours: bellHours_(), rssi: Number(CacheService.getScriptCache().get('bellRssi') || 0),
     ringing: L.map(function (a) { return { id: a.id, text: a.text, min: Math.floor((Date.now() - a.at) / 60000) }; }) };
+}
+/** กล่องจอทัช (ESP32-2432S028) — GET ?action=box&k=KEY ทุก ~10 วิ
+ * คืนค่าเหมือน bell (ring/n/id/text/min) + ข้อมูลหน้าจอ (คนอยู่เวร · งานค้าง · รายการงาน 12 ชม.)
+ * &ack=1&by=ชื่อ = รับทราบ (ชื่อคนที่แตะ) · &ev=light = ไฟห้องเปิดระหว่างปลุก · &rssi=-60 = ความแรง Wi-Fi */
+function boxPoll_(q) {
+  if (String(q.k || '') !== bellKey_()) throw new Error('กุญแจกล่องกระดิ่งไม่ถูกต้อง');
+  const cache = CacheService.getScriptCache();
+  if (q.rssi) cache.put('bellRssi', String(Number(q.rssi) || 0), 21600);
+  if (q.ev === 'light') {
+    const L = bellActive_();
+    if (L.length) log_('กล่องหน้าห้องเวร', 'กระดิ่ง: ไฟห้องเปิด (มีคนตื่น)', '', L.map(function (a) { return a.id; }).join(', '));
+  }
+  let r;
+  if (q.ack) {
+    cache.put('bellHB', String(Date.now()), 21600);
+    const by = String(q.by || '').trim().slice(0, 40);
+    r = bellAck_(by ? by + ' · กล่องหน้าห้องเวร' : 'ปุ่มหน้าห้องเวร');
+    cache.remove('boxInfo');
+  } else r = bellPoll_({ k: q.k });
+  return Object.assign(r, boxInfo_());
+}
+function boxInfo_() {
+  const cache = CacheService.getScriptCache(), c = cache.get('boxInfo');
+  if (c) return JSON.parse(c);
+  const rows = tkRows_(), since = Date.now() - 12 * 3600000, today = bkkYmd_();
+  const live = function (x) { return x.st === 'new' || x.st === 'acc'; };
+  const jobs = rows.filter(function (x) { return x.st !== 'dup' && x.st !== 'cancel' && (live(x) || new Date(x.d.upd || x.d.at).getTime() > since); })
+    .sort(function (a, b) { return new Date(b.d.at) - new Date(a.d.at); }).slice(0, 6)
+    .map(function (x) {
+      const d = x.d;
+      return { id: x.id, t: Utilities.formatDate(new Date(d.at), TZ, 'HH:mm'), type: TK_TYPES_[d.type] || 'แจ้งไฟดับ', place: String(d.place || '').slice(0, 60),
+        st: x.st, by: d.accBy || (d.bellAck && d.bellAck.by) || '', ph: d.phone || '', lat: d.lat || 0, lon: d.lon || 0 };
+    });
+  const out = { duty: dutyShorts_(), open: rows.filter(live).length,
+    today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
+    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '' };
+  cache.put('boxInfo', JSON.stringify(out), 30);
+  return out;
 }
 /** tkCheck: ไล่แจ้งแทนกล่อง (ถ้ากล่องดับ) + เตือนเมื่อกล่องขาดการติดต่อเกิน 5 นาที (เฉพาะช่วงเวลาปลุก) */
 function bellWatch_() {

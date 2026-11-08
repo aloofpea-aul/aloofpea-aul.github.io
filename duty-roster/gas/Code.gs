@@ -423,7 +423,8 @@ function doGet(e) {
     if (a === 'requests') return json_({ ok: true, requests: listRequests_() });
     if (a === 'monthReqs') return json_({ ok: true, requests: monthRequests_(q.m) });
     if (a === 'bell') return json_(Object.assign({ ok: true }, bellPoll_(q)));
-    if (a === 'bellStatus') { const st = bellStatus_(); return json_({ ok: true, status: { online: st.online, lastSeen: st.lastSeen, hours: st.hours, ringing: st.ringing.map(function (r) { return { id: r.id, min: r.min }; }) } }); }
+    if (a === 'box') return json_(Object.assign({ ok: true }, boxPoll_(q)));
+    if (a === 'bellStatus') { const st = bellStatus_(); return json_({ ok: true, status: { online: st.online, lastSeen: st.lastSeen, hours: st.hours, rssi: st.rssi, ringing: st.ringing.map(function (r) { return { id: r.id, min: r.min }; }) } }); }
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
     if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
