@@ -1072,7 +1072,7 @@ function ocIn_(q) {
   if (q.ping) return { ping: 1 };
   const C = ocCfg_(), ti = String(q.ti || '').slice(0, 300), tx = String(q.tx || '').slice(0, 2000), bt = String(q.bt || '').slice(0, 2000);
   const room = ocNorm_(C.room);
-  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) return { skip: 'room' };   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ
+  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) { console.log('OC skip ' + JSON.stringify({ keys: Object.keys(q), ti: ti.slice(0, 40), sub: String(q.sub || '').slice(0, 60), txLen: tx.length, btLen: bt.length, btHead: bt.slice(0, 30) })); return { skip: 'room' }; }   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ
   let body = (bt.length > tx.length ? bt : tx).trim(), sender = '';
   if (ocNorm_(ti).indexOf(room) >= 0) { const m = body.match(/^([^\n:：]{1,40}?)\s*[:：]\s*([\s\S]+)$/); if (m) { sender = m[1].trim(); body = m[2].trim(); } }
   else { sender = ti.trim(); }
