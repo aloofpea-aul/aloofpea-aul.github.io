@@ -1153,10 +1153,10 @@ function tkFromLine_(text, by) {
 /* ======================================================================
  *  ติดตามรายงานการอยู่เวร — กำหนดส่ง 3 วันหลังวันเข้าเวร (ถึง 23:59)
  *  ขั้น: กรอก (คนอยู่เวร) → ตรวจ (ผู้ตรวจเวร, อีก 3 วันหลังกรอก) → พิมพ์ → หผ.ปร. รับเอกสาร = ปิด
- *  เริ่มติดตามตั้งแต่ config.repTrackFrom (ค่าเริ่มต้น 2026-10-28) — ก่อนหน้านั้นไม่ทวง
+ *  เริ่มติดตามตั้งแต่ config.repTrackFrom (ค่าเริ่มต้น 2026-11-09) — ก่อนหน้านั้นไม่ทวง
  * ====================================================================== */
 const REP_DUE_DAYS_ = 3;
-function repTrackFrom_() { const v = getConfig_().repTrackFrom; return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v || '2026-10-28').slice(0, 10); }
+function repTrackFrom_() { const v = getConfig_().repTrackFrom; return v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v || '2026-11-09').slice(0, 10); }
 function normN_(s) { return String(s || '').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').replace(/\s+/g, '').toLowerCase(); }
 function repFilled_(r) { return !!r && ['arr', 'dep', 'hv', 'lv', 'temp', 'comm', 'att', 'other'].some(function (f) { return r[f] != null && r[f] !== ''; }); }
 function dayDiff_(a, b) { return Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86400000); }
@@ -1203,6 +1203,7 @@ function repRemindDaily_() {
     });
   });
   if (over.length) {
+    over.sort(function (a, b) { return a.k < b.k ? -1 : 1; });
     const L = over.map(function (x) { return '• ' + thShortD_(x.k.slice(0, 10)) + ' ' + x.label + ' — ' + (x.st === 'fill' ? x.names.join(', ') : 'ผู้ตรวจ ' + (x.insp || '-')) + ' (เกิน ' + (-x.left) + ' วัน)'; });
     const u = webUrl_('viewReport', { kind: 'track', m: today.slice(0, 7) }), btn = u ? [{ type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ดูทั้งหมดในแอป', uri: u } }] : null;
     const base = String(getConfig_().webUrl || ''), su = /^https:\/\//.test(base) ? base.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'share-overdue.html' : '';   // เปิดในหน้าต่าง LINE เพื่อเลือกห้องที่จะส่งต่อ
