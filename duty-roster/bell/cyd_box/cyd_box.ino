@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.3"
+#define FW_VER "1.4"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -51,6 +51,7 @@ struct Cfg {
   int pidx = -1; bool pok = false;
   uint16_t cal[8]; bool cok = false;
   int lb = 60, ld = 600;          // ค่าเซนเซอร์แสงตอนห้องสว่าง / มืด
+  String wS[5], wP[5]; int wN = 0; // Wi-Fi ที่จำไว้ (ล่าสุดอยู่บนสุด)
 } cfg;
 
 void loadCfg() {
@@ -60,7 +61,15 @@ void loadCfg() {
   cfg.pidx = prefs.getInt("inv", -1); cfg.pok = prefs.getBool("pok2", false);
   cfg.cok = prefs.getBytes("cal2", cfg.cal, sizeof(cfg.cal)) == sizeof(cfg.cal) && prefs.getBool("cok2", false);
   cfg.lb = prefs.getInt("lb", 60); cfg.ld = prefs.getInt("ld", 600);
+  String wl = prefs.getString("wl", "");
   prefs.end();
+  cfg.wN = 0;
+  int i = 0;
+  while (i < (int)wl.length() && cfg.wN < 5) {
+    int t = wl.indexOf("\t", i), n = wl.indexOf("\n", i); if (t < 0 || n < 0) break;
+    cfg.wS[cfg.wN] = wl.substring(i, t); cfg.wP[cfg.wN] = wl.substring(t + 1, n); cfg.wN++; i = n + 1;
+  }
+  if (!cfg.wN && cfg.ssid.length()) { cfg.wS[0] = cfg.ssid; cfg.wP[0] = cfg.pass; cfg.wN = 1; }   // ย้ายจากรุ่นเก่า
 }
 void saveCfg() {
   prefs.begin("bell", false);
@@ -68,7 +77,22 @@ void saveCfg() {
   prefs.putInt("inv", cfg.pidx); prefs.putBool("pok2", cfg.pok);
   prefs.putBytes("cal2", cfg.cal, sizeof(cfg.cal)); prefs.putBool("cok2", cfg.cok);
   prefs.putInt("lb", cfg.lb); prefs.putInt("ld", cfg.ld);
+  String wl; for (int i = 0; i < cfg.wN; i++) wl += cfg.wS[i] + "\t" + cfg.wP[i] + "\n";
+  prefs.putString("wl", wl);
   prefs.end();
+}
+
+void addWifi(const String& ss, const String& pw) {   // เพิ่ม/แก้ แล้วย้ายขึ้นบนสุด · เก็บได้ 5 วง
+  String S[5], P[5]; int n = 0; S[n] = ss; P[n] = pw; n++;
+  for (int i = 0; i < cfg.wN && n < 5; i++) if (cfg.wS[i] != ss) { S[n] = cfg.wS[i]; P[n] = cfg.wP[i]; n++; }
+  for (int i = 0; i < n; i++) { cfg.wS[i] = S[i]; cfg.wP[i] = P[i]; } cfg.wN = n;
+  cfg.ssid = ss; cfg.pass = pw; saveCfg();
+}
+void delWifi(int k) {
+  if (k < 0 || k >= cfg.wN) return;
+  for (int i = k; i < cfg.wN - 1; i++) { cfg.wS[i] = cfg.wS[i + 1]; cfg.wP[i] = cfg.wP[i + 1]; }
+  cfg.wN--; if (cfg.wN) { cfg.ssid = cfg.wS[0]; cfg.pass = cfg.wP[0]; } else { cfg.ssid = ""; cfg.pass = ""; }
+  saveCfg();
 }
 
 // ---------- ข้อมูลจากระบบ (งานเน็ตบน core 0 เขียน · หน้าจอบน core 1 อ่าน) ----------
@@ -77,6 +101,8 @@ struct Net {
   bool ok = false; String err; uint32_t lastOk = 0; uint32_t ver = 0;
   int ring = 0, n = 0, min = 0; String id, text; bool test = false;
   String duty[6]; int nDuty = 0; String crew[6]; int nCrew = 0; int open = 0, today = 0; Job jobs[6]; int nJobs = 0; String app;
+  bool wxOk = false; int wxLv = 0, wxT = 0, wxRh = 0, wxGust = 0; String wxLabel, wxCond, wxAt; String wxH[6]; int wxP[6]; int wxN = 0;
+  String mkAt; String mkN[4], mkP[4]; float mkC[4]; int mkCount = 0;
 } net;
 SemaphoreHandle_t mtx;
 volatile bool reqAck = false, reqLight = false, reqPoll = false;
@@ -128,6 +154,20 @@ void doPoll(bool ack, const String& by, bool light) {
     for (JsonVariant v : doc["crew"].as<JsonArray>()) if (net.nCrew < 6) net.crew[net.nCrew++] = String((const char*)(v | ""));
     net.open = doc["open"] | 0; net.today = doc["today"] | 0;
     net.app = String((const char*)(doc["app"] | ""));
+    JsonObject w = doc["wx"];
+    net.wxOk = !w.isNull() && !w["t"].isNull();
+    if (net.wxOk) {
+      net.wxLv = w["lv"] | 0; net.wxT = w["t"] | 0; net.wxRh = w["rh"] | 0; net.wxGust = w["gust"] | 0;
+      net.wxLabel = String((const char*)(w["label"] | "")); net.wxCond = String((const char*)(w["cond"] | "")); net.wxAt = String((const char*)(w["at"] | ""));
+      net.wxN = 0;
+      for (JsonObject h : w["hrs"].as<JsonArray>()) { if (net.wxN >= 6) break; net.wxH[net.wxN] = String((const char*)(h["h"] | "")); net.wxP[net.wxN] = h["p"] | -1; net.wxN++; }
+    }
+    JsonObject mk = doc["mk"];
+    net.mkCount = 0; net.mkAt = String((const char*)(mk["at"] | ""));
+    for (JsonObject it : mk["items"].as<JsonArray>()) {
+      if (net.mkCount >= 4) break;
+      net.mkN[net.mkCount] = String((const char*)(it["n"] | "")); net.mkP[net.mkCount] = String((const char*)(it["p"] | "")); net.mkC[net.mkCount] = it["c"] | 0.0f; net.mkCount++;
+    }
     net.nJobs = 0;
     for (JsonObject j : doc["jobs"].as<JsonArray>()) {
       if (net.nJobs >= 6) break;
@@ -147,9 +187,16 @@ void netTask(void*) {
   uint32_t lastPoll = 0, lastBegin = 0; bool ntp = false;
   for (;;) {
     if (wifiChanged) { wifiChanged = false; WiFi.disconnect(); lastBegin = 0; }
-    if (wifiPause || cfg.ssid.length() == 0) { vTaskDelay(500); continue; }
+    if (wifiPause || cfg.wN == 0) { vTaskDelay(500); continue; }
     if (WiFi.status() != WL_CONNECTED) {
-      if (!lastBegin || millis() - lastBegin > 20000) { lastBegin = millis(); WiFi.begin(cfg.ssid.c_str(), cfg.pass.c_str()); }
+      if (!lastBegin || millis() - lastBegin > 20000) {
+        lastBegin = millis();
+        int best = -1, bestR = -999, n = WiFi.scanNetworks();            // ต่อวงที่จำไว้และแรงที่สุด
+        for (int i = 0; i < n; i++) for (int k = 0; k < cfg.wN; k++) if (WiFi.SSID(i) == cfg.wS[k] && WiFi.RSSI(i) > bestR) { best = k; bestR = WiFi.RSSI(i); }
+        WiFi.scanDelete();
+        if (best < 0) best = 0;
+        WiFi.begin(cfg.wS[best].c_str(), cfg.wP[best].c_str());
+      }
       vTaskDelay(300); continue;
     }
     if (!ntp) { configTzTime("ICT-7", "pool.ntp.org", "time.google.com", "time.cloudflare.com"); ntp = true; }
@@ -248,7 +295,7 @@ lv_obj_t* btn(lv_obj_t* p, const String& s, const lv_font_t* f, uint32_t bg, int
 void loadScr(lv_obj_t* s) { lv_scr_load_anim(s, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); }
 
 // ---------- สถานะหน้าจอ ----------
-enum Scr { S_NONE, S_COLOR, S_CALI, S_WIFI, S_PASS, S_KEY, S_HOME, S_ALARM, S_WHO, S_DETAIL, S_JOBS, S_SET };
+enum Scr { S_NONE, S_COLOR, S_CALI, S_WIFI, S_PASS, S_KEY, S_HOME, S_ALARM, S_WHO, S_DETAIL, S_JOBS, S_SET, S_WX, S_MK, S_WLIST };
 Scr scr = S_NONE;
 Net snap;                                   // สำเนาข้อมูลล่าสุดสำหรับวาดจอ
 uint32_t snapVer = 0;
@@ -268,6 +315,7 @@ String thDate() {
 bool online() { return WiFi.status() == WL_CONNECTED && snap.lastOk && millis() - snap.lastOk < OFFLINE_MS; }
 const Job* findJob(const String& id) { for (int i = 0; i < snap.nJobs; i++) if (snap.jobs[i].id == id) return &snap.jobs[i]; return nullptr; }
 
+void showWifiList(); void showWx(); void showMk(); uint32_t pageAt = 0;
 void showHome(); void showAlarm(); void showWho(); void showDetail(const String& id, const String& head, uint32_t headCol); void showJobs(); void showSettings();
 void showWifi(); void showPass(const String& ssid); void showKey(); void showColor(); void showCali();
 void nextSetup();
@@ -321,6 +369,7 @@ void showHome() {
   lv_obj_add_event_cb(t3, simCb, LV_EVENT_ALL, nullptr);
   hErr = lbl(s, "", &font_th16, C_MUTED, 8, 215, 304);
   loadScr(s);
+  pageAt = millis();
   snapVer = 0;
 }
 void paintHome() {
@@ -339,7 +388,9 @@ void paintHome() {
   String c; for (int i = 0; i < snap.nCrew; i++) c += (i ? " · " : "") + snap.crew[i];
   setT(hCrew, "คนงาน: " + (c.length() ? c : String("—")));
   setT(hOpen, String(snap.open)); setT(hToday, String(snap.today));
-  setT(hErr, (snap.err.length() && on) ? snap.err : String("ห้องมืด → จอหรี่ · กด BOOT ค้าง = จำลอง"));
+  bool wxWarn = snap.wxOk && snap.wxLv >= 5;
+  setT(hErr, (snap.err.length() && on) ? snap.err : wxWarn ? String(LV_SYMBOL_WARNING " อากาศระดับ " + String(snap.wxLv) + " · " + snap.wxLabel) : String("ห้องมืด → จอหรี่ · กด BOOT ค้าง = จำลอง"));
+  lv_obj_set_style_text_color(hErr, lv_color_hex(wxWarn ? 0xFDBA74 : C_MUTED), 0);
 }
 
 // ---------- หน้าปลุก ----------
@@ -493,8 +544,8 @@ void showSettings() {
   lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN); lv_obj_set_style_pad_row(c, 6, 0);
   auto row = [&](const String& t) { lv_obj_t* l = lv_label_create(c); lv_obj_set_width(l, 306); lv_obj_set_style_text_font(l, &font_th16, 0); lv_obj_set_style_text_color(l, lv_color_hex(C_MUTED), 0); setT(l, t); return l; };
   auto rb = [&](const String& t, lv_event_cb_t cb) { lv_obj_t* b = btn(c, t, &font_th20, C_CARD, 0, 0, 306, 38, cb); return b; };
-  row("Wi-Fi: " + cfg.ssid + (WiFi.status() == WL_CONNECTED ? String(" · สัญญาณ " + String(WiFi.RSSI()) + " · " + WiFi.localIP().toString()) : String(" · ยังไม่เชื่อมต่อ")));
-  rb("เปลี่ยน Wi-Fi", [](lv_event_t*) { showWifi(); });
+  row("Wi-Fi: " + (WiFi.status() == WL_CONNECTED ? String(WiFi.SSID() + " · สัญญาณ " + String(WiFi.RSSI())) : String("ยังไม่เชื่อมต่อ")) + " · จำไว้ " + String(cfg.wN) + " วง");
+  rb("Wi-Fi ที่จำไว้", [](lv_event_t*) { showWifiList(); });
   row(String("กุญแจกล่อง: ") + (cfg.key.length() > 4 ? String("••••" + cfg.key.substring(cfg.key.length() - 4)) : String("ยังไม่ได้ใส่")));
   rb("ใส่กุญแจกล่องใหม่", [](lv_event_t*) { showKey(); });
   sLdr = row("");
@@ -508,6 +559,95 @@ void showSettings() {
 }
 void paintSettings() {
   setT(sLdr, "เซนเซอร์แสง: ค่า " + String(int(ldrAvg)) + " → " + (roomBright ? "สว่าง" : "มืด") + " (จำไว้: สว่าง " + cfg.lb + " / มืด " + cfg.ld + ")");
+}
+
+// ---------- หน้าสลับ: สภาพอากาศ / ตลาด ----------
+// สีตามระดับสภาพอากาศ 1–6 (พื้น, ตัวหนังสือ)
+const uint32_t WX_BG[7] = {0x221D2D, 0x14321F, 0x12304A, 0x3A2E12, 0x4A2A0E, 0x5A1E10, 0xB91C1C};
+const uint32_t WX_FG[7] = {0xC9BFD3, 0x86EFAC, 0x93C5FD, 0xFCD34D, 0xFDBA74, 0xFCA5A5, 0xFFFFFF};
+void pageDots(lv_obj_t* s, int k) {
+  for (int i = 0; i < 3; i++) box(s, 278 + i * 12, 10, 8, 8, i == k ? C_TEXT : 0x4A4458, 4);
+}
+void backHome(lv_event_t*) { showHome(); }
+void showWx() {
+  scr = S_WX; pageAt = millis();
+  lv_obj_t* s = mkScr();
+  lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE); lv_obj_add_event_cb(s, backHome, LV_EVENT_CLICKED, nullptr);
+  lbl(s, "อากาศ อ่าวลึก · " + snap.wxAt, &font_th16, C_MUTED, 8, 2, 260);
+  pageDots(s, 1);
+  lv_obj_t* t = lbl(s, String(snap.wxT), &font_clock56, C_TEXT, 8, 30);
+  lv_obj_update_layout(t);
+  lbl(s, "°C", &font_th26, C_TEXT, 10 + lv_obj_get_width(t), 26);
+  lbl(s, snap.wxCond, &font_th20, C_TEXT, 132, 28, 182);
+  lbl(s, "ชื้น " + String(snap.wxRh) + "% · ลม " + String(snap.wxGust) + " กม./ชม.", &font_th16, C_MUTED, 132, 56, 182);
+  int lv = snap.wxLv < 0 ? 0 : snap.wxLv > 6 ? 6 : snap.wxLv;
+  lv_obj_t* b = box(s, 8, 84, 304, 36, WX_BG[lv], 8);
+  lbl(b, "ระดับ " + String(lv) + " · " + snap.wxLabel, &font_th20, WX_FG[lv], 10, 2, 284);
+  int n = snap.wxN, cw = n ? (304 - (n - 1) * 4) / n : 0;
+  for (int i = 0; i < n; i++) {
+    lv_obj_t* c = box(s, 8 + i * (cw + 4), 126, cw, 78, C_CARD, 8);
+    lv_obj_t* h = lbl(c, snap.wxH[i] + " น.", &font_th16, C_MUTED, 0, 6); lv_obj_set_width(h, cw); lv_obj_set_style_text_align(h, LV_TEXT_ALIGN_CENTER, 0);
+    int pp = snap.wxP[i];
+    lv_obj_t* v = lbl(c, pp < 0 ? String("–") : String(pp) + "%", &font_th20, pp >= 70 ? 0x60A5FA : pp >= 40 ? 0x93C5FD : C_MUTED, 0, 36);
+    lv_obj_set_width(v, cw); lv_obj_set_style_text_align(v, LV_TEXT_ALIGN_CENTER, 0);
+  }
+  lbl(s, "โอกาสฝนรายชั่วโมง · แตะจอ = กลับหน้าเวร", &font_th16, 0xA79DB3, 8, 210, 304);
+  loadScr(s);
+}
+void showMk() {
+  scr = S_MK; pageAt = millis();
+  lv_obj_t* s = mkScr();
+  lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE); lv_obj_add_event_cb(s, backHome, LV_EVENT_CLICKED, nullptr);
+  lbl(s, "ตลาด · อัปเดต " + snap.mkAt + " (ล่าช้า)", &font_th16, C_MUTED, 8, 2, 260);
+  pageDots(s, 2);
+  for (int i = 0; i < snap.mkCount; i++) {
+    lv_obj_t* r = box(s, 8, 32 + i * 51, 304, 46, C_CARD, 8);
+    lv_obj_clear_flag(r, LV_OBJ_FLAG_CLICKABLE);
+    lbl(r, snap.mkN[i], &font_th20, C_TEXT, 10, 7, 100);
+    lv_obj_t* pl = lbl(r, snap.mkP[i], &font_th20, C_TEXT, 108, 7, 100); lv_obj_set_style_text_align(pl, LV_TEXT_ALIGN_RIGHT, 0);
+    float c = snap.mkC[i]; char cb[16]; snprintf(cb, sizeof cb, "%s %s%.1f%%", c > 0.05f ? "▲" : c < -0.05f ? "▼" : "●", c > 0.05f ? "+" : c < -0.05f ? "−" : "", fabs(c));
+    lv_obj_t* cl = lbl(r, cb, &font_th20, c > 0.05f ? 0x4ADE80 : c < -0.05f ? 0xF87171 : C_MUTED, 210, 7, 86); lv_obj_set_style_text_align(cl, LV_TEXT_ALIGN_RIGHT, 0);
+  }
+  loadScr(s);
+}
+// วนหน้า: หน้าเวร 20 วิ → อากาศ 10 วิ → ตลาด 10 วิ (ข้ามหน้าที่ไม่มีข้อมูล)
+void rotateTick() {
+  if (scr != S_HOME && scr != S_WX && scr != S_MK) return;
+  if (!roomBright) { if (scr != S_HOME) showHome(); return; }                     // กลางคืน ค้างหน้าเวร
+  if (lv_disp_get_inactive_time(NULL) < 60000 && scr == S_HOME) { pageAt = millis(); return; }   // เพิ่งแตะ → หยุดวน 1 นาที
+  uint32_t dur = scr == S_HOME ? 20000 : 10000;
+  if (millis() - pageAt < dur) return;
+  if (scr == S_HOME && snap.wxOk) showWx();
+  else if ((scr == S_HOME || scr == S_WX) && snap.mkCount) showMk();
+  else showHome();
+}
+
+// ---------- Wi-Fi ที่จำไว้ ----------
+int wDel = -1;
+void showWifiList() {
+  scr = S_WLIST;
+  lv_obj_t* s = mkScr();
+  lbl(s, "Wi-Fi ที่จำไว้", &font_th26, C_TEXT, 8, 2);
+  btn(s, "+ เพิ่ม", &font_th20, C_CARD2, 196, 4, 60, 32, [](lv_event_t*) { showWifi(); });
+  btn(s, LV_SYMBOL_LEFT, &font_th20, C_CARD2, 262, 4, 50, 32, [](lv_event_t*) { showSettings(); });
+  String cur = WiFi.status() == WL_CONNECTED ? WiFi.SSID() : String("");
+  for (int i = 0; i < cfg.wN; i++) {
+    bool on = cfg.wS[i] == cur;
+    lv_obj_t* r = btn(s, "", &font_th16, on ? 0x14321F : C_CARD, 8, 42 + i * 38, 304, 34,
+                      [](lv_event_t* e) { wDel = (int)(intptr_t)lv_event_get_user_data(e); showWifiList(); }, (void*)(intptr_t)i);
+    lv_obj_set_style_pad_all(r, 0, 0);
+    lbl(r, cfg.wS[i], &font_th20, C_TEXT, 10, 2, 190);
+    lbl(r, on ? String("เชื่อมอยู่") : String("จำไว้"), &font_th16, on ? 0x86EFAC : C_MUTED, 210, 6, 86);
+  }
+  if (wDel >= 0 && wDel < cfg.wN) {
+    lv_obj_t* m = box(s, 20, 70, 280, 110, 0x2E2640, 12);
+    lbl(m, "ลบ " + cfg.wS[wDel] + " ?", &font_th20, C_TEXT, 12, 8, 256);
+    btn(m, "ลบ", &font_th20, C_RED, 12, 56, 120, 40, [](lv_event_t*) { delWifi(wDel); wDel = -1; wifiChanged = true; showWifiList(); });
+    btn(m, "ยกเลิก", &font_th20, C_CARD, 148, 56, 120, 40, [](lv_event_t*) { wDel = -1; showWifiList(); });
+  } else {
+    lbl(s, "จำได้ 5 วง · ต่อวงที่แรงสุดเอง · แตะชื่อ = ลบ", &font_th16, 0xA79DB3, 8, 214, 304);
+  }
+  loadScr(s);
 }
 
 // ---------- ตั้งค่าครั้งแรก ----------
@@ -532,7 +672,7 @@ String pickSsid;
 void showPass(const String& ssid) {
   scr = S_PASS; pickSsid = ssid;
   loadScr(kbScreen("รหัส Wi-Fi: " + ssid, "พิมพ์รหัส แล้วกด ✓ มุมขวาล่าง", "", [](lv_event_t*) {
-    cfg.ssid = pickSsid; cfg.pass = lv_textarea_get_text(kbTa); saveCfg(); wifiChanged = true; nextSetup();
+    addWifi(pickSsid, lv_textarea_get_text(kbTa)); wifiChanged = true; nextSetup();
   }));
 }
 void showKey() {
@@ -610,7 +750,7 @@ void runCalibration() {
 void nextSetup() {
   if (!cfg.pok) return showColor();
   if (!cfg.cok) return showCali();
-  if (!cfg.ssid.length()) return showWifi();
+  if (!cfg.wN) return showWifi();
   if (!cfg.key.length()) return showKey();
   showHome();
 }
@@ -685,7 +825,7 @@ void loop() {
   if (fresh) { netSeenVer = net.ver; snap = net; if (net.test) { net.test = false; testUntil = now + 3000; } }
   xSemaphoreGive(mtx);
 
-  bool setupDone = cfg.pok && cfg.ssid.length() && cfg.key.length();
+  bool setupDone = cfg.pok && cfg.wN && cfg.key.length();
   bool inSetup = scr == S_WIFI || scr == S_PASS || scr == S_KEY;
   if (setupDone && !inSetup) {
     // เริ่มปลุกเมื่อระบบส่ง ring > 0 (ยกเว้นงานที่เพิ่งกดรับทราบไป)
@@ -709,12 +849,13 @@ void loop() {
   if (be == 1 && scr == S_ALARM) doAck();
   else if (be == 1 && scr == S_WHO) chooseWho(whoN ? whoNames[0] : String(""));
   else if (be == 2 && (scr == S_WIFI || scr == S_PASS || scr == S_KEY)) showCali();   // แตะไม่ตรง → กด BOOT ค้าง = ตั้งการแตะใหม่
-  else if (be == 2 && (scr == S_HOME || scr == S_JOBS || scr == S_DETAIL)) {
+  else if (be == 2 && (scr == S_HOME || scr == S_JOBS || scr == S_DETAIL || scr == S_WX || scr == S_MK)) {
     alarmSim = true; alarmId = "ทดลอง"; alarmText = "จำลอง: ไฟดับทั้งซอย (ไม่ใช่งานจริง)"; alarmMin0 = 0; showAlarm();
   }
 
   // กลับหน้าหลักเองเมื่อไม่มีใครแตะ 3 นาที
-  if ((scr == S_DETAIL || scr == S_JOBS || scr == S_SET) && lv_disp_get_inactive_time(NULL) > IDLE_HOME_MS) showHome();
+  if ((scr == S_DETAIL || scr == S_JOBS || scr == S_SET || scr == S_WLIST) && lv_disp_get_inactive_time(NULL) > IDLE_HOME_MS) showHome();
+  if (setupDone) rotateTick();
 
   if (now - lastPaint > 250) {
     lastPaint = now;

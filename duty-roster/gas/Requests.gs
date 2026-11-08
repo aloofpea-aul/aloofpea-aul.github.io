@@ -972,6 +972,39 @@ function boxPoll_(q) {
   } else r = bellPoll_({ k: q.k });
   return Object.assign(r, boxInfo_());
 }
+/** สภาพอากาศอ่าวลึกสำหรับหน้าสลับของกล่อง (ข้อมูลเดียวกับระดับสภาพอากาศในแอป) */
+function boxWx_() {
+  try {
+    const d = weatherData_(); if (!d) return null;
+    const w = wxNow_(), hrs = [];
+    for (let i = 1; i <= 6 && i < (d.hrs || []).length; i++) hrs.push({ h: d.hrs[i], p: d.probs[i] == null ? -1 : d.probs[i] });
+    return { lv: w.lv, label: w.label || '', t: d.t == null ? null : Math.round(d.t), rh: d.rh == null ? null : Math.round(d.rh),
+      gust: d.gust == null ? null : Math.round(d.gust), cond: WX_TH_[d.code] || '', at: Utilities.formatDate(new Date(d.at), TZ, 'HH:mm'), hrs: hrs };
+  } catch (e) { return null; }
+}
+/** ตลาด 4 ตัว (Yahoo Finance ฟรี · จำไว้ 10 นาที) */
+const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 0 }, { n: 'บิตคอยน์', s: 'BTC-USD', d: 0 }, { n: 'USD/THB', s: 'THB=X', d: 2 }, { n: 'SET', s: '^SET.BK', d: 2 }];
+function boxMk_() {
+  const cache = CacheService.getScriptCache(), hit = cache.get('boxMk');
+  if (hit) return JSON.parse(hit);
+  let out = [];
+  try {
+    const res = UrlFetchApp.fetchAll(BOX_MK_.map(function (m) {
+      return { url: 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(m.s) + '?range=1d&interval=1d', muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } };
+    }));
+    out = BOX_MK_.map(function (m, i) {
+      try {
+        const meta = JSON.parse(res[i].getContentText()).chart.result[0].meta, p = Number(meta.regularMarketPrice), pc = Number(meta.chartPreviousClose || meta.previousClose);
+        if (!isFinite(p)) return null;
+        const pct = isFinite(pc) && pc ? (p - pc) / pc * 100 : 0;
+        return { n: m.n, p: p.toFixed(m.d).replace(/\B(?=(\d{3})+(?!\d))/g, ','), c: Math.round(pct * 10) / 10 };
+      } catch (e) { return null; }
+    }).filter(function (x) { return x; });
+  } catch (e) { out = []; }
+  const r = { at: Utilities.formatDate(new Date(), TZ, 'HH:mm'), items: out };
+  if (out.length) cache.put('boxMk', JSON.stringify(r), 600);
+  return r;
+}
 /** คนงานที่อยู่เวรตอนนี้ (คนที่อยู่เวรแต่ไม่ใช่พนักงาน) */
 function crewNow_() {
   const td = dayData_(bkkYmd_()), yd = dayData_(addDays_(bkkYmd_(), -1)), emp = Object.assign({}, yd ? yd.emp : {}, td ? td.emp : {});
@@ -991,7 +1024,7 @@ function boxInfo_() {
     });
   const out = { duty: dutyShorts_(), crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
-    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '' };
+    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_() };
   cache.put('boxInfo', JSON.stringify(out), 30);
   return out;
 }
