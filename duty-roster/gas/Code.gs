@@ -425,6 +425,7 @@ function doGet(e) {
     if (a === 'bell') return json_(Object.assign({ ok: true }, bellPoll_(q)));
     if (a === 'box') return json_(Object.assign({ ok: true }, boxPoll_(q)));
     if (a === 'oc') return json_(Object.assign({ ok: true }, ocIn_(q)));
+    if (a === 'ocStatus') { const hb = Number(CacheService.getScriptCache().get('ocHB') || 0), sh = sheet_(OC_SHEET_); return json_({ ok: true, lastSeen: hb ? new Date(hb).toISOString() : '', rows: sh ? Math.max(0, sh.getLastRow() - 1) : 0 }); }
     if (a === 'bellStatus') { const st = bellStatus_(); return json_({ ok: true, status: { online: st.online, lastSeen: st.lastSeen, hours: st.hours, rssi: st.rssi, ringing: st.ringing.map(function (r) { return { id: r.id, min: r.min }; }) } }); }
     if (a === 'wx') return json_({ ok: true, wx: wxNow_() });
     if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
