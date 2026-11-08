@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.2"
+#define FW_VER "1.3"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -76,7 +76,7 @@ struct Job { String id, t, type, place, st, by, ph; double lat = 0, lon = 0; };
 struct Net {
   bool ok = false; String err; uint32_t lastOk = 0; uint32_t ver = 0;
   int ring = 0, n = 0, min = 0; String id, text; bool test = false;
-  String duty[6]; int nDuty = 0; int open = 0, today = 0; Job jobs[6]; int nJobs = 0; String app;
+  String duty[6]; int nDuty = 0; String crew[6]; int nCrew = 0; int open = 0, today = 0; Job jobs[6]; int nJobs = 0; String app;
 } net;
 SemaphoreHandle_t mtx;
 volatile bool reqAck = false, reqLight = false, reqPoll = false;
@@ -124,6 +124,8 @@ void doPoll(bool ack, const String& by, bool light) {
     net.id = String((const char*)(doc["id"] | "")); net.text = String((const char*)(doc["text"] | ""));
     net.nDuty = 0;
     for (JsonVariant v : doc["duty"].as<JsonArray>()) if (net.nDuty < 6) net.duty[net.nDuty++] = String((const char*)(v | ""));
+    net.nCrew = 0;
+    for (JsonVariant v : doc["crew"].as<JsonArray>()) if (net.nCrew < 6) net.crew[net.nCrew++] = String((const char*)(v | ""));
     net.open = doc["open"] | 0; net.today = doc["today"] | 0;
     net.app = String((const char*)(doc["app"] | ""));
     net.nJobs = 0;
@@ -223,8 +225,15 @@ void setT(lv_obj_t* l, const String& s) { lv_label_set_text(l, thai::shape(s).c_
 lv_obj_t* lbl(lv_obj_t* p, const String& s, const lv_font_t* f, uint32_t col, int x, int y, int w = 0) {
   lv_obj_t* l = lv_label_create(p);
   lv_obj_set_style_text_font(l, f, 0); lv_obj_set_style_text_color(l, lv_color_hex(col), 0);
-  if (w > 0) { lv_obj_set_width(l, w); lv_label_set_long_mode(l, LV_LABEL_LONG_DOT); }
   lv_obj_set_pos(l, x, y); setT(l, s);
+  // ทุกข้อความเป็นบรรทัดเดียว ไม่ล้นกรอบ: ยาวเกินที่ว่าง → ตัดท้ายด้วย … (ไม่ขึ้นบรรทัดใหม่ไปทับข้อความอื่น)
+  if (w <= 0) {
+    lv_obj_update_layout(p);
+    int avail = lv_obj_get_content_width(p) - (x > 0 ? x : 0) - 2;
+    lv_point_t sz; lv_txt_get_size(&sz, lv_label_get_text(l), f, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    if (avail > 20 && sz.x > avail) w = avail;
+  }
+  if (w > 0) { lv_obj_set_width(l, w); lv_label_set_long_mode(l, LV_LABEL_LONG_DOT); lv_obj_set_height(l, lv_font_get_line_height(f)); }
   return l;
 }
 lv_obj_t* btn(lv_obj_t* p, const String& s, const lv_font_t* f, uint32_t bg, int x, int y, int w, int h, lv_event_cb_t cb, void* ud = nullptr) {
@@ -264,7 +273,7 @@ void showWifi(); void showPass(const String& ssid); void showKey(); void showCol
 void nextSetup();
 
 // ---------- หน้าหลัก ----------
-lv_obj_t *hClock, *hDate, *hNet, *hDuty, *hOpen, *hToday, *hBars[4], *hErr;
+lv_obj_t *hClock, *hDate, *hNet, *hDuty, *hCrew, *hOpen, *hToday, *hBars[4], *hErr;
 uint32_t simPress = 0; bool simFired = false;
 
 void wifiBars(lv_obj_t* p, int x, int y, lv_obj_t** bars) {
@@ -284,29 +293,33 @@ void simCb(lv_event_t* e) {
 void showHome() {
   scr = S_HOME;
   lv_obj_t* s = mkScr();
-  lbl(s, "งานเวรแก้ไฟ · กฟส.อ่าวลึก", &font_th16, C_MUTED, 8, 4);
-  lv_obj_t* tag = box(s, 196, 5, 48, 20, 0x3A2E12, 5);
+  lbl(s, "เวรแก้ไฟ กฟส.อ่าวลึก", &font_th16, C_MUTED, 8, 4);
+  lv_obj_t* tag = box(s, 186, 4, 58, 22, 0x3A2E12, 5);
   lv_obj_t* tl = lbl(tag, "ทดลอง", &font_th16, C_AMBER, 0, 0); lv_obj_center(tl);
   wifiBars(s, 252, 6, hBars);
   lv_obj_t* g = btn(s, LV_SYMBOL_SETTINGS, &font_th20, C_CARD2, 282, 2, 34, 28, [](lv_event_t*) { showSettings(); });
   (void)g;
   hClock = lbl(s, "--:--", &font_clock56, C_TEXT, 8, 26);
-  hDate = lbl(s, "", &font_th20, C_MUTED, 172, 52);
-  hNet = lbl(s, "", &font_th16, C_MUTED, 172, 76, 144);
-  lv_obj_t* card = box(s, 8, 98, 304, 54, C_CARD);
-  lbl(card, "อยู่เวรตอนนี้", &font_th16, C_MUTED, 10, 2);
-  hDuty = lbl(card, "—", &font_th26, C_TEXT, 10, 20, 284);
-  lv_obj_t* t1 = btn(s, "", &font_th16, C_CARD, 8, 158, 96, 58, [](lv_event_t*) { showJobs(); });
-  lbl(t1, "งานค้าง", &font_th16, C_MUTED, -4, -6);
-  hOpen = lbl(t1, "0", &font_th26, C_AMBER, -4, 14);
-  lv_obj_t* t2 = btn(s, "", &font_th16, C_CARD, 112, 158, 96, 58, [](lv_event_t*) { showJobs(); });
-  lbl(t2, "วันนี้", &font_th16, C_MUTED, -4, -6);
-  hToday = lbl(t2, "0", &font_th26, C_TEXT, -4, 14);
-  lv_obj_t* t3 = btn(s, "", &font_th16, C_CARD2, 216, 158, 96, 58, nullptr);
-  lbl(t3, "แตะค้าง 3 วิ", &font_th16, C_MUTED, -4, -6);
-  lbl(t3, "จำลองเรื่อง", &font_th16, C_TEXT, -4, 16);
+  hDate = lbl(s, "", &font_th20, C_MUTED, 172, 24, 144);
+  hNet = lbl(s, "", &font_th16, C_MUTED, 172, 48, 144);
+  lv_obj_t* card = box(s, 8, 74, 304, 82, C_CARD);
+  lbl(card, "พนักงานเวร", &font_th16, C_MUTED, 10, 0);
+  hDuty = lbl(card, "—", &font_th26, C_TEXT, 10, 16, 284);
+  hCrew = lbl(card, "", &font_th16, C_TEXT, 10, 54, 284);
+  lv_obj_t* t1 = btn(s, "", &font_th16, C_CARD, 8, 160, 96, 54, [](lv_event_t*) { showJobs(); });
+  lv_obj_set_style_pad_all(t1, 4, 0);
+  lbl(t1, "งานค้าง", &font_th16, C_MUTED, 4, 0);
+  hOpen = lbl(t1, "0", &font_th26, C_AMBER, 4, 8);
+  lv_obj_t* t2 = btn(s, "", &font_th16, C_CARD, 112, 160, 96, 54, [](lv_event_t*) { showJobs(); });
+  lv_obj_set_style_pad_all(t2, 4, 0);
+  lbl(t2, "วันนี้", &font_th16, C_MUTED, 4, 0);
+  hToday = lbl(t2, "0", &font_th26, C_TEXT, 4, 8);
+  lv_obj_t* t3 = btn(s, "", &font_th16, C_CARD2, 216, 160, 96, 54, nullptr);
+  lv_obj_set_style_pad_all(t3, 4, 0);
+  lbl(t3, "ค้าง 3 วิ", &font_th16, C_MUTED, 4, 0);
+  lbl(t3, "จำลองเรื่อง", &font_th16, C_TEXT, 4, 22);
   lv_obj_add_event_cb(t3, simCb, LV_EVENT_ALL, nullptr);
-  hErr = lbl(s, "", &font_th16, C_MUTED, 8, 220, 304);
+  hErr = lbl(s, "", &font_th16, C_MUTED, 8, 215, 304);
   loadScr(s);
   snapVer = 0;
 }
@@ -319,9 +332,14 @@ void paintHome() {
   else st = "ออนไลน์";
   setT(hNet, st); lv_obj_set_style_text_color(hNet, lv_color_hex(on ? C_OK : C_AMBER), 0);
   String d; for (int i = 0; i < snap.nDuty; i++) d += (i ? " · " : "") + snap.duty[i];
-  setT(hDuty, d.length() ? d : String(on ? "ไม่มีพนักงานอยู่เวรตอนนี้" : "—"));
+  String ds = d.length() ? d : String(on ? "ไม่มีพนักงานอยู่เวรตอนนี้" : "—");
+  { lv_point_t sz; String sh = thai::shape(ds); lv_txt_get_size(&sz, sh.c_str(), &font_th26, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    lv_obj_set_style_text_font(hDuty, sz.x > 284 ? &font_th20 : &font_th26, 0); }   // หลายชื่อ → ตัวเล็กลง ไม่ตัดชื่อ
+  setT(hDuty, ds);
+  String c; for (int i = 0; i < snap.nCrew; i++) c += (i ? " · " : "") + snap.crew[i];
+  setT(hCrew, "คนงาน: " + (c.length() ? c : String("—")));
   setT(hOpen, String(snap.open)); setT(hToday, String(snap.today));
-  setT(hErr, (snap.err.length() && on) ? snap.err : String("ห้องมืด → จอหรี่เอง · กดค้างปุ่ม BOOT = จำลองเรื่องเข้า"));
+  setT(hErr, (snap.err.length() && on) ? snap.err : String("ห้องมืด → จอหรี่ · กด BOOT ค้าง = จำลอง"));
 }
 
 // ---------- หน้าปลุก ----------
@@ -333,16 +351,16 @@ void showAlarm() {
   lbl(s, LV_SYMBOL_BELL " มีเรื่องแจ้งไฟดับ", &font_th26, 0xFFFFFF, 10, 6);
   lv_obj_t* tb = box(s, 246, 8, 66, 30, 0x5A0E0E, 8);
   aTimer = lbl(tb, "0:00", &font_th20, 0xFFFFFF, 0, 0); lv_obj_center(aTimer);
-  lv_obj_t* jb = box(s, 8, 44, 304, 70, 0x6E1111, 10);
+  lv_obj_t* jb = box(s, 8, 44, 304, 90, 0x6E1111, 10);
   const Job* j = findJob(alarmId);
-  String place = j && j->place.length() ? j->place : alarmText;
-  String type = j ? j->type : String("");
+  String place = alarmSim ? String("งานจำลอง") : (j && j->place.length() ? j->place : alarmText);
+  String type = alarmSim ? String("ไฟดับทั้งซอย · ไม่ใช่งานจริง") : (j ? j->type : String(""));
   lbl(jb, place, &font_th26, 0xFFFFFF, 10, 2, 284);
-  lbl(jb, type.length() ? type : String(" "), &font_th20, 0xFDE2E2, 10, 30, 284);
-  lbl(jb, alarmSim ? String("โหมดจำลอง · ไม่ส่งเข้าระบบ") : String("งาน " + alarmId + (j ? String(" · แจ้ง " + j->t) : String(""))), &font_th16, 0xFDE2E2, 10, 50, 284);
-  lv_obj_t* b = btn(s, LV_SYMBOL_OK " แตะเพื่อรับทราบ", &font_th26, C_GREEN, 8, 122, 304, 84, [](lv_event_t*) { doAck(); });
+  lbl(jb, type.length() ? type : String(" "), &font_th20, 0xFDE2E2, 10, 37, 284);
+  lbl(jb, alarmSim ? String("โหมดจำลอง · ไม่ส่งเข้าระบบ") : String("งาน " + alarmId + (j ? String(" · แจ้ง " + j->t) : String(""))), &font_th16, 0xFDE2E2, 10, 63, 284);
+  lv_obj_t* b = btn(s, LV_SYMBOL_OK " แตะเพื่อรับทราบ", &font_th26, C_GREEN, 8, 140, 304, 70, [](lv_event_t*) { doAck(); });
   lv_obj_set_style_border_width(b, 3, 0); lv_obj_set_style_border_color(b, lv_color_hex(0xFFFFFF), 0);
-  lbl(s, "แตะตรงไหนก็ได้ หรือกดปุ่ม BOOT", &font_th16, 0xFDE2E2, 10, 214);
+  lbl(s, "แตะตรงไหนก็ได้ หรือกดปุ่ม BOOT", &font_th16, 0xFDE2E2, 10, 213);
   lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(s, [](lv_event_t*) { doAck(); }, LV_EVENT_CLICKED, nullptr);
   loadScr(s);
@@ -397,7 +415,8 @@ void paintQr() {
   if (!v.length()) { lv_obj_add_flag(qr, LV_OBJ_FLAG_HIDDEN); setT(qrCap, "ไม่มีลิงก์งาน"); return; }
   lv_qrcode_update(qr, v.c_str(), v.length());
   bool tel = v.startsWith("tel:");
-  setT(qrCap, tel ? String("สแกน = โทรหาผู้แจ้ง\nแตะ QR = เปิดแอป") : String("สแกน = เปิดงานในแอป\nแตะ QR = โทรผู้แจ้ง"));
+  if (!qrTel.length() || !qrApp.length()) { setT(qrCap, tel ? String("สแกน = โทรออก") : String("สแกน = เปิดงาน")); return; }
+  setT(qrCap, tel ? String("สแกน = โทรออก\nแตะ = ลิงก์แอป") : String("สแกน = เปิดงาน\nแตะ = เบอร์โทร"));
 }
 void showDetail(const String& id, const String& head, uint32_t headCol) {
   scr = S_DETAIL;
@@ -406,23 +425,25 @@ void showDetail(const String& id, const String& head, uint32_t headCol) {
   lbl(hb, head, &font_th20, 0xFFFFFF, 10, 4, 300);
   const Job* j = findJob(id);
   String place = j && j->place.length() ? j->place : (id == alarmId ? alarmText : String(""));
-  lbl(s, id + " " + place, &font_th20, C_TEXT, 8, 38, 196);
-  lbl(s, j ? j->type : String(alarmSim ? "โหมดจำลอง" : ""), &font_th16, C_MUTED, 8, 62, 196);
+  bool sim = alarmSim && id == alarmId;
+  lbl(s, sim ? String("งานจำลอง") : String(id + " " + place), &font_th20, C_TEXT, 8, 38, 196);
+  lbl(s, sim ? String("ไฟดับทั้งซอย · ไม่ใช่งานจริง") : (j ? j->type : String("")), &font_th16, C_MUTED, 8, 62, 196);
   lv_obj_t* tl = box(s, 8, 84, 196, 108, C_CARD, 8);
   int y = 4;
-  auto line = [&](const String& t, const String& txt, uint32_t col) { lbl(tl, t, &font_th16, C_MUTED, 8, y); lbl(tl, txt, &font_th16, col, 52, y, 140); y += 20; };
+  auto line = [&](const String& t, const String& txt, uint32_t col) { lbl(tl, t, &font_th16, C_MUTED, 8, y, 50); lbl(tl, txt, &font_th16, col, 62, y, 128); y += 20; };
   if (j) line(j->t, "รับแจ้ง", C_TEXT);
   if (id == alarmId && lightAt.length()) line(lightAt, "ไฟห้องเปิด", C_AMBER);
   if (id == alarmId && ackAt.length()) line(ackAt, "รับทราบ (กล่อง)", 0x86EFAC);
   if (j && j->by.length()) line(String(j->st == "done" ? "เสร็จ" : "รับ"), j->by, C_TEXT);
   if (j) line("สถานะ", j->st == "new" ? String("ยังไม่กดรับงาน") : j->st == "acc" ? String("รับงานแล้ว") : j->st == "done" ? String("แก้เสร็จ") : j->st, C_TEXT);
   qrApp = snap.app; qrTel = j && j->ph.length() ? "tel:" + j->ph : String(""); qrShowTel = false;
-  qr = lv_qrcode_create(s, 104, lv_color_hex(0x000000), lv_color_hex(0xFFFFFF));
-  lv_obj_set_pos(qr, 210, 42);
+  qr = lv_qrcode_create(s, 92, lv_color_hex(0x000000), lv_color_hex(0xFFFFFF));
+  lv_obj_set_pos(qr, 212, 40);
   lv_obj_set_style_border_color(qr, lv_color_hex(0xFFFFFF), 0); lv_obj_set_style_border_width(qr, 4, 0);
   lv_obj_add_flag(qr, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(qr, [](lv_event_t*) { qrShowTel = !qrShowTel; paintQr(); }, LV_EVENT_CLICKED, nullptr);
-  qrCap = lbl(s, "", &font_th16, C_MUTED, 208, 152);
+  qrCap = lv_label_create(s); lv_obj_set_style_text_font(qrCap, &font_th16, 0); lv_obj_set_style_text_color(qrCap, lv_color_hex(C_MUTED), 0);
+  lv_obj_set_pos(qrCap, 206, 142); lv_obj_set_width(qrCap, 112); lv_label_set_long_mode(qrCap, LV_LABEL_LONG_CLIP); lv_obj_set_height(qrCap, 2 * lv_font_get_line_height(&font_th16));
   paintQr();
   btn(s, "หน้าหลัก", &font_th20, C_CARD, 8, 198, 148, 38, [](lv_event_t*) { showHome(); });
   btn(s, "งานทั้งหมด", &font_th20, C_CARD2, 164, 198, 148, 38, [](lv_event_t*) { showJobs(); });
@@ -444,7 +465,7 @@ void showJobs() {
     const Job& j = snap.jobs[i];
     bool live = j.st == "new" || j.st == "acc";
     lv_obj_t* r = lv_btn_create(lst);
-    lv_obj_set_size(r, 306, 48);
+    lv_obj_set_size(r, 306, 54);
     lv_obj_set_style_bg_color(r, lv_color_hex(live ? C_CARD : 0x1A1622), 0); lv_obj_set_style_radius(r, 8, 0); lv_obj_set_style_shadow_width(r, 0, 0);
     lv_obj_set_style_pad_all(r, 0, 0);
     box(r, 8, 18, 10, 10, j.st == "new" ? C_RED : j.st == "acc" ? C_AMBER : C_OK, 5);
@@ -496,11 +517,11 @@ lv_obj_t* kbScreen(const String& title, const String& hint, const String& init, 
   lbl(s, title, &font_th16, C_TEXT, 6, 0, 308);
   (void)hint;
   kbTa = lv_textarea_create(s);
-  lv_obj_set_pos(kbTa, 4, 20); lv_obj_set_size(kbTa, 312, 38); lv_textarea_set_placeholder_text(kbTa, thai::shape(hint).c_str());
+  lv_obj_set_pos(kbTa, 4, 26); lv_obj_set_size(kbTa, 312, 36); lv_textarea_set_placeholder_text(kbTa, thai::shape(hint).c_str());
   lv_textarea_set_one_line(kbTa, true); lv_obj_set_style_text_font(kbTa, &font_th20, 0);
   lv_textarea_set_text(kbTa, init.c_str());
   lv_obj_t* kb = lv_keyboard_create(s);
-  lv_obj_set_size(kb, 320, 180); lv_obj_set_style_pad_all(kb, 2, 0); lv_obj_set_style_pad_gap(kb, 3, 0); lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
+  lv_obj_set_size(kb, 320, 176); lv_obj_set_style_pad_all(kb, 2, 0); lv_obj_set_style_pad_gap(kb, 3, 0); lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_text_font(kb, &font_th20, 0);
   lv_keyboard_set_textarea(kb, kbTa);
   lv_obj_add_event_cb(kb, onOk, LV_EVENT_READY, nullptr);
@@ -541,7 +562,7 @@ void wifiScanFill(lv_timer_t* t) {
 void showWifi() {
   scr = S_WIFI;
   lv_obj_t* s = mkScr();
-  lbl(s, "เลือก Wi-Fi สำนักงาน", &font_th26, C_TEXT, 8, 2);
+  lbl(s, "เลือก Wi-Fi", &font_th26, C_TEXT, 8, 2);
   btn(s, "ค้นหาใหม่", &font_th16, C_CARD2, 222, 6, 90, 30, [](lv_event_t*) { lv_obj_clean(wList); lbl(wList, "กำลังค้นหา…", &font_th20, C_MUTED, 0, 0); lv_timer_create(wifiScanFill, 150, nullptr); });
   wList = lv_obj_create(s);
   lv_obj_set_pos(wList, 0, 40); lv_obj_set_size(wList, 320, 200);
@@ -561,8 +582,8 @@ void showColor() {
   const uint32_t cs[3] = {0xFF0000, 0x00FF00, 0x0000FF}; const char* nm[3] = {"แดง", "เขียว", "น้ำเงิน"};
   for (int i = 0; i < 3; i++) { lv_obj_t* b = box(s, 10 + i * 102, 44, 96, 80, cs[i], 8); lv_obj_t* l = lbl(b, nm[i], &font_th26, 0xFFFFFF, 0, 0); lv_obj_center(l); }
   lbl(s, "สีตรงกับชื่อหรือไม่?", &font_th20, 0xFFFFFF, 10, 134);
-  lbl(s, "ตรง → แตะจอ หรือกด BOOT ค้าง 2 วิ", &font_th20, 0x00FF00, 10, 164);
-  lbl(s, "ไม่ตรง → กดปุ่ม BOOT สั้น ๆ (กลับสี)", &font_th20, 0xFFFF00, 10, 194);
+  lbl(s, "ตรง → แตะจอ หรือ BOOT ค้าง 2 วิ", &font_th20, 0x00FF00, 10, 166);
+  lbl(s, "ไม่ตรง → กด BOOT สั้น ๆ (กลับสี)", &font_th20, 0xFFFF00, 10, 200);
   loadScr(s);
 }
 bool caliArmed = false; uint32_t caliShownAt = 0;
@@ -570,10 +591,11 @@ void showCali() {
   scr = S_CALI; caliArmed = false; caliShownAt = millis();
   lv_obj_t* s = mkScr();
   lbl(s, "ตั้งการแตะจอ", &font_th26, C_TEXT, 10, 6);
-  lbl(s, "จะมีลูกศรขึ้นที่มุมจอทีละมุม", &font_th20, C_TEXT, 10, 50);
-  lbl(s, "ใช้ปลายเล็บหรือปากกาแตะที่ปลายลูกศร", &font_th20, C_TEXT, 10, 76);
-  lbl(s, "ครบ 4 มุมแล้วจะไปหน้าถัดไปเอง", &font_th20, C_TEXT, 10, 102);
-  lbl(s, "แตะจอ หรือกด BOOT เพื่อเริ่ม", &font_th26, C_AMBER, 10, 160);
+  lbl(s, "จะมีลูกศรขึ้นที่มุมจอทีละมุม", &font_th20, C_TEXT, 10, 46);
+  lbl(s, "ใช้ปลายเล็บแตะที่ปลายลูกศร", &font_th20, C_TEXT, 10, 76);
+  lbl(s, "ครบ 4 มุมแล้วจะไปหน้าถัดไปเอง", &font_th20, C_TEXT, 10, 106);
+  lbl(s, "แตะจอเพื่อเริ่ม", &font_th26, C_AMBER, 10, 150);
+  lbl(s, "(หรือกดปุ่ม BOOT)", &font_th20, C_MUTED, 10, 192);
   loadScr(s);
 }
 void runCalibration() {

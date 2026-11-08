@@ -972,6 +972,11 @@ function boxPoll_(q) {
   } else r = bellPoll_({ k: q.k });
   return Object.assign(r, boxInfo_());
 }
+/** คนงานที่อยู่เวรตอนนี้ (คนที่อยู่เวรแต่ไม่ใช่พนักงาน) */
+function crewNow_() {
+  const td = dayData_(bkkYmd_()), yd = dayData_(addDays_(bkkYmd_(), -1)), emp = Object.assign({}, yd ? yd.emp : {}, td ? td.emp : {});
+  return Object.keys(onDutyNow_()).filter(function (n) { return !(n in emp); });
+}
 function boxInfo_() {
   const cache = CacheService.getScriptCache(), c = cache.get('boxInfo');
   if (c) return JSON.parse(c);
@@ -984,7 +989,7 @@ function boxInfo_() {
       return { id: x.id, t: Utilities.formatDate(new Date(d.at), TZ, 'HH:mm'), type: TK_TYPES_[d.type] || 'แจ้งไฟดับ', place: String(d.place || '').slice(0, 60),
         st: x.st, by: d.accBy || (d.bellAck && d.bellAck.by) || '', ph: d.phone || '', lat: d.lat || 0, lon: d.lon || 0 };
     });
-  const out = { duty: dutyShorts_(), open: rows.filter(live).length,
+  const out = { duty: dutyShorts_(), crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
     jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '' };
   cache.put('boxInfo', JSON.stringify(out), 30);
