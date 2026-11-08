@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.5"
+#define FW_VER "1.6"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -560,7 +560,7 @@ void showSettings() {
   loadScr(s);
 }
 void paintSettings() {
-  setT(sLdr, "เซนเซอร์แสง: ค่า " + String(int(ldrAvg)) + " → " + (roomBright ? "สว่าง" : "มืด") + " (จำไว้: สว่าง " + cfg.lb + " / มืด " + cfg.ld + ")");
+  setT(sLdr, "เซนเซอร์แสง: ค่า " + String(int(ldrAvg)) + " → " + (roomBright ? "สว่าง" : "มืด") + " (จำไว้: สว่าง " + cfg.lb + " / มืด " + cfg.ld + ")\nวนหน้า: อากาศ " + (snap.wxOk ? "มี" : "ไม่มี") + " · ตลาด " + String(snap.mkCount) + " ตัว · เวลา " + String(snap.rot[0]) + "/" + String(snap.rot[1]) + "/" + String(snap.rot[2]) + " วิ");
 }
 
 // ---------- หน้าสลับ: สภาพอากาศ / ตลาด ----------
@@ -615,7 +615,8 @@ void showMk() {
 // วนหน้า: หน้าเวร 20 วิ → อากาศ 10 วิ → ตลาด 5 วิ (เวลาตั้งได้จากระบบ: Config boxRot · ข้ามหน้าที่ไม่มีข้อมูล)
 void rotateTick() {
   if (scr != S_HOME && scr != S_WX && scr != S_MK) return;
-  if (!roomBright) { if (scr != S_HOME) showHome(); return; }                     // กลางคืน ค้างหน้าเวร
+  struct tm tt; bool nightHr = getLocalTime(&tt, 5) && tt.tm_year >= 124 && (tt.tm_hour >= 19 || tt.tm_hour < 6);
+  if (!roomBright && nightHr) { if (scr != S_HOME) showHome(); return; }        // กลางคืนและห้องมืด → ค้างหน้าเวร (กลางวันวนเสมอ แม้เซนเซอร์แสงอ่านว่ามืด)
   if (lv_disp_get_inactive_time(NULL) < 60000 && scr == S_HOME) { pageAt = millis(); return; }   // เพิ่งแตะ → หยุดวน 1 นาที
   uint32_t dur = 1000UL * (scr == S_HOME ? max(5, snap.rot[0]) : scr == S_WX ? snap.rot[1] : snap.rot[2]);
   if (millis() - pageAt < dur) return;
