@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.1"
+#define FW_VER "1.2"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -493,14 +493,14 @@ void paintSettings() {
 lv_obj_t* kbTa;
 lv_obj_t* kbScreen(const String& title, const String& hint, const String& init, lv_event_cb_t onOk) {
   lv_obj_t* s = mkScr();
-  lbl(s, title, &font_th20, C_TEXT, 8, 2, 304);
-  lbl(s, hint, &font_th16, C_MUTED, 8, 26, 304);
+  lbl(s, title, &font_th16, C_TEXT, 6, 0, 308);
+  (void)hint;
   kbTa = lv_textarea_create(s);
-  lv_obj_set_pos(kbTa, 8, 48); lv_obj_set_size(kbTa, 304, 40);
+  lv_obj_set_pos(kbTa, 4, 20); lv_obj_set_size(kbTa, 312, 38); lv_textarea_set_placeholder_text(kbTa, thai::shape(hint).c_str());
   lv_textarea_set_one_line(kbTa, true); lv_obj_set_style_text_font(kbTa, &font_th20, 0);
   lv_textarea_set_text(kbTa, init.c_str());
   lv_obj_t* kb = lv_keyboard_create(s);
-  lv_obj_set_size(kb, 320, 146); lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
+  lv_obj_set_size(kb, 320, 180); lv_obj_set_style_pad_all(kb, 2, 0); lv_obj_set_style_pad_gap(kb, 3, 0); lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_text_font(kb, &font_th20, 0);
   lv_keyboard_set_textarea(kb, kbTa);
   lv_obj_add_event_cb(kb, onOk, LV_EVENT_READY, nullptr);
@@ -510,13 +510,13 @@ lv_obj_t* kbScreen(const String& title, const String& hint, const String& init, 
 String pickSsid;
 void showPass(const String& ssid) {
   scr = S_PASS; pickSsid = ssid;
-  loadScr(kbScreen("รหัส Wi-Fi: " + ssid, "พิมพ์รหัสแล้วกด ✓ ที่มุมขวาล่างของแป้น", "", [](lv_event_t*) {
+  loadScr(kbScreen("รหัส Wi-Fi: " + ssid, "พิมพ์รหัส แล้วกด ✓ มุมขวาล่าง", "", [](lv_event_t*) {
     cfg.ssid = pickSsid; cfg.pass = lv_textarea_get_text(kbTa); saveCfg(); wifiChanged = true; nextSetup();
   }));
 }
 void showKey() {
   scr = S_KEY;
-  loadScr(kbScreen("กุญแจกล่อง (16 ตัว)", "ดูในแอปงานเวรแก้ไฟ → ตั้งค่า → กระดิ่งหน้าห้องเวร → ติดตั้งกล่อง", cfg.key, [](lv_event_t*) {
+  loadScr(kbScreen("กุญแจกล่อง (16 ตัว)", "ดูในแอป → ตั้งค่า → กระดิ่งหน้าห้องเวร", cfg.key, [](lv_event_t*) {
     String k = lv_textarea_get_text(kbTa); k.trim(); cfg.key = k; saveCfg(); reqPoll = true; nextSetup();
   }));
 }
@@ -560,7 +560,7 @@ void showColor() {
   lbl(s, String(cfg.pidx == 1 ? "กลับสี: เปิด" : "กลับสี: ปิด"), &font_th16, 0xFFFFFF, 214, 10);
   const uint32_t cs[3] = {0xFF0000, 0x00FF00, 0x0000FF}; const char* nm[3] = {"แดง", "เขียว", "น้ำเงิน"};
   for (int i = 0; i < 3; i++) { lv_obj_t* b = box(s, 10 + i * 102, 44, 96, 80, cs[i], 8); lv_obj_t* l = lbl(b, nm[i], &font_th26, 0xFFFFFF, 0, 0); lv_obj_center(l); }
-  lbl(s, "สีตรงกับชื่อ และตัวหนังสืออ่านได้ปกติ?", &font_th20, 0xFFFFFF, 10, 134, 300);
+  lbl(s, "สีตรงกับชื่อหรือไม่?", &font_th20, 0xFFFFFF, 10, 134);
   lbl(s, "ตรง → แตะจอ หรือกด BOOT ค้าง 2 วิ", &font_th20, 0x00FF00, 10, 164);
   lbl(s, "ไม่ตรง → กดปุ่ม BOOT สั้น ๆ (กลับสี)", &font_th20, 0xFFFF00, 10, 194);
   loadScr(s);
@@ -573,7 +573,7 @@ void showCali() {
   lbl(s, "จะมีลูกศรขึ้นที่มุมจอทีละมุม", &font_th20, C_TEXT, 10, 50);
   lbl(s, "ใช้ปลายเล็บหรือปากกาแตะที่ปลายลูกศร", &font_th20, C_TEXT, 10, 76);
   lbl(s, "ครบ 4 มุมแล้วจะไปหน้าถัดไปเอง", &font_th20, C_TEXT, 10, 102);
-  lbl(s, "แตะจอเพื่อเริ่ม", &font_th26, C_AMBER, 10, 160);
+  lbl(s, "แตะจอ หรือกด BOOT เพื่อเริ่ม", &font_th26, C_AMBER, 10, 160);
   loadScr(s);
 }
 void runCalibration() {
@@ -587,6 +587,7 @@ void runCalibration() {
 }
 void nextSetup() {
   if (!cfg.pok) return showColor();
+  if (!cfg.cok) return showCali();
   if (!cfg.ssid.length()) return showWifi();
   if (!cfg.key.length()) return showKey();
   showHome();
@@ -649,6 +650,7 @@ void loop() {
   }
   if (scr == S_CALI) {
     uint16_t x, y; bool t = lcd.getTouch(&x, &y);
+    if (be == 1) runCalibration();
     if (now - caliShownAt > 800) { if (t) caliArmed = true; else if (caliArmed) runCalibration(); }
     delay(5); return;
   }
@@ -684,6 +686,7 @@ void loop() {
   // ปุ่ม BOOT
   if (be == 1 && scr == S_ALARM) doAck();
   else if (be == 1 && scr == S_WHO) chooseWho(whoN ? whoNames[0] : String(""));
+  else if (be == 2 && (scr == S_WIFI || scr == S_PASS || scr == S_KEY)) showCali();   // แตะไม่ตรง → กด BOOT ค้าง = ตั้งการแตะใหม่
   else if (be == 2 && (scr == S_HOME || scr == S_JOBS || scr == S_DETAIL)) {
     alarmSim = true; alarmId = "ทดลอง"; alarmText = "จำลอง: ไฟดับทั้งซอย (ไม่ใช่งานจริง)"; alarmMin0 = 0; showAlarm();
   }

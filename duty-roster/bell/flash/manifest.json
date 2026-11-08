@@ -1,8 +1,8 @@
 {
   "name": "กล่องกระดิ่งเวรแก้ไฟ (จอทัช ESP32-2432S028)",
-  "version": "1.1",
+  "version": "1.2",
   "new_install_prompt_erase": true,
   "builds": [
-    { "chipFamily": "ESP32", "parts": [{ "path": "bell-cyd-v1.1.bin", "offset": 0 }] }
+    { "chipFamily": "ESP32", "parts": [{ "path": "bell-cyd-v1.2.bin", "offset": 0 }] }
   ]
 }
