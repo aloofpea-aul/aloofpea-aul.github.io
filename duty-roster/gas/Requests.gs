@@ -1060,6 +1060,8 @@ function ocSetup() {
   if (!k) { k = Utilities.getUuid().replace(/-/g, '').slice(0, 16); props.setProperty('OC_KEY', k); }
   Logger.log('OC_KEY=' + k + ' · room=' + ocCfg_().room + ' · mode=' + ocCfg_().mode);
 }
+/** ดูแจ้งเตือนที่ถูกข้าม (ชั่วคราว ใช้ตอนตั้งค่า) — รันในหน้าแก้ไขสคริปต์ */
+function ocDebug() { Logger.log(CacheService.getScriptCache().get('ocDbg') || 'ว่าง'); }
 function ocSheet_() {
   let sh = sheet_(OC_SHEET_);
   if (!sh) { sh = ss_().insertSheet(OC_SHEET_); sh.getRange(1, 1, 1, 6).setValues([['time', 'sender', 'text', 'result', 'room', 'raw']]).setFontWeight('bold'); sh.setFrozenRows(1); }
@@ -1072,7 +1074,7 @@ function ocIn_(q) {
   if (q.ping) return { ping: 1 };
   const C = ocCfg_(), ti = String(q.ti || '').slice(0, 300), tx = String(q.tx || '').slice(0, 2000), bt = String(q.bt || '').slice(0, 2000);
   const room = ocNorm_(C.room);
-  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) { console.log('OC skip ' + JSON.stringify({ keys: Object.keys(q), ti: ti.slice(0, 40), sub: String(q.sub || '').slice(0, 60), txLen: tx.length, btLen: bt.length, btHead: bt.slice(0, 30) })); return { skip: 'room' }; }   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ
+  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) { try { const c = CacheService.getScriptCache(), L = JSON.parse(c.get('ocDbg') || '[]'); L.unshift({ at: new Date().toISOString(), ti: ti.slice(0, 40), sub: String(q.sub || '').slice(0, 60), tx: tx.slice(0, 30), bt: bt.slice(0, 30), other: Object.keys(q).filter(function (k) { return ['action', 'k', 'ti', 'tx', 'bt', 'sub'].indexOf(k) < 0; }) }); c.put('ocDbg', JSON.stringify(L.slice(0, 6)), 21600); } catch (e) {} return { skip: 'room' }; }   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ
   let body = (bt.length > tx.length ? bt : tx).trim(), sender = '';
   if (ocNorm_(ti).indexOf(room) >= 0) { const m = body.match(/^([^\n:：]{1,40}?)\s*[:：]\s*([\s\S]+)$/); if (m) { sender = m[1].trim(); body = m[2].trim(); } }
   else { sender = ti.trim(); }
