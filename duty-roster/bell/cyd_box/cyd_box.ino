@@ -22,13 +22,11 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.0"
+#define FW_VER "1.1"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
 const uint32_t POLL_MS = 10000, OFFLINE_MS = 60000, IDLE_HOME_MS = 180000;
-// ลำดับแบบจอที่ลองเมื่อกด BOOT ตอนตรวจสี: bit0 ILI9341 · bit1 กลับสี · bit2 สลับแดง/น้ำเงิน
-const uint8_t PANEL_MODES[8] = {0, 2, 1, 3, 4, 6, 5, 7};
 
 // สี
 #define C_BG 0x12101A
@@ -44,7 +42,7 @@ const uint8_t PANEL_MODES[8] = {0, 2, 1, 3, 4, 6, 5, 7};
 #define C_AMBER 0xFBBF24
 #define C_OK 0x22C55E
 
-LGFX_CYD lcd;
+LGFX lcd;
 Preferences prefs;
 
 // ---------- ค่าที่จำไว้ในเครื่อง ----------
@@ -59,16 +57,16 @@ void loadCfg() {
   prefs.begin("bell", true);
   cfg.ssid = prefs.getString("ssid", ""); cfg.pass = prefs.getString("pass", "");
   cfg.key = prefs.getString("key", ""); cfg.url = prefs.getString("url", DEF_URL);
-  cfg.pidx = prefs.getInt("pidx", -1); cfg.pok = prefs.getBool("pok", false);
-  cfg.cok = prefs.getBytes("cal", cfg.cal, sizeof(cfg.cal)) == sizeof(cfg.cal) && prefs.getBool("cok", false);
+  cfg.pidx = prefs.getInt("inv", -1); cfg.pok = prefs.getBool("pok2", false);
+  cfg.cok = prefs.getBytes("cal2", cfg.cal, sizeof(cfg.cal)) == sizeof(cfg.cal) && prefs.getBool("cok2", false);
   cfg.lb = prefs.getInt("lb", 60); cfg.ld = prefs.getInt("ld", 600);
   prefs.end();
 }
 void saveCfg() {
   prefs.begin("bell", false);
   prefs.putString("ssid", cfg.ssid); prefs.putString("pass", cfg.pass); prefs.putString("key", cfg.key); prefs.putString("url", cfg.url);
-  prefs.putInt("pidx", cfg.pidx); prefs.putBool("pok", cfg.pok);
-  prefs.putBytes("cal", cfg.cal, sizeof(cfg.cal)); prefs.putBool("cok", cfg.cok);
+  prefs.putInt("inv", cfg.pidx); prefs.putBool("pok2", cfg.pok);
+  prefs.putBytes("cal2", cfg.cal, sizeof(cfg.cal)); prefs.putBool("cok2", cfg.cok);
   prefs.putInt("lb", cfg.lb); prefs.putInt("ld", cfg.ld);
   prefs.end();
 }
@@ -559,12 +557,12 @@ void showColor() {
   scr = S_COLOR; colorShownAt = millis();
   lv_obj_t* s = mkScr(0x000000);
   lbl(s, "ตรวจสีจอ", &font_th26, 0xFFFFFF, 10, 4);
-  lbl(s, "แบบที่ " + String(cfg.pidx + 1) + "/8", &font_th20, 0xFFFFFF, 220, 8);
+  lbl(s, String(cfg.pidx == 1 ? "กลับสี: เปิด" : "กลับสี: ปิด"), &font_th16, 0xFFFFFF, 214, 10);
   const uint32_t cs[3] = {0xFF0000, 0x00FF00, 0x0000FF}; const char* nm[3] = {"แดง", "เขียว", "น้ำเงิน"};
   for (int i = 0; i < 3; i++) { lv_obj_t* b = box(s, 10 + i * 102, 44, 96, 80, cs[i], 8); lv_obj_t* l = lbl(b, nm[i], &font_th26, 0xFFFFFF, 0, 0); lv_obj_center(l); }
   lbl(s, "สีตรงกับชื่อ และตัวหนังสืออ่านได้ปกติ?", &font_th20, 0xFFFFFF, 10, 134, 300);
-  lbl(s, "ตรง → แตะจอ 1 ครั้ง", &font_th20, 0x00FF00, 10, 164);
-  lbl(s, "ไม่ตรง → กดปุ่ม BOOT (เปลี่ยนแบบ)", &font_th20, 0xFFFF00, 10, 194);
+  lbl(s, "ตรง → แตะจอ หรือกด BOOT ค้าง 2 วิ", &font_th20, 0x00FF00, 10, 164);
+  lbl(s, "ไม่ตรง → กดปุ่ม BOOT สั้น ๆ (กลับสี)", &font_th20, 0xFFFF00, 10, 194);
   loadScr(s);
 }
 bool caliArmed = false; uint32_t caliShownAt = 0;
@@ -589,7 +587,6 @@ void runCalibration() {
 }
 void nextSetup() {
   if (!cfg.pok) return showColor();
-  if (!cfg.cok) return showCali();
   if (!cfg.ssid.length()) return showWifi();
   if (!cfg.key.length()) return showKey();
   showHome();
@@ -597,18 +594,14 @@ void nextSetup() {
 
 // ---------- เริ่มเครื่อง ----------
 void initDisplay() {
-  if (cfg.pidx < 0) {                        // ครั้งแรก: อ่านรหัสชิปจอ ST7789 = 85 85 52
-    lcd.setup(PANEL_MODES[0]); lcd.init();
-    uint32_t id = lcd.getPanel()->readCommand(0x04, 0, 4);
-    bool st = ((id & 0xFF) == 0x85 || ((id >> 8) & 0xFF) == 0x85) && (((id >> 16) & 0xFF) == 0x52 || ((id >> 24) & 0xFF) == 0x52);
-    cfg.pidx = st ? 0 : 2; saveCfg();
-    Serial.printf("panel id %08X -> %s\n", id, st ? "ST7789" : "ILI9341");
-    if (!st) { lcd.setup(PANEL_MODES[cfg.pidx]); lcd.init(); }
-  } else { lcd.setup(PANEL_MODES[cfg.pidx % 8]); lcd.init(); }
+  lcd.init();                                // LovyanGFX ตรวจรุ่นจอเอง (ST7789 / ILI9341)
   lcd.setRotation(1);
+  if (cfg.pidx < 0) { cfg.pidx = 0; saveCfg(); }
+  if (cfg.pidx == 1) lcd.invertDisplay(true);
   lcd.setBrightness(200);
   if (cfg.cok) lcd.setTouchCalibrate(cfg.cal);
   lcd.fillScreen(TFT_BLACK);
+  Serial.printf("board %d  %dx%d\n", (int)lcd.getBoard(), lcd.width(), lcd.height());
 }
 
 void setup() {
@@ -645,9 +638,13 @@ void loop() {
 
   // ตรวจสีจอ: BOOT = เปลี่ยนแบบ · แตะ = ยืนยัน
   if (scr == S_COLOR) {
-    if (be == 1) { cfg.pidx = (cfg.pidx + 1) % 8; saveCfg(); delay(100); ESP.restart(); }
+    if (be == 1) { cfg.pidx = cfg.pidx == 1 ? 0 : 1; saveCfg(); lcd.invertDisplay(cfg.pidx == 1); showColor(); }
     uint16_t x, y;
-    if (now - colorShownAt > 800 && lcd.getTouch(&x, &y)) { cfg.pok = true; saveCfg(); while (lcd.getTouch(&x, &y)) delay(20); nextSetup(); }
+    static uint32_t tDown = 0;
+    bool t = lcd.getTouch(&x, &y);
+    if (t && !tDown) tDown = now;
+    bool tapped = !t && tDown && now - tDown > 60 && now - tDown < 1500; if (!t) tDown = 0;
+    if (now - colorShownAt > 800 && (tapped || be == 2)) { cfg.pok = true; saveCfg(); nextSetup(); }
     delay(5); return;
   }
   if (scr == S_CALI) {
@@ -664,7 +661,7 @@ void loop() {
   if (fresh) { netSeenVer = net.ver; snap = net; if (net.test) { net.test = false; testUntil = now + 3000; } }
   xSemaphoreGive(mtx);
 
-  bool setupDone = cfg.pok && cfg.cok && cfg.ssid.length() && cfg.key.length();
+  bool setupDone = cfg.pok && cfg.ssid.length() && cfg.key.length();
   bool inSetup = scr == S_WIFI || scr == S_PASS || scr == S_KEY;
   if (setupDone && !inSetup) {
     // เริ่มปลุกเมื่อระบบส่ง ring > 0 (ยกเว้นงานที่เพิ่งกดรับทราบไป)
