@@ -1042,6 +1042,73 @@ function bellWatch_() {
 }
 /** ticketAct 'acc' ก็หยุดกระดิ่ง (st ไม่ใช่ new) — ไม่ต้องทำเพิ่ม */
 
+/* ===================== ข้อความจาก LINE OpenChat (มือถือ Android + MacroDroid อ่านแจ้งเตือนแล้วส่งมา) =====================
+ * GET ?action=oc&k=KEY&ti=<หัวแจ้งเตือน>&tx=<ข้อความ>&bt=<ข้อความเต็ม> · ?action=oc&k=KEY&ping=1 (ทุก 10 นาที)
+ * ส่งเฉพาะห้องที่ตั้งไว้ (config.ocRoom) — ห้องอื่น/แชทส่วนตัว ไม่บันทึก
+ * ocMode: test (ค่าเริ่มต้น) = บันทึก + ข้อความตรงคำ → LINE ถึง config.ocTestTo คนเดียว · ไม่เปิดงาน ไม่สั่งกระดิ่ง */
+const OC_SHEET_ = 'OpenChat';
+const OC_WORDS_ = 'ไฟดับ,ไฟไม่มา,ไฟตก,ไฟกระพริบ,ไฟกะพริบ,สายขาด,สายพาด,สายหย่อน,ไฟไหม้,ไฟช็อต,ไฟช๊อต,ประกายไฟ,เสาล้ม,เสาหัก,ต้นไม้ล้ม,ต้นไม้ทับ,หม้อแปลง,ระเบิด,ฟิวส์';
+function ocCfg_() {
+  const c = getConfig_();
+  return { room: String(c.ocRoom || 'แจ้งกระแสไฟฟ้าขัดข้องอ่าวลึก'), mode: String(c.ocMode || 'test'), testTo: String(c.ocTestTo || 'มานศักดิ์'),
+    words: String(c.ocWords || OC_WORDS_).split(/[,\n]/).map(function (w) { return w.trim(); }).filter(String) };
+}
+function ocKey_() { return PropertiesService.getScriptProperties().getProperty('OC_KEY') || ''; }
+/** รันครั้งเดียวในหน้าแก้ไขสคริปต์: สร้างกุญแจ แล้วดู Log */
+function ocSetup() {
+  const props = PropertiesService.getScriptProperties(); let k = props.getProperty('OC_KEY');
+  if (!k) { k = Utilities.getUuid().replace(/-/g, '').slice(0, 16); props.setProperty('OC_KEY', k); }
+  Logger.log('OC_KEY=' + k + ' · room=' + ocCfg_().room + ' · mode=' + ocCfg_().mode);
+}
+function ocSheet_() {
+  let sh = sheet_(OC_SHEET_);
+  if (!sh) { sh = ss_().insertSheet(OC_SHEET_); sh.getRange(1, 1, 1, 6).setValues([['time', 'sender', 'text', 'result', 'room', 'raw']]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  return sh;
+}
+function ocNorm_(s) { return String(s || '').replace(/[\s​]+/g, ''); }
+function ocIn_(q) {
+  const key = ocKey_(); if (!key || String(q.k || '') !== key) throw new Error('กุญแจไม่ถูกต้อง');
+  const cache = CacheService.getScriptCache(); cache.put('ocHB', String(Date.now()), 21600);
+  if (q.ping) return { ping: 1 };
+  const C = ocCfg_(), ti = String(q.ti || '').slice(0, 300), tx = String(q.tx || '').slice(0, 2000), bt = String(q.bt || '').slice(0, 2000);
+  const room = ocNorm_(C.room);
+  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) return { skip: 'room' };   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ
+  let body = (bt.length > tx.length ? bt : tx).trim(), sender = '';
+  if (ocNorm_(ti).indexOf(room) >= 0) { const m = body.match(/^([^\n:：]{1,40}?)\s*[:：]\s*([\s\S]+)$/); if (m) { sender = m[1].trim(); body = m[2].trim(); } }
+  else { sender = ti.trim(); }
+  const raw = JSON.stringify({ ti: ti, tx: tx, bt: bt, sub: String(q.sub || '').slice(0, 200) });
+  let result;
+  if (!body || /^\d+\s*(ข้อความใหม่|new messages?)/i.test(body)) result = 'สรุปแจ้งเตือน (ไม่มีข้อความ)';
+  else {
+    let h = 5381; const hs = sender + '|' + body; for (let i = 0; i < hs.length; i++) h = ((h * 33) ^ hs.charCodeAt(i)) >>> 0;
+    const dk = 'oc_' + h + '_' + hs.length;
+    if (cache.get(dk)) result = 'ซ้ำ – ข้าม';
+    else {
+      cache.put(dk, '1', 600);
+      const hit = C.words.filter(function (w) { return body.indexOf(w) >= 0; })[0];
+      if (!hit) result = 'บันทึก';
+      else {
+        result = 'ตรงคำ "' + hit + '"' + (C.mode === 'test' ? ' (ทดสอบ)' : '');
+        if (C.mode === 'test') {
+          const id = lineIdOf_(C.testTo), t = Utilities.formatDate(new Date(), TZ, 'HH:mm');
+          if (id) push_(id, [text_('🧪 ทดสอบ OpenChat · ตรงคำ "' + hit + '"\nจาก ' + (sender || '-') + ' · ' + t + ' น.\n' + body.slice(0, 500))], 'ticket');
+        }
+      }
+    }
+  }
+  ocSheet_().appendRow([new Date(), sender, body, result, C.room, raw]);
+  return { result: result };
+}
+/** tkCheck: มือถือเงียบเกิน 15 นาที (ช่วงนอกเวลาทำการ) → เตือนครั้งเดียว · กลับมา → แจ้ง */
+function ocWatch_() {
+  const props = PropertiesService.getScriptProperties(); if (!props.getProperty('OC_KEY')) return;
+  const hb = Number(CacheService.getScriptCache().get('ocHB') || 0); if (!hb) return;
+  const off = Date.now() - hb > 15 * 60000, was = props.getProperty('OC_OFF'), C = ocCfg_();
+  const tell = function (msg) { if (C.mode === 'test') { const id = lineIdOf_(C.testTo); if (id) push_(id, [text_(msg)], 'ticket'); } else notifyApprovers_(msg.split('\n')[0], msg.split('\n').slice(1).join('\n') || msg); };
+  if (off && !was && bellHours_()) { props.setProperty('OC_OFF', '1'); try { tell('📵 มือถือรับข้อความ OpenChat เงียบเกิน 15 นาที\nล่าสุด ' + Utilities.formatDate(new Date(hb), TZ, 'HH:mm') + ' น. — ตรวจแบต/เน็ต/MacroDroid'); } catch (e) {} }
+  if (!off && was) { props.deleteProperty('OC_OFF'); try { tell('📲 มือถือรับข้อความ OpenChat กลับมาทำงานแล้ว'); } catch (e) {} }
+}
+
 /* ===================== รับแจ้งไฟดับจากผู้ใช้ไฟ (หน้าเว็บ /fire หรือส่งต่อข้อความให้บอต) =====================
  * Tickets: id | createdAt | data(JSON) | status | updatedAt
  * status: new (ยังไม่มีคนรับ) · acc (รับงานแล้ว) · done (แก้เสร็จ → เชื่อมเหตุการณ์ไฟดับ) · dup (ซ้ำ) · cancel */
@@ -1164,6 +1231,7 @@ function tkCheck() {
   try { retExpire_(); } catch (e) {}
   try { wxTick_(); } catch (e) {}
   try { bellWatch_(); } catch (e) {}
+  try { ocWatch_(); } catch (e) {}
   const now = Date.now();
   tkRows_().forEach(function (x) {
     if (x.st !== 'new' || x.d.again || x.d.bellAck) return;
