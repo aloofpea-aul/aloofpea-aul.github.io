@@ -1047,10 +1047,13 @@ function bellWatch_() {
  * ส่งเฉพาะห้องที่ตั้งไว้ (config.ocRoom) — ห้องอื่น/แชทส่วนตัว ไม่บันทึก
  * ocMode: test (ค่าเริ่มต้น) = บันทึก + ข้อความตรงคำ → LINE ถึง config.ocTestTo คนเดียว · ไม่เปิดงาน ไม่สั่งกระดิ่ง */
 const OC_SHEET_ = 'OpenChat';
+const OC_STAFF_ = 'manasak philarite,Aum,konlawat,Puttapong,กัมปนาทท์,กำลังแก้ไขครับ,ดีน505860,วิชัย,สกายย,อ๋องสมิง,ใจเย็นๆกำลังแก้ไขครับ,😐วอนผู้ใช้ไฟใจเย็นคับ';   // ชื่อแอดมิน/เจ้าหน้าที่ในห้อง — บันทึกแต่ไม่นับเป็นการแจ้ง (แก้ได้ที่ Config ocStaff)
+function ocName_(s) { return String(s || '').replace(/[^\p{L}\p{N}\p{M}]/gu, '').toLowerCase(); }
 const OC_WORDS_ = 'ไฟดับ,ไฟไม่มา,ไฟตก,ไฟกระพริบ,ไฟกะพริบ,สายขาด,สายพาด,สายหย่อน,ไฟไหม้,ไฟช็อต,ไฟช๊อต,ประกายไฟ,เสาล้ม,เสาหัก,ต้นไม้ล้ม,ต้นไม้ทับ,หม้อแปลง,ระเบิด,ฟิวส์';
 function ocCfg_() {
   const c = getConfig_();
   return { room: String(c.ocRoom || 'แจ้งกระแสไฟฟ้าขัดข้องอ่าวลึก'), mode: String(c.ocMode || 'test'), testTo: String(c.ocTestTo || 'มานศักดิ์'),
+    staff: String(c.ocStaff || OC_STAFF_).split(/[,\n]/).map(ocName_).filter(String),
     words: String(c.ocWords || OC_WORDS_).split(/[,\n]/).map(function (w) { return w.trim(); }).filter(String) };
 }
 function ocKey_() { return PropertiesService.getScriptProperties().getProperty('OC_KEY') || ''; }
@@ -1086,7 +1089,8 @@ function ocIn_(q) {
     else {
       cache.put(dk, '1', 600);
       const hit = C.words.filter(function (w) { return body.indexOf(w) >= 0; })[0];
-      if (!hit) result = 'บันทึก';
+      if (sender && C.staff.indexOf(ocName_(sender)) >= 0) result = 'เจ้าหน้าที่ (ไม่นับ)';
+      else if (!hit) result = 'บันทึก';
       else {
         result = 'ตรงคำ "' + hit + '"' + (C.mode === 'test' ? ' (ทดสอบ)' : '');
         if (C.mode === 'test') {
