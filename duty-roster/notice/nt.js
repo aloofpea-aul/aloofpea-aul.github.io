@@ -107,13 +107,14 @@ async function ntMapData(n){
   const got=await Promise.all(tiles.map(t=>Promise.race([toData(t.u),new Promise((_,j)=>setTimeout(j,6000))]).then(d=>(t.d=d,1)).catch(()=>0)));
   return {g,P,z,tiles:got.every(Boolean)?tiles:[],all:tiles};
 }
+let NT_CX=null; function ntTW(t,px){ try{ NT_CX=NT_CX||document.createElement('canvas').getContext('2d'); NT_CX.font=`700 ${px}px 'IBM Plex Sans Thai',sans-serif`; return NT_CX.measureText(t).width; }catch(e){ return String(t).length*px*.55; } }
 function ntMapHtml(m,emg){
   if(!m) return ''; const {g,P,tiles}=m, red=emg?'#E8590C':'#E03131';
   const L=(f)=>g.poly?g.poly.filter(q=>q.a===f).map(q=>q.v.map((x,i)=>{ const a=P(x[0],x[1]); return (i?'L':'M')+a[0]+' '+a[1]; }).join('')).join(''):g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
   const cut=g.cut&&P(g.cut[0],g.cut[1]);
-  const R=[]; const pin=(xy,t,cls)=>{ t=String(t); const tw=t.length*5.9+14, w=Math.min(168,tw), hgt=Math.ceil(tw/168)*13+5, l=xy[0]+7+w>NT_MW-4;
+  const R=[]; const pin=(xy,t,cls)=>{ t=String(t); const tw=Math.ceil(ntTW(t,cls?8.5:8))+12, w=Math.min(124,tw), hgt=Math.ceil(tw/124)*10.5+4, l=xy[0]+7+w>NT_MW-4;
     let x=l?xy[0]-7-w:xy[0]+7, y=Math.max(2,Math.min(NT_MH-22-hgt,xy[1]-hgt/2));
-    for(let i=0;i<10&&R.some(r=>x<r[0]+r[2]&&r[0]<x+w&&y<r[1]+r[3]&&r[1]<y+hgt);i++) y=Math.max(2,Math.min(NT_MH-22-hgt,y+(i%2?-1:1)*(i+1)*11));
+    for(let i=0;i<10&&R.some(r=>x<r[0]+r[2]&&r[0]<x+w&&y<r[1]+r[3]&&r[1]<y+hgt);i++) y=Math.max(2,Math.min(NT_MH-22-hgt,y+(i%2?-1:1)*(i+1)*9));
     x=Math.max(3,Math.min(NT_MW-w-3,x)); R.push([x,y,w,hgt]);
     return `<span class="np-mpin ${cls||''}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;width:${w.toFixed(0)}px">${esc(t)}</span>`; };
   return `<div class="np-mapbox${tiles.length?'':' vec'}">${tiles.map(t=>`<img src="${t.d}" style="left:${t.x.toFixed(1)}px;top:${t.y.toFixed(1)}px;width:${t.s.toFixed(1)}px;height:${t.s.toFixed(1)}px" alt="">`).join('')}<i class="np-wash"></i>
