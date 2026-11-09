@@ -207,9 +207,9 @@ async function ntForm(n0){
       :`<div class="grid3" style="margin-top:6px"><label class="tf">วันที่<input type="date" id="ntD" value="${esc(F.date)}" min="${emg?'':td}"></label><label class="tf">เริ่ม<input type="text" class="hm" inputmode="numeric" id="ntS" value="${esc(F.start||'')}" maxlength="5"></label>${emg?`<label class="tf">คาดว่าใช้ (นาที)<input type="number" id="ntE" value="${F.estMin||''}"></label>`:`<label class="tf">สิ้นสุด<input type="text" class="hm" inputmode="numeric" id="ntEn" value="${esc(F.end||'')}" maxlength="5"></label>`}</div>`}
      <div class="lb">สาเหตุ</div><div class="chips">${NT_RS[F.type].map(([k,l])=>`<button type="button" class="ch ${F.reasonKey===k?'on':''}" data-rk="${k}">${esc(l)}</button>`).join('')}</div>
      <input type="text" id="ntR" value="${esc(F.reason||'')}" placeholder="รายละเอียดสาเหตุ (แสดงบนโปสเตอร์)" style="margin-top:6px">
-     <div class="lb">ฟีดเดอร์ / อุปกรณ์ที่ตัดไฟ (SLD) <i>ไม่บังคับ · ใช้คำนวณจำนวนผู้ใช้ไฟ</i></div>
+     <div class="lb">ฟีดเดอร์ / อุปกรณ์ที่ตัดไฟ (SLD) <i>ไม่บังคับ · ค้นได้ทุกอุปกรณ์</i></div>
      <div class="chips">${fd.map(([id,col])=>`<button type="button" class="ch ${F.feeder===id?'on':''}" data-fd="${id}"><span class="dot" style="background:${col}"></span>${id}</button>`).join('')}</div>
-     ${F.dev?`<div class="hit on" style="margin-top:6px"><div><b>${esc(F.dev.id)}</b> ${esc(F.dev.desc||'')}${F.cust?' · ผู้ใช้ไฟ ~'+F.cust+' ราย':''}</div><button type="button" class="lnk" id="ntDevX">เปลี่ยน</button></div>`:`<input type="search" id="ntQ" placeholder="รหัสอุปกรณ์ เช่น DS-12 หรือชื่อหมู่บ้าน" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
+     ${F.dev?`<div class="hit on" style="margin-top:6px"><div><b>${esc(F.dev.id)}</b> ${esc(F.dev.desc||'')}${F.cust?' · ผู้ใช้ไฟ ~'+F.cust+' ราย':''}</div><button type="button" class="lnk" id="ntDevX">เปลี่ยน</button></div>`:`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
      <div class="lb">พื้นที่ไฟดับ <i>ชื่อที่ชาวบ้านรู้จัก · ใช้ → แบ่ง จาก/ถึง</i></div>
      <input type="text" id="ntA" value="${esc(F.area||'')}" placeholder="เช่น สามแยก ศพด.แหลมสัก → หัวแหลม">
      <div class="grid2" style="margin-top:6px"><input type="text" id="ntSub" value="${esc(F.sub||'')}" placeholder="ต./อ./จ."><input type="text" id="ntV" value="${esc((F.villages||[]).join(', '))}" placeholder="หมู่บ้าน/จุดสังเกต (คั่นด้วย ,)"></div>
@@ -231,10 +231,15 @@ async function ntForm(n0){
     document.querySelectorAll('#ntF [data-fd]').forEach(b=>b.onclick=()=>{ keep(); F.feeder=F.feeder===b.dataset.fd?'':b.dataset.fd; if(F.dev&&F.dev.feeder!==F.feeder) F.dev=null; draw(); });
     document.querySelectorAll('#ntF input.hm').forEach(x=>x.oninput=hmTyping);
     if($('ntDevX')) $('ntDevX').onclick=()=>{ keep(); F.dev=null; draw(); };
-    const q=$('ntQ'); if(q) q.oninput=()=>{ const s=S.sld, v=q.value.trim().toLowerCase(); if(!s||v.length<2){ $('ntHits').innerHTML=''; return; }
-      const L=s.dev.filter(d=>(!F.feeder||d[4]===F.feeder)&&(d[0].toLowerCase().includes(v)||String(d[3]).toLowerCase().includes(v))&&d[1]!=='TRANSFORMER').slice(0,8);
-      $('ntHits').innerHTML=L.map((d,i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])} · ${esc(d[3])}</span><span class="muted">${esc(d[4])}</span></button>`).join('')||'<div class="muted">ไม่พบ</div>';
-      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); const d=L[+b.dataset.h]; F.dev={id:d[0],type:d[1],desc:d[3],feeder:d[4]}; F.feeder=d[4]; F.cust=custBelow(d[0])||F.cust; if(!F.area&&d[3]) F.area=d[3]; draw(); }); };
+    const q=$('ntQ'); if(q) q.oninput=()=>{ const s=S.sld, raw=q.value.trim(); if(!s||!s.dev.length){ $('ntHits').innerHTML='<div class="muted">กำลังโหลดข้อมูลอุปกรณ์จาก SLD…</div>'; sldData().then(()=>q.oninput()); return; }
+      const N=x=>String(x||'').toLowerCase().replace(/[\s\-_.\/]/g,''), v=N(raw); if(v.length<2){ $('ntHits').innerHTML=''; return; }
+      const rank=d=>{ const id=N(d[0]), ds=N(d[3]), ty=N(DEV_TH[d[1]]||d[1]); return id===v?0:id.startsWith(v)?1:id.includes(v)?2:ds.includes(v)?3:ty.includes(v)?4:9; };
+      let L=s.dev.map(d=>[d,rank(d)]).filter(x=>x[1]<9);
+      const inF=F.feeder?L.filter(x=>x[0][4]===F.feeder):L; if(inF.length) L=inF;
+      const tot=L.length; L=L.sort((a,b)=>a[1]-b[1]||String(a[0][0]).localeCompare(String(b[0][0]))).slice(0,20).map(x=>x[0]);
+      $('ntHits').innerHTML=L.map((d,i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])}${d[2]?' '+esc(d[2]):''} · ${esc(d[3])}</span><span class="muted" style="white-space:nowrap">${esc(d[4])}${d[8]?' · '+d[8]+' ราย':''}</span></button>`).join('')
+        +(tot>L.length?`<div class="muted">พบ ${tot} รายการ — พิมพ์ให้เจาะจงขึ้นเพื่อดูที่เหลือ</div>`:'')+(L.length?'':`<div class="muted">ไม่พบ "${esc(raw)}"${F.feeder?' (ค้นทุกฟีดเดอร์แล้ว)':''} — ลองพิมพ์บางส่วนของรหัส เช่น เลข 4 หลักท้าย</div>`);
+      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); const d=L[+b.dataset.h]; F.dev={id:d[0],type:d[1],desc:d[3],feeder:d[4]}; F.feeder=d[4]; F.cust=custBelow(d[0])||(+d[8]||null)||F.cust; if(!F.area&&d[3]) F.area=d[3]; draw(); }); };
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
       if(!String(F.area||'').trim()){ msg('ntFMsg','ใส่พื้นที่ไฟดับ','err'); return; }
