@@ -308,6 +308,7 @@ fieldset:disabled{opacity:.55}
   html,body,.app,main#viewReport,#printArea{margin:0!important;padding:0!important;min-height:0!important;height:auto!important;border:0!important}
   .page.a4p{height:296.5mm}.page.a4l{height:209.5mm}
 }
+.ofm input.hm{font-size:22px;font-weight:800;letter-spacing:1.5px;text-align:center;max-width:120px}
 </style>
 </head>
 <body>
@@ -1008,7 +1009,8 @@ function outIssues(o,k,L){
   const nx=new Date(Date.parse(d+'T00:00:00Z')+864e5).toISOString().slice(0,10);
   const st=Date.parse(d+'T'+(p==='p1'?'00:30':p==='p2'||dy&&dy.off?'08:30':'16:30')+':00+07:00'), en=p==='p1'?Date.parse(d+'T08:30:00+07:00'):p==='p2'?Date.parse(d+'T16:30:00+07:00'):Date.parse(nx+'T00:30:00+07:00');
   if(!isNaN(off)&&(off<st-15*6e4||off>en)) out.push(['y','เวลาไฟดับ '+hmTh(o.off)+' น. อยู่นอกช่วงเวรนี้ ('+new Date(st+7*36e5).toISOString().slice(11,16).replace(':','.')+'–'+new Date(en+7*36e5).toISOString().slice(11,16).replace(':','.')+' น.) — ตรวจว่าบันทึกถูกเวรหรือไม่']);
-  if(!o.cType) out.push(['y','ยังไม่ระบุสาเหตุ']);
+  if(!o.cType&&!o.cBtn) out.push(['y','ข้อมูลยังไม่ครบ: สาเหตุ']);
+  if(!(o.dev&&o.dev.id)&&!o.place&&!o.lat) out.push(['y','ข้อมูลยังไม่ครบ: อุปกรณ์ / จุดที่เกิด']);
   const dup=(L||[]).find(x=>x.id!==o.id&&x.feeder===o.feeder&&((x.dev&&x.dev.id)||'')===((o.dev&&o.dev.id)||'')&&Math.abs(tm(x.off)-off)<=15*6e4);
   if(dup) out.push(['y','อาจซ้ำกับรายการ '+hmTh(dup.off)+' น. (ฟีดเดอร์/อุปกรณ์เดียวกัน) — นับเป็น 2 ครั้ง']);
   return out;
@@ -1065,7 +1067,7 @@ const outKeyTxt=k=>{ const d=new Date(k.slice(0,10)+'T00:00:00Z'), mo=S.months[k
 function outMetaHtml(o){
   const H=(o.hist||[]).slice().reverse(), F={crew:'ผู้ปฏิบัติงาน',lvl:'แรงดัน',off:'เวลาไฟดับ',on:'เวลาจ่ายไฟ',ws:'เริ่มปฏิบัติงาน',we:'เสร็จงาน',feeder:'ฟีดเดอร์',place:'สถานที่',cType:'สาเหตุ',cData:'สาเหตุย่อย',fix:'การแก้ไข',cust:'ผู้ใช้ไฟ',detail:'รายละเอียด',dev:'อุปกรณ์',mats:'อุปกรณ์ที่ใช้'};
   const v=x=>x==null||x===''?'(ว่าง)':/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(x)?x.slice(11,16):x==='hv'?'แรงสูง':x==='lv'?'แรงต่ำ':x;
-  const line=h=>h.act==='new'?'บันทึกใหม่':h.act==='del'?'ลบ ('+esc(h.why||'')+')':h.act==='restore'?'กู้คืน':h.act==='move'?'ย้ายเวร '+esc(outKeyTxt(h.from))+' → '+esc(outKeyTxt(h.to)):(h.ch||[]).map(c=>esc(F[c.f]||c.f)+': '+esc(v(c.from))+' → '+esc(v(c.to))).join('<br>');
+  const line=h=>h.act==='new'?'บันทึกใหม่'+(h.x?' (ลงให้เวรอื่น)':''):h.act==='del'?'ลบ ('+esc(h.why||'')+')':h.act==='restore'?'กู้คืน':h.act==='move'?'ย้ายเวร '+esc(outKeyTxt(h.from))+' → '+esc(outKeyTxt(h.to)):(h.ch||[]).map(c=>esc(F[c.f]||c.f)+': '+esc(v(c.from))+' → '+esc(v(c.to))).join('<br>');
   const cr=o.createdBy?'บันทึกโดย '+esc(o.createdBy)+(o.created?' '+esc(isoShort(o.created.slice(0,10))):''):'';
   const up=o.by&&o.updated&&o.updated!==o.created?' · แก้ล่าสุด '+esc(o.by)+' '+esc(isoShort(o.updated.slice(0,10)))+' '+new Date(new Date(o.updated).getTime()+7*36e5).toISOString().slice(11,16):'';
   return `<div class="muted" style="margin-top:8px">${cr}${up}</div>${H.length?`<details class="ohist"><summary>ประวัติการแก้ไข (${H.length})</summary>${H.map(h=>`<div><b>${esc(h.at)} · ${esc(h.by)}</b><br>${line(h)}</div>`).join('')}</details>`:''}`;
@@ -1120,6 +1122,7 @@ function outCardHtml(k,canEdit){
   const P2=k.endsWith('p2');
   return `<div class="rp-sec"><h4>${P2?'⚡ เหตุการณ์ไฟดับในเวลาทำการ':'๒–๔. เหตุการณ์ไฟดับในเวรนี้'}</h4>
     <div class="osum"><div><b>${T.hv.n}</b><span>แรงสูง (ครั้ง)</span></div><div><b>${T.lv.n}</b><span>แรงต่ำ (ครั้ง)</span></div><div><b>${hmH((T.hv.outM||0)+(T.lv.outM||0))}</b><span>ชม. ไฟดับรวม</span></div></div>
+    ${canEdit&&LS.get('outDraft')&&Date.now()-LS.get('outDraft').at<24*36e5?`<div class="oiss y">📝 มีร่างไฟดับที่ยังไม่บันทึก${(()=>{const x=LS.get('outDraft').F||{};return (x.feeder?' — '+esc(x.feeder):'')+(x.off?' '+hmTh(x.off)+' น.':'');})()} <button type="button" class="lnk" id="outDraftGo" style="font-size:12.5px">กรอกต่อ</button></div>`:''}
     <div class="evl">${L.map(row).join('')||'<div class="muted" style="padding:8px 0">ยังไม่มีเหตุการณ์ไฟดับ</div>'}</div>
     ${canEdit?'<button class="btn" type="button" id="outAdd" style="width:100%;margin-top:6px">＋ เพิ่มเหตุการณ์ไฟดับ</button>':`<div class="oiss ${outLocked(k)?'g':'b'}">${outLocked(k)?'🔒 ล็อกแล้ว (หผ.ปร. รับเอกสารแล้ว) — แก้ได้เฉพาะผู้อนุมัติ':P2?'อ่านอย่างเดียว — ล็อกอินศูนย์รวมงานก่อนบันทึก (หรือใส่ PIN ผู้อนุมัติ)':'อ่านอย่างเดียว — แก้ได้เฉพาะคนอยู่เวรชุดนี้ หรือผู้อนุมัติ'} <button class="lnk" type="button" id="outPin" style="font-size:12.5px">ผู้อนุมัติ: ใส่ PIN เพื่อแก้</button></div>`}
     ${(()=>{ const D=outDelOf(S.dMonth,k); return D.length?`<details class="odel"><summary>ลบแล้ว (${D.length})</summary>${D.map(o=>`<div class="ev del"><span class="tag ${o.lvl}">${o.lvl==='hv'?'แรงสูง':'แรงต่ำ'}</span><div style="min-width:0;flex:1"><div class="t">${esc(outWhere(o)||'ไม่ระบุที่เกิดเหตุ')}</div><div class="d">ดับ ${hmTh(o.off)} – ${o.on?hmTh(o.on):'—'} · ลบโดย ${esc((o.del&&o.del.by)||'-')} ${o.del?esc(isoShort(o.del.at.slice(0,10)))+' '+new Date(new Date(o.del.at).getTime()+7*36e5).toISOString().slice(11,16):''}<br>เหตุผล: ${esc(o.del?(OUT_WHY[o.del.why]||o.del.why)+(o.del.note?' — '+o.del.note:''):'-')}</div>${canEdit||(S.outPin)?`<button class="btn ghost" type="button" data-rest="${esc(o.id)}" style="height:32px;padding:0 10px;font-size:12.5px;margin-top:6px">↩ กู้คืน</button>`:''}</div></div>`).join('')}</details>`:''; })()}
@@ -1128,6 +1131,7 @@ function outCardHtml(k,canEdit){
 }
 function bindOutCard(k,I,data){
   const a=$('outAdd'); if(a) a.onclick=()=>outForm(k,I,null,data);
+  const dg=$('outDraftGo'); if(dg) dg.onclick=()=>outForm(k,I,null,data);
   if($('outPin')) $('outPin').onclick=()=>{ const p=prompt('PIN ผู้อนุมัติ'); if(!p) return; S.outPin=p; S.outPinAppr=true; renderRepCard(data); };
   document.querySelectorAll('#repEd [data-rest]').forEach(b=>b.onclick=async()=>{ b.disabled=true; b.textContent='กำลังกู้คืน…';
     try{ await apiPost(Object.assign({action:'restoreOutage',id:b.dataset.rest},outAuthBody(repAuthFor(k),S.outPin))); await monthOutages(S.dMonth,true); renderRepCard(data); toast('กู้คืนแล้ว'); loadTickets(true); }
@@ -1156,19 +1160,38 @@ function crewList(sel,I){
   return `<div class="cwl"><div class="cwh"><b>เลือกผู้ปฏิบัติงาน</b><button type="button" class="lnk" id="ofCwDone">เสร็จ</button></div>
     ${grp('อยู่เวรนี้',duty)}${grp('ใช้ล่าสุด',rec)}${grp('พนักงาน',ppl.filter(p=>p.g==='emp').map(p=>p.short))}${grp('คนงาน',ppl.filter(p=>p.g==='wk').map(p=>p.short))}</div>`;
 }
+/* วัน–เวลาไฟดับ: เก็บเป็น yyyy-MM-ddTHH:mm (เวลาไทย) · เวรคำนวณจากเวลาไฟดับเอง */
+const isoAt=ms=>new Date(ms+7*36e5).toISOString().slice(0,16), nowIso=()=>isoAt(Date.now());
+function outKeyOfOff(off){ const d=off.slice(0,10), hm=off.slice(11,16), prev=new Date(Date.parse(d+'T00:00:00Z')-864e5).toISOString().slice(0,10);
+  return hm<'00:30'?prev+'|p3':hm<'08:30'?d+'|p1':hm<'16:30'&&isWorkdayK(d)?d+'|p2':d+'|p3'; }
+function outSetNames(x){ const mo=S.months[x.slice(0,7)]; if(!mo) return ''; return Object.keys(mo.data.emp).filter(n=>outInSet(x,n)).join(', '); }
+function hmNorm(v){ let d=String(v||'').replace(/\D/g,''); if(!d) return ''; if(d.length===3) d='0'+d; if(d.length===1||d.length===2) d=d.padStart(2,'0')+'00'; d=d.slice(0,4); const h=+d.slice(0,2), m=+d.slice(2); return h<24&&m<60?d.slice(0,2)+':'+d.slice(2):null; }
+function hmTyping(e){ const el=e.target; let d=el.value.replace(/\D/g,'').slice(0,4); el.value=d.length>2?d.slice(0,2)+':'+d.slice(2):d; }
+const nextDay=ymd=>new Date(Date.parse(ymd+'T00:00:00Z')+864e5).toISOString().slice(0,10);
 async function outForm(k,I,o,data,pre){
   const auth=repAuthFor(k), wx=(S.wx||LS.get('wx')||{}).lv||1;
-  const F=o?JSON.parse(JSON.stringify(o)):{lvl:'hv',off:outDateFor(k,nowHm()),on:null,feeder:'',dev:null,cust:null,cBtn:'',cType:'',cData:'',known:'ทราบสาเหตุ',weather:WX_PEA[wx],fix:'perm',mats:[],detail:'',wo:''};
+  const dr=!o&&!pre?LS.get('outDraft'):null, fromDraft=!!(dr&&dr.F&&Date.now()-dr.at<24*36e5);
+  const F=o?JSON.parse(JSON.stringify(o)):fromDraft?dr.F:{lvl:'hv',off:nowIso(),on:null,feeder:'',dev:null,cust:null,cBtn:'',cType:'',cData:'',known:'ทราบสาเหตุ',weather:WX_PEA[wx],fix:'perm',mats:[],detail:'',wo:''};
   if(!o&&pre){ const t=pre.tk; F._tk=t.id; F.lvl=t.type==='area'||(t.near&&t.near.type!=='TRANSFORMER')?'hv':'lv';
-    const hm=new Date(new Date(t.at).getTime()+7*3600e3).toISOString().slice(11,16); F.off=outDateFor(k,hm); F.on=outDateFor(k,nowHm()); if(F.on<F.off) F.on=null;
+    F.off=isoAt(new Date(t.at).getTime()); F.on=nowIso(); if(F.on<F.off) F.on=null;
     F.place=t.place||''; if(t.lat){F.lat=t.lat;F.lon=t.lon;} if(t.near&&t.near.feeder) F.feeder=t.near.feeder;
     F.detail='รับแจ้ง '+t.id+(t.detail?': '+t.detail.slice(0,120):''); }
-  F.workSame=!o||(!o.ws&&!o.we)||(o.ws===o.off&&o.we===o.on);
+  if(!fromDraft) F.workSame=!o||(!o.ws&&!o.we)||(o.ws===o.off&&o.we===o.on);
+  F._day=(F.off||nowIso()).slice(0,10); F._dirty=fromDraft; F._fromDraft=fromDraft?dr.at:0;
   if(!Array.isArray(F.crew)) F.crew=o?[]:((I&&I.names)||[]).map(crewOf);   // ผู้ปฏิบัติงาน: ค่าเริ่มต้น = คนอยู่เวรชุดนี้
   let photos=[];
   const bg=document.createElement('div'); bg.className='dlgBg osheet'; document.body.appendChild(bg);
   sldData().then(()=>{ if(document.body.contains(bg)) draw(); });
   const close=()=>bg.remove();
+  function askClose(){ keep(false); if(!F._dirty) return close();
+    const ov=document.createElement('div'); ov.className='rqov';
+    ov.innerHTML=o?`<div class="rqsh"><h4>ปิดโดยไม่บันทึกการแก้ไข?</h4><div class="grid2" style="margin-top:10px"><button type="button" class="btn" id="ocBack">กลับไปแก้ต่อ</button><button type="button" class="btn ghost red" id="ocDrop">ทิ้งการแก้ไข</button></div></div>`
+      :`<div class="rqsh"><h4>ปิดหน้าบันทึกไฟดับ?</h4><div class="muted">ข้อมูลที่กรอกเก็บเป็นร่างในเครื่องนี้ — กลับมากรอกต่อได้ภายใน 24 ชม.</div>
+        <button type="button" class="btn" id="ocBack" style="width:100%;margin-top:10px">กรอกต่อ</button><button type="button" class="btn ghost" id="ocKeep" style="width:100%;margin-top:8px">ปิดไว้ก่อน (เก็บร่าง)</button><button type="button" class="lnk" id="ocDrop" style="width:100%;margin-top:10px;color:#A23434">ทิ้งข้อมูลนี้</button></div>`;
+    document.body.appendChild(ov);
+    $('ocBack').onclick=()=>ov.remove();
+    if($('ocKeep')) $('ocKeep').onclick=()=>{ ov.remove(); close(); if(data) renderRepCard(data); };
+    $('ocDrop').onclick=()=>{ if(!o) LS.del('outDraft'); ov.remove(); close(); if(data&&!o) renderRepCard(data); }; }
   function devHits(q){
     const s=S.sld; if(!s||!s.dev.length) return [];
     q=q.trim().toLowerCase(); if(q.length<2) return [];
@@ -1207,14 +1230,24 @@ async function outForm(k,I,o,data,pre){
     bg.innerHTML=`<div class="dlg ofm" role="dialog" aria-modal="true" aria-labelledby="ofT">
       <div class="row" style="justify-content:space-between"><h3 id="ofT" style="margin:0;color:var(--ink)">${o?'แก้ไขเหตุการณ์ไฟดับ':'เหตุการณ์ไฟดับ'}</h3><button class="lnk" id="ofX" type="button">ปิด</button></div>
       <div class="sxp"><span><i style="width:${Math.round(SX.n/7*100)}%"></i></span><b>${SX.n} / 7 ข้อ</b></div>
+      ${F._fromDraft?`<div class="oiss y">📝 กรอกต่อจากร่างที่เก็บไว้ ${new Date(F._fromDraft+7*36e5).toISOString().slice(11,16)} น. <button type="button" class="lnk" id="ofNew" style="font-size:12.5px">เริ่มใหม่</button></div>`:''}
       ${SH(1)}
       <div class="seg2"><button type="button" data-lvl="hv" class="${F.lvl==='hv'?'on hv':''}">⚡ แรงสูง 33 kV</button><button type="button" data-lvl="lv" class="${F.lvl==='lv'?'on lv':''}">แรงต่ำ 400/230 V</button></div>
       </div></div>${SH(2)}
-      <div class="grid2"><label class="tf">ไฟดับ<span class="row"><input type="time" id="ofOff" value="${offHm}"><button type="button" class="lnk" data-now="off">ตอนนี้</button></span></label>
-        <label class="tf">ไฟมา / จ่ายไฟได้<span class="row"><input type="time" id="ofOn" value="${onHm}"><button type="button" class="lnk" data-now="on">ตอนนี้</button></span></label></div>
-      <div class="dur">${F.off?'ดับ '+esc(isoShort(F.off.slice(0,10)))+' '+hmTh(F.off)+' น. · ':''}${dd==null?'ยังไม่จ่ายไฟ (ใส่เวลาไฟมาทีหลังได้)':'ไฟดับ '+durTxt(dd)}</div>
+      ${(()=>{ const DS=x=>+x.slice(8,10)+' '+TH_MS[+x.slice(5,7)-1], td=nowIso().slice(0,10), yd=new Date(Date.parse(td+'T00:00:00Z')-864e5).toISOString().slice(0,10);
+        return `<div class="lb" style="margin-top:0">วันที่ไฟดับ <i>เวลาใส่แบบ 24 ชม. เช่น 2350</i></div><div class="chips"><button type="button" class="ch ${F._day===td?'on':''}" data-day="${td}">วันนี้ ${esc(DS(td))}</button><button type="button" class="ch ${F._day===yd?'on':''}" data-day="${yd}">เมื่อวาน ${esc(DS(yd))}</button><label class="ch ${F._day!==td&&F._day!==yd?'on':''}" style="position:relative;white-space:nowrap;display:inline-flex;align-items:center">📅 ${F._day!==td&&F._day!==yd?esc(DS(F._day)):'เลือกวัน'}<input type="date" id="ofDay" value="${F._day}" max="${td}" style="position:absolute;inset:0;opacity:0"></label></div>`; })()}
+      <div class="grid2" style="margin-top:8px"><label class="tf">ไฟดับ<span class="row"><input type="text" inputmode="numeric" class="hm" id="ofOff" value="${offHm}" placeholder="--:--" maxlength="5" autocomplete="off"><button type="button" class="lnk" data-now="off">ตอนนี้</button></span><button type="button" class="lnk" data-m10 style="font-size:12.5px;align-self:flex-start">−10 นาที</button></label>
+        <label class="tf">ไฟมา / จ่ายไฟได้<span class="row"><input type="text" inputmode="numeric" class="hm" id="ofOn" value="${onHm}" placeholder="--:--" maxlength="5" autocomplete="off"><button type="button" class="lnk" data-now="on">ตอนนี้</button></span></label></div>
+      <div class="dur">${F.off?'ดับ '+esc(isoShort(F.off.slice(0,10)))+' '+hmTh(F.off)+' น. · ':''}${F.on&&F.off&&F.on.slice(0,10)!==F.off.slice(0,10)?'มา '+esc(isoShort(F.on.slice(0,10)))+' '+hmTh(F.on)+' น. · ':''}${dd==null?'ยังไม่จ่ายไฟ (ใส่เวลาไฟมาทีหลังได้)':'ไฟดับ '+durTxt(dd)}</div>
+      ${(()=>{ if(!F.off) return ''; const tk=outKeyOfOff(F.off), fut=Date.parse(F.off+':00+07:00')>Date.now()+6e5;
+        if(fut) return `<div class="oiss r">❗ เวลาไฟดับอยู่ในอนาคต — ตรวจวันที่และเวลาอีกครั้ง</div>`;
+        if(!S.months[tk.slice(0,7)]&&!S.boot.months.some(m=>m.month===tk.slice(0,7))) return `<div class="oiss r">❗ ยังไม่มีตารางเวรเดือนนี้</div>`;
+        const nm=outSetNames(tk), me0=(auth&&auth.u)||hubCreds().user||'', me=(crewPeople().find(p=>p.short===me0||p.full===me0)||{}).short||me0, mine=!me||outInSet(tk,me)||tk.endsWith('p2');
+        return `<div class="oiss g" style="font-size:14px">📋 <b>จะลงในรายงาน: ${esc(outKeyTxt(tk))}</b>${nm?'<br>คนอยู่เวร: '+esc(nm):''}${tk.endsWith('p2')?'<br>ไม่อยู่ในบัญชีลงนาม (ในเวลาทำการ)':'<br>นับในข้อ '+(F.lvl==='lv'?'๓ แรงต่ำ':'๒ แรงสูง')+' ของบัญชีลงนามชุดนี้'}</div>`
+          +(tk!==k?`<div class="oiss y">ต่างจากเวรที่เปิดอยู่ (${esc(outKeyTxt(k))}) — ระบบลงให้เวรที่ถูกต้องเอง</div>`:'')
+          +(!mine&&!(S.outPinAppr)?`<div class="oiss b">ไม่ใช่เวรของคุณ — ลงย้อนหลังได้ไม่เกิน 3 วัน · ระบบแจ้ง LINE คนอยู่เวรชุดนั้นให้</div>`:''); })()}
       <label class="ckb" style="margin-top:6px"><input type="checkbox" id="ofWs" ${F.workSame?'checked':''}> เวลาปฏิบัติงาน เท่ากับเวลาไฟดับ</label>
-      ${F.workSame?'':`<div class="grid2"><label class="tf">เริ่มปฏิบัติงาน<input type="time" id="ofWS" value="${(F.ws||F.off||'').slice(11,16)}"></label><label class="tf">เสร็จ<input type="time" id="ofWE" value="${(F.we||F.on||'').slice(11,16)}"></label></div>`}
+      ${F.workSame?'':`<div class="grid2"><label class="tf">เริ่มปฏิบัติงาน<input type="text" inputmode="numeric" class="hm" id="ofWS" value="${(F.ws||F.off||'').slice(11,16)}" placeholder="--:--" maxlength="5"></label><label class="tf">เสร็จ<input type="text" inputmode="numeric" class="hm" id="ofWE" value="${(F.we||F.on||'').slice(11,16)}" placeholder="--:--" maxlength="5"></label></div>`}
       ${NX(2)}</div></div>${SH(3)}
       <div class="chips">${fd.map(([id,c])=>`<button type="button" class="ch ${F.feeder===id?'on':''}" data-fd="${id}"><span class="dot" style="background:${c}"></span>${id}</button>`).join('')}</div>
       </div></div>${SH(4)}
@@ -1245,7 +1278,7 @@ async function outForm(k,I,o,data,pre){
       ${auth&&auth.r==='duty'?`<div class="muted" style="margin-top:6px">บันทึกในชื่อ ${esc(auth.u)} (ลิงก์จาก LINE)</div>`:hubCreds().user?`<div class="muted" style="margin-top:6px">บันทึกในชื่อ ${esc(hubCreds().user)} (บัญชีศูนย์รวมงาน) · ไม่ต้องใส่ PIN</div>`:`<label class="tf" style="margin-top:6px">PIN ผู้อนุมัติ <span class="muted" style="font-weight:400">(หรือล็อกอินศูนย์รวมงานก่อน จะไม่ต้องใส่ PIN)</span><input type="password" id="ofPin" inputmode="numeric" autocomplete="off" value="${esc(($('rpPin')||{}).value||'')}"></label>`}
       <div id="ofMsg"></div>
       ${o?outMetaHtml(o):''}
-      <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">🗑 ลบ</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">บันทึก</button></div>
+      <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">🗑 ลบ</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">${(()=>{ const mi=[!F.dev&&!F.place&&!F.lat,!F.cBtn].filter(Boolean).length; return F.feeder&&mi&&!o?'⚡ บันทึกเลย <small style="font-weight:400">(ยังไม่ครบ '+mi+' ข้อ เติมทีหลังได้)</small>':'บันทึก'; })()}</button></div>
       ${o?'<button type="button" class="btn ghost" id="ofMove" style="width:100%;margin-top:8px">⇄ ย้ายไปเวรที่ถูกต้อง</button>':''}
     </div>`;
     const nd=bg.querySelector('.dlg.ofm'); if(nd&&st) nd.scrollTop=st;
@@ -1253,13 +1286,18 @@ async function outForm(k,I,o,data,pre){
     F._lastOpen=SX.open;
     bind();
   }
-  function keep(){ // เก็บค่าที่พิมพ์ไว้ก่อนวาดใหม่
-    const v=id=>{const e=$(id);return e?e.value:null;};
-    if(v('ofOff')!=null) F.off=v('ofOff')?outDateFor(k,v('ofOff')):null;
-    if(v('ofOn')!=null){ const h=v('ofOn'); if(!h) F.on=null; else { let x=outDateFor(k,h); if(F.off&&x<F.off){const t=new Date(x.slice(0,10)+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+1);x=t.toISOString().slice(0,10)+'T'+h;} F.on=x; } }
-    if(v('ofWS')!=null){ F.ws=v('ofWS')?outDateFor(k,v('ofWS')):null; F.we=v('ofWE')?outDateFor(k,v('ofWE')):null; if(F.ws&&F.we&&F.we<F.ws){const t=new Date(F.we.slice(0,10)+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+1);F.we=t.toISOString().slice(0,10)+'T'+F.we.slice(11);} }
+  function keep(dirty){ // เก็บค่าที่พิมพ์ไว้ก่อนวาดใหม่ · เวลา 24 ชม. · ไฟมาก่อนเวลาดับ = ข้ามวัน · เก็บร่างในเครื่อง
+    const v=id=>{const e=$(id);return e?e.value:null;}, hv=id=>{const x=v(id); if(x==null) return undefined; const h=hmNorm(x); if(h===null){ F._bad=1; return undefined; } return h;};
+    F._bad=0; const day=F._day;
+    const a=hv('ofOff'); if(a!==undefined) F.off=a?day+'T'+a:null;
+    const b=hv('ofOn'); if(b!==undefined){ if(!b) F.on=null; else { let x=(F.off||day).slice(0,10)+'T'+b; if(F.off&&x<F.off) x=nextDay(x.slice(0,10))+'T'+b; F.on=x; } }
+    const c=hv('ofWS'), e=hv('ofWE');
+    if(c!==undefined){ F.ws=c?(F.off||day).slice(0,10)+'T'+c:null; if(F.ws&&F.off&&F.ws<F.off&&F.off.slice(11)>='12:00'&&c<'12:00') F.ws=nextDay(F.ws.slice(0,10))+'T'+c; }
+    if(e!==undefined){ F.we=e?(F.ws||F.off||day).slice(0,10)+'T'+e:null; if(F.we&&F.ws&&F.we<F.ws) F.we=nextDay(F.we.slice(0,10))+'T'+e; }
     if(v('ofDet')!=null) F.detail=v('ofDet'); if(v('ofWo')!=null) F.wo=v('ofWo'); if(v('ofPlace')!=null) F.place=v('ofPlace');
     F._pin=v('ofPin')!=null?v('ofPin'):F._pin;
+    if(dirty!==false) F._dirty=true;
+    if(!o&&F._dirty){ const c2=Object.assign({},F); delete c2._SX; delete c2._near; delete c2._pin; LS.set('outDraft',{F:c2,at:Date.now()}); }
   }
   function bind(){
     $('ofCw').onclick=()=>{ keep(); F._cw=!F._cw; draw(); };
@@ -1269,10 +1307,15 @@ async function outForm(k,I,o,data,pre){
     bg.querySelectorAll('[data-cw]').forEach(b=>b.onclick=()=>{ keep(); const c=crewOf(b.dataset.cw), i=F.crew.findIndex(x=>x.n===c.n); if(i>=0) F.crew.splice(i,1); else F.crew.push(c); draw(); });
     const cd=$('ofCwDone'); if(cd) cd.onclick=()=>{ keep(); F._cw=false; draw(); };
     const on=(sel,fn)=>bg.querySelectorAll(sel).forEach(b=>b.onclick=()=>{keep();fn(b);draw();});
-    $('ofX').onclick=close; if($('ofNo')) $('ofNo').onclick=close;
-    bg.onclick=e=>{ if(e.target===bg) close(); };
+    $('ofX').onclick=askClose; if($('ofNo')) $('ofNo').onclick=askClose;
+    bg.onclick=null;   // แตะนอกกรอบไม่ปิด (กันข้อมูลหาย)
+    bg.querySelectorAll('input.hm').forEach(x=>{ x.oninput=hmTyping; x.onblur=()=>{ keep(); setTimeout(()=>{ const ae=document.activeElement; if(document.body.contains(bg)&&!(ae&&bg.contains(ae)&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))) draw(); },60); }; });
+    bg.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{ keep(); F._day=b.dataset.day; keep(); draw(); });
+    if($('ofDay')) $('ofDay').onchange=()=>{ keep(); if($('ofDay').value) F._day=$('ofDay').value; keep(); draw(); };
+    const m10=bg.querySelector('[data-m10]'); if(m10) m10.onclick=()=>{ keep(); const base=F.off||nowIso(); F.off=isoAt(Date.parse(base+':00+07:00')-6e5); F._day=F.off.slice(0,10); keep(); draw(); };
+    if($('ofNew')) $('ofNew').onclick=()=>{ LS.del('outDraft'); close(); outForm(k,I,null,data); };
     on('[data-lvl]',b=>{F.lvl=b.dataset.lvl; F.dev=null; F.cust=null; F._open=0;});
-    on('[data-now]',b=>{ const x=outDateFor(k,nowHm()); if(b.dataset.now==='off') F.off=x; else F.on=x; });
+    bg.querySelectorAll('[data-now]').forEach(b=>b.onclick=()=>{ keep(); const x=nowIso(); if(b.dataset.now==='off'){ F.off=x; F._day=x.slice(0,10); } else F.on=x; F._dirty=true; keep(); draw(); });
     $('ofWs').onchange=()=>{keep();F.workSame=$('ofWs').checked;draw();};
     on('[data-fd]',b=>{F.feeder=F.feeder===b.dataset.fd?'':b.dataset.fd; if(F.feeder) F._open=0; if(F.dev&&F.dev.feeder&&F.dev.feeder!==F.feeder) F.dev=null;});
     on('[data-cb]',b=>{ const c=CAUSES.find(x=>x.k===b.dataset.cb); F.cBtn=c.k; F.cData=''; F.cType=c.g.length===1?c.g[0][0]:''; if(c.k==='unk') F.known='สันนิษฐาน'; });
@@ -1298,18 +1341,25 @@ async function outForm(k,I,o,data,pre){
     if($('ofDel')) $('ofDel').onclick=()=>{ keep(); outDelDialog(o,k,auth,F._pin,async r=>{ await afterSave(); close(); toast('ลบแล้ว'+(r.reopened&&r.reopened.length?' · งานรับแจ้ง '+r.reopened.join(', ')+' กลับเป็น "กำลังแก้"':'')+' · กู้คืนได้ที่ "ลบแล้ว" ท้ายรายการ'); if(r.reopened&&r.reopened.length) loadTickets(true); }); };
     if($('ofMove')) $('ofMove').onclick=()=>{ keep(); outMoveDialog(o,k,auth,F._pin,async d=>{ S.dMonth=d.k.slice(0,7); await monthOutages(k.slice(0,7),true); if(d.k.slice(0,7)!==k.slice(0,7)) await monthOutages(d.k.slice(0,7),true); close(); toast('ย้ายไป '+outKeyTxt(d.k)+' แล้ว'); S.dDay=+d.k.slice(8,10); S.repOpen=d.k; renderDaily(); }); };
     $('ofSave').onclick=async()=>{ keep();
+      if(F._bad){ msg('ofMsg','เวลาไม่ถูกต้อง — ใส่แบบ 24 ชม. เช่น 23:50','err'); return; }
       if(!F.off){ msg('ofMsg','ใส่เวลาไฟดับ','err'); return; }
+      if(!F.feeder){ msg('ofMsg','เลือกฟีดเดอร์ (ข้อ 3)','err'); F._open=3; draw(); return; }
+      if(Date.parse(F.off+':00+07:00')>Date.now()+6e5){ msg('ofMsg','เวลาไฟดับอยู่ในอนาคต — ตรวจวันที่/เวลา','err'); return; }
+      const tk=outKeyOfOff(F.off);
       const body={lvl:F.lvl,off:F.off,on:F.on,ws:F.workSame?F.off:F.ws,we:F.workSame?F.on:F.we,feeder:F.feeder,dev:F.dev,cust:F.cust,lat:F.lat||null,lon:F.lon||null,place:F.place||'',
         cBtn:F.cBtn,cType:F.cType,cData:F.cData,known:F.known,weather:F.weather,fix:F.fix,mats:F.mats,detail:F.detail,wo:F.wo,crew:F.crew.map(c=>({n:c.n,p:c.p}))};
       crewRemember(F.crew);
       if(o) body.id=o.id;
       $('ofSave').disabled=true; $('ofSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';
-      try{ const j=await apiPost(Object.assign({action:'saveOutage',k,o:body},outAuthBody(auth,F._pin)));
+      try{ const j=await apiPost(Object.assign({action:'saveOutage',k:tk,o:body},outAuthBody(auth,F._pin)));
+        if(!o) LS.del('outDraft');
         if(F._tk){ try{ await apiPost(Object.assign({action:'ticketAct',id:F._tk,a:'done',outId:j.outage.id,onAt:F.on||''},tkAuthBody(F._pin))); loadTickets(true); }catch(e){} }
         let note='';
         if(photos.length){ $('ofSave').innerHTML='<span class="spin"></span>กำลังอัปโหลดรูป…'; note=await outPhotosUp(j.outage,photos,F.fix,auth,F._pin); }
+        const nk=j.outage.k||tk; if(nk.slice(0,7)!==S.dMonth) await monthOutages(nk.slice(0,7),true);
         await afterSave(); close();
-        toast('บันทึกแล้ว'+(j.outage.patrol&&j.outage.patrol.id&&!(o&&o.patrol&&o.patrol.id)?' · ส่งเข้า Patrol แล้ว':'')+(j.outage.patrol&&j.outage.patrol.err?' · ยังไม่เข้า Patrol: '+j.outage.patrol.err:'')+note);
+        if(nk!==k){ S.dMonth=nk.slice(0,7); S.dDay=+nk.slice(8,10); S.repOpen=nk; renderDaily(); }
+        toast('บันทึกแล้ว'+(nk!==k?' · ลงใน '+outKeyTxt(nk):'')+(j.outage.patrol&&j.outage.patrol.id&&!(o&&o.patrol&&o.patrol.id)?' · ส่งเข้า Patrol แล้ว':'')+(j.outage.patrol&&j.outage.patrol.err?' · ยังไม่เข้า Patrol: '+j.outage.patrol.err:'')+note);
       }catch(x){ $('ofSave').disabled=false; $('ofSave').textContent='บันทึก'; msg('ofMsg',x.message,'err'); }
     };
   }
