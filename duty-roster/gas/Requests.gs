@@ -1537,3 +1537,128 @@ function repMark_(b) {
   }
   throw new Error('คำสั่งไม่ถูกต้อง');
 }
+
+/* ======================================================================
+ *  ประกาศงดจ่ายไฟ — แจ้งล่วงหน้า (แนบหนังสือประกาศ) / ฉุกเฉิน
+ *  เก็บในชีต Notices · หนังสือ/ภาพที่อัปโหลดเก็บใน Google Drive (โฟลเดอร์ของระบบ)
+ * ====================================================================== */
+const NT_SHEET_ = 'Notices';
+function ntSheet_() {
+  let sh = sheet_(NT_SHEET_);
+  if (!sh) { sh = ss_().insertSheet(NT_SHEET_); sh.getRange(1, 1, 1, 5).setValues([['id', 'data', 'updatedAt', 'by', 'deleted']]).setFontWeight('bold'); sh.setFrozenRows(1); sh.getRange('A:A').setNumberFormat('@'); }
+  return sh;
+}
+function ntRows_() {
+  const sh = ntSheet_(); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues().map(function (r, i) {
+    let d = {}; try { d = JSON.parse(r[1] || '{}'); } catch (e) {}
+    return { row: i + 2, id: String(r[0]), d: d, deleted: r[4] === true || r[4] === 'TRUE' };
+  });
+}
+/** รายการประกาศ: ย้อนหลัง 45 วัน + ที่ยังไม่ถึง (สาธารณะ — ไม่มีข้อมูลส่วนตัว) */
+function noticesList_() {
+  const from = Utilities.formatDate(new Date(Date.now() - 45 * 864e5), TZ, 'yyyy-MM-dd');
+  return ntRows_().filter(function (x) { return !x.deleted && String(x.d.date || '') >= from; }).map(function (x) { return x.d; })
+    .sort(function (a, b) { return String(a.startAt).localeCompare(String(b.startAt)); });
+}
+function ntWho_(b) {
+  const w = approverOf_(b); if (w) return w.short || w.name;
+  const n = tkAuth_(b), nn = normN_(n), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
+  return pr ? pr.short : n;
+}
+const NT_KEYS_ = ['type', 'date', 'start', 'end', 'estMin', 'reason', 'reasonKey', 'feeder', 'dev', 'cust', 'area', 'sub', 'villages', 'speech', 'note'];
+function ntAt_(d, hm) { return d + 'T' + hm; }
+function saveNotice_(b) {
+  const by = ntWho_(b), o = b.n || {};
+  if (o.type !== 'plan' && o.type !== 'emg') throw new Error('เลือกประเภทประกาศ');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(o.date || '')) || !/^\d{2}:\d{2}$/.test(String(o.start || ''))) throw new Error('ใส่วันและเวลาเริ่มดับ');
+  if (o.type === 'plan' && !/^\d{2}:\d{2}$/.test(String(o.end || ''))) throw new Error('ใส่เวลาสิ้นสุด');
+  if (!String(o.area || '').trim()) throw new Error('ใส่พื้นที่ไฟดับ');
+  const sh = ntSheet_(), rows = ntRows_(), now = new Date();
+  const cur = o.id ? rows.filter(function (x) { return x.id === String(o.id) && !x.deleted; })[0] : null;
+  const d = cur ? cur.d : { id: 'NT-' + Utilities.formatDate(now, TZ, 'yyMMdd-HHmmss'), status: o.type === 'emg' && o.live ? 'live' : 'plan', created: now.toISOString(), createdBy: by, tl: [] };
+  NT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
+  d.area = String(d.area || '').slice(0, 120); d.sub = String(d.sub || '').slice(0, 120); d.reason = String(d.reason || '').slice(0, 160); d.speech = String(d.speech || '').slice(0, 90);
+  d.villages = (Array.isArray(d.villages) ? d.villages : []).map(String).filter(String).slice(0, 12);
+  d.startAt = ntAt_(d.date, d.start);
+  if (d.type === 'plan') { d.endAt = d.end >= d.start ? ntAt_(d.date, d.end) : ntAt_(Utilities.formatDate(new Date(Date.parse(d.date + 'T00:00:00Z') + 864e5), 'UTC', 'yyyy-MM-dd'), d.end); }
+  else { const m = Number(d.estMin) || 0; d.endAt = m ? Utilities.formatDate(new Date(Date.parse(d.startAt + ':00+07:00') + m * 60000), TZ, 'yyyy-MM-dd HH:mm').replace(' ', 'T') : ''; }
+  d.updated = now.toISOString(); d.by = by;
+  d.tl = (d.tl || []).concat([{ at: Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), by: by, act: cur ? 'edit' : 'new' }]).slice(-40);
+  const rec = [d.id, JSON.stringify(d), now, by, false];
+  if (cur) sh.getRange(cur.row, 1, 1, 5).setValues([rec]); else sh.appendRow(rec);
+  log_(by, cur ? 'แก้ประกาศงดจ่ายไฟ' : 'สร้างประกาศงดจ่ายไฟ', d.date.slice(0, 7), d.id + ' ' + d.type + ' ' + d.area);
+  if (!cur && d.type === 'emg') { try { ntNotify_(d, by); } catch (e) { log_('system', 'แจ้งดับไฟฉุกเฉินไม่สำเร็จ', '', String(e)); } }
+  return d;
+}
+/** เปลี่ยนสถานะ: start เริ่มดับ · done ไฟมาแล้ว · extend ขยายเวลา · move เลื่อน · cancel ยกเลิก · reopen กลับเป็นแผน · del ลบ · link ผูกรายการไฟดับ */
+function noticeAct_(b) {
+  const by = ntWho_(b), x = ntRows_().filter(function (r) { return r.id === String(b.id || '') && !r.deleted; })[0];
+  if (!x) throw new Error('ไม่พบประกาศ');
+  const d = x.d, now = new Date(), nowS = Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm').replace(' ', 'T'), a = String(b.a || ''), ev = { at: Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), by: by, act: a };
+  const hm = function (s) { return /^\d{2}:\d{2}$/.test(String(s || '')) ? String(s) : ''; };
+  if (a === 'start') { d.status = 'live'; d.actualOff = b.at && hm(b.at) ? d.date + 'T' + b.at : nowS; ev.txt = d.actualOff.slice(11); }
+  else if (a === 'done') { d.status = 'done'; d.actualOn = b.at && hm(b.at) ? nowS.slice(0, 10) + 'T' + b.at : nowS; if (!d.actualOff) d.actualOff = d.startAt; ev.txt = d.actualOn.slice(11); }
+  else if (a === 'extend') { const t = hm(b.to); if (!t) throw new Error('ใส่เวลาที่คาดว่าไฟมา'); d.endAt = (t >= String(d.startAt).slice(11) ? d.startAt.slice(0, 10) : Utilities.formatDate(new Date(Date.parse(d.startAt.slice(0, 10) + 'T00:00:00Z') + 864e5), 'UTC', 'yyyy-MM-dd')) + 'T' + t; if (d.type === 'plan') d.end = t; ev.txt = t; }
+  else if (a === 'move') { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.date || '')) || !hm(b.start) || !hm(b.end)) throw new Error('ใส่วัน/เวลาใหม่'); d.moved = { from: d.date, fromStart: d.start, fromEnd: d.end, at: ev.at }; d.date = b.date; d.start = b.start; d.end = b.end; d.startAt = ntAt_(d.date, d.start); d.endAt = ntAt_(d.date, d.end); d.status = 'plan'; ev.txt = b.date + ' ' + b.start + '–' + b.end; }
+  else if (a === 'cancel') { d.status = 'cancel'; ev.txt = String(b.note || '').slice(0, 80); }
+  else if (a === 'reopen') { d.status = 'plan'; delete d.actualOn; }
+  else if (a === 'link') { d.outId = String(b.outId || ''); }
+  else if (a === 'del') { ntSheet_().getRange(x.row, 5).setValue(true); log_(by, 'ลบประกาศงดจ่ายไฟ', '', d.id); return d; }
+  else throw new Error('คำสั่งไม่ถูกต้อง');
+  d.tl = (d.tl || []).concat([ev]).slice(-40); d.updated = now.toISOString(); d.by = by;
+  ntSheet_().getRange(x.row, 2, 1, 3).setValues([[JSON.stringify(d), now, by]]);
+  log_(by, 'ประกาศงดจ่ายไฟ: ' + a, String(d.date).slice(0, 7), d.id + (ev.txt ? ' ' + ev.txt : ''));
+  return d;
+}
+/* ---- ไฟล์ใน Drive: หนังสือประกาศ / ภาพของหน่วยงาน ---- */
+function ntFolder_() {
+  const props = PropertiesService.getScriptProperties(), id = props.getProperty('NT_FOLDER');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+  const f = DriveApp.createFolder('งานเวรแก้ไฟ - ประกาศงดจ่ายไฟ'); props.setProperty('NT_FOLDER', f.getId()); return f;
+}
+function ntSaveFile_(b64, mime, name) {
+  if (!b64 || String(b64).length > 9e6) throw new Error('ไฟล์ใหญ่เกินไป');
+  mime = /^(image\/(jpeg|png|webp)|application\/pdf)$/.test(String(mime)) ? String(mime) : 'image/jpeg';
+  const f = ntFolder_().createFile(Utilities.newBlob(Utilities.base64Decode(String(b64)), mime, String(name || 'file').slice(0, 80)));
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return { fileId: f.getId(), name: f.getName(), mime: mime };
+}
+function noticeDoc_(b) {
+  const by = ntWho_(b), x = ntRows_().filter(function (r) { return r.id === String(b.id || '') && !r.deleted; })[0];
+  if (!x) throw new Error('ไม่พบประกาศ');
+  const d = x.d;
+  if (b.remove) delete d.doc;
+  else { d.doc = ntSaveFile_(b.base64, b.mime, 'หนังสือประกาศ ' + d.date + ' ' + d.area); d.doc.at = new Date().toISOString(); d.doc.by = by; }
+  d.tl = (d.tl || []).concat([{ at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by: by, act: b.remove ? 'docDel' : 'doc' }]).slice(-40);
+  ntSheet_().getRange(x.row, 2, 1, 3).setValues([[JSON.stringify(d), new Date(), by]]);
+  return d;
+}
+/** อ่านไฟล์ (สำหรับรวมเป็นชุดส่ง/PDF ในเบราว์เซอร์ — ไฟล์ใน Drive ดึงข้ามโดเมนตรง ๆ ไม่ได้) */
+function noticeFile_(q) {
+  const id = String(q.f || ''); if (!/^[\w-]{20,}$/.test(id)) throw new Error('bad id');
+  const f = DriveApp.getFileById(id); if (f.getParents().next().getId() !== ntFolder_().getId()) throw new Error('ไม่อนุญาต');
+  const bl = f.getBlob(); return { mime: bl.getContentType(), base64: Utilities.base64Encode(bl.getBytes()) };
+}
+function saveNoticeCfg_(b, who) {
+  const c = b.cfg || {}, cur = (function () { try { return JSON.parse(getConfig_().noticeCfg || '{}'); } catch (e) { return {}; } })();
+  ['unit', 'speaker', 'footer', 'phone', 'qr', 'slogan', 'sub'].forEach(function (k) { if (k in c) cur[k] = String(c[k] || '').slice(0, 300); });
+  if (b.speakerImg) cur.speakerFile = ntSaveFile_(b.speakerImg, b.speakerMime, 'ภาพตัวพูด').fileId;
+  if (b.logoImg) cur.logoFile = ntSaveFile_(b.logoImg, b.logoMime, 'โลโก้').fileId;
+  if (c.clearSpeaker) delete cur.speakerFile; if (c.clearLogo) delete cur.logoFile;
+  setConfigKey_('noticeCfg', JSON.stringify(cur));
+  log_(who.short || who.name, 'ตั้งค่าประกาศงดจ่ายไฟ', '', '');
+  return cur;
+}
+/** ดับไฟฉุกเฉิน → LINE ผู้อนุมัติ + คนอยู่เวรตอนนี้ (ครั้งเดียวตอนสร้าง) */
+function ntNotify_(d, by) {
+  const to = [], add = function (n) { if (n && to.indexOf(n) < 0 && n !== by) to.push(n); };
+  approverList_().forEach(function (a) { add(a.short); });
+  try { const td = dayData_(bkkYmd_()), yd = dayData_(addDays_(bkkYmd_(), -1)), empSet = Object.assign({}, yd ? yd.emp : {}, td ? td.emp : {}); Object.keys(onDutyNow_()).filter(function (n) { return n in empSet; }).forEach(add); } catch (e) {}
+  const lines = [d.area + (d.sub ? ' · ' + d.sub : ''), 'ดับ ' + String(d.startAt).slice(11) + ' น.' + (d.endAt ? ' · คาดว่าไฟมา ~' + String(d.endAt).slice(11) + ' น.' : ''), 'สาเหตุ: ' + (d.reason || '-') + (d.cust ? ' · ~' + d.cust + ' ราย' : ''), 'ประกาศโดย ' + by];
+  const u = webUrl_('viewDaily', { nt: d.id }), btn = u ? [{ type: 'button', style: 'primary', height: 'sm', color: '#B3261E', action: { type: 'uri', label: 'ดูประกาศ / อัปเดตสถานะ', uri: u } }] : null;
+  const msg = [flex_('⚠️ ดับไฟฉุกเฉิน ' + d.area, bubble_('⚠️ ดับไฟฉุกเฉิน', '#B3261E', d.feeder ? d.feeder + ' · ' + d.area : d.area, lines, btn))];
+  to.forEach(function (n) { const id = lineIdOf_(n); if (id) push_(id, msg, 'outage'); });
+}
+/** เรียกครั้งแรกจากหน้าแก้ไขสคริปต์ เพื่อขอสิทธิ์ Google Drive (เก็บหนังสือประกาศ/ภาพ) */
+function ntSetup() { const f = ntFolder_(); Logger.log('โฟลเดอร์ประกาศ: ' + f.getUrl()); return f.getId(); }

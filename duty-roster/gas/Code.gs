@@ -431,6 +431,8 @@ function doGet(e) {
     if (a === 'ticketStatus') return json_({ ok: true, ticket: tkStatus_(q.id, q.k, q.p) });
     if (a === 'tmd') return json_({ ok: true, days: tmdDays_(String(q.m || '')) });
     if (a === 'outages') return json_({ ok: true, outages: outagesOf_(q.m, q.del === '1') });
+    if (a === 'notices') return json_({ ok: true, notices: noticesList_() });
+    if (a === 'noticeFile') return json_(Object.assign({ ok: true }, noticeFile_(q)));
     if (a === 'repTrack') return json_({ ok: true, items: repTrack_(String(q.m || '')), from: repTrackFrom_() });
     if (a === 'sldPing') { const x = sldSS_(), f = x.getSheetByName('PatrolFinding'); return json_({ ok: true, sheet: x.getName(), patrol: !!f }); }
     return json_({ ok: false, error: 'unknown action' });
@@ -460,6 +462,10 @@ function doPost(e) {
     if (b.action === 'moveOutage') return json_({ ok: true, outage: moveOutage_(b) });
     if (b.action === 'addOutPhotos') return json_({ ok: true, outage: addOutPhotos_(b) });
     if (b.action === 'saveOutMats') return json_({ ok: true, mats: saveOutMats_(b) });
+    // ---- ประกาศงดจ่ายไฟ: ผู้อนุมัติ / บัญชีศูนย์รวมงาน / ลิงก์เวรจาก LINE ----
+    if (b.action === 'saveNotice') return json_({ ok: true, notice: saveNotice_(b) });
+    if (b.action === 'noticeAct') return json_({ ok: true, notice: noticeAct_(b) });
+    if (b.action === 'noticeDoc') return json_({ ok: true, notice: noticeDoc_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'resubmitRequest') return json_({ ok: true, request: resubmitRequest_(b), requests: listRequests_() });
     if (b.action === 'cancelReturned') { cancelReturned_(b.id, b.by); return json_({ ok: true, requests: listRequests_() }); }
@@ -467,7 +473,7 @@ function doPost(e) {
       const rq = createRequest_(b, null); return json_({ ok: true, request: rq });
     }
     // ---- ต้องเป็นผู้อนุมัติ ----
-    const who = approverByPin_(b.pin) || (b.action === 'setWx' ? approverOf_(b) : null);   // ตั้งอากาศ: ผู้อนุมัติที่ล็อกอินศูนย์รวมงานไม่ต้องใส่ PIN
+    const who = approverByPin_(b.pin) || (b.action === 'setWx' || b.action === 'saveNoticeCfg' ? approverOf_(b) : null);   // ตั้งอากาศ: ผู้อนุมัติที่ล็อกอินศูนย์รวมงานไม่ต้องใส่ PIN
     if (!who) return json_({ ok: false, error: 'PIN ไม่ถูกต้อง' });
 
     // ส่งรายการคำขอล่าสุดกลับไปด้วย หน้าเว็บไม่ต้องโหลดซ้ำอีกรอบ
@@ -529,6 +535,7 @@ function doPost(e) {
       saveMonth_(b.m, mo.status, mo.data, mo.stateAfter, mo.note);
       return json_({ ok: true, month: getMonth_(b.m) });
     }
+    if (b.action === 'saveNoticeCfg') return json_({ ok: true, cfg: saveNoticeCfg_(b, who) });
     if (b.action === 'setWx') {                       // ตั้งระดับสภาพอากาศเอง (null = อัตโนมัติ)
       let hrs = b.dur === 'forever' ? 0 : b.dur === 'shift' ? shiftHoursLeft_() : Number(getConfig_().wxManualHours || 6);
       setWxOverride_(b.lv == null ? null : Number(b.lv), who.short || who.name, hrs, b.note || '');

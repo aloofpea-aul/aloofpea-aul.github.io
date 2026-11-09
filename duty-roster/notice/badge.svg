@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EBD592"/><stop offset=".5" stop-color="#B8964A"/><stop offset="1" stop-color="#8C6E2E"/></linearGradient>
+<clipPath id="c"><circle cx="100" cy="92" r="58"/></clipPath></defs>
+<circle cx="100" cy="92" r="84" fill="#6F2C8E"/>
+<!-- laurel-ish leaves in white -->
+<g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".95">
+<path d="M40 140 C26 118 24 86 36 58"/><path d="M160 140 C174 118 176 86 164 58"/>
+<g fill="#fff" stroke="none"><ellipse cx="30" cy="80" rx="3.5" ry="8" transform="rotate(-25 30 80)"/><ellipse cx="29" cy="100" rx="3.5" ry="8" transform="rotate(-10 29 100)"/><ellipse cx="33" cy="120" rx="3.5" ry="8" transform="rotate(10 33 120)"/><ellipse cx="170" cy="80" rx="3.5" ry="8" transform="rotate(25 170 80)"/><ellipse cx="171" cy="100" rx="3.5" ry="8" transform="rotate(10 171 100)"/><ellipse cx="167" cy="120" rx="3.5" ry="8" transform="rotate(-10 167 120)"/></g></g>
+<circle cx="100" cy="92" r="62" fill="url(#gold)"/>
+<g clip-path="url(#c)"><rect width="200" height="200" fill="#fff"/>
+<g stroke="#C9AE68" stroke-width="2.2"><path d="M40 112h120M40 118h120M40 124h120M40 130h120M40 136h120M40 142h120"/></g>
+<path d="M44 112 C50 108 52 80 62 78 C72 76 70 104 78 106 C84 90 88 64 100 62 C112 60 112 98 120 102 C126 90 130 80 138 82 C148 84 148 106 158 110 L158 112Z" fill="url(#gold)"/>
+<path d="M76 66 l-12 22 h9 l-7 18 l20 -26 h-10 l8 -14z" fill="url(#gold)" stroke="#fff" stroke-width="1.6"/>
+<path d="M138 56 l-12 22 h9 l-7 18 l20 -26 h-10 l8 -14z" fill="url(#gold)" stroke="#fff" stroke-width="1.6"/>
+</g>
+<g transform="translate(100 172)"><rect x="-66" y="-18" width="132" height="30" rx="15" fill="#fff" stroke="url(#gold)" stroke-width="3"/><text y="4" text-anchor="middle" font-family="Sarabun,sans-serif" font-weight="800" font-size="17" fill="#6F2C8E">♥ รักอ่าวลึก</text></g>
+</svg>
