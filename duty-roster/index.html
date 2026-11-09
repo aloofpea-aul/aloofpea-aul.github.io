@@ -58,7 +58,7 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .days button.on i.cd{background:#FFD27A}
 .days button i.rqb{position:absolute;bottom:2px;left:50%;margin-left:-9px;width:18px;height:3px;border-radius:2px;background:#C92A2A}.days button.on i.rqb{background:#fff}.days button.rqd i.cd{bottom:7px}
 .oiss{border-radius:8px;padding:5px 8px;margin-top:5px;font-size:12.5px;line-height:1.35}.oiss.r{background:#FDECEC;color:#9B1C1C}.oiss.y{background:#FFF1D6;color:#7A4A00}.oiss.g{background:#E6F4E8;color:#1F5A2A;margin-top:8px}
-.oiss.b{background:#E3E6FA;color:#26307A}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
+.oiss.b{background:#E3E6FA;color:#26307A}.oiss.ochk{font-size:13.5px;padding:8px 10px}.osg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.osg button{background:#fff;border:1.5px solid #C92A2A;color:#8A1F1F;border-radius:16px;padding:5px 11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.osg.y button{border-color:#A06A00;color:#7A4A00}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
 .rqp{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}.rqp.o{background:#FFF1D6;color:#7A4A00}.rqp.r{background:#FDECEC;color:#9B1C1C}.rqp.b{background:#E3E6FA;color:#26307A}.rqp.g{background:#E6F4E8;color:#1F5A2A}.rqp.n{background:#EEE;color:#555}
 .rqov{position:fixed;inset:0;background:rgba(20,10,25,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:10px}
 .rqsh{background:#fff;border-radius:18px;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -1005,6 +1005,10 @@ function outIssues(o,k,L){
   if(!o.on) out.push(['r','ยังไม่บันทึกเวลาจ่ายไฟ — ไม่ถูกนับชั่วโมงในข้อ ๒–๓']);
   else if(on<off) out.push(['r','เวลาจ่ายไฟก่อนเวลาไฟดับ']);
   if(o.ws&&o.we&&tm(o.we)<tm(o.ws)) out.push(['r','เวลาเสร็จงานก่อนเวลาเริ่มปฏิบัติงาน']);
+  const cr=o.created?Date.parse(o.created):NaN;
+  if(!isNaN(cr)&&off>cr+10*6e4) out.push(['r','เวลาไฟดับ '+hmTh(o.off)+' น. อยู่หลังเวลาที่ลงรายการ — น่าจะลงวันที่/เวลาผิด']);
+  else if(!isNaN(cr)&&o.on&&on>cr+10*6e4&&!(o.hist||[]).some(h=>h.act==='edit')) out.push(['r','เวลาไฟมา '+hmTh(o.on)+' น. อยู่หลังเวลาที่ลงรายการ — น่าจะลงเวลาผิด']);
+  if(o.on&&on-off>OUT_LONG*6e4) out.push(o.longWhy?['y','ไฟดับเกิน 4 ชม. — เหตุผล: '+o.longWhy]:['r','ไฟดับ '+durTxt(durMin(o.off,o.on))+' เกินมาตรฐาน 4 ชม. — ตรวจเวลาอีกครั้ง']);
   const d=k.slice(0,10), p=k.slice(-2), mo=S.months[d.slice(0,7)], dy=mo&&mo.data.days[+d.slice(8,10)-1];
   const nx=new Date(Date.parse(d+'T00:00:00Z')+864e5).toISOString().slice(0,10);
   const st=Date.parse(d+'T'+(p==='p1'?'00:30':p==='p2'||dy&&dy.off?'08:30':'16:30')+':00+07:00'), en=p==='p1'?Date.parse(d+'T08:30:00+07:00'):p==='p2'?Date.parse(d+'T16:30:00+07:00'):Date.parse(nx+'T00:30:00+07:00');
@@ -1168,6 +1172,32 @@ function outSetNames(x){ const mo=S.months[x.slice(0,7)]; if(!mo) return ''; ret
 function hmNorm(v){ let d=String(v||'').replace(/\D/g,''); if(!d) return ''; if(d.length===3) d='0'+d; if(d.length===1||d.length===2) d=d.padStart(2,'0')+'00'; d=d.slice(0,4); const h=+d.slice(0,2), m=+d.slice(2); return h<24&&m<60?d.slice(0,2)+':'+d.slice(2):null; }
 function hmTyping(e){ const el=e.target; let d=el.value.replace(/\D/g,'').slice(0,4); el.value=d.length>2?d.slice(0,2)+':'+d.slice(2):d; }
 const nextDay=ymd=>new Date(Date.parse(ymd+'T00:00:00Z')+864e5).toISOString().slice(0,10);
+/* กันลงเวลาผิด: เวลาที่ยังไม่ถึง (บล็อก) · ไฟดับเกิน 4 ชม. = เกินมาตรฐานแก้ไฟ (ต้องยืนยัน + เหตุผล) · 2–4 ชม. / ไม่ถึง 1 นาที (เตือน) · ซ้ำ
+   s = ปุ่มแก้ด่วน [ช่อง, ค่า, ป้าย] — เดาจากที่พบบ่อย: เลือก AM/PM สลับ (±12 ชม.), ลงย้อนหลังแต่วันที่เป็นวันนี้ (−1 วัน) */
+const OUT_LONG=240, OUT_WARN=120;
+function outChk(F,o){
+  const r={blk:[],long:null,warn:[],dup:null}; if(!F.off) return r;
+  const T=x=>Date.parse(x+':00+07:00'), now=Date.now(), sh=(iso,h)=>isoAt(T(iso)+h*36e5), hm=x=>x.slice(11,16), H=x=>+x.slice(11,13);
+  const td=nowIso().slice(0,10), dl=x=>{ const d=x.slice(0,10); return d===td?'วันนี้':d===isoAt(now-864e5).slice(0,10)?'เมื่อวาน':isoShort(d); };
+  if(T(F.off)>now+6e5){ const s=[];
+    if(H(F.off)>=12){ const a=sh(F.off,-12); if(T(a)<=now) s.push(['off',a,hm(a)+' '+dl(a)]); }
+    const y=sh(F.off,-24); s.push(['off',y,hm(y)+' '+dl(y)]);
+    r.blk.push({t:'⛔ เวลาไฟดับ '+hm(F.off)+' ยังไม่ถึง (ตอนนี้ '+hm(nowIso())+')',s}); return r; }
+  if(F.on&&T(F.on)>now+6e5){ const s=[];
+    if(H(F.on)>=12){ const a=sh(F.on,-12); if(a>F.off&&T(a)<=now) s.push(['on',a,'มา '+hm(a)+' ('+durTxt(durMin(F.off,a)).trim()+')']); }
+    r.blk.push({t:'⛔ เวลาไฟมา '+hm(F.on)+' ยังไม่ถึง (ตอนนี้ '+hm(nowIso())+') — ถ้าไฟยังไม่มา ให้เว้นช่อง "ไฟมา" ว่างไว้ แล้วค่อยใส่ทีหลัง',s}); }
+  const dd=durMin(F.off,F.on);
+  if(dd!=null&&dd>OUT_LONG){ const s=[], ad=(f,a,l)=>{ if(!s.some(x=>x[1]===a&&x[0]===f)) s.push([f,a,l]); };
+    if(H(F.on)>=12){ const a=sh(F.on,-12); if(a>F.off) ad('on',a,'มา '+hm(a)+' ('+durTxt(durMin(F.off,a)).trim()+')'); }
+    if(H(F.off)<12){ const a=sh(F.off,12); if(a<F.on&&T(a)<=now) ad('off',a,'ดับ '+hm(a)+' ('+durTxt(durMin(a,F.on)).trim()+')'); }
+    if(F.on.slice(0,10)!==F.off.slice(0,10)){ const a=sh(F.on,-24); if(a>F.off) ad('on',a,'มา '+hm(a)+' วันเดียวกัน ('+durTxt(durMin(F.off,a)).trim()+')'); }
+    r.long={t:'⛔ ไฟดับ '+durTxt(dd).trim()+' — เกินมาตรฐาน 4 ชม.',s}; }
+  else if(dd!=null&&dd>OUT_WARN) r.warn.push('🟡 ไฟดับ '+durTxt(dd).trim()+' — นานกว่าปกติ ตรวจเวลาอีกครั้ง (บันทึกได้)');
+  else if(dd===0) r.warn.push('🟡 ไฟดับไม่ถึง 1 นาที — ตรวจเวลาไฟมาอีกครั้ง');
+  if(F.feeder){ const a=T(F.off), b=F.on?T(F.on):a+36e5, L=[F.off.slice(0,7),isoAt(a-864e5).slice(0,7)].filter((x,i,A)=>A.indexOf(x)===i).flatMap(m=>(S.outs&&S.outs[m])||[]);
+    r.dup=L.find(x=>x.id!==(o&&o.id)&&x.feeder===F.feeder&&x.lvl===F.lvl&&x.off&&T(x.off)<=b+6e5&&(x.on?T(x.on):T(x.off)+36e5)>=a-6e5)||null; }
+  return r;
+}
 async function outForm(k,I,o,data,pre){
   const auth=repAuthFor(k), wx=(S.wx||LS.get('wx')||{}).lv||1;
   const dr=!o&&!pre?LS.get('outDraft'):null, fromDraft=!!(dr&&dr.F&&Date.now()-dr.at<24*36e5);
@@ -1176,6 +1206,7 @@ async function outForm(k,I,o,data,pre){
     F.off=isoAt(new Date(t.at).getTime()); F.on=nowIso(); if(F.on<F.off) F.on=null;
     F.place=t.place||''; if(t.lat){F.lat=t.lat;F.lon=t.lon;} if(t.near&&t.near.feeder) F.feeder=t.near.feeder;
     F.detail='รับแจ้ง '+t.id+(t.detail?': '+t.detail.slice(0,120):''); }
+  if(o&&o.longWhy) F.longOk=true;
   if(!fromDraft) F.workSame=!o||(!o.ws&&!o.we)||(o.ws===o.off&&o.we===o.on);
   F._day=(F.off||nowIso()).slice(0,10); F._dirty=fromDraft; F._fromDraft=fromDraft?dr.at:0;
   if(!Array.isArray(F.crew)) F.crew=o?[]:((I&&I.names)||[]).map(crewOf);   // ผู้ปฏิบัติงาน: ค่าเริ่มต้น = คนอยู่เวรชุดนี้
@@ -1239,8 +1270,15 @@ async function outForm(k,I,o,data,pre){
       <div class="grid2" style="margin-top:8px"><label class="tf">ไฟดับ<span class="row"><input type="text" inputmode="numeric" class="hm" id="ofOff" value="${offHm}" placeholder="--:--" maxlength="5" autocomplete="off"><button type="button" class="lnk" data-now="off">ตอนนี้</button></span><button type="button" class="lnk" data-m10 style="font-size:12.5px;align-self:flex-start">−10 นาที</button></label>
         <label class="tf">ไฟมา / จ่ายไฟได้<span class="row"><input type="text" inputmode="numeric" class="hm" id="ofOn" value="${onHm}" placeholder="--:--" maxlength="5" autocomplete="off"><button type="button" class="lnk" data-now="on">ตอนนี้</button></span></label></div>
       <div class="dur">${F.off?'ดับ '+esc(isoShort(F.off.slice(0,10)))+' '+hmTh(F.off)+' น. · ':''}${F.on&&F.off&&F.on.slice(0,10)!==F.off.slice(0,10)?'มา '+esc(isoShort(F.on.slice(0,10)))+' '+hmTh(F.on)+' น. · ':''}${dd==null?'ยังไม่จ่ายไฟ (ใส่เวลาไฟมาทีหลังได้)':'ไฟดับ '+durTxt(dd)}</div>
+      ${(()=>{ const C=F._chk=outChk(F,o), SG=s=>s.length?'<div class="osg">'+s.map(x=>`<button type="button" data-sg="${x[0]}" data-v="${x[1]}">${esc(x[2])}</button>`).join('')+'</div>':'';
+        return C.blk.map(b=>`<div class="oiss r ochk"><b>${esc(b.t)}</b>${b.s.length?'<br>แตะเพื่อแก้:':''}${SG(b.s)}</div>`).join('')
+          +(C.long?`<div class="oiss r ochk"><b>${esc(C.long.t)}</b><br>ลงเวลาผิดหรือเปล่า?${C.long.s.length?' แตะเพื่อแก้:':''}${SG(C.long.s)}
+            <label class="ckb" style="margin-top:6px"><input type="checkbox" id="ofLongOk" ${F.longOk?'checked':''}> ถูกต้องแล้ว ไฟดับนานจริง</label>
+            ${F.longOk?`<input type="text" id="ofLongWhy" value="${esc(F.longWhy||'')}" placeholder="เหตุผลที่นานเกิน 4 ชม. (ต้องกรอก) เช่น เสาหัก รออุปกรณ์" style="margin-top:4px;width:100%">`:''}</div>`:'')
+          +C.warn.map(t=>`<div class="oiss y">${esc(t)}</div>`).join('')
+          +(C.dup&&!F._dupOk?`<div class="oiss y ochk"><b>🟡 อาจซ้ำ:</b> ${esc(C.dup.feeder)} มีรายการ ดับ ${hmTh(C.dup.off)}${C.dup.on?'–'+hmTh(C.dup.on):''} น. ${esc(isoShort(C.dup.off.slice(0,10)))} อยู่แล้ว<div class="osg y"><button type="button" id="ofDupOpen">เปิดรายการเดิม</button><button type="button" id="ofDupOk">ไม่ซ้ำ ลงใหม่</button></div></div>`:''); })()}
       ${(()=>{ if(!F.off) return ''; const tk=outKeyOfOff(F.off), fut=Date.parse(F.off+':00+07:00')>Date.now()+6e5;
-        if(fut) return `<div class="oiss r">❗ เวลาไฟดับอยู่ในอนาคต — ตรวจวันที่และเวลาอีกครั้ง</div>`;
+        if(fut) return '';
         if(!S.months[tk.slice(0,7)]&&!S.boot.months.some(m=>m.month===tk.slice(0,7))) return `<div class="oiss r">❗ ยังไม่มีตารางเวรเดือนนี้</div>`;
         const nm=outSetNames(tk), me0=(auth&&auth.u)||hubCreds().user||'', me=(crewPeople().find(p=>p.short===me0||p.full===me0)||{}).short||me0, mine=!me||outInSet(tk,me)||tk.endsWith('p2')||(meInfo()||{}).appr;
         return `<div class="oiss g" style="font-size:14px">📋 <b>จะลงในรายงาน: ${esc(outKeyTxt(tk))}</b>${nm?'<br>คนอยู่เวร: '+esc(nm):''}${tk.endsWith('p2')?'<br>ไม่อยู่ในบัญชีลงนาม (ในเวลาทำการ)':'<br>นับในข้อ '+(F.lvl==='lv'?'๓ แรงต่ำ':'๒ แรงสูง')+' ของบัญชีลงนามชุดนี้'}</div>`
@@ -1278,7 +1316,7 @@ async function outForm(k,I,o,data,pre){
       ${auth&&auth.r==='duty'?`<div class="muted" style="margin-top:6px">บันทึกในชื่อ ${esc(auth.u)} (ลิงก์จาก LINE)</div>`:hubCreds().user?`<div class="muted" style="margin-top:6px">บันทึกในชื่อ ${esc(hubCreds().user)} (บัญชีศูนย์รวมงาน) · ไม่ต้องใส่ PIN</div>`:`<label class="tf" style="margin-top:6px">PIN ผู้อนุมัติ <span class="muted" style="font-weight:400">(หรือล็อกอินศูนย์รวมงานก่อน จะไม่ต้องใส่ PIN)</span><input type="password" id="ofPin" inputmode="numeric" autocomplete="off" value="${esc(($('rpPin')||{}).value||'')}"></label>`}
       <div id="ofMsg"></div>
       ${o?outMetaHtml(o):''}
-      <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">🗑 ลบ</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">${(()=>{ const mi=[!F.dev&&!F.place&&!F.lat,!F.cBtn].filter(Boolean).length; return F.feeder&&mi&&!o?'⚡ บันทึกเลย <small style="font-weight:400">(ยังไม่ครบ '+mi+' ข้อ เติมทีหลังได้)</small>':'บันทึก'; })()}</button></div>
+      <div class="grid2" style="margin-top:8px">${o?'<button type="button" class="btn ghost red" id="ofDel">🗑 ลบ</button>':'<button type="button" class="btn ghost" id="ofNo">ยกเลิก</button>'}<button type="button" class="btn" id="ofSave">${(()=>{ const mi=[!F.dev&&!F.place&&!F.lat,!F.cBtn].filter(Boolean).length; const C=F._chk||{}; if(C.blk&&C.blk.length) return 'บันทึก <small style="font-weight:400">(แก้เวลาก่อน)</small>'; if(C.long&&!(F.longOk&&String(F.longWhy||'').trim())) return 'บันทึก <small style="font-weight:400">(ยืนยันก่อน)</small>'; return F.feeder&&mi&&!o?'⚡ บันทึกเลย <small style="font-weight:400">(ยังไม่ครบ '+mi+' ข้อ เติมทีหลังได้)</small>':'บันทึก'; })()}</button></div>
       ${o?'<button type="button" class="btn ghost" id="ofMove" style="width:100%;margin-top:8px">⇄ ย้ายไปเวรที่ถูกต้อง</button>':''}
     </div>`;
     const nd=bg.querySelector('.dlg.ofm'); if(nd&&st) nd.scrollTop=st;
@@ -1296,8 +1334,9 @@ async function outForm(k,I,o,data,pre){
     if(e!==undefined){ F.we=e?(F.ws||F.off||day).slice(0,10)+'T'+e:null; if(F.we&&F.ws&&F.we<F.ws) F.we=nextDay(F.we.slice(0,10))+'T'+e; }
     if(v('ofDet')!=null) F.detail=v('ofDet'); if(v('ofWo')!=null) F.wo=v('ofWo'); if(v('ofPlace')!=null) F.place=v('ofPlace');
     F._pin=v('ofPin')!=null?v('ofPin'):F._pin;
+    if(v('ofLongWhy')!=null) F.longWhy=v('ofLongWhy');
     if(dirty!==false) F._dirty=true;
-    if(!o&&F._dirty){ const c2=Object.assign({},F); delete c2._SX; delete c2._near; delete c2._pin; LS.set('outDraft',{F:c2,at:Date.now()}); }
+    if(!o&&F._dirty){ const c2=Object.assign({},F); delete c2._SX; delete c2._chk; delete c2._near; delete c2._pin; LS.set('outDraft',{F:c2,at:Date.now()}); }
   }
   function bind(){
     $('ofCw').onclick=()=>{ keep(); F._cw=!F._cw; draw(); };
@@ -1313,6 +1352,13 @@ async function outForm(k,I,o,data,pre){
     bg.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{ keep(); F._day=b.dataset.day; keep(); draw(); });
     if($('ofDay')) $('ofDay').onchange=()=>{ keep(); if($('ofDay').value) F._day=$('ofDay').value; keep(); draw(); };
     const m10=bg.querySelector('[data-m10]'); if(m10) m10.onclick=()=>{ keep(); const base=F.off||nowIso(); F.off=isoAt(Date.parse(base+':00+07:00')-6e5); F._day=F.off.slice(0,10); keep(); draw(); };
+    bg.querySelectorAll('[data-sg]').forEach(b=>b.onclick=()=>{ keep(); const v=b.dataset.v;
+      if(b.dataset.sg==='off'){ const ohm=F.on&&F.on.slice(11,16); F.off=v; F._day=v.slice(0,10); if(ohm){ let x=F._day+'T'+ohm; if(x<F.off) x=nextDay(F._day)+'T'+ohm; F.on=x; } }
+      else F.on=v;
+      F._dirty=true; draw(); keep(); toast('แก้เวลาแล้ว — ตรวจอีกครั้ง'); });
+    if($('ofLongOk')) $('ofLongOk').onchange=()=>{ keep(); F.longOk=$('ofLongOk').checked; draw(); if(F.longOk&&$('ofLongWhy')) $('ofLongWhy').focus(); };
+    if($('ofDupOk')) $('ofDupOk').onclick=()=>{ keep(); F._dupOk=1; draw(); };
+    if($('ofDupOpen')) $('ofDupOpen').onclick=()=>{ keep(); const d=F._chk&&F._chk.dup; if(!d) return; close(); outForm(d.k,I,d,data); };
     if($('ofNew')) $('ofNew').onclick=()=>{ LS.del('outDraft'); close(); outForm(k,I,null,data); };
     on('[data-lvl]',b=>{F.lvl=b.dataset.lvl; F.dev=null; F.cust=null; F._open=0;});
     bg.querySelectorAll('[data-now]').forEach(b=>b.onclick=()=>{ keep(); const x=nowIso(); if(b.dataset.now==='off'){ F.off=x; F._day=x.slice(0,10); } else F.on=x; F._dirty=true; keep(); draw(); });
@@ -1344,10 +1390,13 @@ async function outForm(k,I,o,data,pre){
       if(F._bad){ msg('ofMsg','เวลาไม่ถูกต้อง — ใส่แบบ 24 ชม. เช่น 23:50','err'); return; }
       if(!F.off){ msg('ofMsg','ใส่เวลาไฟดับ','err'); return; }
       if(!F.feeder){ msg('ofMsg','เลือกฟีดเดอร์ (ข้อ 3)','err'); F._open=3; draw(); return; }
-      if(Date.parse(F.off+':00+07:00')>Date.now()+6e5){ msg('ofMsg','เวลาไฟดับอยู่ในอนาคต — ตรวจวันที่/เวลา','err'); return; }
+      const C=outChk(F,o);
+      if(C.blk.length){ F._open=2; draw(); msg('ofMsg',C.blk[0].t.replace('⛔ ','')+' — แก้เวลาก่อนบันทึก','err'); return; }
+      if(C.long&&!(F.longOk&&String(F.longWhy||'').trim())){ F._open=2; draw(); msg('ofMsg','ไฟดับเกิน 4 ชม. — แก้เวลา หรือติ๊ก "ถูกต้องแล้ว" และใส่เหตุผล','err'); return; }
+      if(C.dup&&!F._dupOk&&!o){ F._open=2; draw(); msg('ofMsg','มีรายการที่อาจซ้ำ — กด "เปิดรายการเดิม" หรือ "ไม่ซ้ำ ลงใหม่"','err'); return; }
       const tk=outKeyOfOff(F.off);
       const body={lvl:F.lvl,off:F.off,on:F.on,ws:F.workSame?F.off:F.ws,we:F.workSame?F.on:F.we,feeder:F.feeder,dev:F.dev,cust:F.cust,lat:F.lat||null,lon:F.lon||null,place:F.place||'',
-        cBtn:F.cBtn,cType:F.cType,cData:F.cData,known:F.known,weather:F.weather,fix:F.fix,mats:F.mats,detail:F.detail,wo:F.wo,crew:F.crew.map(c=>({n:c.n,p:c.p}))};
+        cBtn:F.cBtn,cType:F.cType,cData:F.cData,known:F.known,weather:F.weather,fix:F.fix,mats:F.mats,detail:F.detail,wo:F.wo,longWhy:C.long?String(F.longWhy||'').trim():'',crew:F.crew.map(c=>({n:c.n,p:c.p}))};
       crewRemember(F.crew);
       if(o) body.id=o.id;
       $('ofSave').disabled=true; $('ofSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';

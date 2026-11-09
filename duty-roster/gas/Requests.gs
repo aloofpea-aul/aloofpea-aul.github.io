@@ -669,10 +669,10 @@ function outPerm_(b, k, cross) {
   return { by: by, appr: false, cross: isX };
 }
 function outAuth_(b, k) { return outPerm_(b, k).by; }
-const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew'];
+const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew', 'longWhy'];
 /** แก้ข้อมูลเวรที่ล็อกแล้ว (ผู้อนุมัติ) → ยกเลิก "รับแล้ว" ให้พิมพ์บัญชีลงนามใหม่ */
 function outUnlock_(k, P) { if (!P.appr) return; const R = reportsOf_(k.slice(0, 7))[k]; if (R && R.received) { repSetMeta_(k, { received: null }); log_(P.by, 'ยกเลิกรับเอกสาร (แก้ไฟดับ)', k.slice(0, 7), k); } }
-const OUT_HIST_F_ = { lvl: 'แรงดัน', off: 'เวลาไฟดับ', on: 'เวลาจ่ายไฟ', ws: 'เริ่มปฏิบัติงาน', we: 'เสร็จงาน', feeder: 'ฟีดเดอร์', place: 'สถานที่', cType: 'สาเหตุ', cData: 'สาเหตุย่อย', fix: 'การแก้ไข', cust: 'ผู้ใช้ไฟ', detail: 'รายละเอียด' };
+const OUT_HIST_F_ = { lvl: 'แรงดัน', off: 'เวลาไฟดับ', on: 'เวลาจ่ายไฟ', ws: 'เริ่มปฏิบัติงาน', we: 'เสร็จงาน', feeder: 'ฟีดเดอร์', place: 'สถานที่', cType: 'สาเหตุ', cData: 'สาเหตุย่อย', fix: 'การแก้ไข', cust: 'ผู้ใช้ไฟ', detail: 'รายละเอียด', longWhy: 'เหตุผลไฟดับเกิน 4 ชม.' };
 function outHist_(d, by, act, extra) {
   d.hist = (Array.isArray(d.hist) ? d.hist : []).concat([Object.assign({ at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by: by, act: act }, extra || {})]).slice(-30);
 }
@@ -682,6 +682,10 @@ function saveOutage_(b) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(o.off || ''))) throw new Error('ใส่เวลาไฟดับ');
   if (Date.parse(o.off + ':00+07:00') > Date.now() + 10 * 60000) throw new Error('เวลาไฟดับอยู่ในอนาคต — ตรวจวันที่/เวลาอีกครั้ง');
   if (o.on && String(o.on) < String(o.off)) throw new Error('เวลาไฟมาต้องหลังเวลาไฟดับ');
+  if (o.on && Date.parse(o.on + ':00+07:00') > Date.now() + 10 * 60000) throw new Error('เวลาไฟมายังไม่ถึง — ถ้าไฟยังไม่มา ให้เว้นว่างไว้ แล้วค่อยใส่ทีหลัง');
+  // มาตรฐานงานแก้ไฟไม่เกิน 4 ชม. — เกินกว่านั้นต้องยืนยันพร้อมเหตุผล (กันลงเวลาผิด เช่น AM/PM สลับ)
+  if (o.on && Date.parse(o.on + ':00+07:00') - Date.parse(o.off + ':00+07:00') > 4 * 3600000 && !String(o.longWhy || '').trim()) throw new Error('ไฟดับเกิน 4 ชม. — ตรวจเวลา หรือยืนยันพร้อมใส่เหตุผล');
+  if ('longWhy' in o) o.longWhy = String(o.longWhy || '').trim().slice(0, 200);
   const k = outKeyOf_(o.off);   // เวรตามเวลาไฟดับจริง (ไม่ขึ้นกับว่าเปิดฟอร์มจากเวรไหน)
   if (!outKeyOk_(k)) throw new Error('รหัสเวรไม่ถูกต้อง');
   if (!getMonth_(k.slice(0, 7))) throw new Error('ยังไม่มีตารางเวรเดือน ' + k.slice(0, 7));
