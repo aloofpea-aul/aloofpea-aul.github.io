@@ -155,11 +155,11 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .np-mapbox.vec{background:linear-gradient(#F4F1EC,#EFEBE3)}
 .np-mapbox img{position:absolute;width:256px;height:256px;max-width:none}.np-wash{position:absolute;inset:0;background:rgba(255,255,255,.28)}
 .np-mapbox svg{position:absolute;left:0;top:0}
-.np-mpin{position:absolute;overflow:hidden;text-overflow:ellipsis;background:#fff;border:1.5px solid #E03131;color:#3C0F45;border-radius:7px;padding:0 5px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2);line-height:16px}
+.np-mpin{position:absolute;box-sizing:border-box;text-align:center;background:#fff;border:1.5px solid #E03131;color:#3C0F45;border-radius:7px;padding:0 5px;font-size:10px;font-weight:700;white-space:normal;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,.2);line-height:13px;padding:2px 5px}
 .np-mpin.cut{background:#4A1B66;color:#fff;border-color:#EBD592}
 .np-mlg{position:absolute;left:5px;bottom:5px;background:rgba(255,255,255,.92);border-radius:6px;padding:1px 6px;font-size:9px;font-weight:700;color:#3C0F45;display:flex;align-items:center;gap:3px}.np-mlg b{display:inline-block;width:14px;height:4px;border-radius:2px;margin-left:3px}
 .np-osm{position:absolute;right:4px;bottom:3px;font-size:7.5px;color:#555;background:rgba(255,255,255,.75);padding:0 3px;border-radius:3px}
-.np-area .np-tags{margin-top:5px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap}.np-area .np-tags i{flex:none}.np-at{margin-bottom:4px}
+.np-area .np-tags{margin-top:5px;flex-wrap:wrap}.np-area .np-tags i{flex:none}.np-at{margin-bottom:4px}
 .np-where{display:flex;gap:8px;margin:10px 14px 0;background:#F5EEF8;border-left:4px solid #B8964A;border-radius:12px;padding:7px}.np-where.em{border-left-color:#D9480F}
 .np-map{width:110px;height:82px;border-radius:8px;display:block;flex:none}
 .np-wt{display:flex;flex-direction:column;font-size:11px;line-height:1.35;min-width:0}.np-wt b{font-size:14px;color:#3C0F45;line-height:1.25;margin:1px 0}
@@ -2753,6 +2753,6 @@ $('sSave').onclick=async()=>{
 <script>
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);});
 </script>
-<script src="notice/nt.js?v=7"></script>
+<script src="notice/nt.js?v=8"></script>
 </body>
 </html>

@@ -111,11 +111,11 @@ function ntMapHtml(m,emg){
   if(!m) return ''; const {g,P,tiles}=m, red=emg?'#E8590C':'#E03131';
   const L=(f)=>g.poly?g.poly.filter(q=>q.a===f).map(q=>q.v.map((x,i)=>{ const a=P(x[0],x[1]); return (i?'L':'M')+a[0]+' '+a[1]; }).join('')).join(''):g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
   const cut=g.cut&&P(g.cut[0],g.cut[1]);
-  const R=[]; const pin=(xy,t,cls)=>{ t=String(t).length>24?String(t).slice(0,23)+'…':t; const w=Math.min(200,String(t).length*6.2+14), hgt=18, l=xy[0]+7+w>NT_MW-4;
-    let x=l?xy[0]-7-w:xy[0]+7, y=Math.max(2,Math.min(NT_MH-38,xy[1]-9));
-    for(let i=0;i<8&&R.some(r=>x<r[0]+r[2]&&r[0]<x+w&&y<r[1]+hgt&&r[1]<y+hgt);i++) y=Math.max(2,Math.min(NT_MH-38,y+(i%2?-1:1)*(i+1)*hgt*.6));
-    x=Math.max(3,Math.min(NT_MW-w-3,x)); R.push([x,y,w]);
-    return `<span class="np-mpin ${cls||''}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;max-width:${w}px">${esc(t)}</span>`; };
+  const R=[]; const pin=(xy,t,cls)=>{ t=String(t); const tw=t.length*5.9+14, w=Math.min(168,tw), hgt=Math.ceil(tw/168)*13+5, l=xy[0]+7+w>NT_MW-4;
+    let x=l?xy[0]-7-w:xy[0]+7, y=Math.max(2,Math.min(NT_MH-22-hgt,xy[1]-hgt/2));
+    for(let i=0;i<10&&R.some(r=>x<r[0]+r[2]&&r[0]<x+w&&y<r[1]+r[3]&&r[1]<y+hgt);i++) y=Math.max(2,Math.min(NT_MH-22-hgt,y+(i%2?-1:1)*(i+1)*11));
+    x=Math.max(3,Math.min(NT_MW-w-3,x)); R.push([x,y,w,hgt]);
+    return `<span class="np-mpin ${cls||''}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;width:${w.toFixed(0)}px">${esc(t)}</span>`; };
   return `<div class="np-mapbox${tiles.length?'':' vec'}">${tiles.map(t=>`<img src="${t.d}" style="left:${t.x.toFixed(1)}px;top:${t.y.toFixed(1)}px;width:${t.s.toFixed(1)}px;height:${t.s.toFixed(1)}px" alt="">`).join('')}<i class="np-wash"></i>
    <svg viewBox="0 0 ${NT_MW} ${NT_MH}" width="${NT_MW}" height="${NT_MH}"><path d="${L(0)}" stroke="#6B5A78" stroke-width="2.2" stroke-opacity=".75" fill="none" stroke-linecap="round"/>
    <path d="${L(1)}" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="${L(1)}" stroke="${red}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -150,7 +150,7 @@ function ntPoster(n,im){
    <div class="np-bar">${[6,12,18].map(h=>`<u style="left:${(h*60/14.4).toFixed(1)}%"></u>`).join('')}<i style="left:${(a/14.4).toFixed(1)}%;width:${Math.max(1.5,(b-a)/14.4).toFixed(1)}%"></i>${emg&&st==='live'&&dd===0?`<b class="np-now" style="left:${(nowM/14.4).toFixed(1)}%">ตอนนี้</b>`:''}</div>
    <div class="np-tlx"><span>🌙 0.00</span><span>6.00</span><span>☀️ 12.00</span><span>18.00</span><span>24.00</span></div></div></div>
   ${im.map?`<div class="np-area ${emg?'em':''}"><div class="np-at"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span class="np-sub">${esc(n.sub||c.sub||'')}${n.cust?` · <b class="np-cust">ผู้ใช้ไฟ ~${n.cust} ราย</b>`:''}</span></div>${ntMapHtml(im.map,emg)}
-   ${(n.villages||[]).length?`<div class="np-tags">${(n.villages||[]).slice(0,8).map(v=>`<i>${esc(v)}</i>`).join('')}</div>`:''}</div>`
+   ${(n.villages||[]).length?`<div class="np-tags">${(n.villages||[]).slice(0,6).map(v=>`<i>${esc(v)}</i>`).join('')}</div>`:''}</div>`
   :`<div class="np-where ${emg?'em':''}"><svg class="np-map" viewBox="0 0 120 90"><rect width="120" height="90" fill="${emg?'#F6ECEC':'#EEF4F2'}"/><path d="M0 72 C30 62 50 77 80 64 S120 57 120 57 L120 90 L0 90Z" fill="${emg?'#F3DADA':'#CFE6EA'}"/><path d="M6 24 L44 40 L100 26" stroke="#B9B2C0" stroke-width="3" fill="none"/>${fb?`<path d="M44 40 L62 70" stroke="${emg?'#D9480F':'#C92A2A'}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="62" cy="70" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/>`:''}<circle cx="44" cy="40" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/></svg>
    <div class="np-wt"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span>${esc(n.sub||c.sub||'')}</span><span class="np-tags">${(n.villages||[]).slice(0,3).map(v=>`<i>${esc(v)}</i>`).join('')}${n.cust?`<i>~${n.cust} ราย</i>`:''}</span></div></div>`}
   <div class="np-prep">${prep}</div>
