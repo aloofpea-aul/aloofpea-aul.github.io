@@ -59,7 +59,42 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .days button.on i.cd{background:#FFD27A}
 .days button i.rqb{position:absolute;bottom:2px;left:50%;margin-left:-9px;width:18px;height:3px;border-radius:2px;background:#C92A2A}.days button.on i.rqb{background:#fff}.days button.rqd i.cd{bottom:7px}
 .oiss{border-radius:8px;padding:5px 8px;margin-top:5px;font-size:12.5px;line-height:1.35}.oiss.r{background:#FDECEC;color:#9B1C1C}.oiss.y{background:#FFF1D6;color:#7A4A00}.oiss.g{background:#E6F4E8;color:#1F5A2A;margin-top:8px}
-.oiss.b{background:#E3E6FA;color:#26307A}.prp{display:inline-block;border-radius:8px;padding:1px 7px;font-size:11.5px;font-weight:700;margin-top:3px}.prp.g{background:#E6F4E8;color:#1F5A2A}.prp.o{background:#FFF1D6;color:#7A4A00}
+.oiss.b{background:#E3E6FA;color:#26307A}.rpme{background:linear-gradient(135deg,#5C1A63,#8A2E8F);color:#fff;border-radius:14px;padding:12px;margin-bottom:10px}.rpme.over{background:linear-gradient(135deg,#A12A2A,#C94040)}
+.rpme .t{font-size:12px;opacity:.9}.rpme .b{font-size:16.5px;font-weight:800;margin:2px 0 8px;line-height:1.35}.rpme .dl{display:inline-block;background:#FFD54A;color:#5A3A00;border-radius:8px;padding:0 8px;font-size:12px;font-weight:800;margin-left:6px;vertical-align:2px}
+.rpme .go{width:100%;background:#fff;color:#5C1A63;border:0;border-radius:10px;padding:10px;font:inherit;font-weight:800;cursor:pointer}.rpme.over .go{color:#A12A2A}
+.rpov{border:2px solid #C92A2A;border-radius:14px;padding:10px;margin-bottom:10px}.rpov b{color:#8A1F1F}
+.rpovi{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:1.5px solid #E5A3A3;background:#FFF7F7;border-radius:12px;padding:8px;margin-top:8px;font:inherit;cursor:pointer}
+.rpovi .mid,.rset .mid{flex:1;min-width:0;display:flex;flex-direction:column}.rpovi small,.rset small{font-size:12px;color:var(--mut,#6B6478)}.rpovi small{color:#8A1F1F;font-weight:700}
+#dRep.alldone{border:2px solid #1E7B45}
+.rpbar{display:flex;gap:3px;height:6px;margin:5px 0 4px}.rpbar>i{flex:1;border-radius:3px;background:#E6E0EC}.rpbar>i.d{background:#1E7B45}.rpbar>i.p{background:#F0A640}
+#dRep>.rpbar{display:block;background:#EEE;border-radius:4px;overflow:hidden}#dRep>.rpbar>i{display:block;height:100%;background:#1E7B45;border-radius:4px}
+.rset{display:flex;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;cursor:pointer;background:#fff}
+.rset.open{border-color:var(--pri);box-shadow:0 0 0 2px #EBDDEE}.rset.r{border-color:#E5A3A3;background:#FFF7F7}.rset.g{border-color:#B9DDBF;background:#F6FBF6}.rset.p2{opacity:.85}
+.rset .tb,.rpovi .tb{width:56px;border-radius:10px;text-align:center;padding:6px 0;font-weight:800;font-size:13px;line-height:1.2;flex:none}.tb small{display:block;font-size:10px;font-weight:600;color:inherit!important}
+.tb.t1{background:#E8E6F8;color:#3B3485}.tb.t2{background:#FFF1D6;color:#7A4A00}.tb.t3{background:#F3E1F5;color:#6A1F70}
+.rset .mid b{font-size:14px}.rset em.you{font-style:normal;background:#5C1A63;color:#fff;border-radius:6px;padding:0 5px;font-size:11px;vertical-align:1px}
+.rset small.red{color:#A12A2A;font-weight:700}
+.stp{display:flex;margin-top:5px}.stp .sx{position:relative;width:38px;display:flex;flex-direction:column;align-items:center;flex:none}.stp .sx em{font-style:normal;font-size:10px;color:#888;margin-top:1px;white-space:nowrap}
+.stp .sx+.sx::before{content:'';position:absolute;top:8px;right:calc(50% + 11px);width:16px;height:2px;background:#E3DCEA}.stp .sx.on+.sx.on::before{background:#1E7B45}
+.stp i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:10px;font-weight:800;background:#EEE;color:#999;flex:none}
+.stp i.d{background:#1E7B45;color:#fff}.stp i.c{background:#5C1A63;color:#fff;box-shadow:0 0 0 3px #E9D5EC}.stp i.x{background:#C92A2A;color:#fff;box-shadow:0 0 0 3px #F7D4D4}
+.stp s{width:13px;height:2px;background:#E3DCEA;flex:none}.stl{display:flex;font-size:10px;color:#888;margin-top:1px}.stl span{width:31px;text-align:center;margin-left:-6.5px}.stl span:first-child{margin-left:-6px}
+.rcps{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.rcp{white-space:nowrap;border-radius:8px;padding:1px 6px;font:inherit;font-size:11.5px;font-weight:700;border:1.5px solid;cursor:pointer}
+.rcp.done{background:#E6F4E8;color:#1F5A2A;border-color:#B9DDBF}.rcp.pend{background:#FFF6E8;color:#9A5A00;border-color:#F2C27A}.rcp.auto{background:#EEF2FB;color:#2A4A8A;border-color:#C5D3EE}
+.rset .act{border-radius:10px;padding:7px 10px;font:inherit;font-weight:800;font-size:12.5px;white-space:nowrap;flex:none;border:0;cursor:pointer}
+.act.ap{background:#5C1A63;color:#fff}.act.ar{background:#C92A2A;color:#fff}.act.ag{background:#E6F4E8;color:#1F5A2A}.act.ao{border:1.5px solid #5C1A63!important;color:#5C1A63;background:#fff}.act.mute{opacity:.6}
+.rpovi .act{border-radius:10px;padding:7px 10px;font-weight:800;font-size:12.5px;flex:none}
+.rosum{display:flex;gap:6px;margin-top:10px}.rosum div{flex:1;background:#F7F3F9;border-radius:10px;text-align:center;padding:6px 0;font-size:11px;color:#6B6478}.rosum b{display:block;font-size:17px;color:var(--ink)}
+.rpprog{margin-top:8px;font-size:12.5px;color:#6B6478}.rpprog small{display:block;font-size:11.5px}
+.rp-sec.sdone,.rp-sec.spend,.rp-sec.sauto{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:8px}
+.rp-sec.sdone{border-color:#B9DDBF;background:#F7FBF7}.rp-sec.spend{border:2px solid #F0A640;background:#FFFBF3}.rp-sec.sauto{border-color:#C5D3EE;background:#F5F8FE}
+.rp-sec.sinsp.spend,.rp-sec.smine{border:2px solid #5C1A63;background:#F8F2FA}
+.rp-sec>h4{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin:0 0 6px}.rp-sec>h4 .ss{font-size:12px;font-weight:700;text-align:right}
+.rp-sec.sdone>h4{cursor:pointer;margin:0}.rp-sec.sdone>h4 .ss{color:#1F5A2A}.rp-sec.spend>h4 .ss{color:#9A5A00}.rp-sec.sauto>h4 .ss{color:#2A4A8A}.rp-sec.smine>h4 .ss{color:#5C1A63}
+.rp-sec.sdone:not(.open)>*:not(h4){display:none}.rp-sec.sdone.open>h4{margin-bottom:6px}
+.rp-sec.flash{box-shadow:0 0 0 3px #F0A640}
+.rpstick{position:sticky;bottom:calc(70px + env(safe-area-inset-bottom));background:#fff;padding:8px 0 4px;margin-top:8px;z-index:3;box-shadow:0 -8px 10px -8px rgba(0,0,0,.12)}
+.prp{display:inline-block;border-radius:8px;padding:1px 7px;font-size:11.5px;font-weight:700;margin-top:3px}.prp.g{background:#E6F4E8;color:#1F5A2A}.prp.o{background:#FFF1D6;color:#7A4A00}
 .prl{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin:8px 0;font-size:13.5px;line-height:1.7}.prw{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
 .prh{margin-top:8px;font-size:13px}.prh summary{cursor:pointer;color:var(--pri);font-weight:700}.prh div{padding:2px 0 0 6px}
 .pst{position:absolute;top:3mm;right:5mm;z-index:2;font-family:sans-serif}.pfoot{position:absolute;bottom:4mm;right:12mm;font-size:8.5pt;color:#555;font-family:inherit}
@@ -898,27 +933,78 @@ async function drawTrack(){
   paint(trackOf(key)); paint(await loadTrack(key,true));
 }
 function repAuthFor(k){ const a=S.repAuth; if(!a) return null; if(a.r==='duty'&&a.k===k) return a; if(a.r==='insp'&&k.indexOf(a.k)===0) return a; return null; }
+/* ขั้นตอนของชุดเวร: 0 กรอก · 1 ตรวจ · 2 พิมพ์ · 3 รับเอกสาร · 4 ครบ */
+const repFilled=r=>!!r&&['arr','dep','hv','lv','temp','comm','att','other'].some(f=>r[f]!=null&&r[f]!=='');
+function repStep(r){ return !repFilled(r)?0:!(r.insp&&r.insp.complete!=null)?1:!prPrints(r).length?2:!r.received?3:4; }
+function repSpan(k,day){ const d=k.slice(0,10), p=k.slice(-2), t0=p==='p1'?'00:30':day&&day.off?'08:30':'16:30', t1=p==='p1'?'08:30':'00:30';
+  const a=Date.parse(d+'T'+t0+':00+07:00'); let b=Date.parse(d+'T'+t1+':00+07:00'); if(p==='p3') b=Date.parse(new Date(Date.parse(d+'T00:00:00Z')+864e5).toISOString().slice(0,10)+'T00:30:00+07:00'); return {a,b,t0}; }
+function meShort(){ const a=S.repAuth; if(a&&a.u) return a.u; const m=meInfo()||{}; return m.p?m.p.short:m.appr?(m.appr.short||''):''; }
+function isApprNow(){ const m=meInfo()||{}; return !!(m.appr||S.outPinAppr); }
+const repLbl=x=>+x.k.slice(8,10)+' '+TH_MS[+x.k.slice(5,7)-1]+' '+x.label;
+function repGo(k,jump){ S.dMonth=k.slice(0,7); S.dDay=+k.slice(8,10); S.repOpen=k; S.repJump=jump||null; if($('dMonth')) $('dMonth').value=S.dMonth; renderDaily().then(()=>{ const e=$('repEd'); e&&e.scrollIntoView({block:'start',behavior:'smooth'}); }); }
+/* งานของฉัน (แถบม่วง) + ค้างส่ง (ผู้อนุมัติ) — ดึงจากหน้าติดตามรายงานทุกเดือนที่โหลดไว้ */
+function repTopHtml(){
+  const me=meShort(), ck=todayIso().slice(0,7), ms=[ck,prevKey(ck),S.dMonth].filter((x,i,A)=>A.indexOf(x)===i);
+  const L=ms.flatMap(m=>trackOf(m)), ord=(a,b)=>(b.over-a.over)||((a.left??99)-(b.left??99))||a.k.localeCompare(b.k);
+  const mine=me?L.filter(x=>(x.st==='fill'&&x.names.includes(me))||(x.st==='insp'&&x.insp===me)).sort(ord):[];
+  let h='';
+  if(mine.length){ const x=mine[0], ins=x.st==='insp';
+    h+=`<div class="rpme ${x.over?'over':''}"><div class="t">📝 งานของคุณ · ${esc(me)}${mine.length>1?' · ค้าง '+mine.length+' รายการ':''}</div>
+      <div class="b">${ins?'ตรวจรายงานเวร':'กรอกรายงานเวร'} ${esc(repLbl(x))}<span class="dl">${esc(dueTxt(x)||'')}</span></div>
+      <button type="button" class="go" data-go="${x.k}">${ins?'ตรวจรายงานเลย ›':'กรอกรายงานเลย ›'}</button></div>`; }
+  if(isApprNow()){ const ov=L.filter(x=>x.over&&(x.st==='fill'||x.st==='insp')).sort(ord);
+    if(ov.length) h+=`<div class="rpov"><div class="row" style="justify-content:space-between"><b>⏰ ค้างส่ง ${ov.length} รายการ</b><span class="rqp r">เกินกำหนด</span></div>
+      ${ov.slice(0,5).map(x=>`<button type="button" class="rpovi" data-go="${x.k}"><span class="tb ${x.p==='p1'?'t1':'t3'}">${+x.k.slice(8,10)} ${TH_MS[+x.k.slice(5,7)-1]}<small>${esc(x.label)}</small></span><span class="mid"><b>${esc(x.st==='insp'?'ผู้ตรวจ: '+(x.insp||'—'):x.names.join(' · '))}</b><small>${x.st==='insp'?'กรอกแล้ว · รอตรวจ':'ยังไม่กรอก'} · ${esc(dueTxt(x))}</small></span><span class="act ar">${x.st==='insp'?'ตรวจ ›':'กรอก ›'}</span></button>`).join('')}
+      ${ov.length>5?`<div class="muted">และอีก ${ov.length-5} รายการ — ดูทั้งหมดที่ รายงาน › ติดตามรายงานเวร</div>`:''}</div>`; }
+  return h;
+}
 async function renderRepCard(data){
   const el=$('dRep'); if(S.dGroup!=='emp'){el.classList.add('hide');return;} el.classList.remove('hide');
   const key=S.dMonth, d=S.dDay, R=(S.reps&&S.reps[key])||LS.get('rp_'+key)||{};
   { const me=meInfo()||{}, ck=todayIso().slice(0,7); if((me.appr||S.outPinAppr)&&!S.susLoaded){ S.susLoaded=1; Promise.all([ck,prevKey(ck)].filter(m=>m!==key&&S.boot.months.some(x=>x.month===m)).map(m=>monthOutages(m).catch(()=>[]))).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); } }
-  if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
+  if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; Promise.all([monthReports(key),monthOutages(key).catch(()=>[]),loadTrack(key).catch(()=>[])]).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
   const OD=((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k.slice(0,10)===key+'-'+String(d).padStart(2,'0')), OT=outTotals(OD);
-  const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
-  const parts=data.days[d-1].off?[['p1','ช่วง 1'],['p3','ช่วง 2+3']]:[['p1','ช่วง 1'],['p2','เวลาทำการ'],['p3','ช่วง 3']];
-  const T=trackOf(key), st0=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
-  const st=k=>{ if(k.endsWith('p2')){ const n=OD.filter(o=>o.k===k).length; return n?'<span class="rs1">ไฟดับ '+n+' ครั้ง</span>':'<span class="muted">บันทึกไฟดับ</span>'; } const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':'')+(R[k]&&R[k].insp&&R[k].insp.complete!=null?'<br>'+prStat(R[k],true):''); };
-  loadTrack(key);
-  el.innerHTML=outSuspHtml()+`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
-      <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
-    <div class="${parts.length>2?'grid3':'grid2'}" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
-      return `<button class="btn ${S.repOpen===k?'':'ghost'}" data-k="${k}" style="height:auto;min-height:46px;padding:6px 8px;line-height:1.3">${l}<br><small style="font-weight:400">${st(k)}</small></button>`;}).join('')}</div>
-    ${OD.length?`<div class="muted" style="margin-top:6px">⚡ ไฟดับวันนี้: แรงสูง ${OT.hv.n} ครั้ง · แรงต่ำ ${OT.lv.n} ครั้ง${OT.temp.length?' · แก้ชั่วคราว '+OT.temp.length:''}</div>`:''}
-    ${(()=>{ const H=parts.filter(([p])=>p!=='p2').map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p; return prPrints(R[k]).map((x,i)=>[x,l,i+1]);}).flat().sort((a,b)=>String(b[0].at).localeCompare(String(a[0].at)));
+  const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp), day=data.days[d-1];
+  const parts=day.off?[['p1','ช่วง 1'],['p3','ช่วง 2+3']]:[['p1','ช่วง 1'],['p2','เวลาทำการ'],['p3','ช่วง 3']];
+  const T=trackOf(key), me=meShort(), appr=isApprNow(), now=Date.now(), kOf=p=>key+'-'+String(d).padStart(2,'0')+'|'+p;
+  const sets=parts.filter(([p])=>p!=='p2').map(([p])=>repStep(R[kOf(p)]));
+  const tot=sets.length*4, dn=sets.reduce((a,b)=>a+b,0), all=sets.every(x=>x===4);
+  const SL=['กรอก','ตรวจ','พิมพ์','รับ'];
+  const row=([p,l])=>{ const k=kOf(p), I=sheetInfo(key,data,d,p), r=R[k];
+    if(p==='p2'){ const n=OD.filter(o=>o.k===k).length;
+      return `<div class="rset p2 ${S.repOpen===k?'open':''}" data-k="${k}" role="button" tabindex="0"><span class="tb t2">เวลา<br>ทำการ</span><span class="mid"><b>ไม่มีเวร</b><small>${n?'⚡ ไฟดับ '+n+' ครั้ง · บันทึกแล้ว':'บันทึกไฟดับในเวลาทำการ'}</small></span><span class="act ao">${n?'ดู':'บันทึก'}</span></div>`; }
+    const st=repStep(r), x=T.find(y=>y.k===k), sp=repSpan(k,day), fut=now<sp.a, over=!!(x&&x.over&&st<2), mine=me&&I.names.includes(me), iamInsp=me&&me===I.insp;
+    const act=fut?`<span class="act ao mute">เริ่ม ${sp.t0.replace(':','.')}</span>`:st===0?`<button type="button" class="act ${over?'ar':'ap'}" data-open="${k}">กรอก ›</button>`
+      :st===1?(appr||iamInsp?`<button type="button" class="act ${over?'ar':'ap'}" data-open="${k}" data-j="sInsp">ตรวจ ›</button>`:'<span class="act ao">รอผู้ตรวจ</span>')
+      :st===2?`<button type="button" class="act ap" data-print="${k}">🖨 พิมพ์</button>`:st===3?(appr?`<button type="button" class="act ap" data-recv="${k}">รับแล้ว</button>`:'<span class="act ao">รอรับเอกสาร</span>'):'<span class="act ag">✓ ครบ</span>';
+    const dots=SL.map((t,i)=>`<span class="sx ${i<=st?'on':''}"><i class="${i<st?'d':i===st&&!fut?(over?'x':'c'):''}">${i<st?'✓':i+1}</i><em>${t}</em></span>`).join('');
+    const OL=OD.filter(o=>o.k===k), cm=(r&&r.comm)||{};
+    const chip=(cls,t,j)=>`<button type="button" class="rcp ${cls}" data-open="${k}" data-j="${j}">${t}</button>`;
+    const chips=fut&&!r?'':[chip(r&&r.arr?'done':'pend',(r&&r.arr?'✓':'○')+'๑ เวลา','s1'),chip('auto','✓๒–๔ ไฟดับ '+OL.length,'s24'),chip(cm.ok!=null?'done':'pend',(cm.ok!=null?'✓':'○')+'๕ สื่อสาร','s5'),
+      chip(r&&r.att!=null?'done':'pend',(r&&r.att!=null?'✓':'○')+'๖ แนบ','s6'),chip('auto',OL.length?'✓๗ ไฟดับ '+OL.length+' จุด':(r&&r.other?'✓':'·')+'๗ อื่น ๆ','s7')]
+      .concat(st>=1?[chip(st>1?'done':'pend',(st>1?'✓':'○')+' ผลตรวจ','sInsp')]:[]).join('');
+    return `<div class="rset ${st===4?'g':over?'r':''} ${S.repOpen===k?'open':''}" data-k="${k}" role="button" tabindex="0"><span class="tb ${p==='p1'?'t1':'t3'}">${esc(I.names.length&&p==='p3'&&day.off?'ช่วง 2+3':l)}<small>${I.t0.replace(':','.')}–${I.t1.replace(':','.')}</small></span>
+      <span class="mid"><b>${esc(I.names.join(' · ')||'—')}${mine?' <em class="you">คุณ</em>':''}</b>
+        <span class="stp">${dots}</span>
+        ${x&&(st===0||st===1)&&x.left!=null?`<small class="${over?'red':''}">${esc(dueTxt(x))}</small>`:''}${st>=2&&prPrints(r).length?`<small>${prStat(r,true)}</small>`:''}
+        ${chips?`<span class="rcps">${chips}</span>`:''}</span>${act}</div>`; };
+  el.classList.toggle('alldone',all);
+  el.innerHTML=outSuspHtml()+repTopHtml()+`<div class="row" style="justify-content:space-between;gap:8px"><h3 style="margin:0">รายงานการอยู่เวร ${d} ${TH_MS[+key.slice(5,7)-1]}${all?' <span class="rqp g">✓ ครบทุกช่วง</span>':''}</h3>
+      <span class="muted" style="text-align:right">ผู้ตรวจ: <b style="color:var(--ink)">${esc(ip?ip.short||ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
+    <div class="muted" style="margin-top:4px;font-size:12px">เสร็จ ${dn} จาก ${tot} ขั้น${all?'':' · กรอก → ตรวจ → พิมพ์ → รับเอกสาร'}</div><div class="rpbar"><i style="width:${tot?Math.round(dn/tot*100):0}%"></i></div>
+    ${parts.map(row).join('')}
+    ${OD.length?`<div class="rosum"><div><b>${OT.hv.n}</b>แรงสูง</div><div><b>${OT.lv.n}</b>แรงต่ำ</div><div><b>${hmH((OT.hv.outM||0)+(OT.lv.outM||0))}</b>ชม.ดับ</div><div><b>${OT.temp.length}</b>ชั่วคราว</div></div>`:''}
+    ${(()=>{ const H=parts.filter(([p])=>p!=='p2').map(([p,l])=>prPrints(R[kOf(p)]).map((x,i)=>[x,l,i+1])).flat().sort((a,b)=>String(b[0].at).localeCompare(String(a[0].at)));
       return H.length?`<details class="prh"><summary>ประวัติการพิมพ์บัญชีลงนาม (${H.length})</summary>${H.map(([x,l,n])=>`<div>• ${esc(prAt(x.at))} — ${esc(x.by||'ไม่ทราบชื่อ')} · ${esc(l)} (ครั้งที่ ${n})</div>`).join('')}</details>`:''; })()}
     <div id="repEd"></div>`;
   bindSusp();
-  el.querySelectorAll('button[data-k]:not([data-sus])').forEach(b=>b.onclick=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k;renderRepCard(data);});
+  el.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>repGo(b.dataset.go,b.textContent.includes('ตรวจ')?'sInsp':null));
+  el.querySelectorAll('.rset[data-k]').forEach(b=>{ const go=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k; S.repJump=null; renderRepCard(data); if(S.repOpen) setTimeout(()=>{const e=$('repEd'); e&&e.scrollIntoView({block:'nearest',behavior:'smooth'});},60);}; b.onclick=go; b.onkeydown=ev=>{if(ev.key==='Enter')go();}; });
+  el.querySelectorAll('[data-open]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); S.repOpen=b.dataset.open; S.repJump=b.dataset.j||null; renderRepCard(data); });
+  el.querySelectorAll('[data-print]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); S.rPreset={kind:'sign',m:key,day:d}; show('viewReport'); });
+  el.querySelectorAll('[data-recv]').forEach(b=>b.onclick=async ev=>{ ev.stopPropagation(); const c=hubCreds(), m=meInfo()||{};
+    const a=m.appr&&c.user?{hubUser:c.user,hubPass:c.pass}:S.outPin?{pin:S.outPin}:(()=>{const pin=prompt('PIN ผู้อนุมัติ');return pin?{pin}:null;})(); if(!a) return;
+    b.disabled=true; try{ await apiPost(Object.assign({action:'repMark',what:'received',keys:[b.dataset.recv]},a)); await monthReports(key); S.reps[key]=await apiGet({action:'reports',m:key}).then(j=>j.reports); LS.set('rp_'+key,S.reps[key]); loadTrack(key,true); renderRepCard(data); toast('รับเอกสารแล้ว ✓'); }catch(e){ b.disabled=false; alert(e.message); } });
   $('inspChg').onclick=async ev=>{ev.preventDefault();
     const L=(S.boot.inspectors||[]); const pick=prompt('เปลี่ยนผู้ตรวจเวรวันที่ '+d+'\n'+L.map((x,i)=>(i+1)+'. '+x.full).join('\n')+'\nพิมพ์หมายเลข'); if(!pick) return;
     const x=L[+pick-1]; if(!x) return; const pin=prompt('PIN ผู้มีสิทธิ์'); if(!pin) return;
@@ -935,25 +1021,35 @@ function repEditor(data,k,r){
   }
   const canDuty=!auth||auth.r==='duty', canInsp=!auth||auth.r==='insp';
   const hv=r.hv||{}, lv=r.lv||{}, tp=r.temp||{}, cm=r.comm||{}, ins=r.insp||{};
+  const OL=outOf(S.dMonth,k), me=meShort(), iamInsp=(auth&&auth.r==='insp')||(me&&me===I.insp);
+  const D1=!!r.arr, D5=cm.ok!=null, D6=r.att!=null, DI=ins.complete!=null, need=[[D1,'๑'],[D5,'๕'],[D6,'๖']], left=need.filter(x=>!x[0]).map(x=>x[1]);
+  const SC=(id,done,auto,title,sum,extra)=>`<div class="rp-sec ${auto?'sauto':done?'sdone':'spend'} ${extra||''}" id="${id}"><h4 data-tg="${id}">${title}<span class="ss">${esc(sum)}</span></h4>`;
+  const s1=D1?I.names.map(n=>n+' '+String((r.arr||{})[n]||I.t0).replace(':','.')+'–'+String((r.dep||{})[n]||I.t1).replace(':','.')).join(' · '):'○ ยังไม่กรอก';
+  const s5=D5?'✓ '+String(cm.time||'').replace(':','.')+' '+(cm.ok?'ติดต่อได้ทุก กฟฟ.':'ติดต่อไม่ได้ '+(cm.fail||'')):'○ ยังไม่กรอก';
+  const s6=D6?'✓ '+(+r.att?r.att+' ฉบับ':'ไม่มีแนบ'):'○ ยังไม่กรอก', sI=DI?'✓ '+(ins.complete?'ครบถ้วน':'ไม่ครบถ้วน')+' · '+(ins.ready?'พร้อม':ins.ready===false?'ไม่พร้อม':''):'○ ยังไม่ตรวจ';
   const num=(id,val,ph)=>`<input type="number" step="0.5" min="0" id="${id}" value="${val==null?'':esc(val)}" placeholder="${ph}" inputmode="decimal">`;
   const yn=(name,val,a,b)=>`<label class="ckb"><input type="radio" name="${name}" value="1" ${val===true?'checked':''}>${a}</label><label class="ckb"><input type="radio" name="${name}" value="0" ${val===false?'checked':''}>${b}</label>`;
   $('repEd').innerHTML=`<div class="note" style="margin-top:8px">${auth?'เข้าจากลิงก์ LINE ของ '+esc(auth.u)+' · '+(auth.r==='insp'?'ผู้ตรวจเวร':'คนอยู่เวร'):(hubCreds().user?'คนอยู่เวร/ผู้ตรวจเวรของชุดนี้ กรอกได้เลยด้วยบัญชีศูนย์รวมงาน · ผู้อนุมัติแก้ได้ทุกช่อง':'ผู้อนุมัติแก้ได้ทุกช่องด้วย PIN · คนอยู่เวร/ผู้ตรวจ ขอลิงก์ทาง LINE: พิมพ์ "รายงานเวร" หรือ "ตรวจเวร"')}</div>
    <fieldset id="rpDuty" ${canDuty?'':'disabled'}>
-    <div class="rp-sec"><h4>๑. เวลามา–กลับ <span class="muted">(${tTh(I.t0)} → ${tTh(I.t1)})</span></h4>
+    <div class="rpprog"><span>ต้องกรอก ๓ ข้อ (๑ ๕ ๖) · กรอกแล้ว ${3-left.length}${left.length?' · เหลือ '+left.join(', '):' ✓'}</span><span class="rpbar">${need.map(x=>`<i class="${x[0]?'d':'p'}"></i>`).join('')}</span><small>ข้อ ๒–๔ และ ๗ ระบบเติมจากรายการไฟดับให้เอง</small></div>
+    ${SC('s1',D1,false,'๑. เวลามา–กลับ ',D1?'✓ '+s1:s1)}
       ${I.names.map(n=>`<div class="rpf" style="grid-template-columns:1fr 92px 92px"><div style="align-self:center">${esc(n)}</div><input type="time" data-arr="${esc(n)}" value="${esc((r.arr||{})[n]||I.t0)}"><input type="time" data-dep="${esc(n)}" value="${esc((r.dep||{})[n]||I.t1)}"></div>`).join('')||'<div class="muted">ไม่มีคนเวรชุดนี้</div>'}</div>
-    ${outCardHtml(k,outCan(k))}
-    <div class="rp-sec"><h4>๕. ตรวจระบบสื่อสาร</h4><div class="row"><input type="time" id="cmT" value="${esc(cm.time||I.t0)}" style="width:110px">${yn('cmOk',cm.ok,'ติดต่อได้ทุก กฟฟ.','ติดต่อไม่ได้')}</div>
+    <div class="sauto-wrap" id="s24">${outCardHtml(k,outCan(k))}</div>
+    ${SC('s5',D5,false,'๕. ตรวจระบบสื่อสาร ',s5)}<div class="row"><input type="time" id="cmT" value="${esc(cm.time||I.t0)}" style="width:110px">${yn('cmOk',cm.ok,'ติดต่อได้ทุก กฟฟ.','ติดต่อไม่ได้')}</div>
       <input type="text" id="cmF" value="${esc(cm.fail||'')}" placeholder="ติดต่อไม่ได้ คือ…" style="margin-top:6px"></div>
-    <div class="rp-sec"><h4>๖–๗. แนบบันทึก / อื่น ๆ</h4><div class="rpf" style="grid-template-columns:90px 1fr">${num('att',r.att,'ฉบับ')}<input type="text" id="oth" value="${esc(r.other||'')}" placeholder="อื่น ๆ"></div></div>
+    ${SC('s6',D6,false,'๖. แนบบันทึก / ใบสั่งงาน ',s6)}<div style="display:flex;gap:6px;align-items:center"><span style="width:110px;flex:none">${num('att',r.att,'ฉบับ')}</span><button type="button" class="btn ghost" id="attNo" style="height:40px;padding:0 12px;flex:none">ไม่มีแนบ</button></div></div>
+    ${SC('s7',false,true,'๗. อื่น ๆ ',OL.length?'อัตโนมัติจากรายการไฟดับ':'ไม่บังคับ')}
+      ${OL.length?`<div class="muted" style="line-height:1.5">ไฟดับ ${OL.length} ครั้ง: ${OL.slice().sort((a,b)=>String(a.off).localeCompare(String(b.off))).map((o,i)=>'('+(i+1)+') '+esc(outPlace(o))).join(' ')}</div>`:''}
+      <input type="text" id="oth" value="${esc(r.other||'')}" placeholder="${OL.length?'ข้อความเพิ่มเติม (ไม่บังคับ)':'อื่น ๆ (ถ้ามี)'}" style="margin-top:6px"></div>
    </fieldset>
    <fieldset id="rpInsp" ${canInsp?'':'disabled'}>
-    <div class="rp-sec" style="background:#F4F5FC;border-radius:10px;padding:8px"><h4>ผลการตรวจสอบ (ผู้ตรวจเวร)</h4>
+    ${SC('sInsp',DI,false,'ผลการตรวจสอบ (ผู้ตรวจเวร) '+(iamInsp&&!DI?'👉 ':''),iamInsp&&!DI?'ส่วนของคุณ':sI,'sinsp'+(iamInsp?' smine':''))}
       <div class="rpf" style="grid-template-columns:1fr 110px"><input type="date" id="inD" value="${esc(ins.date||I.a.toISOString().slice(0,10))}"><input type="time" id="inT" value="${esc(ins.time||I.t0)}"></div>
       <div>พนักงาน/คนงานอยู่เวร: ${yn('inC',ins.complete,'ครบถ้วน','ไม่ครบถ้วน')}</div><input type="text" id="inM" value="${esc(ins.missing||'')}" placeholder="ไม่ครบถ้วน (ระบุ)" style="margin:4px 0 6px">
       <div>ยานพาหนะ/เครื่องมือ: ${yn('inR',ins.ready,'พร้อม','ไม่พร้อม')}</div><input type="text" id="inN" value="${esc(ins.notready||'')}" placeholder="ไม่พร้อม (ระบุ)" style="margin-top:4px"></div>
    </fieldset>
    ${auth?'':hubCreds().user?`<div class="muted" style="margin-top:8px">บันทึกในชื่อ ${esc(hubCreds().user)} (บัญชีศูนย์รวมงาน) — ถ้าไม่ได้อยู่เวรชุดนี้ ใส่ PIN ผู้อนุมัติ</div><label class="f">PIN ผู้อนุมัติ (ไม่บังคับ)<input type="password" id="rpPin" inputmode="numeric" autocomplete="off"></label>`:'<label class="f" style="margin-top:8px">PIN ผู้อนุมัติ<input type="password" id="rpPin" inputmode="numeric" autocomplete="off"></label>'}
-   <div class="grid2" style="margin-top:8px"><button class="btn ghost" id="rpPrint">พิมพ์แผ่นนี้</button><button class="btn" id="rpSave">บันทึก</button></div>
+   <div class="rpstick"><div class="grid2"><button class="btn ghost" id="rpPrint">พิมพ์แผ่นนี้</button><button class="btn" id="rpSave">${iamInsp&&!left.length&&!DI?'✓ ยืนยันผลตรวจ':'บันทึก'+(left.length&&!iamInsp?' · เหลือ '+left.length+' ข้อ':'')}</button></div></div>
    <div class="muted" style="margin-top:4px">${r._by?'บันทึกล่าสุดโดย '+esc(r._by)+' · '+esc(r._at||''):''}</div><div id="rpMsg"></div>`;
   const val=id=>{const e=$(id);return e&&e.value!==''?e.value:null;}, nv=id=>{const x=val(id);return x==null?null:+x;};
   const rad=n=>{const e=document.querySelector('input[name="'+n+'"]:checked');return e?e.value==='1':null;};
@@ -969,6 +1065,9 @@ function repEditor(data,k,r){
     catch(e){ msg('rpMsg',e.message,'err'); }
   };
   $('rpPrint').onclick=()=>{ const R=(S.reps&&S.reps[S.dMonth])||{}; S.rPreset={kind:'sign',m:S.dMonth,day:d}; show('viewReport'); };
+  $('repEd').querySelectorAll('[data-tg]').forEach(h=>h.onclick=()=>{ const s=$(h.dataset.tg); if(s&&s.classList.contains('sdone')) s.classList.toggle('open'); });
+  if($('attNo')) $('attNo').onclick=()=>{ $('att').value='0'; };
+  if(S.repJump){ const jx=$(S.repJump); S.repJump=null; if(jx){ jx.classList.add('open','flash'); setTimeout(()=>jx.scrollIntoView({block:'center',behavior:'smooth'}),80); setTimeout(()=>jx.classList.remove('flash'),1600); } }
   bindOutCard(k,I,data);
   if(S.openOut===k){ S.openOut=null; const pre=S.tkPre; S.tkPre=null; if($('outAdd')) setTimeout(()=>outForm(k,I,null,data,pre),150); }
 }
