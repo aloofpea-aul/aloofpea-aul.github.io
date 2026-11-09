@@ -58,7 +58,7 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .days button.on i.cd{background:#FFD27A}
 .days button i.rqb{position:absolute;bottom:2px;left:50%;margin-left:-9px;width:18px;height:3px;border-radius:2px;background:#C92A2A}.days button.on i.rqb{background:#fff}.days button.rqd i.cd{bottom:7px}
 .oiss{border-radius:8px;padding:5px 8px;margin-top:5px;font-size:12.5px;line-height:1.35}.oiss.r{background:#FDECEC;color:#9B1C1C}.oiss.y{background:#FFF1D6;color:#7A4A00}.oiss.g{background:#E6F4E8;color:#1F5A2A;margin-top:8px}
-.oiss.b{background:#E3E6FA;color:#26307A}.oiss.ochk{font-size:13.5px;padding:8px 10px}.osg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.osg button{background:#fff;border:1.5px solid #C92A2A;color:#8A1F1F;border-radius:16px;padding:5px 11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.osg.y button{border-color:#A06A00;color:#7A4A00}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
+.oiss.b{background:#E3E6FA;color:#26307A}.osus{border:1.5px solid #F2C2C2;background:#FFF8F8;border-radius:12px;padding:8px 10px;margin-bottom:10px}.osus summary{cursor:pointer;font-weight:700;color:#8A1F1F}.osi{border-top:1px solid #F2D6D6;padding:7px 0;font-size:13.5px;line-height:1.5}.osi .btn{float:right;height:30px;padding:0 12px;font-size:13px;margin-left:8px}.osi .otg{display:inline-block;background:#FDECEC;color:#8A1F1F;border-radius:8px;padding:0 7px;font-size:12px;font-weight:700;margin-right:4px}.oiss.ochk{font-size:13.5px;padding:8px 10px}.osg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.osg button{background:#fff;border:1.5px solid #C92A2A;color:#8A1F1F;border-radius:16px;padding:5px 11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.osg.y button{border-color:#A06A00;color:#7A4A00}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
 .rqp{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}.rqp.o{background:#FFF1D6;color:#7A4A00}.rqp.r{background:#FDECEC;color:#9B1C1C}.rqp.b{background:#E3E6FA;color:#26307A}.rqp.g{background:#E6F4E8;color:#1F5A2A}.rqp.n{background:#EEE;color:#555}
 .rqov{position:fixed;inset:0;background:rgba(20,10,25,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:10px}
 .rqsh{background:#fff;border-radius:18px;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -885,6 +885,7 @@ function repAuthFor(k){ const a=S.repAuth; if(!a) return null; if(a.r==='duty'&&
 async function renderRepCard(data){
   const el=$('dRep'); if(S.dGroup!=='emp'){el.classList.add('hide');return;} el.classList.remove('hide');
   const key=S.dMonth, d=S.dDay, R=(S.reps&&S.reps[key])||LS.get('rp_'+key)||{};
+  { const me=meInfo()||{}, ck=todayIso().slice(0,7); if((me.appr||S.outPinAppr)&&!S.susLoaded){ S.susLoaded=1; Promise.all([ck,prevKey(ck)].filter(m=>m!==key&&S.boot.months.some(x=>x.month===m)).map(m=>monthOutages(m).catch(()=>[]))).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); } }
   if(!S.repsLoading||S.repsLoading!==key){ S.repsLoading=key; Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]).then(()=>{ if(S.dMonth===key) renderRepCard(S.months[key].data); }); }
   const OD=((S.outs&&S.outs[key])||LS.get('out_'+key)||[]).filter(o=>o.k.slice(0,10)===key+'-'+String(d).padStart(2,'0')), OT=outTotals(OD);
   const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
@@ -892,13 +893,14 @@ async function renderRepCard(data){
   const T=trackOf(key), st0=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
   const st=k=>{ if(k.endsWith('p2')){ const n=OD.filter(o=>o.k===k).length; return n?'<span class="rs1">ไฟดับ '+n+' ครั้ง</span>':'<span class="muted">บันทึกไฟดับ</span>'; } const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':''); };
   loadTrack(key);
-  el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
+  el.innerHTML=outSuspHtml()+`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
       <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
     <div class="${parts.length>2?'grid3':'grid2'}" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
       return `<button class="btn ${S.repOpen===k?'':'ghost'}" data-k="${k}" style="height:auto;min-height:46px;padding:6px 8px;line-height:1.3">${l}<br><small style="font-weight:400">${st(k)}</small></button>`;}).join('')}</div>
     ${OD.length?`<div class="muted" style="margin-top:6px">⚡ ไฟดับวันนี้: แรงสูง ${OT.hv.n} ครั้ง · แรงต่ำ ${OT.lv.n} ครั้ง${OT.temp.length?' · แก้ชั่วคราว '+OT.temp.length:''}</div>`:''}
     <div id="repEd"></div>`;
-  el.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k;renderRepCard(data);});
+  bindSusp();
+  el.querySelectorAll('button[data-k]:not([data-sus])').forEach(b=>b.onclick=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k;renderRepCard(data);});
   $('inspChg').onclick=async ev=>{ev.preventDefault();
     const L=(S.boot.inspectors||[]); const pick=prompt('เปลี่ยนผู้ตรวจเวรวันที่ '+d+'\n'+L.map((x,i)=>(i+1)+'. '+x.full).join('\n')+'\nพิมพ์หมายเลข'); if(!pick) return;
     const x=L[+pick-1]; if(!x) return; const pin=prompt('PIN ผู้มีสิทธิ์'); if(!pin) return;
@@ -1018,6 +1020,25 @@ function outIssues(o,k,L){
   const dup=(L||[]).find(x=>x.id!==o.id&&x.feeder===o.feeder&&((x.dev&&x.dev.id)||'')===((o.dev&&o.dev.id)||'')&&Math.abs(tm(x.off)-off)<=15*6e4);
   if(dup) out.push(['y','อาจซ้ำกับรายการ '+hmTh(dup.off)+' น. (ฟีดเดอร์/อุปกรณ์เดียวกัน) — นับเป็น 2 ครั้ง']);
   return out;
+}
+/* รายการผิดสังเกต (สำหรับผู้อนุมัติ): เวลาหลังลงรายการ · ไฟดับเกิน 4 ชม. ไม่มีเหตุผล · ยังไม่ใส่เวลาไฟมาเกิน 4 ชม. */
+function outSusp(o){
+  const r=[], T=x=>Date.parse(x+':00+07:00'), cr=o.created?Date.parse(o.created):NaN, off=T(o.off), on=o.on?T(o.on):NaN;
+  if(!isNaN(cr)&&off>cr+10*6e4) r.push('เวลาดับหลังลงรายการ');
+  else if(!isNaN(cr)&&o.on&&on>cr+10*6e4&&!(o.hist||[]).some(h=>h.act==='edit')) r.push('ไฟมาหลังลงรายการ');
+  if(o.on&&on-off>OUT_LONG*6e4&&!o.longWhy) r.push('นาน '+durTxt(durMin(o.off,o.on)).trim());
+  if(!o.on&&Date.now()-off>OUT_LONG*6e4) r.push('ยังไม่ใส่เวลาไฟมา');
+  return r;
+}
+function outSuspHtml(){
+  const me=meInfo()||{}; if(!(me.appr||S.outPinAppr)) return '';
+  const L=Object.values(S.outs||{}).flat().map(o=>[o,outSusp(o)]).filter(x=>x[1].length).sort((a,b)=>String(b[0].off).localeCompare(String(a[0].off)));
+  if(!L.length) return '';
+  return `<details class="osus" ${L.length<=6?'open':''}><summary>🔍 รายการไฟดับผิดสังเกต <b>${L.length}</b> <span class="muted">· ตรวจ/แก้ก่อนพิมพ์บัญชีลงนาม</span></summary>
+    ${L.map(([o,r])=>`<div class="osi"><button type="button" class="btn sm" data-sus="${esc(o.id)}" data-k="${esc(o.k)}">แก้</button>${r.map(t=>`<span class="otg">${esc(t)}</span>`).join('')}<br><b>${esc(o.feeder||'-')}</b> ${esc(isoShort(o.off.slice(0,10)))} ดับ ${hmTh(o.off)}${o.on?'–'+hmTh(o.on):''} น. · ลงเมื่อ ${o.created?new Date(Date.parse(o.created)+7*36e5).toISOString().slice(11,16).replace(':','.'):'-'}${o.createdBy?' · '+esc(o.createdBy):''}</div>`).join('')}</details>`;
+}
+function bindSusp(){
+  document.querySelectorAll('[data-sus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.k; S.openOid=b.dataset.sus; S.dMonth=k.slice(0,7); S.dDay=+k.slice(8,10); S.repOpen=k; if($('dMonth')) $('dMonth').value=S.dMonth; renderDaily().then(()=>{ const e=$('dRep'); e&&e.scrollIntoView({block:'start'}); }); });
 }
 const outWhere=o=>[o.feeder,o.dev&&o.dev.id?((DEV_TH[o.dev.type]&&o.dev.type!=='TRANSFORMER'?DEV_TH[o.dev.type]+' ':o.dev.type==='TRANSFORMER'?'หม้อแปลง ':'')+o.dev.id+(o.dev.desc?' '+o.dev.desc:'')):(o.place||'')].filter(Boolean).join(' · ');
 const outCause=o=>[o.cType,o.cData].filter(Boolean).join(' / ')||(o.cBtn==='unk'?'ไม่ทราบสาเหตุ':'');
@@ -1140,6 +1161,7 @@ function bindOutCard(k,I,data){
   document.querySelectorAll('#repEd [data-rest]').forEach(b=>b.onclick=async()=>{ b.disabled=true; b.textContent='กำลังกู้คืน…';
     try{ await apiPost(Object.assign({action:'restoreOutage',id:b.dataset.rest},outAuthBody(repAuthFor(k),S.outPin))); await monthOutages(S.dMonth,true); renderRepCard(data); toast('กู้คืนแล้ว'); loadTickets(true); }
     catch(e){ b.disabled=false; b.textContent='↩ กู้คืน'; alert(e.message); } });
+  if(S.openOid){ const o=outOf(S.dMonth,k).find(x=>x.id===S.openOid); if(o){ S.openOid=null; setTimeout(()=>outForm(k,I,o,data),150); } }
   document.querySelectorAll('#repEd .ev[data-oid]').forEach(e=>{ if(!e.getAttribute('role')) return; const go=()=>{const o=outOf(S.dMonth,k).find(x=>x.id===e.dataset.oid); if(o) outForm(k,I,o,data);}; e.onclick=go; e.onkeydown=ev=>{if(ev.key==='Enter')go();}; });
 }
 
@@ -1207,6 +1229,7 @@ async function outForm(k,I,o,data,pre){
     F.place=t.place||''; if(t.lat){F.lat=t.lat;F.lon=t.lon;} if(t.near&&t.near.feeder) F.feeder=t.near.feeder;
     F.detail='รับแจ้ง '+t.id+(t.detail?': '+t.detail.slice(0,120):''); }
   if(o&&o.longWhy) F.longOk=true;
+  if(!Array.isArray(F.mats)) F.mats=[];
   if(!fromDraft) F.workSame=!o||(!o.ws&&!o.we)||(o.ws===o.off&&o.we===o.on);
   F._day=(F.off||nowIso()).slice(0,10); F._dirty=fromDraft; F._fromDraft=fromDraft?dr.at:0;
   if(!Array.isArray(F.crew)) F.crew=o?[]:((I&&I.names)||[]).map(crewOf);   // ผู้ปฏิบัติงาน: ค่าเริ่มต้น = คนอยู่เวรชุดนี้

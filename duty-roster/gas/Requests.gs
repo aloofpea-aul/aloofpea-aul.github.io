@@ -737,6 +737,30 @@ function outCrossNotify_(d, k, by) {
     const id = lineIdOf_(x.short); if (id) push_(id, [text_(t)], 'outage');
   });
 }
+/** ไฟดับเกิน 4 ชม. (มาตรฐานงานแก้ไฟ) แล้วยังไม่ใส่เวลาไฟมา → LINE เตือนคนอยู่เวรชุดนั้น + คนลงรายการ + ผู้อนุมัติ
+ *  ครั้งเดียวต่อรายการ (d.al4) · ดูเฉพาะที่ดับไม่เกิน 2 วัน (ไม่ไล่เตือนรายการเก่า) · เรียกจาก tkCheck ทุก 5 นาที */
+function outLongWatch_() {
+  const now = Date.now(), sh = outSheet_();
+  outRows_().forEach(function (x) {
+    const d = x.d; if (x.deleted || d.on || !d.off || d.al4) return;
+    const t = Date.parse(d.off + ':00+07:00'), age = now - t;
+    if (!(age > 4 * 3600000 && age < 48 * 3600000)) return;
+    const cell = sh.getRange(x.row, 3); if (String(cell.getValues()[0][0]) !== JSON.stringify(d)) return;   // มีคนแก้อยู่ — รอรอบหน้า
+    d.al4 = new Date().toISOString(); cell.setValues([[JSON.stringify(d)]]);
+    const ymd = x.k.slice(0, 10), p = x.k.slice(-2), to = [];
+    const add = function (n) { if (n && to.indexOf(n) < 0) to.push(n); };
+    if (p !== 'p2') readTable_(SH.PEOPLE).forEach(function (q) { const c = empCode_(ymd, q.short); if (c && (p === 'p1' ? cHas_(c, '1') : (cHas_(c, '2') || cHas_(c, '3')))) add(q.short); });
+    add(d.createdBy); approverList_().forEach(function (a) { add(a.short); });
+    const hm = String(d.off).slice(11, 16).replace(':', '.'), hh = Math.floor(age / 3600000), mm = Math.floor(age / 60000) % 60;
+    const where = [d.feeder, d.dev && d.dev.id ? d.dev.id : (d.place || '')].filter(String).join(' · ');
+    const lines = [(d.lvl === 'hv' ? 'แรงสูง ' : 'แรงต่ำ ') + where, 'ดับตั้งแต่ ' + hm + ' น. · ผ่านมาแล้ว ' + hh + ' ชม. ' + (mm ? mm + ' นาที' : ''), 'ยังไม่ใส่เวลาไฟมา — ไฟมาแล้วหรือยัง?', 'ถ้ามาแล้ว แตะเพื่อใส่เวลาไฟมา'];
+    const u = webUrl_('viewDaily', { m: x.k.slice(0, 7), day: Number(ymd.slice(8, 10)) });
+    const btn = u ? [{ type: 'button', style: 'primary', height: 'sm', color: '#5B1A63', action: { type: 'uri', label: 'ใส่เวลาไฟมา', uri: u } }] : null;
+    const msg = [flex_('⏰ ' + (d.feeder || 'ไฟดับ') + ' ดับเกิน 4 ชม. ยังไม่ปิดงาน', bubble_('⏰ ไฟดับเกิน 4 ชม.', '#C92A2A', (d.feeder || 'ไฟดับ') + ' ยังไม่ปิดงาน', lines, btn))], sent = [];
+    to.forEach(function (n) { const id = lineIdOf_(n); if (id && push_(id, msg, 'outage')) sent.push(n); });
+    log_('system', 'เตือนไฟดับเกิน 4 ชม.', x.k.slice(0, 7), d.id + ' → ' + (sent.join(', ') || 'ไม่มีผู้รับ'));
+  });
+}
 const OUT_DEL_WHY_ = { dup: 'บันทึกซ้ำ', wrong: 'บันทึกผิดเวร', bad: 'ไม่ใช่เหตุการณ์ไฟดับ / ข้อมูลผิด', other: 'อื่น ๆ' };
 function deleteOutage_(b) {
   const id = String(b.id || ''); const x = outRows_().filter(function (r) { return r.id === id && !r.deleted; })[0];
@@ -1313,6 +1337,7 @@ function tkCheck() {
   try { wxTick_(); } catch (e) {}
   try { bellWatch_(); } catch (e) {}
   try { ocWatch_(); } catch (e) {}
+  try { outLongWatch_(); } catch (e) { log_('system', 'เตือนไฟดับเกิน 4 ชม. ไม่สำเร็จ', '', String(e)); }
   const now = Date.now();
   tkRows_().forEach(function (x) {
     if (x.st !== 'new' || x.d.again || x.d.bellAck) return;
