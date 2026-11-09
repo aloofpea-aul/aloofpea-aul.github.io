@@ -48,7 +48,61 @@ async function ntImgs(n){ const c=ntCfg();
   const sp=n.type==='emg'&&c.speaker!=='custom'?NT_ART.mascot:c.speaker==='custom'&&c.speakerFile?await ntFile(c.speakerFile).catch(()=>NT_ART.heart):NT_ART[c.speaker]||NT_ART.heart;
   const logo=c.logoFile?await ntFile(c.logoFile).catch(()=>'notice/pea.png'):'notice/pea.png';
   const qr=c.qr?await ntQr(c.qr).catch(()=>''):'';
-  return {sp:await ntRaster(sp,300).catch(()=>sp),logo,qr}; }
+  const map=await ntMapData(n).catch(()=>null);
+  return {sp:await ntRaster(sp,300).catch(()=>sp),logo,qr,map}; }
+/* ---------- แผนที่พื้นที่ไฟดับ (พิกัดจาก SLD + แผนที่ OSM) ---------- */
+const NT_MW=350, NT_MH=166;
+function ntPlace(t){ t=String(t||'').replace(/\(นำเข้าจาก\s*GIS\)/gi,'').replace(/DCC_?/g,'').replace(/~?\s*\d+(\.\d+)?\s*ม\.?(?=\s|$)/g,'').replace(/\s+/g,' ').trim();
+  const m=t.match(/^ใกล้\s*(.+)$/)||t.match(/ใกล้\s+(.+)$/); if(m&&t.replace(m[0],'').trim().length<3) t=m[1].trim();
+  return /^[\s\-_.()]*$/.test(t)?'':t; }
+function ntGeo(n){
+  const s=S.sld, id=n&&n.dev&&n.dev.id; if(!s||!s.dev||!s.dev.length||!id) return null;
+  if(!s.kids){ s.kids={}; s.byId={}; s.dev.forEach(d=>{s.byId[d[0]]=d; if(d[7]) (s.kids[d[7]]=s.kids[d[7]]||[]).push(d[0]);}); }
+  const me=s.byId[id]; if(!me) return null;
+  const A={}, st=[id]; while(st.length){ const x=st.pop(); if(A[x]) continue; A[x]=1; (s.kids[x]||[]).forEach(k=>st.push(k)); }
+  const ok=d=>d&&+d[5]&&+d[6];
+  const aff=Object.keys(A).map(k=>s.byId[k]).filter(ok); if(!aff.length) return null;
+  let la0=1e9,la1=-1e9,lo0=1e9,lo1=-1e9; aff.forEach(d=>{la0=Math.min(la0,+d[5]);la1=Math.max(la1,+d[5]);lo0=Math.min(lo0,+d[6]);lo1=Math.max(lo1,+d[6]);});
+  const pa=Math.max(.004,(la1-la0)*.18), po=Math.max(.004,(lo1-lo0)*.18); la0-=pa;la1+=pa;lo0-=po;lo1+=po;
+  const inB=d=>ok(d)&&+d[5]>=la0-pa&&+d[5]<=la1+pa&&+d[6]>=lo0-po&&+d[6]<=lo1+po;
+  const segs=[]; s.dev.forEach(d=>{ const p=s.byId[d[7]]; if(ok(d)&&ok(p)&&(inB(d)||inB(p))) segs.push([+p[5],+p[6],+d[5],+d[6],A[d[0]]&&d[0]!==id?1:0]); });
+  // ป้ายชื่อ: จุดตัดไฟ + หม้อแปลงที่อยู่ไกลกันที่สุด (ไม่ซ้ำชื่อ)
+  const tr=aff.filter(d=>d[1]==='TRANSFORMER'||d[1]==='MVMETER'); const lab=[]; const seen={};
+  const far=(d)=>lab.reduce((m,l)=>Math.min(m,Math.hypot(l[0]-d[5],l[1]-d[6])),1e9);
+  for(let k=0;k<3&&tr.length;k++){ let best=null,bd=-1; tr.forEach(d=>{ const t=ntPlace(d[3]); if(!t||seen[t]) return; const f=lab.length?far(d):Math.hypot(d[5]-me[5],d[6]-me[6]); if(f>bd){bd=f;best=d;} }); if(!best||bd<(la1-la0)*.12) break; const bt=ntPlace(best[3]); seen[bt]=1; lab.push([+best[5],+best[6],bt]); }
+  const cx=aff.reduce((a,d)=>a+ +d[5],0)/aff.length, cy=aff.reduce((a,d)=>a+ +d[6],0)/aff.length;
+  return {bb:[la0,la1,lo0,lo1], segs, cut:ok(me)?[+me[5],+me[6],ntPlace(me[3])]:null, lab, tr:aff.filter(d=>d[1]==='TRANSFORMER').map(d=>[+d[5],+d[6]]), ctr:[+cx.toFixed(5),+cy.toFixed(5)]};
+}
+const ntMx=(lo,z)=>(lo+180)/360*256*Math.pow(2,z), ntMy=(la,z)=>{ const r=la*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256*Math.pow(2,z); };
+async function ntMapData(n){
+  if(!n||!n.dev||!n.dev.id) return null; if(!S.sld||!S.sld.dev.length) await sldData();
+  const g=ntGeo(n); if(!g) return null; const [la0,la1,lo0,lo1]=g.bb;
+  let z=17; while(z>9&&(ntMx(lo1,z)-ntMx(lo0,z)>NT_MW||ntMy(la0,z)-ntMy(la1,z)>NT_MH)) z--;
+  let w=Math.max(1,ntMx(lo1,z)-ntMx(lo0,z)), h=Math.max(1,ntMy(la0,z)-ntMy(la1,z)), k0=Math.min(NT_MW/w,NT_MH/h,1.95), up=k0>1.05&&z<17?1:0; z+=up; const k=up?k0/2:k0;
+  const cx=(ntMx(lo0,z)+ntMx(lo1,z))/2, cy=(ntMy(la0,z)+ntMy(la1,z))/2, ox=cx-NT_MW/2/k, oy=cy-NT_MH/2/k;
+  const P=(la,lo)=>[+((ntMx(lo,z)-ox)*k).toFixed(1),+((ntMy(la,z)-oy)*k).toFixed(1)];
+  const tiles=[]; for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+NT_MW/k)/256);tx++) for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+NT_MH/k)/256);ty++) tiles.push({x:(tx*256-ox)*k,y:(ty*256-oy)*k,s:256*k,u:`https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`});
+  const toData=u=>fetch(u,{mode:'cors'}).then(r=>{ if(!r.ok) throw 0; return r.blob(); }).then(b=>new Promise(r=>{const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b);}));
+  const got=await Promise.all(tiles.map(t=>Promise.race([toData(t.u),new Promise((_,j)=>setTimeout(j,6000))]).then(d=>(t.d=d,1)).catch(()=>0)));
+  return {g,P,z,tiles:got.every(Boolean)?tiles:[],all:tiles};
+}
+function ntMapHtml(m,emg){
+  if(!m) return ''; const {g,P,tiles}=m, red=emg?'#E8590C':'#E03131';
+  const L=(f)=>g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
+  const cut=g.cut&&P(g.cut[0],g.cut[1]);
+  const R=[]; const pin=(xy,t,cls)=>{ t=String(t).length>24?String(t).slice(0,23)+'…':t; const w=Math.min(200,String(t).length*6.2+14), hgt=18, l=xy[0]+7+w>NT_MW-4;
+    let x=l?xy[0]-7-w:xy[0]+7, y=Math.max(2,Math.min(NT_MH-38,xy[1]-9));
+    for(let i=0;i<8&&R.some(r=>x<r[0]+r[2]&&r[0]<x+w&&y<r[1]+hgt&&r[1]<y+hgt);i++) y=Math.max(2,Math.min(NT_MH-38,y+(i%2?-1:1)*(i+1)*hgt*.6));
+    x=Math.max(3,Math.min(NT_MW-w-3,x)); R.push([x,y,w]);
+    return `<span class="np-mpin ${cls||''}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;max-width:${w}px">${esc(t)}</span>`; };
+  return `<div class="np-mapbox${tiles.length?'':' vec'}">${tiles.map(t=>`<img src="${t.d}" style="left:${t.x.toFixed(1)}px;top:${t.y.toFixed(1)}px;width:${t.s.toFixed(1)}px;height:${t.s.toFixed(1)}px" alt="">`).join('')}<i class="np-wash"></i>
+   <svg viewBox="0 0 ${NT_MW} ${NT_MH}" width="${NT_MW}" height="${NT_MH}"><path d="${L(0)}" stroke="#6B5A78" stroke-width="2.2" stroke-opacity=".75" fill="none" stroke-linecap="round"/>
+   <path d="${L(1)}" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="${L(1)}" stroke="${red}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+   ${g.tr.map(t=>{const p=P(t[0],t[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${red}" stroke-width="1.6"/>`;}).join('')}
+   ${cut?`<circle cx="${cut[0]}" cy="${cut[1]}" r="8" fill="#4A1B66" stroke="#EBD592" stroke-width="2.5"/><path d="M${cut[0]+1.5} ${cut[1]-5}l-4 5.5h3l-1.5 4.5 4.5-6h-3z" fill="#FFD43B"/>`:''}</svg>
+   ${cut&&g.cut[2]?pin(cut,'⚡ '+g.cut[2],'cut'):''}${g.lab.map(l=>pin(P(l[0],l[1]),l[2])).join('')}
+   <span class="np-mlg"><b style="background:${red}"></b>ไฟดับ <b style="background:#6B5A78;height:2px"></b>ไฟปกติ</span>${tiles.length?'<span class="np-osm">© OpenStreetMap</span>':''}</div>`;
+}
 /* ---------- โปสเตอร์ (กว้าง 400 · สูง 545) ---------- */
 const NT_KARST='<svg viewBox="0 0 400 70" preserveAspectRatio="none" style="position:absolute;left:0;right:0;top:0;width:100%;height:50px"><path d="M0 70 L0 48 C18 46 22 20 34 18 C44 16 46 40 58 42 C66 30 70 8 84 6 C98 4 100 34 110 40 C122 44 128 26 140 28 C150 30 152 46 166 46 C176 30 182 12 196 10 C212 8 214 36 226 42 C238 46 246 30 258 32 C270 34 272 48 286 48 C296 36 300 20 314 18 C328 16 330 40 342 44 C354 46 362 34 374 36 C386 38 390 50 400 50 L400 70Z" fill="#4A1B66"/></svg>';
 function ntPoster(n,im){
@@ -65,17 +119,19 @@ function ntPoster(n,im){
   const stamp=st==='done'?(()=>{ const on=n.actualOn, early=n.endAt&&on?Math.round((ntT(n.endAt)-ntT(on))/6e4):0;
       return `<div class="np-stamp g">✅ ไฟมาแล้ว ${ntHm(on)} น.<small>${early>0?'เร็วกว่ากำหนด '+early+' นาที · ':''}ขอบคุณที่รอครับ</small></div>`; })()
     :st==='cancel'?`<div class="np-stamp x">ยกเลิกการงดจ่ายไฟ<small>ใช้ไฟได้ตามปกติ</small></div>`:'';
-  return `<div class="np"><div class="np-gl"></div>${emg?'<div class="np-emtop">⚠️ ด่วน · งดจ่ายไฟฉุกเฉิน</div>':''}
+  return `<div class="np${im.map?' tall':''}"><div class="np-gl"></div>${emg?'<div class="np-emtop">⚠️ ด่วน · งดจ่ายไฟฉุกเฉิน</div>':''}
   <div class="np-top"><img class="np-logo" src="${im.logo}" alt=""></div>
   <div class="np-sp"><img src="${im.sp}" alt=""><div class="np-bub">${say}</div></div>
   <div class="np-hl">ประกาศ ${st==='live'?'<span class="np-live">● กำลังดับ</span>':cd?`<span class="np-cd">${cd}</span>`:''}<b class="${emg?'np-red':''}">${emg?'ดับไฟฉุกเฉิน':'งดจ่ายไฟฟ้า'}</b><small>${esc(n.reason||'')}</small></div>
   ${mv?`<div class="np-mv">⚠️ เลื่อนวัน — จากเดิม ${esc(ntDateTh(n.moved.from,true))} ${esc(n.moved.fromStart||'')}–${esc(n.moved.fromEnd||'')} น.</div>`:''}
   <div class="np-when"><div class="np-cal"><span>${emg&&dd===0?'วันนี้':NT_WD[d.getUTCDay()]}</span><b>${d.getUTCDate()}</b><span>${NT_MS[d.getUTCMonth()]} ${String(d.getUTCFullYear()+543).slice(2)}</span></div>
-   <div class="np-tl"><div class="np-tlt"><b>${ntHm(n.actualOff||n.startAt)}</b><span class="${emg?'np-red':''}">${emg?(n.endAt?'คาดว่าไฟมา ~'+durT:'กำลังเร่งแก้ไข'):'ดับ '+durT}</span><b>${n.endAt?(emg?'~':'')+ntHm(n.endAt):'—'}</b></div>
-   <div class="np-bar"><i class="${emg?'em':''}" style="left:${(a/14.4).toFixed(1)}%;width:${Math.max(1.5,(b-a)/14.4).toFixed(1)}%"></i>${emg&&st==='live'&&dd===0?`<b class="np-now" style="left:${(nowM/14.4).toFixed(1)}%">ตอนนี้</b>`:''}</div>
-   <div class="np-tlx"><span>00.00</span><span>☀️ 12.00</span><span>24.00</span></div></div></div>
-  <div class="np-where ${emg?'em':''}"><svg class="np-map" viewBox="0 0 120 90"><rect width="120" height="90" fill="${emg?'#F6ECEC':'#EEF4F2'}"/><path d="M0 72 C30 62 50 77 80 64 S120 57 120 57 L120 90 L0 90Z" fill="${emg?'#F3DADA':'#CFE6EA'}"/><path d="M6 24 L44 40 L100 26" stroke="#B9B2C0" stroke-width="3" fill="none"/>${fb?`<path d="M44 40 L62 70" stroke="${emg?'#D9480F':'#C92A2A'}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="62" cy="70" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/>`:''}<circle cx="44" cy="40" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/></svg>
-   <div class="np-wt"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span>${esc(n.sub||c.sub||'')}</span><span class="np-tags">${(n.villages||[]).slice(0,3).map(v=>`<i>${esc(v)}</i>`).join('')}${n.cust?`<i>~${n.cust} ราย</i>`:''}</span></div></div>
+   <div class="np-tl ${emg?'em':''}"><div class="np-tlt"><div class="np-t1"><small>${emg?'ดับตั้งแต่':'เริ่มดับ'}</small><b>${ntHm(n.actualOff||n.startAt)}</b></div><span class="np-dur">${emg?(n.endAt?'คาดว่า ~'+durT:'กำลังเร่งแก้ไข'):'ดับ '+durT}</span><div class="np-t2"><small>${emg?'คาดว่าไฟมา':'ไฟมา'}</small><b>${n.endAt?(emg?'~':'')+ntHm(n.endAt):'—'}</b></div></div>
+   <div class="np-bar">${[6,12,18].map(h=>`<u style="left:${(h*60/14.4).toFixed(1)}%"></u>`).join('')}<i style="left:${(a/14.4).toFixed(1)}%;width:${Math.max(1.5,(b-a)/14.4).toFixed(1)}%"></i>${emg&&st==='live'&&dd===0?`<b class="np-now" style="left:${(nowM/14.4).toFixed(1)}%">ตอนนี้</b>`:''}</div>
+   <div class="np-tlx"><span>🌙 0.00</span><span>6.00</span><span>☀️ 12.00</span><span>18.00</span><span>24.00</span></div></div></div>
+  ${im.map?`<div class="np-area ${emg?'em':''}"><div class="np-at"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span class="np-sub">${esc(n.sub||c.sub||'')}${n.cust?` · <b class="np-cust">ผู้ใช้ไฟ ~${n.cust} ราย</b>`:''}</span></div>${ntMapHtml(im.map,emg)}
+   ${(n.villages||[]).length?`<div class="np-tags">${(n.villages||[]).slice(0,8).map(v=>`<i>${esc(v)}</i>`).join('')}</div>`:''}</div>`
+  :`<div class="np-where ${emg?'em':''}"><svg class="np-map" viewBox="0 0 120 90"><rect width="120" height="90" fill="${emg?'#F6ECEC':'#EEF4F2'}"/><path d="M0 72 C30 62 50 77 80 64 S120 57 120 57 L120 90 L0 90Z" fill="${emg?'#F3DADA':'#CFE6EA'}"/><path d="M6 24 L44 40 L100 26" stroke="#B9B2C0" stroke-width="3" fill="none"/>${fb?`<path d="M44 40 L62 70" stroke="${emg?'#D9480F':'#C92A2A'}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="62" cy="70" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/>`:''}<circle cx="44" cy="40" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/></svg>
+   <div class="np-wt"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span>${esc(n.sub||c.sub||'')}</span><span class="np-tags">${(n.villages||[]).slice(0,3).map(v=>`<i>${esc(v)}</i>`).join('')}${n.cust?`<i>~${n.cust} ราย</i>`:''}</span></div></div>`}
   <div class="np-prep">${prep}</div>
   ${!emg&&n.doc?'<div class="np-dtag">📎 หนังสือประกาศ แนบภาพถัดไป</div>':''}
   <div class="np-foot">${NT_KARST}<div class="np-pf"><div><b>📞 ${esc(c.phone)}</b><span>${emg?'ติดตามสถานะในห้อง OpenChat<br>ไฟมาแล้วจะแจ้งทันที':'ไฟมาเร็วกว่ากำหนด — จ่ายไฟทันที<br>อย่าเข้าใกล้สายไฟ / ปฏิบัติงานเอง'}</span></div>${im.qr?`<div class="np-qr"><img src="${im.qr}" alt=""><span>${esc(c.qrLabel||'')}<br>สแกนเข้า<br>OpenChat</span></div>`:''}</div><div class="np-tag">${esc(c.unit)} · ${esc(n.slogan||c.slogan)}</div></div>
@@ -94,7 +150,7 @@ const ntB64Blob=(u)=>{ const [h,b]=u.split(','), mime=(h.match(/data:([^;]+)/)||
 function ntFname(n,x){ return (n.type==='emg'?'ดับไฟฉุกเฉิน':'งดจ่ายไฟ')+' '+n.date+' '+String(n.area||'').replace(/[\\/:*?"<>|→]/g,'-').slice(0,40)+x; }
 function ntText(n){ const c=ntCfg(), st=ntState(n), emg=n.type==='emg';
   const L=[(st==='done'?'✅ ไฟมาแล้ว '+ntHm(n.actualOn)+' น. — ':st==='cancel'?'❎ ยกเลิก — ':'')+(emg?'⚠️ ดับไฟฉุกเฉิน':'📢 ประกาศงดจ่ายไฟฟ้า')+' '+ntDateTh(n.date,true)+' เวลา '+ntHm(n.actualOff||n.startAt)+(n.endAt?'–'+(emg?'~':'')+ntHm(n.endAt):'')+' น.',
-    '📍 '+(n.area||'')+(n.sub?' '+n.sub:''), n.reason?'🔧 '+n.reason:'', n.cust?'🏠 ผู้ใช้ไฟประมาณ '+n.cust+' ราย':'', !emg&&n.doc?'📎 หนังสือประกาศ (ภาพที่ 2)':'',
+    '📍 '+(n.area||'')+(n.sub?' '+n.sub:''), n.reason?'🔧 '+n.reason:'', n.cust?'🏠 ผู้ใช้ไฟประมาณ '+n.cust+' ราย':'', (()=>{ const g=ntGeo(n); return g?'🗺️ แผนที่: https://maps.google.com/?q='+g.ctr.join(','):''; })(), !emg&&n.doc?'📎 หนังสือประกาศ (ภาพที่ 2)':'',
     emg?'⚠️ อย่าเข้าใกล้สายไฟที่ขาด/ห้อย · เห็นจุดอันตรายแจ้ง '+c.phone:'ไฟมาเร็วกว่ากำหนดจะจ่ายไฟทันที · สอบถาม '+c.phone, c.unit+' ขออภัยในความไม่สะดวก 🙏'];
   return L.filter(Boolean).join('\n'); }
 async function ntFiles(n){ const files=[new File([await ntPosterPng(n)],ntFname(n,'.png'),{type:'image/png'})];
@@ -204,7 +260,7 @@ function ntBelow(id){
   const me=s.byId[id]; if(!me) return null;
   const st=[id], vis={}, tr=[], places=[];
   while(st.length){ const x=st.pop(); if(vis[x]) continue; vis[x]=1; const d=s.byId[x]; if(!d) continue;
-    if(d[1]==='TRANSFORMER'||d[1]==='MVMETER'||d[1]==='MR'){ tr.push(d); const p=String(d[3]||'').trim(); if(p&&places.indexOf(p)<0) places.push(p); }
+    if(d[1]==='TRANSFORMER'||d[1]==='MVMETER'||d[1]==='MR'){ tr.push(d); const p=ntPlace(d[3]); if(p&&places.indexOf(p)<0) places.push(p); }
     (s.kids[x]||[]).forEach(k=>st.push(k)); }
   const sum=tr.reduce((a,d)=>a+(Number(d[8])||0),0);
   return {dev:me, tr:tr.filter(d=>d[1]==='TRANSFORMER').length, mv:tr.filter(d=>d[1]!=='TRANSFORMER').length, cust:Number(me[9])||sum||null, places};
