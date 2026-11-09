@@ -1034,7 +1034,10 @@ function boxInfo_() {
       return { id: x.id, t: Utilities.formatDate(new Date(d.at), TZ, 'HH:mm'), type: TK_TYPES_[d.type] || 'แจ้งไฟดับ', place: String(d.place || '').slice(0, 60),
         st: x.st, by: d.accBy || (d.bellAck && d.bellAck.by) || '', ph: d.phone || '', lat: d.lat || 0, lon: d.lon || 0 };
     });
-  const out = { duty: dutyShorts_(), crew: crewNow_(), open: rows.filter(live).length,
+  // เวลาทำการไม่มีพนักงานเวร → แสดงผู้รับผิดชอบแทน (ตั้งใน Config: boxOfficeDuty)
+  let duty = dutyShorts_();
+  if (!duty.length && !bellHours_()) duty = [String(getConfig_().boxOfficeDuty || 'ผปร. : อติวิทย์')];
+  const out = { duty: duty, crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
     jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(),
     rot: String(getConfig_().boxRot || '20,10,5').split(',').map(function (x) { return Math.max(0, Math.min(120, Number(x) || 0)); }) };
