@@ -8,10 +8,14 @@ const NT_RS={
   plan:[['improve','ปรับปรุง ซ่อมแซมระบบจำหน่าย'],['tree','ตัดต้นไม้ใกล้แนวสายไฟ'],['tr','เปลี่ยน/เพิ่มขนาดหม้อแปลง'],['pole','ย้าย/เปลี่ยนเสาไฟฟ้า'],['other','อื่น ๆ']],
   emg:[['tree','ต้นไม้ล้มทับสายไฟ'],['equip','อุปกรณ์ชำรุด เสี่ยงอันตราย'],['fire','ไฟไหม้ / ช่วยเหลือผู้ประสบภัย'],['car','รถชนเสาไฟฟ้า'],['other','อื่น ๆ']]};
 const NT_SAY={improve:'ขอปรับปรุงสายไฟ\nให้ไฟนิ่งขึ้นนะครับ 🙏',tree:'ขอตัดต้นไม้ใกล้สายไฟ\nกันไฟดับหน้าฝนครับ 🙏',tr:'ขอเปลี่ยนหม้อแปลงใหม่\nไฟจะได้ไม่ตกครับ 🙏',pole:'ขอปรับเสาไฟให้มั่นคง\nปลอดภัยขึ้นครับ 🙏',other:'ขออภัยในความไม่สะดวก\nนะครับ 🙏',emg:'ขออภัยที่แจ้งกะทันหัน\nรีบแก้ให้เร็วที่สุดครับ 🙏'};
+const NT_SLOGANS=['รักอ่าวลึก ดูแลทุกดวงไฟ','ดับวันนี้ เพื่อไฟดีทุกวัน','ไฟฟ้าอ่าวลึก ดูแลเหมือนคนในบ้าน','ทุกบ้านอ่าวลึก ไฟฟ้าเราดูแล','มีเรื่องไฟ นึกถึง PEA อ่าวลึก','ไฟมั่นคง ใส่ใจทุกครัวเรือน','แจ้งก่อน ทำไว เพื่อไฟที่ดีกว่า','จากภูเขาถึงทะเล ไฟฟ้าอ่าวลึกดูแลทั่วถึง','ไฟดีทุกบ้าน ใส่ใจทุกครั้ง'];
+function ntSlogans(){ const c=ntCfg(); return (Array.isArray(c.slogans)&&c.slogans.length?c.slogans:NT_SLOGANS).filter(Boolean); }
+function ntPickSlogan(type){ const L=ntSlogans(), last=LS.get('ntLastSlogan'); const pool=L.filter(x=>x!==last); const pref=type==='plan'&&L.indexOf('ดับวันนี้ เพื่อไฟดีทุกวัน')>=0&&last!=='ดับวันนี้ เพื่อไฟดีทุกวัน'&&Math.random()<.35?'ดับวันนี้ เพื่อไฟดีทุกวัน':null;
+  return pref||(pool.length?pool:L)[Math.floor(Math.random()*(pool.length||L.length))]||ntCfg().slogan; }
 const NT_WD=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'], NT_MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 function ntCfg(){ let c={}; try{ c=JSON.parse((S.boot&&S.boot.config&&S.boot.config.noticeCfg)||'{}'); }catch(e){}
   return Object.assign({unit:(S.boot&&S.boot.config&&S.boot.config.office)||'กฟส.อ่าวลึก',speaker:'heart',footer:'karst',phone:'0-7566-6925',
-    qr:'https://line.me/ti/g2/kG8leDxLn2xEjQPvYMUB3R8BKqXoUhuj_Ocp8w',qrLabel:'ห้องแจ้งไฟฟ้าขัดข้อง',slogan:'ไฟดีทุกบ้าน ใส่ใจทุกครั้ง',sub:'อ.อ่าวลึก จ.กระบี่'},c); }
+    qr:'https://line.me/ti/g2/kG8leDxLn2xEjQPvYMUB3R8BKqXoUhuj_Ocp8w',qrLabel:'ห้องแจ้งไฟฟ้าขัดข้อง',slogan:'รักอ่าวลึก ดูแลทุกดวงไฟ',sub:'อ.อ่าวลึก จ.กระบี่'},c); }
 const ntT=x=>Date.parse(x+':00+07:00');
 const ntNow=()=>new Date(Date.now()+7*36e5).toISOString().slice(0,16);
 const ntHm=x=>String(x||'').slice(11,16).replace(':','.');
@@ -74,7 +78,7 @@ function ntPoster(n,im){
    <div class="np-wt"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span>${esc(n.sub||c.sub||'')}</span><span class="np-tags">${(n.villages||[]).slice(0,3).map(v=>`<i>${esc(v)}</i>`).join('')}${n.cust?`<i>~${n.cust} ราย</i>`:''}</span></div></div>
   <div class="np-prep">${prep}</div>
   ${!emg&&n.doc?'<div class="np-dtag">📎 หนังสือประกาศ แนบภาพถัดไป</div>':''}
-  <div class="np-foot">${NT_KARST}<div class="np-pf"><div><b>📞 ${esc(c.phone)}</b><span>${emg?'ติดตามสถานะในห้อง OpenChat<br>ไฟมาแล้วจะแจ้งทันที':'ไฟมาเร็วกว่ากำหนด — จ่ายไฟทันที<br>อย่าเข้าใกล้สายไฟ / ปฏิบัติงานเอง'}</span></div>${im.qr?`<div class="np-qr"><img src="${im.qr}" alt=""><span>${esc(c.qrLabel||'')}<br>สแกนเข้า<br>OpenChat</span></div>`:''}</div><div class="np-tag">${esc(c.unit)} · ${esc(c.slogan)}</div></div>
+  <div class="np-foot">${NT_KARST}<div class="np-pf"><div><b>📞 ${esc(c.phone)}</b><span>${emg?'ติดตามสถานะในห้อง OpenChat<br>ไฟมาแล้วจะแจ้งทันที':'ไฟมาเร็วกว่ากำหนด — จ่ายไฟทันที<br>อย่าเข้าใกล้สายไฟ / ปฏิบัติงานเอง'}</span></div>${im.qr?`<div class="np-qr"><img src="${im.qr}" alt=""><span>${esc(c.qrLabel||'')}<br>สแกนเข้า<br>OpenChat</span></div>`:''}</div><div class="np-tag">${esc(c.unit)} · ${esc(n.slogan||c.slogan)}</div></div>
   ${stamp}</div>`;
 }
 async function ntPosterPng(n){
@@ -214,7 +218,7 @@ function ntPickDev(F,d){ const B=ntBelow(d[0])||{places:[],cust:+d[8]||null,tr:0
 /* ---------- ฟอร์มสร้าง/แก้ประกาศ ---------- */
 async function ntForm(n0){
   const c=ntCfg(), td=ntNow().slice(0,10);
-  const F=n0?JSON.parse(JSON.stringify(n0)):{type:'plan',date:new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10),start:'08:30',end:'16:30',reasonKey:'improve',reason:NT_RS.plan[0][1],area:'',sub:c.sub,villages:[],feeder:'',dev:null,cust:null,estMin:120,startIn:0};
+  const F=n0?JSON.parse(JSON.stringify(n0)):{type:'plan',date:new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10),start:'08:30',end:'16:30',reasonKey:'improve',reason:NT_RS.plan[0][1],slogan:ntPickSlogan('plan'),area:'',sub:c.sub,villages:[],feeder:'',dev:null,cust:null,estMin:120,startIn:0};
   let docFile=null;
   sldData().then(()=>{ if($('ntF')) draw(); });
   const draw=()=>{ const emg=F.type==='emg', fd=(S.sld&&S.sld.fd&&S.sld.fd.length?S.sld.fd:FEEDERS0);
@@ -233,6 +237,7 @@ async function ntForm(n0){
      <div class="grid2" style="margin-top:6px"><input type="text" id="ntSub" value="${esc(F.sub||'')}" placeholder="ต./อ./จ."><input type="text" id="ntV" value="${esc((F.villages||[]).join(', '))}" placeholder="หมู่บ้าน/จุดสังเกต (คั่นด้วย ,)"></div>
      <label class="tf" style="margin-top:6px">ผู้ใช้ไฟประมาณ (ราย) ${F.dev?'<span class="muted" style="font-weight:400">· คำนวณจาก SLD แก้ได้</span>':''}<input type="number" id="ntC" value="${F.cust||''}" min="0"></label>
      <div class="lb">คำพูดของตัวพูดบนโปสเตอร์ <i>ไม่บังคับ</i></div><textarea id="ntSay" rows="2" placeholder="${esc((emg?NT_SAY.emg:NT_SAY[F.reasonKey]||NT_SAY.other))}">${esc(F.speech||'')}</textarea>
+     <div class="lb">คำขวัญท้ายโปสเตอร์ <i>เปลี่ยนได้ทุกประกาศ</i></div><div class="chips nt-slg">${ntSlogans().map((x,i)=>`<button type="button" class="ch ${F.slogan===x?'on':''}" data-sl="${i}">${esc(x)}</button>`).join('')}<button type="button" class="ch" data-sl="rnd">🎲 สุ่ม</button></div>
      ${!emg&&!n0?`<div class="lb">📎 หนังสือประกาศ ${esc(c.unit)} (ลงนามแล้ว) <i>แนบทีหลังได้</i></div><label class="nt-drop">📷 ถ่ายรูป / 📄 เลือกไฟล์ (รูป หรือ PDF)<input type="file" id="ntDocIn" accept="image/*,application/pdf" hidden></label><div id="ntDocN" class="muted">${docFile?'✓ '+esc(docFile.name):''}</div>`:''}
      <div id="ntFMsg"></div>
      <button type="button" class="btn ${emg?'redf':''}" id="ntSave" style="width:100%;margin-top:10px">${n0?'บันทึก':emg?'⚠️ ประกาศดับไฟฉุกเฉิน':'สร้างประกาศ'}</button>
@@ -243,6 +248,7 @@ async function ntForm(n0){
     F.reason=v('ntR')??F.reason; if(v('ntA')!=null&&v('ntA')!==F.area){ F.area=v('ntA'); F._autoArea=0; } F.sub=v('ntSub')??F.sub; if(v('ntV')!=null){ const nv=v('ntV').split(/[,،]/).map(x=>x.trim()).filter(Boolean); if(nv.join(',')!==(F.villages||[]).join(',')){ F.villages=nv; F._autoV=0; } } if(v('ntC')!=null) F.cust=+v('ntC')||null; if(v('ntSay')!=null) F.speech=v('ntSay').trim(); };
   const bind=()=>{
     document.querySelectorAll('#ntF [data-ty]').forEach(b=>b.onclick=()=>{ keep(); F.type=b.dataset.ty; F.reasonKey=NT_RS[F.type][0][0]; F.reason=NT_RS[F.type][0][1]; if(F.type==='emg'){ F.startIn=0; F.estMin=120; } else { F.date=new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10); F.start='08:30'; F.end='16:30'; } draw(); });
+    document.querySelectorAll('#ntF [data-sl]').forEach(b=>b.onclick=()=>{ keep(); const L=ntSlogans(); F.slogan=b.dataset.sl==='rnd'?(()=>{ const p=L.filter(x=>x!==F.slogan); return p[Math.floor(Math.random()*p.length)]||L[0]; })():L[+b.dataset.sl]; draw(); });
     document.querySelectorAll('#ntF [data-si]').forEach(b=>b.onclick=()=>{ keep(); F.startIn=+b.dataset.si; draw(); });
     document.querySelectorAll('#ntF [data-es]').forEach(b=>b.onclick=()=>{ keep(); F.estMin=+b.dataset.es; draw(); });
     document.querySelectorAll('#ntF [data-rk]').forEach(b=>b.onclick=()=>{ keep(); const r=NT_RS[F.type].find(x=>x[0]===b.dataset.rk); F.reasonKey=r[0]; F.reason=r[0]==='other'?'':r[1]; draw(); });
@@ -262,10 +268,11 @@ async function ntForm(n0){
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
       if(!String(F.area||'').trim()){ msg('ntFMsg','ใส่พื้นที่ไฟดับ','err'); return; }
-      const o={type:F.type,reason:F.reason,reasonKey:F.reasonKey,feeder:F.feeder,dev:F.dev,cust:F.cust,area:F.area.trim(),sub:F.sub,villages:F.villages,speech:F.speech};
+      const o={type:F.type,slogan:F.slogan||'',reason:F.reason,reasonKey:F.reasonKey,feeder:F.feeder,dev:F.dev,cust:F.cust,area:F.area.trim(),sub:F.sub,villages:F.villages,speech:F.speech};
       if(n0) Object.assign(o,{id:n0.id,date:F.date,start:F.start,end:F.end,estMin:F.estMin});
       else if(F.type==='emg'){ const at=isoAt(Date.now()+F.startIn*6e4); Object.assign(o,{date:at.slice(0,10),start:at.slice(11,16),estMin:F.estMin,live:F.startIn===0}); }
       else { if(!F.date||!F.start||!F.end){ msg('ntFMsg','ใส่วันและเวลาให้ครบ','err'); return; } Object.assign(o,{date:F.date,start:F.start,end:F.end}); }
+      if(F.slogan) LS.set('ntLastSlogan',F.slogan);
       $('ntSave').disabled=true; $('ntSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';
       try{ const j=await apiPost(Object.assign({action:'saveNotice',n:o},a)); let nn=j.notice;
         if(docFile){ $('ntSave').innerHTML='<span class="spin"></span>กำลังแนบหนังสือ…'; try{ const x=await ntReadFile(docFile); const k=await apiPost(Object.assign({action:'noticeDoc',id:nn.id,base64:x.base64,mime:x.mime},a)); nn=k.notice; if(nn.doc) (S.ntFiles=S.ntFiles||{})[nn.doc.fileId]=x.url; }catch(e){ toast('สร้างประกาศแล้ว แต่แนบหนังสือไม่สำเร็จ: '+e.message); } }
@@ -285,7 +292,7 @@ function ntSettings(){
     <div class="grid2" style="margin-top:8px"><label class="tf">เบอร์โทร<input type="text" id="nsP" value="${esc(c.phone)}"></label><label class="tf">ต./อ./จ. (ค่าเริ่มต้น)<input type="text" id="nsSub" value="${esc(c.sub)}"></label></div>
     <label class="tf" style="margin-top:6px">ลิงก์ QR (ห้อง OpenChat / LINE)<input type="url" id="nsQ" value="${esc(c.qr)}"></label>
     <label class="tf" style="margin-top:6px">ป้ายใต้ QR<input type="text" id="nsQL" value="${esc(c.qrLabel||'')}"></label>
-    <label class="tf" style="margin-top:6px">คำขวัญ<input type="text" id="nsS" value="${esc(c.slogan)}"></label>
+    <label class="tf" style="margin-top:6px">คำขวัญ (ให้เลือกตอนสร้างประกาศ · บรรทัดละ 1 คำขวัญ · ประกาศใหม่จะสุ่มให้ไม่ซ้ำครั้งก่อน)<textarea id="nsS" rows="7" style="width:100%">${esc((Array.isArray(c.slogans)&&c.slogans.length?c.slogans:NT_SLOGANS).join('\n'))}</textarea></label>
     ${(meInfo()||{}).appr&&hubCreds().user?'':'<label class="tf" style="margin-top:6px">PIN ผู้อนุมัติ<input type="password" id="nsPin" inputmode="numeric" autocomplete="new-password"></label>'}
     <div id="nsMsg"></div><button type="button" class="btn" id="nsSave" style="width:100%;margin-top:10px">บันทึกตั้งค่า</button></div>`,()=>ntPage());
     document.querySelectorAll('#ntSet [data-sp]').forEach(b=>b.onclick=()=>{ keep(); if(b.dataset.sp==='custom'&&!c.speakerFile&&!spImg){ $('nsSp').click(); return; } c.speaker=b.dataset.sp; draw(); });
@@ -296,7 +303,7 @@ function ntSettings(){
       const body=Object.assign({action:'saveNoticeCfg',cfg:c},m.appr&&cr.user?{hubUser:cr.user,hubPass:cr.pass}:{pin});
       if(spImg){ body.speakerImg=spImg.base64; body.speakerMime='image/png'; } if(lgImg){ body.logoImg=lgImg.base64; body.logoMime='image/png'; }
       msg('nsMsg','กำลังบันทึก…'); try{ const j=await apiPost(body); S.boot.config.noticeCfg=JSON.stringify(j.cfg); msg('nsMsg','บันทึกแล้ว ✓'); }catch(e){ msg('nsMsg',e.message,'err'); } }; };
-  const keep=()=>{ const v=id=>($(id)||{}).value; c.unit=v('nsU')??c.unit; c.phone=v('nsP')??c.phone; c.sub=v('nsSub')??c.sub; c.qr=v('nsQ')??c.qr; c.qrLabel=v('nsQL')??c.qrLabel; c.slogan=v('nsS')??c.slogan; };
+  const keep=()=>{ const v=id=>($(id)||{}).value; c.unit=v('nsU')??c.unit; c.phone=v('nsP')??c.phone; c.sub=v('nsSub')??c.sub; c.qr=v('nsQ')??c.qr; c.qrLabel=v('nsQL')??c.qrLabel; if(v('nsS')!=null){ c.slogans=v('nsS').split('\n').map(x=>x.trim()).filter(Boolean); c.slogan=c.slogans[0]||c.slogan; } };
   draw();
 }
 function ntPng(f){ return new Promise((ok,no)=>{ const im=new Image(), u=URL.createObjectURL(f); im.onload=()=>{ const s=Math.min(1,600/Math.max(im.width,im.height)), cv=document.createElement('canvas'); cv.width=Math.round(im.width*s); cv.height=Math.round(im.height*s); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); URL.revokeObjectURL(u); const url=cv.toDataURL('image/png'); ok({base64:url.split(',')[1],url}); }; im.onerror=()=>no(new Error('เปิดภาพไม่ได้')); im.src=u; }); }

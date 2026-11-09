@@ -1566,7 +1566,7 @@ function ntWho_(b) {
   const n = tkAuth_(b), nn = normN_(n), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
   return pr ? pr.short : n;
 }
-const NT_KEYS_ = ['type', 'date', 'start', 'end', 'estMin', 'reason', 'reasonKey', 'feeder', 'dev', 'cust', 'area', 'sub', 'villages', 'speech', 'note'];
+const NT_KEYS_ = ['type', 'date', 'start', 'end', 'estMin', 'reason', 'reasonKey', 'feeder', 'dev', 'cust', 'area', 'sub', 'villages', 'speech', 'note', 'slogan'];
 function ntAt_(d, hm) { return d + 'T' + hm; }
 function saveNotice_(b) {
   const by = ntWho_(b), o = b.n || {};
@@ -1578,7 +1578,7 @@ function saveNotice_(b) {
   const cur = o.id ? rows.filter(function (x) { return x.id === String(o.id) && !x.deleted; })[0] : null;
   const d = cur ? cur.d : { id: 'NT-' + Utilities.formatDate(now, TZ, 'yyMMdd-HHmmss'), status: o.type === 'emg' && o.live ? 'live' : 'plan', created: now.toISOString(), createdBy: by, tl: [] };
   NT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
-  d.area = String(d.area || '').slice(0, 120); d.sub = String(d.sub || '').slice(0, 120); d.reason = String(d.reason || '').slice(0, 160); d.speech = String(d.speech || '').slice(0, 90);
+  d.area = String(d.area || '').slice(0, 120); d.sub = String(d.sub || '').slice(0, 120); d.reason = String(d.reason || '').slice(0, 160); d.speech = String(d.speech || '').slice(0, 90); d.slogan = String(d.slogan || '').slice(0, 80);
   d.villages = (Array.isArray(d.villages) ? d.villages : []).map(String).filter(String).slice(0, 12);
   d.startAt = ntAt_(d.date, d.start);
   if (d.type === 'plan') { d.endAt = d.end >= d.start ? ntAt_(d.date, d.end) : ntAt_(Utilities.formatDate(new Date(Date.parse(d.date + 'T00:00:00Z') + 864e5), 'UTC', 'yyyy-MM-dd'), d.end); }
@@ -1642,7 +1642,8 @@ function noticeFile_(q) {
 }
 function saveNoticeCfg_(b, who) {
   const c = b.cfg || {}, cur = (function () { try { return JSON.parse(getConfig_().noticeCfg || '{}'); } catch (e) { return {}; } })();
-  ['unit', 'speaker', 'footer', 'phone', 'qr', 'slogan', 'sub'].forEach(function (k) { if (k in c) cur[k] = String(c[k] || '').slice(0, 300); });
+  ['unit', 'speaker', 'footer', 'phone', 'qr', 'qrLabel', 'slogan', 'sub'].forEach(function (k) { if (k in c) cur[k] = String(c[k] || '').slice(0, 300); });
+  if ('slogans' in c) cur.slogans = (Array.isArray(c.slogans) ? c.slogans : []).map(function (x) { return String(x || '').trim().slice(0, 80); }).filter(String).slice(0, 20);
   if (b.speakerImg) cur.speakerFile = ntSaveFile_(b.speakerImg, b.speakerMime, 'ภาพตัวพูด').fileId;
   if (b.logoImg) cur.logoFile = ntSaveFile_(b.logoImg, b.logoMime, 'โลโก้').fileId;
   if (c.clearSpeaker) delete cur.speakerFile; if (c.clearLogo) delete cur.logoFile;
