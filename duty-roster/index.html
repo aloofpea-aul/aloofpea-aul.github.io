@@ -242,6 +242,14 @@ body.wide #viewReport>.card{max-width:736px;width:100%;margin:0 auto}
 .doc.m2 .io{display:grid;grid-template-columns:7mm 62mm 1fr;padding-left:25mm;margin-top:3mm}
 .doc.m2 .it{display:flex;padding-left:25mm;margin-top:4px}.doc.m2 .it .no{width:7mm;flex:0 0 7mm}
 .doc.m2 .sig{line-height:1.3;text-align:center;width:80mm}
+.wxcard{padding:10px 12px!important}.wxcard.hot{border:2px solid #C92A2A}
+.wxc{display:flex;gap:10px;align-items:center}.wxm{flex:1;min-width:0;font-size:15px}.wxs{font-size:12px;color:var(--mut,#6B6478);margin-top:1px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.wxs.wxa{color:#8A1F1F;font-weight:700}
+.wxl{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;align-content:center;font-weight:800;font-size:21px;flex:none;line-height:1}.wxl small{display:block;font-size:9.5px;font-weight:700;margin-top:2px}
+.wxl.l0{background:#EEE;color:#888}.wxl.l1{background:#E6F4E8;color:#1F5A2A}.wxl.l2{background:#E8EEF6;color:#3C5A80}.wxl.l3{background:#DCEBFA;color:#1D4E89}.wxl.l4{background:#FFF1D6;color:#7A4A00}.wxl.l5{background:#FFE1CC;color:#9A3B00}.wxl.l6{background:#C92A2A;color:#fff}
+.wxt{display:inline-block;border-radius:7px;padding:0 6px;font-size:11px;font-weight:700;vertical-align:2px}.wxt.a{background:#E6F4E8;color:#1F5A2A}.wxt.m{background:#FFF1D6;color:#7A4A00}
+.wxbar{display:flex;gap:2px;margin-top:5px;max-width:200px}.wxbar i{height:5px;flex:1;border-radius:3px;background:#E6E0EC}.wxbar i.f{background:#3B82C4}.wxbar.r i.f{background:#C92A2A}
+.wxch{height:36px!important;padding:0 12px!important;font-size:13px;flex:none}
+.wxov{align-items:flex-end}.wxsh{max-height:88vh;overflow:auto}
 .wxg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
 .wxg button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;color:var(--ink);padding:4px}
 .wxg button.on{border:2px solid var(--pri);background:#F3E9F5;color:var(--pri2);font-weight:700}
@@ -1573,29 +1581,56 @@ function wxWhy(w,tm){
   return (pills.length?`<div style="margin-top:6px">${pills.join('')}</div>`:'')+(showCk?`<ul class="wxck">${ck.map(c=>`<li>${ic[c.k]||''} ${esc(c.t)} ${c.ok?'<b class="ok">✓</b>':''}</li>`).join('')}</ul>
     ${w.auto!==6?'<div class="muted" style="font-size:12.5px">ระดับ 6 ต้องผ่าน ⚡ และมีหลักฐานยืนยันอีกอย่างน้อย 1 ข้อ (📄 / 🌬 / 🌧) ติดกัน 2 รอบ</div>':''}`:'');
 }
+const WX_IC={1:'☀️',2:'🌥',3:'🌧',4:'🌬',5:'🌧',6:'⛈'}, WX_SH={1:'ปกติ',2:'ชื้น',3:'ฝนตก',4:'ลมแรง',5:'ฝน+ลม',6:'คะนอง'};
+/* สภาพอากาศตอนนี้: แถบย่อบรรทัดเดียว · แตะ "เปลี่ยน" เปิดแผ่นตั้งระดับ (ระดับนี้ = ค่าเริ่มต้นตอนบันทึกไฟดับ · 5–6 แจ้ง หผ.ปร./ชผ.) */
 function renderWx(){
   const w=S.wx||LS.get('wx'); const el=$('dWx'); if(!el) return;
   if(!S.wxLoading){S.wxLoading=1;loadWx();}
-  const keep={note:($('wxNote')||{}).value||'',pin:($('wxPin')||{}).value||''};
-  if(!w||w.lv==null){ el.innerHTML='<h3>สภาพอากาศตอนนี้</h3><div class="muted">กำลังโหลด…</div>'; return; }
-  const pick=S.wxPick!=null?S.wxPick:w.lv, m=w.manual;
+  if(!w||w.lv==null){ el.innerHTML='<div class="wxc"><div class="wxl l0">…</div><div class="wxm"><b>สภาพอากาศ</b><div class="wxs">กำลังโหลด…</div></div></div>'; return; }
+  const m=w.manual, lv=+w.lv, hot=lv>=5;
+  const tm=t=>{const d=new Date(t+7*3600e3);return String(d.getUTCHours()).padStart(2,'0')+'.'+String(d.getUTCMinutes()).padStart(2,'0');};
+  const det=String(w.detail||'').replace(/ความชื้น\s*/,'ชื้น ').replace(/โอกาสฝน\s*6\s*ชม\.?ข้างหน้า\s*/,'ฝน 6 ชม. ').replace(/ลมกระโชก\s*/,'ลม ');
+  const sub=m?['ถึง '+(m.until?tm(m.until)+' น.':'ยกเลิกเอง'),w.auto!=null?'ระบบวิเคราะห์ได้ '+w.auto:'',m.note?'"'+m.note+'"':''].filter(Boolean).join(' · ')
+    :[det,w.hold?'คงถึง '+tm(w.hold+36e5):''].filter(Boolean).join(' · ');
+  const alert=w.ok6?'ยืนยันแล้ว 2 รอบ '+tm(w.ok6[0])+' / '+tm(w.ok6[1])+(hot?' · แจ้ง หผ.ปร. / ชผ. แล้ว':''):w.pend6?'⚡ เข้าเกณฑ์ระดับ 6 — รอยืนยันรอบถัดไป':w.watch?'⚡ เฝ้าระวังฟ้าคะนอง '+w.watch:'';
+  el.classList.add('wxcard'); el.classList.toggle('hot',hot);
+  el.innerHTML=`<div class="wxc"><div class="wxl l${lv}">${lv}<small>${esc(WX_SH[lv]||'')}</small></div>
+    <div class="wxm"><b>${WX_IC[lv]||''} ${esc(WX_LV[lv]||'')}</b> <span class="wxt ${m?'m':'a'}">${m?'ตั้งเอง · '+esc(m.by):'อัตโนมัติ'}</span>
+      <div class="wxs">${esc(sub)}</div>${alert?`<div class="wxs wxa">${esc(alert)}</div>`:''}
+      <div class="wxbar ${hot?'r':''}">${[1,2,3,4,5,6].map(n=>`<i class="${n<=lv?'f':''}"></i>`).join('')}</div></div>
+    <button type="button" class="btn ghost wxch" id="wxOpen">เปลี่ยน</button></div>`;
+  $('wxOpen').onclick=()=>wxSheet();
+}
+function wxSheet(){
+  const w=S.wx||LS.get('wx')||{}, m=w.manual, me=meInfo()||{}, c=hubCreds(), appr=!!(me.appr&&c.user&&c.pass);
   const tm=t=>{const d=new Date(t+7*3600e3);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');};
-  el.innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">สภาพอากาศตอนนี้ : ${w.lv} <span style="font-weight:400">(${esc(WX_LV[w.lv]||'')})</span></h3><span class="muted">ระบบวิเคราะห์: ${w.auto==null?'—':w.auto}</span></div>
-    ${m?`<div class="note" style="margin-top:6px">ตั้งเองโดย ${esc(m.by)} ${tm(m.at)} น.${m.note?' · '+esc(m.note):''} · ${m.until?'ใช้ถึง '+tm(m.until)+' น.':'จนกว่าจะยกเลิก'}</div>`:''}
-    <div class="muted" style="margin-top:4px">${esc(w.detail||'')}</div>
+  let pick=w.lv, dur=S.wxDur||'6h';
+  const ov=document.createElement('div'); ov.className='rqov wxov';
+  const draw=()=>{ ov.innerHTML=`<div class="rqsh wxsh" role="dialog" aria-modal="true" aria-label="ตั้งระดับสภาพอากาศ">
+    <div class="row" style="justify-content:space-between"><h4 style="margin:0">ตั้งระดับสภาพอากาศ</h4><button type="button" class="lnk" id="wxX">ปิด</button></div>
+    <div class="muted" style="margin-top:4px">ระบบวิเคราะห์ได้ <b>${w.auto==null?'—':w.auto+' '+esc(WX_LV[w.auto]||'')}</b> (กรอบประ)${w.detail?' · '+esc(w.detail):''}</div>
+    ${m?`<div class="note" style="margin-top:6px">ตอนนี้ตั้งเองโดย ${esc(m.by)} ${tm(m.at)} น.${m.note?' · '+esc(m.note):''} · ${m.until?'ใช้ถึง '+tm(m.until)+' น.':'จนกว่าจะยกเลิก'}</div>`:''}
     ${wxWhy(w,tm)}
-    <div class="wxg">${[1,2,3,4,5,6].map(n=>`<button data-l="${n}" class="${n===pick?'on':''} ${!m&&n===w.auto?'auto':''}">${n} ${WX_LV[n]}</button>`).join('')}</div>
-    <div class="seg light" id="wxDur">${[['6h','6 ชม.'],['shift','จบเวรนี้'],['forever','จนกว่าจะยกเลิก']].map(x=>`<button data-d="${x[0]}" class="${S.wxDur===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
-    <div class="grid2" style="margin-top:8px"><input type="text" id="wxNote" placeholder="หมายเหตุ (ไม่บังคับ)" aria-label="หมายเหตุสภาพอากาศ"><input type="password" id="wxPin" inputmode="numeric" autocomplete="off" placeholder="PIN ผู้มีสิทธิ์" aria-label="PIN"></div>
-    <div class="grid2" style="margin-top:8px"><button class="btn ghost" id="wxAuto">กลับเป็นอัตโนมัติ</button><button class="btn" id="wxSave">บันทึกระดับ ${pick}</button></div>
-    <div class="muted" style="margin-top:6px">ระดับ 5–6 ระบบแจ้ง หผ.ปร. / ชผ. ทาง LINE · คนอยู่เวรตั้งจาก LINE ได้: พิมพ์ "อากาศ 3"</div><div id="wxMsg"></div>`;
-  $('wxNote').value=keep.note; $('wxPin').value=keep.pin;
-  el.querySelectorAll('.wxg button').forEach(b=>b.onclick=()=>{S.wxPick=+b.dataset.l;renderWx();});
-  el.querySelectorAll('#wxDur button').forEach(b=>b.onclick=()=>{S.wxDur=b.dataset.d;renderWx();});
-  const send=async lv=>{ msg('wxMsg','กำลังบันทึก…');
-    try{ const j=await apiPost({action:'setWx',lv,dur:S.wxDur,note:$('wxNote').value.trim(),pin:$('wxPin').value}); S.wx=j.wx; LS.set('wx',j.wx); S.wxPick=null; renderWx(); msg('wxMsg',lv==null?'กลับเป็นอัตโนมัติแล้ว':'บันทึกระดับ '+lv+' แล้ว'+(lv>=5?' · แจ้ง หผ.ปร. / ชผ. แล้ว':'')); }
-    catch(e){ msg('wxMsg',e.message,'err'); } };
-  $('wxSave').onclick=()=>send(pick); $('wxAuto').onclick=()=>send(null);
+    <div class="wxg">${[1,2,3,4,5,6].map(n=>`<button type="button" data-l="${n}" class="${n===pick?'on':''} ${n===w.auto?'auto':''}">${n} ${WX_LV[n]}</button>`).join('')}</div>
+    <div class="lb" style="margin-top:2px">ใช้นานเท่าไร</div>
+    <div class="seg light" id="wxDur">${[['6h','6 ชม.'],['shift','จบเวรนี้'],['forever','จนกว่าจะยกเลิก']].map(x=>`<button type="button" data-d="${x[0]}" class="${dur===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
+    ${appr?`<div class="oiss g">✓ เข้าในชื่อ ${esc(me.appr.short||me.appr.name)} (ผู้อนุมัติ) — ไม่ต้องใส่ PIN</div>`:`<input type="password" id="wxPin" inputmode="numeric" autocomplete="new-password" placeholder="PIN ผู้มีสิทธิ์" aria-label="PIN" style="width:100%;margin-top:8px">`}
+    <input type="text" id="wxNote" autocomplete="off" name="wxnote-${Date.now()}" placeholder="หมายเหตุ (ไม่บังคับ) เช่น ต้นไม้ล้มหลายจุด" aria-label="หมายเหตุสภาพอากาศ" style="width:100%;margin-top:8px">
+    <div id="wxMsg"></div>
+    <button type="button" class="btn" id="wxSave" style="width:100%;margin-top:10px">บันทึกระดับ ${pick}</button>
+    ${m?'<button type="button" class="lnk" id="wxAuto" style="width:100%;margin-top:10px">↺ กลับเป็นอัตโนมัติ</button>':''}
+    <div class="muted" style="margin-top:8px">ระดับ 5–6 ระบบแจ้ง หผ.ปร. / ชผ. ทาง LINE · คนอยู่เวรตั้งจาก LINE ได้: พิมพ์ "อากาศ ${pick}"</div></div>`;
+    const keep={note:'',pin:''};
+    ov.querySelector('#wxX').onclick=()=>ov.remove();
+    ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+    ov.querySelectorAll('.wxg button').forEach(b=>b.onclick=()=>{ keep.note=$('wxNote').value; keep.pin=($('wxPin')||{}).value||''; pick=+b.dataset.l; draw(); $('wxNote').value=keep.note; if($('wxPin')) $('wxPin').value=keep.pin; });
+    ov.querySelectorAll('#wxDur button').forEach(b=>b.onclick=()=>{ keep.note=$('wxNote').value; keep.pin=($('wxPin')||{}).value||''; dur=S.wxDur=b.dataset.d; draw(); $('wxNote').value=keep.note; if($('wxPin')) $('wxPin').value=keep.pin; });
+    const send=async lv=>{ const pin=($('wxPin')||{}).value||''; if(!appr&&!pin){ msg('wxMsg','ใส่ PIN ผู้มีสิทธิ์','err'); return; } msg('wxMsg','กำลังบันทึก…');
+      try{ const j=await apiPost(Object.assign({action:'setWx',lv,dur,note:$('wxNote').value.trim()},appr?{hubUser:c.user,hubPass:c.pass}:{pin})); S.wx=j.wx; LS.set('wx',j.wx); ov.remove(); renderWx(); toast(lv==null?'กลับเป็นอัตโนมัติแล้ว':'บันทึกระดับ '+lv+' แล้ว'+(lv>=5?' · แจ้ง หผ.ปร. / ชผ. แล้ว':'')); }
+      catch(e){ msg('wxMsg',e.message,'err'); } };
+    $('wxSave').onclick=()=>send(pick); if($('wxAuto')) $('wxAuto').onclick=()=>send(null);
+  };
+  document.body.appendChild(ov); draw();
 }
 /* ---------- สร้างเวร ---------- */
 function genKey(){const ms=S.boot.months.map(x=>x.month).sort();return nextKey(ms[ms.length-1]);}

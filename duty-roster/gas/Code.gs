@@ -467,7 +467,7 @@ function doPost(e) {
       const rq = createRequest_(b, null); return json_({ ok: true, request: rq });
     }
     // ---- ต้องเป็นผู้อนุมัติ ----
-    const who = approverByPin_(b.pin);
+    const who = approverByPin_(b.pin) || (b.action === 'setWx' ? approverOf_(b) : null);   // ตั้งอากาศ: ผู้อนุมัติที่ล็อกอินศูนย์รวมงานไม่ต้องใส่ PIN
     if (!who) return json_({ ok: false, error: 'PIN ไม่ถูกต้อง' });
 
     // ส่งรายการคำขอล่าสุดกลับไปด้วย หน้าเว็บไม่ต้องโหลดซ้ำอีกรอบ
