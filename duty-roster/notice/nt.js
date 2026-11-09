@@ -193,6 +193,24 @@ async function ntToOutage(n){
   S.dMonth=m; S.dDay=d; S.repOpen=k; if($('dMonth')) $('dMonth').value=m; await renderDaily();
   outForm(k,I,null,mo.data,{nt:n});
 }
+/* ใต้อุปกรณ์ที่ตัดไฟ (SLD): หม้อแปลง/มิเตอร์ทั้งหมด → จำนวนผู้ใช้ไฟ + หมู่บ้าน */
+function ntBelow(id){
+  const s=S.sld; if(!s||!s.dev.length) return null;
+  if(!s.kids){ s.kids={}; s.byId={}; s.dev.forEach(d=>{s.byId[d[0]]=d; if(d[7]) (s.kids[d[7]]=s.kids[d[7]]||[]).push(d[0]);}); }
+  const me=s.byId[id]; if(!me) return null;
+  const st=[id], vis={}, tr=[], places=[];
+  while(st.length){ const x=st.pop(); if(vis[x]) continue; vis[x]=1; const d=s.byId[x]; if(!d) continue;
+    if(d[1]==='TRANSFORMER'||d[1]==='MVMETER'||d[1]==='MR'){ tr.push(d); const p=String(d[3]||'').trim(); if(p&&places.indexOf(p)<0) places.push(p); }
+    (s.kids[x]||[]).forEach(k=>st.push(k)); }
+  const sum=tr.reduce((a,d)=>a+(Number(d[8])||0),0);
+  return {dev:me, tr:tr.filter(d=>d[1]==='TRANSFORMER').length, mv:tr.filter(d=>d[1]!=='TRANSFORMER').length, cust:Number(me[9])||sum||null, places};
+}
+function ntPickDev(F,d){ const B=ntBelow(d[0])||{places:[],cust:+d[8]||null,tr:0,mv:0};
+  F.dev={id:d[0],type:d[1],desc:d[3],feeder:d[4],rating:d[2]}; F.feeder=d[4]; F._sld=B;
+  if(B.cust) F.cust=B.cust;
+  const pl=B.places.length?B.places:(d[3]?[d[3]]:[]);
+  if(!F.area||F._autoArea){ F.area=d[3]&&pl.length&&pl[pl.length-1]!==d[3]?d[3]+' → '+pl[pl.length-1]:(d[3]||pl[0]||''); F._autoArea=1; }
+  if(!(F.villages||[]).length||F._autoV){ F.villages=pl.slice(0,6); F._autoV=1; } }
 /* ---------- ฟอร์มสร้าง/แก้ประกาศ ---------- */
 async function ntForm(n0){
   const c=ntCfg(), td=ntNow().slice(0,10);
@@ -209,11 +227,11 @@ async function ntForm(n0){
      <input type="text" id="ntR" value="${esc(F.reason||'')}" placeholder="รายละเอียดสาเหตุ (แสดงบนโปสเตอร์)" style="margin-top:6px">
      <div class="lb">ฟีดเดอร์ / อุปกรณ์ที่ตัดไฟ (SLD) <i>ไม่บังคับ · ค้นได้ทุกอุปกรณ์</i></div>
      <div class="chips">${fd.map(([id,col])=>`<button type="button" class="ch ${F.feeder===id?'on':''}" data-fd="${id}"><span class="dot" style="background:${col}"></span>${id}</button>`).join('')}</div>
-     ${F.dev?`<div class="hit on" style="margin-top:6px"><div><b>${esc(F.dev.id)}</b> ${esc(F.dev.desc||'')}${F.cust?' · ผู้ใช้ไฟ ~'+F.cust+' ราย':''}</div><button type="button" class="lnk" id="ntDevX">เปลี่ยน</button></div>`:`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
+     ${F.dev?`<div class="hit on" style="margin-top:6px"><div><b>${esc(F.dev.id)}</b> ${esc(DEV_TH[F.dev.type]||F.dev.type||'')} ${esc(F.dev.rating||'')} · ${esc(F.dev.desc||'')} · ${esc(F.dev.feeder||'')}${(()=>{ const B=F._sld||ntBelow(F.dev.id); if(!B) return ''; return `<div class="nt-sld">📊 จาก SLD: ${B.tr?'หม้อแปลง '+B.tr+' ลูก · ':''}${B.mv?'มิเตอร์แรงสูง '+B.mv+' ราย · ':''}<b>ผู้ใช้ไฟ ~${B.cust||0} ราย</b>${B.places.length?'<br>พื้นที่: '+esc(B.places.slice(0,8).join(', '))+(B.places.length>8?' และอีก '+(B.places.length-8)+' จุด':''):''}</div>`; })()}</div><button type="button" class="lnk" id="ntDevX">เปลี่ยน</button></div>`:`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div><button type="button" class="lnk" id="ntSldR" style="font-size:12px;margin-top:4px">↻ โหลดข้อมูล SLD ใหม่ (ถ้าเพิ่งแก้ใน SLD)</button>`}
      <div class="lb">พื้นที่ไฟดับ <i>ชื่อที่ชาวบ้านรู้จัก · ใช้ → แบ่ง จาก/ถึง</i></div>
      <input type="text" id="ntA" value="${esc(F.area||'')}" placeholder="เช่น สามแยก ศพด.แหลมสัก → หัวแหลม">
      <div class="grid2" style="margin-top:6px"><input type="text" id="ntSub" value="${esc(F.sub||'')}" placeholder="ต./อ./จ."><input type="text" id="ntV" value="${esc((F.villages||[]).join(', '))}" placeholder="หมู่บ้าน/จุดสังเกต (คั่นด้วย ,)"></div>
-     <label class="tf" style="margin-top:6px">ผู้ใช้ไฟประมาณ (ราย)<input type="number" id="ntC" value="${F.cust||''}" min="0"></label>
+     <label class="tf" style="margin-top:6px">ผู้ใช้ไฟประมาณ (ราย) ${F.dev?'<span class="muted" style="font-weight:400">· คำนวณจาก SLD แก้ได้</span>':''}<input type="number" id="ntC" value="${F.cust||''}" min="0"></label>
      <div class="lb">คำพูดของตัวพูดบนโปสเตอร์ <i>ไม่บังคับ</i></div><textarea id="ntSay" rows="2" placeholder="${esc((emg?NT_SAY.emg:NT_SAY[F.reasonKey]||NT_SAY.other))}">${esc(F.speech||'')}</textarea>
      ${!emg&&!n0?`<div class="lb">📎 หนังสือประกาศ ${esc(c.unit)} (ลงนามแล้ว) <i>แนบทีหลังได้</i></div><label class="nt-drop">📷 ถ่ายรูป / 📄 เลือกไฟล์ (รูป หรือ PDF)<input type="file" id="ntDocIn" accept="image/*,application/pdf" hidden></label><div id="ntDocN" class="muted">${docFile?'✓ '+esc(docFile.name):''}</div>`:''}
      <div id="ntFMsg"></div>
@@ -222,7 +240,7 @@ async function ntForm(n0){
     bind(); };
   const keep=()=>{ const v=id=>{const e=$(id);return e?e.value:null;};
     if(v('ntD')!=null) F.date=v('ntD'); if(v('ntS')!=null){ const h=hmNorm(v('ntS')); if(h) F.start=h; } if(v('ntEn')!=null){ const h=hmNorm(v('ntEn')); if(h) F.end=h; } if(v('ntE')!=null) F.estMin=+v('ntE')||0;
-    F.reason=v('ntR')??F.reason; F.area=v('ntA')??F.area; F.sub=v('ntSub')??F.sub; if(v('ntV')!=null) F.villages=v('ntV').split(/[,،]/).map(x=>x.trim()).filter(Boolean); if(v('ntC')!=null) F.cust=+v('ntC')||null; if(v('ntSay')!=null) F.speech=v('ntSay').trim(); };
+    F.reason=v('ntR')??F.reason; if(v('ntA')!=null&&v('ntA')!==F.area){ F.area=v('ntA'); F._autoArea=0; } F.sub=v('ntSub')??F.sub; if(v('ntV')!=null){ const nv=v('ntV').split(/[,،]/).map(x=>x.trim()).filter(Boolean); if(nv.join(',')!==(F.villages||[]).join(',')){ F.villages=nv; F._autoV=0; } } if(v('ntC')!=null) F.cust=+v('ntC')||null; if(v('ntSay')!=null) F.speech=v('ntSay').trim(); };
   const bind=()=>{
     document.querySelectorAll('#ntF [data-ty]').forEach(b=>b.onclick=()=>{ keep(); F.type=b.dataset.ty; F.reasonKey=NT_RS[F.type][0][0]; F.reason=NT_RS[F.type][0][1]; if(F.type==='emg'){ F.startIn=0; F.estMin=120; } else { F.date=new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10); F.start='08:30'; F.end='16:30'; } draw(); });
     document.querySelectorAll('#ntF [data-si]').forEach(b=>b.onclick=()=>{ keep(); F.startIn=+b.dataset.si; draw(); });
@@ -239,7 +257,8 @@ async function ntForm(n0){
       const tot=L.length; L=L.sort((a,b)=>a[1]-b[1]||String(a[0][0]).localeCompare(String(b[0][0]))).slice(0,20).map(x=>x[0]);
       $('ntHits').innerHTML=L.map((d,i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])}${d[2]?' '+esc(d[2]):''} · ${esc(d[3])}</span><span class="muted" style="white-space:nowrap">${esc(d[4])}${d[8]?' · '+d[8]+' ราย':''}</span></button>`).join('')
         +(tot>L.length?`<div class="muted">พบ ${tot} รายการ — พิมพ์ให้เจาะจงขึ้นเพื่อดูที่เหลือ</div>`:'')+(L.length?'':`<div class="muted">ไม่พบ "${esc(raw)}"${F.feeder?' (ค้นทุกฟีดเดอร์แล้ว)':''} — ลองพิมพ์บางส่วนของรหัส เช่น เลข 4 หลักท้าย</div>`);
-      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); const d=L[+b.dataset.h]; F.dev={id:d[0],type:d[1],desc:d[3],feeder:d[4]}; F.feeder=d[4]; F.cust=custBelow(d[0])||(+d[8]||null)||F.cust; if(!F.area&&d[3]) F.area=d[3]; draw(); }); };
+      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); ntPickDev(F,L[+b.dataset.h]); draw(); toast('เติมข้อมูลจาก SLD แล้ว — ตรวจ/แก้ได้'); }); };
+    if($('ntSldR')) $('ntSldR').onclick=async()=>{ keep(); LS.del('sld'); S.sld=null; $('ntSldR').textContent='กำลังโหลด…'; await sldData(); toast('โหลดข้อมูล SLD ใหม่แล้ว ('+((S.sld&&S.sld.dev.length)||0)+' อุปกรณ์)'); draw(); };
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
       if(!String(F.area||'').trim()){ msg('ntFMsg','ใส่พื้นที่ไฟดับ','err'); return; }

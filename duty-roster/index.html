@@ -102,7 +102,7 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .ntov{position:fixed;inset:0;background:#F4F1F6;z-index:40;overflow:auto;-webkit-overflow-scrolling:touch}
 .nt-hd{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;background:var(--pri,#5C1A63);color:#fff;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top))}.nt-hd .lnk{color:#fff;font-weight:700}
 .nt-bd{max-width:560px;margin:0 auto;padding:12px 12px 90px}
-#ntF input[type=text],#ntF input[type=search],#ntF input[type=url],#ntF textarea,#ntSet input[type=text],#ntSet input[type=url]{width:100%;box-sizing:border-box}#ntF .grid3 input.hm{max-width:none}#ntQ{border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:14px}
+#ntF input[type=text],#ntF input[type=search],#ntF input[type=url],#ntF textarea,#ntSet input[type=text],#ntSet input[type=url]{width:100%;box-sizing:border-box}#ntF .grid3 input.hm{max-width:none}#ntF .nt-sld{margin-top:4px;font-size:12px;color:#2A4A8A;background:#EEF2FB;border-radius:8px;padding:4px 8px;line-height:1.45}#ntQ{border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:14px}
 .nt-card{background:#fff;border-radius:14px;padding:10px 12px;margin-top:10px}.nt-card h4{margin:0 0 4px;color:#4A1B66}
 .nt-row{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #F0EAF3;padding:8px 0;font:inherit;cursor:pointer;color:var(--ink)}.nt-row:last-child{border:0}
 .nt-dt{width:44px;text-align:center;border-radius:9px;background:#F3E9F5;color:#4A1B66;font-weight:800;line-height:1.1;padding:4px 0;font-size:16px;flex:none}.nt-dt small{display:block;font-size:10px}.nt-row.em .nt-dt{background:#FDECEC;color:#A12A2A}
@@ -2731,6 +2731,6 @@ $('sSave').onclick=async()=>{
 <script>
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);});
 </script>
-<script src="notice/nt.js?v=2"></script>
+<script src="notice/nt.js?v=3"></script>
 </body>
 </html>
