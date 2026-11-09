@@ -983,7 +983,9 @@ function boxWx_() {
   } catch (e) { return null; }
 }
 /** ตลาด 4 ตัว (Yahoo Finance ฟรี · จำไว้ 10 นาที) */
-const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 0, off: 'boxGoldOffset' }, { n: 'บิตคอยน์', s: 'BTC-USD', d: 0 }, { n: 'USD/THB', s: 'THB=X', d: 2 }, { n: 'SET', s: '^SET.BK', d: 2 }];
+// pip = ขนาด 1 หน่วยที่นับ · u = คำเรียก · pd = ทศนิยมของจำนวน pip/จุด
+const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 1, off: 'boxGoldOffset', pip: 0.1, u: 'pips', pd: 0 }, { n: 'บิตคอยน์', s: 'BTC-USD', d: 0, pip: 1, u: 'จุด', pd: 0 },
+  { n: 'USD/THB', s: 'THB=X', d: 2, pip: 0.01, u: 'pips', pd: 0 }, { n: 'SET', s: '^SET.BK', d: 2, pip: 1, u: 'จุด', pd: 2 }];
 function boxMk_() {
   const cache = CacheService.getScriptCache(), hit = cache.get('boxMk');
   if (hit) return JSON.parse(hit);
@@ -995,11 +997,19 @@ function boxMk_() {
     }));
     out = BOX_MK_.map(function (m, i) {
       try {
-        const meta = JSON.parse(res[i].getContentText()).chart.result[0].meta, p = Number(meta.regularMarketPrice), pc = Number(meta.chartPreviousClose || meta.previousClose);
+        const r0 = JSON.parse(res[i].getContentText()).chart.result[0], meta = r0.meta, p = Number(meta.regularMarketPrice), pc = Number(meta.chartPreviousClose || meta.previousClose);
+        const q = (r0.indicators && r0.indicators.quote && r0.indicators.quote[0]) || {}, op = Number((q.open || [])[0]);   // ราคาเปิดของวันนี้ (ตามเวลาเปิดของแต่ละตลาด)
         if (!isFinite(p)) return null;
         const off = m.off ? Number(cfg[m.off]) || 0 : 0;   // ทองฟิวเจอร์ส → หัก offset ให้ใกล้ราคาสปอต (ตั้งใน Config: boxGoldOffset)
         const pct = isFinite(pc) && pc ? (p - pc) / pc * 100 : 0;
-        return { n: m.n, p: (p - off).toFixed(m.d).replace(/\B(?=(\d{3})+(?!\d))/g, ','), c: Math.round(pct * 10) / 10 };
+        const fmt = function (v, d) { return v.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+        const o = { n: m.n, p: fmt(p - off, m.d), c: Math.round(pct * 10) / 10 };
+        if (isFinite(op) && op > 0) {
+          const k = (p - op) / m.pip, kr = m.pd ? Math.round(k * 100) / 100 : Math.round(k);
+          o.o = fmt(op - off, m.d); o.u = kr > 0 ? 1 : kr < 0 ? -1 : 0;
+          o.dt = (kr > 0 ? '+' : kr < 0 ? '−' : '') + fmt(Math.abs(kr), m.pd) + ' ' + m.u;
+        }
+        return o;
       } catch (e) { return null; }
     }).filter(function (x) { return x; });
   } catch (e) { out = []; }

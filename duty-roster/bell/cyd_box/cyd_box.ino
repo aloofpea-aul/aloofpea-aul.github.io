@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.6"
+#define FW_VER "1.7"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -102,7 +102,7 @@ struct Net {
   int ring = 0, n = 0, min = 0; String id, text; bool test = false;
   String duty[6]; int nDuty = 0; String crew[6]; int nCrew = 0; int open = 0, today = 0; Job jobs[6]; int nJobs = 0; String app;
   bool wxOk = false; int wxLv = 0, wxT = 0, wxRh = 0, wxGust = 0; String wxLabel, wxCond, wxAt; String wxH[6]; int wxP[6]; int wxN = 0;
-  String mkAt; String mkN[4], mkP[4]; float mkC[4]; int mkCount = 0;
+  String mkAt; String mkN[4], mkP[4], mkO[4], mkD[4]; float mkC[4]; int mkU[4]; int mkCount = 0;
   int rot[3] = {20, 10, 5};   // วินาที: หน้าเวร / อากาศ / ตลาด (ระบบตั้งได้ · 0 = ไม่แสดงหน้านั้น)
 } net;
 SemaphoreHandle_t mtx;
@@ -168,7 +168,8 @@ void doPoll(bool ack, const String& by, bool light) {
     net.mkCount = 0; net.mkAt = String((const char*)(mk["at"] | ""));
     for (JsonObject it : mk["items"].as<JsonArray>()) {
       if (net.mkCount >= 4) break;
-      net.mkN[net.mkCount] = String((const char*)(it["n"] | "")); net.mkP[net.mkCount] = String((const char*)(it["p"] | "")); net.mkC[net.mkCount] = it["c"] | 0.0f; net.mkCount++;
+      net.mkN[net.mkCount] = String((const char*)(it["n"] | "")); net.mkP[net.mkCount] = String((const char*)(it["p"] | "")); net.mkC[net.mkCount] = it["c"] | 0.0f;
+      net.mkO[net.mkCount] = String((const char*)(it["o"] | "")); net.mkD[net.mkCount] = String((const char*)(it["dt"] | "")); net.mkU[net.mkCount] = it["u"] | 0; net.mkCount++;
     }
     net.nJobs = 0;
     for (JsonObject j : doc["jobs"].as<JsonArray>()) {
@@ -600,15 +601,17 @@ void showMk() {
   scr = S_MK; pageAt = millis();
   lv_obj_t* s = mkScr();
   lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE); lv_obj_add_event_cb(s, backHome, LV_EVENT_CLICKED, nullptr);
-  lbl(s, "ตลาด · อัปเดต " + snap.mkAt + " (ล่าช้า)", &font_th16, C_MUTED, 8, 2, 260);
+  lbl(s, "ตลาด · เทียบราคาเปิดวันนี้ · " + snap.mkAt, &font_th16, C_MUTED, 8, 2, 262);
   pageDots(s, 2);
   for (int i = 0; i < snap.mkCount; i++) {
-    lv_obj_t* r = box(s, 8, 32 + i * 51, 304, 46, C_CARD, 8);
+    lv_obj_t* r = box(s, 6, 30 + i * 52, 308, 49, C_CARD, 8);
     lv_obj_clear_flag(r, LV_OBJ_FLAG_CLICKABLE);
-    lbl(r, snap.mkN[i], &font_th20, C_TEXT, 10, 7, 100);
-    lv_obj_t* pl = lbl(r, snap.mkP[i], &font_th20, C_TEXT, 108, 7, 100); lv_obj_set_style_text_align(pl, LV_TEXT_ALIGN_RIGHT, 0);
-    float c = snap.mkC[i]; char cb[16]; snprintf(cb, sizeof cb, "%s %s%.1f%%", c > 0.05f ? "▲" : c < -0.05f ? "▼" : "●", c > 0.05f ? "+" : c < -0.05f ? "−" : "", fabs(c));
-    lv_obj_t* cl = lbl(r, cb, &font_th20, c > 0.05f ? 0x4ADE80 : c < -0.05f ? 0xF87171 : C_MUTED, 210, 7, 86); lv_obj_set_style_text_align(cl, LV_TEXT_ALIGN_RIGHT, 0);
+    lbl(r, snap.mkN[i], &font_th20, C_TEXT, 10, -3, 140);
+    lbl(r, snap.mkO[i].length() ? "เปิด " + snap.mkO[i] : String("ยังไม่มีราคาเปิด"), &font_th16, 0xA79DB3, 10, 23, 140);
+    lv_obj_t* pl = lbl(r, snap.mkP[i], &font_th20, C_TEXT, 150, -3, 148); lv_obj_set_style_text_align(pl, LV_TEXT_ALIGN_RIGHT, 0);
+    int u = snap.mkU[i];
+    String dt = snap.mkD[i].length() ? String(u > 0 ? "▲ " : u < 0 ? "▼ " : "● ") + snap.mkD[i] : String("");
+    lv_obj_t* dl = lbl(r, dt, &font_th16, u > 0 ? 0x4ADE80 : u < 0 ? 0xF87171 : C_MUTED, 150, 23, 148); lv_obj_set_style_text_align(dl, LV_TEXT_ALIGN_RIGHT, 0);
   }
   loadScr(s);
 }
