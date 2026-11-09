@@ -1435,7 +1435,7 @@ function repTrack_(month) {
       const left = d0 ? dayDiff_(today, d0) : null;
       out.push({ k: k, d: i + 1, p: p, label: p === 'p1' ? 'ช่วง 1' : (names.some(function (n) { return cHas_(mo.data.emp[n][i], '2'); }) ? 'ช่วง 2+3' : 'ช่วง 3'),
         names: names, insp: insp, st: st, due: d0, left: left, over: left != null && left < 0,
-        printed: r && r.printed ? r.printed : null, received: r && r.received ? r.received : null });
+        printed: r && r.printed ? r.printed : null, printedBy: r && r.printedBy ? r.printedBy : null, nPrint: r ? repPrints_(r).length : 0, received: r && r.received ? r.received : null });
     });
   });
   return out;
@@ -1491,11 +1491,35 @@ function repSetMeta_(k, patch) {
   }
   return false;
 }
+/** ประวัติการพิมพ์ของชุดเวร (ข้อมูลเก่ามีแค่ printed = เวลา) */
+function repPrints_(r) { return Array.isArray(r.prints) ? r.prints : (r.printed ? [{ at: String(r.printed), by: String(r.printedBy || '') }] : []); }
+/** ผู้พิมพ์: ผู้อนุมัติ (PIN/บัญชี) · ลิงก์ LINE (คนอยู่เวร/ผู้ตรวจ) · บัญชีศูนย์รวมงาน · หรือชื่อที่เลือกเอง (ต้องมีในรายชื่อ) */
+function printerOf_(b) {
+  const w = approverOf_(b); if (w) return w.short || w.name;
+  if ((b.r === 'duty' || b.r === 'insp') && b.t && Number(b.x) > Date.now() && repToken_(String(b.rk || ''), b.u, b.r, b.x) === b.t) return String(b.u);
+  if (b.hubUser && b.hubPass && hubAllowed_(String(b.hubUser), String(b.hubPass))) {
+    const nn = normN_(b.hubUser), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
+    return pr ? pr.short : String(b.hubUser).slice(0, 40);
+  }
+  const n = String(b.by || '').trim();
+  if (n && (readTable_(SH.PEOPLE).some(function (p) { return p.short === n; }) || approverList_().some(function (a) { return a.short === n; }))) return n;
+  throw new Error('เลือกชื่อผู้พิมพ์ก่อน');
+}
 /** พิมพ์แล้ว (ใครก็ได้ที่กดพิมพ์จากแอป) / รับเอกสารแล้ว (ผู้อนุมัติ) / เตือนซ้ำ (ผู้อนุมัติ) */
 function repMark_(b) {
   const at = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   const keys = (Array.isArray(b.keys) ? b.keys : [b.k]).map(String).filter(function (k) { return /^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k); }).slice(0, 70);
-  if (b.what === 'printed') { let n = 0; keys.forEach(function (k) { if (repSetMeta_(k, { printed: at })) n++; }); return { n: n }; }
+  if (b.what === 'printed') {   // บันทึกว่าใครพิมพ์ เมื่อไร ครั้งที่เท่าไร (เก็บ 20 ครั้งล่าสุดต่อชุด)
+    const by = printerOf_(b), cnt = {}, RM = {};
+    keys.forEach(function (k) {
+      const m = k.slice(0, 7); if (!RM[m]) RM[m] = reportsOf_(m);
+      const r = RM[m][k]; if (!r) return;
+      const L = repPrints_(r).concat([{ at: at, by: by }]).slice(-20);
+      if (repSetMeta_(k, { printed: at, printedBy: by, prints: L })) cnt[k] = L.length;
+    });
+    const ks = Object.keys(cnt); if (ks.length) log_(by, 'พิมพ์บัญชีลงนาม', ks[0].slice(0, 7), ks.join(','));
+    return { n: ks.length, at: at, by: by, cnt: cnt };
+  }
   const who = approverOf_(b); if (!who) throw new Error('เฉพาะผู้อนุมัติ (ใส่ PIN หรือเข้าด้วยบัญชีศูนย์รวมงานของผู้อนุมัติ)');
   if (b.what === 'received' || b.what === 'unreceive') {
     let n = 0; keys.forEach(function (k) { if (repSetMeta_(k, { received: b.what === 'received' ? at + ' ' + (who.short || who.name) : null })) n++; });

@@ -58,7 +58,12 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .days button.on i.cd{background:#FFD27A}
 .days button i.rqb{position:absolute;bottom:2px;left:50%;margin-left:-9px;width:18px;height:3px;border-radius:2px;background:#C92A2A}.days button.on i.rqb{background:#fff}.days button.rqd i.cd{bottom:7px}
 .oiss{border-radius:8px;padding:5px 8px;margin-top:5px;font-size:12.5px;line-height:1.35}.oiss.r{background:#FDECEC;color:#9B1C1C}.oiss.y{background:#FFF1D6;color:#7A4A00}.oiss.g{background:#E6F4E8;color:#1F5A2A;margin-top:8px}
-.oiss.b{background:#E3E6FA;color:#26307A}.osus{border:1.5px solid #F2C2C2;background:#FFF8F8;border-radius:12px;padding:8px 10px;margin-bottom:10px}.osus summary{cursor:pointer;font-weight:700;color:#8A1F1F}.osi{border-top:1px solid #F2D6D6;padding:7px 0;font-size:13.5px;line-height:1.5}.osi .btn{float:right;height:30px;padding:0 12px;font-size:13px;margin-left:8px}.osi .otg{display:inline-block;background:#FDECEC;color:#8A1F1F;border-radius:8px;padding:0 7px;font-size:12px;font-weight:700;margin-right:4px}.oiss.ochk{font-size:13.5px;padding:8px 10px}.osg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.osg button{background:#fff;border:1.5px solid #C92A2A;color:#8A1F1F;border-radius:16px;padding:5px 11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.osg.y button{border-color:#A06A00;color:#7A4A00}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
+.oiss.b{background:#E3E6FA;color:#26307A}.prp{display:inline-block;border-radius:8px;padding:1px 7px;font-size:11.5px;font-weight:700;margin-top:3px}.prp.g{background:#E6F4E8;color:#1F5A2A}.prp.o{background:#FFF1D6;color:#7A4A00}
+.prl{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin:8px 0;font-size:13.5px;line-height:1.7}.prw{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+.prh{margin-top:8px;font-size:13px}.prh summary{cursor:pointer;color:var(--pri);font-weight:700}.prh div{padding:2px 0 0 6px}
+.pst{position:absolute;top:3mm;right:5mm;z-index:2;font-family:sans-serif}.pfoot{position:absolute;bottom:4mm;right:12mm;font-size:8.5pt;color:#555;font-family:inherit}
+@media print{.pst{display:none!important}}
+.osus{border:1.5px solid #F2C2C2;background:#FFF8F8;border-radius:12px;padding:8px 10px;margin-bottom:10px}.osus summary{cursor:pointer;font-weight:700;color:#8A1F1F}.osi{border-top:1px solid #F2D6D6;padding:7px 0;font-size:13.5px;line-height:1.5}.osi .btn{float:right;height:30px;padding:0 12px;font-size:13px;margin-left:8px}.osi .otg{display:inline-block;background:#FDECEC;color:#8A1F1F;border-radius:8px;padding:0 7px;font-size:12px;font-weight:700;margin-right:4px}.oiss.ochk{font-size:13.5px;padding:8px 10px}.osg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.osg button{background:#fff;border:1.5px solid #C92A2A;color:#8A1F1F;border-radius:16px;padding:5px 11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.osg.y button{border-color:#A06A00;color:#7A4A00}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
 .rqp{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}.rqp.o{background:#FFF1D6;color:#7A4A00}.rqp.r{background:#FDECEC;color:#9B1C1C}.rqp.b{background:#E3E6FA;color:#26307A}.rqp.g{background:#E6F4E8;color:#1F5A2A}.rqp.n{background:#EEE;color:#555}
 .rqov{position:fixed;inset:0;background:rgba(20,10,25,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:10px}
 .rqsh{background:#fff;border-radius:18px;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -336,7 +341,7 @@ fieldset:disabled{opacity:.55}
       <div id="dRows" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="card hide" id="dRep"></div>
     <div class="card" id="dWx"></div>
-    <button class="btn ghost hide" id="dSign" style="width:100%">พิมพ์บัญชีลงนามการอยู่เวรของวันนี้</button>
+    <button class="btn ghost hide" id="dSign" style="width:100%">🖨 พิมพ์บัญชีลงนามการอยู่เวรของวันนี้</button>
   </main>
 
   <!-- ============ สร้างเวร ============ -->
@@ -864,14 +869,14 @@ async function drawTrack(){
   const PA=$('printArea'); if(!trackOf(key).length) PA.innerHTML='<div class="loading">กำลังโหลด…</div>';
   const paint=L=>{
     if($('rKind').value!=='track'||$('rMonth').value!==key) return;
-    const cnt=t=>L.filter(t).length, S0=[['r','เกินกำหนด',x=>(x.st==='fill'||x.st==='insp')&&x.over],['o','รอกรอก',x=>x.st==='fill'&&!x.over],['b','รอผู้ตรวจ',x=>x.st==='insp'&&!x.over],['g','รอรับเอกสาร',x=>x.st==='recv'],['n','ปิดแล้ว',x=>x.st==='done']];
-    const pill=x=>x.st==='done'?'<span class="rqp n">✓ ปิด</span>':x.st==='recv'?`<span class="rqp g">${x.printed?'พิมพ์แล้ว':'ตรวจแล้ว · ยังไม่พิมพ์'}</span>`:`<span class="rqp ${x.over?'r':x.st==='insp'?'b':'o'}">${x.st==='insp'?'รอผู้ตรวจ · ':''}${dueTxt(x)}</span>`;
+    const cnt=t=>L.filter(t).length, S0=[['r','เกินกำหนด',x=>(x.st==='fill'||x.st==='insp')&&x.over],['o','รอกรอก',x=>x.st==='fill'&&!x.over],['b','รอผู้ตรวจ',x=>x.st==='insp'&&!x.over],['o','รอพิมพ์',x=>x.st==='recv'&&!x.printed],['g','พิมพ์แล้ว รอรับ',x=>x.st==='recv'&&x.printed],['n','ปิดแล้ว',x=>x.st==='done']];
+    const pill=x=>x.st==='done'?'<span class="rqp n">✓ ปิด</span>'+(x.printed?`<div class="muted" style="font-size:11.5px">พิมพ์${x.nPrint>1?' ×'+x.nPrint:''} ${esc(prAt(x.printed))}${x.printedBy?' · '+esc(x.printedBy):''}</div>`:''):x.st==='recv'?(x.printed?`<span class="rqp g">พิมพ์แล้ว${x.nPrint>1?' ×'+x.nPrint:''}</span><div class="muted" style="font-size:11.5px">${esc(prAt(x.printed))}${x.printedBy?' · '+esc(x.printedBy):''}</div>`:'<span class="rqp o">ตรวจแล้ว · ยังไม่พิมพ์</span>'):`<span class="rqp ${x.over?'r':x.st==='insp'?'b':'o'}">${x.st==='insp'?'รอผู้ตรวจ · ':''}${dueTxt(x)}</span>`;
     const act=x=>x.st==='fill'||x.st==='insp'?`<button class="btn ghost" data-nudge="${x.k}" style="height:32px;padding:0 10px;font-size:12px" title="ส่ง LINE เตือนซ้ำ">🔔</button>`:x.st==='recv'?`<button class="btn" data-recv="${x.k}" style="height:32px;padding:0 10px;font-size:12px">รับแล้ว</button>`:`<button class="lnk" data-unrecv="${x.k}" style="font-size:11px">ยกเลิก</button>`;
     const order={fill:0,insp:1,recv:2,done:3}, rows=L.slice().sort((a,b)=>(b.over-a.over)||(order[a.st]-order[b.st])||(a.left??99)-(b.left??99)||a.k.localeCompare(b.k));
     PA.innerHTML=`<div class="card" style="max-width:760px;margin:0 auto 10px"><div class="row" style="gap:6px;flex-wrap:wrap">${S0.map(([c,l,t])=>`<span class="rqp ${c}">${l} ${cnt(t)}</span>`).join('')}</div>
       <div class="muted" style="margin-top:6px">กำหนดส่ง 3 วันหลังวันเข้าเวร · ผู้ตรวจเวรตรวจภายใน 3 วันหลังกรอก · ติดตามตั้งแต่ ${esc(S.trackFrom||'28 ต.ค. 2569')}</div></div>
       <div class="card" style="max-width:760px;margin:0 auto">${rows.length?`<table class="trk"><tr><th>เวร</th><th>คนอยู่เวร / ผู้ตรวจ</th><th>สถานะ</th><th></th></tr>${rows.map(x=>`<tr><td style="white-space:nowrap">${x.d} ${esc(x.label)}</td><td>${esc(x.names.join(', '))}<div class="muted" style="font-size:11.5px">ตรวจ: ${esc(x.insp||'—')}${x.received?' · รับ '+esc(x.received):''}</div></td><td>${pill(x)}</td><td style="text-align:right">${act(x)}</td></tr>`).join('')}</table>`:'<div class="muted">ยังไม่มีชุดเวรที่ต้องติดตามในเดือนนี้</div>'}
-      <div class="muted" style="margin-top:8px">🔔 ส่ง LINE เตือนซ้ำทันที · "พิมพ์แล้ว" บันทึกเองเมื่อกดพิมพ์บัญชีลงนามจากแอป · "รับแล้ว" = ได้รับเอกสารลงนามครบ ปิดเรื่อง</div><div id="trkMsg"></div></div>`;
+      <div class="muted" style="margin-top:8px">🔔 ส่ง LINE เตือนซ้ำทันที · "พิมพ์แล้ว" บันทึกเองพร้อมชื่อผู้พิมพ์ เมื่อกดพิมพ์บัญชีลงนามจากแอป · "รับแล้ว" = ได้รับเอกสารลงนามครบ ปิดเรื่อง</div><div id="trkMsg"></div></div>`;
     const auth=()=>{ const c=hubCreds(); if(c.user){ const me=meInfo(); if(me.appr) return {hubUser:c.user,hubPass:c.pass}; } const pin=prompt('PIN ผู้อนุมัติ'); return pin?{pin}:null; };
     const run=async(what,k)=>{ const a=auth(); if(!a) return; msg('trkMsg','กำลังบันทึก…');
       try{ const j=await apiPost(Object.assign({action:'repMark',what,keys:[k]},a)); msg('trkMsg',what==='nudge'?'ส่ง LINE เตือนแล้ว '+j.result.n+' คน':'บันทึกแล้ว ✓'); await loadTrack(key,true); }catch(e){ msg('trkMsg',e.message,'err'); } };
@@ -891,13 +896,15 @@ async function renderRepCard(data){
   const insp=(data.insp||[])[d-1]||'', ip=(S.boot.inspectors||[]).find(x=>x.short===insp);
   const parts=data.days[d-1].off?[['p1','ช่วง 1'],['p3','ช่วง 2+3']]:[['p1','ช่วง 1'],['p2','เวลาทำการ'],['p3','ช่วง 3']];
   const T=trackOf(key), st0=k=>{const r=R[k]; if(!r) return '<span class="rs0">ยังไม่กรอก</span>'; return '<span class="rs1">กรอกแล้ว</span>'+(r.insp&&r.insp.complete!=null?' · <span class="rs2">ตรวจแล้ว</span>':'');};
-  const st=k=>{ if(k.endsWith('p2')){ const n=OD.filter(o=>o.k===k).length; return n?'<span class="rs1">ไฟดับ '+n+' ครั้ง</span>':'<span class="muted">บันทึกไฟดับ</span>'; } const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':''); };
+  const st=k=>{ if(k.endsWith('p2')){ const n=OD.filter(o=>o.k===k).length; return n?'<span class="rs1">ไฟดับ '+n+' ครั้ง</span>':'<span class="muted">บันทึกไฟดับ</span>'; } const x=T.find(y=>y.k===k); return st0(k)+(x&&(x.st==='fill'||x.st==='insp')?' <span class="rqp '+(x.over?'r':'o')+'">'+dueTxt(x)+'</span>':'')+(R[k]&&R[k].insp&&R[k].insp.complete!=null?'<br>'+prStat(R[k],true):''); };
   loadTrack(key);
   el.innerHTML=outSuspHtml()+`<div class="row" style="justify-content:space-between"><h3 style="margin:0">รายงานการอยู่เวร</h3>
       <span class="muted">ผู้ตรวจเวร: <b style="color:var(--ink)">${esc(ip?ip.full:insp||'—')}</b> <a href="#" id="inspChg" style="font-size:12px">เปลี่ยน</a></span></div>
     <div class="${parts.length>2?'grid3':'grid2'}" style="margin-top:8px">${parts.map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p;
       return `<button class="btn ${S.repOpen===k?'':'ghost'}" data-k="${k}" style="height:auto;min-height:46px;padding:6px 8px;line-height:1.3">${l}<br><small style="font-weight:400">${st(k)}</small></button>`;}).join('')}</div>
     ${OD.length?`<div class="muted" style="margin-top:6px">⚡ ไฟดับวันนี้: แรงสูง ${OT.hv.n} ครั้ง · แรงต่ำ ${OT.lv.n} ครั้ง${OT.temp.length?' · แก้ชั่วคราว '+OT.temp.length:''}</div>`:''}
+    ${(()=>{ const H=parts.filter(([p])=>p!=='p2').map(([p,l])=>{const k=key+'-'+String(d).padStart(2,'0')+'|'+p; return prPrints(R[k]).map((x,i)=>[x,l,i+1]);}).flat().sort((a,b)=>String(b[0].at).localeCompare(String(a[0].at)));
+      return H.length?`<details class="prh"><summary>ประวัติการพิมพ์บัญชีลงนาม (${H.length})</summary>${H.map(([x,l,n])=>`<div>• ${esc(prAt(x.at))} — ${esc(x.by||'ไม่ทราบชื่อ')} · ${esc(l)} (ครั้งที่ ${n})</div>`).join('')}</details>`:''; })()}
     <div id="repEd"></div>`;
   bindSusp();
   el.querySelectorAll('button[data-k]:not([data-sus])').forEach(b=>b.onclick=()=>{S.repOpen=S.repOpen===b.dataset.k?null:b.dataset.k;renderRepCard(data);});
@@ -1869,7 +1876,8 @@ async function drawDocs(k){
     el.value=[...el.options].some(o=>o.value===old)?old:'all';
     const list=el.value==='all'?days.map(d=>d.d):[+el.value];
     const [R,OUT]=await Promise.all([monthReports(key),monthOutages(key).catch(()=>[])]), kk=(d,p)=>key+'-'+String(d).padStart(2,'0')+'|'+p, ax=$('rAnnex').checked;
-    const one=(d,p)=>{const OL=OUT.filter(o=>o.k===kk(d,p)); return signPage(key,mo.data,null,d,cfg,p,R[kk(d,p)],sg,OL)+(ax&&OL.length?outAnnexPage(sheetInfo(key,mo.data,d,p),OL):'');};
+    const wrap=(h,k)=>{ const r=R[k]; return h.replace('<div class="page a4p">',`<div class="page a4p" data-sk="${k}" style="position:relative">`+(r?`<div class="pst">${prStat(r)}</div>`:'')).replace(/<\/div>\s*$/,`<div class="pfoot">${r?prFoot(r):''}</div></div>`); };
+    const one=(d,p)=>{const OL=OUT.filter(o=>o.k===kk(d,p)); return wrap(signPage(key,mo.data,null,d,cfg,p,R[kk(d,p)],sg,OL),kk(d,p))+(ax&&OL.length?outAnnexPage(sheetInfo(key,mo.data,d,p),OL):'');};
     S.signKeys=list.flatMap(d=>['p1','p3'].map(p=>kk(d,p))).filter(x=>R[x]);
     PA.innerHTML=list.map(d=>one(d,'p1')+one(d,'p3')).join('');
     return;
@@ -1989,6 +1997,43 @@ function item7(OL,other){
     <div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));column-gap:4mm;padding-left:6mm">${items.map((t,i)=>`<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">(${THD(i+1)}) ${esc(t)}</div>`).join('')}</div>
     ${other?`<div style="padding-left:6mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">เพิ่มเติม: ${esc(other)}</div>`:''}</div>`;
 }
+/* ประวัติการพิมพ์บัญชีลงนาม: ใครพิมพ์ เมื่อไร ครั้งที่เท่าไร */
+const prPrints=r=>!r?[]:Array.isArray(r.prints)?r.prints:(r.printed?[{at:String(r.printed),by:String(r.printedBy||'')}]:[]);
+const prAt=at=>{ const m=String(at||'').match(/^(\d{4})-(\d\d)-(\d\d) (\d\d:\d\d)/); return m?(+m[3])+' '+TH_MS[+m[2]-1]+' '+m[4]:String(at||''); };
+function prStat(r,short){ const L=prPrints(r); if(!L.length) return '<span class="prp o">🖨 ยังไม่พิมพ์</span>'; const x=L[L.length-1];
+  return `<span class="prp g">🖨 พิมพ์แล้ว${L.length>1?' ×'+L.length:''} ${esc(short?String(x.at).slice(11,16):prAt(x.at))}${x.by?' · '+esc(x.by):''}</span>`; }
+function prFoot(r){ const L=prPrints(r); if(!L.length) return ''; const x=L[L.length-1]; return 'พิมพ์จากระบบตารางเวร '+esc(prAt(x.at))+(x.by?' · '+esc(x.by):'')+' · ครั้งที่ '+L.length; }
+function prWho(){ const a=S.repAuth; if(a&&a.u) return a.u; const m=meInfo()||{}; if(m.appr) return m.appr.short||m.appr.name; if(m.p) return m.p.short; return ''; }
+function prAuth(){ const a=S.repAuth, c=hubCreds(); if(S.outPin) return {pin:S.outPin}; if(c.user&&c.pass) return {hubUser:c.user,hubPass:c.pass}; if(a&&a.t) return {u:a.u,r:a.r,x:a.x,t:a.t,rk:a.k}; return {}; }
+function printSignDialog(keys){
+  const key=keys[0].slice(0,7), R=(S.reps&&S.reps[key])||{}, who=prWho();
+  const lbl=k=>{ const d=+k.slice(8,10), mo=S.months[key], dy=mo&&mo.data.days[d-1]; return d+' '+TH_MS[+k.slice(5,7)-1]+' '+(k.endsWith('p1')?'ช่วง 1':dy&&dy.off?'ช่วง 2+3':'ช่วง 3'); };
+  const done=keys.filter(k=>prPrints(R[k]).length);
+  const ppl=[...(S.boot.people.emp||[]).map(p=>p.short),...(S.boot.approvers||[]).map(a=>a.short)].filter((x,i,A)=>x&&A.indexOf(x)===i);
+  const last=LS.get('printBy')||'';
+  const ov=document.createElement('div'); ov.className='rqov';
+  ov.innerHTML=`<div class="rqsh" role="dialog" aria-modal="true"><h4>🖨 พิมพ์บัญชีลงนาม ${keys.length} ชุด</h4>
+    <div class="prl">${keys.slice(0,8).map(k=>`<div>✓ ${esc(lbl(k))} ${prStat(R[k])}</div>`).join('')}${keys.length>8?`<div class="muted">และอีก ${keys.length-8} ชุด (พิมพ์แล้ว ${done.filter(k=>keys.indexOf(k)>=8).length})</div>`:''}</div>
+    ${done.length?`<div class="oiss y" style="font-size:13.5px"><b>🟡 พิมพ์ไปแล้ว ${done.length} ชุด</b>${done.slice(0,3).map(k=>{const x=prPrints(R[k]).slice(-1)[0];return '<br>'+esc(lbl(k))+' — '+esc(x.by||'ไม่ทราบชื่อ')+' · '+esc(prAt(x.at));}).join('')}<br>พิมพ์ซ้ำจะนับเป็นครั้งถัดไป</div>`:''}
+    <div class="lb">บันทึกว่าพิมพ์โดย</div>
+    ${who?`<div class="prw"><b>${esc(who)}</b> <span class="muted">(${S.repAuth&&S.repAuth.u?'ลิงก์จาก LINE':S.outPin?'PIN ผู้อนุมัติ':'บัญชีศูนย์รวมงาน'})</span></div>`
+      :`<select id="prBy" style="width:100%"><option value="">— เลือกชื่อผู้พิมพ์ —</option>${ppl.map(n=>`<option ${n===last?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+    <div id="prMsg"></div>
+    <button type="button" class="btn" id="prGo" style="width:100%;margin-top:10px">🖨 พิมพ์ และบันทึก</button>
+    <button type="button" class="btn ghost" id="prNo" style="width:100%;margin-top:8px">ยกเลิก</button></div>`;
+  document.body.appendChild(ov);
+  $('prNo').onclick=()=>ov.remove();
+  $('prGo').onclick=async()=>{ const by=who||($('prBy')||{}).value||''; if(!by&&!S.outPin){ msg('prMsg','เลือกชื่อผู้พิมพ์ก่อน','err'); return; }
+    if(!who) LS.set('printBy',by);
+    $('prGo').disabled=true; $('prGo').innerHTML='<span class="spin"></span>กำลังบันทึก…';
+    try{ const j=await apiPost(Object.assign({action:'repMark',what:'printed',keys,by},prAuth())), res=j.result||{};
+      Object.keys(res.cnt||{}).forEach(k=>{ const r=R[k]; if(!r) return; r.prints=prPrints(r).concat([{at:res.at,by:res.by}]); r.printed=res.at; r.printedBy=res.by; });
+      LS.set('rp_'+key,R);
+      document.querySelectorAll('#printArea [data-sk]').forEach(pg=>{ const k=pg.dataset.sk, f=pg.querySelector('.pfoot'), st=pg.querySelector('.pst'); if(f) f.innerHTML=prFoot(R[k]); if(st) st.innerHTML=prStat(R[k]); });
+      ov.remove(); (S.track||{})[key]&&loadTrack(key,true); setTimeout(()=>window.print(),80);
+    }catch(e){ $('prGo').disabled=false; $('prGo').textContent='🖨 พิมพ์ และบันทึก'; msg('prMsg',e.message+' — <a href="#" id="prRaw">พิมพ์โดยไม่บันทึก</a>','err');
+      const rw=$('prRaw'); if(rw) rw.onclick=ev=>{ ev.preventDefault(); ov.remove(); window.print(); }; } };
+}
 function signPage(key,data,next,d,cfg,part,rp,sg,OL){
   sg=sg||{name:cfg.mgrName,title:cfg.mgrTitle};
   const I=sheetInfo(key,data,d,part), r=rp||{}, pa=dParts(I.a), pb=dParts(I.b);
@@ -2086,7 +2131,7 @@ function setPageSize(){ const ps=[...document.querySelectorAll('#printArea .page
   let st=$('pgSize'); if(!st){ st=document.createElement('style'); st.id='pgSize'; document.head.appendChild(st); } st.textContent='@page{size:'+k+';margin:0}'; }
 window.addEventListener('beforeprint',setPageSize);
 try{ new MutationObserver(setPageSize).observe($('printArea'),{childList:true}); }catch(e){}
-$('rPrint').onclick=()=>{ setPageSize(); if($('rKind').value==='sign'&&(S.signKeys||[]).length) apiPost({action:'repMark',what:'printed',keys:S.signKeys}).then(()=>{ (S.track||{})[$('rMonth').value]&&loadTrack($('rMonth').value,true); }).catch(()=>{}); window.print(); };
+$('rPrint').onclick=()=>{ setPageSize(); if($('rKind').value==='sign'&&(S.signKeys||[]).length) return printSignDialog(S.signKeys); window.print(); };
 $('rSetStatus').onclick=async()=>{
   const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
   const pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
