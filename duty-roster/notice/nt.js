@@ -52,6 +52,26 @@ async function ntImgs(n){ const c=ntCfg();
   return {sp:await ntRaster(sp,300).catch(()=>sp),logo,qr,map}; }
 /* ---------- แผนที่พื้นที่ไฟดับ (พิกัดจาก SLD + แผนที่ OSM) ---------- */
 const NT_MW=350, NT_MH=166;
+/* ---------- ข้อมูลจากแอป SLD: แนวสายแรงสูงจริง (mv-lines.json) + มิเตอร์แรงต่ำ (lvmeters.json) ---------- */
+const NT_SLDB='../sld-ala/'; let NT_LN=null, NT_LV=null;
+async function ntLines(){ if(NT_LN!==null) return NT_LN; try{ NT_LN=await fetch(NT_SLDB+'mv-lines.json').then(r=>{ if(!r.ok) throw 0; return r.json(); }); }catch(e){ NT_LN=false; } return NT_LN; }
+async function ntLv(){ if(NT_LV) return NT_LV; NT_LV=await fetch(NT_SLDB+'lvmeters.json').then(r=>{ if(!r.ok) throw new Error('โหลดข้อมูลมิเตอร์ไม่สำเร็จ'); return r.json(); }); return NT_LV; }
+const ntKm=(a,b,c,d)=>{ const k=Math.cos(a*Math.PI/180); return Math.hypot(a-c,(b-d)*k)*111.2; };
+// แบ่งแนวสายจริงเป็นช่วงไฟดับ/ไฟปกติ: จุดบนสายเป็นของอุปกรณ์ที่ใกล้ที่สุดในฟีดเดอร์เดียวกัน
+async function ntPolys(g){
+  const LN=await ntLines(); if(!LN||!LN.lines) return null; const s=S.sld, [la0,la1,lo0,lo1]=g.bb, pa=(la1-la0)*.3, po=(lo1-lo0)*.3;
+  const inB=x=>x[0]>=la0-pa&&x[0]<=la1+pa&&x[1]>=lo0-po&&x[1]<=lo1+po;
+  const dv=s.dev.filter(d=>d[4]===g.fd&&+d[5]&&+d[6]);
+  const cls=x=>{ let b1=null,b2=null,e1=1e9,e2=1e9; for(const d of dv){ const e=(d[5]-x[0])*(d[5]-x[0])+(d[6]-x[1])*(d[6]-x[1]); if(e<e1){ e2=e1;b2=b1;e1=e;b1=d; } else if(e<e2){ e2=e;b2=d; } } const d=b1&&b1[0]===g.id?b2:b1; return d&&g.A[d[0]]?1:0; };
+  const out=[]; let hit=0;
+  Object.keys(LN.lines).forEach(f=>LN.lines[f].forEach(l=>{ const v=l.v||[]; if(!v.some(inB)) return;
+    if(f!==g.fd){ out.push({a:0,v}); return; }
+    let cur=null; v.forEach((x,i)=>{ const a=cls(x); if(!cur||cur.a!==a){ if(cur) cur.v.push(x); cur={a,v:i?[v[i-1],x]:[x]}; out.push(cur); } else cur.v.push(x); if(a) hit=1; }); }));
+  return hit?out:null; }
+function ntUpSw(id,n){ const s=S.sld; if(!s||!s.byId) return []; const r=[]; let d=s.byId[(s.byId[id]||[])[7]], g=0; while(d&&g++<80&&r.length<(n||2)){ if(/^(WF|WS|WR|SW|MR|WC)$/.test(d[1])) r.push(d); d=s.byId[d[7]]; } return r; }
+function ntNearTr(fd,la,lo){ const s=S.sld; s._tr=s._tr||{}; const k=fd||'*'; if(!s._tr[k]) s._tr[k]=s.dev.filter(d=>d[1]==='TRANSFORMER'&&+d[5]&&(!fd||d[4]===fd)); let b=null,e=1e9; s._tr[k].forEach(d=>{ const x=ntKm(la,lo,+d[5],+d[6]); if(x<e){e=x;b=d;} }); return b?[b,Math.round(e*1000)]:null; }
+function ntChainHtml(id,tr,m){ const s=S.sld, d=s.byId[id]; if(!d) return ''; const sw=ntUpSw(id,2);
+  return `<span class="nt-chn">${tr?`<a data-pk="${esc(d[0])}">⚡ หม้อแปลง ${esc(d[0])}</a>${m!=null?(m>300?`<em class="far">≈${m} ม. ไกล ควรตรวจสอบ</em>`:`<em>≈${m} ม.</em>`):''}`:''}${sw.map(w=>`<i>›</i><a data-pk="${esc(w[0])}">แยก ${esc(w[0])}${ntPlace(w[3])?' '+esc(ntPlace(w[3])):''}</a>`).join('')}<i>›</i><b>${esc(d[4])}</b></span>`; }
 function ntPlace(t){ t=String(t||'').replace(/\(นำเข้าจาก\s*GIS\)/gi,'').replace(/DCC_?/g,'').replace(/~?\s*\d+(\.\d+)?\s*ม\.?(?=\s|$)/g,'').replace(/\s+/g,' ').trim();
   const m=t.match(/^ใกล้\s*(.+)$/)||t.match(/ใกล้\s+(.+)$/); if(m&&t.replace(m[0],'').trim().length<3) t=m[1].trim();
   return /^[\s\-_.()]*$/.test(t)?'':t; }
@@ -71,7 +91,7 @@ function ntGeo(n){
   const far=(d)=>lab.reduce((m,l)=>Math.min(m,Math.hypot(l[0]-d[5],l[1]-d[6])),1e9);
   for(let k=0;k<3&&tr.length;k++){ let best=null,bd=-1; tr.forEach(d=>{ const t=ntPlace(d[3]); if(!t||seen[t]) return; const f=lab.length?far(d):Math.hypot(d[5]-me[5],d[6]-me[6]); if(f>bd){bd=f;best=d;} }); if(!best||bd<(la1-la0)*.12) break; const bt=ntPlace(best[3]); seen[bt]=1; lab.push([+best[5],+best[6],bt]); }
   const cx=aff.reduce((a,d)=>a+ +d[5],0)/aff.length, cy=aff.reduce((a,d)=>a+ +d[6],0)/aff.length;
-  return {bb:[la0,la1,lo0,lo1], segs, cut:ok(me)?[+me[5],+me[6],ntPlace(me[3])]:null, lab, tr:aff.filter(d=>d[1]==='TRANSFORMER').map(d=>[+d[5],+d[6]]), ctr:[+cx.toFixed(5),+cy.toFixed(5)]};
+  return {A, fd:me[4], id, bb:[la0,la1,lo0,lo1], segs, cut:ok(me)?[+me[5],+me[6],ntPlace(me[3])]:null, lab, tr:aff.filter(d=>d[1]==='TRANSFORMER').map(d=>[+d[5],+d[6]]), ctr:[+cx.toFixed(5),+cy.toFixed(5)]};
 }
 const ntMx=(lo,z)=>(lo+180)/360*256*Math.pow(2,z), ntMy=(la,z)=>{ const r=la*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256*Math.pow(2,z); };
 async function ntMapData(n){
@@ -83,12 +103,13 @@ async function ntMapData(n){
   const P=(la,lo)=>[+((ntMx(lo,z)-ox)*k).toFixed(1),+((ntMy(la,z)-oy)*k).toFixed(1)];
   const tiles=[]; for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+NT_MW/k)/256);tx++) for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+NT_MH/k)/256);ty++) tiles.push({x:(tx*256-ox)*k,y:(ty*256-oy)*k,s:256*k,u:`https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`});
   const toData=u=>fetch(u,{mode:'cors'}).then(r=>{ if(!r.ok) throw 0; return r.blob(); }).then(b=>new Promise(r=>{const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b);}));
+  g.poly=await ntPolys(g).catch(()=>null);
   const got=await Promise.all(tiles.map(t=>Promise.race([toData(t.u),new Promise((_,j)=>setTimeout(j,6000))]).then(d=>(t.d=d,1)).catch(()=>0)));
   return {g,P,z,tiles:got.every(Boolean)?tiles:[],all:tiles};
 }
 function ntMapHtml(m,emg){
   if(!m) return ''; const {g,P,tiles}=m, red=emg?'#E8590C':'#E03131';
-  const L=(f)=>g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
+  const L=(f)=>g.poly?g.poly.filter(q=>q.a===f).map(q=>q.v.map((x,i)=>{ const a=P(x[0],x[1]); return (i?'L':'M')+a[0]+' '+a[1]; }).join('')).join(''):g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
   const cut=g.cut&&P(g.cut[0],g.cut[1]);
   const R=[]; const pin=(xy,t,cls)=>{ t=String(t).length>24?String(t).slice(0,23)+'…':t; const w=Math.min(200,String(t).length*6.2+14), hgt=18, l=xy[0]+7+w>NT_MW-4;
     let x=l?xy[0]-7-w:xy[0]+7, y=Math.max(2,Math.min(NT_MH-38,xy[1]-9));
@@ -317,9 +338,21 @@ async function ntForm(n0){
       let L=s.dev.map(d=>[d,rank(d)]).filter(x=>x[1]<9);
       const inF=F.feeder?L.filter(x=>x[0][4]===F.feeder):L; if(inF.length) L=inF;
       const tot=L.length; L=L.sort((a,b)=>a[1]-b[1]||String(a[0][0]).localeCompare(String(b[0][0]))).slice(0,20).map(x=>x[0]);
-      $('ntHits').innerHTML=L.map((d,i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])}${d[2]?' '+esc(d[2]):''} · ${esc(d[3])}</span><span class="muted" style="white-space:nowrap">${esc(d[4])}${d[8]?' · '+d[8]+' ราย':''}</span></button>`).join('')
-        +(tot>L.length?`<div class="muted">พบ ${tot} รายการ — พิมพ์ให้เจาะจงขึ้นเพื่อดูที่เหลือ</div>`:'')+(L.length?'':`<div class="muted">ไม่พบ "${esc(raw)}"${F.feeder?' (ค้นทุกฟีดเดอร์แล้ว)':''} — ลองพิมพ์บางส่วนของรหัส เช่น เลข 4 หลักท้าย</div>`);
-      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); ntPickDev(F,L[+b.dataset.h]); draw(); toast('เติมข้อมูลจาก SLD แล้ว — ตรวจ/แก้ได้'); }); };
+      if(!s.byId) ntBelow((s.dev[0]||[])[0]);
+      const up=d=>{ const w=ntUpSw(d[0],1)[0]; return w?`<small class="nt-up">อยู่หลัง แยก ${esc(w[0])}${ntPlace(w[3])?' '+esc(ntPlace(w[3])):''}</small>`:''; };
+      $('ntHits').innerHTML=L.map((d,i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])}${d[2]?' '+esc(d[2]):''} · ${esc(ntPlace(d[3])||d[3])}${up(d)}</span><span class="muted" style="white-space:nowrap">${esc(d[4])}${d[8]?' · '+d[8]+' ราย':''}</span></button>`).join('')
+        +(tot>L.length?`<div class="muted">พบ ${tot} รายการ — พิมพ์ให้เจาะจงขึ้นเพื่อดูที่เหลือ</div>`:'')+(L.length?'':`<div class="muted nt-nf">ไม่พบ "${esc(raw)}"${F.feeder?' (ค้นทุกฟีดเดอร์แล้ว)':''} — ลองพิมพ์บางส่วนของรหัส เช่น เลข 4 หลักท้าย</div>`);
+      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); ntPickDev(F,L[+b.dataset.h]); draw(); toast('เติมข้อมูลจาก SLD แล้ว — ตรวจ/แก้ได้'); });
+      if(/^\d{4,}$/.test(v)) ntMeterHits(v,raw); };
+    const ntMeterHits=async(v,raw)=>{ const box=document.createElement('div'); box.className='nt-lvb'; box.innerHTML='<div class="muted">🏠 กำลังค้นมิเตอร์…</div>'; $('ntHits').prepend(box);
+      let J; try{ J=await ntLv(); }catch(e){ box.innerHTML='<div class="muted">'+esc(e.message)+'</div>'; return; }
+      if(!$('ntQ')||$('ntQ').value.trim()!==raw) return;
+      const ca=m=>J.caPrefix+String(m[6]).padStart(8,'0'), M=[]; for(const m of J.meters){ if(String(m[7]).includes(v)||ca(m).includes(v)||String(m[8]||'')===v){ M.push(m); if(M.length>=6) break; } }
+      if(!M.length){ box.remove(); return; }
+      const nf=$('ntHits').querySelector('.nt-nf'); if(nf) nf.remove();
+      box.innerHTML='<div class="nt-lvh">🏠 มิเตอร์ผู้ใช้ไฟ <i>หม้อแปลงประมาณจากพิกัด · แตะชื่อเพื่อเลือก</i></div>'+M.map(m=>{ const fd=J.feeder[m[2]], nt=ntNearTr(S.sld.fd.some(x=>x[0]===fd)?fd:null,m[0],m[1]);
+        return `<div class="hit lv"><div><b>มิเตอร์ ${esc(m[7])}</b> <span class="muted">CA ${esc(ca(m))} · ${esc(fd||'')}${J.office[m[3]]==='PPY'?' · ปลายพระยา':''}</span>${nt?ntChainHtml(nt[0][0],1,nt[1]):''}</div></div>`; }).join('');
+      box.querySelectorAll('[data-pk]').forEach(a=>a.onclick=e=>{ e.stopPropagation(); const d=S.sld.byId[a.dataset.pk]; if(!d) return; keep(); ntPickDev(F,d); draw(); toast('เลือก '+d[0]+' แล้ว — เติมข้อมูลจาก SLD'); }); };
     if($('ntSldR')) $('ntSldR').onclick=async()=>{ keep(); LS.del('sld'); S.sld=null; $('ntSldR').textContent='กำลังโหลด…'; await sldData(); if(F.dev){ const d=(S.sld.dev||[]).find(x=>x[0]===F.dev.id); if(d) ntPickDev(F,d); } toast('โหลดข้อมูล SLD ใหม่แล้ว ('+((S.sld&&S.sld.dev.length)||0)+' อุปกรณ์)'); draw(); };
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
