@@ -65,7 +65,7 @@ async function ntPolys(g){
   const cls=x=>{ let b1=null,b2=null,e1=1e9,e2=1e9; for(const d of dv){ const e=(d[5]-x[0])*(d[5]-x[0])+(d[6]-x[1])*(d[6]-x[1]); if(e<e1){ e2=e1;b2=b1;e1=e;b1=d; } else if(e<e2){ e2=e;b2=d; } } const d=b1&&b1[0]===g.id?b2:b1; return d&&g.A[d[0]]?1:0; };
   const own=(LN.lines[g.fd]||[]).filter(l=>(l.v||[]).length>1), ar=own.map(l=>l.v.map(cls));
   // ดรอปไลน์: จากจุดตัดไฟย้อนขึ้นตามแนวสายจนถึงจุดแยก (สามแยก) ให้เป็นสีแดงด้วย — ไม่เข้าสายเมน ไม่เกิน 2 กม.
-  if(cut){ const near=(x,y)=>ntKm(x[0],x[1],y[0],y[1])<.015;
+  if(cut&&!/^(TRANSFORMER|MVMETER|MR)$/.test(cm[1])){ const near=(x,y)=>ntKm(x[0],x[1],y[0],y[1])<.015;
     const ends=(x,skip)=>{ const r=[]; own.forEach((l,j)=>{ if(j===skip) return; if(near(l.v[0],x)) r.push([j,0]); else if(near(l.v[l.v.length-1],x)) r.push([j,l.v.length-1]); }); return r; };
     let bl=-1,bi=-1,bd=1e9; own.forEach((l,j)=>{ let ci=-1,cd=1e9; l.v.forEach((x,i)=>{ const e=ntKm(x[0],x[1],cut[0],cut[1]); if(e<cd){cd=e;ci=i;} });
       const pen=(ci===0||ci===l.v.length-1)?.03:0; if(cd<.06&&cd+pen<bd){ bd=cd+pen; bl=j; bi=ci; } });   // เลือกสายที่ผ่านจุดตัดไฟ (ไม่ใช่สายที่เริ่มต้นจากจุดนั้น)
@@ -83,7 +83,7 @@ async function ntPolys(g){
   Object.keys(LN.lines).forEach(f=>{ if(f===g.fd) return; LN.lines[f].forEach(l=>{ const v=l.v||[]; if(v.some(inB)) out.push({a:0,v}); }); });
   own.forEach((l,j)=>{ const v=l.v; if(!v.some(inB)) return;
     let cur=null; v.forEach((x,i)=>{ const a=ar[j][i]; if(!cur||cur.a!==a){ if(cur) cur.v.push(x); cur={a,v:i?[v[i-1],x]:[x]}; out.push(cur); } else cur.v.push(x); if(a) hit=1; }); });
-  return hit?out:null; }
+  return out.length?out:null; }
 function ntUpSw(id,n){ const s=S.sld; if(!s||!s.byId) return []; const r=[]; let d=s.byId[(s.byId[id]||[])[7]], g=0; while(d&&g++<80&&r.length<(n||2)){ if(/^(WF|WS|WR|SW|MR|WC)$/.test(d[1])) r.push(d); d=s.byId[d[7]]; } return r; }
 function ntNearTr(fd,la,lo){ const s=S.sld; s._tr=s._tr||{}; const k=fd||'*'; if(!s._tr[k]) s._tr[k]=s.dev.filter(d=>d[1]==='TRANSFORMER'&&+d[5]&&(!fd||d[4]===fd)); let b=null,e=1e9; s._tr[k].forEach(d=>{ const x=ntKm(la,lo,+d[5],+d[6]); if(x<e){e=x;b=d;} }); return b?[b,Math.round(e*1000)]:null; }
 function ntChainHtml(id,tr,m){ const s=S.sld, d=s.byId[id]; if(!d) return ''; const sw=ntUpSw(id,2);
@@ -97,7 +97,9 @@ function ntGeo(n){
   const s=S.sld, id=n&&n.dev&&n.dev.id; if(!s||!s.dev||!s.dev.length||!id) return null;
   if(!s.kids){ s.kids={}; s.byId={}; s.dev.forEach(d=>{s.byId[d[0]]=d; if(d[7]) (s.kids[d[7]]=s.kids[d[7]]||[]).push(d[0]);}); }
   const me=s.byId[id]; if(!me) return null;
-  const A={}, st=[id]; while(st.length){ const x=st.pop(); if(A[x]) continue; A[x]=1; (s.kids[x]||[]).forEach(k=>st.push(k)); }
+  // หม้อแปลง/มิเตอร์ MV ไม่จ่ายต่อให้อุปกรณ์ MV อื่น (ลูกที่ผูกไว้ใน SLD เป็นการประมาณ) — ดับเฉพาะตัวเอง
+  const leaf=x=>/^(TRANSFORMER|MVMETER|MR)$/.test((s.byId[x]||[])[1]);
+  const A={}, st=[id]; while(st.length){ const x=st.pop(); if(A[x]) continue; A[x]=1; if(!leaf(x)) (s.kids[x]||[]).forEach(k=>st.push(k)); }
   const ok=d=>d&&+d[5]&&+d[6];
   const aff=Object.keys(A).map(k=>s.byId[k]).filter(ok); if(!aff.length) return null;
   let la0=1e9,la1=-1e9,lo0=1e9,lo1=-1e9; aff.forEach(d=>{la0=Math.min(la0,+d[5]);la1=Math.max(la1,+d[5]);lo0=Math.min(lo0,+d[6]);lo1=Math.max(lo1,+d[6]);});
@@ -112,9 +114,23 @@ function ntGeo(n){
   return {A, fd:me[4], id, bb:[la0,la1,lo0,lo1], segs, cut:ok(me)?[+me[5],+me[6],ntPlace(me[3])]:null, lab, tr:aff.filter(d=>d[1]==='TRANSFORMER').map(d=>[+d[5],+d[6]]), ctr:[+cx.toFixed(5),+cy.toFixed(5)]};
 }
 const ntMx=(lo,z)=>(lo+180)/360*256*Math.pow(2,z), ntMy=(la,z)=>{ const r=la*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256*Math.pow(2,z); };
+async function ntLvPts(g){
+  const trs=Object.keys(g.A).map(k=>S.sld.byId[k]).filter(d=>d&&d[1]==='TRANSFORMER'&&+d[5]); if(!trs.length||trs.length>6) return null;
+  const J=await ntLv(); const fi=J.feeder.indexOf(g.fd), set={}; trs.forEach(d=>set[d[0]]=1);
+  const [a0,a1,b0,b1]=trs.reduce((r,d)=>[Math.min(r[0],+d[5]),Math.max(r[1],+d[5]),Math.min(r[2],+d[6]),Math.max(r[3],+d[6])],[90,-90,180,-180]);
+  const out={}; J.meters.forEach(m=>{ if(fi>=0&&m[2]!==fi) return; if(m[0]<a0-.008||m[0]>a1+.008||m[1]<b0-.008||m[1]>b1+.008) return;
+    const t=ntNearTr(fi>=0?g.fd:null,m[0],m[1]); if(t&&set[t[0][0]]&&t[1]<=600) (out[t[0][0]]=out[t[0][0]]||[]).push([m[0],m[1],t[1]]); });
+  // เก็บเฉพาะมิเตอร์ที่ใกล้สุดไม่เกินจำนวนมิเตอร์ของหม้อแปลงนั้นใน SLD
+  return trs.flatMap(d=>(out[d[0]]||[]).sort((a,b)=>a[2]-b[2]).slice(0,+d[8]>0?+d[8]:undefined)); }
 async function ntMapData(n){
   if(!n||!n.dev||!n.dev.id) return null; if(!S.sld||!S.sld.dev.length) await sldData();
-  const g=ntGeo(n); if(!g) return null; const [la0,la1,lo0,lo1]=g.bb;
+  const g=ntGeo(n); if(!g) return null;
+  // บ้านที่ไฟดับ: มิเตอร์แรงต่ำของหม้อแปลงที่ดับ (ประมาณจากหม้อแปลงที่ใกล้สุด) — เฉพาะจุดเล็ก ≤ 6 หม้อแปลง
+  g.lv=await ntLvPts(g).catch(()=>null);
+  if(g.lv&&g.lv.length){ let [a0,a1,b0,b1]=g.cut?[g.cut[0],g.cut[0],g.cut[1],g.cut[1]]:g.bb; const cx=(a0+a1)/2, cy=(b0+b1)/2; g.lv.forEach(m=>{ a0=Math.min(a0,m[0]);a1=Math.max(a1,m[0]);b0=Math.min(b0,m[1]);b1=Math.max(b1,m[1]); });
+    const pa=Math.max(.0012,(a1-a0)*.12), po=Math.max(.0012,(b1-b0)*.12); g.bb=[Math.min(g.bb[0],a0-pa),Math.max(g.bb[1],a1+pa),Math.min(g.bb[2],b0-po),Math.max(g.bb[3],b1+po)];
+    if(g.tr.length<=1){ g.bb=[a0-pa,a1+pa,b0-po,b1+po]; } }
+  const [la0,la1,lo0,lo1]=g.bb;
   let z=17; while(z>9&&(ntMx(lo1,z)-ntMx(lo0,z)>NT_MW||ntMy(la0,z)-ntMy(la1,z)>NT_MH)) z--;
   let w=Math.max(1,ntMx(lo1,z)-ntMx(lo0,z)), h=Math.max(1,ntMy(la0,z)-ntMy(la1,z)), k0=Math.min(NT_MW/w,NT_MH/h,1.95), up=k0>1.05&&z<17?1:0; z+=up; const k=up?k0/2:k0;
   const cx=(ntMx(lo0,z)+ntMx(lo1,z))/2, cy=(ntMy(la0,z)+ntMy(la1,z))/2, ox=cx-NT_MW/2/k, oy=cy-NT_MH/2/k;
@@ -138,10 +154,11 @@ function ntMapHtml(m,emg){
   return `<div class="np-mapbox${tiles.length?'':' vec'}">${tiles.map(t=>`<img src="${t.d}" style="left:${t.x.toFixed(1)}px;top:${t.y.toFixed(1)}px;width:${t.s.toFixed(1)}px;height:${t.s.toFixed(1)}px" alt="">`).join('')}<i class="np-wash"></i>
    <svg viewBox="0 0 ${NT_MW} ${NT_MH}" width="${NT_MW}" height="${NT_MH}"><path d="${L(0)}" stroke="#6B5A78" stroke-width="2.2" stroke-opacity=".75" fill="none" stroke-linecap="round"/>
    <path d="${L(1)}" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="${L(1)}" stroke="${red}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+   ${(g.lv||[]).map(m=>{const p=P(m[0],m[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.3" fill="${red}" fill-opacity=".75" stroke="#fff" stroke-width=".7"/>`;}).join('')}
    ${g.tr.map(t=>{const p=P(t[0],t[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${red}" stroke-width="1.6"/>`;}).join('')}
    ${cut?`<circle cx="${cut[0]}" cy="${cut[1]}" r="8" fill="#4A1B66" stroke="#EBD592" stroke-width="2.5"/><path d="M${cut[0]+1.5} ${cut[1]-5}l-4 5.5h3l-1.5 4.5 4.5-6h-3z" fill="#FFD43B"/>`:''}</svg>
    ${cut&&g.cut[2]?pin(cut,'⚡ '+g.cut[2],'cut'):''}${g.lab.map(l=>pin(P(l[0],l[1]),l[2])).join('')}
-   <span class="np-mlg"><b style="background:${red}"></b>ไฟดับ <b style="background:#6B5A78;height:2px"></b>ไฟปกติ</span>${tiles.length?'<span class="np-osm">© OpenStreetMap</span>':''}</div>`;
+   <span class="np-mlg"><b style="background:${red}"></b>ไฟดับ <b style="background:#6B5A78;height:2px"></b>ไฟปกติ${(g.lv||[]).length?`<b style="background:${red};width:7px;height:7px;border-radius:50%"></b>บ้านที่ไฟดับ`:''}</span>${tiles.length?'<span class="np-osm">© OpenStreetMap</span>':''}</div>`;
 }
 /* ---------- โปสเตอร์ (กว้าง 400 · สูง 545) ---------- */
 const NT_KARST='<svg viewBox="0 0 400 70" preserveAspectRatio="none" style="position:absolute;left:0;right:0;top:0;width:100%;height:50px"><path d="M0 70 L0 48 C18 46 22 20 34 18 C44 16 46 40 58 42 C66 30 70 8 84 6 C98 4 100 34 110 40 C122 44 128 26 140 28 C150 30 152 46 166 46 C176 30 182 12 196 10 C212 8 214 36 226 42 C238 46 246 30 258 32 C270 34 272 48 286 48 C296 36 300 20 314 18 C328 16 330 40 342 44 C354 46 362 34 374 36 C386 38 390 50 400 50 L400 70Z" fill="#4A1B66"/></svg>';
@@ -301,7 +318,7 @@ function ntBelow(id){
   const st=[id], vis={}, tr=[], places=[];
   while(st.length){ const x=st.pop(); if(vis[x]) continue; vis[x]=1; const d=s.byId[x]; if(!d) continue;
     if(d[1]==='TRANSFORMER'||d[1]==='MVMETER'||d[1]==='MR'){ tr.push(d); const p=ntPlace(d[3]); if(p&&places.indexOf(p)<0) places.push(p); }
-    (s.kids[x]||[]).forEach(k=>st.push(k)); }
+    if(!(x===id&&/^(TRANSFORMER|MVMETER|MR)$/.test(d[1]))) (s.kids[x]||[]).forEach(k=>st.push(k)); }
   const sum=tr.reduce((a,d)=>a+(Number(d[8])||0),0);
   const noname=tr.filter(d=>d[1]==='TRANSFORMER'&&!ntPlace(d[3])).map(d=>d[0]);
   return {noname, dev:me, tr:tr.filter(d=>d[1]==='TRANSFORMER').length, mv:tr.filter(d=>d[1]!=='TRANSFORMER').length, cust:Number(me[9])||sum||null, places};
