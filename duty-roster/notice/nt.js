@@ -258,9 +258,11 @@ async function ntBannerRefresh(){ await loadNotices(); renderNtBanner(); if(S.nt
 /* ---------- หน้าประกาศ (แผ่นเต็มจอ) ---------- */
 function ntSheet(title,html,onBack){
   let ov=$('ntOv'); if(!ov){ ov=document.createElement('div'); ov.id='ntOv'; ov.className='ntov'; document.body.appendChild(ov); }
+  const same=ov.dataset.t===title, y=ov.scrollTop, by=(ov.querySelector('.nt-bd')||{}).scrollTop||0; ov.dataset.t=title;
   ov.innerHTML=`<div class="nt-hd"><button type="button" class="lnk" id="ntBack">${onBack?'‹ กลับ':'✕ ปิด'}</button><b>${title}</b><span></span></div><div class="nt-bd ofm">${html}</div>`;
   $('ntBack').onclick=()=>{ if(onBack) onBack(); else { ov.remove(); renderNtBanner(); } };
-  ov.scrollTop=0; return ov; }
+  // วาดหน้าเดิมซ้ำ (กดตัวเลือก) → อยู่ตำแหน่งเดิม ไม่เด้งขึ้นบน
+  ov.scrollTop=same?y:0; const bd=ov.querySelector('.nt-bd'); if(bd) bd.scrollTop=same?by:0; return ov; }
 async function ntPage(){
   const draw=()=>{ const L=S.nts||[], td=ntNow().slice(0,10), up=L.filter(n=>{const s=ntState(n);return s!=='done'&&s!=='cancel'&&(n.date>=td||s==='live'||s==='due');}), past=L.filter(n=>up.indexOf(n)<0).reverse();
     const row=n=>{ const s=ntState(n), d=new Date(n.date+'T00:00:00Z'), dd=ntDaysTo(n.date);
@@ -372,7 +374,7 @@ async function ntForm(n0){
       :`<div class="grid3" style="margin-top:6px"><label class="tf">วันที่<input type="date" id="ntD" value="${esc(F.date)}" min="${emg?'':td}"></label><label class="tf">เริ่ม<input type="text" class="hm" inputmode="numeric" id="ntS" value="${esc(F.start||'')}" maxlength="5"></label>${emg?`<label class="tf">คาดว่าใช้ (นาที)<input type="number" id="ntE" value="${F.estMin||''}"></label>`:`<label class="tf">สิ้นสุด<input type="text" class="hm" inputmode="numeric" id="ntEn" value="${esc(F.end||'')}" maxlength="5"></label>`}</div>`}
      <div class="lb">สาเหตุ</div><div class="chips">${NT_RS[F.type].map(([k,l])=>`<button type="button" class="ch ${F.reasonKey===k?'on':''}" data-rk="${k}">${esc(l)}</button>`).join('')}</div>
      <input type="text" id="ntR" value="${esc(F.reason||'')}" placeholder="รายละเอียดสาเหตุ (แสดงบนโปสเตอร์)" style="margin-top:6px">
-     <div class="lb" style="align-items:center"><span>ฟีดเดอร์ / อุปกรณ์ที่ตัดไฟ (SLD) <i>ไม่บังคับ</i></span><button type="button" class="nt-rl" id="ntSldR">↻ โหลด SLD ใหม่</button></div>
+     <div class="lb" style="align-items:center"><span>ช่วงที่ดับ: จุดเริ่ม A → จุด B (SLD) <i>ไม่บังคับ</i></span><button type="button" class="nt-rl" id="ntSldR">↻ โหลด SLD ใหม่</button></div>
      <div class="chips">${fd.map(([id,col])=>`<button type="button" class="ch ${F.feeder===id?'on':''}" data-fd="${id}"><span class="dot" style="background:${col}"></span>${id}</button>`).join('')}</div>
      ${F.dev?(()=>{ const B=F._sld||ntSum(F), secs=ntSecs(F), dv=x=>`<b>${esc(x.id)}</b> ${esc(DEV_TH[x.type]||x.type||'')} · ${esc(ntPlace(x.desc)||x.desc||'')}`;
         return secs.map((x,i)=>`<div class="nt-sec"><div class="nt-sech"><span>ช่วงที่ ${i+1}</span>${i?`<button type="button" class="lnk" data-delsec="${i}">✕ ลบช่วง</button>`:''}</div>
@@ -383,7 +385,7 @@ async function ntForm(n0){
           ${F._pick==='b'+i?`<div class="nt-pk">ค้นจุด B — เฉพาะอุปกรณ์ที่อยู่หลัง ${esc(x.a.id)} <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="รหัส / ชื่อสถานที่ ของจุดที่ยังมีไฟ" autocomplete="off"><div id="ntHits"></div>`:''}</div>`).join('')
          +(F._pick==='more'?`<div class="nt-pk">ค้นจุดเริ่มดับของช่วงใหม่ <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" autocomplete="off"><div id="ntHits"></div>`:NT_AB?`<button type="button" class="nt-addsec" id="ntAddSec">＋ เพิ่มช่วง / จุดตัดไฟ</button>`:'')
          +(B?`<div class="nt-sld">📊 ${secs.length>1?'รวม '+secs.length+' ช่วง · ':''}${B.tr?'หม้อแปลง '+B.tr+' ลูก · ':''}${B.mv?'มิเตอร์แรงสูง '+B.mv+' ราย · ':''}<b>ผู้ใช้ไฟ ~${B.cust||0} ราย</b>${(B.noname||[]).length?`<div class="nt-warn">⚠️ หม้อแปลง ${B.noname.length} ลูกยังไม่มีชื่อใน SLD (มีแต่ DCC_) — ใส่ชื่อสถานที่ใน SLD ก่อน แล้วกด ↻ โหลด SLD ใหม่<br><small>${esc(B.noname.slice(0,12).join(', '))}${B.noname.length>12?' …':''}</small></div>`:''}${B.places.length?'<br>พื้นที่: '+esc(B.places.slice(0,8).join(', '))+(B.places.length>8?' และอีก '+(B.places.length-8)+' จุด':''):''}</div>`:''); })()
-      :`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
+      :`<div class="nt-pt" style="margin-top:6px"><span class="nt-ic a">A</span><div>ค้นจุดเริ่มดับ (A) ก่อน<small>เลือกแล้วจะใส่จุดที่ยังมีไฟ (B) และเพิ่มช่วงอื่นได้</small></div></div><input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
      <div class="lb">พื้นที่ไฟดับ <i>ชื่อที่ชาวบ้านรู้จัก · ใช้ → แบ่ง จาก/ถึง</i></div>
      <input type="text" id="ntA" value="${esc(F.area||'')}" placeholder="เช่น สามแยก ศพด.แหลมสัก → หัวแหลม">
      <div class="grid2" style="margin-top:6px"><input type="text" id="ntSub" value="${esc(F.sub||'')}" placeholder="ต./อ./จ."><input type="text" id="ntV" value="${esc((F.villages||[]).join(', '))}" placeholder="หมู่บ้าน/จุดสังเกต (คั่นด้วย ,)"></div>
