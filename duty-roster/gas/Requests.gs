@@ -1576,8 +1576,7 @@ function saveNotice_(b) {
   if (!String(o.area || '').trim()) throw new Error('ใส่พื้นที่ไฟดับ');
   const sh = ntSheet_(), rows = ntRows_(), now = new Date();
   const cur = o.id ? rows.filter(function (x) { return x.id === String(o.id) && !x.deleted; })[0] : null;
-  if (cur && !cur.d.draft) throw new Error('ประกาศจริงแล้ว แก้ไขไม่ได้ — ใช้ เลื่อนวัน / ยกเลิก หรือ คัดลอกเป็นร่างใหม่');
-  const d = cur ? cur.d : { id: 'NT-' + Utilities.formatDate(now, TZ, 'yyMMdd-HHmmss'), status: o.type === 'emg' && o.live ? 'live' : 'plan', created: now.toISOString(), createdBy: by, draft: true, tl: [] };
+  const d = cur ? cur.d : { id: 'NT-' + Utilities.formatDate(now, TZ, 'yyMMdd-HHmmss'), status: o.type === 'emg' && o.live ? 'live' : 'plan', created: now.toISOString(), createdBy: by, tl: [] };
   NT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
   d.area = String(d.area || '').slice(0, 120); d.sub = String(d.sub || '').slice(0, 120); d.reason = String(d.reason || '').slice(0, 160); d.speech = String(d.speech || '').slice(0, 90); d.slogan = String(d.slogan || '').slice(0, 80);
   d.villages = (Array.isArray(d.villages) ? d.villages : []).map(String).filter(String).slice(0, 12);
@@ -1600,10 +1599,7 @@ function noticeAct_(b) {
   if (!x) throw new Error('ไม่พบประกาศ');
   const d = x.d, now = new Date(), nowS = Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm').replace(' ', 'T'), a = String(b.a || ''), ev = { at: Utilities.formatDate(now, TZ, 'yyyy-MM-dd HH:mm'), by: by, act: a };
   const hm = function (s) { return /^\d{2}:\d{2}$/.test(String(s || '')) ? String(s) : ''; };
-  if (d.draft && /^(start|done|extend|move|link|reopen)$/.test(a)) throw new Error('ยังเป็นร่าง — รอหัวหน้า/ผู้ช่วยหัวหน้าแผนกยืนยันประกาศก่อน');
-  if (a === 'publish') { const w = approverOf_(b); if (!w) throw new Error('ยืนยันประกาศได้เฉพาะหัวหน้า/ผู้ช่วยหัวหน้าแผนก'); if (!d.draft) throw new Error('ประกาศจริงแล้ว');
-    delete d.draft; d.pubBy = w.short || w.name; d.pubAt = nowS; ev.by = d.pubBy; }
-  else if (a === 'start') { d.status = 'live'; d.actualOff = b.at && hm(b.at) ? d.date + 'T' + b.at : nowS; ev.txt = d.actualOff.slice(11); }
+  if (a === 'start') { d.status = 'live'; d.actualOff = b.at && hm(b.at) ? d.date + 'T' + b.at : nowS; ev.txt = d.actualOff.slice(11); }
   else if (a === 'done') { d.status = 'done'; d.actualOn = b.at && hm(b.at) ? nowS.slice(0, 10) + 'T' + b.at : nowS; if (!d.actualOff) d.actualOff = d.startAt; ev.txt = d.actualOn.slice(11); }
   else if (a === 'extend') { const t = hm(b.to); if (!t) throw new Error('ใส่เวลาที่คาดว่าไฟมา'); d.endAt = (t >= String(d.startAt).slice(11) ? d.startAt.slice(0, 10) : Utilities.formatDate(new Date(Date.parse(d.startAt.slice(0, 10) + 'T00:00:00Z') + 864e5), 'UTC', 'yyyy-MM-dd')) + 'T' + t; if (d.type === 'plan') d.end = t; ev.txt = t; }
   else if (a === 'move') { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.date || '')) || !hm(b.start) || !hm(b.end)) throw new Error('ใส่วัน/เวลาใหม่'); d.moved = { from: d.date, fromStart: d.start, fromEnd: d.end, at: ev.at }; d.date = b.date; d.start = b.start; d.end = b.end; d.startAt = ntAt_(d.date, d.start); d.endAt = ntAt_(d.date, d.end); d.status = 'plan'; ev.txt = b.date + ' ' + b.start + '–' + b.end; }
@@ -1664,7 +1660,6 @@ function ntNotify_(d, by) {
   try { const td = dayData_(bkkYmd_()), yd = dayData_(addDays_(bkkYmd_(), -1)), empSet = Object.assign({}, yd ? yd.emp : {}, td ? td.emp : {}); Object.keys(onDutyNow_()).filter(function (n) { return n in empSet; }).forEach(add); } catch (e) {}
   const lines = [d.area + (d.sub ? ' · ' + d.sub : ''), 'ดับ ' + String(d.startAt).slice(11) + ' น.' + (d.endAt ? ' · คาดว่าไฟมา ~' + String(d.endAt).slice(11) + ' น.' : ''), 'สาเหตุ: ' + (d.reason || '-') + (d.cust ? ' · ~' + d.cust + ' ราย' : ''), 'ประกาศโดย ' + by];
   const u = webUrl_('viewDaily', { nt: d.id }), btn = u ? [{ type: 'button', style: 'primary', height: 'sm', color: '#B3261E', action: { type: 'uri', label: 'ดูประกาศ / อัปเดตสถานะ', uri: u } }] : null;
-  if (d.draft) lines.push('📝 ร่าง — รอหัวหน้า/ผู้ช่วยหัวหน้าแผนกกดยืนยันประกาศ');
   const msg = [flex_('⚠️ ดับไฟฉุกเฉิน ' + d.area, bubble_('⚠️ ดับไฟฉุกเฉิน', '#B3261E', d.feeder ? d.feeder + ' · ' + d.area : d.area, lines, btn))];
   to.forEach(function (n) { const id = lineIdOf_(n); if (id) push_(id, msg, 'outage'); });
 }
