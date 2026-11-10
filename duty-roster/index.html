@@ -129,6 +129,10 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .nt-ic{width:24px;height:24px;border-radius:50%;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}.nt-ic.a{background:#4A1B66}.nt-ic.b{background:#0B7A3B}
 .nt-addb,.nt-addsec{border:1.5px dashed #B9A4C8;background:#fff;color:#4A1B66;border-radius:10px;padding:6px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.nt-addsec{margin-top:8px;width:100%;border-color:#4A1B66}
 .nt-secs{font-size:12.5px;color:#6B4E10;background:#FFF4DC;border-radius:8px;padding:4px 8px}.nt-pk{font-size:12.5px;font-weight:700;color:#0B7A3B;display:flex;justify-content:space-between}
+.ntp.dr{background:#FFF1D6;color:#8A4B00;border:1px dashed #E0A940}
+.nt-drb{background:#FFF6DE;border:1.5px dashed #E0A940;border-radius:12px;padding:8px 10px;margin:8px 0;font-size:13.5px;color:#7A4A00;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.nt-lock{margin-top:8px;background:#F1ECF5;border-radius:10px;padding:8px 10px;font-size:13px;color:#4A1B66}
+.np-wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5}.np-wm span{transform:rotate(-24deg);font-size:110px;font-weight:800;color:rgba(214,130,0,.28);border:10px solid rgba(214,130,0,.28);border-radius:24px;padding:0 34px;line-height:1.2}
 .nt-rl{border:1.5px solid #B8964A;background:#FFFBF0;color:#6B4E10;border-radius:16px;padding:3px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;flex:none}
 /* โปสเตอร์ 400×545 */
 .np{position:relative;width:400px;height:545px;background:#fff;overflow:hidden;color:#241C2B;font-family:'IBM Plex Sans Thai',sans-serif;line-height:1.3}
@@ -2757,6 +2761,6 @@ $('sSave').onclick=async()=>{
 <script>
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);});
 </script>
-<script src="notice/nt.js?v=17"></script>
+<script src="notice/nt.js?v=18"></script>
 </body>
 </html>
