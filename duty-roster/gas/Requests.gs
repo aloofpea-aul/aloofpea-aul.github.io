@@ -669,7 +669,7 @@ function outPerm_(b, k, cross) {
   return { by: by, appr: false, cross: isX };
 }
 function outAuth_(b, k) { return outPerm_(b, k).by; }
-const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew', 'longWhy'];
+const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'stops', 'more', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew', 'longWhy'];
 /** แก้ข้อมูลเวรที่ล็อกแล้ว (ผู้อนุมัติ) → ยกเลิก "รับแล้ว" ให้พิมพ์บัญชีลงนามใหม่ */
 function outUnlock_(k, P) { if (!P.appr) return; const R = reportsOf_(k.slice(0, 7))[k]; if (R && R.received) { repSetMeta_(k, { received: null }); log_(P.by, 'ยกเลิกรับเอกสาร (แก้ไฟดับ)', k.slice(0, 7), k); } }
 const OUT_HIST_F_ = { lvl: 'แรงดัน', off: 'เวลาไฟดับ', on: 'เวลาจ่ายไฟ', ws: 'เริ่มปฏิบัติงาน', we: 'เสร็จงาน', feeder: 'ฟีดเดอร์', place: 'สถานที่', cType: 'สาเหตุ', cData: 'สาเหตุย่อย', fix: 'การแก้ไข', cust: 'ผู้ใช้ไฟ', detail: 'รายละเอียด', longWhy: 'เหตุผลไฟดับเกิน 4 ชม.' };
@@ -1580,6 +1580,8 @@ function saveNotice_(b) {
   NT_KEYS_.forEach(function (f) { if (f in o) d[f] = o[f]; });
   d.area = String(d.area || '').slice(0, 120); d.sub = String(d.sub || '').slice(0, 120); d.reason = String(d.reason || '').slice(0, 160); d.speech = String(d.speech || '').slice(0, 90); d.slogan = String(d.slogan || '').slice(0, 80);
   d.villages = (Array.isArray(d.villages) ? d.villages : []).map(String).filter(String).slice(0, 12);
+  ['stops', 'more'].forEach(function (k) { d[k] = (Array.isArray(d[k]) ? d[k] : []).filter(function (x) { return x && x.id; }).slice(0, 10)
+    .map(function (x) { return { id: String(x.id).slice(0, 40), type: String(x.type || '').slice(0, 20), desc: String(x.desc || '').slice(0, 120), feeder: String(x.feeder || '').slice(0, 10), rating: String(x.rating || '').slice(0, 20) }; }); });
   d.startAt = ntAt_(d.date, d.start);
   if (d.type === 'plan') { d.endAt = d.end >= d.start ? ntAt_(d.date, d.end) : ntAt_(Utilities.formatDate(new Date(Date.parse(d.date + 'T00:00:00Z') + 864e5), 'UTC', 'yyyy-MM-dd'), d.end); }
   else { const m = Number(d.estMin) || 0; d.endAt = m ? Utilities.formatDate(new Date(Date.parse(d.startAt + ':00+07:00') + m * 60000), TZ, 'yyyy-MM-dd HH:mm').replace(' ', 'T') : ''; }

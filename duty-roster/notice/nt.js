@@ -79,6 +79,13 @@ async function ntPolys(g){
       const up=P?(ntKm(v0[0][0],v0[0][1],P[0],P[1])<=ntKm(vn[0],vn[1],P[0],P[1])?-1:1):(ar[bl].slice(0,bi).includes(0)?-1:1);
       if((up===-1&&bi>0)||(up===1&&bi<v0.length-1)) walk(bl,bi,up,0,0);
       else { const o=ends(v0[bi],bl); if(o.length===1&&own[o[0][0]].m!==1){ const [j2,i2]=o[0]; ar[j2][i2]=1; walk(j2,i2,i2===0?1:-1,0,1); } } } }
+  // จุดสิ้นสุด (อุปกรณ์ที่เปิดไว้): จากจุดนั้นไปทางปลายสาย ยังมีไฟ → เทา จนถึงจุดแยกถัดไป
+  (g.stopIds||[]).forEach(sid=>{ const d=s.byId[sid]; if(!d||!+d[5]) return; const c=[+d[5],+d[6]];
+    let bl=-1,bi=-1,bd=1e9; own.forEach((l,j)=>l.v.forEach((x,i)=>{ const e=ntKm(x[0],x[1],c[0],c[1]); if(e<bd){bd=e;bl=j;bi=i;} })); if(bl<0||bd>.06) return;
+    const v=own[bl].v, pr=s.byId[d[7]], P=pr&&+pr[5]?[+pr[5],+pr[6]]:null; if(!P) return;
+    const dn=ntKm(v[0][0],v[0][1],P[0],P[1])<=ntKm(v[v.length-1][0],v[v.length-1][1],P[0],P[1])?1:-1;
+    const others=(x,j)=>own.some((l,k)=>k!==j&&(ntKm(l.v[0][0],l.v[0][1],x[0],x[1])<.015||ntKm(l.v[l.v.length-1][0],l.v[l.v.length-1][1],x[0],x[1])<.015));
+    for(let k=bi;k>=0&&k<v.length;k+=dn){ ar[bl][k]=0; if(k!==bi&&others(v[k],bl)) break; } });
   const out=[]; let hit=0;
   Object.keys(LN.lines).forEach(f=>{ if(f===g.fd) return; LN.lines[f].forEach(l=>{ const v=l.v||[]; if(v.some(inB)) out.push({a:0,v}); }); });
   own.forEach((l,j)=>{ const v=l.v; if(!v.some(inB)) return;
@@ -99,7 +106,10 @@ function ntGeo(n){
   const me=s.byId[id]; if(!me) return null;
   // หม้อแปลง/มิเตอร์ MV ไม่จ่ายต่อให้อุปกรณ์ MV อื่น (ลูกที่ผูกไว้ใน SLD เป็นการประมาณ) — ดับเฉพาะตัวเอง
   const leaf=x=>/^(TRANSFORMER|MVMETER|MR)$/.test((s.byId[x]||[])[1]);
-  const A={}, st=[id]; while(st.length){ const x=st.pop(); if(A[x]) continue; A[x]=1; if(!leaf(x)) (s.kids[x]||[]).forEach(k=>st.push(k)); }
+  // ช่วงที่ดับ: จุดเริ่ม (n.dev + n.more[]) ลงไปตามสาย จนถึงจุดสิ้นสุด (n.stops[] — อุปกรณ์ที่เปิดไว้ หลังจุดนั้นยังมีไฟ)
+  const stops={}; (n.stops||[]).forEach(x=>{ if(x&&s.byId[x.id||x]) stops[x.id||x]=1; });
+  const cuts=[id].concat((n.more||[]).map(x=>x.id||x).filter(x=>s.byId[x]&&x!==id));
+  const A={}, st=cuts.slice(); while(st.length){ const x=st.pop(); if(A[x]||stops[x]) continue; A[x]=1; if(!leaf(x)) (s.kids[x]||[]).forEach(k=>st.push(k)); }
   const ok=d=>d&&+d[5]&&+d[6];
   const aff=Object.keys(A).map(k=>s.byId[k]).filter(ok); if(!aff.length) return null;
   let la0=1e9,la1=-1e9,lo0=1e9,lo1=-1e9; aff.forEach(d=>{la0=Math.min(la0,+d[5]);la1=Math.max(la1,+d[5]);lo0=Math.min(lo0,+d[6]);lo1=Math.max(lo1,+d[6]);});
@@ -111,7 +121,7 @@ function ntGeo(n){
   const far=(d)=>lab.reduce((m,l)=>Math.min(m,Math.hypot(l[0]-d[5],l[1]-d[6])),1e9);
   for(let k=0;k<3&&tr.length;k++){ let best=null,bd=-1; tr.forEach(d=>{ const t=ntPlace(d[3]); if(!t||seen[t]) return; const f=lab.length?far(d):Math.hypot(d[5]-me[5],d[6]-me[6]); if(f>bd){bd=f;best=d;} }); if(!best||bd<(la1-la0)*.12) break; const bt=ntPlace(best[3]); seen[bt]=1; lab.push([+best[5],+best[6],bt]); }
   const cx=aff.reduce((a,d)=>a+ +d[5],0)/aff.length, cy=aff.reduce((a,d)=>a+ +d[6],0)/aff.length;
-  return {A, fd:me[4], id, bb:[la0,la1,lo0,lo1], segs, cut:ok(me)?[+me[5],+me[6],ntPlace(me[3])]:null, lab, tr:aff.filter(d=>d[1]==='TRANSFORMER').map(d=>[+d[5],+d[6]]), ctr:[+cx.toFixed(5),+cy.toFixed(5)]};
+  return {A, cuts, stopIds:Object.keys(stops), fd:me[4], id, bb:[la0,la1,lo0,lo1], segs, cut:ok(me)?[+me[5],+me[6],ntPlace(me[3])]:null, lab, tr:aff.filter(d=>d[1]==='TRANSFORMER').map(d=>[+d[5],+d[6]]), ctr:[+cx.toFixed(5),+cy.toFixed(5)]};
 }
 const ntMx=(lo,z)=>(lo+180)/360*256*Math.pow(2,z), ntMy=(la,z)=>{ const r=la*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256*Math.pow(2,z); };
 async function ntLvPts(g){
@@ -145,7 +155,7 @@ let NT_CX=null; function ntTW(t,px){ try{ NT_CX=NT_CX||document.createElement('c
 function ntMapHtml(m,emg){
   if(!m) return ''; const {g,P,tiles}=m, red=emg?'#E8590C':'#E03131';
   const L=(f)=>g.poly?g.poly.filter(q=>q.a===f).map(q=>q.v.map((x,i)=>{ const a=P(x[0],x[1]); return (i?'L':'M')+a[0]+' '+a[1]; }).join('')).join(''):g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
-  const cut=g.cut&&P(g.cut[0],g.cut[1]);
+  const cut=g.cut&&P(g.cut[0],g.cut[1]), okd=d=>d&&+d[5]&&+d[6], xc=(g.cuts||[]).slice(1).map(x=>S.sld.byId[x]).filter(okd), sp=(g.stopIds||[]).map(x=>S.sld.byId[x]).filter(okd);
   const R=[]; const pin=(xy,t,cls)=>{ t=String(t); const tw=Math.ceil(ntTW(t,cls?8.5:8))+12, w=Math.min(124,tw), hgt=Math.ceil(tw/124)*10.5+4, l=xy[0]+7+w>NT_MW-4;
     let x=l?xy[0]-7-w:xy[0]+7, y=Math.max(2,Math.min(NT_MH-22-hgt,xy[1]-hgt/2));
     for(let i=0;i<10&&R.some(r=>x<r[0]+r[2]&&r[0]<x+w&&y<r[1]+r[3]&&r[1]<y+hgt);i++) y=Math.max(2,Math.min(NT_MH-22-hgt,y+(i%2?-1:1)*(i+1)*9));
@@ -156,8 +166,9 @@ function ntMapHtml(m,emg){
    <path d="${L(1)}" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="${L(1)}" stroke="${red}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
    ${(g.lv||[]).map(m=>{const p=P(m[0],m[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.3" fill="${red}" fill-opacity=".75" stroke="#fff" stroke-width=".7"/>`;}).join('')}
    ${g.tr.map(t=>{const p=P(t[0],t[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${red}" stroke-width="1.6"/>`;}).join('')}
-   ${cut?`<circle cx="${cut[0]}" cy="${cut[1]}" r="8" fill="#4A1B66" stroke="#EBD592" stroke-width="2.5"/><path d="M${cut[0]+1.5} ${cut[1]-5}l-4 5.5h3l-1.5 4.5 4.5-6h-3z" fill="#FFD43B"/>`:''}</svg>
-   ${cut&&g.cut[2]?pin(cut,'⚡ '+g.cut[2],'cut'):''}${g.lab.map(l=>pin(P(l[0],l[1]),l[2])).join('')}
+   ${[cut].concat(xc.map(d=>P(+d[5],+d[6]))).filter(Boolean).map(c=>`<circle cx="${c[0]}" cy="${c[1]}" r="8" fill="#4A1B66" stroke="#EBD592" stroke-width="2.5"/><path d="M${c[0]+1.5} ${c[1]-5}l-4 5.5h3l-1.5 4.5 4.5-6h-3z" fill="#FFD43B"/>`).join('')}
+   ${sp.map(d=>{const c=P(+d[5],+d[6]);return `<rect x="${c[0]-7}" y="${c[1]-7}" width="14" height="14" rx="3" fill="#0B7A3B" stroke="#fff" stroke-width="2"/>`;}).join('')}</svg>
+   ${cut&&g.cut[2]?pin(cut,'⚡ '+g.cut[2],'cut'):''}${xc.map(d=>pin(P(+d[5],+d[6]),'⚡ '+(ntPlace(d[3])||d[0]),'cut')).join('')}${sp.map(d=>pin(P(+d[5],+d[6]),'■ ไฟถึงแค่นี้ · '+(ntPlace(d[3])||d[0]),'end')).join('')}${g.lab.map(l=>pin(P(l[0],l[1]),l[2])).join('')}
    <span class="np-mlg"><b style="background:${red}"></b>ไฟดับ <b style="background:#6B5A78;height:2px"></b>ไฟปกติ${(g.lv||[]).length?`<b style="background:${red};width:7px;height:7px;border-radius:50%"></b>บ้านที่ไฟดับ`:''}</span>${tiles.length?'<span class="np-osm">© OpenStreetMap</span>':''}</div>`;
 }
 /* ---------- โปสเตอร์ (กว้าง 400 · สูง 545) ---------- */
@@ -169,7 +180,7 @@ function ntPoster(n,im){
   const dur=n.endAt?Math.round((ntT(n.endAt)-ntT(n.startAt))/6e4):0, durT=dur?(dur>=60?Math.floor(dur/60)+' ชั่วโมง'+(dur%60?' '+dur%60+' นาที':''):dur+' นาที'):'';
   const dd=ntDaysTo(n.date), cd=st==='plan'?(dd>1?'อีก '+dd+' วัน':dd===1?'พรุ่งนี้':'วันนี้'):'';
   const d=new Date(n.date+'T00:00:00Z'), nowM=sm(ntNow());
-  const [fa,fb]=(x=>[x[0]||x[1],x[0]?x[1]:''])(String(n.area||'').split(/\s*(?:→|->|ถึง|-)\s*/).map(x=>ntPlace(x))); const vil=ntVil(n);
+  const [fa,fb]=/\s·\s/.test(n.area||'')?[ntArea(n),'']:(x=>[x[0]||x[1],x[0]?x[1]:''])(String(n.area||'').split(/\s*(?:→|->)\s*|\s+ถึง\s+|\s+-\s+/).map(x=>ntPlace(x))); const vil=ntVil(n);
   const say=String(n.speech||(emg?NT_SAY.emg:NT_SAY[n.reasonKey]||NT_SAY.other)).split('\n').map(esc).join('<br>');
   const prep=emg?`<span class="np-lab np-red">⚠️ เพื่อความปลอดภัย</span><div class="np-g3"><span>🚫<br>อย่าเข้าใกล้สาย<br>ที่ขาด/ห้อย</span><span>🔌<br>ถอดปลั๊ก<br>เครื่องใช้ไฟฟ้า</span><span class="np-w">📞<br>เห็นจุดอันตราย<br><b>แจ้ง ${esc(c.phone)}</b></span></div>`
     :`<span class="np-lab">🔋 เตรียมตัวก่อนไฟดับ</span><div class="np-g4"><span>📱<br>ชาร์จมือถือ</span><span>🧊<br>ตู้เย็นปิดสนิท</span><span>💧<br>สำรองน้ำ</span><span class="np-w">🩺<br>มีผู้ป่วยใช้เครื่องมือแพทย์<br><b>โทรแจ้งเราก่อน</b></span></div>`;
@@ -329,6 +340,23 @@ function ntPickDev(F,d){ const B=ntBelow(d[0])||{places:[],cust:+d[8]||null,tr:0
   const nm=ntPlace(d[3]), pl=B.places.length?B.places:(nm?[nm]:[]);
   if(!F.area||F._autoArea){ F.area=nm&&pl.length&&pl[pl.length-1]!==nm?nm+' → '+pl[pl.length-1]:(nm||pl[0]||''); F._autoArea=1; }
   if(!(F.villages||[]).length||F._autoV){ F.villages=pl.slice(0,6); F._autoV=1; } }
+/* ช่วงที่ดับหลายช่วง: A = F.dev + F.more[] · B (ไฟถึงแค่) = F.stops[] — หลัง B ยังมีไฟ */
+function ntIsUnder(x,a){ const s=S.sld; let d=s.byId[x], g=0; while(d&&g++<200){ if(d[0]===a) return true; d=s.byId[d[7]]; } return false; }
+function ntSecs(F){ const A=[F.dev].concat(F.more||[]).filter(Boolean), st=F.stops||[];
+  return A.map(a=>({a, b:st.filter(b=>ntIsUnder(b.id,a.id)&&b.id!==a.id)})); }
+function ntSum(F){ const s=S.sld; if(!F.dev||!s||!s.dev.length) return null; ntBelow(F.dev.id);
+  const g=ntGeo({dev:F.dev,more:F.more,stops:F.stops}); if(!g) return ntBelow(F.dev.id);
+  const tr=[], places=[]; Object.keys(g.A).forEach(k=>{ const d=s.byId[k]; if(d&&/^(TRANSFORMER|MVMETER|MR)$/.test(d[1])){ tr.push(d); } });
+  // ชื่อพื้นที่เรียงตามลำดับจากจุดเริ่ม (ใช้ลำดับแบบเดียวกับ ntBelow)
+  ntSecs(F).forEach(x=>{ const B=ntBelow(x.a.id); (B?B.places:[]).forEach(p=>{ if(places.indexOf(p)<0&&tr.some(d=>ntPlace(d[3])===p)) places.push(p); }); });
+  let cust=0; const per=ntSecs(F).map(x=>{ const B=ntBelow(x.a.id)||{cust:0}; let c=+B.cust||0; x.b.forEach(b=>{ const Bb=ntBelow(b.id); c-=+(Bb&&Bb.cust)||0; });
+    const t=tr.filter(d=>ntIsUnder(d[0],x.a.id)||d[0]===x.a.id); if(c<0||(x.b.length&&!c)) c=t.reduce((a,d)=>a+(+d[8]||0),0); cust+=Math.max(0,c); return {tr:t.filter(d=>d[1]==='TRANSFORMER').length, cust:Math.max(0,c)}; });
+  return {per, dev:s.byId[F.dev.id], tr:tr.filter(d=>d[1]==='TRANSFORMER').length, mv:tr.filter(d=>d[1]!=='TRANSFORMER').length, cust:cust||null, places,
+    noname:tr.filter(d=>d[1]==='TRANSFORMER'&&!ntPlace(d[3])).map(d=>d[0])}; }
+function ntApplySum(F){ const B=ntSum(F); if(!B) return; F._sld=B; if(B.cust) F.cust=B.cust;
+  const secs=ntSecs(F), nm=x=>ntPlace(x.desc)||x.id;
+  if(!F.area||F._autoArea){ F.area=secs.map(x=>{ const a=nm(x.a); if(x.b.length) return a+' → ก่อนถึง '+x.b.map(nm).join(', '); const B=ntBelow(x.a.id), pl=B?B.places:[]; return pl.length&&pl[pl.length-1]!==a?a+' → '+pl[pl.length-1]:a; }).join(' · '); F._autoArea=1; }
+  if(!(F.villages||[]).length||F._autoV){ F.villages=B.places.slice(0,6); F._autoV=1; } }
 /* ---------- ฟอร์มสร้าง/แก้ประกาศ ---------- */
 async function ntForm(n0){
   const c=ntCfg(), td=ntNow().slice(0,10);
@@ -345,7 +373,16 @@ async function ntForm(n0){
      <input type="text" id="ntR" value="${esc(F.reason||'')}" placeholder="รายละเอียดสาเหตุ (แสดงบนโปสเตอร์)" style="margin-top:6px">
      <div class="lb" style="align-items:center"><span>ฟีดเดอร์ / อุปกรณ์ที่ตัดไฟ (SLD) <i>ไม่บังคับ</i></span><button type="button" class="nt-rl" id="ntSldR">↻ โหลด SLD ใหม่</button></div>
      <div class="chips">${fd.map(([id,col])=>`<button type="button" class="ch ${F.feeder===id?'on':''}" data-fd="${id}"><span class="dot" style="background:${col}"></span>${id}</button>`).join('')}</div>
-     ${F.dev?`<div class="hit on" style="margin-top:6px"><div><b>${esc(F.dev.id)}</b> ${esc(DEV_TH[F.dev.type]||F.dev.type||'')} ${esc(F.dev.rating||'')} · ${esc(F.dev.desc||'')} · ${esc(F.dev.feeder||'')}${(()=>{ const B=F._sld||ntBelow(F.dev.id); if(!B) return ''; return `<div class="nt-sld">📊 จาก SLD: ${B.tr?'หม้อแปลง '+B.tr+' ลูก · ':''}${B.mv?'มิเตอร์แรงสูง '+B.mv+' ราย · ':''}<b>ผู้ใช้ไฟ ~${B.cust||0} ราย</b>${(B.noname||[]).length?`<div class="nt-warn">⚠️ หม้อแปลง ${B.noname.length} ลูกยังไม่มีชื่อใน SLD (มีแต่ DCC_) — ใส่ชื่อสถานที่ใน SLD ก่อน แล้วกด ↻ โหลด SLD ใหม่<br><small>${esc(B.noname.slice(0,12).join(', '))}${B.noname.length>12?' …':''}</small></div>`:''}${B.places.length?'<br>พื้นที่: '+esc(B.places.slice(0,8).join(', '))+(B.places.length>8?' และอีก '+(B.places.length-8)+' จุด':''):''}</div>`; })()}</div><button type="button" class="lnk" id="ntDevX">เปลี่ยน</button></div>`:`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
+     ${F.dev?(()=>{ const B=F._sld||ntSum(F), secs=ntSecs(F), dv=x=>`<b>${esc(x.id)}</b> ${esc(DEV_TH[x.type]||x.type||'')} · ${esc(ntPlace(x.desc)||x.desc||'')}`;
+        return secs.map((x,i)=>`<div class="nt-sec"><div class="nt-sech"><span>ช่วงที่ ${i+1}</span>${i?`<button type="button" class="lnk" data-delsec="${i}">✕ ลบช่วง</button>`:''}</div>
+          <div class="nt-pt"><span class="nt-ic a">A</span><div>⚡ เริ่มดับที่ ${dv(x.a)}<small>${esc(x.a.feeder||'')}</small></div>${i?'':'<button type="button" class="lnk" id="ntDevX">เปลี่ยน</button>'}</div>
+          ${x.b.map(b=>`<div class="nt-pt"><span class="nt-ic b">B</span><div>■ ไฟถึงแค่ ${dv(b)}<small>หลังจุดนี้ยังมีไฟ</small></div><button type="button" class="lnk" data-delb="${esc(b.id)}">✕</button></div>`).join('')}
+          ${F._pick==='b'+i?'':`<button type="button" class="nt-addb" data-addb="${i}">＋ ใส่จุดที่ยังมีไฟ (B) ไม่บังคับ</button>`}
+          ${B&&B.per&&B.per[i]?`<div class="nt-secs">หม้อแปลง ${B.per[i].tr} ลูก · ผู้ใช้ไฟ ~${B.per[i].cust} ราย</div>`:''}
+          ${F._pick==='b'+i?`<div class="nt-pk">ค้นจุด B — เฉพาะอุปกรณ์ที่อยู่หลัง ${esc(x.a.id)} <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="รหัส / ชื่อสถานที่ ของจุดที่ยังมีไฟ" autocomplete="off"><div id="ntHits"></div>`:''}</div>`).join('')
+         +(F._pick==='more'?`<div class="nt-pk">ค้นจุดเริ่มดับของช่วงใหม่ <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" autocomplete="off"><div id="ntHits"></div>`:`<button type="button" class="nt-addsec" id="ntAddSec">＋ เพิ่มช่วง / จุดตัดไฟ</button>`)
+         +(B?`<div class="nt-sld">📊 ${secs.length>1?'รวม '+secs.length+' ช่วง · ':''}${B.tr?'หม้อแปลง '+B.tr+' ลูก · ':''}${B.mv?'มิเตอร์แรงสูง '+B.mv+' ราย · ':''}<b>ผู้ใช้ไฟ ~${B.cust||0} ราย</b>${(B.noname||[]).length?`<div class="nt-warn">⚠️ หม้อแปลง ${B.noname.length} ลูกยังไม่มีชื่อใน SLD (มีแต่ DCC_) — ใส่ชื่อสถานที่ใน SLD ก่อน แล้วกด ↻ โหลด SLD ใหม่<br><small>${esc(B.noname.slice(0,12).join(', '))}${B.noname.length>12?' …':''}</small></div>`:''}${B.places.length?'<br>พื้นที่: '+esc(B.places.slice(0,8).join(', '))+(B.places.length>8?' และอีก '+(B.places.length-8)+' จุด':''):''}</div>`:''); })()
+      :`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
      <div class="lb">พื้นที่ไฟดับ <i>ชื่อที่ชาวบ้านรู้จัก · ใช้ → แบ่ง จาก/ถึง</i></div>
      <input type="text" id="ntA" value="${esc(F.area||'')}" placeholder="เช่น สามแยก ศพด.แหลมสัก → หัวแหลม">
      <div class="grid2" style="margin-top:6px"><input type="text" id="ntSub" value="${esc(F.sub||'')}" placeholder="ต./อ./จ."><input type="text" id="ntV" value="${esc((F.villages||[]).join(', '))}" placeholder="หมู่บ้าน/จุดสังเกต (คั่นด้วย ,)"></div>
@@ -368,18 +405,30 @@ async function ntForm(n0){
     document.querySelectorAll('#ntF [data-rk]').forEach(b=>b.onclick=()=>{ keep(); const r=NT_RS[F.type].find(x=>x[0]===b.dataset.rk); F.reasonKey=r[0]; F.reason=r[0]==='other'?'':r[1]; draw(); });
     document.querySelectorAll('#ntF [data-fd]').forEach(b=>b.onclick=()=>{ keep(); F.feeder=F.feeder===b.dataset.fd?'':b.dataset.fd; if(F.dev&&F.dev.feeder!==F.feeder) F.dev=null; draw(); });
     document.querySelectorAll('#ntF input.hm').forEach(x=>x.oninput=hmTyping);
-    if($('ntDevX')) $('ntDevX').onclick=()=>{ keep(); F.dev=null; draw(); };
+    if($('ntDevX')) $('ntDevX').onclick=()=>{ keep(); F.dev=null; F.stops=[]; F.more=[]; F._pick=''; draw(); };
+    document.querySelectorAll('#ntF [data-addb]').forEach(b=>b.onclick=()=>{ keep(); F._pick='b'+b.dataset.addb; draw(); setTimeout(()=>$('ntQ')&&$('ntQ').focus(),50); });
+    document.querySelectorAll('#ntF [data-pkx]').forEach(b=>b.onclick=()=>{ keep(); F._pick=''; draw(); });
+    document.querySelectorAll('#ntF [data-delb]').forEach(b=>b.onclick=()=>{ keep(); F.stops=(F.stops||[]).filter(x=>x.id!==b.dataset.delb); ntApplySum(F); draw(); });
+    document.querySelectorAll('#ntF [data-delsec]').forEach(b=>b.onclick=()=>{ keep(); const x=ntSecs(F)[+b.dataset.delsec]; if(!x) return; F.more=(F.more||[]).filter(m=>m.id!==x.a.id); F.stops=(F.stops||[]).filter(t=>!x.b.some(y=>y.id===t.id)); ntApplySum(F); draw(); });
+    if($('ntAddSec')) $('ntAddSec').onclick=()=>{ keep(); F._pick='more'; draw(); setTimeout(()=>$('ntQ')&&$('ntQ').focus(),50); };
+    const pick=d=>{ const o={id:d[0],type:d[1],desc:d[3],feeder:d[4],rating:d[2]};
+      if(F.dev&&/^b\d+$/.test(F._pick||'')){ const a=ntSecs(F)[+F._pick.slice(1)].a; if(d[0]===a.id||!ntIsUnder(d[0],a.id)){ toast(d[0]+' ไม่ได้อยู่หลัง '+a.id+' — เลือกอุปกรณ์ที่อยู่ปลายสาย'); return false; }
+        F.stops=(F.stops||[]).filter(x=>x.id!==d[0]).concat([o]); }
+      else if(F.dev&&F._pick==='more'){ if(d[0]===F.dev.id||(F.more||[]).some(x=>x.id===d[0])){ toast('เลือกไว้แล้ว'); return false; } F.more=(F.more||[]).concat([o]); }
+      else { F.stops=[]; F.more=[]; ntPickDev(F,d); }
+      F._pick=''; ntApplySum(F); return true; };
     const q=$('ntQ'); if(q) q.oninput=()=>{ const s=S.sld, raw=q.value.trim(); if(!s||!s.dev.length){ $('ntHits').innerHTML='<div class="muted">กำลังโหลดข้อมูลอุปกรณ์จาก SLD…</div>'; sldData().then(()=>q.oninput()); return; }
       const N=x=>String(x||'').toLowerCase().replace(/[\s\-_.\/]/g,''), v=N(raw); if(v.length<2){ $('ntHits').innerHTML=''; return; }
       const rank=d=>{ const id=N(d[0]), ds=N(d[3]), ty=N(DEV_TH[d[1]]||d[1]); return id===v?0:id.startsWith(v)?1:id.includes(v)?2:ds.includes(v)?3:ty.includes(v)?4:9; };
       let L=s.dev.map(d=>[d,rank(d)]).filter(x=>x[1]<9);
+      if(F.dev&&/^b\d+$/.test(F._pick||'')){ const a=ntSecs(F)[+F._pick.slice(1)].a.id; L=L.filter(x=>x[0][0]!==a&&ntIsUnder(x[0][0],a)); }
       const inF=F.feeder?L.filter(x=>x[0][4]===F.feeder):L; if(inF.length) L=inF;
       const tot=L.length; L=L.sort((a,b)=>a[1]-b[1]||String(a[0][0]).localeCompare(String(b[0][0]))).slice(0,20).map(x=>x[0]);
       if(!s.byId) ntBelow((s.dev[0]||[])[0]);
       const up=d=>{ const w=ntUpSw(d[0],1)[0]; return w?`<small class="nt-up">อยู่หลัง แยก ${esc(w[0])}${ntPlace(w[3])?' '+esc(ntPlace(w[3])):''}</small>`:''; };
       $('ntHits').innerHTML=L.map((d,i)=>`<button type="button" class="hit" data-h="${i}"><span><b>${esc(d[0])}</b> ${esc(DEV_TH[d[1]]||d[1])}${d[2]?' '+esc(d[2]):''} · ${esc(ntPlace(d[3])||d[3])}${up(d)}</span><span class="muted" style="white-space:nowrap">${esc(d[4])}${d[8]?' · '+d[8]+' ราย':''}</span></button>`).join('')
         +(tot>L.length?`<div class="muted">พบ ${tot} รายการ — พิมพ์ให้เจาะจงขึ้นเพื่อดูที่เหลือ</div>`:'')+(L.length?'':`<div class="muted nt-nf">ไม่พบ "${esc(raw)}"${F.feeder?' (ค้นทุกฟีดเดอร์แล้ว)':''} — ลองพิมพ์บางส่วนของรหัส เช่น เลข 4 หลักท้าย</div>`);
-      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); ntPickDev(F,L[+b.dataset.h]); draw(); toast('เติมข้อมูลจาก SLD แล้ว — ตรวจ/แก้ได้'); });
+      $('ntHits').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ keep(); if(pick(L[+b.dataset.h])){ draw(); toast('เติมข้อมูลจาก SLD แล้ว — ตรวจ/แก้ได้'); } });
       if(/^\d{4,}$/.test(v)) ntMeterHits(v,raw); };
     const ntMeterHits=async(v,raw)=>{ const box=document.createElement('div'); box.className='nt-lvb'; box.innerHTML='<div class="muted">🏠 กำลังค้นมิเตอร์…</div>'; $('ntHits').prepend(box);
       let J; try{ J=await ntLv(); }catch(e){ box.innerHTML='<div class="muted">'+esc(e.message)+'</div>'; return; }
@@ -389,12 +438,12 @@ async function ntForm(n0){
       const nf=$('ntHits').querySelector('.nt-nf'); if(nf) nf.remove();
       box.innerHTML='<div class="nt-lvh">🏠 มิเตอร์ผู้ใช้ไฟ <i>หม้อแปลงประมาณจากพิกัด · แตะชื่อเพื่อเลือก</i></div>'+M.map(m=>{ const fd=J.feeder[m[2]], nt=ntNearTr(S.sld.fd.some(x=>x[0]===fd)?fd:null,m[0],m[1]);
         return `<div class="hit lv"><div><b>มิเตอร์ ${esc(m[7])}</b> <span class="muted">CA ${esc(ca(m))} · ${esc(fd||'')}${J.office[m[3]]==='PPY'?' · ปลายพระยา':''}</span>${nt?ntChainHtml(nt[0][0],1,nt[1]):''}</div></div>`; }).join('');
-      box.querySelectorAll('[data-pk]').forEach(a=>a.onclick=e=>{ e.stopPropagation(); const d=S.sld.byId[a.dataset.pk]; if(!d) return; keep(); ntPickDev(F,d); draw(); toast('เลือก '+d[0]+' แล้ว — เติมข้อมูลจาก SLD'); }); };
-    if($('ntSldR')) $('ntSldR').onclick=async()=>{ keep(); LS.del('sld'); S.sld=null; $('ntSldR').textContent='กำลังโหลด…'; await sldData(); if(F.dev){ const d=(S.sld.dev||[]).find(x=>x[0]===F.dev.id); if(d) ntPickDev(F,d); } toast('โหลดข้อมูล SLD ใหม่แล้ว ('+((S.sld&&S.sld.dev.length)||0)+' อุปกรณ์)'); draw(); };
+      box.querySelectorAll('[data-pk]').forEach(a=>a.onclick=e=>{ e.stopPropagation(); const d=S.sld.byId[a.dataset.pk]; if(!d) return; keep(); if(pick(d)){ draw(); toast('เลือก '+d[0]+' แล้ว — เติมข้อมูลจาก SLD'); } }); };
+    if($('ntSldR')) $('ntSldR').onclick=async()=>{ keep(); LS.del('sld'); S.sld=null; $('ntSldR').textContent='กำลังโหลด…'; await sldData(); if(F.dev){ const d=(S.sld.dev||[]).find(x=>x[0]===F.dev.id); if(d){ const st=F.stops, mo=F.more; ntPickDev(F,d); F.stops=st; F.more=mo; ntApplySum(F); } } toast('โหลดข้อมูล SLD ใหม่แล้ว ('+((S.sld&&S.sld.dev.length)||0)+' อุปกรณ์)'); draw(); };
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
       if(!String(F.area||'').trim()){ msg('ntFMsg','ใส่พื้นที่ไฟดับ','err'); return; }
-      const o={type:F.type,slogan:F.slogan||'',reason:F.reason,reasonKey:F.reasonKey,feeder:F.feeder,dev:F.dev,cust:F.cust,area:F.area.trim(),sub:F.sub,villages:F.villages,speech:F.speech};
+      const o={type:F.type,slogan:F.slogan||'',reason:F.reason,reasonKey:F.reasonKey,feeder:F.feeder,dev:F.dev,stops:F.dev?(F.stops||[]):[],more:F.dev?(F.more||[]):[],cust:F.cust,area:F.area.trim(),sub:F.sub,villages:F.villages,speech:F.speech};
       if(n0) Object.assign(o,{id:n0.id,date:F.date,start:F.start,end:F.end,estMin:F.estMin});
       else if(F.type==='emg'){ const at=isoAt(Date.now()+F.startIn*6e4); Object.assign(o,{date:at.slice(0,10),start:at.slice(11,16),estMin:F.estMin,live:F.startIn===0}); }
       else { if(!F.date||!F.start||!F.end){ msg('ntFMsg','ใส่วันและเวลาให้ครบ','err'); return; } Object.assign(o,{date:F.date,start:F.start,end:F.end}); }
