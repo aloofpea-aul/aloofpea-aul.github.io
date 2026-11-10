@@ -669,7 +669,7 @@ function outPerm_(b, k, cross) {
   return { by: by, appr: false, cross: isX };
 }
 function outAuth_(b, k) { return outPerm_(b, k).by; }
-const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'stops', 'more', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew', 'longWhy'];
+const OUT_KEYS_ = ['lvl', 'off', 'on', 'ws', 'we', 'feeder', 'dev', 'cust', 'lat', 'lon', 'cBtn', 'cType', 'cData', 'known', 'weather', 'fix', 'mats', 'detail', 'wo', 'place', 'crew', 'longWhy'];
 /** แก้ข้อมูลเวรที่ล็อกแล้ว (ผู้อนุมัติ) → ยกเลิก "รับแล้ว" ให้พิมพ์บัญชีลงนามใหม่ */
 function outUnlock_(k, P) { if (!P.appr) return; const R = reportsOf_(k.slice(0, 7))[k]; if (R && R.received) { repSetMeta_(k, { received: null }); log_(P.by, 'ยกเลิกรับเอกสาร (แก้ไฟดับ)', k.slice(0, 7), k); } }
 const OUT_HIST_F_ = { lvl: 'แรงดัน', off: 'เวลาไฟดับ', on: 'เวลาจ่ายไฟ', ws: 'เริ่มปฏิบัติงาน', we: 'เสร็จงาน', feeder: 'ฟีดเดอร์', place: 'สถานที่', cType: 'สาเหตุ', cData: 'สาเหตุย่อย', fix: 'การแก้ไข', cust: 'ผู้ใช้ไฟ', detail: 'รายละเอียด', longWhy: 'เหตุผลไฟดับเกิน 4 ชม.' };
@@ -1566,7 +1566,7 @@ function ntWho_(b) {
   const n = tkAuth_(b), nn = normN_(n), pr = readTable_(SH.PEOPLE).filter(function (p) { return normN_(p.full) === nn || normN_(p.short) === nn; })[0];
   return pr ? pr.short : n;
 }
-const NT_KEYS_ = ['type', 'date', 'start', 'end', 'estMin', 'reason', 'reasonKey', 'feeder', 'dev', 'cust', 'area', 'sub', 'villages', 'speech', 'note', 'slogan'];
+const NT_KEYS_ = ['type', 'date', 'start', 'end', 'estMin', 'reason', 'reasonKey', 'feeder', 'dev', 'stops', 'more', 'cust', 'area', 'sub', 'villages', 'speech', 'note', 'slogan'];
 function ntAt_(d, hm) { return d + 'T' + hm; }
 function saveNotice_(b) {
   const by = ntWho_(b), o = b.n || {};

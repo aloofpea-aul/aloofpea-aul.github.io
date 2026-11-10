@@ -340,7 +340,7 @@ function ntPickDev(F,d){ const B=ntBelow(d[0])||{places:[],cust:+d[8]||null,tr:0
   const nm=ntPlace(d[3]), pl=B.places.length?B.places:(nm?[nm]:[]);
   if(!F.area||F._autoArea){ F.area=nm&&pl.length&&pl[pl.length-1]!==nm?nm+' → '+pl[pl.length-1]:(nm||pl[0]||''); F._autoArea=1; }
   if(!(F.villages||[]).length||F._autoV){ F.villages=pl.slice(0,6); F._autoV=1; } }
-const NT_AB=false;   // เปิดหลัง deploy GAS ที่เก็บ stops/more แล้ว
+const NT_AB=true;
 /* ช่วงที่ดับหลายช่วง: A = F.dev + F.more[] · B (ไฟถึงแค่) = F.stops[] — หลัง B ยังมีไฟ */
 function ntIsUnder(x,a){ const s=S.sld; let d=s.byId[x], g=0; while(d&&g++<200){ if(d[0]===a) return true; d=s.byId[d[7]]; } return false; }
 function ntSecs(F){ const A=[F.dev].concat(F.more||[]).filter(Boolean), st=F.stops||[];
