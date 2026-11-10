@@ -1097,7 +1097,7 @@ function boxInfo_() {
   if (!duty.length && !bellHours_()) duty = [String(getConfig_().boxOfficeDuty || 'ผปร. : อติวิทย์')];
   const out = { duty: duty, crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
-    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(),
+    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(), oc: ocBox_(),
     rot: String(getConfig_().boxRot || '20,10,5').split(',').map(function (x) { return Math.max(0, Math.min(120, Number(x) || 0)); }) };
   cache.put('boxInfo', JSON.stringify(out), 30);
   return out;
@@ -1164,6 +1164,7 @@ function ocClassify_(body, C) {
 function ocCfg_() {
   const c = getConfig_();
   return { room: String(c.ocRoom || 'แจ้งกระแสไฟฟ้าขัดข้องอ่าวลึก'), mode: String(c.ocMode || 'test'), testTo: String(c.ocTestTo || 'มานศักดิ์'),
+    hours: String(c.ocHours || 'off'), remind: Math.max(5, Number(c.ocRemind) || 30),
     staff: String(c.ocStaff || OC_STAFF_).split(/[,\n]/).map(ocName_).filter(String),
     words: String(c.ocWords || OC_WORDS_).split(/[,\n]/).map(function (w) { return w.trim(); }).filter(String) };
 }
@@ -1205,6 +1206,12 @@ function ocIn_(q) {
       else if (k.lv === 'back') result = 'ไฟมาแล้ว';
       else {
         result = (k.lv === 'sure' ? 'ตรง "' + k.why + '"' : 'อาจเป็นการแจ้ง') + (C.mode === 'test' ? ' (ทดสอบ)' : '');
+        cache.remove('boxInfo');
+        if (C.mode === 'live' && k.lv === 'sure' && (C.hours === 'all' || bellHours_()) && !cache.get('ocNtf')) {
+          cache.put('ocNtf', '1', 600);
+          try { const u = webUrl_('', { oc: 1 }), t = Utilities.formatDate(new Date(), TZ, 'HH:mm');
+            bellPushText_(dutyShorts_(), '💬 OpenChat มีคนแจ้งไฟดับ · ' + t + ' น.\n' + (sender ? sender + ': ' : '') + body.slice(0, 200) + '\n\nตรวจแล้วกด "เปิดเป็นงาน" หรือ "ไม่ใช่"' + (u ? '\n' + u : '')); } catch (e) {}
+        }
         if (C.mode === 'test') {
           const id = lineIdOf_(C.testTo), t = Utilities.formatDate(new Date(), TZ, 'HH:mm');
           if (id) push_(id, [text_((k.lv === 'sure' ? '🧪 ทดสอบ OpenChat · ตรง "' + k.why + '"' : '🧪❔ ทดสอบ OpenChat · อาจเป็นการแจ้ง (ไม่ตรงรูปแบบ)') + '\nจาก ' + (sender || '-') + ' · ' + t + ' น.\n' + body.slice(0, 500))], 'ticket');
@@ -1219,15 +1226,17 @@ function ocIn_(q) {
 function ocList_(b) {
   const by = tkAuth_(b), sh = ocSheet_(), n = sh.getLastRow(); if (n < 2) return { by: by, rows: [] };
   const hrs = Math.min(72, Math.max(1, Number(b.hours) || 24)), from = Date.now() - hrs * 3600e3, k = Math.min(n - 1, 1500);
-  const v = sh.getRange(n - k + 1, 1, k, 7).getValues(), C = ocCfg_(), out = [];
+  const v = sh.getRange(n - k + 1, 1, k, 8).getValues(), C = ocCfg_(), out = [], qFrom = Date.now() - OC_QH_ * 3600e3;
   for (let i = v.length - 1; i >= 0; i--) { const t = v[i][0] instanceof Date ? v[i][0].getTime() : Date.parse(v[i][0]); if (!t || t < from) continue;
     const sender = String(v[i][1] || ''), body = String(v[i][2] || ''), res = String(v[i][3] || '');
     if (!body || /^สรุปแจ้งเตือน|^ซ้ำ/.test(res)) continue;
     const staff = !!(sender && C.staff.indexOf(ocName_(sender)) >= 0), c = staff ? { lv: 'staff', why: '' } : ocClassify_(body, C);
-    out.push({ r: n - k + 1 + i, at: Utilities.formatDate(new Date(t), TZ, 'yyyy-MM-dd HH:mm'), s: sender.slice(0, 60), x: body.slice(0, 600), lv: c.lv, why: c.why || '', fix: String(v[i][6] || '') });
+    const fix = String(v[i][6] || ''), tk = String(v[i][7] || '');
+    out.push({ r: n - k + 1 + i, at: Utilities.formatDate(new Date(t), TZ, 'yyyy-MM-dd HH:mm'), s: sender.slice(0, 60), x: body.slice(0, 600), lv: c.lv, why: c.why || '', fix: fix, tk: tk,
+      q: ocIsQ_(c.lv, fix, tk) && t >= qFrom ? 1 : 0 });
     if (out.length >= 400) break; }
   const hb = Number(CacheService.getScriptCache().get('ocHB') || 0);
-  return { by: by, mode: C.mode, hb: hb ? Utilities.formatDate(new Date(hb), TZ, 'HH:mm') : '', rows: out };
+  return { by: by, mode: C.mode, hours: C.hours, remind: C.remind, qh: OC_QH_, appr: !!approverOf_(b), hb: hb ? Utilities.formatDate(new Date(hb), TZ, 'HH:mm') : '', rows: out };
 }
 /** ป้ายแก้การคัด: yes = เป็นการแจ้ง · no = ไม่ใช่ · '' = ล้าง — ใช้ปรับรูปแบบภายหลัง */
 function ocMark_(b) {
@@ -1235,6 +1244,91 @@ function ocMark_(b) {
   const f = /^(yes|no)$/.test(String(b.fix)) ? String(b.fix) + '·' + by : '';
   if (sh.getRange(1, 7).getValues()[0][0] !== 'fix') sh.getRange(1, 7).setValues([['fix']]);
   sh.getRange(r, 7).setValues([[f]]); return { r: r, fix: f };
+}
+/* ---- กล่องรอตรวจ: ข้อความแจ้งเหตุ/ไม่แน่ใจ ที่ยังไม่มีคนจัดการ (ภายใน OC_QH_ ชม.) ----
+ * คอลัมน์ H (tk): A-0012 = เปิดเป็นงาน · merge:A-0012 = รวมกับงานเดิม · ok·ชื่อ = รับทราบ ไม่ต้องเปิดงาน · skip·ชื่อ = ไม่ใช่การแจ้ง */
+const OC_QH_ = 3;
+function ocIsQ_(lv, fix, tk) { return !tk && !/^no/.test(fix) && (lv === 'sure' || lv === 'maybe' || /^yes/.test(fix)); }
+function ocPending_() {
+  const sh = ocSheet_(), n = sh.getLastRow(); if (n < 2) return [];
+  const k = Math.min(n - 1, 300), v = sh.getRange(n - k + 1, 1, k, 8).getValues(), C = ocCfg_(), from = Date.now() - OC_QH_ * 3600e3, out = [];
+  for (let i = v.length - 1; i >= 0; i--) {
+    const t = v[i][0] instanceof Date ? v[i][0].getTime() : Date.parse(v[i][0]); if (!t || t < from) continue;
+    const sender = String(v[i][1] || ''), body = String(v[i][2] || ''), res = String(v[i][3] || ''), fix = String(v[i][6] || '');
+    if (!body || /^สรุปแจ้งเตือน|^ซ้ำ/.test(res) || (sender && C.staff.indexOf(ocName_(sender)) >= 0)) continue;
+    const c = ocClassify_(body, C);
+    if (ocIsQ_(c.lv, fix, String(v[i][7] || ''))) out.push({ r: n - k + 1 + i, t: t, s: sender, x: body, sure: c.lv === 'sure' || /^yes/.test(fix) });
+  }
+  return out;   // ใหม่สุดก่อน
+}
+/** ข้อมูลให้กล่องจอ: จำนวนรอตรวจ (นับตามคนแจ้ง) · อายุรายการ "แจ้งเหตุ" ที่ค้างนานสุด · ข้อความล่าสุด */
+function ocBox_() {
+  if (!ocKey_()) return null;
+  try {
+    const q = ocPending_(); if (!q.length) return { n: 0 };
+    const who = {}, whoS = {}; q.forEach(function (x) { who[x.s || ('#' + x.r)] = 1; if (x.sure) whoS[x.s || ('#' + x.r)] = 1; });
+    const sure = q.filter(function (x) { return x.sure; }), old = sure.length ? sure[sure.length - 1].t : 0, last = q[0], C = ocCfg_();
+    return { n: Object.keys(who).length, ns: Object.keys(whoS).length, min: old ? Math.floor((Date.now() - old) / 60000) : -1,
+      at: Utilities.formatDate(new Date(last.t), TZ, 'HH:mm'), s: ocBoxTxt_(last.s).slice(0, 30), x: ocBoxTxt_(last.x).slice(0, 90),
+      rm: C.remind, url: webUrl_('', { oc: 1 }) || '' };
+  } catch (e) { return null; }
+}
+/** จัดการข้อความในกล่องรอตรวจ — a: open (เปิดเป็นงาน) · merge (รวมกับงานเดิม ref) · ack (รับทราบ ไม่เปิดงาน) · skip (ไม่ใช่การแจ้ง) · undo */
+function ocAct_(b) {
+  const by = tkAuth_(b), a = String(b.a || ''), sh = ocSheet_(), n = sh.getLastRow(), C = ocCfg_();
+  const rs = (Array.isArray(b.rows) ? b.rows : [b.r]).map(Number).filter(function (r) { return r >= 2 && r <= n; }).slice(0, 20);
+  if (!rs.length) throw new Error('ไม่พบข้อความ');
+  if (sh.getRange(1, 7, 1, 2).getValues()[0].join('|') !== 'fix|tk') sh.getRange(1, 7, 1, 2).setValues([['fix', 'tk']]);
+  const cur = rs.map(function (r) { return sh.getRange(r, 1, 1, 8).getValues()[0]; });
+  if (a !== 'undo') { const done = cur.filter(function (v) { return String(v[7] || ''); })[0];
+    if (done) throw new Error('ข้อความนี้มีคนจัดการแล้ว (' + ocTkText_(String(done[7])) + ')'); }
+  if ((a === 'open' || a === 'merge') && C.mode !== 'live') throw new Error('ยังอยู่ในโหมดทดสอบ — หัวหน้าเปิด "โหมดใช้งานจริง" ก่อนจึงเปิดเป็นงานได้');
+  let tk = '', d = null;
+  if (a === 'open') {
+    const texts = cur.map(function (v) { return String(v[2] || ''); }), sender = String(cur[0][1] || ''), t = texts.join('\n').slice(0, 500);
+    const ph = (t.replace(/[\s-]/g, '').match(/0\d{8,9}/) || [''])[0], id = tkNextId_(), now = new Date();
+    const firstAt = cur.reduce(function (m, v) { const x = v[0] instanceof Date ? v[0].getTime() : Date.parse(v[0]); return x && x < m ? x : m; }, now.getTime());
+    d = { id: id, at: now.toISOString(), ocAt: new Date(firstAt).toISOString(),
+      type: TK_TYPES_[b.type] ? b.type : (/สาย.*ขาด|เสา.*ล้ม|ไฟไหม้|ประกาย|ระเบิด/.test(t) ? 'danger' : /ตก|กระพริบ|หรี่|ไม่เต็ม/.test(t) ? 'low' : /ซอย|หมู่บ้าน|ทั้งหมู่|ทั้งตำบล|แถว/.test(t) ? 'area' : 'home'),
+      phone: ph, name: sender.slice(0, 60), place: String(b.place || '').trim().slice(0, 200), detail: t, lat: null, lon: null,
+      src: 'oc', ocRows: rs, fwdBy: by, key: Utilities.getUuid().slice(0, 8), st: 'new' };
+    const self = !!b.self;
+    if (self) { d.st = 'acc'; d.accBy = by; d.accAt = now.toISOString(); }
+    else if (bellHours_(now)) { d.bell = 1; bellFlag_(); }
+    tkSheet_().appendRow([id, now, JSON.stringify(d), d.st, now]);
+    log_(by, 'รับแจ้งไฟดับ (จาก OpenChat)', bkkYmd_().slice(0, 7), id + (self ? ' · รับงานเอง' : ''));
+    if (!self) { try { tkNotify_(d, false); } catch (e) {} }
+    try { tkEnsureTrigger_(); } catch (e) {}
+    tk = id;
+  } else if (a === 'merge') {
+    const ref = String(b.ref || '').trim().toUpperCase(), x = tkRows_().filter(function (r) { return r.id === ref; })[0];
+    if (!x) throw new Error('ไม่พบงาน ' + ref);
+    x.d.ocMore = (x.d.ocMore || []).concat(rs).slice(-30);
+    const extra = cur.map(function (v) { return (v[1] ? v[1] + ': ' : '') + String(v[2] || ''); }).join('\n');
+    x.d.detail = (String(x.d.detail || '') + '\n+ ' + extra).slice(0, 1500); tkWrite_(x);
+    log_(by, 'รับแจ้งไฟดับ: รวมข้อความ OpenChat', '', ref + ' +' + rs.length);
+    tk = 'merge:' + ref;
+  } else if (a === 'ack') tk = 'ok·' + by;
+  else if (a === 'skip') tk = 'skip·' + by;
+  else if (a !== 'undo') throw new Error('คำสั่งไม่ถูกต้อง');
+  rs.forEach(function (r, i) {
+    let fix = String(cur[i][6] || '');
+    if (a === 'skip') fix = 'no·' + by; else if (a !== 'undo' && !/^yes/.test(fix)) fix = 'yes·' + by;
+    if (a === 'undo' && /^(A-|merge:)/.test(String(cur[i][7]))) throw new Error('ข้อความที่เปิดเป็นงานแล้ว ยกเลิกไม่ได้ — ไปจัดการที่รายการรับแจ้ง');
+    sh.getRange(r, 7, 1, 2).setValues([[fix, a === 'undo' ? '' : tk]]);
+  });
+  CacheService.getScriptCache().remove('boxInfo');
+  return { rows: rs, tk: a === 'undo' ? '' : tk, ticket: d ? { id: d.id, st: d.st } : null };
+}
+function ocBoxTxt_(t) { return String(t || '').replace(/[^\u0020-\u007e\u0e00-\u0e7f\s]/g, '').replace(/\s+/g, ' ').trim(); }   // จอกล่องมีเฉพาะอักษรไทย/อังกฤษ
+function ocTkText_(tk) { return /^A-/.test(tk) ? 'เปิดเป็นงาน ' + tk : /^merge:/.test(tk) ? 'รวมกับ ' + tk.slice(6) : /^ok/.test(tk) ? 'รับทราบแล้ว' : 'ไม่ใช่การแจ้ง'; }
+/** หัวหน้า/ผู้ช่วย: สลับโหมด test ↔ live และช่วงเวลาแจ้ง LINE (off = นอกเวลาทำการ · all = ตลอด) */
+function ocSetMode_(b) {
+  const w = approverOf_(b); if (!w) throw new Error('เฉพาะหัวหน้า/ผู้ช่วยหัวหน้าแผนก');
+  if (b.mode) { const m = String(b.mode); if (['test', 'live'].indexOf(m) < 0) throw new Error('โหมดไม่ถูกต้อง'); setConfigKey_('ocMode', m); log_(w.short || w.name, 'OpenChat: โหมด ' + m, '', ''); }
+  if (b.hours) { const h = String(b.hours); if (['off', 'all'].indexOf(h) < 0) throw new Error('ช่วงเวลาไม่ถูกต้อง'); setConfigKey_('ocHours', h); }
+  CacheService.getScriptCache().remove('boxInfo');
+  const C = ocCfg_(); return { mode: C.mode, hours: C.hours };
 }
 /** tkCheck: มือถือเงียบเกิน 15 นาที (ช่วงนอกเวลาทำการ) → เตือนครั้งเดียว · กลับมา → แจ้ง */
 function ocWatch_() {
