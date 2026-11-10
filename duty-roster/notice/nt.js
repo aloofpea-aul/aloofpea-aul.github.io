@@ -340,6 +340,7 @@ function ntPickDev(F,d){ const B=ntBelow(d[0])||{places:[],cust:+d[8]||null,tr:0
   const nm=ntPlace(d[3]), pl=B.places.length?B.places:(nm?[nm]:[]);
   if(!F.area||F._autoArea){ F.area=nm&&pl.length&&pl[pl.length-1]!==nm?nm+' → '+pl[pl.length-1]:(nm||pl[0]||''); F._autoArea=1; }
   if(!(F.villages||[]).length||F._autoV){ F.villages=pl.slice(0,6); F._autoV=1; } }
+const NT_AB=false;   // เปิดหลัง deploy GAS ที่เก็บ stops/more แล้ว
 /* ช่วงที่ดับหลายช่วง: A = F.dev + F.more[] · B (ไฟถึงแค่) = F.stops[] — หลัง B ยังมีไฟ */
 function ntIsUnder(x,a){ const s=S.sld; let d=s.byId[x], g=0; while(d&&g++<200){ if(d[0]===a) return true; d=s.byId[d[7]]; } return false; }
 function ntSecs(F){ const A=[F.dev].concat(F.more||[]).filter(Boolean), st=F.stops||[];
@@ -377,10 +378,10 @@ async function ntForm(n0){
         return secs.map((x,i)=>`<div class="nt-sec"><div class="nt-sech"><span>ช่วงที่ ${i+1}</span>${i?`<button type="button" class="lnk" data-delsec="${i}">✕ ลบช่วง</button>`:''}</div>
           <div class="nt-pt"><span class="nt-ic a">A</span><div>⚡ เริ่มดับที่ ${dv(x.a)}<small>${esc(x.a.feeder||'')}</small></div>${i?'':'<button type="button" class="lnk" id="ntDevX">เปลี่ยน</button>'}</div>
           ${x.b.map(b=>`<div class="nt-pt"><span class="nt-ic b">B</span><div>■ ไฟถึงแค่ ${dv(b)}<small>หลังจุดนี้ยังมีไฟ</small></div><button type="button" class="lnk" data-delb="${esc(b.id)}">✕</button></div>`).join('')}
-          ${F._pick==='b'+i?'':`<button type="button" class="nt-addb" data-addb="${i}">＋ ใส่จุดที่ยังมีไฟ (B) ไม่บังคับ</button>`}
+          ${F._pick==='b'+i||!NT_AB?'':`<button type="button" class="nt-addb" data-addb="${i}">＋ ใส่จุดที่ยังมีไฟ (B) ไม่บังคับ</button>`}
           ${B&&B.per&&B.per[i]?`<div class="nt-secs">หม้อแปลง ${B.per[i].tr} ลูก · ผู้ใช้ไฟ ~${B.per[i].cust} ราย</div>`:''}
           ${F._pick==='b'+i?`<div class="nt-pk">ค้นจุด B — เฉพาะอุปกรณ์ที่อยู่หลัง ${esc(x.a.id)} <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="รหัส / ชื่อสถานที่ ของจุดที่ยังมีไฟ" autocomplete="off"><div id="ntHits"></div>`:''}</div>`).join('')
-         +(F._pick==='more'?`<div class="nt-pk">ค้นจุดเริ่มดับของช่วงใหม่ <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" autocomplete="off"><div id="ntHits"></div>`:`<button type="button" class="nt-addsec" id="ntAddSec">＋ เพิ่มช่วง / จุดตัดไฟ</button>`)
+         +(F._pick==='more'?`<div class="nt-pk">ค้นจุดเริ่มดับของช่วงใหม่ <button type="button" class="lnk" data-pkx="1">ยกเลิก</button></div><input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" autocomplete="off"><div id="ntHits"></div>`:NT_AB?`<button type="button" class="nt-addsec" id="ntAddSec">＋ เพิ่มช่วง / จุดตัดไฟ</button>`:'')
          +(B?`<div class="nt-sld">📊 ${secs.length>1?'รวม '+secs.length+' ช่วง · ':''}${B.tr?'หม้อแปลง '+B.tr+' ลูก · ':''}${B.mv?'มิเตอร์แรงสูง '+B.mv+' ราย · ':''}<b>ผู้ใช้ไฟ ~${B.cust||0} ราย</b>${(B.noname||[]).length?`<div class="nt-warn">⚠️ หม้อแปลง ${B.noname.length} ลูกยังไม่มีชื่อใน SLD (มีแต่ DCC_) — ใส่ชื่อสถานที่ใน SLD ก่อน แล้วกด ↻ โหลด SLD ใหม่<br><small>${esc(B.noname.slice(0,12).join(', '))}${B.noname.length>12?' …':''}</small></div>`:''}${B.places.length?'<br>พื้นที่: '+esc(B.places.slice(0,8).join(', '))+(B.places.length>8?' และอีก '+(B.places.length-8)+' จุด':''):''}</div>`:''); })()
       :`<input type="search" id="ntQ" placeholder="ค้นอุปกรณ์ทุกชนิด: รหัส / หม้อแปลง / มิเตอร์ / ชื่อสถานที่" style="margin-top:6px" autocomplete="off"><div id="ntHits"></div>`}
      <div class="lb">พื้นที่ไฟดับ <i>ชื่อที่ชาวบ้านรู้จัก · ใช้ → แบ่ง จาก/ถึง</i></div>
