@@ -1142,13 +1142,17 @@ const OC_PAT_ = [
 ].map(function (x) { return [x[0], new RegExp(ocNormTh_(x[1]))]; });
 const OC_IGNORE_ = new RegExp(ocNormTh_('^(ขอบคุณ|ขอบใจ|ขอบพระคุณ|thank|ไฟมาแล้ว|ไฟติดแล้ว|มาแล้ว|ได้แล้ว|ใช้ได้แล้ว|เรียบร้อย|โอเค|ok|รับทราบ|ครับ|ค่ะ|คะ|จ้า|จ้ะ|555)|(ขอบคุณ)'));
 const OC_BACK_ = new RegExp(ocNormTh_('(ไฟมาแล้ว|ไฟติดแล้ว|ไฟมาละ|ไฟกลับมาแล้ว|ไฟใช้ได้แล้ว)')), OC_BACK_NOT_ = new RegExp(ocNormTh_('(ดับอีก|หายอีก|ยังไม่|บางบ้าน|บางหลัง)'));
+const OC_JUNK_ = /(ส่งสติกเกอร์|ส่งสติ๊กเกอร์|ส่งรูป|ส่งวิดีโอ|ส่งวีดีโอ|ส่งไฟล์|ส่งข้อความเสียง|ยกเลิกการส่งข้อความ|sent a (sticker|photo|video|file)|ขออภัยในความไม่สะดวก)/i;
 function ocClassify_(body, C) {
+  body = String(body || '').replace(/^(\s*@\S+)+\s*/, '');                         // ตัด @ชื่อ ที่ตอบกลับคนอื่น
+  if (!body.trim() || OC_JUNK_.test(body) || /^[\d\-\s+()]+(ครับ|ค่ะ|คะ|คับ|นะ)?$/.test(body.trim())) return { lv: 'no', why: '' };
   const n = ocNormTh_(body);
   if (OC_BACK_.test(n) && !OC_BACK_NOT_.test(n)) return { lv: 'no', why: '' };   // แจ้งว่าไฟมาแล้ว
   for (let i = 0; i < OC_PAT_.length; i++) if (OC_PAT_[i][1].test(n)) return { lv: 'sure', why: OC_PAT_[i][0] };
   const w = C.words.filter(function (x) { return n.indexOf(ocNormTh_(x)) >= 0; })[0];
   if (w) return { lv: 'sure', why: w };
   if (!n || OC_IGNORE_.test(n) || /^[\p{P}\p{S}\d]*$/u.test(n)) return { lv: 'no', why: '' };
+  if (body.length > 160) return { lv: 'no', why: '' };                                  // ข้อความยาวที่ไม่มีรูปแบบแจ้งเหตุ = โฆษณา/ประกาศ
   return { lv: 'maybe', why: '' };
 }
 function ocCfg_() {
