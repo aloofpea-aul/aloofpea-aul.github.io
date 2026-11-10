@@ -15,12 +15,12 @@ async function ocPage(){
   const a=ntAuth(); if(!a){ toast('ล็อกอินศูนย์รวมงาน หรือใส่ PIN ก่อน'); return; }
   let D=null, f='rep', hrs=24, err='';
   const load=async()=>{ try{ D=await apiPost(Object.assign({action:'ocList',hours:hrs},a)); err=''; }catch(e){ err=e.message; } if(!S.sld||!S.sld.dev.length) await sldData().catch(()=>{}); await loadNotices().catch(()=>{}); };
-  const LV={sure:['ตรงรูปแบบแจ้งเหตุ','r'],maybe:['ไม่แน่ใจ','y'],no:['ข้อความทั่วไป','x'],staff:['เจ้าหน้าที่','b']};
+  const LV={sure:['ตรงรูปแบบแจ้งเหตุ','r'],maybe:['ไม่แน่ใจ','y'],back:['แจ้งไฟมาแล้ว','g'],no:['ข้อความทั่วไป','x'],staff:['เจ้าหน้าที่','b']};
   const eff=r=>/^yes/.test(r.fix)?'sure':/^no/.test(r.fix)?'no':r.lv;
   const draw=()=>{ const R=(D&&D.rows)||[], cnt=k=>R.filter(r=>eff(r)===k).length;
     // รวมข้อความคนเดียวกันภายใน 2 ชม. เป็นการ์ดเดียว
     const groups=[]; R.forEach(r=>{ const g=groups.find(x=>x.s===r.s&&r.s&&Math.abs(Date.parse(x.rows[0].at.replace(' ','T'))-Date.parse(r.at.replace(' ','T')))<2*3600e3); if(g) g.rows.push(r); else groups.push({s:r.s,rows:[r]}); });
-    groups.forEach(g=>{ const ls=g.rows.map(eff); g.lv=ls.includes('sure')?'sure':ls.includes('maybe')?'maybe':ls.includes('staff')?'staff':'no'; });
+    groups.forEach(g=>{ const ls=g.rows.map(eff); g.lv=ls.includes('sure')?'sure':ls.includes('maybe')?'maybe':ls.includes('back')?'back':ls.includes('staff')?'staff':'no'; });
     const show=groups.filter(g=>f==='all'||(f==='rep'?g.lv==='sure'||g.lv==='maybe':g.lv===f));
     const card=(g,i)=>{ const pl=ocPlace(g.rows.map(r=>r.x).join(' ')), nt=pl&&ocInPlan(pl.ids), tr=pl&&pl.ids.length&&S.sld.byId?S.sld.byId[pl.ids[0]]:null;
       return `<div class="oc-card ${g.lv}"><div class="oc-hd"><span class="oc-tag ${LV[g.lv][1]}">${LV[g.lv][0]}</span><b>${esc(g.s||'(ไม่ทราบชื่อ)')}</b><span class="muted">${esc(g.rows[g.rows.length-1].at.slice(11))}${g.rows.length>1?'–'+esc(g.rows[0].at.slice(11))+' · '+g.rows.length+' ข้อความ':''}</span></div>
@@ -29,9 +29,9 @@ async function ocPage(){
         ${nt?`<div class="oc-plan">📢 อยู่ในประกาศงดจ่ายไฟ ${esc(ntHm(nt.startAt))}–${esc(ntHm(nt.endAt))} · ${esc(ntArea(nt))}</div>`:''}
         ${g.lv!=='staff'?`<div class="oc-bt"><button type="button" class="btn ghost sm" data-fx="yes" data-g="${i}">✓ เป็นการแจ้ง</button><button type="button" class="btn ghost sm" data-fx="no" data-g="${i}">✗ ไม่ใช่</button><span class="muted oc-soon">เปิดเป็นงาน · ใช้ได้เมื่อเปิดโหมดใช้งานจริง</span></div>`:''}</div>`; };
     ntSheet('💬 ข้อความ OpenChat',`<div id="ocP">
-      <div class="oc-st">${err?`<div class="err">${esc(err)}</div>`:''}<b>${hrs} ชม.ล่าสุด</b> · รับ ${R.length} ข้อความ · <span class="oc-tag r">แจ้งเหตุ ${cnt('sure')}</span> <span class="oc-tag y">ไม่แน่ใจ ${cnt('maybe')}</span> <span class="oc-tag b">เจ้าหน้าที่ ${cnt('staff')}</span> <span class="oc-tag x">ทั่วไป ${cnt('no')}</span>
+      <div class="oc-st">${err?`<div class="err">${esc(err)}</div>`:''}<b>${hrs} ชม.ล่าสุด</b> · รับ ${R.length} ข้อความ · <span class="oc-tag r">แจ้งเหตุ ${cnt('sure')}</span> <span class="oc-tag y">ไม่แน่ใจ ${cnt('maybe')}</span> <span class="oc-tag g">ไฟมาแล้ว ${cnt('back')}</span> <span class="oc-tag b">เจ้าหน้าที่ ${cnt('staff')}</span> <span class="oc-tag x">ทั่วไป ${cnt('no')}</span>
         <div class="muted" style="margin-top:4px">โหมด: <b>${D&&D.mode==='live'?'ใช้งานจริง':'ทดสอบ'}</b> · มือถือรับแจ้งส่งล่าสุด ${esc((D&&D.hb)||'-')} น. · กด ✓/✗ เพื่อบอกว่าระบบคัดถูกไหม (ใช้ปรับรูปแบบ)</div></div>
-      <div class="chips">${[['rep','แจ้งเหตุ + ไม่แน่ใจ'],['sure','แจ้งเหตุ'],['maybe','ไม่แน่ใจ'],['staff','เจ้าหน้าที่'],['all','ทั้งหมด']].map(([k,l])=>`<button type="button" class="ch ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('')}
+      <div class="chips">${[['rep','แจ้งเหตุ + ไม่แน่ใจ'],['sure','แจ้งเหตุ'],['maybe','ไม่แน่ใจ'],['back','ไฟมาแล้ว'],['staff','เจ้าหน้าที่'],['all','ทั้งหมด']].map(([k,l])=>`<button type="button" class="ch ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('')}
         ${[6,24,48].map(h=>`<button type="button" class="ch ${hrs===h?'on':''}" data-h="${h}">${h} ชม.</button>`).join('')}<button type="button" class="ch" id="ocRe">↻</button></div>
       ${show.length?show.map(card).join(''):'<div class="muted" style="padding:20px;text-align:center">ไม่มีข้อความ</div>'}</div>`);
     document.querySelectorAll('#ocP [data-f]').forEach(b=>b.onclick=()=>{ f=b.dataset.f; draw(); });
