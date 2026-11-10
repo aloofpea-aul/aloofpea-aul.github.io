@@ -1204,6 +1204,27 @@ function ocIn_(q) {
   ocSheet_().appendRow([new Date(), sender, body, result, C.room, raw]);
   return { result: result };
 }
+/** ดูข้อความ OpenChat ย้อนหลัง (เจ้าหน้าที่) — คัดใหม่ตามรูปแบบปัจจุบัน + ป้ายที่คนแก้ไว้ (คอลัมน์ G) */
+function ocList_(b) {
+  const by = tkAuth_(b), sh = ocSheet_(), n = sh.getLastRow(); if (n < 2) return { by: by, rows: [] };
+  const hrs = Math.min(72, Math.max(1, Number(b.hours) || 24)), from = Date.now() - hrs * 3600e3, k = Math.min(n - 1, 1500);
+  const v = sh.getRange(n - k + 1, 1, k, 7).getValues(), C = ocCfg_(), out = [];
+  for (let i = v.length - 1; i >= 0; i--) { const t = v[i][0] instanceof Date ? v[i][0].getTime() : Date.parse(v[i][0]); if (!t || t < from) continue;
+    const sender = String(v[i][1] || ''), body = String(v[i][2] || ''), res = String(v[i][3] || '');
+    if (!body || /^สรุปแจ้งเตือน|^ซ้ำ/.test(res)) continue;
+    const staff = !!(sender && C.staff.indexOf(ocName_(sender)) >= 0), c = staff ? { lv: 'staff', why: '' } : ocClassify_(body, C);
+    out.push({ r: n - k + 1 + i, at: Utilities.formatDate(new Date(t), TZ, 'yyyy-MM-dd HH:mm'), s: sender.slice(0, 60), x: body.slice(0, 600), lv: c.lv, why: c.why || '', fix: String(v[i][6] || '') });
+    if (out.length >= 400) break; }
+  const hb = Number(CacheService.getScriptCache().get('ocHB') || 0);
+  return { by: by, mode: C.mode, hb: hb ? Utilities.formatDate(new Date(hb), TZ, 'HH:mm') : '', rows: out };
+}
+/** ป้ายแก้การคัด: yes = เป็นการแจ้ง · no = ไม่ใช่ · '' = ล้าง — ใช้ปรับรูปแบบภายหลัง */
+function ocMark_(b) {
+  const by = tkAuth_(b), sh = ocSheet_(), r = Number(b.r); if (!(r >= 2 && r <= sh.getLastRow())) throw new Error('ไม่พบข้อความ');
+  const f = /^(yes|no)$/.test(String(b.fix)) ? String(b.fix) + '·' + by : '';
+  if (sh.getRange(1, 7).getValues()[0][0] !== 'fix') sh.getRange(1, 7).setValues([['fix']]);
+  sh.getRange(r, 7).setValues([[f]]); return { r: r, fix: f };
+}
 /** tkCheck: มือถือเงียบเกิน 15 นาที (ช่วงนอกเวลาทำการ) → เตือนครั้งเดียว · กลับมา → แจ้ง */
 function ocWatch_() {
   const props = PropertiesService.getScriptProperties(); if (!props.getProperty('OC_KEY')) return;

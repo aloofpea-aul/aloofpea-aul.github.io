@@ -134,6 +134,13 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .nt-drb{background:#FFF6DE;border:1.5px dashed #E0A940;border-radius:12px;padding:8px 10px;margin:8px 0;font-size:13.5px;color:#7A4A00;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .nt-lock{margin-top:8px;background:#F1ECF5;border-radius:10px;padding:8px 10px;font-size:13px;color:#4A1B66}
 .np-wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5}.np-wm span{transform:rotate(-24deg);font-size:110px;font-weight:800;color:rgba(214,130,0,.28);border:10px solid rgba(214,130,0,.28);border-radius:24px;padding:0 34px;line-height:1.2}
+.oc-st{background:#fff;border-radius:14px;padding:10px 12px;font-size:13.5px;margin-bottom:8px;line-height:1.7}
+.oc-tag{display:inline-block;border-radius:9px;padding:0 8px;font-size:12px;font-weight:700}.oc-tag.r{background:#FDE3E1;color:#B3261E}.oc-tag.y{background:#FFF1D6;color:#8A4B00}.oc-tag.b{background:#E8EEFB;color:#1D4F7A}.oc-tag.x{background:#EEE;color:#555}
+.oc-card{background:#fff;border-radius:14px;padding:10px 12px;margin-top:8px;border-left:5px solid #ccc;font-size:14px}.oc-card.sure{border-left-color:#C92A2A}.oc-card.maybe{border-left-color:#E0A940}.oc-card.staff{border-left-color:#5C7CBA;opacity:.8}
+.oc-hd{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.oc-hd .muted{margin-left:auto;font-size:12px}
+.oc-q{background:#F4F0F7;border-radius:8px;padding:5px 9px;margin-top:5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}.oc-q small{display:block;color:#8A6A30;font-size:11.5px}.oc-q small.fx{color:#0B6B33}
+.oc-pl{margin-top:6px;font-size:13px}.oc-plan{margin-top:6px;background:#FFF4DC;color:#7A4A00;border-radius:8px;padding:4px 8px;font-size:12.5px;font-weight:700}
+.oc-bt{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.oc-soon{font-size:11.5px}
 .nt-rl{border:1.5px solid #B8964A;background:#FFFBF0;color:#6B4E10;border-radius:16px;padding:3px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;flex:none}
 /* โปสเตอร์ 400×545 */
 .np{position:relative;width:400px;height:545px;background:#fff;overflow:hidden;color:#241C2B;font-family:'IBM Plex Sans Thai',sans-serif;line-height:1.3}
@@ -601,6 +608,7 @@ fieldset:disabled{opacity:.55}
   <main id="viewSet" class="hide">
     <div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📢 ประกาศงดจ่ายไฟ</h3><button class="btn ghost sm" type="button" onclick="ntPage()">เปิด</button></div>
       <div class="muted" style="margin-top:4px">ตั้งค่าโลโก้ · ภาพรักอ่าวลึก · เบอร์โทร · QR · คำขวัญ <button class="lnk" type="button" onclick="ntSettings()">ตั้งค่า ›</button></div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">💬 ข้อความ OpenChat <span class="muted" style="font-size:13px;font-weight:400">ทดลอง</span></h3><button class="btn ghost sm" type="button" onclick="ocPage()">เปิด</button></div><div class="muted" style="margin-top:4px">ดูข้อความที่มือถือรับแจ้งส่งเข้ามา · ระบบคัดเป็นแจ้งเหตุ/ไม่แน่ใจ · ติดป้ายแก้ได้</div></div>
     <div class="card" id="bellCard">
       <div class="row" style="justify-content:space-between"><h3 style="margin:0">🔔 กระดิ่งหน้าห้องเวร</h3><span id="bellSt" class="muted">กำลังตรวจ…</span></div>
       <div class="muted" style="margin:4px 0 8px">ดังเมื่อมีงานรับแจ้งไฟดับนอกเวลาทำการ (16:30–08:30 และวันหยุด) จนกว่าจะกดรับทราบ · 3 นาทีดังยาว + LINE ซ้ำ · 8 นาทีแจ้ง หผ.ปร./ชผ. · 20 นาทีหยุด</div>
@@ -2733,6 +2741,7 @@ $('sSave').onclick=async()=>{
   if(qs.get('tk')) S.tkFocus=1;
   if(qs.get('ret')) S.retWant=qs.get('ret');
   if(qs.get('nt')) S.ntOpen=qs.get('nt');
+  if(qs.get('oc')) setTimeout(()=>typeof ocPage==='function'&&ocPage(),1500);
   if(view==='viewDaily'&&qs.get('m')&&qs.get('day')&&!qs.get('rep')){ S.dMonthWant=qs.get('m'); S.dDayWant=+qs.get('day'); }
   if(qs.get('g')==='wk'){ S.dGroup='wk'; document.querySelectorAll('#dGroup button').forEach(x=>x.classList.toggle('on',x.dataset.g==='wk')); }
   const use=j=>{ S.boot=j; S.boot.months.sort((a,b)=>a.month<b.month?-1:1); $('boot').classList.add('hide'); setDot(S.boot.pendingCount||0); };
@@ -2764,6 +2773,7 @@ $('sSave').onclick=async()=>{
 <script>
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);});
 </script>
-<script src="notice/nt.js?v=19"></script>
+<script src="notice/nt.js?v=20"></script>
+<script src="notice/oc.js?v=1"></script>
 </body>
 </html>

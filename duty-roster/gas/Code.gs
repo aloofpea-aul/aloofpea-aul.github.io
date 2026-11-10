@@ -464,6 +464,8 @@ function doPost(e) {
     if (b.action === 'saveOutMats') return json_({ ok: true, mats: saveOutMats_(b) });
     // ---- ประกาศงดจ่ายไฟ: ผู้อนุมัติ / บัญชีศูนย์รวมงาน / ลิงก์เวรจาก LINE ----
     if (b.action === 'saveNotice') return json_({ ok: true, notice: saveNotice_(b) });
+    if (b.action === 'ocList') return json_(Object.assign({ ok: true }, ocList_(b)));
+    if (b.action === 'ocMark') return json_(Object.assign({ ok: true }, ocMark_(b)));
     if (b.action === 'noticeAct') return json_({ ok: true, notice: noticeAct_(b) });
     if (b.action === 'noticeDoc') return json_({ ok: true, notice: noticeDoc_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
