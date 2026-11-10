@@ -64,32 +64,6 @@ async function ntPolys(g){
   const dv=s.dev.filter(d=>d[4]===g.fd&&+d[5]&&+d[6]); const cm=s.byId[g.id], cut=cm&&+cm[5]?[+cm[5],+cm[6]]:null;
   const cls=x=>{ let b1=null,b2=null,e1=1e9,e2=1e9; for(const d of dv){ const e=(d[5]-x[0])*(d[5]-x[0])+(d[6]-x[1])*(d[6]-x[1]); if(e<e1){ e2=e1;b2=b1;e1=e;b1=d; } else if(e<e2){ e2=e;b2=d; } } const d=b1&&b1[0]===g.id?b2:b1; return d&&g.A[d[0]]?1:0; };
   const own=(LN.lines[g.fd]||[]).filter(l=>(l.v||[]).length>1), ar=own.map(l=>l.v.map(cls));
-  // ไล่ตามโครงข่ายสายจริง: ทุกเส้นที่ต่ออยู่หลังจุดตัดไฟ (รวมสายแยก) = ไฟดับ — หยุดที่จุด B และไม่ย้อนขึ้นต้นทาง
-  (()=>{ const lf=x=>/^(TRANSFORMER|MVMETER|MR)$/.test((s.byId[x]||[])[1]); const cuts=(g.cuts||[g.id]).filter(x=>!lf(x)); if(!cuts.length) return;
-    const nid=[], nodes=[], grid={}, T=.015, cell=x=>Math.round(x[0]/.0002)+':'+Math.round(x[1]/.0002);
-    const node=x=>{ const [a,b]=cell(x).split(':').map(Number); for(let i=-1;i<=1;i++) for(let k=-1;k<=1;k++){ const L=grid[(a+i)+':'+(b+k)]; if(L) for(const n of L) if(ntKm(nodes[n][0],nodes[n][1],x[0],x[1])<T) return n; }
-      nodes.push(x); (grid[cell(x)]=grid[cell(x)]||[]).push(nodes.length-1); return nodes.length-1; };
-    const adj=[]; own.forEach((l,j)=>{ nid[j]=l.v.map(node); nid[j].forEach((n,i)=>{ if(i){ const p=nid[j][i-1]; if(p!==n){ (adj[n]=adj[n]||[]).push(p); (adj[p]=adj[p]||[]).push(n); } } }); });
-    // ปลายสายที่ไปชนกลางเส้นอื่น (สามแยกที่ GIS ไม่มีจุดร่วม) → ต่อเข้ากับช่วงนั้น
-    const sd=(p,a,b)=>{ const k=Math.cos(p[0]*Math.PI/180), ax=a[1]*k, ay=a[0], bx=b[1]*k-ax, by=b[0]-ay, px=p[1]*k-ax, py=p[0]-ay, L2=bx*bx+by*by, t=L2?Math.max(0,Math.min(1,(px*bx+py*by)/L2)):0; return Math.hypot(px-t*bx,py-t*by)*111.2; };
-    const link=(a,b)=>{ if(a===b) return; (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a); };
-    own.forEach((l,j)=>[0,l.v.length-1].forEach(k=>{ const e=l.v[k]; let bj=-1,bk=-1,bd=.025;
-      own.forEach((m,j2)=>{ if(j2===j) return; for(let q=0;q<m.v.length-1;q++){ const d=sd(e,m.v[q],m.v[q+1]); if(d<bd){ bd=d; bj=j2; bk=q; } } });
-      if(bj>=0){ const a=own[bj].v[bk], b=own[bj].v[bk+1]; link(nid[j][k], ntKm(e[0],e[1],a[0],a[1])<=ntKm(e[0],e[1],b[0],b[1])?nid[bj][bk]:nid[bj][bk+1]); } }));
-    const near=c=>{ let b=-1,e=.06; nodes.forEach((x,i)=>{ const d=ntKm(x[0],x[1],c[0],c[1]); if(d<e){e=d;b=i;} }); return b; };
-    const bfs=(src,block)=>{ const D=new Map([[src,0]]), q=[src]; while(q.length){ const u=q.shift(); for(const v of adj[u]||[]) if(!D.has(v)&&!block.has(v)){ D.set(v,D.get(u)+1); q.push(v); } } return D; };
-    const stopN=new Set((g.stopIds||[]).map(x=>s.byId[x]).filter(d=>d&&+d[5]).map(d=>near([+d[5],+d[6]])).filter(x=>x>=0));
-    const red=new Set();
-    for(const id of cuts){ const d=s.byId[id], p=s.byId[(d||[])[7]]; if(!d||!+d[5]) return; const cN=near([+d[5],+d[6]]); if(cN<0) return;
-      // ต้นฟีดเดอร์ (ต่อจากบัส/เบรกเกอร์ในสถานี) → ทั้งโครงข่ายหลังจุดนี้ดับ ไม่ต้องหาทิศต้นทาง
-      const head=!p||/^(WB|CB|BUS|WB\d*)$/i.test(p[1])||/WB-|CB-/.test(p[0]);
-      if(head){ bfs(cN,stopN).forEach((_,k)=>red.add(k)); continue; }
-      if(!+p[5]) return; const pN=near([+p[5],+p[6]]); if(pN<0||cN===pN) return;
-      const D0=bfs(pN,new Set()); if(!D0.has(cN)) return; const up=new Set((adj[cN]||[]).filter(v=>D0.has(v)&&D0.get(v)<D0.get(cN)));
-      const R=bfs(cN,new Set([...up,...stopN])); if(R.has(pN)) return;          // ย้อนถึงต้นทางได้ = โครงข่ายมีวงรอบ → ใช้วิธีเดิม
-      R.forEach((_,k)=>red.add(k)); }
-    if(red.size<2) return;
-    own.forEach((l,j)=>l.v.forEach((x,i)=>{ ar[j][i]=red.has(nid[j][i])?1:0; })); g.redPts=[...red].map(k=>nodes[k]); })();
   // ดรอปไลน์: จากจุดตัดไฟย้อนขึ้นตามแนวสายจนถึงจุดแยก (สามแยก) ให้เป็นสีแดงด้วย — ไม่เข้าสายเมน ไม่เกิน 2 กม.
   if(cut&&!/^(TRANSFORMER|MVMETER|MR)$/.test(cm[1])){ const near=(x,y)=>ntKm(x[0],x[1],y[0],y[1])<.015;
     const ends=(x,skip)=>{ const r=[]; own.forEach((l,j)=>{ if(j===skip) return; if(near(l.v[0],x)) r.push([j,0]); else if(near(l.v[l.v.length-1],x)) r.push([j,l.v.length-1]); }); return r; };
@@ -113,7 +87,7 @@ async function ntPolys(g){
     const others=(x,j)=>own.some((l,k)=>k!==j&&(ntKm(l.v[0][0],l.v[0][1],x[0],x[1])<.015||ntKm(l.v[l.v.length-1][0],l.v[l.v.length-1][1],x[0],x[1])<.015));
     for(let k=bi;k>=0&&k<v.length;k+=dn){ ar[bl][k]=0; if(k!==bi&&others(v[k],bl)) break; } });
   const out=[]; let hit=0;
-  Object.keys(LN.lines).forEach(f=>{ if(f===g.fd) return; LN.lines[f].forEach(l=>{ const v=l.v||[]; if(v.some(inB)) out.push({a:-1,v}); }); });
+  Object.keys(LN.lines).forEach(f=>{ if(f===g.fd) return; LN.lines[f].forEach(l=>{ const v=l.v||[]; if(v.some(inB)) out.push({a:0,v}); }); });
   own.forEach((l,j)=>{ const v=l.v; if(!v.some(inB)) return;
     let cur=null; v.forEach((x,i)=>{ const a=ar[j][i]; if(!cur||cur.a!==a){ if(cur) cur.v.push(x); cur={a,v:i?[v[i-1],x]:[x]}; out.push(cur); } else cur.v.push(x); if(a) hit=1; }); });
   return out.length?out:null; }
@@ -166,10 +140,6 @@ async function ntMapData(n){
   if(g.lv&&g.lv.length){ let [a0,a1,b0,b1]=g.cut?[g.cut[0],g.cut[0],g.cut[1],g.cut[1]]:g.bb; const cx=(a0+a1)/2, cy=(b0+b1)/2; g.lv.forEach(m=>{ a0=Math.min(a0,m[0]);a1=Math.max(a1,m[0]);b0=Math.min(b0,m[1]);b1=Math.max(b1,m[1]); });
     const pa=Math.max(.0012,(a1-a0)*.12), po=Math.max(.0012,(b1-b0)*.12); g.bb=[Math.min(g.bb[0],a0-pa),Math.max(g.bb[1],a1+pa),Math.min(g.bb[2],b0-po),Math.max(g.bb[3],b1+po)];
     if(g.tr.length<=1){ g.bb=[a0-pa,a1+pa,b0-po,b1+po]; } }
-  // ไล่โครงข่ายสายจริงก่อน: ถ้าได้ช่วงไฟดับจากแนวสาย → ซูมแผนที่ให้พอดีเส้นแดง
-  g.poly=await ntPolys(g).catch(()=>null);
-  if(g.redPts&&g.redPts.length>1&&!(g.lv&&g.lv.length)){ const pts=g.redPts.concat(g.cut?[[g.cut[0],g.cut[1]]]:[]); let a0=90,a1=-90,b0=180,b1=-180; pts.forEach(p=>{a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);b0=Math.min(b0,p[1]);b1=Math.max(b1,p[1]);});
-    const pa=Math.max(.002,(a1-a0)*.15), po=Math.max(.002,(b1-b0)*.15); g.bb=[a0-pa,a1+pa,b0-po,b1+po]; const rp=g.redPts; g.poly=await ntPolys(g).catch(()=>g.poly); g.redPts=rp; }
   const [la0,la1,lo0,lo1]=g.bb;
   let z=17; while(z>9&&(ntMx(lo1,z)-ntMx(lo0,z)>NT_MW||ntMy(la0,z)-ntMy(la1,z)>NT_MH)) z--;
   let w=Math.max(1,ntMx(lo1,z)-ntMx(lo0,z)), h=Math.max(1,ntMy(la0,z)-ntMy(la1,z)), k0=Math.min(NT_MW/w,NT_MH/h,1.95), up=k0>1.05&&z<17?1:0; z+=up; const k=up?k0/2:k0;
@@ -177,13 +147,13 @@ async function ntMapData(n){
   const P=(la,lo)=>[+((ntMx(lo,z)-ox)*k).toFixed(1),+((ntMy(la,z)-oy)*k).toFixed(1)];
   const tiles=[]; for(let tx=Math.floor(ox/256);tx<=Math.floor((ox+NT_MW/k)/256);tx++) for(let ty=Math.floor(oy/256);ty<=Math.floor((oy+NT_MH/k)/256);ty++) tiles.push({x:(tx*256-ox)*k,y:(ty*256-oy)*k,s:256*k,u:`https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`});
   const toData=u=>fetch(u,{mode:'cors'}).then(r=>{ if(!r.ok) throw 0; return r.blob(); }).then(b=>new Promise(r=>{const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b);}));
+  g.poly=await ntPolys(g).catch(()=>null);
   const got=await Promise.all(tiles.map(t=>Promise.race([toData(t.u),new Promise((_,j)=>setTimeout(j,6000))]).then(d=>(t.d=d,1)).catch(()=>0)));
   return {g,P,z,tiles:got.every(Boolean)?tiles:[],all:tiles};
 }
 let NT_CX=null; function ntTW(t,px){ try{ NT_CX=NT_CX||document.createElement('canvas').getContext('2d'); NT_CX.font=`700 ${px}px 'IBM Plex Sans Thai',sans-serif`; return NT_CX.measureText(t).width; }catch(e){ return String(t).length*px*.55; } }
 function ntMapHtml(m,emg){
   if(!m) return ''; const {g,P,tiles}=m, red=emg?'#E8590C':'#E03131';
-  const nearRed=p=>!g.redPts||g.redPts.some(r=>ntKm(r[0],r[1],p[0],p[1])<.2);
   const L=(f)=>g.poly?g.poly.filter(q=>q.a===f).map(q=>q.v.map((x,i)=>{ const a=P(x[0],x[1]); return (i?'L':'M')+a[0]+' '+a[1]; }).join('')).join(''):g.segs.filter(s=>s[4]===f).map(s=>{ const a=P(s[0],s[1]), b=P(s[2],s[3]); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }).join('');
   const cut=g.cut&&P(g.cut[0],g.cut[1]), okd=d=>d&&+d[5]&&+d[6], xc=(g.cuts||[]).slice(1).map(x=>S.sld.byId[x]).filter(okd), sp=(g.stopIds||[]).map(x=>S.sld.byId[x]).filter(okd);
   const R=[]; const pin=(xy,t,cls)=>{ t=String(t); const tw=Math.ceil(ntTW(t,cls?8.5:8))+12, w=Math.min(124,tw), hgt=Math.ceil(tw/124)*10.5+4, l=xy[0]+7+w>NT_MW-4;
@@ -192,13 +162,13 @@ function ntMapHtml(m,emg){
     x=Math.max(3,Math.min(NT_MW-w-3,x)); R.push([x,y,w,hgt]);
     return `<span class="np-mpin ${cls||''}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;width:${w.toFixed(0)}px">${esc(t)}</span>`; };
   return `<div class="np-mapbox${tiles.length?'':' vec'}">${tiles.map(t=>`<img src="${t.d}" style="left:${t.x.toFixed(1)}px;top:${t.y.toFixed(1)}px;width:${t.s.toFixed(1)}px;height:${t.s.toFixed(1)}px" alt="">`).join('')}<i class="np-wash"></i>
-   <svg viewBox="0 0 ${NT_MW} ${NT_MH}" width="${NT_MW}" height="${NT_MH}">${g.poly?`<path d="${L(-1)}" stroke="#8E8496" stroke-width="1.4" stroke-opacity=".45" fill="none" stroke-linecap="round"/>`:''}<path d="${L(0)}" stroke="#6B5A78" stroke-width="2.2" stroke-opacity=".75" fill="none" stroke-linecap="round"/>
+   <svg viewBox="0 0 ${NT_MW} ${NT_MH}" width="${NT_MW}" height="${NT_MH}"><path d="${L(0)}" stroke="#6B5A78" stroke-width="2.2" stroke-opacity=".75" fill="none" stroke-linecap="round"/>
    <path d="${L(1)}" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="${L(1)}" stroke="${red}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-   ${(g.lv||[]).filter(m=>nearRed(m)).map(m=>{const p=P(m[0],m[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.3" fill="${red}" fill-opacity=".75" stroke="#fff" stroke-width=".7"/>`;}).join('')}
-   ${g.tr.filter(t=>nearRed(t)).map(t=>{const p=P(t[0],t[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${red}" stroke-width="1.6"/>`;}).join('')}
+   ${(g.lv||[]).map(m=>{const p=P(m[0],m[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.3" fill="${red}" fill-opacity=".75" stroke="#fff" stroke-width=".7"/>`;}).join('')}
+   ${g.tr.map(t=>{const p=P(t[0],t[1]);return `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${red}" stroke-width="1.6"/>`;}).join('')}
    ${[cut].concat(xc.map(d=>P(+d[5],+d[6]))).filter(Boolean).map(c=>`<circle cx="${c[0]}" cy="${c[1]}" r="8" fill="#4A1B66" stroke="#EBD592" stroke-width="2.5"/><path d="M${c[0]+1.5} ${c[1]-5}l-4 5.5h3l-1.5 4.5 4.5-6h-3z" fill="#FFD43B"/>`).join('')}
    ${sp.map(d=>{const c=P(+d[5],+d[6]);return `<rect x="${c[0]-7}" y="${c[1]-7}" width="14" height="14" rx="3" fill="#0B7A3B" stroke="#fff" stroke-width="2"/>`;}).join('')}</svg>
-   ${cut&&g.cut[2]?pin(cut,'⚡ '+g.cut[2],'cut'):''}${xc.map(d=>pin(P(+d[5],+d[6]),'⚡ '+(ntPlace(d[3])||d[0]),'cut')).join('')}${sp.map(d=>pin(P(+d[5],+d[6]),'■ ไฟถึงแค่นี้ · '+(ntPlace(d[3])||d[0]),'end')).join('')}${g.lab.filter(l=>nearRed(l)).map(l=>pin(P(l[0],l[1]),l[2])).join('')}
+   ${cut&&g.cut[2]?pin(cut,'⚡ '+g.cut[2],'cut'):''}${xc.map(d=>pin(P(+d[5],+d[6]),'⚡ '+(ntPlace(d[3])||d[0]),'cut')).join('')}${sp.map(d=>pin(P(+d[5],+d[6]),'■ ไฟถึงแค่นี้ · '+(ntPlace(d[3])||d[0]),'end')).join('')}${g.lab.map(l=>pin(P(l[0],l[1]),l[2])).join('')}
    <span class="np-mlg"><b style="background:${red}"></b>ไฟดับ <b style="background:#6B5A78;height:2px"></b>ไฟปกติ${(g.lv||[]).length?`<b style="background:${red};width:7px;height:7px;border-radius:50%"></b>บ้านที่ไฟดับ`:''}</span>${tiles.length?'<span class="np-osm">© OpenStreetMap</span>':''}</div>`;
 }
 /* ---------- โปสเตอร์ (กว้าง 400 · สูง 545) ---------- */
