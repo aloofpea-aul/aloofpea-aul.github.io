@@ -202,7 +202,7 @@ function ntPoster(n,im){
   :`<div class="np-where ${emg?'em':''}"><svg class="np-map" viewBox="0 0 120 90"><rect width="120" height="90" fill="${emg?'#F6ECEC':'#EEF4F2'}"/><path d="M0 72 C30 62 50 77 80 64 S120 57 120 57 L120 90 L0 90Z" fill="${emg?'#F3DADA':'#CFE6EA'}"/><path d="M6 24 L44 40 L100 26" stroke="#B9B2C0" stroke-width="3" fill="none"/>${fb?`<path d="M44 40 L62 70" stroke="${emg?'#D9480F':'#C92A2A'}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="62" cy="70" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/>`:''}<circle cx="44" cy="40" r="5" fill="${emg?'#D9480F':'#C92A2A'}"/></svg>
    <div class="np-wt"><span class="np-lab">📍 พื้นที่ไฟดับ</span><b>${esc(fa||'')}${fb?' → '+esc(fb):''}</b><span>${esc(n.sub||c.sub||'')}</span><span class="np-tags">${vil.slice(0,3).map(v=>`<i>${esc(v)}</i>`).join('')}${n.cust?`<i>~${n.cust} ราย</i>`:''}</span></div></div>`}
   <div class="np-prep">${prep}</div>
-  ${st==='draft'?'<div class="np-wm"><span>ร่าง</span></div>':''}
+  ${st==='draft'?'<div class="np-wm"><span>ร่าง</span></div>':''}${n.rev&&st!=='draft'&&st!=='done'&&st!=='cancel'?`<div class="np-rev">ฉบับแก้ไข${n.rev>1?' ครั้งที่ '+n.rev:''}</div>`:''}
   ${!emg&&n.doc?'<div class="np-dtag">📎 หนังสือประกาศ แนบภาพถัดไป</div>':''}
   <div class="np-foot">${NT_KARST}<div class="np-pf"><div><b>📞 ${esc(c.phone)}</b><span>${emg?'ติดตามสถานะในห้อง OpenChat<br>ไฟมาแล้วจะแจ้งทันที':'ไฟมาเร็วกว่ากำหนด — จ่ายไฟทันที<br>อย่าเข้าใกล้สายไฟ / ปฏิบัติงานเอง'}</span></div>${im.qr?`<div class="np-qr"><img src="${im.qr}" alt=""><span>${esc(c.qrLabel||'')}<br>สแกนเข้า<br>OpenChat</span></div>`:''}</div><div class="np-tag">${esc(c.unit)} · ${esc(n.slogan||c.slogan)}</div></div>
   ${stamp}</div>`;
@@ -265,20 +265,63 @@ function ntSheet(title,html,onBack){
   $('ntBack').onclick=()=>{ if(onBack) onBack(); else { ov.remove(); renderNtBanner(); } };
   // วาดหน้าเดิมซ้ำ (กดตัวเลือก) → อยู่ตำแหน่งเดิม ไม่เด้งขึ้นบน
   ov.scrollTop=same?y:0; const bd=ov.querySelector('.nt-bd'); if(bd) bd.scrollTop=same?by:0; return ov; }
+const NT_FL=[['all','ทั้งหมด'],['draft','📝 ร่าง'],['pub','📢 ประกาศแล้ว'],['past','ผ่านไปแล้ว'],['cancel','ยกเลิก'],['trash','🗑 ถังขยะ']];
+function ntGroup(n){ const s=ntState(n); return s==='draft'?'draft':s==='cancel'?'cancel':s==='done'?'past':'pub'; }
 async function ntPage(){
-  const draw=()=>{ const L=S.nts||[], td=ntNow().slice(0,10), up=L.filter(n=>{const s=ntState(n);return s!=='done'&&s!=='cancel'&&(n.date>=td||s==='live'||s==='due');}), past=L.filter(n=>up.indexOf(n)<0).reverse();
+  const P=S.ntPg=S.ntPg||{f:'all',ty:'all',q:''};
+  const draw=()=>{ const all=S.nts||[], td=ntNow().slice(0,10), can=!!ntAuth(), appr=!!((meInfo()||{}).appr||S.outPinAppr);
+    const okTy=n=>P.ty==='all'||n.type===P.ty, okQ=n=>!P.q||(n.area+' '+(n.reason||'')+' '+(n.sub||'')+' '+(n.villages||[]).join(' ')).toLowerCase().includes(P.q.toLowerCase());
+    const L=P.f==='trash'?(S.ntTrash||[]).filter(okTy).filter(okQ):all.filter(n=>okTy(n)&&okQ(n)&&(P.f==='all'||ntGroup(n)===P.f||(P.f==='pub'&&n.pend)));
+    const up=L.filter(n=>{const s=ntState(n);return P.f!=='trash'&&s!=='done'&&s!=='cancel'&&(n.date>=td||s==='live'||s==='due');}), past=L.filter(n=>up.indexOf(n)<0).slice().reverse();
+    const cnt=k=>all.filter(n=>okTy(n)&&(ntGroup(n)===k||(k==='pub'&&false))).length;
     const row=n=>{ const s=ntState(n), d=new Date(n.date+'T00:00:00Z'), dd=ntDaysTo(n.date);
-      const pill=s==='draft'?'<span class="ntp dr">📝 ร่าง</span>':s==='live'?'<span class="ntp r">● กำลังดับ</span>':s==='due'?'<span class="ntp r">ถึงเวลาแล้ว</span>':s==='done'?'<span class="ntp g">✅ เสร็จ</span>':s==='cancel'?'<span class="ntp x">ยกเลิก</span>':s==='over'?'<span class="ntp o">ยังไม่ปิด</span>':`<span class="ntp o">${dd===0?'วันนี้':dd===1?'พรุ่งนี้':'อีก '+dd+' วัน'}</span>`;
-      return `<button type="button" class="nt-row ${n.type==='emg'?'em':''}" data-n="${esc(n.id)}"><span class="nt-dt">${d.getUTCDate()}<small>${NT_MS[d.getUTCMonth()]}</small></span><span class="nt-mid"><b>${n.type==='emg'?'⚠️ ':''}${ntHm(n.actualOff||n.startAt)}–${n.endAt?ntHm(n.endAt):'?'} · ${esc(ntArea(n))}</b><small>${esc(n.reason||'')}${n.cust?' · ~'+n.cust+' ราย':''}${n.type==='plan'&&!n.doc&&s!=='cancel'?' · <em class="ntw">📎 รอแนบหนังสือ</em>':''}</small></span>${pill}</button>`; };
-    const can=!!ntAuth(), appr=!!((meInfo()||{}).appr||S.outPinAppr);
+      const pill=P.f==='trash'?`<span class="ntp x">🗑 ${esc(n.delBy||'')}</span>`:s==='draft'?'<span class="ntp dr">📝 ร่าง</span>':s==='live'?'<span class="ntp r">● กำลังดับ</span>':s==='due'?'<span class="ntp r">ถึงเวลาแล้ว</span>':s==='done'?'<span class="ntp g">✅ เสร็จ</span>':s==='cancel'?'<span class="ntp x">ยกเลิก</span>':s==='over'?'<span class="ntp o">ยังไม่ปิด</span>':`<span class="ntp o">${dd===0?'วันนี้':dd===1?'พรุ่งนี้':'อีก '+dd+' วัน'}</span>`;
+      const sub=P.f==='trash'?'ลบ '+esc(String(n.delAt||'').slice(0,10))+(n.delWhy?' · "'+esc(n.delWhy)+'"':'')+' · เหลือ '+Math.max(0,30-Math.floor((Date.now()-Date.parse(n.delAt))/864e5))+' วัน'
+        :`${esc(n.reason||'')}${n.cust?' · ~'+n.cust+' ราย':''}${n.type==='plan'&&!n.doc&&s!=='cancel'&&s!=='draft'?' · <em class="ntw">📎 รอแนบหนังสือ</em>':''}${n.rev?' · ฉบับแก้ไข'+(n.rev>1?' '+n.rev:''):''}${n.fixN?' · แก้บันทึก '+n.fixN+' ครั้ง':''}`;
+      return `<button type="button" class="nt-row ${n.type==='emg'?'em':''}" data-n="${esc(n.id)}"><span class="nt-dt">${d.getUTCDate()}<small>${NT_MS[d.getUTCMonth()]}</small></span><span class="nt-mid"><b>${n.type==='emg'?'⚠️ ':''}${ntHm(n.actualOff||n.startAt)}–${n.endAt?ntHm(n.endAt):'?'} · ${esc(ntArea(n))}</b><small>${sub}</small>${n.pend&&P.f!=='trash'?'<em class="nt-pendp">✏️ ขอแก้ไข · รออนุมัติ</em>':''}</span>${pill}</button>`; };
     ntSheet('📢 ประกาศงดจ่ายไฟ',`${can?'<button type="button" class="btn" id="ntNew" style="width:100%">＋ สร้างประกาศ</button>':'<div class="note">ล็อกอินศูนย์รวมงาน (หรือเปิดจากลิงก์ LINE ของเวร) เพื่อสร้าง/อัปเดตประกาศ</div>'}
-      <div class="nt-card"><h4>กำลังจะถึง / กำลังดับ</h4>${up.map(row).join('')||'<div class="muted">ไม่มีแผนงดจ่ายไฟ</div>'}</div>
-      <div class="nt-card"><h4>ผ่านมาแล้ว</h4>${past.slice(0,20).map(row).join('')||'<div class="muted">—</div>'}</div>
+      <div class="chips nt-fl">${NT_FL.filter(x=>x[0]!=='trash'||can).map(([k,l])=>`<button type="button" class="ch ${P.f===k?'on':''}" data-fl="${k}">${l}${k!=='all'&&k!=='trash'&&cnt(k)?' '+cnt(k):''}</button>`).join('')}</div>
+      <div class="chips nt-fl">${[['all','ทุกแบบ'],['plan','📅 ตามแผน'],['emg','⚠️ ฉุกเฉิน']].map(([k,l])=>`<button type="button" class="ch ${P.ty===k?'on':''}" data-ty="${k}">${l}</button>`).join('')}<input type="search" id="ntSq" value="${esc(P.q)}" placeholder="🔍 ค้นพื้นที่ / สาเหตุ" class="nt-sq"></div>
+      ${P.f==='trash'?`<div class="nt-card"><h4>🗑 ถังขยะ <span class="muted" style="font-weight:400">· กู้คืนได้ภายใน 30 วัน (หัวหน้า/ผู้ช่วย)</span></h4>${S.ntTrash?past.map(row).join('')||'<div class="muted">ถังขยะว่าง</div>':'<div class="muted">กำลังโหลด…</div>'}</div>`
+      :`${P.f==='all'||P.f==='pub'||P.f==='draft'?`<div class="nt-card"><h4>กำลังจะถึง / กำลังดับ</h4>${up.map(row).join('')||'<div class="muted">ไม่มี</div>'}</div>`:''}
+      ${P.f!=='draft'&&P.f!=='pub'||past.length?`<div class="nt-card"><h4>ผ่านมาแล้ว</h4>${past.slice(0,P.f==='all'?20:60).map(row).join('')||'<div class="muted">—</div>'}</div>`:''}`}
       ${appr?'<button type="button" class="btn ghost" id="ntCfgB" style="width:100%;margin-top:8px">⚙️ ตั้งค่าประกาศของหน่วยงาน</button>':''}`);
-    document.querySelectorAll('#ntOv [data-n]').forEach(b=>b.onclick=()=>ntDetail(b.dataset.n));
+    document.querySelectorAll('#ntOv [data-n]').forEach(b=>b.onclick=()=>P.f==='trash'?ntTrashItem(b.dataset.n):ntDetail(b.dataset.n));
+    document.querySelectorAll('#ntOv [data-fl]').forEach(b=>b.onclick=async()=>{ P.f=b.dataset.fl; draw(); if(P.f==='trash'){ try{ const j=await apiPost(Object.assign({action:'noticeTrash'},ntAuth())); S.ntTrash=j.notices||[]; }catch(e){ S.ntTrash=[]; toast(e.message); } if(P.f==='trash') draw(); } });
+    document.querySelectorAll('#ntOv [data-ty]').forEach(b=>b.onclick=()=>{ P.ty=b.dataset.ty; draw(); });
+    if($('ntSq')) $('ntSq').oninput=e=>{ P.q=e.target.value; clearTimeout(S.ntSqT); S.ntSqT=setTimeout(()=>{ draw(); const i=$('ntSq'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } },350); };
     if($('ntNew')) $('ntNew').onclick=()=>ntForm(null);
     if($('ntCfgB')) $('ntCfgB').onclick=()=>ntSettings(); };
   draw(); await loadNotices(true); if($('ntOv')&&!$('ntF')&&!$('ntDet')) draw();
+}
+function ntTrashItem(id){ const n=(S.ntTrash||[]).find(x=>x.id===id); if(!n) return;
+  ntSheet('🗑 ประกาศในถังขยะ',`<div id="ntDet"><div class="nt-prev"><div class="nt-scale" id="ntTPrev"><div class="muted">กำลังสร้างภาพ…</div></div></div>
+    <div class="oiss" style="margin-top:8px">ลบโดย ${esc(n.delBy||'-')} · ${esc(String(n.delAt||'').slice(0,16).replace('T',' '))}${n.delWhy?'<br>เหตุผล: '+esc(n.delWhy):''}</div><div id="ntMsg"></div>
+    ${ntIsAppr()?'<button type="button" class="btn" id="ntRes" style="width:100%;margin-top:8px">♻ กู้คืนประกาศนี้</button>':'<div class="muted" style="margin-top:8px">กู้คืนได้เฉพาะหัวหน้า/ผู้ช่วยหัวหน้าแผนก</div>'}</div>`,()=>ntPage());
+  ntImgs(n).then(im=>{ const p=$('ntTPrev'); if(p) p.innerHTML=ntPoster(n,im); });
+  if($('ntRes')) $('ntRes').onclick=async()=>{ $('ntRes').disabled=true; try{ await apiPost(Object.assign({action:'noticeAct',id:n.id,a:'restore'},ntAuth())); S.ntTrash=(S.ntTrash||[]).filter(x=>x.id!==id); await loadNotices(true); toast('กู้คืนแล้ว'); ntDetail(id); }catch(e){ $('ntRes').disabled=false; msg('ntMsg',e.message,'err'); } };
+}
+const NT_FLD={date:'วันที่',start:'เวลาเริ่ม',end:'เวลาสิ้นสุด',estMin:'คาดว่าใช้ (นาที)',reason:'สาเหตุ',reasonKey:'ประเภทสาเหตุ',feeder:'ฟีดเดอร์',dev:'จุดเริ่มดับ',stops:'จุดที่ยังมีไฟ',more:'ช่วงเพิ่มเติม',cust:'ผู้ใช้ไฟ (ราย)',area:'พื้นที่',sub:'ต./อ./จ.',villages:'หมู่บ้าน',speech:'คำพูดบนโปสเตอร์',note:'หมายเหตุ',slogan:'คำขวัญ',endAt:'เวลาไฟมา'};
+function ntFv(k,v){ if(v==null||v==='') return '—'; if(k==='dev') return v.id||'—'; if(k==='stops'||k==='more') return (v||[]).map(x=>x.id).join(', ')||'—'; if(k==='villages') return (v||[]).join(', ')||'—'; if(k==='date') return ntDateTh(v); if(k==='endAt') return ntHm(v); return String(v); }
+function ntPendHtml(n){ const p=n.pend; if(!p) return ''; const f=p.f||{}, ks=Object.keys(f).filter(k=>k!=='startAt'&&!(k==='endAt'&&('end' in f||'estMin' in f)));
+  const me=meShort&&meShort(), mine=p.by===me, ap=ntIsAppr();
+  return `<div class="nt-pend"><div class="nt-pendh">✏️ <b>ขอแก้ไขประกาศ — รออนุมัติ</b><span class="muted">โดย ${esc(p.by)} · ${esc(String(p.at).slice(8,10)+'/'+String(p.at).slice(5,7)+' '+String(p.at).slice(11))}</span></div>
+    <div class="nt-pendw">เหตุผล: ${esc(p.why)}</div>
+    <table class="nt-diff">${ks.map(k=>`<tr><td>${esc(NT_FLD[k]||k)}</td><td><s>${esc(ntFv(k,n[k]))}</s></td><td>→ <b>${esc(ntFv(k,f[k]))}</b></td></tr>`).join('')}</table>
+    <div class="nt-pendb"><button type="button" class="btn ghost sm" id="ntPv">🖼 ดูภาพฉบับแก้ไข</button>${ap?'<button type="button" class="btn sm" id="ntPOk">✅ อนุมัติการแก้ไข</button><button type="button" class="btn ghost sm red" id="ntPNo">ไม่อนุมัติ</button>':mine?'<button type="button" class="btn ghost sm" id="ntPNo">ยกเลิกคำขอแก้</button>':'<span class="muted">รอหัวหน้า/ผู้ช่วยหัวหน้าแผนก</span>'}</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">ระหว่างรออนุมัติ ประกาศเดิมยังใช้อยู่ (แชร์/เริ่มดับ/ขยายเวลาได้ตามปกติ)</div></div>`; }
+function ntFix(n){ const done=n.status==='done', a=ntAuth();
+  ntSheet('✏️ แก้บันทึก (งานจบแล้ว)',`<div id="ntF"><div class="nt-info">ℹ️ งานนี้${done?'จบแล้ว':'ยกเลิกแล้ว'} — แก้เพื่อให้<b>บันทึกถูกต้อง</b> (รายงาน/สถิติ) · ไม่สร้างภาพประกาศใหม่</div>
+    ${done?`<div class="grid2"><label class="tf">ดับจริง<input type="datetime-local" id="fxOff" value="${esc(n.actualOff||n.startAt||'')}"></label><label class="tf">ไฟมาจริง<input type="datetime-local" id="fxOn" value="${esc(n.actualOn||'')}"></label></div>`:''}
+    <label class="tf" style="margin-top:6px">ผู้ใช้ไฟที่ได้รับผลกระทบ (ราย)<input type="number" id="fxC" min="0" value="${n.cust==null?'':n.cust}"></label>
+    <label class="tf" style="margin-top:6px">สาเหตุ<input type="text" id="fxR" value="${esc(n.reason||'')}"></label>
+    <label class="tf" style="margin-top:6px">หมายเหตุ (ภายใน)<input type="text" id="fxM" value="${esc(n.memo||'')}" placeholder="เช่น เปลี่ยนลูกถ้วย 3 ชุด"></label>
+    ${n.outId?`<div class="muted" style="margin-top:6px;font-size:12.5px">⚡ ผูกกับรายการไฟดับ ${esc(n.outId)} — ถ้าแก้เวลา ให้แก้ในรายงานเวรให้ตรงกันด้วย</div>`:''}
+    <label class="tf nt-why" style="margin-top:8px">เหตุผลที่แก้ *<input type="text" id="fxW" placeholder="เช่น ลงเวลาไฟมาผิด"></label>
+    <div id="ntFMsg"></div><button type="button" class="btn" id="fxSave" style="width:100%;margin-top:10px">💾 บันทึก</button></div>`,()=>ntDetail(n.id));
+  $('fxSave').onclick=async()=>{ const why=$('fxW').value.trim(); if(!why){ msg('ntFMsg','ใส่เหตุผลที่แก้','err'); return; }
+    const body={action:'noticeAct',id:n.id,a:'fix',why,cust:$('fxC').value,reason:$('fxR').value,memo:$('fxM').value}; if(done){ body.actualOff=$('fxOff').value; body.actualOn=$('fxOn').value; }
+    $('fxSave').disabled=true; try{ await apiPost(Object.assign(body,a)); await loadNotices(true); toast('แก้บันทึกแล้ว'); ntDetail(n.id); }catch(e){ $('fxSave').disabled=false; msg('ntFMsg',e.message,'err'); } };
 }
 async function ntDetail(id){
   await loadNotices(); const n=(S.nts||[]).find(x=>x.id===id); if(!n){ toast('ไม่พบประกาศ'); return ntPage(); }
@@ -292,17 +335,26 @@ async function ntDetail(id){
     ${!emg?`<div class="nt-doc">${n.doc?`<span>📎 <b>หนังสือประกาศ</b> แนบแล้ว · ส่งเป็นภาพที่ 2</span>${can?'<button type="button" class="lnk" id="ntDocX">เปลี่ยน</button>':''}`:`<span class="ntw">📎 ยังไม่ได้แนบหนังสือประกาศ (ลงนามแล้ว)</span>${can?'<label class="btn sm">แนบไฟล์<input type="file" id="ntDocF" accept="image/*,application/pdf" hidden></label>':''}`}<div id="ntDocM"></div></div>`:''}
     ${s==='draft'?`<div class="nt-drb"><span>📝 <b>ร่าง</b> · ยังไม่ประกาศ แชร์ออกไม่ได้</span><button type="button" class="btn ghost" id="ntDrImg">⬇️ ภาพร่าง (มีลายน้ำ)</button></div>`:''}
     <div class="nt-sh" ${s==='draft'?'style="display:none"':''}><button type="button" class="btn line" id="ntShare">📤 แชร์ ${!emg&&n.doc?'2 ภาพ (โปสเตอร์+หนังสือ)':'โปสเตอร์'}</button><button type="button" class="btn ghost" id="ntPdfB">📄 PDF</button><button type="button" class="btn ghost" id="ntCopy">💬 คัดลอกข้อความ</button></div>
+    ${ntPendHtml(n)}
     ${acts?`<div class="nt-acts">${acts}</div>`:''}<div id="ntMsg"></div>
-    ${can&&s==='draft'?'<button type="button" class="lnk" id="ntEdit" style="margin-top:8px">✏️ แก้ไขร่าง</button>':''}${can&&s!=='draft'?'<div class="nt-lock">🔒 ประกาศจริงแล้ว'+(n.pubBy?' โดย '+esc(n.pubBy):'')+' — แก้ไขไม่ได้ (เลื่อนวัน / ยกเลิก ได้) <button type="button" class="lnk" id="ntCopyNew">📋 คัดลอกเป็นร่างใหม่</button></div>':''}
-    <div class="nt-tl"><b>ไทม์ไลน์</b>${(n.tl||[]).slice().reverse().map(e=>`<div>${esc(String(e.at).slice(8,10)+'/'+String(e.at).slice(5,7)+' '+String(e.at).slice(11))} · ${esc({new:'สร้างร่าง',edit:'แก้ไข',publish:'ยืนยันประกาศจริง',start:'เริ่มดับ',done:'ไฟมาแล้ว',extend:'ขยายเวลาถึง',move:'เลื่อนเป็น',cancel:'ยกเลิก',reopen:'เปิดใหม่',doc:'แนบหนังสือ',docDel:'ลบหนังสือ',link:'ลงรายการไฟดับ'}[e.act]||e.act)} ${esc(e.txt||'')} <span class="muted">(${esc(e.by||'')})</span></div>`).join('')}</div>
-    ${can&&(s==='cancel'||s==='plan'||s==='draft')?'<button type="button" class="lnk" id="ntDel" style="color:#A23434;margin-top:10px">ลบประกาศนี้</button>':''}</div>`,()=>ntPage());
+    ${can&&s==='draft'?'<button type="button" class="lnk" id="ntEdit" style="margin-top:8px">✏️ แก้ไขร่าง</button>':''}${can&&s!=='draft'?`<div class="nt-lock">${s==='done'||s==='cancel'?(ntIsAppr()?'<button type="button" class="lnk" id="ntFixB">✏️ แก้บันทึก</button>':'🔒 งานจบแล้ว · แก้บันทึกได้เฉพาะหัวหน้า/ผู้ช่วย'):`<button type="button" class="lnk" id="ntEdit">✏️ ${n.pend?'แก้คำขอแก้ไข':'แก้ไขประกาศ'}</button> <span class="muted">· ต้องให้หัวหน้า/ผู้ช่วยอนุมัติใหม่</span>`} <button type="button" class="lnk" id="ntCopyNew">📋 คัดลอกเป็นร่างใหม่</button></div>`:''}
+    <div class="nt-tl"><b>ไทม์ไลน์</b>${(n.tl||[]).slice().reverse().map(e=>`<div>${esc(String(e.at).slice(8,10)+'/'+String(e.at).slice(5,7)+' '+String(e.at).slice(11))} · ${esc({new:'สร้างร่าง',edit:'แก้ไข',publish:'ยืนยันประกาศจริง',start:'เริ่มดับ',done:'ไฟมาแล้ว',extend:'ขยายเวลาถึง',move:'เลื่อนเป็น',cancel:'ยกเลิก',reopen:'เปิดใหม่',doc:'แนบหนังสือ',docDel:'ลบหนังสือ',link:'ลงรายการไฟดับ',revReq:'ขอแก้ไข',rev:'อนุมัติฉบับแก้ไข',unpend:'ทิ้งคำขอแก้ไข',fix:'แก้บันทึก',del:'ลบ',restore:'กู้คืนจากถังขยะ'}[e.act]||e.act)} ${esc(e.txt||'')} <span class="muted">(${esc(e.by||'')})</span></div>`).join('')}</div>
+    ${can&&s!=='live'&&s!=='due'&&(s==='draft'||ntIsAppr())?`<button type="button" class="lnk" id="ntDel" style="color:#A23434;margin-top:10px">🗑 ลบประกาศนี้ <span class="muted">(ย้ายไปถังขยะ · กู้คืนได้ 30 วัน)</span></button>`:''}${can&&(s==='live'||s==='due')?'<div class="muted" style="margin-top:10px;font-size:12.5px">กำลังดับอยู่ — ลบไม่ได้จนกว่าจะกด "ไฟมาแล้ว" หรือยกเลิก</div>':''}</div>`,()=>ntPage());
   ntImgs(n).then(im=>{ const p=$('ntPrev'); if(p) p.innerHTML=`<div class="nt-scale">${ntPoster(n,im)}</div>`; });
   $('ntShare').onclick=e=>ntShare(n,e.currentTarget); $('ntPdfB').onclick=e=>ntPdf(n,e.currentTarget);
   $('ntCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText(ntText(n)); toast('คัดลอกข้อความแล้ว'); }catch(e){ prompt('คัดลอกข้อความนี้',ntText(n)); } };
   if($('ntEdit')) $('ntEdit').onclick=()=>ntForm(n);
+  if($('ntFixB')) $('ntFixB').onclick=()=>ntFix(n);
+  if($('ntPv')) $('ntPv').onclick=async()=>{ const r=Object.assign(JSON.parse(JSON.stringify(n)),n.pend.f,{rev:(n.rev||0)+1}); delete r.pend; if(r.status==='plan') delete r.moved; const im=await ntImgs(r); const p=$('ntPrev'); if(p){ p.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;width:100%"><div class="nt-pvt" style="align-self:stretch">ภาพฉบับแก้ไข (ยังไม่อนุมัติ) <button type="button" class="lnk" id="ntPvX">ดูฉบับปัจจุบัน</button></div><div class="nt-scale">${ntPoster(r,im)}</div></div>`; p.scrollIntoView({block:'start'}); $('ntPvX').onclick=()=>ntDetail(n.id); } };
+  const pAct=async(a,b,txt)=>{ b.disabled=true; try{ await apiPost(Object.assign({action:'noticeAct',id:n.id,a},ntAuth())); await loadNotices(true); toast(txt); ntDetail(n.id); }catch(e){ b.disabled=false; msg('ntMsg',e.message,'err'); } };
+  if($('ntPOk')) $('ntPOk').onclick=e=>{ if(confirm('อนุมัติการแก้ไข?\nภาพประกาศจะเปลี่ยนเป็น "ฉบับแก้ไข" — อย่าลืมแชร์ภาพใหม่ในกลุ่ม')) pAct('publish',e.currentTarget,'อนุมัติแล้ว — แชร์ภาพฉบับแก้ไขได้เลย'); };
+  if($('ntPNo')) $('ntPNo').onclick=e=>{ if(confirm(ntIsAppr()?'ไม่อนุมัติ และทิ้งคำขอแก้ไขนี้?':'ยกเลิกคำขอแก้ไข?')) pAct('unpend',e.currentTarget,'ทิ้งคำขอแก้ไขแล้ว'); };
   if($('ntCopyNew')) $('ntCopyNew').onclick=()=>{ const c=JSON.parse(JSON.stringify(n)); ['id','status','tl','draft','pubBy','pubAt','actualOff','actualOn','moved','outId','doc','created','createdBy','updated','by','al4'].forEach(k=>delete c[k]); c._copy=1; ntForm(c); };
   if($('ntDrImg')) $('ntDrImg').onclick=async e=>{ const b=e.currentTarget; b.disabled=true; try{ const bl=await ntPosterPng(n); const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download='ร่างประกาศ-'+n.date+'.png'; a.click(); }catch(x){ toast('สร้างภาพไม่สำเร็จ'); } b.disabled=false; };
-  if($('ntDel')) $('ntDel').onclick=async()=>{ if(!confirm('ลบประกาศนี้?')) return; try{ await apiPost(Object.assign({action:'noticeAct',id:n.id,a:'del'},ntAuth())); await loadNotices(true); toast('ลบแล้ว'); ntPage(); }catch(e){ msg('ntMsg',e.message,'err'); } };
+  if($('ntDel')) $('ntDel').onclick=async()=>{ let why='';
+    if(s==='draft'){ if(!confirm('ลบร่างนี้? (ย้ายไปถังขยะ กู้คืนได้ 30 วัน)')) return; }
+    else { why=prompt((s==='plan'||s==='over'?'ประกาศที่ส่งลูกค้าไปแล้ว ควรใช้ "ยกเลิก" มากกว่า\nลบ = ใช้กับประกาศที่ทำผิด/ซ้ำ\n\n':'')+'เหตุผลที่ลบ (จำเป็น)',''); if(why===null) return; why=why.trim(); if(!why){ alert('ใส่เหตุผลที่ลบ'); return; } }
+    try{ await apiPost(Object.assign({action:'noticeAct',id:n.id,a:'del',why},ntAuth())); S.ntTrash=null; await loadNotices(true); toast('ย้ายไปถังขยะแล้ว'); ntPage(); }catch(e){ msg('ntMsg',e.message,'err'); } };
   const docUp=async f=>{ if(!f) return; msg('ntDocM','กำลังอัปโหลด…'); try{ const x=await ntReadFile(f); const j=await apiPost(Object.assign({action:'noticeDoc',id:n.id,base64:x.base64,mime:x.mime},ntAuth())); if(j.notice.doc) S.ntFiles=Object.assign(S.ntFiles||{},{[j.notice.doc.fileId]:x.url}); await loadNotices(true); toast('แนบหนังสือแล้ว'); ntDetail(n.id); }catch(e){ msg('ntDocM',e.message,'err'); } };
   if($('ntDocF')) $('ntDocF').onchange=e=>docUp(e.target.files[0]);
   if($('ntDocX')) $('ntDocX').onclick=()=>{ const i=document.createElement('input'); i.type='file'; i.accept='image/*,application/pdf'; i.onchange=()=>docUp(i.files[0]); i.click(); };
@@ -311,7 +363,7 @@ async function ntDetail(id){
     if(a==='done'||a==='start'){ const t=prompt(a==='done'?'เวลาไฟมา (24 ชม.) — เว้นว่าง = ตอนนี้':'เวลาเริ่มดับ (24 ชม.) — เว้นว่าง = ตอนนี้',''); if(t===null) return; if(t.trim()){ const h=hmNorm(t); if(!h){ alert('เวลาไม่ถูกต้อง'); return; } body.at=h; } }
     if(a==='extend'){ const t=prompt('คาดว่าไฟมากี่โมง (24 ชม.)',ntHm(n.endAt).replace('.',':')); if(!t) return; const h=hmNorm(t); if(!h){ alert('เวลาไม่ถูกต้อง'); return; } body.to=h; }
     if(a==='move'){ const dt=prompt('เลื่อนเป็นวันที่ (ปปปป-ดด-วว ค.ศ.)',n.date); if(!dt) return; const st=hmNorm(prompt('เวลาเริ่ม',n.start)||''), en=hmNorm(prompt('เวลาสิ้นสุด',n.end)||''); if(!st||!en){ alert('เวลาไม่ถูกต้อง'); return; } Object.assign(body,{date:dt.trim(),start:st,end:en}); }
-    if(a==='publish'&&!confirm('ยืนยันประกาศจริง?\nหลังยืนยันจะแก้ไขรายละเอียดไม่ได้ (เลื่อนวัน / ยกเลิก ได้)')) return;
+    if(a==='publish'&&!confirm('ยืนยันประกาศจริง?\nหลังยืนยัน ถ้าจะแก้ต้องขออนุมัติใหม่ (เลื่อนวัน / ยกเลิก ได้)')) return;
     if(a==='cancel'){ const r=prompt('เหตุผลที่ยกเลิก (ไม่บังคับ)',''); if(r===null) return; body.note=r; }
     b.disabled=true; msg('ntMsg','กำลังบันทึก…');
     try{ await apiPost(Object.assign(body,ntAuth())); await loadNotices(true); toast({publish:'ประกาศจริงแล้ว — แชร์ได้',start:'บันทึกเริ่มดับแล้ว',done:'ไฟมาแล้ว ✓ — โปสเตอร์เปลี่ยนให้แล้ว',extend:'ขยายเวลาแล้ว',move:'เลื่อนวันแล้ว',cancel:'ยกเลิกแล้ว',reopen:'เปิดใหม่แล้ว'}[a]||'บันทึกแล้ว'); ntDetail(n.id); }
@@ -369,11 +421,13 @@ function ntApplySum(F){ const B=ntSum(F); if(!B) return; F._sld=B; if(B.cust) F.
 /* ---------- ฟอร์มสร้าง/แก้ประกาศ ---------- */
 async function ntForm(n0){
   const c=ntCfg(), td=ntNow().slice(0,10);
-  const F=n0?JSON.parse(JSON.stringify(n0)):{type:'plan',date:new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10),start:'08:30',end:'16:30',reasonKey:'improve',reason:NT_RS.plan[0][1],slogan:ntPickSlogan('plan'),area:'',sub:c.sub,villages:[],feeder:'',dev:null,cust:null,estMin:120,startIn:0};
+  const REV=!!(n0&&!n0._copy&&!n0.draft), LIVE=REV&&ntState(n0)==='live';
+  const F=n0?Object.assign(JSON.parse(JSON.stringify(n0)),REV&&n0.pend?JSON.parse(JSON.stringify(n0.pend.f||{})):{},REV?{why:''}:{}):{type:'plan',date:new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10),start:'08:30',end:'16:30',reasonKey:'improve',reason:NT_RS.plan[0][1],slogan:ntPickSlogan('plan'),area:'',sub:c.sub,villages:[],feeder:'',dev:null,cust:null,estMin:120,startIn:0};
   let docFile=null;
   sldData().then(()=>{ if($('ntF')) draw(); });
   const draw=()=>{ const emg=F.type==='emg', fd=(S.sld&&S.sld.fd&&S.sld.fd.length?S.sld.fd:FEEDERS0);
-    ntSheet(n0&&!n0._copy?'✏️ แก้ไขร่างประกาศ':'📢 สร้างประกาศ',`<div id="ntF">
+    ntSheet(REV?'✏️ แก้ไขประกาศจริง':n0&&!n0._copy?'✏️ แก้ไขร่างประกาศ':'📢 สร้างประกาศ',`<div id="ntF">
+     ${REV?`<div class="nt-revb">⚠️ ประกาศนี้ส่งลูกค้าไปแล้ว — บันทึกแล้วเป็น <b>คำขอแก้ไข</b> รอหัวหน้า/ผู้ช่วยอนุมัติ · ระหว่างนี้ประกาศเดิมยังใช้อยู่ · อนุมัติแล้วภาพมีป้าย <b>"ฉบับแก้ไข"</b> ให้ส่งซ้ำ${LIVE?'<br>⏱ กำลังดับอยู่: แก้วัน/เวลาเริ่มไม่ได้ (ใช้ปุ่ม "ขยายเวลา" ถ้าไฟมาช้ากว่าเดิม)':''}</div>`:''}
      ${n0?'':`<div class="nt-typ"><button type="button" data-ty="plan" class="${!emg?'on':''}">📅 แจ้งล่วงหน้า<small>ปรับปรุง / บำรุงรักษา</small></button><button type="button" data-ty="emg" class="${emg?'on em':''}">⚠️ ฉุกเฉิน<small>ต้องดับเดี๋ยวนี้ / ภายในวันนี้</small></button></div>`}
      ${emg&&!n0?`<div class="lb">เริ่มดับ</div><div class="chips">${[[0,'ดับแล้ว (ตอนนี้)'],[15,'อีก 15 นาที'],[30,'อีก 30 นาที'],[60,'อีก 1 ชม.']].map(([v,l])=>`<button type="button" class="ch ${F.startIn===v?'on':''}" data-si="${v}">${l}</button>`).join('')}</div>
        <div class="lb">คาดว่าใช้เวลา</div><div class="chips">${[[60,'1 ชม.'],[120,'2 ชม.'],[180,'3 ชม.'],[240,'4 ชม.'],[0,'ยังไม่ทราบ']].map(([v,l])=>`<button type="button" class="ch ${F.estMin===v?'on':''}" data-es="${v}">${l}</button>`).join('')}</div>`
@@ -399,9 +453,10 @@ async function ntForm(n0){
      <div class="lb">คำพูดของตัวพูดบนโปสเตอร์ <i>ไม่บังคับ</i></div><textarea id="ntSay" rows="2" placeholder="${esc((emg?NT_SAY.emg:NT_SAY[F.reasonKey]||NT_SAY.other))}">${esc(F.speech||'')}</textarea>
      <div class="lb">คำขวัญท้ายโปสเตอร์ <i>เปลี่ยนได้ทุกประกาศ</i></div><div class="chips nt-slg">${ntSlogans().map((x,i)=>`<button type="button" class="ch ${F.slogan===x?'on':''}" data-sl="${i}">${esc(x)}</button>`).join('')}<button type="button" class="ch" data-sl="rnd">🎲 สุ่ม</button></div>
      ${!emg&&!n0?`<div class="lb">📎 หนังสือประกาศ ${esc(c.unit)} (ลงนามแล้ว) <i>แนบทีหลังได้</i></div><label class="nt-drop">📷 ถ่ายรูป / 📄 เลือกไฟล์ (รูป หรือ PDF)<input type="file" id="ntDocIn" accept="image/*,application/pdf" hidden></label><div id="ntDocN" class="muted">${docFile?'✓ '+esc(docFile.name):''}</div>`:''}
+     ${REV?`<label class="tf nt-why" style="margin-top:10px">เหตุผลที่แก้ไข *<input type="text" id="ntWhy" value="${esc(F.why||'')}" placeholder="เช่น ผู้รับเหมาขอเวลาเพิ่ม 1 ชม."></label>`:''}
      <div id="ntFMsg"></div>
-     <button type="button" class="btn ${ntIsAppr()?'ghost':emg?'redf':''}" id="ntSave" style="width:100%;margin-top:10px">💾 ${n0&&!n0._copy?'บันทึกร่าง':'บันทึกเป็นร่าง'}</button>
-     ${ntIsAppr()?`<button type="button" class="btn ${emg?'redf':''}" id="ntSavePub" style="width:100%;margin-top:8px">📢 บันทึกและประกาศจริง</button>`:`<div class="muted" style="margin-top:6px;font-size:12.5px">ร่างจะประกาศจริงเมื่อหัวหน้า/ผู้ช่วยหัวหน้าแผนกกดยืนยัน${emg?' — ระบบแจ้ง LINE ให้หัวหน้าทันที':''}</div>`}
+     <button type="button" class="btn ${ntIsAppr()?'ghost':emg?'redf':''}" id="ntSave" style="width:100%;margin-top:10px">${REV?'📨 ส่งขออนุมัติการแก้ไข':'💾 '+(n0&&!n0._copy?'บันทึกร่าง':'บันทึกเป็นร่าง')}</button>
+     ${REV?(ntIsAppr()?`<button type="button" class="btn" id="ntSavePub" style="width:100%;margin-top:8px">✅ บันทึกและอนุมัติการแก้ไขเลย</button>`:''):ntIsAppr()?`<button type="button" class="btn ${emg?'redf':''}" id="ntSavePub" style="width:100%;margin-top:8px">📢 บันทึกและประกาศจริง</button>`:`<div class="muted" style="margin-top:6px;font-size:12.5px">ร่างจะประกาศจริงเมื่อหัวหน้า/ผู้ช่วยหัวหน้าแผนกกดยืนยัน${emg?' — ระบบแจ้ง LINE ให้หัวหน้าทันที':''}</div>`}
      ${emg&&!n0?'<div class="note" style="margin-top:6px">กดแล้วระบบแจ้ง LINE ผู้อนุมัติและเวรตอนนี้ · ได้โปสเตอร์ด่วนทันที</div>':''}</div>`,()=>n0?ntDetail(n0.id):ntPage());
     bind(); };
   const keep=()=>{ const v=id=>{const e=$(id);return e?e.value:null;};
@@ -451,11 +506,12 @@ async function ntForm(n0){
       box.querySelectorAll('[data-pk]').forEach(a=>a.onclick=e=>{ e.stopPropagation(); const d=S.sld.byId[a.dataset.pk]; if(!d) return; keep(); if(pick(d)){ draw(); toast('เลือก '+d[0]+' แล้ว — เติมข้อมูลจาก SLD'); } }); };
     if($('ntSldR')) $('ntSldR').onclick=async()=>{ keep(); LS.del('sld'); S.sld=null; $('ntSldR').textContent='กำลังโหลด…'; await sldData(); if(F.dev){ const d=(S.sld.dev||[]).find(x=>x[0]===F.dev.id); if(d){ const st=F.stops, mo=F.more; ntPickDev(F,d); F.stops=st; F.more=mo; ntApplySum(F); } } toast('โหลดข้อมูล SLD ใหม่แล้ว ('+((S.sld&&S.sld.dev.length)||0)+' อุปกรณ์)'); draw(); };
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
-    if($('ntSavePub')) $('ntSavePub').onclick=()=>{ if(!confirm('บันทึกและประกาศจริง?\nหลังประกาศจะแก้ไขรายละเอียดไม่ได้')) return; F._pub=1; $('ntSave').onclick(); };
+    if($('ntSavePub')) $('ntSavePub').onclick=()=>{ if(!confirm(REV?'บันทึกและอนุมัติการแก้ไขเลย?\nภาพประกาศจะเปลี่ยนเป็น "ฉบับแก้ไข"':'บันทึกและประกาศจริง?\nหลังประกาศ ถ้าจะแก้ต้องขออนุมัติใหม่')) return; F._pub=1; $('ntSave').onclick(); };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
       if(!String(F.area||'').trim()){ msg('ntFMsg','ใส่พื้นที่ไฟดับ','err'); return; }
+      if(REV){ F.why=($('ntWhy')||{}).value||''; if(!F.why.trim()){ msg('ntFMsg','ใส่เหตุผลที่แก้ไข','err'); return; } }
       const o={type:F.type,slogan:F.slogan||'',reason:F.reason,reasonKey:F.reasonKey,feeder:F.feeder,dev:F.dev,stops:F.dev?(F.stops||[]):[],more:F.dev?(F.more||[]):[],cust:F.cust,area:F.area.trim(),sub:F.sub,villages:F.villages,speech:F.speech};
-      if(n0&&!n0._copy) Object.assign(o,{id:n0.id,date:F.date,start:F.start,end:F.end,estMin:F.estMin});
+      if(n0&&!n0._copy) Object.assign(o,{id:n0.id,date:F.date,start:F.start,end:F.end,estMin:F.estMin},REV?{why:F.why.trim()}:{});
       else if(n0&&n0._copy&&F.type!=='emg'){ if(!F.date||!F.start||!F.end){ msg('ntFMsg','ใส่วันและเวลาให้ครบ','err'); return; } Object.assign(o,{date:F.date,start:F.start,end:F.end}); }
       else if(F.type==='emg'){ const at=isoAt(Date.now()+F.startIn*6e4); Object.assign(o,{date:at.slice(0,10),start:at.slice(11,16),estMin:F.estMin,live:F.startIn===0}); }
       else { if(!F.date||!F.start||!F.end){ msg('ntFMsg','ใส่วันและเวลาให้ครบ','err'); return; } Object.assign(o,{date:F.date,start:F.start,end:F.end}); }
@@ -464,7 +520,7 @@ async function ntForm(n0){
       try{ const j=await apiPost(Object.assign({action:'saveNotice',n:o},a)); let nn=j.notice;
         if(docFile){ $('ntSave').innerHTML='<span class="spin"></span>กำลังแนบหนังสือ…'; try{ const x=await ntReadFile(docFile); const k=await apiPost(Object.assign({action:'noticeDoc',id:nn.id,base64:x.base64,mime:x.mime},a)); nn=k.notice; if(nn.doc) (S.ntFiles=S.ntFiles||{})[nn.doc.fileId]=x.url; }catch(e){ toast('สร้างประกาศแล้ว แต่แนบหนังสือไม่สำเร็จ: '+e.message); } }
         if(F._pub){ try{ await apiPost(Object.assign({action:'noticeAct',id:nn.id,a:'publish'},a)); }catch(e){ toast('บันทึกร่างแล้ว แต่ยืนยันประกาศไม่สำเร็จ: '+e.message); } }
-        await loadNotices(true); renderNtBanner(); toast(F._pub?'ประกาศจริงแล้ว':'บันทึกร่างแล้ว'); ntDetail(nn.id);
+        await loadNotices(true); renderNtBanner(); toast(REV?(F._pub?'อนุมัติฉบับแก้ไขแล้ว — แชร์ภาพใหม่ได้เลย':'ส่งขออนุมัติการแก้ไขแล้ว'):F._pub?'ประกาศจริงแล้ว':'บันทึกร่างแล้ว'); ntDetail(nn.id);
       }catch(e){ $('ntSave').disabled=false; $('ntSave').textContent=n0?'บันทึก':'ลองอีกครั้ง'; msg('ntFMsg',e.message,'err'); } };
   };
   draw();

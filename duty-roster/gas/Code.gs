@@ -469,6 +469,7 @@ function doPost(e) {
     if (b.action === 'ocAct') return json_(Object.assign({ ok: true }, ocAct_(b)));
     if (b.action === 'ocMode') return json_(Object.assign({ ok: true }, ocSetMode_(b)));
     if (b.action === 'noticeAct') return json_({ ok: true, notice: noticeAct_(b) });
+    if (b.action === 'noticeTrash') return json_({ ok: true, notices: noticeTrash_(b) });
     if (b.action === 'noticeDoc') return json_({ ok: true, notice: noticeDoc_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'resubmitRequest') return json_({ ok: true, request: resubmitRequest_(b), requests: listRequests_() });
