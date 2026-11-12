@@ -120,7 +120,7 @@ details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
 .page .in{text-indent:2.5cm}
 .page .in2{padding-left:2.5cm}
 .page .in3{padding-left:3.2cm}
-.page .inn{text-indent:3cm}.page .inn .nb{display:inline-block;min-width:1.25cm;text-indent:0}.page .inh{text-indent:2.5cm}
+.page .inn{text-indent:3cm}.page .inn .nb{display:inline-block;text-indent:0;padding-right:1mm}.page .inh{text-indent:2.5cm}
 .page .c{text-align:center}
 .page b{font-weight:700}
 .logo{width:42mm;display:block;margin-left:0}
@@ -145,8 +145,7 @@ table.t th{font-weight:700;text-align:center}
 .chip{display:inline-block;font-size:12px;border-radius:8px;padding:1px 8px;background:#f1eef4;color:var(--mute);margin:1px 0}.chip.ok{background:#e3f4ea;color:var(--ok)}
 .doc.st-done .n{background:#e3f4ea;color:var(--ok)}.doc.st-ready{border-color:#f0c766;background:#fffbf1}.doc.st-wait{opacity:.85}
 .page .in3{padding-left:3.2cm}
-.page .inn{text-indent:3cm}.page .inn .nb{display:inline-block;min-width:1.25cm;text-indent:0}.page .inh{text-indent:2.5cm}
-.cml{display:grid;grid-template-columns:56mm 1fr 25mm;gap:0 2mm;padding-left:2.5cm}
+.cml{display:grid;grid-template-columns:var(--nw,6mm) var(--nm,42mm) 1fr 24mm;gap:0 2.5mm;padding-left:var(--pl,3cm);align-items:start}.cml>span:last-child{white-space:nowrap}.page .cmd{padding-left:calc(var(--pl,3cm) + var(--nw,6mm) + 2.5mm)}
 .cms{display:grid;grid-template-columns:12mm 1fr 34mm;gap:0 2mm}.cms .dl{border-bottom:1px dotted #000;margin-bottom:5pt}
 .cmn{display:grid;grid-template-columns:12mm 1fr 34mm;gap:0 2mm}.cmn span:nth-child(2){text-align:center}
 .exth{display:grid;grid-template-columns:1fr 34mm 1fr;align-items:start}.exr{padding-left:6mm}
@@ -219,7 +218,7 @@ const nm = s => String(s || '').replace(/[\s​-‍﻿]/g, '').toLowerCase();
 
 const REG1 = 'ข้อบังคับการไฟฟ้าส่วนภูมิภาคว่าด้วยการดำเนินธุรกิจเสริมของการไฟฟ้าส่วนภูมิภาค พ.ศ. 2567';
 const REG2 = 'ระเบียบการไฟฟ้าส่วนภูมิภาคว่าด้วยธุรกิจเสริมของสายงานการไฟฟ้า ภาค 1-4 พ.ศ. 2564';
-const DEFSET = { office: 'กฟส.อ่าวลึก', officeFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', bookPrefix: 'ต.2อล.', extPrefix: 'มท 5307.60/กฟส.อล.',
+const DEFSET = { office: 'กฟส.อ่าวลึก', officeFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', bookPrefix: 'ต.2กฟส.อล.', extPrefix: 'มท 5307.60/กฟส.อล.',
   addr1: '125 หมู่ 1 ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', phone: '0-7566-6925',
   reg1: REG1, reg2: REG2,
   manual: 'ตามอนุมัติ ผวก. ลงวันที่ 20 กันยายน 2561 หนังสือที่ ก.1 กบล.(ก.) 3333/2561 ลงวันที่ 13 กันยายน 2561 อนุมัติหลักเกณฑ์และคู่มือการปฏิบัติงาน (Work Manual) การให้บริการตามระเบียบ กฟภ. ว่าด้วยธุรกิจเสริมของสายงานการไฟฟ้า ภาค 1 – 4 ข้อ 38 - 40',
@@ -453,10 +452,10 @@ function approverBox(j, k, lines, extra) { const d = j.docs[k] || {}, ov = ovOf(
  <div class="sc">(${esc(withPre(j.mgr.name))})</div><div class="sc">${esc(j.mgr.pos.replace('ผู้จัดการ การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', 'ผจก.' + SET.office))}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`; }
 function signer(p, extra) { return `<div class="sc">(${esc(withPre(p.name))})</div><div class="sc">${esc(p.pos)}</div>${(extra || []).map(x => `<div class="sc">${esc(x)}</div>`).join('')}`; }
 function cmSign(list) { return list.map(m => `<div class="cms"><span>ลงชื่อ</span><span class="dl"></span><span>${esc(m.role)}</span></div><div class="cmn"><span></span><span>(${esc(withPre(m.name))})</span><span></span></div><div class="cmn"><span></span><span>${esc(m.pos)}</span><span></span></div><div class="gap"></div>`).join(''); }
-function cmLines(list, pre) { return list.map((m, x) => `<div class="cml"><span>${pre}${x + 1} ${esc(withPre(m.name))}</span><span>ตำแหน่ง ${esc(m.pos)}</span><span>${esc(m.role)}</span></div>`).join(''); }
+function cmLines(list, pre, nw, pl, nmw) { return list.map((m, x) => `<div class="cml" style="--nw:${nw || '6mm'};--pl:${pl || '3cm'};--nm:${nmw || '42mm'}"><span>${pre}${x + 1}${pre ? '' : '.'}</span><span>${esc(withPre(m.name))}</span><span>${esc(m.pos)}</span><span>${esc(m.role)}</span></div>`).join(''); }
 const closing = (j, k, def) => esc(ovOf(j, k).close || def);
 const NUM_RE = /^(\(\d+\)|\d+(?:\.\d+)+|\d+\.)\s+/;
-const numP = (s, c, extra) => { const m = c === 'in' && String(s).match(NUM_RE); return m ? `<p class="inn${extra}"><span class="nb">${m[1]}</span>${s.slice(m[0].length)}</p>` : `<p class="${c}${extra}">${s}</p>`; };
+const numP = (s, c, extra) => { const m = c === 'in' && String(s).match(NUM_RE); return m ? `<p class="inn${extra}"><span class="nb">${m[1]}</span> ${s.slice(m[0].length)}</p>` : `<p class="${c}${extra}">${s}</p>`; };
 const P = (s, c = 'in') => numP(s, c, '');
 const PK = (s, c = 'in') => `<p class="${c} kwn">${s}</p>`;
 const H = s => `<p class="inh kwn"><b>${s}</b></p>`;
@@ -464,14 +463,14 @@ const sigRow = (j, k, boxLines, who, extra, boxExtra) => `<div class="sig tobott
 
 /* ---------------- 1. แต่งตั้ง กก.ราคากลาง + เจ้าหน้าที่ TOR ---------------- */
 function R_d1(j, c) {
-  const pc = j.priceCm.map((m, x) => `<div class="cml"><span>${x + 1}. ${esc(withPre(m.name))}</span><span>${esc(m.pos)}</span><span>${esc(m.role)}</span></div>`).join('');
+  const pc = cmLines(j.priceCm, '', '', '3.6cm');
   return `<div class="page">${memoHead(j, 'd1', { from: j.deptFull, to: SET.office, subj: `ขออนุมัติแต่งตั้งคณะกรรมการกำหนดราคากลางและเจ้าหน้าที่จัดทำ TOR งานจัดซื้อ${w.tf} เพื่อใช้ใน${w.proj}`, attn: w.mgrS })}
  ${H('1. เรื่องเดิม')}${P(`1.1 ตามหนังสือ ${v(j.apvRef)} ลงวันที่ ${dt(j.apvDate)} อนุมัติขยายเขตระบบจำหน่าย ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} หมายเลขงาน WBS : ${v(j.wbsMain)} แบบผังเลขที่ ${v(j.drawing)} ในส่วนของงบผู้ใช้ไฟ งานติดตั้งหม้อแปลง ผู้ใช้ไฟประสงค์ให้ การไฟฟ้าส่วนภูมิภาค ดำเนินการจัดหาและติดตั้งหม้อแปลงไฟฟ้า ชนิดไม่ทนการลัดวงจร (หม้อแปลงไฟฟ้า Low Loss) ซึ่งผู้ใช้ไฟได้ชำระเงินค่าก่อสร้างขยายเขตแล้วตามใบเสร็จรับเงินเลขที่ ${v(j.rcptNo)} ลว. ${dt(j.rcptDate)}`)}
  <div class="gap"></div>${H('2. ข้อเท็จจริง')}${P(`2.1 จากกรณีดังกล่าว กรณีที่ผู้ใช้ไฟมีความประสงค์ให้ การไฟฟ้าส่วนภูมิภาค ดำเนินการจัดหาและติดตั้งหม้อแปลงไฟฟ้า ${w.kvaTh} ที่นอกเหนือจากสเปคหม้อแปลงไฟฟ้าที่ กฟภ.กำหนด ตามระเบียบการไฟฟ้าส่วนภูมิภาคว่าด้วยธุรกิจเสริม`)}
  <div class="gap"></div>${H('3. ข้อพิจารณา')}${P(`${esc(j.deptFull)} พิจารณาแล้วเพื่อให้การจัดหา${w.lowloss} และติดตั้งให้แล้วเสร็จตามความประสงค์ของผู้ใช้ไฟ เห็นควรดำเนินการจัดซื้อหม้อแปลงด้วยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} จึงขออนุมัติดำเนินการดังนี้`)}
  ${P('3.1 ขออนุมัติแต่งตั้งคณะกรรมการกำหนดราคากลาง และเจ้าหน้าที่ร่างขอบเขตงาน ฯ เพื่อดำเนินการจัดซื้อหม้อแปลงไฟฟ้าดังกล่าว ดังต่อไปนี้')}
- <p class="inn kwn"><span class="nb">3.1.1</span>คณะกรรมการกำหนดราคากลาง</p>${pc}<p style="padding-left:3.8cm">หน้าที่พิจารณากำหนดราคากลาง</p>
- <p class="inn kwn"><span class="nb">3.1.2</span>เจ้าหน้าที่ร่างขอบเขตงาน ฯ (TOR)</p><div class="cml"><span>1. ${esc(withPre(j.officer.name))}</span><span>${esc(j.officer.pos)}</span><span></span></div><p style="padding-left:3.8cm">เจ้าหน้าที่ร่างขอบเขตงาน</p>
+ <p class="inn kwn"><span class="nb">3.1.1</span> คณะกรรมการกำหนดราคากลาง</p>${pc}<p class="cmd" style="--pl:3.6cm">หน้าที่พิจารณากำหนดราคากลาง</p>
+ <p class="inn kwn"><span class="nb">3.1.2</span> เจ้าหน้าที่ร่างขอบเขตงาน ฯ (TOR)</p>${cmLines([{ name: j.officer.name, pos: j.officer.pos, role: '' }], '', '', '3.6cm')}<p class="cmd" style="--pl:3.6cm">เจ้าหน้าที่ร่างขอบเขตงาน</p>
  <div class="gap"></div>${PK(closing(j, 'd1', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติและแจ้งคณะกรรมการกำหนดราคากลาง, เจ้าหน้าที่ร่างขอบเขตงาน ฯ ดำเนินการต่อไป'))}
  ${sigRow(j, 'd1', [`เรียน   ${w.head}`, 'คณะกรรมการกำหนดราคากลาง', 'เจ้าหน้าที่ร่างขอบเขตงาน ฯ', '- อนุมัติข้อ 3.1.1 และ 3.1.2', '- ดำเนินการต่อไป'], j.head)}</div>`; }
 
@@ -522,7 +521,7 @@ function R_d4(j, c) {
  ${H('5. กำหนดเวลาที่ต้องการใช้พัสดุนั้น หรือให้งานนั้นแล้วเสร็จ')}${P(`(1) การจัดซื้อให้กำหนดวันส่งมอบพัสดุภายใน ${v(j.days)} วัน นับแต่วันถัดจากวันลงนามในใบสั่งซื้อ (PO)`)}
  ${H('6. วิธีจะซื้อหรือจ้าง และเหตุผลที่จะต้องซื้อหรือจ้างโดยวิธีนั้น')}${P(`พิจารณาเห็นสมควรดำเนินการจัดซื้อจัดจ้างโดยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} เนื่องจากการจัดซื้อจัดจ้างครั้งนี้ ${esc(SET.manual)}`)}
  ${H('7. ข้อเสนออื่นๆ')}${P('ให้คณะกรรมการจัดซื้อ ดำเนินการจัดซื้อ ติดต่อตกลงราคากับผู้ขาย/ผู้รับจ้างโดยตรง ทั้งนี้ ระยะเวลาในการดำเนินการของคณะกรรมการตามคู่มือปฏิบัติงาน (Work Manual) ดังรายชื่อต่อไปนี้')}
- <p class="inn kwn"><span class="nb">7.1</span>คณะกรรมการจัดซื้อ</p>${cmLines(j.buyCm, '7.1.')}<p class="inn kwn"><span class="nb">7.2</span>คณะกรรมการตรวจรับงานซื้อ</p>${cmLines(j.inspCm, '7.2.')}
+ <p class="inn kwn"><span class="nb">7.1</span> คณะกรรมการจัดซื้อ</p>${cmLines(j.buyCm, '7.1.', '11mm', '3cm', '50mm')}<p class="inn kwn"><span class="nb">7.2</span> คณะกรรมการตรวจรับงานซื้อ</p>${cmLines(j.inspCm, '7.2.', '11mm', '3cm', '50mm')}
  <div class="gap"></div>${PK(closing(j, 'd4', `จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้ดำเนินการจัดซื้อ โดยวิธีเฉพาะเจาะจง และดำเนินการตาม${SET.reg1} และตาม${SET.reg2} ดังกล่าวข้างต้น`))}
  ${sigRow(j, 'd4', [`เรียน   ${w.head}`, '- เห็นชอบ/อนุมัติ', '- ดำเนินการต่อไป'], j.officer)}</div>`; }
 
@@ -594,6 +593,9 @@ function thaiNumify(root) { if (!SET.thaiNum) return; const tw = document.create
 
 /* แบ่งหน้าอัตโนมัติ: เนื้อหาเกินหน้า → ยกส่วนท้ายขึ้นหน้าใหม่ · ตารางแบ่งข้ามหน้าได้ (ทำหัวตารางซ้ำ)
    หัวข้อไม่ค้างท้ายหน้า · หนังสือบันทึกข้อความใส่ "/คำแรกของหน้าถัดไป..." ท้ายหน้า และ "-๒-" หัวหน้าถัดไป ตามแบบเดิม */
+function contWords(t){t=String(t).replace(/\s+/g,' ').trim();let out='';
+ try{const seg=new Intl.Segmenter('th',{granularity:'word'});for(const x of seg.segment(t)){if(out.length>=20&&x.isWordLike)break;out+=x.segment;if(out.length>=30)break}}catch(e){out=t.slice(0,20)}
+ return out.trim()}
 function splitTable(tb,over){const rows=[...tb.rows];if(rows.length<3)return null;
  const t2=tb.cloneNode(false);const cg=tb.querySelector('colgroup');if(cg)t2.appendChild(cg.cloneNode(true));
  const body=document.createElement('tbody');t2.appendChild(body);let i=rows.length-1;
@@ -612,7 +614,7 @@ function paginate(box){
     moved.unshift(last);last.remove()}
    take();
    if(memo){n++;const f=document.createElement('div');f.className='cont';cur.appendChild(f);
-    const label=()=>{const fst=moved.find(m=>m.textContent.trim());f.textContent='/'+(fst?fst.textContent.trim().split(/\s+/).slice(0,2).join(' '):'')+'...'};label();
+    const label=()=>{const fst=moved.find(m=>m.textContent.trim());f.textContent='/'+(fst?contWords(fst.textContent):'')+'...'};label();
     const take2=()=>{let q;while((q=f.previousElementSibling)&&cur.children.length>2&&(q.classList.contains('kwn')||q.classList.contains('gap'))){moved.unshift(q);q.remove()}};
     while(over()&&cur.children.length>2){const l=f.previousElementSibling;moved.unshift(l);l.remove();take2();label()}
     const no=String(n);nx.innerHTML='<div class="pgno">-'+(SET.thaiNum?toThaiDigits(no):no)+'-</div><div class="gap"></div>'}
