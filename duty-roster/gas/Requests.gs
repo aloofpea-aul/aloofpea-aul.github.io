@@ -1097,10 +1097,36 @@ function boxInfo_() {
   if (!duty.length && !bellHours_()) duty = [String(getConfig_().boxOfficeDuty || 'ผปร. : อติวิทย์')];
   const out = { duty: duty, crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
-    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(), oc: ocBox_(),
+    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(), oc: ocBox_(), out: boxOut_(),
     rot: String(getConfig_().boxRot || '20,10,5').split(',').map(function (x) { return Math.max(0, Math.min(120, Number(x) || 0)); }) };
   cache.put('boxInfo', JSON.stringify(out), 30);
   return out;
+}
+/** ไฟดับอยู่ตอนนี้ (แสดงบนกล่อง ไม่ปลุก): ประกาศที่กำลังดับ + บันทึกไฟดับในรายงานเวรที่ยังไม่ใส่เวลาไฟมา (24 ชม.) · ผูกกันแล้วแสดงครั้งเดียว */
+function boxOut_() {
+  try {
+    const now = Date.now(), T = function (x) { return Date.parse(String(x) + ':00+07:00'); }, hm = function (x) { return String(x || '').slice(11, 16); };
+    const mins = function (x) { const m = Math.max(0, Math.round((now - T(x)) / 60000)); return m >= 60 ? Math.floor(m / 60) + ' ชม. ' + (m % 60) + ' นาที' : m + ' นาที'; };
+    const tx = function (t) { return ocBoxTxt_(String(t || '').replace(/→|->/g, '-')); }, L = [], used = {};
+    ntRows_().filter(function (x) { return !x.deleted && !x.d.draft && ntState_(x.d) === 'live'; }).forEach(function (x) {
+      const d = x.d, off = d.actualOff || d.startAt, emg = d.type === 'emg'; if (d.outId) used[d.outId] = 1;
+      L.push({ k: emg ? 'e' : 'p', t: T(off), a: tx([d.feeder, d.area].filter(String).join(' · ')).slice(0, 60),
+        b: tx((emg ? 'ฉุกเฉิน · ดับ ' + hm(off) + ' (' + mins(off) + ')' : 'ตามแผน · ' + hm(d.startAt) + '-' + (d.endAt ? hm(d.endAt) : '?')) + (d.cust ? ' · ~' + d.cust + ' ราย' : '')),
+        c: tx(emg ? (d.endAt ? 'คาดไฟมา ~' + hm(d.endAt) : 'กำลังเร่งแก้ไข') + (d.reason ? ' · ' + d.reason : '') : (d.reason || '')).slice(0, 60),
+        s: tx((d.feeder ? d.feeder + ' ' : '') + String(d.area || '').split(/→|->| · /)[0] + ' ดับ ' + hm(off) + (d.endAt ? ' · ' + (emg ? 'คาดไฟมา ~' : 'ถึง ') + hm(d.endAt) : '')) });
+    });
+    let back = null;
+    outRows_().filter(function (x) { return !x.deleted && x.d.off && now - T(x.d.off) < 24 * 3600e3; }).forEach(function (x) {
+      const d = x.d, where = (d.dev && d.dev.id ? d.dev.id + (d.dev.desc ? ' ' + d.dev.desc : '') : '') || d.place || '';
+      if (d.on) { if (bkkYmd_(new Date(T(d.on))) === bkkYmd_() && (!back || d.on > back.on)) back = { on: d.on, s: tx([d.feeder, where].filter(String).join(' ')).slice(0, 40) + ' ' + hm(d.off) + '-' + hm(d.on) }; return; }
+      if (used[d.id]) return;
+      L.push({ k: 'o', t: T(d.off), a: tx([d.feeder, where].filter(String).join(' · ')).slice(0, 60),
+        b: tx('บันทึกเวร · ดับ ' + hm(d.off) + ' (' + mins(d.off) + ')' + (d.cust ? ' · ~' + d.cust + ' ราย' : '')),
+        c: tx('ยังไม่ใส่เวลาไฟมา' + (d.by ? ' · ลงโดย ' + d.by : '')).slice(0, 60), s: tx((d.feeder ? d.feeder + ' ' : '') + where + ' ดับ ' + hm(d.off)) });
+    });
+    L.sort(function (a, b) { return (a.k === 'p') - (b.k === 'p') || b.t - a.t; });
+    return { n: L.length, list: L.slice(0, 3).map(function (x) { return { k: x.k, a: x.a, b: x.b, c: x.c, s: x.s.slice(0, 70) }; }), back: back ? back.s : '' };
+  } catch (e) { return { n: 0, list: [], back: '', err: String(e).slice(0, 80) }; }
 }
 /** tkCheck: ไล่แจ้งแทนกล่อง (ถ้ากล่องดับ) + เตือนเมื่อกล่องขาดการติดต่อเกิน 5 นาที (เฉพาะช่วงเวลาปลุก) */
 function bellWatch_() {
@@ -1187,7 +1213,9 @@ function ocIn_(q) {
   if (q.ping) return { ping: 1 };
   const C = ocCfg_(), ti = String(q.ti || '').slice(0, 300), tx = String(q.tx || '').slice(0, 2000), bt = String(q.bt || '').slice(0, 2000);
   const room = ocNorm_(C.room);
-  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) return { skip: 'room' };   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ
+  if (!room || [ti, tx, bt, String(q.sub || '')].every(function (s) { return ocNorm_(s).indexOf(room) < 0; })) {   // ไม่ใช่ห้องที่ตั้งไว้ → ไม่เก็บ (จำแค่หัวเรื่อง 10 รายการล่าสุดไว้ตรวจสอบ)
+    try { const L = JSON.parse(cache.get('ocSkip') || '[]'); L.unshift([Utilities.formatDate(new Date(), TZ, 'dd/MM HH:mm'), ti.slice(0, 40), String(q.sub || '').slice(0, 40)]); cache.put('ocSkip', JSON.stringify(L.slice(0, 10)), 21600); } catch (e) {}
+    return { skip: 'room' }; }
   let body = (bt.length > tx.length ? bt : tx).trim(), sender = '';
   if (ocNorm_(ti).indexOf(room) >= 0) { const m = body.match(/^([^\n:：]{1,40}?)\s*[:：]\s*([\s\S]+)$/); if (m) { sender = m[1].trim(); body = m[2].trim(); } }
   else { sender = ti.trim(); }
@@ -1224,7 +1252,7 @@ function ocIn_(q) {
 }
 /** ดูข้อความ OpenChat ย้อนหลัง (เจ้าหน้าที่) — คัดใหม่ตามรูปแบบปัจจุบัน + ป้ายที่คนแก้ไว้ (คอลัมน์ G) */
 function ocList_(b) {
-  const by = tkAuth_(b), sh = ocSheet_(), n = sh.getLastRow(); if (n < 2) return { by: by, rows: [] };
+  const by = tkAuth_(b), sh = ocSheet_(), n = sh.getLastRow(); if (n < 2) { let sk = []; try { sk = JSON.parse(CacheService.getScriptCache().get('ocSkip') || '[]'); } catch (e) {} return { by: by, rows: [], skip: sk, room: ocCfg_().room, mode: ocCfg_().mode }; }
   const hrs = Math.min(72, Math.max(1, Number(b.hours) || 24)), from = Date.now() - hrs * 3600e3, k = Math.min(n - 1, 1500);
   const v = sh.getRange(n - k + 1, 1, k, 8).getValues(), C = ocCfg_(), out = [], qFrom = Date.now() - OC_QH_ * 3600e3;
   for (let i = v.length - 1; i >= 0; i--) { const t = v[i][0] instanceof Date ? v[i][0].getTime() : Date.parse(v[i][0]); if (!t || t < from) continue;
@@ -1236,7 +1264,8 @@ function ocList_(b) {
       q: ocIsQ_(c.lv, fix, tk) && t >= qFrom ? 1 : 0 });
     if (out.length >= 400) break; }
   const hb = Number(CacheService.getScriptCache().get('ocHB') || 0);
-  return { by: by, mode: C.mode, hours: C.hours, remind: C.remind, qh: OC_QH_, appr: !!approverOf_(b), hb: hb ? Utilities.formatDate(new Date(hb), TZ, 'HH:mm') : '', rows: out };
+  let skip = []; try { skip = JSON.parse(CacheService.getScriptCache().get('ocSkip') || '[]'); } catch (e) {}
+  return { by: by, mode: C.mode, room: C.room, skip: skip, hours: C.hours, remind: C.remind, qh: OC_QH_, appr: !!approverOf_(b), hb: hb ? Utilities.formatDate(new Date(hb), TZ, 'HH:mm') : '', rows: out };
 }
 /** ป้ายแก้การคัด: yes = เป็นการแจ้ง · no = ไม่ใช่ · '' = ล้าง — ใช้ปรับรูปแบบภายหลัง */
 function ocMark_(b) {
@@ -1320,7 +1349,7 @@ function ocAct_(b) {
   CacheService.getScriptCache().remove('boxInfo');
   return { rows: rs, tk: a === 'undo' ? '' : tk, ticket: d ? { id: d.id, st: d.st } : null };
 }
-function ocBoxTxt_(t) { return String(t || '').replace(/[^\u0020-\u007e\u0e00-\u0e7f\s]/g, '').replace(/\s+/g, ' ').trim(); }   // จอกล่องมีเฉพาะอักษรไทย/อังกฤษ
+function ocBoxTxt_(t) { return String(t || '').replace(/[^\u0020-\u007e\u00b0-\u00b7\u0e00-\u0e7f\u2014\u2026\s]/g, '').replace(/\s+/g, ' ').trim(); }   // จอกล่องมีเฉพาะอักษรไทย/อังกฤษ
 function ocTkText_(tk) { return /^A-/.test(tk) ? 'เปิดเป็นงาน ' + tk : /^merge:/.test(tk) ? 'รวมกับ ' + tk.slice(6) : /^ok/.test(tk) ? 'รับทราบแล้ว' : 'ไม่ใช่การแจ้ง'; }
 /** หัวหน้า/ผู้ช่วย: สลับโหมด test ↔ live และช่วงเวลาแจ้ง LINE (off = นอกเวลาทำการ · all = ตลอด) */
 function ocSetMode_(b) {

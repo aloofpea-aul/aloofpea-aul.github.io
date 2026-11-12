@@ -1,25 +1,25 @@
 {
   "name": "กล่องกระดิ่งเวรแก้ไฟ (จอทัช ESP32-2432S028)",
-  "version": "1.8",
+  "version": "1.9",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32",
       "parts": [
         {
-          "path": "v1.8/bootloader.bin",
+          "path": "v1.9/bootloader.bin",
           "offset": 4096
         },
         {
-          "path": "v1.8/partitions.bin",
+          "path": "v1.9/partitions.bin",
           "offset": 32768
         },
         {
-          "path": "v1.8/boot_app0.bin",
+          "path": "v1.9/boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "v1.8/app.bin",
+          "path": "v1.9/app.bin",
           "offset": 65536
         }
       ]

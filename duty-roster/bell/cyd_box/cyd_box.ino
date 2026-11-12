@@ -22,7 +22,7 @@
 #include "lgfx_cyd.h"
 #include "thai.h"
 
-#define FW_VER "1.8"
+#define FW_VER "1.9"
 static const char* DEF_URL = "https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec";
 
 const int PIN_BOOT = 0, PIN_LDR = 34, PIN_R = 4, PIN_G = 16, PIN_B = 17;
@@ -106,6 +106,7 @@ struct Net {
   String duty[6]; int nDuty = 0; String crew[6]; int nCrew = 0; int open = 0, today = 0; Job jobs[6]; int nJobs = 0; String app;
   bool wxOk = false; int wxLv = 0, wxT = 0, wxRh = 0, wxGust = 0; String wxLabel, wxCond, wxAt; String wxH[6]; int wxP[6]; int wxN = 0;
   String mkAt; String mkN[4], mkP[4], mkO[4], mkD[4]; float mkC[4]; int mkU[4]; int mkCount = 0;
+  int outN = 0; String outK[3], outA[3], outB[3], outC[3], outS[3], outBack;   // ไฟดับอยู่ตอนนี้ (แสดงอย่างเดียว ไม่ปลุก)
   int ocN = -1, ocNs = 0, ocMin = -1, ocRm = 30; String ocAt, ocS, ocX, ocUrl;   // ข้อความ OpenChat รอตรวจ (-1 = ระบบไม่ได้เปิดใช้)
   int rot[3] = {20, 10, 5};   // วินาที: หน้าเวร / อากาศ / ตลาด (ระบบตั้งได้ · 0 = ไม่แสดงหน้านั้น)
 } net;
@@ -173,6 +174,12 @@ void doPoll(bool ack, const String& by, bool light) {
       else { net.ocN = o["n"] | 0; net.ocNs = o["ns"] | 0; net.ocMin = o["min"] | -1; net.ocRm = o["rm"] | 30;
         net.ocAt = String((const char*)(o["at"] | "")); net.ocS = String((const char*)(o["s"] | "")); net.ocX = String((const char*)(o["x"] | ""));
         net.ocUrl = String((const char*)(o["url"] | "")); } }
+    { JsonObject o = doc["out"]; net.outN = 0; net.outBack = "";
+      if (!o.isNull()) { net.outN = o["n"] | 0; net.outBack = String((const char*)(o["back"] | "")); int i = 0;
+        for (JsonObject it : o["list"].as<JsonArray>()) { if (i >= 3) break;
+          net.outK[i] = String((const char*)(it["k"] | "o")); net.outA[i] = String((const char*)(it["a"] | "")); net.outB[i] = String((const char*)(it["b"] | ""));
+          net.outC[i] = String((const char*)(it["c"] | "")); net.outS[i] = String((const char*)(it["s"] | "")); i++; }
+        for (; i < 3; i++) { net.outK[i] = ""; net.outA[i] = ""; } } }
     JsonObject mk = doc["mk"];
     net.mkCount = 0; net.mkAt = String((const char*)(mk["at"] | ""));
     for (JsonObject it : mk["items"].as<JsonArray>()) {
@@ -307,7 +314,7 @@ lv_obj_t* btn(lv_obj_t* p, const String& s, const lv_font_t* f, uint32_t bg, int
 void loadScr(lv_obj_t* s) { lv_scr_load_anim(s, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); }
 
 // ---------- สถานะหน้าจอ ----------
-enum Scr { S_NONE, S_COLOR, S_CALI, S_WIFI, S_PASS, S_KEY, S_HOME, S_ALARM, S_WHO, S_DETAIL, S_JOBS, S_SET, S_WX, S_MK, S_WLIST, S_OC };
+enum Scr { S_NONE, S_COLOR, S_CALI, S_WIFI, S_PASS, S_KEY, S_HOME, S_ALARM, S_WHO, S_DETAIL, S_JOBS, S_SET, S_WX, S_MK, S_WLIST, S_OC, S_OUT };
 Scr scr = S_NONE;
 Net snap;                                   // สำเนาข้อมูลล่าสุดสำหรับวาดจอ
 uint32_t snapVer = 0;
@@ -327,14 +334,14 @@ String thDate() {
 bool online() { return WiFi.status() == WL_CONNECTED && snap.lastOk && millis() - snap.lastOk < OFFLINE_MS; }
 const Job* findJob(const String& id) { for (int i = 0; i < snap.nJobs; i++) if (snap.jobs[i].id == id) return &snap.jobs[i]; return nullptr; }
 
-void showWifiList(); void showWx(); void showMk(); void paintOc(); uint32_t pageAt = 0;
+void showWifiList(); void showWx(); void showMk(); void paintOc(); void showOut(); void backHome(lv_event_t*); uint32_t pageAt = 0;
 void showHome(); void showAlarm(); void showWho(); void showDetail(const String& id, const String& head, uint32_t headCol); void showJobs(); void showSettings();
 void showWifi(); void showPass(const String& ssid); void showKey(); void showColor(); void showCali();
 void nextSetup(); void showOc(bool remind);
 uint32_t ocSnoozeUntil = 0;   // แตะ "ดูแล้ว" → ไม่เด้งเตือนซ้ำ 15 นาที
 
 // ---------- หน้าหลัก ----------
-lv_obj_t *hClock, *hDate, *hNet, *hDuty, *hCrew, *hOpen, *hToday, *hBars[4], *hErr, *hOc, *hOcT;
+lv_obj_t *hClock, *hDate, *hNet, *hDuty, *hCrew, *hOpen, *hToday, *hBars[4], *hErr, *hOc, *hOcT, *hT3, *hT3a, *hT3b, *hT3c, *hT3d, *hOut, *hOutT;
 uint32_t simPress = 0; bool simFired = false;
 
 void wifiBars(lv_obj_t* p, int x, int y, lv_obj_t** bars) {
@@ -375,16 +382,23 @@ void showHome() {
   lv_obj_set_style_pad_all(t2, 4, 0);
   lbl(t2, "วันนี้", &font_th16, C_MUTED, 4, 0);
   hToday = lbl(t2, "0", &font_th26, C_TEXT, 4, 8);
-  lv_obj_t* t3 = btn(s, "", &font_th16, C_CARD2, 216, 160, 96, 54, nullptr);
+  lv_obj_t* t3 = btn(s, "", &font_th16, C_CARD2, 216, 160, 96, 54, nullptr); hT3 = t3;
   lv_obj_set_style_pad_all(t3, 4, 0);
-  lbl(t3, "ค้าง 3 วิ", &font_th16, C_MUTED, 4, 0);
-  lbl(t3, "จำลองเรื่อง", &font_th16, C_TEXT, 4, 22);
+  hT3a = lbl(t3, "ค้าง 3 วิ", &font_th16, C_MUTED, 4, 0);
+  hT3b = lbl(t3, "จำลองเรื่อง", &font_th16, C_TEXT, 4, 22);
+  hT3c = lbl(t3, "ไฟดับอยู่", &font_th16, 0xFECACA, 4, 0);
+  hT3d = lbl(t3, "", &font_th26, C_TEXT, 4, 8);
   lv_obj_add_event_cb(t3, simCb, LV_EVENT_ALL, nullptr);
+  lv_obj_add_event_cb(t3, [](lv_event_t*) { if (snap.outN > 0 && !simFired) showOut(); }, LV_EVENT_CLICKED, nullptr);
   hErr = lbl(s, "", &font_th16, C_MUTED, 8, 215, 304);
   hOc = btn(s, "", &font_th16, C_ORG, 0, 214, 320, 26, [](lv_event_t*) { showOc(false); });
   lv_obj_set_style_radius(hOc, 0, 0); lv_obj_set_style_pad_all(hOc, 0, 0);
   hOcT = lv_obj_get_child(hOc, 0); lv_obj_set_width(hOcT, 304); lv_label_set_long_mode(hOcT, LV_LABEL_LONG_DOT); lv_obj_set_height(hOcT, lv_font_get_line_height(&font_th16));
   lv_obj_add_flag(hOc, LV_OBJ_FLAG_HIDDEN);
+  hOut = btn(s, "", &font_th16, 0xB91C1C, 0, 214, 320, 26, [](lv_event_t*) { showOut(); });
+  lv_obj_set_style_radius(hOut, 0, 0); lv_obj_set_style_pad_all(hOut, 0, 0);
+  hOutT = lv_obj_get_child(hOut, 0); lv_obj_set_width(hOutT, 304); lv_label_set_long_mode(hOutT, LV_LABEL_LONG_DOT); lv_obj_set_height(hOutT, lv_font_get_line_height(&font_th16));
+  lv_obj_add_flag(hOut, LV_OBJ_FLAG_HIDDEN);
   loadScr(s);
   pageAt = millis();
   snapVer = 0;
@@ -417,6 +431,40 @@ void paintHome() {
     bool hot = snap.ocNs > 0 && (millis() / 1000) % 2;
     lv_obj_set_style_bg_color(hOc, lv_color_hex(snap.ocNs > 0 ? (hot ? C_ORG2 : C_ORG) : 0x9A3412), 0);
   } else lv_obj_add_flag(hOc, LV_OBJ_FLAG_HIDDEN);
+  // ไฟดับอยู่ตอนนี้: ช่องที่ 3 เป็นสีแดง + แถบล่างวนชื่อจุด (ถ้าไม่มีแถบ OpenChat บังอยู่)
+  bool out = on && snap.outN > 0;
+  if (out) { lv_obj_add_flag(hT3a, LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(hT3b, LV_OBJ_FLAG_HIDDEN); lv_obj_clear_flag(hT3c, LV_OBJ_FLAG_HIDDEN); lv_obj_clear_flag(hT3d, LV_OBJ_FLAG_HIDDEN);
+    setT(hT3d, String(snap.outN) + " จุด"); lv_obj_set_style_bg_color(hT3, lv_color_hex(0x7F1D1D), 0); }
+  else { lv_obj_clear_flag(hT3a, LV_OBJ_FLAG_HIDDEN); lv_obj_clear_flag(hT3b, LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(hT3c, LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(hT3d, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_bg_color(hT3, lv_color_hex(C_CARD2), 0); }
+  if (out && lv_obj_has_flag(hOc, LV_OBJ_FLAG_HIDDEN)) {
+    int nl = 0; for (int i = 0; i < 3; i++) if (snap.outS[i].length()) nl++;
+    int i = nl ? (millis() / 4000) % nl : 0;
+    lv_obj_clear_flag(hOut, LV_OBJ_FLAG_HIDDEN);
+    setT(hOutT, String(LV_SYMBOL_WARNING " ") + (nl ? snap.outS[i] : String("ไฟดับอยู่ ") + snap.outN + " จุด"));
+  } else lv_obj_add_flag(hOut, LV_OBJ_FLAG_HIDDEN);
+}
+
+// ---------- ไฟดับอยู่ตอนนี้ (แสดงอย่างเดียว · ไม่ปลุก) ----------
+void showOut() {
+  scr = S_OUT; pageAt = millis();
+  lv_obj_t* s = mkScr();
+  lv_obj_add_flag(s, LV_OBJ_FLAG_CLICKABLE); lv_obj_add_event_cb(s, backHome, LV_EVENT_CLICKED, nullptr);
+  lv_obj_t* hb = box(s, 0, 0, 320, 34, 0x7F1D1D, 0);
+  lbl(hb, String(LV_SYMBOL_WARNING " ไฟดับอยู่ตอนนี้ · ") + snap.outN + " จุด", &font_th20, 0xFFFFFF, 10, 4, 300);
+  int y = 40, shown = 0;
+  for (int i = 0; i < 3 && snap.outA[i].length(); i++) {
+    uint32_t bar = snap.outK[i] == "e" ? 0xEF4444 : snap.outK[i] == "p" ? 0xA855F7 : 0xF59E0B;
+    lv_obj_t* c = box(s, 8, y, 304, 54, C_CARD, 8);
+    box(c, 0, 0, 4, 54, bar, 0);
+    lv_obj_t* a = lbl(c, snap.outA[i], &font_th16, C_TEXT, 10, 0, 288); lv_label_set_long_mode(a, LV_LABEL_LONG_DOT); lv_obj_set_height(a, lv_font_get_line_height(&font_th16));
+    lv_obj_t* b = lbl(c, snap.outB[i], &font_th16, C_MUTED, 10, 17, 288); lv_label_set_long_mode(b, LV_LABEL_LONG_DOT); lv_obj_set_height(b, lv_font_get_line_height(&font_th16));
+    lv_obj_t* d = lbl(c, snap.outC[i], &font_th16, snap.outK[i] == "e" ? 0xFCA5A5 : snap.outK[i] == "p" ? 0xD8B4FE : 0xFCD34D, 10, 34, 288); lv_label_set_long_mode(d, LV_LABEL_LONG_DOT); lv_obj_set_height(d, lv_font_get_line_height(&font_th16));
+    y += 58; shown++;
+  }
+  if (snap.outN > shown) { lbl(s, "+ อีก " + String(snap.outN - shown) + " จุด · ดูในแอป", &font_th16, C_MUTED, 10, y, 300); y += 20; }
+  lbl(s, snap.outBack.length() ? "ไฟมาแล้ววันนี้: " + snap.outBack : String("แตะจอ = กลับหน้าเวร"), &font_th16, 0xA79DB3, 8, 214, 304);
+  loadScr(s);
 }
 
 // ---------- ข้อความ OpenChat รอตรวจ (แสดงบนจอ · ไม่มีเสียง) ----------
@@ -676,15 +724,16 @@ void showMk() {
 }
 // วนหน้า: หน้าเวร 20 วิ → อากาศ 10 วิ → ตลาด 5 วิ (เวลาตั้งได้จากระบบ: Config boxRot · ข้ามหน้าที่ไม่มีข้อมูล)
 void rotateTick() {
-  if (scr != S_HOME && scr != S_WX && scr != S_MK) return;
+  if (scr != S_HOME && scr != S_WX && scr != S_MK && scr != S_OUT) return;
   struct tm tt; bool nightHr = getLocalTime(&tt, 5) && tt.tm_year >= 124 && (tt.tm_hour >= 19 || tt.tm_hour < 6);
   if (!roomBright && nightHr) { if (scr != S_HOME) showHome(); return; }        // กลางคืนและห้องมืด → ค้างหน้าเวร (กลางวันวนเสมอ แม้เซนเซอร์แสงอ่านว่ามืด)
   if (lv_disp_get_inactive_time(NULL) < 60000 && scr == S_HOME) { pageAt = millis(); return; }   // เพิ่งแตะ → หยุดวน 1 นาที
   if (snap.ocNs > 0) { if (scr != S_HOME) showHome(); return; }                  // มีข้อความแจ้งเหตุรอตรวจ → ค้างหน้าเวร (เห็นแถบส้ม)
-  uint32_t dur = 1000UL * (scr == S_HOME ? max(5, snap.rot[0]) : scr == S_WX ? snap.rot[1] : snap.rot[2]);
+  uint32_t dur = 1000UL * (scr == S_HOME ? max(5, snap.rot[0]) : scr == S_OUT ? 12 : scr == S_WX ? snap.rot[1] : snap.rot[2]);
   if (millis() - pageAt < dur) return;
-  if (scr == S_HOME && snap.wxOk && snap.rot[1] > 0) showWx();
-  else if ((scr == S_HOME || scr == S_WX) && snap.mkCount && snap.rot[2] > 0) showMk();
+  if (scr == S_HOME && snap.outN > 0) showOut();                                  // วน: เวร → ไฟดับอยู่ (ถ้ามี) → อากาศ → ตลาด
+  else if ((scr == S_HOME || scr == S_OUT) && snap.wxOk && snap.rot[1] > 0) showWx();
+  else if ((scr == S_HOME || scr == S_OUT || scr == S_WX) && snap.mkCount && snap.rot[2] > 0) showMk();
   else showHome();
 }
 
@@ -900,7 +949,7 @@ void loop() {
       alarmSim = false; alarmId = snap.id; alarmText = snap.text; alarmMin0 = snap.min; ackAt = ""; showAlarm();
     }
     // ข้อความแจ้งเหตุจาก OpenChat ค้างเกินกำหนด → เด้งหน้าเตือนสีส้ม (ไม่มีเสียง)
-    if ((scr == S_HOME || scr == S_WX || scr == S_MK) && online() && snap.ocNs > 0 && snap.ocMin >= snap.ocRm && now >= ocSnoozeUntil) showOc(true);
+    if ((scr == S_HOME || scr == S_WX || scr == S_MK || scr == S_OUT) && online() && snap.ocNs > 0 && snap.ocMin >= snap.ocRm && now >= ocSnoozeUntil) showOc(true);
     if (scr == S_OC && !oRemind && lv_disp_get_inactive_time(NULL) > 120000) showHome();
     // มีคนรับจาก LINE / แอป ระหว่างปลุก
     if (scr == S_ALARM && !alarmSim && fresh && snap.ring == 0 && snap.lastOk && now - alarmStart > 3000) {
@@ -918,7 +967,7 @@ void loop() {
   if (be == 1 && scr == S_ALARM) doAck();
   else if (be == 1 && scr == S_WHO) chooseWho(whoN ? whoNames[0] : String(""));
   else if (be == 2 && (scr == S_WIFI || scr == S_PASS || scr == S_KEY)) showCali();   // แตะไม่ตรง → กด BOOT ค้าง = ตั้งการแตะใหม่
-  else if (be == 2 && (scr == S_HOME || scr == S_JOBS || scr == S_DETAIL || scr == S_WX || scr == S_MK)) {
+  else if (be == 2 && (scr == S_HOME || scr == S_JOBS || scr == S_DETAIL || scr == S_WX || scr == S_MK || scr == S_OUT)) {
     alarmSim = true; alarmId = "ทดลอง"; alarmText = "จำลอง: ไฟดับทั้งซอย (ไม่ใช่งานจริง)"; alarmMin0 = 0; showAlarm();
   }
 
@@ -934,6 +983,7 @@ void loop() {
     else if (scr == S_WHO) paintWho();
     else if (scr == S_SET) paintSettings();
     else if (scr == S_OC) paintOc();
+    else if (scr == S_OUT && snap.outN == 0) showHome();
   }
 
   // ความสว่างจอ + ไฟ RGB
