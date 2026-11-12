@@ -151,11 +151,13 @@ table.t th{font-weight:700;text-align:center}
 .cms{display:grid;grid-template-columns:12mm 1fr 34mm;gap:0 2mm}.cms .dl{border-bottom:1px dotted #000;margin-bottom:5pt}
 .cmn{display:grid;grid-template-columns:12mm 1fr 34mm;gap:0 2mm}.cmn span:nth-child(2){text-align:center}
 .exth{display:grid;grid-template-columns:1fr 34mm 1fr;align-items:start}.exr{padding-left:6mm}
+.fv{background:#fff1a8;border-radius:2px}.fv.miss{background:#ffd3d3}.nohl .fv{background:none}
 @page{size:A4;margin:0}
 @media print{
   html,body{background:#fff;height:auto}
   .app,.toast,#busy,.mdl{display:none!important}
   #printArea{display:block!important}
+  .fv{background:none!important}
   #printArea .page{break-after:page}
   #printArea .page:last-child{break-after:auto}
 }
@@ -414,15 +416,19 @@ function choose(title, opts) { return new Promise(res => { const m = modal(`<h3>
 function calc(j) { const q = +j.qty || 0, unit = +j.price || 0, net = Math.round(q * unit * 100) / 100, vat = Math.round(net * 7) / 100;
   return { unit, net, vat, total: Math.round((net + vat) * 100) / 100, q }; }
 const DOTS = '..........';
+const F = (s, miss) => `<span class="fv${miss ? ' miss' : ''}">${s}</span>`;
+const ef = s => String(s ?? '').trim() ? F(esc(s)) : '';
+const mny = n => F(money(n));
+const bt = n => F(bahtText(n));
 function yearOf(k) { return beYear((cur && cur.docs[k] || {}).date || today()); }
 /* เลขหนังสือฉบับนี้ (หัวหนังสือ) */
 function docNo(j, k) { const d = j.docs[k] || {}, ext = DOCS.find(x => x.k === k).ext, y = beYear(d.date || today());
   return ext ? `${SET.extPrefix}${d.no || '&nbsp;'.repeat(12)}/${y}` : `${SET.bookPrefix}${j.deptCode}${d.no || '&nbsp;'.repeat(12)}/${y}`; }
 /* เลขที่อ้างถึงในเนื้อหา — ยังไม่ออก = จุดไข่ปลา */
 function refNo(j, k) { const d = j.docs[k] || {}, ext = DOCS.find(x => x.k === k).ext, y = beYear(d.date || today());
-  return ext ? `${SET.extPrefix}${d.no || DOTS}/${y}` : `${SET.bookPrefix}${j.deptCode}${d.no || DOTS}/${y}`; }
-const dt = iso => iso ? thDate(iso) : '....................';
-const v = (s, dots) => String(s ?? '').trim() ? esc(s) : (dots || '..........');
+  return ext ? `${SET.extPrefix}${d.no ? F(d.no) : F(DOTS, 1)}/${y}` : `${SET.bookPrefix}${j.deptCode}${d.no ? F(d.no) : F(DOTS, 1)}/${y}`; }
+const dt = iso => iso ? F(thDate(iso)) : F('....................', 1);
+const v = (s, dots) => String(s ?? '').trim() ? F(esc(s)) : (dots === '' ? '' : F(dots || '..........', 1));
 function W(j) { const kva = v(j.kva, '…'), ph = v(j.phase, '…');
   return { tf: 'หม้อแปลงไฟฟ้านอกเหนือจากสเปคที่ กฟภ. กำหนด (Low Loss)', tf2: 'หม้อแปลงไฟฟ้านอกเหนือสเปคที่ กฟภ.กำหนด (Low Loss)',
     lowloss: 'หม้อแปลงไฟฟ้า ชนิดไม่ทนการลัดวงจร แต่ยังมีค่าความสูญเสียที่การไฟฟ้าส่วนภูมิภาคกำหนด (Low Loss)',
@@ -431,7 +437,7 @@ function W(j) { const kva = v(j.kva, '…'), ph = v(j.phase, '…');
     proj: `งานก่อสร้างขยายเขตระบบจำหน่าย ${v(j.branch, '')} – ${v(j.cust)}`, loc: v(j.loc, ''),
     vendor: v(j.vendor), head: `${j.headAbbr}${SET.office}`, mgrS: `ผจก.${SET.office}` }; }
 let w;
-function priceSrc(j) { return j.priceSrc === 'market' ? `ราคาที่ได้มาจากการสืบราคาจากท้องตลาด${j.marketRef ? ' ตามหนังสือที่ ' + esc(j.marketRef) : ''}`
+function priceSrc(j) { return j.priceSrc === 'market' ? `ราคาที่ได้มาจากการสืบราคาจากท้องตลาด${j.marketRef ? ' ตามหนังสือที่ ' + ef(j.marketRef) : ''}`
   : `ผู้ใช้ไฟระบุผลิตภัณฑ์ของหม้อแปลง ตามหนังสือเลขที่รับ ${v(j.recvNo)} ลว. ${dt(j.recvDate)}`; }
 
 const E = (f, s) => `<span data-e="${f}">${s}</span>`;
@@ -439,22 +445,22 @@ const ovOf = (j, k) => ((j.docs[k] || {}).ov || {});
 function memoHead(j, k, o) { const d = j.docs[k] || {}, ov = ovOf(j, k);
   return `<img class="logo" src="${LOGO}">
  <div class="mh"><div>จาก</div><div>${esc(ov.from || o.from)}</div><div>ถึง</div><div>${esc(ov.to || o.to)}</div>
- <div>เลขที่</div><div>${docNo(j, k)}</div><div>วันที่</div><div>${thDate(d.date)}</div></div>
+ <div>เลขที่</div><div>${docNo(j, k)}</div><div>วันที่</div><div>${dt(d.date)}</div></div>
  <div class="subj"><div>เรื่อง</div><div>${ov.subj ? esc(ov.subj) : o.subj}</div></div><div class="gap"></div>
  <div class="subj"><div>เรียน</div><div>${esc(ov.attn || o.attn)}</div></div><div class="gap"></div>`; }
 function extHead(j, k, o) { const d = j.docs[k] || {}, ov = ovOf(j, k);
   return `<div class="exth"><div class="exl"><div style="height:24mm"></div>ที่ ${docNo(j, k)}</div><div class="exc"><img class="logo" style="width:30mm;margin:0 auto" src="${LOGO}"></div>
  <div class="exr"><div style="height:24mm"></div>${esc(SET.officeFull)}<br>${esc(SET.addr1)}<br>${esc(SET.addr2)}</div></div><div class="gap"></div>
- <div style="margin-left:80mm">${thDate(d.date)}</div><div class="gap"></div>
+ <div style="margin-left:80mm">${dt(d.date)}</div><div class="gap"></div>
  <div class="subj"><div>เรื่อง</div><div>${esc(ov.subj || o.subj)}</div></div><div class="gap"></div>
  <div class="subj"><div>เรียน</div><div>${esc(ov.attn || o.attn)}</div></div><div class="gap"></div>`; }
 function approverBox(j, k, lines, extra) { const d = j.docs[k] || {}, ov = ovOf(j, k); const L = (ov.box || lines.join('\n')).split('\n');
   return `<div class="box"><div>${esc(L[0])}</div>${L.slice(1).map(l => `<div class="l">${esc(l)}</div>`).join('')}${extra || ''}
  <div class="gap2"></div><div class="gap2"></div><div class="gap"></div>
- <div class="sc">(${esc(withPre(j.mgr.name))})</div><div class="sc">${esc(j.mgr.pos.replace('ผู้จัดการ การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', 'ผจก.' + SET.office))}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`; }
-function signer(p, extra) { return `<div class="sc">(${esc(withPre(p.name))})</div><div class="sc">${esc(p.pos)}</div>${(extra || []).map(x => `<div class="sc">${esc(x)}</div>`).join('')}`; }
-function cmSign(list) { return list.map(m => `<div class="cms"><span>ลงชื่อ</span><span class="dl"></span><span>${esc(m.role)}</span></div><div class="cmn"><span></span><span>(${esc(withPre(m.name))})</span><span></span></div><div class="cmn"><span></span><span>${esc(m.pos)}</span><span></span></div><div class="gap"></div>`).join(''); }
-function cmLines(list, pre, nw, pl, nmw) { return list.map((m, x) => `<div class="cml" style="--nw:${nw || '6mm'};--pl:${pl || '3cm'};--nm:${nmw || '45mm'}"><span>${pre}${x + 1}${pre ? '' : '.'}</span><span>${esc(withPre(m.name))}</span><span>${esc(m.pos)}</span><span>${esc(m.role)}</span></div>`).join(''); }
+ <div class="sc">(${ef(withPre(j.mgr.name))})</div><div class="sc">${ef(j.mgr.pos.replace('ผู้จัดการ การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', 'ผจก.' + SET.office))}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`; }
+function signer(p, extra) { return `<div class="sc">(${ef(withPre(p.name))})</div><div class="sc">${ef(p.pos)}</div>${(extra || []).map(x => `<div class="sc">${esc(x)}</div>`).join('')}`; }
+function cmSign(list) { return list.map(m => `<div class="cms"><span>ลงชื่อ</span><span class="dl"></span><span>${ef(m.role)}</span></div><div class="cmn"><span></span><span>(${ef(withPre(m.name))})</span><span></span></div><div class="cmn"><span></span><span>${ef(m.pos)}</span><span></span></div><div class="gap"></div>`).join(''); }
+function cmLines(list, pre, nw, pl, nmw) { return list.map((m, x) => `<div class="cml" style="--nw:${nw || '6mm'};--pl:${pl || '3cm'};--nm:${nmw || '45mm'}"><span>${pre}${x + 1}${pre ? '' : '.'}</span><span>${ef(withPre(m.name))}</span><span>${ef(m.pos)}</span><span>${ef(m.role)}</span></div>`).join(''); }
 const closing = (j, k, def) => esc(ovOf(j, k).close || def);
 const NUM_RE = /^(\(\d+\)|\d+(?:\.\d+)+|\d+\.)\s+/;
 const numP = (s, c, extra) => { const m = c === 'in' && String(s).match(NUM_RE); return m ? `<p class="inn${extra}"><span class="nb">${m[1]}</span> ${s.slice(m[0].length)}</p>` : `<p class="${c === 'in' && hdoc ? 'inb' : c}${extra}">${s}</p>`; };
@@ -470,7 +476,7 @@ function R_d1(j, c) {
   return `<div class="page">${memoHead(j, 'd1', { from: j.deptFull, to: SET.office, subj: `ขออนุมัติแต่งตั้งคณะกรรมการกำหนดราคากลางและเจ้าหน้าที่จัดทำ TOR งานจัดซื้อ${w.tf} เพื่อใช้ใน${w.proj}`, attn: w.mgrS })}
  ${H('1. เรื่องเดิม')}${P(`1.1 ตามหนังสือ ${v(j.apvRef)} ลงวันที่ ${dt(j.apvDate)} อนุมัติขยายเขตระบบจำหน่าย ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} หมายเลขงาน WBS : ${v(j.wbsMain)} แบบผังเลขที่ ${v(j.drawing)} ในส่วนของงบผู้ใช้ไฟ งานติดตั้งหม้อแปลง ผู้ใช้ไฟประสงค์ให้ การไฟฟ้าส่วนภูมิภาค ดำเนินการจัดหาและติดตั้งหม้อแปลงไฟฟ้า ชนิดไม่ทนการลัดวงจร (หม้อแปลงไฟฟ้า Low Loss) ซึ่งผู้ใช้ไฟได้ชำระเงินค่าก่อสร้างขยายเขตแล้วตามใบเสร็จรับเงินเลขที่ ${v(j.rcptNo)} ลว. ${dt(j.rcptDate)}`)}
  <div class="gap"></div>${H('2. ข้อเท็จจริง')}${P(`2.1 จากกรณีดังกล่าว กรณีที่ผู้ใช้ไฟมีความประสงค์ให้ การไฟฟ้าส่วนภูมิภาค ดำเนินการจัดหาและติดตั้งหม้อแปลงไฟฟ้า ${w.kvaTh} ที่นอกเหนือจากสเปคหม้อแปลงไฟฟ้าที่ กฟภ.กำหนด ตามระเบียบการไฟฟ้าส่วนภูมิภาคว่าด้วยธุรกิจเสริม`)}
- <div class="gap"></div>${H('3. ข้อพิจารณา')}${P(`${esc(j.deptFull)} พิจารณาแล้วเพื่อให้การจัดหา${w.lowloss} และติดตั้งให้แล้วเสร็จตามความประสงค์ของผู้ใช้ไฟ เห็นควรดำเนินการจัดซื้อหม้อแปลงด้วยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} จึงขออนุมัติดำเนินการดังนี้`)}
+ <div class="gap"></div>${H('3. ข้อพิจารณา')}${P(`${ef(j.deptFull)} พิจารณาแล้วเพื่อให้การจัดหา${w.lowloss} และติดตั้งให้แล้วเสร็จตามความประสงค์ของผู้ใช้ไฟ เห็นควรดำเนินการจัดซื้อหม้อแปลงด้วยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} จึงขออนุมัติดำเนินการดังนี้`)}
  ${P('3.1 ขออนุมัติแต่งตั้งคณะกรรมการกำหนดราคากลาง และเจ้าหน้าที่ร่างขอบเขตงาน ฯ เพื่อดำเนินการจัดซื้อหม้อแปลงไฟฟ้าดังกล่าว ดังต่อไปนี้')}
  <p class="inn kwn"><span class="nb">3.1.1</span> คณะกรรมการกำหนดราคากลาง</p>${pc}<p class="cmd" style="--pl:4cm">หน้าที่พิจารณากำหนดราคากลาง</p>
  <p class="inn kwn"><span class="nb">3.1.2</span> เจ้าหน้าที่ร่างขอบเขตงาน ฯ (TOR)</p>${cmLines([{ name: j.officer.name, pos: j.officer.pos, role: '' }], '', '', '4cm')}<p class="cmd" style="--pl:4cm">เจ้าหน้าที่ร่างขอบเขตงาน</p>
@@ -481,7 +487,7 @@ function R_d1(j, c) {
 function R_d2(j, c) {
   return `<div class="page">${memoHead(j, 'd2', { from: 'คณะกรรมการกำหนดราคากลาง', to: w.mgrS, subj: `ขออนุมัติกำหนดราคากลาง จัดซื้อ${w.tf} เพื่อใช้ใน${w.proj}`, attn: w.mgrS })}
  ${P(`ตามที่ ${SET.office} มีความประสงค์จะจัดซื้อหม้อแปลงไฟฟ้า เพื่อติดตั้งใช้งานก่อสร้างขยายเขตระบบจำหน่าย งบผู้ใช้ไฟ (02.2) ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} โดยในส่วนของงานติดตั้งหม้อแปลง ผู้ใช้ไฟมีความประสงค์ให้ ${SET.office} ติดตั้ง${w.lowloss} ขนาด ${w.kva} เควีเอ จาก ${w.vendor} ตามหนังสือขอใช้บริการงานก่อสร้างขยายเขตระบบจำหน่ายไฟฟ้า ลว. ${dt(j.reqDate)} เลขที่รับ ${v(j.recvNo)} ลว. ${dt(j.recvDate)} และตามอนุมัติที่ ${refNo(j, 'd1')} ลว. ${dt(j.docs.d1.date)} แต่งตั้งคณะกรรมการกำหนดราคากลาง นั้น`)}
- ${P(`คณะกรรมการกำหนดราคากลางได้พิจารณาแล้ว เพื่อให้การจัดซื้อหม้อแปลงไฟฟ้าดังกล่าว ได้สำเร็จลุล่วงไปด้วยดี ทันตามแผนที่กำหนดไว้ และเพื่อให้ถูกต้องตาม${esc(SET.reg1)} คณะกรรมการกำหนดราคากลาง จึงขอกำหนดราคากลางของการจัดซื้อหม้อแปลง ตามที่ส่วนเกี่ยวข้องได้จัดทำประมาณการไว้แล้ว เป็นจำนวนเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม 7 % เป็นเงิน ${money(c.vat)} บาท รวมเป็นเงินราคากลางทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)})`)}
+ ${P(`คณะกรรมการกำหนดราคากลางได้พิจารณาแล้ว เพื่อให้การจัดซื้อหม้อแปลงไฟฟ้าดังกล่าว ได้สำเร็จลุล่วงไปด้วยดี ทันตามแผนที่กำหนดไว้ และเพื่อให้ถูกต้องตาม${esc(SET.reg1)} คณะกรรมการกำหนดราคากลาง จึงขอกำหนดราคากลางของการจัดซื้อหม้อแปลง ตามที่ส่วนเกี่ยวข้องได้จัดทำประมาณการไว้แล้ว เป็นจำนวนเงิน ${mny(c.net)} บาท ภาษีมูลค่าเพิ่ม 7 % เป็นเงิน ${mny(c.vat)} บาท รวมเป็นเงินราคากลางทั้งสิ้น ${mny(c.total)} บาท (${bt(c.total)})`)}
  <div class="gap"></div>${PK(closing(j, 'd2', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติราคากลางต่อไป'))}<div class="gap"></div>
  <div class="sig" style="margin-left:-9mm;margin-top:6mm"><div class="bxc">${approverBox(j, 'd2', ['เรียน   คณะกรรมการกำหนดราคากลาง', '- อนุมัติราคากลาง', '- ดำเนินการต่อไป'])}</div><div class="sgn">${cmSign(j.priceCm)}</div></div></div>`; }
 
@@ -503,24 +509,24 @@ function R_d3(j, c) {
  ${T(1, 'ข้อมูลเกี่ยวกับโครงการ')}${P(`ชื่อโครงการ งานจัดซื้อ${w.tf} สำหรับติดตั้งใช้งานก่อสร้างขยายเขตระบบจำหน่ายงบผู้ใช้ไฟ ${v(j.branch, '')} – ${v(j.cust)} ${w.loc}`)}
  ${T(2, 'คุณสมบัติผู้ยื่นเสนอราคา')}${q.map((s, x) => `<p class="in2" style="padding-left:2.5cm;text-indent:-0.7cm">2.${x + 1} ${s}</p>`).join('')}
  ${T(3, 'รายละเอียดคุณลักษณะเฉพาะของพัสดุที่จะดำเนินการจัดซื้อ')}${P(`${w.lowloss} ขนาด ${w.kva} kVA จำนวน ${v(j.qty)} เครื่อง`)}
- ${T(4, 'วงเงินงบประมาณ และราคากลาง')}${P(`4.1 วงเงินงบประมาณที่ได้รับการจัดสรรในการจัดซื้อในครั้งนี้ ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}${P(`4.2 ราคากลางในการจัดซื้อครั้งนี้ รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ที่มาของราคากลาง ${priceSrc(j)}`)}
- ${T(5, 'ระยะเวลาส่งมอบพัสดุ และสถานที่ส่งมอบ')}${P(`5.1 กำหนดส่งมอบพัสดุดังกล่าวภายใน ${v(j.days)} วัน นับถัดจากวันลงนามในใบสั่งซื้อ (PO)`)}${P(`5.2 สถานที่ส่งมอบพัสดุ ${esc(j.store)} ${esc(SET.addr2)}`)}
+ ${T(4, 'วงเงินงบประมาณ และราคากลาง')}${P(`4.1 วงเงินงบประมาณที่ได้รับการจัดสรรในการจัดซื้อในครั้งนี้ ${mny(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}${P(`4.2 ราคากลางในการจัดซื้อครั้งนี้ รวมเป็นเงินทั้งสิ้น ${mny(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ที่มาของราคากลาง ${priceSrc(j)}`)}
+ ${T(5, 'ระยะเวลาส่งมอบพัสดุ และสถานที่ส่งมอบ')}${P(`5.1 กำหนดส่งมอบพัสดุดังกล่าวภายใน ${v(j.days)} วัน นับถัดจากวันลงนามในใบสั่งซื้อ (PO)`)}${P(`5.2 สถานที่ส่งมอบพัสดุ ${ef(j.store)} ${esc(SET.addr2)}`)}
  ${T(6, 'กำหนดการจ่ายเงินค่าพัสดุที่จัดซื้อ')}${P(`${esc(SET.officeFull)} จะจ่ายเงินค่าพัสดุซึ่งได้รวมภาษีมูลค่าเพิ่ม ภาษีอื่น ค่าขนส่ง และค่าใช้จ่ายอื่น ๆ ทั้งปวง ให้กับผู้ขาย เมื่อผู้ขายได้ส่งมอบพัสดุถูกต้องครบถ้วนตามใบสั่งซื้อ และ${esc(SET.officeFull)} ได้ตรวจรับพัสดุไว้ถูกต้องครบถ้วนแล้ว โดยจะจ่ายเงินค่าพัสดุให้กับผู้ขายร้อยละ 100 ของวงเงินตามใบสั่งซื้อ (1 งวด)`)}
  ${T(7, 'อัตราค่าปรับ')}${P(`การไฟฟ้าส่วนภูมิภาค สงวนสิทธิ์ค่าปรับกรณีส่งมอบพัสดุเกินกำหนดเวลา โดยคิดค่าปรับเป็นรายวัน ในอัตราร้อยละ ${v(j.penalty)} ของมูลค่าพัสดุรวมภาษีมูลค่าเพิ่ม ที่ยังไม่ได้รับมอบ แต่ต้องไม่ต่ำกว่าวันละ ${v(j.penaltyMin)} บาท`)}
  ${T(8, 'การรับประกันความชำรุดบกพร่อง')}${P(`ผู้ยื่นข้อเสนอซึ่งได้รับการคัดเลือกทำข้อตกลงเป็นใบสั่งซื้อ หรือสัญญาซื้อ แล้วแต่กรณีจะต้องรับประกันความชำรุดบกพร่องของพัสดุที่ซื้อภายในระยะไม่น้อยกว่า ${v(j.torWarranty)} ปี นับถัดจากวันที่ การไฟฟ้าส่วนภูมิภาค ได้รับมอบพัสดุ`)}
  ${T(9, 'หลักเกณฑ์การพิจารณา')}${P('คัดเลือกข้อเสนอตามเกณฑ์ราคา โดยพิจารณาราคาแบบรวมรายการ')}
- ${T(10, 'หน่วยงานผู้รับผิดชอบดำเนินการ')}${P(`${esc(j.unit)} ${esc(SET.officeFull)} ${esc(SET.addr1)} ${esc(SET.addr2)} โทรศัพท์ ${esc(SET.phone)}`)}
+ ${T(10, 'หน่วยงานผู้รับผิดชอบดำเนินการ')}${P(`${ef(j.unit)} ${esc(SET.officeFull)} ${esc(SET.addr1)} ${esc(SET.addr2)} โทรศัพท์ ${esc(SET.phone)}`)}
  <div class="gap2"></div><div class="gap2"></div><div class="kwn" style="margin-left:70mm"><div class="sc">(ลงชื่อ) ……………………………… เจ้าหน้าที่ร่างขอบเขตงาน</div><div style="margin-left:-20mm">${signer(j.officer)}</div></div></div>`;
   return memo + tor; }
 
 /* ---------------- 4. รายงานขอซื้อ ---------------- */
 function R_d4(j, c) {
   return `<div class="page">${memoHead(j, 'd4', { from: j.deptFull, to: w.mgrS, subj: `รายงานขอจัดซื้อหม้อแปลงไฟฟ้าระบบ ${w.kvaTh} นอกเหนือจากสเปคที่ กฟภ. กำหนด (Low Loss)`, attn: `${w.mgrS} ผ่าน ${w.head}` })}
- ${`<p class="in">`}${(`ด้วย ${esc(j.deptFull)} มีความประสงค์ จะซื้อพัสดุเข้างานหมายเลขงาน ${v(j.wbs)} โดยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และ${esc(SET.reg2)} จำนวน 1 งาน (รวม 1 รายการ) ซึ่งมีรายละเอียดดังต่อไปนี้`)}</p>
+ ${`<p class="in">`}${(`ด้วย ${ef(j.deptFull)} มีความประสงค์ จะซื้อพัสดุเข้างานหมายเลขงาน ${v(j.wbs)} โดยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และ${esc(SET.reg2)} จำนวน 1 งาน (รวม 1 รายการ) ซึ่งมีรายละเอียดดังต่อไปนี้`)}</p>
  ${H('1. เหตุผลและความจำเป็นที่ต้องซื้อ/จ้าง')}${P(`ตามอนุมัติที่ ${v(j.apvRef)} ลงวันที่ ${dt(j.apvDate)} อนุมัติงานก่อสร้างด้านระบบไฟฟ้า ในส่วนของงบผู้ใช้ไฟ ซึ่งในขั้นตอนการดำเนินการจะต้องจัดซื้อ${w.tf} เข้างานให้ทันกับความต้องการของลูกค้า ไม่ให้เกิดผลกระทบความเสียหายต่อ กฟภ. ในพื้นที่รับผิดชอบของ ${SET.office}`)}
  ${H('2. รายละเอียดของพัสดุที่จะซื้อหรืองานที่จะจ้าง')}${P(`(1) การจัดซื้อหม้อแปลงไฟฟ้า ระบบ ${w.kvaTh} นอกเหนือจากสเปคที่ กฟภ. กำหนด (Low Loss) ครั้งนี้เป็นการจัดซื้อพัสดุเข้างานใช้รหัสหม้อแปลง (Dummy) อ้างอิงตาม${esc(SET.reg2)} ตามร่างขอบเขตงานที่ได้รับความเห็นชอบตามหนังสือที่ ${refNo(j, 'd3')} ลว. ${dt(j.docs.d3.date)}`)}
  ${H('3. ราคากลางของพัสดุที่จะซื้อหรืองานที่จะจ้าง')}${P(`(1) ${priceSrc(j)} อนุมัติราคากลางตามหนังสือที่ ${refNo(j, 'd2')} ลว. ${dt(j.docs.d2.date)}`)}
- ${H('4. วงเงินที่จะซื้อหรือจ้างโดยให้ระบุวงเงินงบประมาณ')}${P(`วงเงินจัดซื้อหม้อแปลงระบบ ${w.kvaTh} เพื่อใช้งานขยายเขตฯ ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} หมายเลขงาน ${v(j.wbs)} ในวงเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม 7% เป็นเงิน ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)})`)}
+ ${H('4. วงเงินที่จะซื้อหรือจ้างโดยให้ระบุวงเงินงบประมาณ')}${P(`วงเงินจัดซื้อหม้อแปลงระบบ ${w.kvaTh} เพื่อใช้งานขยายเขตฯ ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} หมายเลขงาน ${v(j.wbs)} ในวงเงิน ${mny(c.net)} บาท ภาษีมูลค่าเพิ่ม 7% เป็นเงิน ${mny(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${mny(c.total)} บาท (${bt(c.total)})`)}
  ${H('5. กำหนดเวลาที่ต้องการใช้พัสดุนั้น หรือให้งานนั้นแล้วเสร็จ')}${P(`(1) การจัดซื้อให้กำหนดวันส่งมอบพัสดุภายใน ${v(j.days)} วัน นับแต่วันถัดจากวันลงนามในใบสั่งซื้อ (PO)`)}
  ${H('6. วิธีจะซื้อหรือจ้าง และเหตุผลที่จะต้องซื้อหรือจ้างโดยวิธีนั้น')}${P(`พิจารณาเห็นสมควรดำเนินการจัดซื้อจัดจ้างโดยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} เนื่องจากการจัดซื้อจัดจ้างครั้งนี้ ${esc(SET.manual)}`)}
  ${H('7. ข้อเสนออื่นๆ')}${P('ให้คณะกรรมการจัดซื้อ ดำเนินการจัดซื้อ ติดต่อตกลงราคากับผู้ขาย/ผู้รับจ้างโดยตรง ทั้งนี้ ระยะเวลาในการดำเนินการของคณะกรรมการตามคู่มือปฏิบัติงาน (Work Manual) ดังรายชื่อต่อไปนี้')}
@@ -530,7 +536,7 @@ function R_d4(j, c) {
 
 /* ---------------- 5–6. หนังสือภายนอก ---------------- */
 function extTail(j) { return `<div class="gap"></div><div class="kwn" style="margin-left:75mm"><div class="sc">ขอแสดงความนับถือ</div><div class="gap2"></div><div class="gap2"></div><div class="gap2"></div>${signer(j.mgr)}</div>
- <div class="tobottom"><div>${esc(j.unit)}</div><div>โทรศัพท์ ${esc(SET.phone)}</div></div>`; }
+ <div class="tobottom"><div>${ef(j.unit)}</div><div>โทรศัพท์ ${esc(SET.phone)}</div></div>`; }
 function R_d5(j, c) {
   return `<div class="page">${extHead(j, 'd5', { subj: 'ขอเชิญชวนให้เสนอราคา', attn: `ผู้จัดการ ${j.vendor || '..........'}` })}
  ${P(`ด้วย${esc(SET.officeFull)} มีความประสงค์จะจัดซื้อหม้อแปลงไฟฟ้า ${w.kvaTh} ที่นอกเหนือจากสเปคหม้อแปลงไฟฟ้าที่ กฟภ.กำหนด เพื่อติดตั้งใช้งานก่อสร้างขยายเขตระบบจำหน่าย งบผู้ใช้ไฟ (02.2) ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} ตามรายงานขอซื้อที่ได้รับอนุมัติตามหนังสือที่ ${refNo(j, 'd4')} ลว. ${dt(j.docs.d4.date)}`)}
@@ -545,18 +551,18 @@ function R_d6(j, c) {
 function R_d7(j, c) {
   return `<div class="page">${memoHead(j, 'd7', { from: 'คณะกรรมการจัดซื้อฯ', to: w.mgrS, subj: `ผลการพิจารณาจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) โดยวิธีเฉพาะเจาะจง`, attn: w.mgrS })}
  ${H('1. เรื่องเดิม')}${P(`1.1 ตามอนุมัติ ${w.mgrS} เลขที่ ${refNo(j, 'd4')} ลงวันที่ ${dt(j.docs.d4.date)} อนุมัติรายงานขอซื้อและแต่งตั้งคณะกรรมการจัดซื้อ${w.tf2} โดยวิธีเฉพาะเจาะจง สรุปรายละเอียด ดังนี้`)}
- <table class="t" style="margin:2mm 0"><colgroup><col style="width:50mm"><col></colgroup><tr><td>การจัดซื้อ หมายเลขงาน</td><td>${v(j.wbs)}</td></tr><tr><td>วงเงินงบประมาณ</td><td>${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)<br>เบิกจ่ายจากงบผู้ใช้ไฟ</td></tr><tr><td>ราคากลาง</td><td>${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ที่มาของราคากลาง ${priceSrc(j)}</td></tr></table>
+ <table class="t" style="margin:2mm 0"><colgroup><col style="width:50mm"><col></colgroup><tr><td>การจัดซื้อ หมายเลขงาน</td><td>${v(j.wbs)}</td></tr><tr><td>วงเงินงบประมาณ</td><td>${mny(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)<br>เบิกจ่ายจากงบผู้ใช้ไฟ</td></tr><tr><td>ราคากลาง</td><td>${mny(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ที่มาของราคากลาง ${priceSrc(j)}</td></tr></table>
  ${H('2. ข้อเท็จจริง')}${P(`2.1 ${SET.office} ได้ดำเนินการจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) โดยวิธีเฉพาะเจาะจงตามรายละเอียดดังนี้`)}
  <table class="t" style="margin:2mm 0"><colgroup><col style="width:70mm"><col></colgroup><tr><td>มีผู้เสนอราคาที่หน่วยงานจัดซื้อ/จัดจ้าง (ตามเอกสารประกอบรายชื่อผู้ยื่นเอกสารที่หน่วยงานจัดซื้อ)</td><td>จำนวน 1 ราย คือ ${w.vendor}</td></tr></table>
- ${H('3. ข้อพิจารณา')}${P(`3.1 คณะกรรมการได้ดำเนินการตรวจสอบรายละเอียดต่างๆ ของ${w.vendor} เสนอราคาเป็นเงิน ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ตามเอกสารใบเสนอราคาเลขที่ ${v(j.quoteNo)} ลว. ${dt(j.quoteDate)} และมีคุณสมบัติตรงตามข้อกำหนดและเงื่อนไขของ กฟภ.`)}
+ ${H('3. ข้อพิจารณา')}${P(`3.1 คณะกรรมการได้ดำเนินการตรวจสอบรายละเอียดต่างๆ ของ${w.vendor} เสนอราคาเป็นเงิน ${mny(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ตามเอกสารใบเสนอราคาเลขที่ ${v(j.quoteNo)} ลว. ${dt(j.quoteDate)} และมีคุณสมบัติตรงตามข้อกำหนดและเงื่อนไขของ กฟภ.`)}
  ${P(`3.2 คณะกรรมการได้ต่อรองราคากับผู้เสนอราคาแล้ว ตามหนังสือเลขที่ ${refNo(j, 'd6')} ลงวันที่ ${dt(j.docs.d6.date)} โดย${w.vendor} ขอยืนยันราคาตามที่ได้เสนอ ลงวันที่ ${dt(j.confirmDate)}`)}
- ${H('4. ข้อเสนอ')}${P(`จากรายละเอียดดังกล่าวข้างต้น คณะกรรมการ พิจารณาแล้ว เห็นควรดำเนินการจัดซื้อ${w.tf2} จาก${w.vendor} จำนวน ${v(j.qty)} เครื่อง ในราคาหน่วยละ ${money(c.unit)} บาท (ไม่รวมภาษีมูลค่าเพิ่ม) รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}
- ${['เบิกจ่ายจากงบผู้ใช้ไฟ', `ผลิตภัณฑ์ ยี่ห้อ ${v(j.brand)}`, `กำหนดยืนราคา ${v(j.holdDays)} วันนับตั้งแต่วันเสนอราคา`, `สถานที่ส่งของ ${esc(j.store)}`, `กำหนดส่งของ ภายใน ${v(j.days)} วัน นับถัดจากวันลงนามในใบสั่งซื้อ (PO)`, `การรับประกันคุณภาพ ${v(j.warranty)} ปี นับแต่วันที่การไฟฟ้าส่วนภูมิภาคได้รับมอบสินค้า`].map(s => `<p class="in2">- ${s}</p>`).join('')}
+ ${H('4. ข้อเสนอ')}${P(`จากรายละเอียดดังกล่าวข้างต้น คณะกรรมการ พิจารณาแล้ว เห็นควรดำเนินการจัดซื้อ${w.tf2} จาก${w.vendor} จำนวน ${v(j.qty)} เครื่อง ในราคาหน่วยละ ${mny(c.unit)} บาท (ไม่รวมภาษีมูลค่าเพิ่ม) รวมเป็นเงินทั้งสิ้น ${mny(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}
+ ${['เบิกจ่ายจากงบผู้ใช้ไฟ', `ผลิตภัณฑ์ ยี่ห้อ ${v(j.brand)}`, `กำหนดยืนราคา ${v(j.holdDays)} วันนับตั้งแต่วันเสนอราคา`, `สถานที่ส่งของ ${ef(j.store)}`, `กำหนดส่งของ ภายใน ${v(j.days)} วัน นับถัดจากวันลงนามในใบสั่งซื้อ (PO)`, `การรับประกันคุณภาพ ${v(j.warranty)} ปี นับแต่วันที่การไฟฟ้าส่วนภูมิภาคได้รับมอบสินค้า`].map(s => `<p class="in2">- ${s}</p>`).join('')}
  <div class="gap"></div><table class="t"><colgroup><col style="width:16mm"><col><col style="width:18mm"><col style="width:30mm"><col style="width:32mm"></colgroup>
  <tr><th rowspan="2">Mat No.</th><th rowspan="2">รายละเอียด</th><th rowspan="2">จำนวน<br>(หน่วย)</th><th colspan="2">ราคาไม่รวมภาษีมูลค่าเพิ่ม (บาท)</th></tr><tr><th>ต่อหน่วย</th><th>รวม</th></tr>
- <tr><td class="ctr">1.</td><td>หม้อแปลง ${w.kva} เควีเอ</td><td class="ctr">${v(j.qty)}</td><td class="r">${money(c.unit)}</td><td class="r">${money(c.net)}</td></tr>
- <tr><td colspan="4" class="r">ภาษีมูลค่าเพิ่ม</td><td class="r">${money(c.vat)}</td></tr>
- <tr><td colspan="4" class="r"><b>รวมเป็นเงินรวมภาษีมูลค่าเพิ่ม (${bahtText(c.total)})</b></td><td class="r"><b>${money(c.total)}</b></td></tr></table>
+ <tr><td class="ctr">1.</td><td>หม้อแปลง ${w.kva} เควีเอ</td><td class="ctr">${v(j.qty)}</td><td class="r">${mny(c.unit)}</td><td class="r">${mny(c.net)}</td></tr>
+ <tr><td colspan="4" class="r">ภาษีมูลค่าเพิ่ม</td><td class="r">${mny(c.vat)}</td></tr>
+ <tr><td colspan="4" class="r"><b>รวมเป็นเงินรวมภาษีมูลค่าเพิ่ม (${bt(c.total)})</b></td><td class="r"><b>${mny(c.total)}</b></td></tr></table>
  <div class="gap"></div>${PK(closing(j, 'd7', 'จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติสั่งซื้อ, ลงนามในใบสั่งซื้อ พร้อมนี้ได้แนบรายละเอียดผลการเสนอราคามาเพื่อประกอบการพิจารณาด้วยแล้ว'))}
  <div class="sig" style="margin-left:-9mm;margin-top:6mm"><div class="bxc">${approverBox(j, 'd7', ['เรียน   คณะกรรมการฯ, ' + j.headAbbr, '- อนุมัติ', '- ลงนามใบสั่งซื้อ/สั่งจ้าง'])}</div><div class="sgn">${cmSign(j.buyCm)}</div></div></div>`; }
 
@@ -564,29 +570,29 @@ function R_d7(j, c) {
 function R_d8(j, c) {
   return `<div class="page">${memoHead(j, 'd8', { from: 'คณะกรรมการตรวจรับงาน', to: w.mgrS, subj: `ผลการตรวจรับงานจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม)`, attn: w.mgrS })}
  ${H('1. เรื่องเดิม')}${P(`1.1 ตามอนุมัติ ${w.mgrS} เลขที่ ${refNo(j, 'd4')} ลงวันที่ ${dt(j.docs.d4.date)} อนุมัติรายงานขอซื้อ${w.tf2} แต่งตั้งให้ผู้มีรายนามตามท้ายบันทึกเป็นกรรมการตรวจรับพัสดุ และได้ทำการตรวจรับงานจัดซื้อหม้อแปลงไฟฟ้า ${w.size} (ธุรกิจเสริม)`)}
- ${P(`1.2 ตามใบสั่งซื้อ/สั่งจ้าง เลขที่ ${v(j.poNo)} ลงวันที่ ${dt(j.poDate)} ${SET.office} ได้ซื้อหม้อแปลงไฟฟ้า ${w.size} ดำเนินการ${w.proj} เป็นเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) มีกำหนดส่งมอบภายใน ${v(j.days)} วัน โดยเบิกจ่ายเป็นงวดเดียว ตามผลการพิจารณาที่ ${refNo(j, 'd7')} ลว. ${dt(j.docs.d7.date)}`)}
+ ${P(`1.2 ตามใบสั่งซื้อ/สั่งจ้าง เลขที่ ${v(j.poNo)} ลงวันที่ ${dt(j.poDate)} ${SET.office} ได้ซื้อหม้อแปลงไฟฟ้า ${w.size} ดำเนินการ${w.proj} เป็นเงิน ${mny(c.net)} บาท ภาษีมูลค่าเพิ่ม ${mny(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${mny(c.total)} บาท (${bt(c.total)}) มีกำหนดส่งมอบภายใน ${v(j.days)} วัน โดยเบิกจ่ายเป็นงวดเดียว ตามผลการพิจารณาที่ ${refNo(j, 'd7')} ลว. ${dt(j.docs.d7.date)}`)}
  ${H('2. ข้อเท็จจริง')}${P(`2.1 ${w.vendor} ได้จัดส่งหม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss) งานขยายเขตระบบจำหน่ายงบผู้ใช้ไฟ ตามใบส่งของเลขที่ ${v(j.invNo)} ลงวันที่ ${dt(j.invDate)} และขอเบิกจ่ายเงิน ซึ่งคณะกรรมการฯ ได้ทำการตรวจสอบแล้วพบว่า${w.vendor} ได้ดำเนินการจัดส่งพัสดุดังกล่าวถูกต้องตามใบสั่งซื้อ/สั่งจ้าง มีรายละเอียดตามเงื่อนไขทุกประการ และได้ดำเนินการส่งมอบพัสดุตั้งแต่วันที่ ${dt(j.invDate)} ซึ่งไม่เกินกำหนดระยะเวลาส่งมอบ`)}
  ${P(`2.2 คณะกรรมการตรวจรับได้ทำการตรวจรับพัสดุงานจัดซื้อฯ ดังกล่าวเมื่อวันที่ ${dt(j.inspDate)} ปรากฏว่า ${w.vendor} ได้ส่งมอบหม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss) ให้กับ${w.proj} แล้วเสร็จเรียบร้อยตามใบสั่งซื้อ/สั่งจ้างทุกประการ`)}
  <table class="t" style="width:120mm;margin:2mm 0 2mm 20mm"><colgroup><col style="width:14mm"><col><col style="width:36mm"></colgroup><tr><th>ลำดับ</th><th>รายการ</th><th>จำนวนเงิน (บาท)</th></tr>
- <tr><td class="ctr">1</td><td>หม้อแปลงขนาด ${w.kva} เควีเอ</td><td class="r">${money(c.net)}</td></tr><tr><td class="ctr">2</td><td>ภาษีมูลค่าเพิ่ม 7%</td><td class="r">${money(c.vat)}</td></tr><tr><td class="ctr">3</td><td>รวมทั้งสิ้น</td><td class="r">${money(c.total)}</td></tr></table>
+ <tr><td class="ctr">1</td><td>หม้อแปลงขนาด ${w.kva} เควีเอ</td><td class="r">${mny(c.net)}</td></tr><tr><td class="ctr">2</td><td>ภาษีมูลค่าเพิ่ม 7%</td><td class="r">${mny(c.vat)}</td></tr><tr><td class="ctr">3</td><td>รวมทั้งสิ้น</td><td class="r">${mny(c.total)}</td></tr></table>
  ${H('3. ข้อพิจารณา')}${P(`คณะกรรมการตรวจรับได้พิจารณาแล้วเห็นว่า ${w.vendor} ได้ดำเนินการส่งมอบหม้อแปลงไฟฟ้า พิกัด ${v(j.kv)} kV ${w.size} เรียบร้อยถูกต้องตามใบสั่งซื้อ/สั่งจ้างทุกประการ จึงเห็นควรดำเนินการ รับมอบงานซื้อหม้อแปลงไฟฟ้า (แบบ Low Loss) หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม)`)}
  <div class="gap"></div>${PK(closing(j, 'd8', 'จึงเรียนมาเพื่อโปรดทราบและพิจารณาดำเนินการต่อไป'))}
  <div class="sig" style="margin-left:-9mm;margin-top:6mm"><div class="bxc">${approverBox(j, 'd8', ['เรียน   คณะกรรมการฯ, ' + j.headAbbr, '- เพื่อดำเนินการต่อไป'])}</div><div class="sgn">${cmSign(j.inspCm.map((m, i) => Object.assign({}, m, { role: i ? m.role : 'ประธานกรรมการตรวจรับ' })))}</div></div></div>`; }
 
 /* ---------------- 9. ขออนุมัติจ่ายเงิน ---------------- */
 function R_d9(j, c) {
-  const amt = `<div class="gap"></div><div class="l">อนุมัติเงิน ${money(c.total)} บาท</div><div class="l">(${bahtText(c.total)})</div><div class="l">(รวมภาษีมูลค่าเพิ่ม)</div>`;
+  const amt = `<div class="gap"></div><div class="l">อนุมัติเงิน ${mny(c.total)} บาท</div><div class="l">(${bt(c.total)})</div><div class="l">(รวมภาษีมูลค่าเพิ่ม)</div>`;
   return `<div class="page">${memoHead(j, 'd9', { from: j.deptFull, to: SET.office, subj: `ขออนุมัติจ่ายเงินค่าซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) โดยวิธีเฉพาะเจาะจง`, attn: w.mgrS })}
  ${H('1. เรื่องเดิม')}${P(`1.1 ตามหนังสือคณะกรรมการตรวจรับพัสดุ ที่ ${refNo(j, 'd8')} ลงวันที่ ${dt(j.docs.d8.date)} เรื่อง ผลการตรวจรับงานจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) ${w.vendor}`)}
  ${P(`1.2 คณะกรรมการตรวจรับฯ พิจารณาเห็นควรรับพัสดุทั้งหมดไว้ใช้งานงบผู้ใช้ไฟให้กับ ${v(j.branch, '')} – ${v(j.cust)}`)}
  <table class="t" style="margin:2mm 0"><colgroup><col style="width:9mm"><col><col style="width:20mm"><col style="width:14mm"><col style="width:22mm"><col style="width:22mm"><col style="width:20mm"><col style="width:23mm"></colgroup>
  <tr><th>ที่</th><th>รายการ</th><th>ยี่ห้อที่เสนอ</th><th>จำนวน (เครื่อง)</th><th>ราคาต่อหน่วย (บาท)</th><th>ราคารวมสินค้า (บาท)</th><th>ภาษีมูลค่าเพิ่ม 7% (บาท)</th><th>รวมเป็นเงินทั้งสิ้น (บาท)</th></tr>
- <tr><td class="ctr">1</td><td>หม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss)</td><td class="ctr">${v(j.brand)}</td><td class="ctr">${v(j.qty)}</td><td class="r">${money(c.unit)}</td><td class="r">${money(c.net)}</td><td class="r">${money(c.vat)}</td><td class="r">${money(c.total)}</td></tr>
- <tr><td colspan="5" class="r"><b>(${bahtText(c.total)}) รวมเป็นเงินทั้งสิ้น</b></td><td class="r"><b>${money(c.net)}</b></td><td class="r"><b>${money(c.vat)}</b></td><td class="r"><b>${money(c.total)}</b></td></tr></table>
+ <tr><td class="ctr">1</td><td>หม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss)</td><td class="ctr">${v(j.brand)}</td><td class="ctr">${v(j.qty)}</td><td class="r">${mny(c.unit)}</td><td class="r">${mny(c.net)}</td><td class="r">${mny(c.vat)}</td><td class="r">${mny(c.total)}</td></tr>
+ <tr><td colspan="5" class="r"><b>(${bt(c.total)}) รวมเป็นเงินทั้งสิ้น</b></td><td class="r"><b>${mny(c.net)}</b></td><td class="r"><b>${mny(c.vat)}</b></td><td class="r"><b>${mny(c.total)}</b></td></tr></table>
  ${H('2. การดำเนินการ')}${P(`คณะกรรมการตรวจรับฯ ได้ดำเนินการตรวจรับหม้อแปลงพิกัด ${v(j.kv)} kV ${w.size} ตามใบส่งของเลขที่ ${v(j.invNo)} ลงวันที่ ${dt(j.invDate)} เมื่อวันที่ ${dt(j.inspDate)} พบว่า${w.vendor} ได้ส่งมอบหม้อแปลงเรียบร้อยถูกต้องตามใบสั่งซื้อ/สั่งจ้างทุกประการ`)}
- ${H('3. ข้อพิจารณาและข้อเสนอแนะ')}${P(`${esc(j.deptFull)} พิจารณาแล้วจึงเห็นควรดำเนินการ ดังนี้`)}
- ${P(`3.1 อนุมัติการเบิกจ่ายเงินค่าซื้อ${w.tf2} พิกัด ${v(j.kv)} kV ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) สำหรับงานงบผู้ใช้ไฟเป็นเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) รวมภาษีมูลค่าเพิ่ม ให้แก่${w.vendor}`)}
- ${P(`3.2 การเบิกจ่ายเงินค่าจัดซื้อพัสดุฯ จากงบผู้ใช้ไฟ หมายเลข WBS : ${v(j.wbs)} เป็นเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท`)}
+ ${H('3. ข้อพิจารณาและข้อเสนอแนะ')}${P(`${ef(j.deptFull)} พิจารณาแล้วจึงเห็นควรดำเนินการ ดังนี้`)}
+ ${P(`3.1 อนุมัติการเบิกจ่ายเงินค่าซื้อ${w.tf2} พิกัด ${v(j.kv)} kV ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) สำหรับงานงบผู้ใช้ไฟเป็นเงิน ${mny(c.net)} บาท ภาษีมูลค่าเพิ่ม ${mny(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${mny(c.total)} บาท (${bt(c.total)}) รวมภาษีมูลค่าเพิ่ม ให้แก่${w.vendor}`)}
+ ${P(`3.2 การเบิกจ่ายเงินค่าจัดซื้อพัสดุฯ จากงบผู้ใช้ไฟ หมายเลข WBS : ${v(j.wbs)} เป็นเงิน ${mny(c.net)} บาท ภาษีมูลค่าเพิ่ม ${mny(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${mny(c.total)} บาท`)}
  <div class="gap"></div>${PK(closing(j, 'd9', `จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติเบิกจ่ายค่าซื้อฯ ให้กับ${j.vendor || '..........'} ตามข้อ 3.1 ต่อไป`))}
  ${sigRow(j, 'd9', [`เรียน   ${j.headAbbr}, หผ.บง.`], j.head, null, amt)}</div>`; }
 
@@ -721,7 +727,7 @@ function jobView() { const j = cur, c = calc(j);
  ${(d.ext ? ['subj:เรื่อง', 'attn:เรียน'] : ['from:จาก', 'to:ถึง', 'subj:เรื่อง', 'attn:เรียน']).map(z => { const [a, b] = z.split(':'); return `<label class="f"><span>${b} (เว้นว่าง = ค่าอัตโนมัติ)</span><input data-ov="${d.k}.${a}" value="${esc(ov[a] || '')}"></label>`; }).join('')}
  <label class="f"><span>คำลงท้าย</span><input data-ov="${d.k}.close" value="${esc(ov.close || '')}" placeholder="(ค่าอัตโนมัติ)"></label>${d.ext ? '' : `<label class="f"><span>ข้อความในกรอบสั่งการของผู้อนุมัติ (บรรทัดละข้อ)</span><textarea data-ov="${d.k}.box" rows="3" placeholder="(ค่าอัตโนมัติ)">${esc(ov.box || '')}</textarea></label>`}</details></div></div>`; }).join('')}`;
   const pv = `<div class="pvbar"><b>ตัวอย่างพิมพ์</b><select id="pvSel" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:14px;max-width:100%">${[['all', 'ทั้งชุด (9 ฉบับ)'], ...DOCS.map((d, x) => [d.k, (x + 1) + '. ' + d.short])].map(([a, t]) => `<option value="${a}" ${pvSel === a ? 'selected' : ''}>${t}</option>`).join('')}</select>
- <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum ? 'checked' : ''}> เลขไทย</label><label class="muted"><input type="checkbox" id="ed" ${editing ? 'checked' : ''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn" id="zoomBtn">${pvReal ? '↔ พอดีจอ' : '🔍 ขนาดจริง'}</button><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox ${pvReal ? 'real' : ''}" id="sheets"></div>`;
+ <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum ? 'checked' : ''}> เลขไทย</label><label class="muted"><input type="checkbox" id="hl" ${store.get('tfbuy_hl', true) ? 'checked' : ''}> ไฮไลต์ข้อความที่เติม</label><label class="muted"><input type="checkbox" id="ed" ${editing ? 'checked' : ''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn" id="zoomBtn">${pvReal ? '↔ พอดีจอ' : '🔍 ขนาดจริง'}</button><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox ${pvReal ? 'real' : ''}" id="sheets"></div>`;
   $('#view').innerHTML = tab === 'pv' ? pv : `<div class="split"><div>${L}<div style="height:60px"></div></div><div class="pv" id="pvcol">${pv}</div></div>`;
   bindJob(); drawSheets(); }
 function toggleReal() { pvReal = !pvReal; const zb = $('#zoomBtn'); if (zb) zb.textContent = pvReal ? '↔ พอดีจอ' : '🔍 ขนาดจริง'; drawSheets(); if (pvReal) toast('ขนาดเท่ากระดาษ A4 จริง (100%) — เลื่อนซ้าย/ขวาเพื่อดู'); }
@@ -747,6 +753,8 @@ function bindJob() { const j = cur; const V = $('#view');
   const tn = $('#tn'); if (tn) tn.onchange = () => { SET.thaiNum = tn.checked; store.set('tfbuy_thainum', tn.checked); drawSheets(); };
   const ed = $('#ed'); if (ed) ed.onchange = () => { editing = ed.checked; $('#app').classList.toggle('editing', editing); drawSheets(); if (editing) toast('คลิกที่ข้อความบนกระดาษเพื่อแก้ไขก่อนพิมพ์'); };
   const zb = $('#zoomBtn'); if (zb) zb.onclick = () => toggleReal();
+  const hl = $('#hl'); if (hl) hl.onchange = () => { store.set('tfbuy_hl', hl.checked); document.body.classList.toggle('nohl', !hl.checked); };
+  document.body.classList.toggle('nohl', !store.get('tfbuy_hl', true));
   const pr = $('#prt'); if (pr) pr.onclick = doPrint; }
 function doPrint() { const keys = pvSel === 'all' ? DK : [pvSel]; const pa = $('#printArea');
   if (!editing) drawSheets();
