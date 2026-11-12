@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script src="/pea-hub.js" data-app="tfbuy" data-perm="login" data-name="จัดซื้อหม้อแปลง (ธุรกิจเสริม)"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>จัดซื้อหม้อแปลง (ธุรกิจเสริม) · กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#6b1f7c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<style>
+@font-face{font-family:'Sarabun16';src:url('fonts/THSarabunNew.woff') format('woff');font-weight:400}
+@font-face{font-family:'Sarabun16';src:url('fonts/THSarabunNew-Bold.woff') format('woff');font-weight:700}
+:root{--pea:#6b1f7c;--pea2:#8e3aa0;--bg:#f3f1f6;--card:#fff;--line:#e3dfe8;--ink:#2b2433;--mute:#7a7184;--ok:#1f8a4c;--warn:#c27a00}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:flex;flex-direction:column;position:fixed;inset:0}   /* เต็มจอพอดีทุกเครื่อง (iPhone ไม่เหลือที่ว่างด้านล่าง) */
+.top{background:linear-gradient(135deg,var(--pea),var(--pea2));color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px;flex:none}
+.top h1{font-size:17px;margin:0;font-weight:700;line-height:1.1}
+.top small{display:block;font-weight:400;opacity:.85;font-size:12.5px}
+.top .sp{flex:1}
+.ibtn{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;padding:6px 11px;cursor:pointer;font-size:16px}
+.main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:1500px;margin:0 auto;padding:12px}
+.bnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.bnav button{flex:1;border:0;background:none;padding:6px 0 4px;color:var(--mute);font-size:12px;cursor:pointer;line-height:1.3}
+.bnav button b{display:block;font-size:18px;font-weight:400}
+.bnav button.on{color:var(--pea);font-weight:700}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(40,10,50,.06)}
+.card h3{margin:0 0 8px;font-size:16px;font-weight:600;color:var(--pea)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 220px}
+label.f{display:block;margin:4px 0 8px}
+label.f>span{display:block;font-size:12.5px;color:var(--mute);line-height:1.35;margin-bottom:2px}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:#fff;line-height:1.4;font-size:14.5px}
+.f textarea{min-height:64px;resize:vertical}
+.f input:focus,.f textarea:focus,.f select:focus{outline:2px solid var(--pea2);border-color:transparent}
+.btn{border:0;border-radius:10px;padding:7px 14px;cursor:pointer;background:#efe8f3;color:var(--pea);font-weight:600;font-size:14px}
+.btn.p{background:var(--pea);color:#fff}
+.btn.g{background:#e3f4ea;color:var(--ok)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.muted{color:var(--mute);font-size:13px}
+.seg{display:inline-flex;background:#efe8f3;border-radius:11px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{border:0;background:none;border-radius:8px;padding:5px 14px;cursor:pointer;color:var(--pea);font-size:14px}
+.seg button.on{background:var(--pea);color:#fff;font-weight:600}
+.segrow{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap}.segrow>span{min-width:80px;color:var(--mute);font-size:13px}
+.tag{display:inline-block;border-radius:20px;padding:1px 9px;font-size:12px;background:#efe8f3;color:var(--pea)}
+.tag.ok{background:#e3f4ea;color:var(--ok)}.tag.w{background:#fff3dc;color:var(--warn)}
+/* list */
+.job{display:flex;gap:12px;align-items:center;cursor:pointer}
+.job .ico{width:42px;height:42px;border-radius:12px;background:#efe8f3;display:grid;place-items:center;font-size:21px;flex:none}
+.job .t{font-weight:600;line-height:1.35}
+.steps{display:flex;gap:3px;margin-top:5px}
+.steps i{flex:1;height:6px;border-radius:4px;background:#e6e1ea}
+.steps i.d{background:var(--ok)}.steps i.c{background:var(--warn)}
+.fab{position:fixed;right:18px;bottom:calc(78px + env(safe-area-inset-bottom,0px));background:var(--pea);color:#fff;border:0;border-radius:30px;padding:10px 20px;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(107,31,124,.4);cursor:pointer}
+/* items table */
+.it{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:#fcfbfd}
+.it .hd{display:flex;align-items:center;gap:8px}
+.it .no{width:26px;height:26px;font-size:13px;border-radius:50%;background:var(--pea);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.sum{display:grid;grid-template-columns:1fr auto;gap:2px 14px;font-size:14.5px}
+.sum b{text-align:right}
+/* person */
+.pc{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#d9c6e0,#efe8f3);display:grid;place-items:center;color:var(--pea);font-weight:600;flex:none;font-size:15px}
+.pc .body{flex:1}
+.role{font-size:12px;color:#fff;background:var(--pea2);border-radius:6px;padding:0 7px;display:inline-block}
+/* docs */
+.doc{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.doc .n{width:30px;height:30px;font-size:14px;border-radius:9px;background:#efe8f3;color:var(--pea);display:grid;place-items:center;font-weight:700;flex:none}
+.doc .b{flex:1;min-width:0}
+.doc .ttl{font-weight:600;line-height:1.35}
+.doc .row>*{flex:0 0 auto}
+.it .row{display:grid;grid-template-columns:1fr 1fr 1.3fr 1.3fr;gap:6px}.it .row>*{min-width:0}
+.top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 190px)}
+.top small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 190px)}
+.doc input{border:1px solid var(--line);border-radius:8px;padding:4px 7px;width:150px;font-size:14px}
+.doc input.num{width:96px}
+details.more{margin-top:4px}
+details.more summary{color:var(--pea);cursor:pointer;font-size:12.5px}
+/* layout: editor + preview */
+.split{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media(min-width:1100px){.split{grid-template-columns:minmax(420px,560px) minmax(0,1fr)}.split .pv{position:sticky;top:0;max-height:calc(100vh - 90px);overflow:auto}.bnav .pvbtn{display:none}}
+.pvbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border-radius:12px;padding:6px 10px;margin-bottom:10px}
+.pvbar .sp{flex:1}
+.sheetbox{display:flex;flex-direction:column;align-items:safe center;gap:14px;padding-bottom:30px;overflow-x:auto}
+.sheetbox.real{align-items:flex-start}.sheetbox.real .sheetwrap{flex:none}
+.sheetwrap{cursor:zoom-in}.sheetbox.real .sheetwrap{cursor:zoom-out}
+.sheetwrap{box-shadow:0 2px 10px rgba(0,0,0,.18);position:relative}
+.ovf::after{content:'⚠ เนื้อหาเกินหน้ากระดาษ';position:absolute;top:6px;right:6px;background:#c62828;color:#fff;font:13px 'IBM Plex Sans Thai',sans-serif;padding:0 8px;border-radius:6px}
+.savest{font-size:12px;opacity:.9;margin-left:6px;white-space:nowrap}.savest.err{background:#fff3;border-radius:6px;padding:0 6px;cursor:pointer;color:#ffe08a}
+.warnbox{background:#fff6e0;color:#7a4b00}
+.mdl{position:fixed;inset:0;background:rgba(30,10,40,.45);display:flex;align-items:center;justify-content:center;z-index:20;padding:14px}
+.mbox{background:#fff;border-radius:16px;padding:14px 16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.mbox h3{margin:0 0 8px;color:var(--pea);font-size:17px}.mbtn{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.minp{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:15px}
+.mlist{display:flex;flex-direction:column;gap:6px;margin-top:6px}.mlist button{border:1px solid var(--line);background:#fcfbfd;border-radius:10px;padding:8px 12px;font-size:14px;text-align:left;cursor:pointer}.mlist button:hover{background:#efe8f3}
+#busy{position:fixed;inset:0;background:rgba(255,255,255,.5);display:none;align-items:center;justify-content:center;z-index:15}
+.spin{width:42px;height:42px;border:4px solid #e3d6e8;border-top-color:var(--pea);border-radius:50%;animation:sp 0.8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.toast{z-index:30;position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2b2433;color:#fff;padding:6px 16px;border-radius:20px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+.toast.on{opacity:.95}
+.editing .page [data-e]{outline:1px dashed #b07cc0;background:#fbf5fd}
+
+/* ================= A4 PAGE (print) ================= */
+.page{width:210mm;height:297mm;background:#fff;color:#000;padding:12mm 22.4mm 6mm 25mm;font-family:'Sarabun16';font-size:calc(16pt / 1.5283);line-height:18.1pt;overflow:hidden;position:relative}
+/* กรอบอนุมัติ/ช่องลงนาม ชิดโซนล่างของหน้าเสมอ เว้นขอบล่าง 5 มม. + ขอบกระดาษ 6 มม. ≈ 11 มม. (ต้นฉบับ ≈ 12 มม.)
+   แบ่งหน้าด้วยการจัดวางปกติก่อน แล้วค่อยใส่ .pinned ให้ดันลงล่าง */
+.page .tobottom{padding-bottom:5mm}
+.page.pinned{display:flex;flex-direction:column}.page.pinned>*{flex-shrink:0}.page.pinned>.tobottom{margin-top:auto}
+/* ช่องลงนามอยู่ที่เดิม (ต่อจากข้อความ) · เฉพาะกรอบอนุมัติที่ลงไปชิดล่าง */
+.page.pinned>.sig.tobottom{margin-top:0;flex-grow:1}.sig>.sgn{align-self:start}.sig>.bxc{align-self:end}
+.page p{margin:0;text-align:justify;text-justify:inter-character}
+.page .in{text-indent:2.5cm}
+.page .in2{padding-left:2.5cm}
+.page .in3{padding-left:3.2cm}
+.page .c{text-align:center}
+.page b{font-weight:700}
+.logo{width:42mm;display:block;margin-left:0}
+.mh{display:grid;grid-template-columns:12.5mm 67.5mm 10mm 1fr}
+.mh>div{white-space:nowrap}
+.mh .lb{font-weight:400}
+.subj{display:grid;grid-template-columns:12.5mm 1fr}
+.gap{height:6pt}
+.gap2{height:18pt}
+table.t{border-collapse:collapse;width:100%}
+table.t td,table.t th{border:.75pt solid #000;padding:0 4px;vertical-align:top;line-height:18pt}
+/* ทุกตาราง 16pt เท่าเนื้อความ (ฟอนต์เว็บใหญ่กว่า TH SarabunIT๙ 1.5283 เท่า) */
+table.t th{font-weight:700;text-align:center}
+.r{text-align:right}.ctr{text-align:center}
+.sig{display:grid;grid-template-columns:79mm 1fr;gap:0 4mm;align-items:start}
+.box{border:.75pt solid #000;padding:1.5mm 3mm 2mm}
+.box .l{padding-left:12mm}
+.sc{text-align:center}
+.pgno{text-align:center}
+.cont{text-align:right;margin-top:2mm}
+/* ---- เพิ่มเฉพาะแอปจัดซื้อหม้อแปลง ---- */
+.chip{display:inline-block;font-size:12px;border-radius:8px;padding:1px 8px;background:#f1eef4;color:var(--mute);margin:1px 0}.chip.ok{background:#e3f4ea;color:var(--ok)}
+.doc.st-done .n{background:#e3f4ea;color:var(--ok)}.doc.st-ready{border-color:#f0c766;background:#fffbf1}.doc.st-wait{opacity:.85}
+.page .in3{padding-left:3.2cm}
+.cml{display:grid;grid-template-columns:56mm 1fr 25mm;gap:0 2mm;padding-left:2.5cm}
+.cms{display:grid;grid-template-columns:12mm 1fr 34mm;gap:0 2mm}.cms .dl{border-bottom:1px dotted #000;margin-bottom:5pt}
+.cmn{display:grid;grid-template-columns:12mm 1fr 34mm;gap:0 2mm}.cmn span:nth-child(2){text-align:center}
+.exth{display:grid;grid-template-columns:1fr 34mm 1fr;align-items:start}.exr{padding-left:6mm}
+@page{size:A4;margin:0}
+@media print{
+  html,body{background:#fff;height:auto}
+  .app,.toast,#busy,.mdl{display:none!important}
+  #printArea{display:block!important}
+  #printArea .page{break-after:page}
+  #printArea .page:last-child{break-after:auto}
+}
+#printArea{display:none}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top">
+    <button class="ibtn" id="backBtn" style="display:none">‹</button>
+    <div><h1 id="ttl">จัดซื้อหม้อแปลง (ธุรกิจเสริม)</h1><small id="sub">กฟส.อ่าวลึก</small></div>
+    <div class="sp"></div>
+    <button class="ibtn" id="delBtn" title="ลบงานนี้" style="display:none">🗑</button>
+    <button class="ibtn" id="setBtn" title="ตั้งค่า">⚙</button>
+  </div>
+  <div class="main" id="main"><div class="wrap" id="view"></div></div>
+  <div class="bnav" id="bnav" style="display:none">
+    <button data-t="info"><b>📝</b>ข้อมูลงาน</button>
+    <button data-t="people"><b>👥</b>ผู้ลงนาม</button>
+    <button data-t="docs"><b>🔢</b>9 ขั้น/ออกเลข</button>
+    <button data-t="pv" class="pvbtn"><b>🖨</b>ดู/พิมพ์</button>
+  </div>
+</div>
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+<div id="busy"><div class="spin"></div></div>
+<datalist id="staff"></datalist>
+
+<script>
+/* ---------------- utilities ---------------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TM=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+function thDate(iso){if(!iso)return '……………………';const[y,m,d]=iso.split('-').map(Number);return `${d} ${TM[m-1]} ${y+543}`}
+function beYear(iso){return (iso?+iso.slice(0,4):new Date().getFullYear())+543}
+const money=n=>(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function bahtText(num){
+  num=Math.round((+num||0)*100)/100;
+  const D=['','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'],P=['','สิบ','ร้อย','พัน','หมื่น','แสน'];
+  const rd=s=>{let o='';s=String(+s);if(s==='0')return '';
+    // handle millions
+    if(s.length>6){return rd(s.slice(0,-6))+'ล้าน'+rd(s.slice(-6))}
+    const L=s.length;for(let i=0;i<L;i++){const d=+s[i],p=L-i-1;if(!d)continue;
+      if(p===0&&d===1&&L>1)o+='เอ็ด';else if(p===1&&d===2)o+='ยี่';else if(p===1&&d===1)o+='';else o+=D[d];o+=P[p]}return o};
+  const [b,s]=num.toFixed(2).split('.');let t=rd(b);if(t)t+='บาท';
+  if(!t&&!+s)return 'ศูนย์บาทถ้วน';if(+s){t+=rd(s)+'สตางค์'}else t+='ถ้วน';return t}
+const toThaiDigits=s=>s.replace(/[0-9]/g,d=>'๐๑๒๓๔๕๖๗๘๙'[d]);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1800)}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+/* ================= ระบบจัดซื้อหม้อแปลง (ธุรกิจเสริม) — ส่วนเฉพาะของแอปนี้ ================= */
+const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้าน (…/exec) · ว่าง = โหมดทดลองเก็บในเครื่อง
+const BOOK_API = 'https://script.google.com/macros/s/AKfycbxNSVvzUdqQC-_8ZKLJM1GFliAM4zWyJI8z8VzU0vhhSSBqq0JcxrUr_UyBkWol7ko1Rw/exec';   // ระบบออกเลขหนังสือ V4
+const ST_API = 'https://script.google.com/macros/s/AKfycbyfGC_-vovohq24RWL91hUEYWXxdiL8UkvJ5VOabKe2dGt9vERuCKocEieny86rhOBJXw/exec';     // ฐานข้อมูลพนักงาน (Safety Talk)
+const LOGO = 'pea-logo.png';
+const lsr = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const API_URL = () => lsr('tfbuy_api') || API_DEFAULT;
+const LOCAL = () => !API_URL();
+const cred = () => ({ user: lsr('pea_aoluek_username') || '', pass: lsr('pea_aoluek_password') || '' });
+const nm = s => String(s || '').replace(/[\s​-‍﻿]/g, '').toLowerCase();
+
+const REG1 = 'ข้อบังคับการไฟฟ้าส่วนภูมิภาคว่าด้วยการดำเนินธุรกิจเสริมของการไฟฟ้าส่วนภูมิภาค พ.ศ. 2567';
+const REG2 = 'ระเบียบการไฟฟ้าส่วนภูมิภาคว่าด้วยธุรกิจเสริมของสายงานการไฟฟ้า ภาค 1-4 พ.ศ. 2564';
+const DEFSET = { office: 'กฟส.อ่าวลึก', officeFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', bookPrefix: 'ต.2อล.', extPrefix: 'มท 5307.60/กฟส.อล.',
+  addr1: '125 หมู่ 1 ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', phone: '0-7566-6925',
+  reg1: REG1, reg2: REG2,
+  manual: 'ตามอนุมัติ ผวก. ลงวันที่ 20 กันยายน 2561 หนังสือที่ ก.1 กบล.(ก.) 3333/2561 ลงวันที่ 13 กันยายน 2561 อนุมัติหลักเกณฑ์และคู่มือการปฏิบัติงาน (Work Manual) การให้บริการตามระเบียบ กฟภ. ว่าด้วยธุรกิจเสริมของสายงานการไฟฟ้า ภาค 1 – 4 ข้อ 38 - 40',
+  mgr: { name: 'นายชญานิน งานสัมพันธฤทธิ์', pos: 'ผู้จัดการ การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก' },
+  depts: { 'ผปร.': { code: '(ปร.)', head: 'หผ.ปร.', unit: 'แผนกปฏิบัติการระบบไฟฟ้า' }, 'ผบง.': { code: '(บง.)', head: 'หผ.บง.', unit: 'แผนกบัญชีและการเงิน' }, 'ผบค.': { code: '(บค.)', head: 'หผ.บค.', unit: 'แผนกบริการลูกค้า' } } };
+let SET = Object.assign({}, DEFSET, store.get('tfbuy_settings', {}));
+SET.thaiNum = store.get('tfbuy_thainum', false);
+let STAFF = store.get('tfbuy_staff', { list: [] }).list || [];
+let ME = { name: cred().user, admin: false };
+let LIST = [];
+let DEPTS = SET.depts;
+
+/* 9 ขั้น · ext = หนังสือภายนอก (เลข มท 5307.60/… กรอกเองจากระบบสารบรรณ) */
+const DOCS = [
+ { k: 'd1', short: 'แต่งตั้ง กก.ราคากลาง + เจ้าหน้าที่ TOR', refs: [] },
+ { k: 'd2', short: 'ขออนุมัติราคากลาง', refs: ['d1'] },
+ { k: 'd3', short: 'ขอเห็นชอบร่าง TOR + ตัว TOR', refs: ['d1'] },
+ { k: 'd4', short: 'รายงานขอซื้อ + แต่งตั้ง กก.จัดซื้อ/ตรวจรับ', refs: ['d2', 'd3'] },
+ { k: 'd5', short: 'หนังสือเชิญชวนเสนอราคา', ext: true, refs: ['d4'] },
+ { k: 'd6', short: 'หนังสือขอต่อรองราคา', ext: true, refs: ['d5'] },
+ { k: 'd7', short: 'ผลการพิจารณาจัดซื้อ', refs: ['d4', 'd6'] },
+ { k: 'd8', short: 'ผลการตรวจรับ', refs: ['d4', 'd7'] },
+ { k: 'd9', short: 'ขออนุมัติจ่ายเงิน', refs: ['d8'] }];
+const DK = DOCS.map(d => d.k);
+
+const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const P0 = () => ({ name: '', pos: '' });
+function blankJob() {
+  const docs = {}; DK.forEach(k => docs[k] = { no: '', date: '' }); docs.d1.date = today();
+  return { dept: '', deptFull: '', deptCode: '', headAbbr: '', unit: '',
+    cust: '', branch: 'กฟส.ปพย.', loc: '', apvRef: '', apvDate: '', wbsMain: '', wbs: '', drawing: '', rcptNo: '', rcptDate: '',
+    reqDate: '', recvNo: '', recvDate: '',
+    phase: '3', kva: '', kv: '33', qty: 1, brand: '', price: 0, priceSrc: 'cust', marketRef: '',
+    vendor: '', quoteNo: '', quoteDate: '', quoteRecv: '', quoteRecvDate: '', inviteDue: '', confirmDate: '', holdDays: 30, warranty: 3,
+    days: 45, penalty: '0.20', penaltyMin: 100, torWarranty: 1, store: 'คลังพัสดุ การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก',
+    poNo: '', poDate: '', invNo: '', invDate: '', inspDate: '',
+    head: P0(), officer: P0(), mgr: Object.assign({}, SET.mgr),
+    priceCm: [{ name: '', pos: '', role: 'ประธานกรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }],
+    buyCm: [{ name: '', pos: '', role: 'ประธานกรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }],
+    inspCm: [{ name: '', pos: '', role: 'ประธานกรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }, { name: '', pos: '', role: 'กรรมการ' }],
+    docs, printed: {} };
+}
+function fixJob(j) {
+  const b = blankJob();
+  for (const k in b) if (j[k] === undefined) j[k] = b[k];
+  DK.forEach(k => j.docs[k] = j.docs[k] || { no: '', date: '' });
+  j.printed = j.printed || {};
+  return j;
+}
+function jobTitle(j) { return `หม้อแปลง ${j.kva || '…'} kVA${j.cust ? ' – ' + j.cust : ''}`; }
+function summaryOf(j) {
+  const c = calc(j), done = DK.filter(k => (j.docs[k] || {}).no).length;
+  return { id: j.id, year: beYear((j.docs.d1 || {}).date), dept: j.dept, title: jobTitle(j), vendor: j.vendor, wbs: j.wbs,
+    total: c.total, step: done + ' จาก 9', nums: DK.map(k => (j.docs[k] || {}).no).filter(Boolean).join(', '), updatedBy: ME.name, updatedAt: new Date().toISOString() };
+}
+
+/* ---------------- เรียกหลังบ้าน ---------------- */
+async function api(action, payload) {
+  if (LOCAL()) return localApi(action, payload || {});
+  const c = cred();
+  if (!c.user) { const e = new Error('ยังไม่ได้เข้าสู่ระบบศูนย์รวมงาน'); e.code = 'unauthorized'; throw e; }
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
+  let j;
+  try {
+    const r = await fetch(API_URL(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, user: c.user, pass: c.pass }, payload || {})), signal: ctrl.signal });
+    j = await r.json();
+  } catch (e) { throw new Error(e.name === 'AbortError' ? 'เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง' : 'เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ต'); }
+  finally { clearTimeout(t); }
+  if (!j || !j.ok) { const e = new Error((j && (j.message || j.error)) || 'ไม่ทราบสาเหตุ'); e.code = j && j.error; e.latest = j && j.latest; throw e; }
+  return j;
+}
+function localApi(action, b) {
+  const all = store.get('tfbuy_local_jobs', {});
+  const put = () => store.set('tfbuy_local_jobs', all);
+  if (action === 'bootstrap') return { ok: true, me: { name: ME.name || 'ผู้ทดลอง', admin: true }, settings: Object.assign({}, DEFSET, store.get('tfbuy_local_settings', {})),
+    jobs: Object.values(all).filter(j => !j._deleted).map(j => Object.assign(summaryOf(j), { updatedAt: j._at })).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))) };
+  if (action === 'get') { const j = all[b.id]; if (!j) throw new Error('ไม่พบงานนี้'); return { ok: true, job: JSON.parse(JSON.stringify(j)) }; }
+  if (action === 'save') {
+    const job = JSON.parse(JSON.stringify(b.job)), old = job.id && all[job.id];
+    if (!old) { job.id = 'TF' + Date.now().toString(36).toUpperCase(); job.rev = 1; job.createdBy = ME.name; job.createdAt = new Date().toISOString(); }
+    else {
+      if (b.baseRev != null && (old.rev || 0) !== b.baseRev && !b.force) { const e = new Error('มีผู้อื่นแก้ไขงานนี้หลังจากที่คุณเปิด'); e.code = 'conflict'; e.latest = old; throw e; }
+      job.rev = (old.rev || 0) + 1;
+      for (const k in old.docs || {}) if (old.docs[k].bookRef && !(job.docs[k] || {}).no) job.docs[k] = Object.assign(job.docs[k] || {}, { no: old.docs[k].no, bookRef: old.docs[k].bookRef });
+    }
+    job._at = new Date().toISOString(); all[job.id] = job; put();
+    return { ok: true, job, rev: job.rev, summary: summaryOf(job) };
+  }
+  if (action === 'setDocNo') {
+    const job = all[b.id]; if (!job) throw new Error('ไม่พบงานนี้');
+    if (job.docs[b.docKey].no && !b.replace) throw new Error('ฉบับนี้มีเลขแล้ว');
+    Object.assign(job.docs[b.docKey], { no: b.no, date: b.date || job.docs[b.docKey].date, bookRef: b.bookRef || '' });
+    job.rev = (job.rev || 0) + 1; job._at = new Date().toISOString(); put();
+    return { ok: true, job, rev: job.rev, summary: summaryOf(job) };
+  }
+  if (action === 'remove') { if (all[b.id]) all[b.id]._deleted = true; put(); return { ok: true }; }
+  if (action === 'saveSettings') { store.set('tfbuy_local_settings', b.settings); return { ok: true, settings: b.settings }; }
+  throw new Error('unknown action');
+}
+
+/* ---------------- บันทึกอัตโนมัติ ---------------- */
+let saving = false, dirty = false, saveT = null, saveState = '';
+function setSave(s) { saveState = s; const el = $('#saveSt'); if (el) { el.textContent = { wait: '● ยังไม่บันทึก', busy: '⟳ กำลังบันทึก…', ok: '✓ บันทึกแล้ว', err: '⚠ บันทึกไม่สำเร็จ — แตะเพื่อลองใหม่' }[s] || ''; el.className = 'savest ' + s; } }
+function save() { if (!cur) return; dirty = true; setSave('wait'); clearTimeout(saveT); saveT = setTimeout(flush, 1200); }
+const clean = j => { const o = JSON.parse(JSON.stringify(j)); delete o._at; delete o._deleted; return o; };
+async function flush() {
+  clearTimeout(saveT);
+  if (!cur || !dirty) return;
+  if (saving) { saveT = setTimeout(flush, 500); return; }
+  saving = true; dirty = false; setSave('busy');
+  const j = cur;
+  try {
+    const r = await api('save', { job: clean(j), baseRev: j.rev });
+    j.id = r.job.id; j.rev = r.rev; upsertList(r.summary || summaryOf(j));
+    rememberPeople(j);
+    setSave(dirty ? 'wait' : 'ok');
+  } catch (e) {
+    if (e.code === 'conflict') {
+      const ok = await ask('มีผู้อื่นแก้ไขงานนี้ไปก่อน', `${esc(e.message)}<br><br><b>โหลดข้อมูลล่าสุด</b> = ใช้ข้อมูลของอีกฝ่าย (สิ่งที่คุณเพิ่งแก้จะหาย)<br><b>บันทึกของฉันทับ</b> = ใช้ข้อมูลในหน้าจอนี้`, ['โหลดข้อมูลล่าสุด', 'บันทึกของฉันทับ']);
+      if (ok === 0 && e.latest) { cur = fixJob(e.latest); setSave('ok'); jobView(); }
+      else { try { const r = await api('save', { job: clean(j), force: true }); j.rev = r.rev; upsertList(r.summary); setSave('ok'); } catch (e2) { dirty = true; setSave('err'); toast(e2.message); } }
+    } else { dirty = true; setSave('err'); toast('บันทึกไม่สำเร็จ: ' + e.message); }
+  } finally { saving = false; if (dirty && saveState !== 'err') saveT = setTimeout(flush, 1500); }
+}
+async function settle() { for (let i = 0; i < 120 && (saving || dirty); i++) { if (dirty && !saving) await flush(); else await new Promise(r => setTimeout(r, 250)); } return !dirty; }
+function upsertList(s) { if (!s || !s.id) return; const i = LIST.findIndex(x => x.id === s.id); if (i >= 0) LIST[i] = Object.assign(LIST[i], s); else LIST.unshift(s); }
+function rememberPeople(j) { store.set('tfbuy_last', { head: j.head, officer: j.officer, mgr: j.mgr, priceCm: j.priceCm, buyCm: j.buyCm, inspCm: j.inspCm }); }
+addEventListener('beforeunload', e => { if (dirty || saving) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------------- รายชื่อพนักงาน (ฐานข้อมูลเดียวกับ Safety Talk) ---------------- */
+function staffPos(p) { return String(p.newsPos || p.position || '').trim(); }
+async function loadStaff(force) {
+  const c = store.get('tfbuy_staff', null);
+  if (!force && c && c.list && c.list.length && Date.now() - (c.ts || 0) < 12 * 3600e3) return;
+  const a = cred(); if (!a.user) return;
+  try {
+    const j = await fetch(ST_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: 'st', args: [{ action: 'people', auth: { name: a.user, pass: a.pass } }] }) }).then(r => r.json());
+    const arr = (j && (j.result || j.data)) || [];
+    if (!Array.isArray(arr) || !arr.length) return;
+    STAFF = arr.map(p => ({ name: String(p.name || '').replace(/\s+/g, ' ').trim(), pos: staffPos(p), dept: String(p.dept || '') })).filter(p => p.name);
+    store.set('tfbuy_staff', { ts: Date.now(), list: STAFF });
+    fillStaff();
+  } catch (e) {}
+}
+function fillStaff() { $('#staff').innerHTML = STAFF.map(s => `<option value="${esc(s.name)}">${esc(s.pos)}</option>`).join(''); }
+const PRE_RE = /^\s*(นางสาว|นาง|นาย|ว่าที่\s*ร\.ต\.)\s*/;
+const baseName = n => String(n || '').replace(PRE_RE, '').replace(/\s+/g, ' ').trim();
+function learnPre(n) { const m = String(n || '').match(PRE_RE); if (!m) return; const map = store.get('tfbuy_prefix', {}); map[nm(baseName(n))] = m[1].replace(/\s+/g, ''); store.set('tfbuy_prefix', map); }
+function withPre(n) { if (!String(n || '').trim()) return '……………………………………'; if (PRE_RE.test(n)) return String(n).replace(/\s+/g, ' ').trim(); const pre = store.get('tfbuy_prefix', {})[nm(baseName(n))]; return (pre || '') + baseName(n); }
+function learnJob(j) { [j.officer, j.head, j.mgr, ...(j.priceCm || []), ...(j.buyCm || []), ...(j.inspCm || [])].forEach(p => p && learnPre(p.name)); }
+const findStaff = n => STAFF.find(x => nm(x.name.replace(/^(นางสาว|นาง|นาย)/, '')) === nm(String(n).replace(/^(นางสาว|นาง|นาย)/, '')));
+
+/* ---------------- ระบบออกเลขหนังสือ (หมวด "หนังสือทั่วไป") ---------------- */
+async function book(fn, args) {
+  const r = await fetch(BOOK_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }) }).then(x => x.text());
+  let j; try { j = JSON.parse(r); } catch (e) { throw new Error('ระบบออกเลขหนังสือตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้ง'); }
+  if (!j.ok) throw new Error(j.error || 'ระบบออกเลขหนังสือขัดข้อง');
+  return j.data;
+}
+async function bookToken(again) {
+  let t = again ? null : lsr('booknum_token_v1');
+  if (t) return t;
+  const code = await askText('เชื่อมระบบออกเลขหนังสือ', 'กรอก <b>รหัสสำนักงาน</b> (รหัสเดียวกับที่ใช้เข้าระบบออกเลขหนังสือ) — ทำครั้งเดียวต่อเครื่อง', 'รหัสสำนักงาน', true);
+  if (!code) return null;
+  const r = await book('login', [code]);
+  if (!r || !r.ok) throw new Error(r && r.reason === 'SETUP_REQUIRED' ? 'ระบบออกเลขหนังสือยังไม่ได้ตั้งรหัสสำนักงาน' : 'รหัสสำนักงานไม่ถูกต้อง');
+  lsr('booknum_token_v1', r.token);
+  if (r.settings) lsr('booknum_settings_v1', JSON.stringify(r.settings));
+  return r.token;
+}
+async function bookCall(fn, args) {   // แนบ token อัตโนมัติ · หมดอายุ → ถามรหัสใหม่ 1 ครั้ง
+  let t = await bookToken(false); if (!t) return null;
+  try { return await book(fn, [t].concat(args)); }
+  catch (e) {
+    if (!/AUTH_REQUIRED|SETUP_REQUIRED/.test(e.message)) throw e;
+    lsr('booknum_token_v1', null); t = await bookToken(true); if (!t) return null;
+    return await book(fn, [t].concat(args));
+  }
+}
+/* ---------------- กล่องโต้ตอบ ---------------- */
+function modal(html) { const m = document.createElement('div'); m.className = 'mdl'; m.innerHTML = `<div class="mbox">${html}</div>`; document.body.appendChild(m); return m; }
+function ask(title, body, btns) { return new Promise(res => { const m = modal(`<h3>${esc(title)}</h3><div>${body}</div><div class="mbtn">${btns.map((b, i) => `<button class="btn ${i ? '' : 'p'}" data-i="${i}">${esc(b)}</button>`).join('')}</div>`);
+  m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { m.remove(); res(+b.dataset.i); }); }); }
+function askText(title, body, ph, pw) { return new Promise(res => { const m = modal(`<h3>${esc(title)}</h3><div>${body}</div><input class="minp" type="${pw ? 'password' : 'text'}" placeholder="${esc(ph)}"><div class="mbtn"><button class="btn p" data-ok>ตกลง</button><button class="btn" data-x>ยกเลิก</button></div>`);
+  const i = m.querySelector('input'); i.focus(); const done = v => { m.remove(); res(v); };
+  m.querySelector('[data-ok]').onclick = () => done(i.value.trim()); m.querySelector('[data-x]').onclick = () => done(''); i.onkeydown = e => { if (e.key === 'Enter') done(i.value.trim()); }; }); }
+function choose(title, opts) { return new Promise(res => { const m = modal(`<h3>${esc(title)}</h3><div class="mlist">${opts.map((o, i) => `<button data-i="${i}">${esc(o)}</button>`).join('') || '<div class="muted">ไม่มีรายการ</div>'}</div><div class="mbtn"><button class="btn" data-i="-1">ยกเลิก</button></div>`);
+  m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { m.remove(); res(+b.dataset.i); }); }); }
+
+/* ---------------- คำนวณ / ข้อความกลาง ---------------- */
+function calc(j) { const q = +j.qty || 0, unit = +j.price || 0, net = Math.round(q * unit * 100) / 100, vat = Math.round(net * 7) / 100;
+  return { unit, net, vat, total: Math.round((net + vat) * 100) / 100, q }; }
+const DOTS = '..........';
+function yearOf(k) { return beYear((cur && cur.docs[k] || {}).date || today()); }
+/* เลขหนังสือฉบับนี้ (หัวหนังสือ) */
+function docNo(j, k) { const d = j.docs[k] || {}, ext = DOCS.find(x => x.k === k).ext, y = beYear(d.date || today());
+  return ext ? `${SET.extPrefix}${d.no || '&nbsp;'.repeat(12)}/${y}` : `${SET.bookPrefix}${j.deptCode}${d.no || '&nbsp;'.repeat(12)}/${y}`; }
+/* เลขที่อ้างถึงในเนื้อหา — ยังไม่ออก = จุดไข่ปลา */
+function refNo(j, k) { const d = j.docs[k] || {}, ext = DOCS.find(x => x.k === k).ext, y = beYear(d.date || today());
+  return ext ? `${SET.extPrefix}${d.no || DOTS}/${y}` : `${SET.bookPrefix}${j.deptCode}${d.no || DOTS}/${y}`; }
+const dt = iso => iso ? thDate(iso) : '....................';
+const v = (s, dots) => String(s ?? '').trim() ? esc(s) : (dots || '..........');
+function W(j) { const kva = v(j.kva, '…'), ph = v(j.phase, '…');
+  return { tf: 'หม้อแปลงไฟฟ้านอกเหนือจากสเปคที่ กฟภ. กำหนด (Low Loss)', tf2: 'หม้อแปลงไฟฟ้านอกเหนือสเปคที่ กฟภ.กำหนด (Low Loss)',
+    lowloss: 'หม้อแปลงไฟฟ้า ชนิดไม่ทนการลัดวงจร แต่ยังมีค่าความสูญเสียที่การไฟฟ้าส่วนภูมิภาคกำหนด (Low Loss)',
+    size: `ชนิด ${ph} เฟส แรงดัน ${v(j.kv, '…')} kV ขนาด ${kva} kVA จำนวน ${v(j.qty, '…')} เครื่อง`,
+    kva, ph, kvaTh: `${ph} เฟส ขนาด ${kva} เควีเอ`,
+    proj: `งานก่อสร้างขยายเขตระบบจำหน่าย ${v(j.branch, '')} – ${v(j.cust)}`, loc: v(j.loc, ''),
+    vendor: v(j.vendor), head: `${j.headAbbr}${SET.office}`, mgrS: `ผจก.${SET.office}` }; }
+let w;
+function priceSrc(j) { return j.priceSrc === 'market' ? `ราคาที่ได้มาจากการสืบราคาจากท้องตลาด${j.marketRef ? ' ตามหนังสือที่ ' + esc(j.marketRef) : ''}`
+  : `ผู้ใช้ไฟระบุผลิตภัณฑ์ของหม้อแปลง ตามหนังสือเลขที่รับ ${v(j.recvNo)} ลว. ${dt(j.recvDate)}`; }
+
+const E = (f, s) => `<span data-e="${f}">${s}</span>`;
+const ovOf = (j, k) => ((j.docs[k] || {}).ov || {});
+function memoHead(j, k, o) { const d = j.docs[k] || {}, ov = ovOf(j, k);
+  return `<img class="logo" src="${LOGO}">
+ <div class="mh"><div>จาก</div><div>${esc(ov.from || o.from)}</div><div>ถึง</div><div>${esc(ov.to || o.to)}</div>
+ <div>เลขที่</div><div>${docNo(j, k)}</div><div>วันที่</div><div>${thDate(d.date)}</div></div>
+ <div class="subj"><div>เรื่อง</div><div>${ov.subj ? esc(ov.subj) : o.subj}</div></div><div class="gap"></div>
+ <div class="subj"><div>เรียน</div><div>${esc(ov.attn || o.attn)}</div></div><div class="gap"></div>`; }
+function extHead(j, k, o) { const d = j.docs[k] || {}, ov = ovOf(j, k);
+  return `<div class="exth"><div class="exl"><div style="height:24mm"></div>ที่ ${docNo(j, k)}</div><div class="exc"><img class="logo" style="width:30mm;margin:0 auto" src="${LOGO}"></div>
+ <div class="exr"><div style="height:24mm"></div>${esc(SET.officeFull)}<br>${esc(SET.addr1)}<br>${esc(SET.addr2)}</div></div><div class="gap"></div>
+ <div style="margin-left:80mm">${thDate(d.date)}</div><div class="gap"></div>
+ <div class="subj"><div>เรื่อง</div><div>${esc(ov.subj || o.subj)}</div></div><div class="gap"></div>
+ <div class="subj"><div>เรียน</div><div>${esc(ov.attn || o.attn)}</div></div><div class="gap"></div>`; }
+function approverBox(j, k, lines, extra) { const d = j.docs[k] || {}, ov = ovOf(j, k); const L = (ov.box || lines.join('\n')).split('\n');
+  return `<div class="box"><div>${esc(L[0])}</div>${L.slice(1).map(l => `<div class="l">${esc(l)}</div>`).join('')}${extra || ''}
+ <div class="gap2"></div><div class="gap2"></div><div class="gap"></div>
+ <div class="sc">(${esc(withPre(j.mgr.name))})</div><div class="sc">${esc(j.mgr.pos.replace('ผู้จัดการ การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', 'ผจก.' + SET.office))}</div><div class="sc">${thDate(d.date)}</div><div class="gap"></div></div>`; }
+function signer(p, extra) { return `<div class="sc">(${esc(withPre(p.name))})</div><div class="sc">${esc(p.pos)}</div>${(extra || []).map(x => `<div class="sc">${esc(x)}</div>`).join('')}`; }
+function cmSign(list) { return list.map(m => `<div class="cms"><span>ลงชื่อ</span><span class="dl"></span><span>${esc(m.role)}</span></div><div class="cmn"><span></span><span>(${esc(withPre(m.name))})</span><span></span></div><div class="cmn"><span></span><span>${esc(m.pos)}</span><span></span></div><div class="gap"></div>`).join(''); }
+function cmLines(list, pre) { return list.map((m, x) => `<div class="cml"><span>${pre}${x + 1} ${esc(withPre(m.name))}</span><span>ตำแหน่ง ${esc(m.pos)}</span><span>${esc(m.role)}</span></div>`).join(''); }
+const closing = (j, k, def) => esc(ovOf(j, k).close || def);
+const P = (s, c = 'in') => `<p class="${c}">${s}</p>`;
+const PK = (s, c = 'in') => `<p class="${c} kwn">${s}</p>`;
+const H = s => `<p class="in2 kwn"><b>${s}</b></p>`;
+const sigRow = (j, k, boxLines, who, extra, boxExtra) => `<div class="sig tobottom" style="margin-left:-9mm"><div class="bxc">${approverBox(j, k, boxLines, boxExtra)}</div><div class="sgn" style="padding-top:4mm">${signer(who, extra)}</div></div>`;
+
+/* ---------------- 1. แต่งตั้ง กก.ราคากลาง + เจ้าหน้าที่ TOR ---------------- */
+function R_d1(j, c) {
+  const pc = j.priceCm.map((m, x) => `<div class="cml"><span>${x + 1}. ${esc(withPre(m.name))}</span><span>${esc(m.pos)}</span><span>${esc(m.role)}</span></div>`).join('');
+  return `<div class="page">${memoHead(j, 'd1', { from: j.deptFull, to: SET.office, subj: `ขออนุมัติแต่งตั้งคณะกรรมการกำหนดราคากลางและเจ้าหน้าที่จัดทำ TOR งานจัดซื้อ${w.tf} เพื่อใช้ใน${w.proj}`, attn: w.mgrS })}
+ ${H('1. เรื่องเดิม')}${P(`1.1 ตามหนังสือ ${v(j.apvRef)} ลงวันที่ ${dt(j.apvDate)} อนุมัติขยายเขตระบบจำหน่าย ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} หมายเลขงาน WBS : ${v(j.wbsMain)} แบบผังเลขที่ ${v(j.drawing)} ในส่วนของงบผู้ใช้ไฟ งานติดตั้งหม้อแปลง ผู้ใช้ไฟประสงค์ให้ การไฟฟ้าส่วนภูมิภาค ดำเนินการจัดหาและติดตั้งหม้อแปลงไฟฟ้า ชนิดไม่ทนการลัดวงจร (หม้อแปลงไฟฟ้า Low Loss) ซึ่งผู้ใช้ไฟได้ชำระเงินค่าก่อสร้างขยายเขตแล้วตามใบเสร็จรับเงินเลขที่ ${v(j.rcptNo)} ลว. ${dt(j.rcptDate)}`)}
+ <div class="gap"></div>${H('2. ข้อเท็จจริง')}${P(`2.1 จากกรณีดังกล่าว กรณีที่ผู้ใช้ไฟมีความประสงค์ให้ การไฟฟ้าส่วนภูมิภาค ดำเนินการจัดหาและติดตั้งหม้อแปลงไฟฟ้า ${w.kvaTh} ที่นอกเหนือจากสเปคหม้อแปลงไฟฟ้าที่ กฟภ.กำหนด ตามระเบียบการไฟฟ้าส่วนภูมิภาคว่าด้วยธุรกิจเสริม`)}
+ <div class="gap"></div>${H('3. ข้อพิจารณา')}${P(`${esc(j.deptFull)} พิจารณาแล้วเพื่อให้การจัดหา${w.lowloss} และติดตั้งให้แล้วเสร็จตามความประสงค์ของผู้ใช้ไฟ เห็นควรดำเนินการจัดซื้อหม้อแปลงด้วยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} จึงขออนุมัติดำเนินการดังนี้`)}
+ ${P('3.1 ขออนุมัติแต่งตั้งคณะกรรมการกำหนดราคากลาง และเจ้าหน้าที่ร่างขอบเขตงาน ฯ เพื่อดำเนินการจัดซื้อหม้อแปลงไฟฟ้าดังกล่าว ดังต่อไปนี้')}
+ <p class="in3 kwn">3.1.1 คณะกรรมการกำหนดราคากลาง</p>${pc}<p style="padding-left:3.8cm">หน้าที่พิจารณากำหนดราคากลาง</p>
+ <p class="in3 kwn">3.1.2 เจ้าหน้าที่ร่างขอบเขตงาน ฯ (TOR)</p><div class="cml"><span>1. ${esc(withPre(j.officer.name))}</span><span>${esc(j.officer.pos)}</span><span></span></div><p style="padding-left:3.8cm">เจ้าหน้าที่ร่างขอบเขตงาน</p>
+ <div class="gap"></div>${PK(closing(j, 'd1', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติและแจ้งคณะกรรมการกำหนดราคากลาง, เจ้าหน้าที่ร่างขอบเขตงาน ฯ ดำเนินการต่อไป'))}
+ ${sigRow(j, 'd1', [`เรียน   ${w.head}`, 'คณะกรรมการกำหนดราคากลาง', 'เจ้าหน้าที่ร่างขอบเขตงาน ฯ', '- อนุมัติข้อ 3.1.1 และ 3.1.2', '- ดำเนินการต่อไป'], j.head)}</div>`; }
+
+/* ---------------- 2. ขออนุมัติราคากลาง ---------------- */
+function R_d2(j, c) {
+  return `<div class="page">${memoHead(j, 'd2', { from: 'คณะกรรมการกำหนดราคากลาง', to: w.mgrS, subj: `ขออนุมัติกำหนดราคากลาง จัดซื้อ${w.tf} เพื่อใช้ใน${w.proj}`, attn: w.mgrS })}
+ ${P(`ตามที่ ${SET.office} มีความประสงค์จะจัดซื้อหม้อแปลงไฟฟ้า เพื่อติดตั้งใช้งานก่อสร้างขยายเขตระบบจำหน่าย งบผู้ใช้ไฟ (02.2) ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} โดยในส่วนของงานติดตั้งหม้อแปลง ผู้ใช้ไฟมีความประสงค์ให้ ${SET.office} ติดตั้ง${w.lowloss} ขนาด ${w.kva} เควีเอ จาก ${w.vendor} ตามหนังสือขอใช้บริการงานก่อสร้างขยายเขตระบบจำหน่ายไฟฟ้า ลว. ${dt(j.reqDate)} เลขที่รับ ${v(j.recvNo)} ลว. ${dt(j.recvDate)} และตามอนุมัติที่ ${refNo(j, 'd1')} ลว. ${dt(j.docs.d1.date)} แต่งตั้งคณะกรรมการกำหนดราคากลาง นั้น`)}
+ ${P(`คณะกรรมการกำหนดราคากลางได้พิจารณาแล้ว เพื่อให้การจัดซื้อหม้อแปลงไฟฟ้าดังกล่าว ได้สำเร็จลุล่วงไปด้วยดี ทันตามแผนที่กำหนดไว้ และเพื่อให้ถูกต้องตาม${esc(SET.reg1)} คณะกรรมการกำหนดราคากลาง จึงขอกำหนดราคากลางของการจัดซื้อหม้อแปลง ตามที่ส่วนเกี่ยวข้องได้จัดทำประมาณการไว้แล้ว เป็นจำนวนเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม 7 % เป็นเงิน ${money(c.vat)} บาท รวมเป็นเงินราคากลางทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)})`)}
+ <div class="gap"></div>${PK(closing(j, 'd2', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติราคากลางต่อไป'))}<div class="gap"></div>
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc">${approverBox(j, 'd2', ['เรียน   คณะกรรมการกำหนดราคากลาง', '- อนุมัติราคากลาง', '- ดำเนินการต่อไป'])}</div><div class="sgn">${cmSign(j.priceCm)}</div></div></div>`; }
+
+/* ---------------- 3. ขอเห็นชอบ TOR + ตัว TOR ---------------- */
+function R_d3(j, c) {
+  const memo = `<div class="page">${memoHead(j, 'd3', { from: 'เจ้าหน้าที่จัดทำร่างขอบเขตงาน', to: w.mgrS, subj: `ขอความเห็นชอบร่างขอบเขตแบบรูปรายการหรือรายละเอียดคุณลักษณะเฉพาะของพัสดุที่จะซื้อและหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ เพื่อจัดซื้อ${w.tf} เพื่อใช้ใน${w.proj}`, attn: `${w.mgrS} ผ่าน ${w.head}` })}
+ ${P(`ตามอนุมัติที่ ${refNo(j, 'd1')} ลว. ${dt(j.docs.d1.date)} ได้แต่งตั้งเจ้าหน้าที่จัดทำร่างขอบเขตแบบรูปรายการหรือรายละเอียดคุณลักษณะเฉพาะของพัสดุที่จะซื้อ (TOR) และหลักเกณฑ์การพิจารณาคัดเลือกข้อเสนอ เพื่อจัดซื้อ${w.tf} ขนาด ${w.kva} เควีเอ จำนวน ${v(j.qty)} เครื่อง สำหรับติดตั้งใช้ใน${w.proj} ${w.loc} ตามหนังสือเลขที่รับ ${v(j.recvNo)} ลว. ${dt(j.recvDate)} ขอใช้บริการงานก่อสร้างขยายเขตระบบจำหน่ายไฟฟ้า ดังกล่าวนั้น`)}
+ ${P(`เพื่อให้การดำเนินการจัดซื้อ เป็นไปตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} เจ้าหน้าที่ร่างขอบเขต ฯ ได้จัดทำร่างขอบเขตแบบรูปรายการหรือรายละเอียดคุณลักษณะเฉพาะของพัสดุเรียบร้อยแล้ว พร้อมกำหนดใช้รายละเอียดคุณลักษณะเฉพาะของพัสดุ ตามแบบมาตรฐานของ กฟภ. โดยกำหนดพิจารณาคัดเลือกข้อเสนอตามเกณฑ์ราคา`)}
+ <div class="gap"></div>${PK(closing(j, 'd3', 'จึงเรียนมาเพื่อโปรดพิจารณา เห็นชอบร่างขอบเขตแบบรูปรายการหรือรายละเอียดคุณลักษณะเฉพาะของพัสดุที่จะจัดซื้อ และพิจารณาคัดเลือกตามเกณฑ์ราคาต่อไป'))}
+ ${sigRow(j, 'd3', [`เรียน   ${j.headAbbr}, เจ้าหน้าที่จัดทำร่างขอบเขตฯ`, '- เห็นชอบ', '- ดำเนินการต่อไป'], j.officer, ['เจ้าหน้าที่ร่างขอบเขตงาน'])}</div>`;
+  const q = ['มีความสามารถตามกฎหมาย', 'ไม่เป็นบุคคลล้มละลาย', 'ไม่อยู่ระหว่างเลิกกิจการ', 'ไม่เป็นบุคคลซึ่งอยู่ระหว่างถูกระงับการยื่นข้อเสนอหรือทำสัญญากับหน่วยงานของรัฐ',
+    'ไม่เป็นบุคคลซึ่งถูกแจ้งเวียนชื่อให้เป็นผู้ทิ้งงานของหน่วยงานของรัฐตามมาตรา 109', 'คุณสมบัติหรือลักษณะต้องห้ามอื่นตามที่คณะกรรมการนโยบายประกาศกำหนดในราชกิจจานุเบกษา', 'เป็นนิติบุคคลหรือบุคคลธรรมดาผู้มีอาชีพขายพัสดุดังกล่าว',
+    'ไม่เป็นผู้มีผลประโยชน์ร่วมกันกับผู้ยื่นข้อเสนอราคารายอื่นที่เข้ายื่นข้อเสนอให้แก่ การไฟฟ้าส่วนภูมิภาคหรือไม่เป็นผู้กระทำการอันเป็นการขัดขวางการแข่งขันอย่างเป็นธรรม ในการเสนอราคาครั้งนี้',
+    'ไม่เป็นผู้ได้รับเอกสิทธิ์หรือความคุ้มกัน ซึ่งอาจปฏิเสธไม่ยอมขึ้นศาลไทย เว้นแต่รัฐบาลของผู้ยื่นข้อเสนอได้มีคำสั่งให้สละเอกสิทธิ์ความคุ้มกันเช่นว่านั้น',
+    'ผู้ยื่นข้อเสนอ ต้องขึ้นทะเบียนคู่ค้ากับ กฟภ. (Vendor List)', 'ผู้ยื่นข้อเสนอ ต้องเป็นผู้ผลิตหรือผู้แทนจำหน่ายผลิตภัณฑ์ที่เสนอ'];
+  const T = (n, t) => `<div class="gap"></div><p class="kwn"><b>${n}. ${t}</b></p>`;
+  const tor = `<div class="page" data-flow="tor" style="padding-top:14mm"><p class="c"><b>ร่างขอบเขตของงาน (Terms of Reference : TOR)</b></p>
+ <p class="c"><b>การจัดซื้อ${w.lowloss} ขนาด ${w.kva} kVA เพื่อใช้ใน${w.proj} โดยวิธีเฉพาะเจาะจง</b></p><div class="gap"></div>
+ ${T(1, 'ข้อมูลเกี่ยวกับโครงการ')}${P(`ชื่อโครงการ งานจัดซื้อ${w.tf} สำหรับติดตั้งใช้งานก่อสร้างขยายเขตระบบจำหน่ายงบผู้ใช้ไฟ ${v(j.branch, '')} – ${v(j.cust)} ${w.loc}`)}
+ ${T(2, 'คุณสมบัติผู้ยื่นเสนอราคา')}${q.map((s, x) => `<p class="in2" style="padding-left:2.5cm;text-indent:-0.7cm">2.${x + 1} ${s}</p>`).join('')}
+ ${T(3, 'รายละเอียดคุณลักษณะเฉพาะของพัสดุที่จะดำเนินการจัดซื้อ')}${P(`${w.lowloss} ขนาด ${w.kva} kVA จำนวน ${v(j.qty)} เครื่อง`)}
+ ${T(4, 'วงเงินงบประมาณ และราคากลาง')}${P(`4.1 วงเงินงบประมาณที่ได้รับการจัดสรรในการจัดซื้อในครั้งนี้ ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}${P(`4.2 ราคากลางในการจัดซื้อครั้งนี้ รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ที่มาของราคากลาง ${priceSrc(j)}`)}
+ ${T(5, 'ระยะเวลาส่งมอบพัสดุ และสถานที่ส่งมอบ')}${P(`5.1 กำหนดส่งมอบพัสดุดังกล่าวภายใน ${v(j.days)} วัน นับถัดจากวันลงนามในใบสั่งซื้อ (PO)`)}${P(`5.2 สถานที่ส่งมอบพัสดุ ${esc(j.store)} ${esc(SET.addr2)}`)}
+ ${T(6, 'กำหนดการจ่ายเงินค่าพัสดุที่จัดซื้อ')}${P(`${esc(SET.officeFull)} จะจ่ายเงินค่าพัสดุซึ่งได้รวมภาษีมูลค่าเพิ่ม ภาษีอื่น ค่าขนส่ง และค่าใช้จ่ายอื่น ๆ ทั้งปวง ให้กับผู้ขาย เมื่อผู้ขายได้ส่งมอบพัสดุถูกต้องครบถ้วนตามใบสั่งซื้อ และ${esc(SET.officeFull)} ได้ตรวจรับพัสดุไว้ถูกต้องครบถ้วนแล้ว โดยจะจ่ายเงินค่าพัสดุให้กับผู้ขายร้อยละ 100 ของวงเงินตามใบสั่งซื้อ (1 งวด)`)}
+ ${T(7, 'อัตราค่าปรับ')}${P(`การไฟฟ้าส่วนภูมิภาค สงวนสิทธิ์ค่าปรับกรณีส่งมอบพัสดุเกินกำหนดเวลา โดยคิดค่าปรับเป็นรายวัน ในอัตราร้อยละ ${v(j.penalty)} ของมูลค่าพัสดุรวมภาษีมูลค่าเพิ่ม ที่ยังไม่ได้รับมอบ แต่ต้องไม่ต่ำกว่าวันละ ${v(j.penaltyMin)} บาท`)}
+ ${T(8, 'การรับประกันความชำรุดบกพร่อง')}${P(`ผู้ยื่นข้อเสนอซึ่งได้รับการคัดเลือกทำข้อตกลงเป็นใบสั่งซื้อ หรือสัญญาซื้อ แล้วแต่กรณีจะต้องรับประกันความชำรุดบกพร่องของพัสดุที่ซื้อภายในระยะไม่น้อยกว่า ${v(j.torWarranty)} ปี นับถัดจากวันที่ การไฟฟ้าส่วนภูมิภาค ได้รับมอบพัสดุ`)}
+ ${T(9, 'หลักเกณฑ์การพิจารณา')}${P('คัดเลือกข้อเสนอตามเกณฑ์ราคา โดยพิจารณาราคาแบบรวมรายการ')}
+ ${T(10, 'หน่วยงานผู้รับผิดชอบดำเนินการ')}${P(`${esc(j.unit)} ${esc(SET.officeFull)} ${esc(SET.addr1)} ${esc(SET.addr2)} โทรศัพท์ ${esc(SET.phone)}`)}
+ <div class="gap2"></div><div class="gap2"></div><div class="kwn" style="margin-left:70mm"><div class="sc">(ลงชื่อ) ……………………………… เจ้าหน้าที่ร่างขอบเขตงาน</div><div style="margin-left:-20mm">${signer(j.officer)}</div></div></div>`;
+  return memo + tor; }
+
+/* ---------------- 4. รายงานขอซื้อ ---------------- */
+function R_d4(j, c) {
+  return `<div class="page">${memoHead(j, 'd4', { from: j.deptFull, to: w.mgrS, subj: `รายงานขอจัดซื้อหม้อแปลงไฟฟ้าระบบ ${w.kvaTh} นอกเหนือจากสเปคที่ กฟภ. กำหนด (Low Loss)`, attn: `${w.mgrS} ผ่าน ${w.head}` })}
+ ${P(`ด้วย ${esc(j.deptFull)} มีความประสงค์ จะซื้อพัสดุเข้างานหมายเลขงาน ${v(j.wbs)} โดยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และ${esc(SET.reg2)} จำนวน 1 งาน (รวม 1 รายการ) ซึ่งมีรายละเอียดดังต่อไปนี้`)}
+ ${H('1. เหตุผลและความจำเป็นที่ต้องซื้อ/จ้าง')}${P(`ตามอนุมัติที่ ${v(j.apvRef)} ลงวันที่ ${dt(j.apvDate)} อนุมัติงานก่อสร้างด้านระบบไฟฟ้า ในส่วนของงบผู้ใช้ไฟ ซึ่งในขั้นตอนการดำเนินการจะต้องจัดซื้อ${w.tf} เข้างานให้ทันกับความต้องการของลูกค้า ไม่ให้เกิดผลกระทบความเสียหายต่อ กฟภ. ในพื้นที่รับผิดชอบของ ${SET.office}`)}
+ ${H('2. รายละเอียดของพัสดุที่จะซื้อหรืองานที่จะจ้าง')}${P(`(1) การจัดซื้อหม้อแปลงไฟฟ้า ระบบ ${w.kvaTh} นอกเหนือจากสเปคที่ กฟภ. กำหนด (Low Loss) ครั้งนี้เป็นการจัดซื้อพัสดุเข้างานใช้รหัสหม้อแปลง (Dummy) อ้างอิงตาม${esc(SET.reg2)} ตามร่างขอบเขตงานที่ได้รับความเห็นชอบตามหนังสือที่ ${refNo(j, 'd3')} ลว. ${dt(j.docs.d3.date)}`)}
+ ${H('3. ราคากลางของพัสดุที่จะซื้อหรืองานที่จะจ้าง')}${P(`(1) ${priceSrc(j)} อนุมัติราคากลางตามหนังสือที่ ${refNo(j, 'd2')} ลว. ${dt(j.docs.d2.date)}`)}
+ ${H('4. วงเงินที่จะซื้อหรือจ้างโดยให้ระบุวงเงินงบประมาณ')}${P(`วงเงินจัดซื้อหม้อแปลงระบบ ${w.kvaTh} เพื่อใช้งานขยายเขตฯ ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} หมายเลขงาน ${v(j.wbs)} ในวงเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม 7% เป็นเงิน ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)})`)}
+ ${H('5. กำหนดเวลาที่ต้องการใช้พัสดุนั้น หรือให้งานนั้นแล้วเสร็จ')}${P(`(1) การจัดซื้อให้กำหนดวันส่งมอบพัสดุภายใน ${v(j.days)} วัน นับแต่วันถัดจากวันลงนามในใบสั่งซื้อ (PO)`)}
+ ${H('6. วิธีจะซื้อหรือจ้าง และเหตุผลที่จะต้องซื้อหรือจ้างโดยวิธีนั้น')}${P(`พิจารณาเห็นสมควรดำเนินการจัดซื้อจัดจ้างโดยวิธีเฉพาะเจาะจง ตาม${esc(SET.reg1)} และตาม${esc(SET.reg2)} เนื่องจากการจัดซื้อจัดจ้างครั้งนี้ ${esc(SET.manual)}`)}
+ ${H('7. ข้อเสนออื่นๆ')}${P('ให้คณะกรรมการจัดซื้อ ดำเนินการจัดซื้อ ติดต่อตกลงราคากับผู้ขาย/ผู้รับจ้างโดยตรง ทั้งนี้ ระยะเวลาในการดำเนินการของคณะกรรมการตามคู่มือปฏิบัติงาน (Work Manual) ดังรายชื่อต่อไปนี้')}
+ <p class="in2 kwn">7.1 คณะกรรมการจัดซื้อ</p>${cmLines(j.buyCm, '7.1.')}<p class="in2 kwn">7.2 คณะกรรมการตรวจรับงานซื้อ</p>${cmLines(j.inspCm, '7.2.')}
+ <div class="gap"></div>${PK(closing(j, 'd4', `จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติให้ดำเนินการจัดซื้อ โดยวิธีเฉพาะเจาะจง และดำเนินการตาม${SET.reg1} และตาม${SET.reg2} ดังกล่าวข้างต้น`))}
+ ${sigRow(j, 'd4', [`เรียน   ${w.head}`, '- เห็นชอบ/อนุมัติ', '- ดำเนินการต่อไป'], j.officer)}</div>`; }
+
+/* ---------------- 5–6. หนังสือภายนอก ---------------- */
+function extTail(j) { return `<div class="gap"></div><div class="kwn" style="margin-left:75mm"><div class="sc">ขอแสดงความนับถือ</div><div class="gap2"></div><div class="gap2"></div><div class="gap2"></div>${signer(j.mgr)}</div>
+ <div class="tobottom"><div>${esc(j.unit)}</div><div>โทรศัพท์ ${esc(SET.phone)}</div></div>`; }
+function R_d5(j, c) {
+  return `<div class="page">${extHead(j, 'd5', { subj: 'ขอเชิญชวนให้เสนอราคา', attn: `ผู้จัดการ ${j.vendor || '..........'}` })}
+ ${P(`ด้วย${esc(SET.officeFull)} มีความประสงค์จะจัดซื้อหม้อแปลงไฟฟ้า ${w.kvaTh} ที่นอกเหนือจากสเปคหม้อแปลงไฟฟ้าที่ กฟภ.กำหนด เพื่อติดตั้งใช้งานก่อสร้างขยายเขตระบบจำหน่าย งบผู้ใช้ไฟ (02.2) ${v(j.branch, '')} – ${v(j.cust)} ${w.loc} ตามรายงานขอซื้อที่ได้รับอนุมัติตามหนังสือที่ ${refNo(j, 'd4')} ลว. ${dt(j.docs.d4.date)}`)}
+ ${P(`จึงขอให้ท่านเสนอราคา โดยจัดส่งใบเสนอราคา (รวมภาษีมูลค่าเพิ่ม) ให้${esc(SET.officeFull)} ภายในวันที่ ${dt(j.inviteDue)} โดยติดต่อกับเจ้าหน้าที่โดยตรง หรือสามารถสอบถามเพิ่มเติมได้ที่ ${esc(SET.phone)} ในวัน และเวลาราชการ`)}
+ ${PK(closing(j, 'd5', 'จึงเรียนมาเพื่อโปรดทราบ'))}${extTail(j)}</div>`; }
+function R_d6(j, c) {
+  return `<div class="page">${extHead(j, 'd6', { subj: 'ขอต่อรองราคา', attn: `ผู้จัดการ ${j.vendor || '..........'}` })}
+ ${P(`ตามหนังสือใบเสนอราคาเลขที่ ${v(j.quoteNo)} ลงวันที่ ${dt(j.quoteDate)} เลขที่รับ ${v(j.quoteRecv)} ลงวันที่ ${dt(j.quoteRecvDate)} ซึ่งเสนอราคาตามหนังสือเชิญชวนที่ ${refNo(j, 'd5')} ลว. ${dt(j.docs.d5.date)} นั้น ทาง${esc(SET.officeFull)} ได้พิจารณาราคาแล้ว เห็นว่าราคาที่เสนอมานั้น ยังเป็นราคาที่ค่อนข้างสูง จึงขอให้ ${w.vendor} พิจารณาลดราคาหม้อแปลงไฟฟ้าระบบ ${w.kvaTh} ลงอีก จักขอบคุณยิ่ง`)}
+ ${PK(closing(j, 'd6', 'จึงเรียนมาเพื่อโปรดทราบ'))}${extTail(j)}</div>`; }
+
+/* ---------------- 7. ผลการพิจารณา ---------------- */
+function R_d7(j, c) {
+  return `<div class="page">${memoHead(j, 'd7', { from: 'คณะกรรมการจัดซื้อฯ', to: w.mgrS, subj: `ผลการพิจารณาจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) โดยวิธีเฉพาะเจาะจง`, attn: w.mgrS })}
+ ${H('1. เรื่องเดิม')}${P(`1.1 ตามอนุมัติ ${w.mgrS} เลขที่ ${refNo(j, 'd4')} ลงวันที่ ${dt(j.docs.d4.date)} อนุมัติรายงานขอซื้อและแต่งตั้งคณะกรรมการจัดซื้อ${w.tf2} โดยวิธีเฉพาะเจาะจง สรุปรายละเอียด ดังนี้`)}
+ <table class="t" style="margin:2mm 0"><colgroup><col style="width:50mm"><col></colgroup><tr><td>การจัดซื้อ หมายเลขงาน</td><td>${v(j.wbs)}</td></tr><tr><td>วงเงินงบประมาณ</td><td>${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)<br>เบิกจ่ายจากงบผู้ใช้ไฟ</td></tr><tr><td>ราคากลาง</td><td>${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ที่มาของราคากลาง ${priceSrc(j)}</td></tr></table>
+ ${H('2. ข้อเท็จจริง')}${P(`2.1 ${SET.office} ได้ดำเนินการจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) โดยวิธีเฉพาะเจาะจงตามรายละเอียดดังนี้`)}
+ <table class="t" style="margin:2mm 0"><colgroup><col style="width:70mm"><col></colgroup><tr><td>มีผู้เสนอราคาที่หน่วยงานจัดซื้อ/จัดจ้าง (ตามเอกสารประกอบรายชื่อผู้ยื่นเอกสารที่หน่วยงานจัดซื้อ)</td><td>จำนวน 1 ราย คือ ${w.vendor}</td></tr></table>
+ ${H('3. ข้อพิจารณา')}${P(`3.1 คณะกรรมการได้ดำเนินการตรวจสอบรายละเอียดต่างๆ ของ${w.vendor} เสนอราคาเป็นเงิน ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม) ตามเอกสารใบเสนอราคาเลขที่ ${v(j.quoteNo)} ลว. ${dt(j.quoteDate)} และมีคุณสมบัติตรงตามข้อกำหนดและเงื่อนไขของ กฟภ.`)}
+ ${P(`3.2 คณะกรรมการได้ต่อรองราคากับผู้เสนอราคาแล้ว ตามหนังสือเลขที่ ${refNo(j, 'd6')} ลงวันที่ ${dt(j.docs.d6.date)} โดย${w.vendor} ขอยืนยันราคาตามที่ได้เสนอ ลงวันที่ ${dt(j.confirmDate)}`)}
+ ${H('4. ข้อเสนอ')}${P(`จากรายละเอียดดังกล่าวข้างต้น คณะกรรมการ พิจารณาแล้ว เห็นควรดำเนินการจัดซื้อ${w.tf2} จาก${w.vendor} จำนวน ${v(j.qty)} เครื่อง ในราคาหน่วยละ ${money(c.unit)} บาท (ไม่รวมภาษีมูลค่าเพิ่ม) รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (รวมภาษีมูลค่าเพิ่ม)`)}
+ ${['เบิกจ่ายจากงบผู้ใช้ไฟ', `ผลิตภัณฑ์ ยี่ห้อ ${v(j.brand)}`, `กำหนดยืนราคา ${v(j.holdDays)} วันนับตั้งแต่วันเสนอราคา`, `สถานที่ส่งของ ${esc(j.store)}`, `กำหนดส่งของ ภายใน ${v(j.days)} วัน นับถัดจากวันลงนามในใบสั่งซื้อ (PO)`, `การรับประกันคุณภาพ ${v(j.warranty)} ปี นับแต่วันที่การไฟฟ้าส่วนภูมิภาคได้รับมอบสินค้า`].map(s => `<p class="in2">- ${s}</p>`).join('')}
+ <div class="gap"></div><table class="t"><colgroup><col style="width:16mm"><col><col style="width:18mm"><col style="width:30mm"><col style="width:32mm"></colgroup>
+ <tr><th rowspan="2">Mat No.</th><th rowspan="2">รายละเอียด</th><th rowspan="2">จำนวน<br>(หน่วย)</th><th colspan="2">ราคาไม่รวมภาษีมูลค่าเพิ่ม (บาท)</th></tr><tr><th>ต่อหน่วย</th><th>รวม</th></tr>
+ <tr><td class="ctr">1.</td><td>หม้อแปลง ${w.kva} เควีเอ</td><td class="ctr">${v(j.qty)}</td><td class="r">${money(c.unit)}</td><td class="r">${money(c.net)}</td></tr>
+ <tr><td colspan="4" class="r">ภาษีมูลค่าเพิ่ม</td><td class="r">${money(c.vat)}</td></tr>
+ <tr><td colspan="4" class="r"><b>รวมเป็นเงินรวมภาษีมูลค่าเพิ่ม (${bahtText(c.total)})</b></td><td class="r"><b>${money(c.total)}</b></td></tr></table>
+ <div class="gap"></div>${PK(closing(j, 'd7', 'จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบขอได้โปรดอนุมัติสั่งซื้อ, ลงนามในใบสั่งซื้อ พร้อมนี้ได้แนบรายละเอียดผลการเสนอราคามาเพื่อประกอบการพิจารณาด้วยแล้ว'))}
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc">${approverBox(j, 'd7', ['เรียน   คณะกรรมการฯ, ' + j.headAbbr, '- อนุมัติ', '- ลงนามใบสั่งซื้อ/สั่งจ้าง'])}</div><div class="sgn">${cmSign(j.buyCm)}</div></div></div>`; }
+
+/* ---------------- 8. ผลการตรวจรับ ---------------- */
+function R_d8(j, c) {
+  return `<div class="page">${memoHead(j, 'd8', { from: 'คณะกรรมการตรวจรับงาน', to: w.mgrS, subj: `ผลการตรวจรับงานจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม)`, attn: w.mgrS })}
+ ${H('1. เรื่องเดิม')}${P(`1.1 ตามอนุมัติ ${w.mgrS} เลขที่ ${refNo(j, 'd4')} ลงวันที่ ${dt(j.docs.d4.date)} อนุมัติรายงานขอซื้อ${w.tf2} แต่งตั้งให้ผู้มีรายนามตามท้ายบันทึกเป็นกรรมการตรวจรับพัสดุ และได้ทำการตรวจรับงานจัดซื้อหม้อแปลงไฟฟ้า ${w.size} (ธุรกิจเสริม)`)}
+ ${P(`1.2 ตามใบสั่งซื้อ/สั่งจ้าง เลขที่ ${v(j.poNo)} ลงวันที่ ${dt(j.poDate)} ${SET.office} ได้ซื้อหม้อแปลงไฟฟ้า ${w.size} ดำเนินการ${w.proj} เป็นเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) มีกำหนดส่งมอบภายใน ${v(j.days)} วัน โดยเบิกจ่ายเป็นงวดเดียว ตามผลการพิจารณาที่ ${refNo(j, 'd7')} ลว. ${dt(j.docs.d7.date)}`)}
+ ${H('2. ข้อเท็จจริง')}${P(`2.1 ${w.vendor} ได้จัดส่งหม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss) งานขยายเขตระบบจำหน่ายงบผู้ใช้ไฟ ตามใบส่งของเลขที่ ${v(j.invNo)} ลงวันที่ ${dt(j.invDate)} และขอเบิกจ่ายเงิน ซึ่งคณะกรรมการฯ ได้ทำการตรวจสอบแล้วพบว่า${w.vendor} ได้ดำเนินการจัดส่งพัสดุดังกล่าวถูกต้องตามใบสั่งซื้อ/สั่งจ้าง มีรายละเอียดตามเงื่อนไขทุกประการ และได้ดำเนินการส่งมอบพัสดุตั้งแต่วันที่ ${dt(j.invDate)} ซึ่งไม่เกินกำหนดระยะเวลาส่งมอบ`)}
+ ${P(`2.2 คณะกรรมการตรวจรับได้ทำการตรวจรับพัสดุงานจัดซื้อฯ ดังกล่าวเมื่อวันที่ ${dt(j.inspDate)} ปรากฏว่า ${w.vendor} ได้ส่งมอบหม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss) ให้กับ${w.proj} แล้วเสร็จเรียบร้อยตามใบสั่งซื้อ/สั่งจ้างทุกประการ`)}
+ <table class="t" style="width:120mm;margin:2mm 0 2mm 20mm"><colgroup><col style="width:14mm"><col><col style="width:36mm"></colgroup><tr><th>ลำดับ</th><th>รายการ</th><th>จำนวนเงิน (บาท)</th></tr>
+ <tr><td class="ctr">1</td><td>หม้อแปลงขนาด ${w.kva} เควีเอ</td><td class="r">${money(c.net)}</td></tr><tr><td class="ctr">2</td><td>ภาษีมูลค่าเพิ่ม 7%</td><td class="r">${money(c.vat)}</td></tr><tr><td class="ctr">3</td><td>รวมทั้งสิ้น</td><td class="r">${money(c.total)}</td></tr></table>
+ ${H('3. ข้อพิจารณา')}${P(`คณะกรรมการตรวจรับได้พิจารณาแล้วเห็นว่า ${w.vendor} ได้ดำเนินการส่งมอบหม้อแปลงไฟฟ้า พิกัด ${v(j.kv)} kV ${w.size} เรียบร้อยถูกต้องตามใบสั่งซื้อ/สั่งจ้างทุกประการ จึงเห็นควรดำเนินการ รับมอบงานซื้อหม้อแปลงไฟฟ้า (แบบ Low Loss) หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม)`)}
+ <div class="gap"></div>${PK(closing(j, 'd8', 'จึงเรียนมาเพื่อโปรดทราบและพิจารณาดำเนินการต่อไป'))}
+ <div class="sig tobottom" style="margin-left:-9mm"><div class="bxc">${approverBox(j, 'd8', ['เรียน   คณะกรรมการฯ, ' + j.headAbbr, '- เพื่อดำเนินการต่อไป'])}</div><div class="sgn">${cmSign(j.inspCm.map((m, i) => Object.assign({}, m, { role: i ? m.role : 'ประธานกรรมการตรวจรับ' })))}</div></div></div>`; }
+
+/* ---------------- 9. ขออนุมัติจ่ายเงิน ---------------- */
+function R_d9(j, c) {
+  const amt = `<div class="gap"></div><div class="l">อนุมัติเงิน ${money(c.total)} บาท</div><div class="l">(${bahtText(c.total)})</div><div class="l">(รวมภาษีมูลค่าเพิ่ม)</div>`;
+  return `<div class="page">${memoHead(j, 'd9', { from: j.deptFull, to: SET.office, subj: `ขออนุมัติจ่ายเงินค่าซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) โดยวิธีเฉพาะเจาะจง`, attn: w.mgrS })}
+ ${H('1. เรื่องเดิม')}${P(`1.1 ตามหนังสือคณะกรรมการตรวจรับพัสดุ ที่ ${refNo(j, 'd8')} ลงวันที่ ${dt(j.docs.d8.date)} เรื่อง ผลการตรวจรับงานจัดซื้อ${w.tf2} ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) ${w.vendor}`)}
+ ${P(`1.2 คณะกรรมการตรวจรับฯ พิจารณาเห็นควรรับพัสดุทั้งหมดไว้ใช้งานงบผู้ใช้ไฟให้กับ ${v(j.branch, '')} – ${v(j.cust)}`)}
+ <table class="t" style="margin:2mm 0"><colgroup><col style="width:9mm"><col><col style="width:20mm"><col style="width:14mm"><col style="width:22mm"><col style="width:22mm"><col style="width:20mm"><col style="width:23mm"></colgroup>
+ <tr><th>ที่</th><th>รายการ</th><th>ยี่ห้อที่เสนอ</th><th>จำนวน (เครื่อง)</th><th>ราคาต่อหน่วย (บาท)</th><th>ราคารวมสินค้า (บาท)</th><th>ภาษีมูลค่าเพิ่ม 7% (บาท)</th><th>รวมเป็นเงินทั้งสิ้น (บาท)</th></tr>
+ <tr><td class="ctr">1</td><td>หม้อแปลงไฟฟ้า ${w.size} (แบบ Low Loss)</td><td class="ctr">${v(j.brand)}</td><td class="ctr">${v(j.qty)}</td><td class="r">${money(c.unit)}</td><td class="r">${money(c.net)}</td><td class="r">${money(c.vat)}</td><td class="r">${money(c.total)}</td></tr>
+ <tr><td colspan="5" class="r"><b>(${bahtText(c.total)}) รวมเป็นเงินทั้งสิ้น</b></td><td class="r"><b>${money(c.net)}</b></td><td class="r"><b>${money(c.vat)}</b></td><td class="r"><b>${money(c.total)}</b></td></tr></table>
+ ${H('2. การดำเนินการ')}${P(`คณะกรรมการตรวจรับฯ ได้ดำเนินการตรวจรับหม้อแปลงพิกัด ${v(j.kv)} kV ${w.size} ตามใบส่งของเลขที่ ${v(j.invNo)} ลงวันที่ ${dt(j.invDate)} เมื่อวันที่ ${dt(j.inspDate)} พบว่า${w.vendor} ได้ส่งมอบหม้อแปลงเรียบร้อยถูกต้องตามใบสั่งซื้อ/สั่งจ้างทุกประการ`)}
+ ${H('3. ข้อพิจารณาและข้อเสนอแนะ')}${P(`${esc(j.deptFull)} พิจารณาแล้วจึงเห็นควรดำเนินการ ดังนี้`)}
+ ${P(`3.1 อนุมัติการเบิกจ่ายเงินค่าซื้อ${w.tf2} พิกัด ${v(j.kv)} kV ${w.size} หมายเลขงาน ${v(j.wbs)} (ธุรกิจเสริม) สำหรับงานงบผู้ใช้ไฟเป็นเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท (${bahtText(c.total)}) รวมภาษีมูลค่าเพิ่ม ให้แก่${w.vendor}`)}
+ ${P(`3.2 การเบิกจ่ายเงินค่าจัดซื้อพัสดุฯ จากงบผู้ใช้ไฟ หมายเลข WBS : ${v(j.wbs)} เป็นเงิน ${money(c.net)} บาท ภาษีมูลค่าเพิ่ม ${money(c.vat)} บาท รวมเป็นเงินทั้งสิ้น ${money(c.total)} บาท`)}
+ <div class="gap"></div>${PK(closing(j, 'd9', `จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติเบิกจ่ายค่าซื้อฯ ให้กับ${j.vendor || '..........'} ตามข้อ 3.1 ต่อไป`))}
+ ${sigRow(j, 'd9', [`เรียน   ${j.headAbbr}, หผ.บง.`], j.head, null, amt)}</div>`; }
+
+const RENDER = { d1: R_d1, d2: R_d2, d3: R_d3, d4: R_d4, d5: R_d5, d6: R_d6, d7: R_d7, d8: R_d8, d9: R_d9 };
+function renderPages(j, keys) { const c = calc(j); w = W(j); return keys.map(k => RENDER[k](j, c)).join(''); }
+function thaiNumify(root) { if (!SET.thaiNum) return; const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while (n = tw.nextNode()) { if (/[0-9]/.test(n.nodeValue) && !n.parentNode.closest('.nothai')) n.nodeValue = toThaiDigits(n.nodeValue); } }
+
+/* แบ่งหน้าอัตโนมัติ: เนื้อหาเกินหน้า → ยกส่วนท้ายขึ้นหน้าใหม่ · ตารางแบ่งข้ามหน้าได้ (ทำหัวตารางซ้ำ)
+   หัวข้อไม่ค้างท้ายหน้า · หนังสือบันทึกข้อความใส่ "/คำแรกของหน้าถัดไป..." ท้ายหน้า และ "-๒-" หัวหน้าถัดไป ตามแบบเดิม */
+function splitTable(tb,over){const rows=[...tb.rows];if(rows.length<3)return null;
+ const t2=tb.cloneNode(false);const cg=tb.querySelector('colgroup');if(cg)t2.appendChild(cg.cloneNode(true));
+ const body=document.createElement('tbody');t2.appendChild(body);let i=rows.length-1;
+ while(over()&&i>=2){body.insertBefore(rows[i],body.firstChild);i--}
+ if(over()||!body.rows.length){const tb2=rows[0].parentNode;[...body.rows].forEach(r=>tb2.appendChild(r));return null}
+ body.insertBefore(rows[0].cloneNode(true),body.firstChild);return t2}
+function paginate(box){
+ [...box.querySelectorAll('.page')].forEach(pg=>{
+  const memo=pg.dataset.flow!=='tor';let cur=pg,n=1,guard=0;
+  while(cur.scrollHeight>cur.clientHeight+1&&cur.children.length>1&&guard++<20){
+   const over=()=>cur.scrollHeight>cur.clientHeight+1,moved=[];
+   const nx=document.createElement('div');nx.className='page';nx.dataset.flow=pg.dataset.flow||'';nx.style.paddingTop=memo?'15mm':(pg.style.paddingTop||'');cur.after(nx);
+   const take=()=>{while(cur.children.length>1){const l=cur.lastElementChild;if(l.classList.contains('kwn')||l.classList.contains('gap')){moved.unshift(l);l.remove()}else break}};
+   while(over()&&cur.children.length>1){const last=cur.lastElementChild;
+    if(last.tagName==='TABLE'){const t2=splitTable(last,over);if(t2){moved.unshift(t2);break}}
+    moved.unshift(last);last.remove()}
+   take();
+   if(memo){n++;const f=document.createElement('div');f.className='cont';cur.appendChild(f);
+    const label=()=>{const fst=moved.find(m=>m.textContent.trim());f.textContent='/'+(fst?fst.textContent.trim().split(/\s+/).slice(0,2).join(' '):'')+'...'};label();
+    const take2=()=>{let q;while((q=f.previousElementSibling)&&cur.children.length>2&&(q.classList.contains('kwn')||q.classList.contains('gap'))){moved.unshift(q);q.remove()}};
+    while(over()&&cur.children.length>2){const l=f.previousElementSibling;moved.unshift(l);l.remove();take2();label()}
+    const no=String(n);nx.innerHTML='<div class="pgno">-'+(SET.thaiNum?toThaiDigits(no):no)+'-</div><div class="gap"></div>'}
+   while(moved.length&&moved[0].classList&&moved[0].classList.contains('gap'))moved.shift();
+   moved.forEach(m=>nx.appendChild(m));cur=nx}
+ });
+ box.querySelectorAll('.page').forEach(pg=>pg.classList.add('pinned'))}
+
+/* ---------------- ออกเลขหนังสือ: ต้องเรียงตามขั้น ---------------- */
+function prevMissing(j, k) { const i = DK.indexOf(k); return DK.slice(0, i).filter(x => !(j.docs[x] || {}).no); }
+function stepState(j, k) { if ((j.docs[k] || {}).no) return 'done'; return prevMissing(j, k).length ? 'wait' : 'ready'; }
+function docSubject(j, k) {
+  const box = document.createElement('div'); box.innerHTML = renderPages(j, [k]);
+  const s = box.querySelectorAll('.subj')[0];
+  return s ? s.children[1].textContent.replace(/\s+/g, ' ').trim() : (DOCS.find(d => d.k === k) || {}).short;
+}
+async function issueNo(k, btn) {
+  const j = cur, d = j.docs[k], info = DOCS.find(x => x.k === k);
+  if (d.no) return toast('ฉบับนี้มีเลขแล้ว');
+  const miss = prevMissing(j, k);
+  if (miss.length) return toast('ต้องออกเลขขั้นที่ ' + miss.map(x => DK.indexOf(x) + 1).join(', ') + ' ก่อน');
+  if (info.ext) return toast('หนังสือภายนอก: กรอกเลขจากระบบสารบรรณในช่องเลขที่');
+  if (!j.dept) return toast('เลือกแผนกในแท็บข้อมูลงานก่อน');
+  if (LOCAL()) return toast('โหมดทดลอง: ยังไม่เชื่อมหลังบ้าน จึงยังออกเลขจริงไม่ได้ (พิมพ์เลขเองในช่องได้)');
+  const old = btn.textContent; btn.disabled = true; btn.textContent = 'กำลังเตรียม…';
+  try {
+    if (!(await settle())) throw new Error('บันทึกงานไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    if (!j.id) throw new Error('บันทึกงานก่อนออกเลข');
+    let st = null; try { st = JSON.parse(lsr('booknum_settings_v1') || 'null'); } catch (e) {}
+    if (!st || !(st.departments || []).length) { st = await bookCall('getSettings', []); if (!st) return; lsr('booknum_settings_v1', JSON.stringify(st)); }
+    const code = j.deptCode.replace(/\s/g, '');
+    let dept = (st.departments || []).find(x => String(x).replace(/\s/g, '').includes(code));
+    if (!dept) { const i = await choose('เลือกแผนกในระบบออกเลขหนังสือ', st.departments || []); if (i < 0) return; dept = st.departments[i]; }
+    const recs = st.recorders || [];
+    let rec = [lsr('booknum_user_v1'), ME.name].find(x => x && recs.some(r => nm(r) === nm(x)));
+    if (rec) rec = recs.find(r => nm(r) === nm(rec));
+    else { const i = await choose('ผู้บันทึก (ชื่อในระบบออกเลขหนังสือ)', recs); if (i < 0) return; rec = recs[i]; lsr('booknum_user_v1', rec); }
+    const date = d.date || today(), subject = docSubject(j, k);
+    const go = await ask('ยืนยันออกเลขหนังสือ', `<div style="line-height:1.5"><b>ขั้นที่ ${DK.indexOf(k) + 1}. ${esc(info.short)}</b><br>เรื่อง: ${esc(subject)}<br>แผนก: ${esc(dept)} · วันที่ ${thDate(date)}<br>ผู้บันทึก: ${esc(rec)}</div><div class="muted" style="margin-top:6px">เลขจะถูกบันทึกในระบบออกเลขหนังสือทันที ยกเลิกภายหลังต้องแก้ที่ระบบออกเลข</div>`, ['ออกเลข', 'ยกเลิก']);
+    if (go !== 0) return;
+    btn.textContent = 'กำลังขอเลข…';
+    let next = ''; try { const n = await bookCall('getNextInfo', ['หนังสือทั่วไป', date]); next = (n && n.nextBookNum) || ''; } catch (e) {}
+    const res = await bookCall('saveData', [{ category: 'หนังสือทั่วไป', rowIndex: '', bookNum: next, department: dept, date, recorder: rec, subject,
+      detail: 'ออกจากระบบจัดซื้อหม้อแปลง (ธุรกิจเสริม) · ' + j.id, medianPrice: '', paymentDocNum: '', paymentItem: '', paymentAmount: '', payee: '', paymentNote: '', contractor: '', procurement: 'ทั่วไป', startDate: '', endDate: '', orderDate: '', amount: '', retention: '' }]);
+    if (!res) return;
+    if (res.status !== 'success') throw new Error('ระบบออกเลขหนังสือ: ' + (res.message || 'บันทึกไม่สำเร็จ'));
+    const ref = String(res.bookNum || '');
+    const m = ref.match(/(\d+)\s*\/\s*\d{4}\s*$/) || ref.match(/(\d+)(?!.*\d)/);
+    const no = m ? m[1] : ref;
+    const r = await api('setDocNo', { id: j.id, docKey: k, no, date, bookRef: ref });
+    j.docs[k].no = no; j.docs[k].date = date; j.docs[k].bookRef = ref; j.rev = r.rev; upsertList(r.summary);
+    jobView(); toast('ได้เลขที่ ' + no + (res.changed ? ' (เลขที่ขอไว้มีผู้ใช้ก่อน ระบบให้เลขถัดไป)' : ''));
+  } catch (e) { toast(e.message || String(e)); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+
+/* ---------------- views ---------------- */
+let cur = null, tab = 'info', pvSel = 'all', editing = false, pvReal = false;
+function setTop(t, s, back) { $('#ttl').textContent = t; $('#sub').innerHTML = s; $('#backBtn').style.display = back ? '' : 'none'; $('#bnav').style.display = cur ? 'flex' : 'none'; $('#delBtn').style.display = cur ? '' : 'none'; }
+function fld(path, label, opt = {}) { const val = path.split('.').reduce((o, k) => o?.[k], cur) ?? '';
+  const t = opt.ta ? `<textarea data-p="${path}" rows="${opt.rows || 3}">${esc(val)}</textarea>` : `<input data-p="${path}" value="${esc(val)}" ${opt.type ? `type="${opt.type}"` : ''} ${opt.list ? `list="${opt.list}"` : ''} ${opt.ph ? `placeholder="${esc(opt.ph)}"` : ''}>`;
+  return `<label class="f"><span>${label}</span>${t}</label>`; }
+function setDept(j, d) { const x = DEPTS[d] || {}; j.dept = d; j.deptFull = d + SET.office; j.deptCode = x.code || ''; j.headAbbr = x.head || ''; j.unit = (x.unit || '') + ' ' + SET.officeFull; }
+function refChips(j, k) { const info = DOCS.find(d => d.k === k);
+  return info.refs.map(r => { const d = j.docs[r] || {}; return `<span class="chip ${d.no ? 'ok' : ''}">🔗 ขั้น ${DK.indexOf(r) + 1}: ${d.no ? esc(refNo(j, r)) : 'ยังไม่มีเลข'}</span>`; }).join(' '); }
+function jobView() { const j = cur, c = calc(j);
+  setTop(jobTitle(j), `<span id="subAmt">${money(c.total)} บาท</span> <span id="saveSt" class="savest"></span>`, true); setSave(saveState);
+  document.querySelectorAll('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  let L = '';
+  if (tab === 'info') L = `<div class="card"><h3>แผนกเจ้าของเรื่อง</h3><div class="seg">${Object.keys(DEPTS).map(x => `<button data-seg="dept" data-v="${x}" class="${j.dept === x ? 'on' : ''}">${x}</button>`).join('')}</div>
+ <div class="row" style="margin-top:6px">${fld('deptFull', 'ชื่อแผนกในหนังสือ')}${fld('deptCode', 'รหัสในเลขหนังสือ')}${fld('headAbbr', 'หัวหน้าแผนก ตัวย่อ')}</div>${fld('unit', 'หน่วยงานผู้รับผิดชอบ (TOR ข้อ 10 / ท้ายหนังสือภายนอก)')}</div>
+ <div class="card"><h3>งานขยายเขต / ผู้ใช้ไฟ</h3><div class="row">${fld('branch', 'หน่วยงานพื้นที่ (เช่น กฟส.ปพย.)')}${fld('cust', 'ผู้ใช้ไฟ', { ph: 'บจก.… สาขา…' })}</div>${fld('loc', 'ที่ตั้ง (ตำบล อำเภอ จังหวัด)')}
+ <div class="row">${fld('apvRef', 'หนังสืออนุมัติขยายเขต ที่', { ph: 'อล(บค.)1203/2569' })}${fld('apvDate', 'ลงวันที่', { type: 'date' })}</div>
+ <div class="row">${fld('wbsMain', 'WBS งานขยายเขต', { ph: 'C-69-K-…01.1' })}${fld('wbs', 'WBS จัดซื้อหม้อแปลง (งบผู้ใช้ไฟ)', { ph: 'C-69-K-…02.2' })}${fld('drawing', 'แบบผังเลขที่')}</div>
+ <div class="row">${fld('rcptNo', 'ใบเสร็จค่าก่อสร้าง เลขที่')}${fld('rcptDate', 'ลงวันที่', { type: 'date' })}</div>
+ <div class="row">${fld('reqDate', 'หนังสือขอใช้บริการ ลว.', { type: 'date' })}${fld('recvNo', 'เลขที่รับ')}${fld('recvDate', 'ลงวันที่รับ', { type: 'date' })}</div></div>
+ <div class="card"><h3>หม้อแปลง และราคา</h3><div class="row">${fld('phase', 'เฟส')}${fld('kv', 'แรงดัน (kV)')}${fld('kva', 'ขนาด (kVA)')}${fld('qty', 'จำนวน (เครื่อง)', { type: 'number' })}</div>
+ <div class="row">${fld('price', 'ราคาต่อหน่วย ไม่รวม VAT (บาท)', { type: 'number' })}${fld('brand', 'ยี่ห้อ')}</div>
+ <div class="sum" style="margin:4px 0 8px"><span>ราคาไม่รวม VAT</span><b>${money(c.net)}</b><span>ภาษีมูลค่าเพิ่ม 7%</span><b>${money(c.vat)}</b><span>รวมทั้งสิ้น (ราคากลาง/วงเงิน)</span><b>${money(c.total)}</b><span class="muted" style="grid-column:1/3">(${bahtText(c.total)})</span></div>
+ <div class="segrow"><span>ที่มาราคากลาง</span><div class="seg">${[['cust', 'ผู้ใช้ไฟระบุผลิตภัณฑ์'], ['market', 'สืบราคาจากท้องตลาด']].map(([x, t]) => `<button data-seg="priceSrc" data-v="${x}" class="${j.priceSrc === x ? 'on' : ''}">${t}</button>`).join('')}</div></div>
+ ${j.priceSrc === 'market' ? fld('marketRef', 'สืบราคาตามหนังสือที่ (ถ้ามี)') : '<div class="muted">ใช้เลขที่รับ/วันที่รับหนังสือขอใช้บริการด้านบน</div>'}</div>
+ <div class="card"><h3>ผู้ขาย และใบเสนอราคา</h3>${fld('vendor', 'ชื่อบริษัท', { ph: 'บริษัท … จำกัด' })}
+ <div class="row">${fld('inviteDue', 'ให้ส่งใบเสนอราคาภายใน (หนังสือเชิญชวน)', { type: 'date' })}</div>
+ <div class="row">${fld('quoteNo', 'ใบเสนอราคาเลขที่')}${fld('quoteDate', 'ลงวันที่', { type: 'date' })}</div><div class="row">${fld('quoteRecv', 'เลขที่รับ', { ph: '6424/2569' })}${fld('quoteRecvDate', 'ลงวันที่รับ', { type: 'date' })}</div>
+ <div class="row">${fld('confirmDate', 'บริษัทยืนยันราคา ลว.', { type: 'date' })}${fld('holdDays', 'ยืนราคา (วัน)', { type: 'number' })}${fld('warranty', 'รับประกันคุณภาพ (ปี)', { type: 'number' })}</div></div>
+ <div class="card"><h3>เงื่อนไข TOR</h3><div class="row">${fld('days', 'ส่งมอบภายใน (วัน)', { type: 'number' })}${fld('penalty', 'ค่าปรับรายวัน ร้อยละ')}${fld('penaltyMin', 'ไม่ต่ำกว่าวันละ (บาท)', { type: 'number' })}${fld('torWarranty', 'รับประกันขั้นต่ำ (ปี)', { type: 'number' })}</div>${fld('store', 'สถานที่ส่งมอบ')}</div>
+ <div class="card"><h3>สั่งซื้อ / ส่งของ / ตรวจรับ</h3><div class="row">${fld('poNo', 'ใบสั่งซื้อ (PO) เลขที่')}${fld('poDate', 'ลงวันที่', { type: 'date' })}</div><div class="row">${fld('invNo', 'ใบส่งของ เลขที่')}${fld('invDate', 'ลงวันที่', { type: 'date' })}</div>${fld('inspDate', 'วันที่ตรวจรับ', { type: 'date' })}</div>`;
+  if (tab === 'people') { const pc = (p, role, path, x, grp) => `<div class="pc"><div class="av">${esc((p.name || '?').replace(/^(นาย|นางสาว|นาง)/, '').trim().charAt(0))}</div><div class="body"><span class="role">${role}</span>${fld(path + '.name', 'ชื่อ-สกุล', { list: 'staff' })}${fld(path + '.pos', 'ตำแหน่ง / บรรทัดใต้ชื่อ')}${x != null ? `<div class="row">${fld(path + '.role', 'หน้าที่')}<div style="flex:0 0 auto;align-self:end;margin-bottom:8px"><button class="btn sm" data-cdel="${grp}.${x}" style="color:#c62828">ลบ</button></div></div>` : ''}</div></div>`;
+    const grp = (g, t) => `<div class="card"><h3>${t}</h3>${j[g].map((m, x) => pc(m, 'คนที่ ' + (x + 1), g + '.' + x, x, g)).join('')}<button class="btn" data-cadd="${g}" style="width:100%">＋ เพิ่ม</button></div>`;
+    L = `<div class="card"><h3>ผู้ลงนาม</h3><div class="muted">พิมพ์ชื่อแล้วเลือกจากรายชื่อพนักงาน ตำแหน่งเติมให้อัตโนมัติ · พิมพ์ นาย/นาง/นางสาว นำหน้าครั้งแรกครั้งเดียว ระบบจะจำไว้ · แก้คำได้ทุกช่อง เช่น “รักษาการแทน”</div></div>
+  ${pc(j.head, 'หัวหน้าแผนก (ลงนามบันทึกแต่งตั้ง / ขออนุมัติจ่ายเงิน)', 'head')}${pc(j.officer, 'เจ้าหน้าที่ร่างขอบเขตงาน (TOR) / ผู้เสนอรายงานขอซื้อ', 'officer')}${pc(j.mgr, 'ผู้จัดการ (ผู้อนุมัติ / ลงนามหนังสือภายนอก)', 'mgr')}
+  ${grp('priceCm', 'คณะกรรมการกำหนดราคากลาง')}${grp('buyCm', 'คณะกรรมการจัดซื้อ')}${grp('inspCm', 'คณะกรรมการตรวจรับ')}`; }
+  if (tab === 'docs') L = `<div class="card"><h3>9 ขั้นตอน · ออกเลขตามลำดับ</h3><div class="muted">หนังสือภายใน กด “ออกเลข” = ขอเลขจากระบบออกเลขหนังสือ หมวดหนังสือทั่วไป · หนังสือภายนอก (ขั้น 5–6) กรอกเลขจากระบบสารบรรณเอง · ออกเลขได้เมื่อขั้นก่อนหน้ามีเลขครบแล้ว · เลขที่อ้างถึงในเนื้อหาดึงจากขั้นก่อนหน้าให้อัตโนมัติ ${LOCAL() ? '<br><b style="color:#c27a00">โหมดทดลอง: ยังออกเลขจริงไม่ได้ (พิมพ์เลขเองได้)</b>' : ''}</div></div>
+ ${DOCS.map((d, x) => { const s = j.docs[d.k], ov = s.ov || {}, st = stepState(j, d.k);
+   const tag = st === 'done' ? '<span class="tag ok">ออกเลขแล้ว</span>' : st === 'ready' ? '<span class="tag w">พร้อมออกเลข</span>' : '<span class="tag">รอขั้นก่อนหน้า</span>';
+   return `<div class="doc st-${st}"><div class="n">${st === 'done' ? '✓' : x + 1}</div><div class="b"><div class="ttl">${esc(d.short)} ${tag} ${d.ext ? '<span class="tag">ภายนอก</span>' : ''} ${j.printed[d.k] ? '<span class="tag ok">พิมพ์แล้ว</span>' : ''}</div>
+ ${d.refs.length ? `<div style="margin:3px 0">${refChips(j, d.k)}</div>` : ''}
+ <div class="row" style="gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap"><span class="muted">เลขที่</span><input class="num" data-dno="${d.k}" value="${esc(s.no || '')}" placeholder="—" ${s.bookRef ? 'readonly title="ออกจากระบบออกเลขหนังสือแล้ว"' : ''}>${s.no || d.ext ? '' : `<button class="btn sm g" data-gen="${d.k}">ออกเลข</button>`}
+ <span class="muted">วันที่</span><input type="date" data-ddate="${d.k}" value="${s.date || ''}"><button class="btn sm" data-pv="${d.k}">👁 ดู</button></div>
+ <details class="more"><summary>แก้ข้อความเฉพาะฉบับนี้</summary>
+ ${(d.ext ? ['subj:เรื่อง', 'attn:เรียน'] : ['from:จาก', 'to:ถึง', 'subj:เรื่อง', 'attn:เรียน']).map(z => { const [a, b] = z.split(':'); return `<label class="f"><span>${b} (เว้นว่าง = ค่าอัตโนมัติ)</span><input data-ov="${d.k}.${a}" value="${esc(ov[a] || '')}"></label>`; }).join('')}
+ <label class="f"><span>คำลงท้าย</span><input data-ov="${d.k}.close" value="${esc(ov.close || '')}" placeholder="(ค่าอัตโนมัติ)"></label>${d.ext ? '' : `<label class="f"><span>ข้อความในกรอบสั่งการของผู้อนุมัติ (บรรทัดละข้อ)</span><textarea data-ov="${d.k}.box" rows="3" placeholder="(ค่าอัตโนมัติ)">${esc(ov.box || '')}</textarea></label>`}</details></div></div>`; }).join('')}`;
+  const pv = `<div class="pvbar"><b>ตัวอย่างพิมพ์</b><select id="pvSel" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:14px;max-width:100%">${[['all', 'ทั้งชุด (9 ฉบับ)'], ...DOCS.map((d, x) => [d.k, (x + 1) + '. ' + d.short])].map(([a, t]) => `<option value="${a}" ${pvSel === a ? 'selected' : ''}>${t}</option>`).join('')}</select>
+ <label class="muted"><input type="checkbox" id="tn" ${SET.thaiNum ? 'checked' : ''}> เลขไทย</label><label class="muted"><input type="checkbox" id="ed" ${editing ? 'checked' : ''}> แก้บนกระดาษ</label><span class="sp"></span><button class="btn" id="zoomBtn">${pvReal ? '↔ พอดีจอ' : '🔍 ขนาดจริง'}</button><button class="btn p" id="prt">🖨 พิมพ์ / PDF</button></div><div class="sheetbox ${pvReal ? 'real' : ''}" id="sheets"></div>`;
+  $('#view').innerHTML = tab === 'pv' ? pv : `<div class="split"><div>${L}<div style="height:60px"></div></div><div class="pv" id="pvcol">${pv}</div></div>`;
+  bindJob(); drawSheets(); }
+function toggleReal() { pvReal = !pvReal; const zb = $('#zoomBtn'); if (zb) zb.textContent = pvReal ? '↔ พอดีจอ' : '🔍 ขนาดจริง'; drawSheets(); if (pvReal) toast('ขนาดเท่ากระดาษ A4 จริง (100%) — เลื่อนซ้าย/ขวาเพื่อดู'); }
+function drawSheets() { const box = $('#sheets'); if (!box) return; const keys = pvSel === 'all' ? DK : [pvSel];
+  box.innerHTML = renderPages(cur, keys); thaiNumify(box); paginate(box);
+  const pages = [...box.querySelectorAll('.page')]; const BW = box.clientWidth || 600; const z = pvReal ? 1 : Math.min(1, (BW - 4) / (210 * 3.7795)); box.classList.toggle('real', pvReal);
+  pages.forEach(p => { const wr = document.createElement('div'); wr.className = 'sheetwrap'; p.parentNode.insertBefore(wr, p); wr.appendChild(p); wr.style.zoom = z; if (!editing) wr.ondblclick = toggleReal; if (p.scrollHeight > p.clientHeight + 2) wr.classList.add('ovf'); if (editing) p.contentEditable = true; }); }
+function bindJob() { const j = cur; const V = $('#view');
+  const redraw = () => { save(); clearTimeout(bindJob._t); bindJob._t = setTimeout(() => { drawSheets(); const c = calc(j); const sa = $('#subAmt'); if (sa) sa.textContent = `${money(c.total)} บาท`; $('#ttl').textContent = jobTitle(j); }, 250); };
+  V.querySelectorAll('[data-p]').forEach(el => el.oninput = () => { const ks = el.dataset.p.split('.'); let o = j; ks.slice(0, -1).forEach(k => o = o[k]); let val = el.value; if (el.type === 'number') val = +val; o[ks.at(-1)] = val;
+    if (ks.at(-1) === 'name') { learnPre(val); const s = findStaff(val); if (s && s.pos) { o.pos = s.pos; const pe = V.querySelector(`[data-p="${ks.slice(0, -1).join('.')}.pos"]`); if (pe) pe.value = s.pos; } }
+    redraw(); if (['price', 'qty'].includes(ks[0])) { clearTimeout(bindJob._s); bindJob._s = setTimeout(() => { const act = document.activeElement && document.activeElement.dataset.p; jobView(); const el2 = act && V.querySelector(`[data-p="${act}"]`); if (el2) { el2.focus(); const n = el2.value.length; try { el2.setSelectionRange(n, n); } catch (e) {} } }, 900); } });
+  V.querySelectorAll('[data-seg]').forEach(b => b.onclick = () => { const f = b.dataset.seg, val = b.dataset.v; if (f === 'dept') setDept(j, val); else j[f] = val; save(); jobView(); });
+  V.querySelectorAll('[data-cadd]').forEach(b => b.onclick = () => { j[b.dataset.cadd].push({ name: '', pos: '', role: 'กรรมการ' }); save(); jobView(); });
+  V.querySelectorAll('[data-cdel]').forEach(b => b.onclick = () => { const [g, x] = b.dataset.cdel.split('.'); j[g].splice(+x, 1); save(); jobView(); });
+  V.querySelectorAll('[data-dno]').forEach(el => el.oninput = () => { j.docs[el.dataset.dno].no = el.value.trim(); redraw(); });
+  V.querySelectorAll('[data-dno]').forEach(el => el.onchange = () => jobView());
+  V.querySelectorAll('[data-ddate]').forEach(el => el.onchange = () => { j.docs[el.dataset.ddate].date = el.value; redraw(); });
+  V.querySelectorAll('[data-ov]').forEach(el => el.oninput = () => { const [k, f] = el.dataset.ov.split('.'); const d = j.docs[k]; d.ov = d.ov || {}; d.ov[f] = el.value; redraw(); });
+  V.querySelectorAll('[data-gen]').forEach(b => b.onclick = () => issueNo(b.dataset.gen, b));
+  V.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => { pvSel = b.dataset.pv; if (innerWidth < 1100) { tab = 'pv'; jobView(); } else { $('#pvSel').value = pvSel; drawSheets(); $('#pvcol').scrollTop = 0; } });
+  const ps = $('#pvSel'); if (ps) ps.onchange = () => { pvSel = ps.value; drawSheets(); };
+  const tn = $('#tn'); if (tn) tn.onchange = () => { SET.thaiNum = tn.checked; store.set('tfbuy_thainum', tn.checked); drawSheets(); };
+  const ed = $('#ed'); if (ed) ed.onchange = () => { editing = ed.checked; $('#app').classList.toggle('editing', editing); drawSheets(); if (editing) toast('คลิกที่ข้อความบนกระดาษเพื่อแก้ไขก่อนพิมพ์'); };
+  const zb = $('#zoomBtn'); if (zb) zb.onclick = () => toggleReal();
+  const pr = $('#prt'); if (pr) pr.onclick = doPrint; }
+function doPrint() { const keys = pvSel === 'all' ? DK : [pvSel]; const pa = $('#printArea');
+  if (!editing) drawSheets();
+  pa.innerHTML = [...document.querySelectorAll('#sheets .page')].map(p => { const c = p.cloneNode(true); c.removeAttribute('contenteditable'); return c.outerHTML; }).join('');
+  keys.forEach(k => cur.printed[k] = Date.now()); save();
+  Promise.all([...pa.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))).then(() => setTimeout(() => window.print(), 150)); }
+
+/* ---------------- หน้ารายการงาน ---------------- */
+let loadErr = '';
+function stepN(s) { return parseInt(String(s || '0'), 10) || 0; }
+function listView() {
+  cur = null; setTop('จัดซื้อหม้อแปลง (ธุรกิจเสริม)', 'Low Loss · กฟส.อ่าวลึก · ชุดเอกสาร 9 ฉบับ', false);
+  const q = (store.get('tfbuy_q', '') || '').trim();
+  const rows = LIST.filter(x => !q || [x.title, x.vendor, x.nums, x.wbs].join(' ').includes(q));
+  $('#view').innerHTML = `${LOCAL() ? `<div class="card warnbox"><b>โหมดทดลอง</b> — ยังไม่ได้เชื่อมหลังบ้าน ข้อมูลเก็บเฉพาะเครื่องนี้ และยังออกเลขหนังสือจริงไม่ได้</div>` : ''}
+  ${loadErr ? `<div class="card warnbox">${esc(loadErr)} <button class="btn sm" id="retry">ลองใหม่</button></div>` : ''}
+  <div class="card"><input id="q" placeholder="🔍 ค้นหาผู้ใช้ไฟ / ผู้ขาย / WBS / เลขหนังสือ" value="${esc(q)}" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14.5px"><span class="muted">${rows.length} งาน</span></div>
+  ${rows.map(x => { const n = stepN(x.step);
+    const st = n >= 9 ? '<span class="tag ok">ออกเลขครบ 9 ฉบับ</span>' : `<span class="tag w">ขั้นที่ ${n + 1}/9 · ${DOCS[Math.min(n, 8)].short}</span>`;
+    return `<div class="card job" data-id="${esc(x.id)}"><div class="ico">⚡</div><div style="flex:1;min-width:0"><div class="t">${esc(x.title || '(ยังไม่ตั้งชื่อ)')}</div>
+    <div class="muted">${x.wbs ? esc(x.wbs) + ' · ' : ''}${x.vendor ? esc(x.vendor) + ' · ' : ''}<b style="color:var(--ink)">${money(x.total)}</b> บาท${x.nums ? ' · เลขที่ ' + esc(x.nums) : ''}</div>${st}
+    <div class="steps">${DOCS.map((d, i) => `<i class="${i < n ? 'd' : ''}"></i>`).join('')}</div></div><div style="font-size:22px;color:var(--mute)">›</div></div>`; }).join('') ||
+    `<div class="card muted" style="text-align:center;padding:30px">${LIST.length ? 'ไม่พบงานที่ค้นหา' : 'ยังไม่มีงาน — กด “＋ งานใหม่” เพื่อเริ่ม'}</div>`}
+  <div style="height:80px"></div><button class="fab" id="newBtn">＋ งานใหม่</button>`;
+  $('#q').oninput = e => store.set('tfbuy_q', e.target.value); $('#q').onchange = () => listView();
+  document.querySelectorAll('.job').forEach(el => el.onclick = () => openJob(el.dataset.id));
+  $('#newBtn').onclick = newJob;
+  const rt = $('#retry'); if (rt) rt.onclick = () => boot();
+  history.replaceState(null, '', location.pathname);
+}
+async function newJob() {
+  const j = blankJob(), last = store.get('tfbuy_last', null);
+  setDept(j, 'ผปร.');
+  if (last) ['head', 'officer', 'mgr', 'priceCm', 'buyCm', 'inspCm'].forEach(k => { if (last[k]) j[k] = JSON.parse(JSON.stringify(last[k])); });
+  busy(true);
+  try { const r = await api('save', { job: j }); j.id = r.job.id; j.rev = r.rev; upsertList(r.summary); cur = j; tab = 'info'; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + j.id); }
+  catch (e) { toast('สร้างงานไม่สำเร็จ: ' + e.message); }
+  finally { busy(false); }
+}
+async function openJob(id) {
+  busy(true);
+  try { const r = await api('get', { id }); cur = fixJob(r.job); learnJob(cur); tab = 'info'; dirty = false; setSave('ok'); jobView(); history.replaceState(null, '', '?id=' + id); $('#main').scrollTop = 0; }
+  catch (e) { toast('เปิดงานไม่สำเร็จ: ' + e.message); }
+  finally { busy(false); }
+}
+async function backToList() { if (cur && !(await settle())) { const k = await ask('ยังบันทึกไม่สำเร็จ', 'ออกไปตอนนี้ สิ่งที่แก้ล่าสุดอาจหาย', ['อยู่ต่อ', 'ออกเลย']); if (k === 0) return; } dirty = false; editing = false; $('#app').classList.remove('editing'); listView(); }
+async function delJob() {
+  if (!cur) return;
+  const why = await askText('ลบงานนี้', `ลบ “${esc(jobTitle(cur))}” — เลขหนังสือที่ออกไปแล้วจะไม่ถูกยกเลิกในระบบออกเลข`, 'เหตุผลที่ลบ (จำเป็น)');
+  if (!why) return;
+  try { await api('remove', { id: cur.id, reason: why }); LIST = LIST.filter(x => x.id !== cur.id); dirty = false; toast('ลบงานแล้ว'); listView(); }
+  catch (e) { toast(e.message); }
+}
+function busy(on) { $('#busy').style.display = on ? 'flex' : 'none'; }
+
+/* ---------------- ตั้งค่า ---------------- */
+function settingsView() {
+  if (cur) { settle(); } cur = null; setTop('ตั้งค่า', ME.admin ? 'ผู้ดูแลแก้ไขค่ากลางได้' : 'ดูค่ากลาง (แก้ได้เฉพาะผู้ดูแล)', true);
+  const S = JSON.parse(JSON.stringify(SET)), ro = ME.admin ? '' : 'disabled';
+  const f = (k, l, ta) => ta ? `<label class="f"><span>${l}</span><textarea data-s="${k}" rows="3" ${ro}>${esc(S[k])}</textarea></label>` : `<label class="f"><span>${l}</span><input data-s="${k}" value="${esc(S[k])}" ${ro}></label>`;
+  $('#view').innerHTML = `<div class="card"><h3>ผู้ใช้</h3><div>${esc(ME.name || '-')} ${ME.admin ? '<span class="tag">ผู้ดูแล</span>' : ''}</div><label class="muted"><input type="checkbox" id="tn2" ${SET.thaiNum ? 'checked' : ''}> พิมพ์เอกสารเป็นเลขไทย (เฉพาะเครื่องนี้)</label></div>
+  <div class="card"><h3>หน่วยงาน & เลขหนังสือ</h3><div class="row">${f('office', 'ชื่อย่อหน่วยงาน')}${f('officeFull', 'ชื่อเต็ม')}</div><div class="row">${f('bookPrefix', 'คำนำหน้าเลขหนังสือภายใน')}${f('extPrefix', 'คำนำหน้าเลขหนังสือภายนอก')}</div>
+  <div class="row">${f('addr1', 'ที่อยู่ บรรทัด 1')}${f('addr2', 'ที่อยู่ บรรทัด 2')}${f('phone', 'โทรศัพท์')}</div></div>
+  <div class="card"><h3>ระเบียบที่อ้างถึง</h3>${f('reg1', 'ข้อบังคับ', 1)}${f('reg2', 'ระเบียบ', 1)}${f('manual', 'เหตุผลวิธีเฉพาะเจาะจง (รายงานขอซื้อ ข้อ 6)', 1)}</div>
+  <div class="card"><h3>ผู้จัดการเริ่มต้น</h3><div class="row"><label class="f"><span>ชื่อ-สกุล</span><input data-ap="name" list="staff" value="${esc(S.mgr.name)}" ${ro}></label><label class="f"><span>ตำแหน่ง</span><input data-ap="pos" value="${esc(S.mgr.pos)}" ${ro}></label></div></div>
+  ${ME.admin ? `<button class="btn p" id="saveSet" style="width:100%;margin-bottom:12px">บันทึกตั้งค่า</button>` : ''}
+  <div class="card"><h3>การเชื่อมต่อ</h3><div class="muted">หลังบ้าน: ${LOCAL() ? '<b style="color:#c27a00">ยังไม่เชื่อม (โหมดทดลอง)</b>' : 'เชื่อมแล้ว'} · ระบบออกเลขหนังสือ: ${lsr('booknum_token_v1') ? 'เชื่อมแล้วในเครื่องนี้' : 'จะถามรหัสสำนักงานตอนออกเลขครั้งแรก'} · รายชื่อพนักงาน ${STAFF.length} คน</div>
+  ${ME.admin || LOCAL() ? `<label class="f"><span>ลิงก์หลังบ้าน (Web app …/exec) — ใช้เฉพาะเครื่องนี้ เว้นว่าง = ใช้ค่าในระบบ</span><input id="apiUrl" value="${esc(lsr('tfbuy_api') || '')}" placeholder="${esc(API_DEFAULT || 'https://script.google.com/macros/s/…/exec')}"></label><button class="btn sm" id="saveApi">ใช้ลิงก์นี้</button>` : ''}
+  <button class="btn sm" id="reStaff">โหลดรายชื่อพนักงานใหม่</button> <button class="btn sm" id="reBook">ล้างการเชื่อมระบบออกเลข</button></div>`;
+  $('#tn2').onchange = e => { SET.thaiNum = e.target.checked; store.set('tfbuy_thainum', SET.thaiNum); };
+  document.querySelectorAll('[data-s]').forEach(el => el.oninput = () => { S[el.dataset.s] = el.value; });
+  document.querySelectorAll('[data-ap]').forEach(el => el.oninput = () => { S.mgr[el.dataset.ap] = el.value; });
+  const ss = $('#saveSet'); if (ss) ss.onclick = async () => { delete S.thaiNum; try { const r = await api('saveSettings', { settings: S }); applySettings(r.settings); toast('บันทึกตั้งค่าแล้ว'); } catch (e) { toast(e.message); } };
+  const sa = $('#saveApi'); if (sa) sa.onclick = () => { const val = $('#apiUrl').value.trim(); if (val && !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(val)) return toast('ลิงก์ต้องเป็น https://script.google.com/macros/s/…/exec'); lsr('tfbuy_api', val || null); boot(); };
+  $('#reStaff').onclick = () => { loadStaff(true).then(() => { toast('รายชื่อพนักงาน ' + STAFF.length + ' คน'); }); };
+  $('#reBook').onclick = () => { lsr('booknum_token_v1', null); lsr('booknum_settings_v1', null); toast('ล้างแล้ว — ออกเลขครั้งถัดไปจะถามรหัสสำนักงาน'); settingsView(); };
+}
+function applySettings(s) { const tn = SET.thaiNum; SET = Object.assign({}, DEFSET, s || {}); SET.thaiNum = tn; DEPTS = SET.depts; store.set('tfbuy_settings', Object.assign({}, SET, { thaiNum: undefined })); }
+
+/* ---------------- เริ่มต้น ---------------- */
+async function boot() {
+  ME.name = cred().user;
+  loadErr = ''; busy(true);
+  try { const r = await api('bootstrap'); ME = r.me || ME; applySettings(r.settings); LIST = r.jobs || []; store.set('tfbuy_list_cache', LIST); }
+  catch (e) { LIST = store.get('tfbuy_list_cache', []); loadErr = 'โหลดรายการงานไม่สำเร็จ: ' + e.message; }
+  finally { busy(false); }
+  const id = new URLSearchParams(location.search).get('id');
+  if (id && !loadErr) openJob(id); else listView();
+}
+fillStaff();
+$('#backBtn').onclick = backToList; $('#setBtn').onclick = settingsView; $('#delBtn').onclick = delJob;
+document.addEventListener('click', e => { if (e.target && e.target.id === 'saveSt' && saveState === 'err') { dirty = true; flush(); } });
+document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => { tab = b.dataset.t; jobView(); $('#main').scrollTop = 0; });
+addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTimeout(() => { if (cur) drawSheets(); }, 200); });
+document.fonts && document.fonts.ready.then(() => { if (cur) drawSheets(); });
+(function wait(n) { if (cred().user || LOCAL() || n > 600) { boot(); loadStaff(); } else setTimeout(() => wait(n + 1), 500); })(0);
+
+</script>
+</body>
+</html>
