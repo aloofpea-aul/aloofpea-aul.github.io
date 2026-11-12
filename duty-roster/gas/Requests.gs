@@ -1021,14 +1021,15 @@ function boxPoll_(q) {
     const L = bellActive_();
     if (L.length) log_('กล่องหน้าห้องเวร', 'กระดิ่ง: ไฟห้องเปิด (มีคนตื่น)', '', L.map(function (a) { return a.id; }).join(', '));
   }
-  let r;
+  let r, ocres = null;
+  if (q.oca) { try { ocres = ocBoxAct_(q); } catch (e) { ocres = { ok: false, err: String(e.message || e).slice(0, 80) }; } cache.remove('boxInfo'); }
   if (q.ack) {
     cache.put('bellHB', String(Date.now()), 21600);
     const by = String(q.by || '').trim().slice(0, 40);
     r = bellAck_(by ? by + ' · กล่องหน้าห้องเวร' : 'ปุ่มหน้าห้องเวร');
     cache.remove('boxInfo');
   } else r = bellPoll_({ k: q.k });
-  return Object.assign(r, boxInfo_());
+  return Object.assign(r, boxInfo_(), ocres ? { ocres: ocres } : {});
 }
 /** สภาพอากาศอ่าวลึกสำหรับหน้าสลับของกล่อง (ข้อมูลเดียวกับระดับสภาพอากาศในแอป) */
 function boxWx_() {
@@ -1329,12 +1330,13 @@ function ocBox_() {
     const sure = q.filter(function (x) { return x.sure; }), old = sure.length ? sure[sure.length - 1].t : 0, last = q[0], C = ocCfg_();
     return { n: Object.keys(who).length, ns: Object.keys(whoS).length, min: old ? Math.floor((Date.now() - old) / 60000) : -1,
       at: Utilities.formatDate(new Date(last.t), TZ, 'HH:mm'), s: ocBoxTxt_(last.s).slice(0, 30), x: ocBoxTxt_(last.x).slice(0, 90),
-      rm: C.remind, url: webUrl_('', { oc: 1 }) || '' };
+      rm: C.remind, url: webUrl_('', { oc: 1 }) || '', live: C.mode === 'live' ? 1 : 0, list: ocBoxList_(q) };
   } catch (e) { return null; }
 }
 /** จัดการข้อความในกล่องรอตรวจ — a: open (เปิดเป็นงาน) · merge (รวมกับงานเดิม ref) · ack (รับทราบ ไม่เปิดงาน) · skip (ไม่ใช่การแจ้ง) · undo */
-function ocAct_(b) {
-  const by = tkAuth_(b), a = String(b.a || ''), sh = ocSheet_(), n = sh.getLastRow(), C = ocCfg_();
+function ocAct_(b) { return ocActCore_(tkAuth_(b), b); }
+function ocActCore_(by, b) {
+  const a = String(b.a || ''), sh = ocSheet_(), n = sh.getLastRow(), C = ocCfg_();
   const rs = (Array.isArray(b.rows) ? b.rows : [b.r]).map(Number).filter(function (r) { return r >= 2 && r <= n; }).slice(0, 20);
   if (!rs.length) throw new Error('ไม่พบข้อความ');
   if (sh.getRange(1, 7, 1, 2).getValues()[0].join('|') !== 'fix|tk') sh.getRange(1, 7, 1, 2).setValues([['fix', 'tk']]);
@@ -1351,11 +1353,12 @@ function ocAct_(b) {
       type: TK_TYPES_[b.type] ? b.type : (/สาย.*ขาด|เสา.*ล้ม|ไฟไหม้|ประกาย|ระเบิด/.test(t) ? 'danger' : /ตก|กระพริบ|หรี่|ไม่เต็ม/.test(t) ? 'low' : /ซอย|หมู่บ้าน|ทั้งหมู่|ทั้งตำบล|แถว/.test(t) ? 'area' : 'home'),
       phone: ph, name: sender.slice(0, 60), place: String(b.place || '').trim().slice(0, 200), detail: t, lat: null, lon: null,
       src: 'oc', ocRows: rs, fwdBy: by, key: Utilities.getUuid().slice(0, 8), st: 'new' };
+    if (b.src) d.ocVia = String(b.src);
     const self = !!b.self;
     if (self) { d.st = 'acc'; d.accBy = by; d.accAt = now.toISOString(); }
     else if (bellHours_(now)) { d.bell = 1; bellFlag_(); }
     tkSheet_().appendRow([id, now, JSON.stringify(d), d.st, now]);
-    log_(by, 'รับแจ้งไฟดับ (จาก OpenChat)', bkkYmd_().slice(0, 7), id + (self ? ' · รับงานเอง' : ''));
+    log_(by, 'รับแจ้งไฟดับ (จาก OpenChat' + (b.src === 'box' ? ' · กล่องหน้าห้องเวร' : '') + ')', bkkYmd_().slice(0, 7), id + (self ? ' · รับงานเอง' : ''));
     if (!self) { try { tkNotify_(d, false); } catch (e) {} }
     try { tkEnsureTrigger_(); } catch (e) {}
     tk = id;
@@ -1380,6 +1383,32 @@ function ocAct_(b) {
   return { rows: rs, tk: a === 'undo' ? '' : tk, ticket: d ? { id: d.id, st: d.st } : null };
 }
 function ocBoxTxt_(t) { return String(t || '').replace(/[^\u0020-\u007e\u00b0-\u00b7\u0e00-\u0e7f\u2014\u2026\s]/g, '').replace(/\s+/g, ' ').trim(); }   // จอกล่องมีเฉพาะอักษรไทย/อังกฤษ
+/** รายการให้กล่องตัดสินทีละข้อ (เก่าสุดก่อน · รวมข้อความคนเดียวกันภายใน 2 ชม.) — สูงสุด 5 */
+function ocBoxList_(q) {
+  const G = [];
+  q.slice().reverse().forEach(function (x) {
+    const g = G.filter(function (y) { return x.s && y.s === x.s && x.t - y.t1 < 2 * 3600e3; })[0];
+    if (g) { g.r.push(x.r); g.x.push(x.x); g.t1 = x.t; if (x.sure) g.sure = true; }
+    else G.push({ s: x.s, r: [x.r], x: [x.x], t: x.t, t1: x.t, sure: x.sure });
+  });
+  return G.slice(0, 5).map(function (g) {
+    const t = g.x.join(' / '), moo = (t.match(/(?:ม\.|หมู่(?:ที่)?)\s*(\d{1,2})/) || [])[1];
+    return { r: g.r.join(','), s: ocBoxTxt_(g.s).slice(0, 24), at: Utilities.formatDate(new Date(g.t), TZ, 'HH:mm'), min: Math.floor((Date.now() - g.t) / 60000),
+      lv: g.sure ? 'sure' : 'maybe', x: ocBoxTxt_(t).slice(0, 130), moo: moo || '' };
+  });
+}
+/** กล่องหน้าห้องเวรกดตัดสินข้อความ: oca = open (เปิดเป็นงาน · ocby = คนรับ) | yes (ใช่ ไม่เปิดงาน) | skip (ไม่ใช่) */
+function ocBoxAct_(q) {
+  const a = String(q.oca || ''), by = String(q.ocby || '').trim().slice(0, 40), actor = by || 'กล่องหน้าห้องเวร';
+  const rows = String(q.ocr || '').split(',').map(Number).filter(function (n) { return n >= 2; });
+  if (['open', 'yes', 'skip'].indexOf(a) < 0 || !rows.length) throw new Error('คำสั่งไม่ถูกต้อง');
+  const r = ocActCore_(actor, { a: a === 'yes' ? 'ack' : a, rows: rows, self: by ? 1 : 0, src: 'box' });
+  if (a === 'open' && r.ticket && by) {
+    try { const sh = ocSheet_(), x = sh.getRange(rows[0], 2, 1, 2).getValues()[0];
+      bellPushText_(dutyShorts_(), '📋 เปิดงาน ' + r.ticket.id + ' จาก OpenChat (กล่องหน้าห้องเวร)\nรับงานโดย ' + by + '\n' + (x[0] ? x[0] + ': ' : '') + String(x[1] || '').slice(0, 200)); } catch (e) {}
+  }
+  return { ok: true, a: a, tk: r.tk, id: r.ticket ? r.ticket.id : '', st: r.ticket ? r.ticket.st : '', url: webUrl_('viewDaily', { tk: 1 }) || '' };
+}
 function ocTkText_(tk) { return /^A-/.test(tk) ? 'เปิดเป็นงาน ' + tk : /^merge:/.test(tk) ? 'รวมกับ ' + tk.slice(6) : /^ok/.test(tk) ? 'รับทราบแล้ว' : 'ไม่ใช่การแจ้ง'; }
 /** หัวหน้า/ผู้ช่วย: สลับโหมด test ↔ live และช่วงเวลาแจ้ง LINE (off = นอกเวลาทำการ · all = ตลอด) */
 function ocSetMode_(b) {
