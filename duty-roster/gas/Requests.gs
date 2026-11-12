@@ -1043,21 +1043,26 @@ function boxWx_() {
 }
 /** ตลาด 4 ตัว (Yahoo Finance ฟรี · จำไว้ 10 นาที) */
 // pip = ขนาด 1 หน่วยที่นับ · u = คำเรียก · pd = ทศนิยมของจำนวน pip/จุด
-const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 1, off: 'boxGoldOffset', pip: 0.1, u: 'pips', pd: 0 }, { n: 'บิตคอยน์', s: 'BTC-USD', d: 0, pip: 1, u: 'จุด', pd: 0 },
+const BOX_MK_ = [{ n: 'ทองคำ', s: 'GC=F', d: 1, off: 'boxGoldOffset', pip: 0.1, u: 'pips', pd: 0, ny17: 1 },   // ทอง: ราคาเปิดวัน = ตัดวัน 17:00 นิวยอร์ก (05:00 น. ไทยช่วงหน้าหนาว · 04:00 ช่วงหน้าร้อน) แบบ MT4/MT5 { n: 'บิตคอยน์', s: 'BTC-USD', d: 0, pip: 1, u: 'จุด', pd: 0 },
   { n: 'USD/THB', s: 'THB=X', d: 2, pip: 0.01, u: 'pips', pd: 0 }, { n: 'SET', s: '^SET.BK', d: 2, pip: 1, u: 'จุด', pd: 2 }];
 function boxMk_() {
-  const cache = CacheService.getScriptCache(), hit = cache.get('boxMk2');
+  const cache = CacheService.getScriptCache(), hit = cache.get('boxMk3');
   if (hit) return JSON.parse(hit);
   let out = [];
   const cfg = getConfig_();
   try {
     const res = UrlFetchApp.fetchAll(BOX_MK_.map(function (m) {
-      return { url: 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(m.s) + '?range=1d&interval=5m', muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } };
+      return { url: 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(m.s) + '?range=' + (m.ny17 ? '2d' : '1d') + '&interval=5m', muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } };
     }));
     out = BOX_MK_.map(function (m, i) {
       try {
         const r0 = JSON.parse(res[i].getContentText()).chart.result[0], meta = r0.meta, p = Number(meta.regularMarketPrice), pc = Number(meta.chartPreviousClose || meta.previousClose);
-        const q = (r0.indicators && r0.indicators.quote && r0.indicators.quote[0]) || {}, op = Number((q.open || []).filter(function (v) { return v != null; })[0]);   // ราคาเปิดของวันนี้ (ตามเวลาเปิดของแต่ละตลาด)
+        const q = (r0.indicators && r0.indicators.quote && r0.indicators.quote[0]) || {};
+        let op = Number((q.open || []).filter(function (v) { return v != null; })[0]);   // ราคาเปิดของวันนี้ (ตามเวลาเปิดของแต่ละตลาด)
+        if (m.ny17) {   // แท่งแรกหลังตัดวัน 17:00 นิวยอร์กล่าสุด (ตลาดพักถึง 18:00 → ราคาแรกที่มีซื้อขาย)
+          const cut = boxNy17_(), ts = r0.timestamp || [], ov = q.open || [];
+          op = NaN; for (let k = 0; k < ts.length; k++) if (ts[k] * 1000 >= cut && ov[k] != null) { op = Number(ov[k]); break; }
+        }
         if (!isFinite(p)) return null;
         const off = m.off ? Number(cfg[m.off]) || 0 : 0;   // ทองฟิวเจอร์ส → หัก offset ให้ใกล้ราคาสปอต (ตั้งใน Config: boxGoldOffset)
         const pct = isFinite(pc) && pc ? (p - pc) / pc * 100 : 0;
@@ -1075,6 +1080,12 @@ function boxMk_() {
   const r = { at: Utilities.formatDate(new Date(), TZ, 'HH:mm'), items: out };
   if (out.length) cache.put('boxMk2', JSON.stringify(r), 600);
   return r;
+}
+/** เวลาตัดวันของตลาดทอง/ฟอเร็กซ์ = 17:00 นิวยอร์กครั้งล่าสุด (epoch ms) */
+function boxNy17_() {
+  const now = new Date(), z = 'America/New_York', h = +Utilities.formatDate(now, z, 'H');
+  const day = h >= 17 ? now : new Date(now.getTime() - 864e5), ymd = Utilities.formatDate(day, z, 'yyyy-MM-dd'), off = Utilities.formatDate(day, z, 'Z');
+  return Date.parse(ymd + 'T17:00:00' + (/^[+-]\d{4}$/.test(off) ? off.slice(0, 3) + ':' + off.slice(3) : '-05:00'));
 }
 /** คนงานที่อยู่เวรตอนนี้ (คนที่อยู่เวรแต่ไม่ใช่พนักงาน) */
 function crewNow_() {
