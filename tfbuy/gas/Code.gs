@@ -1,3 +1,6 @@
+/** ▶ Run ฟังก์ชันนี้ครั้งแรก (สร้างชีต + ขอสิทธิ์) */
+function setup() { setupAll_(); }
+
 /**
  * ระบบจัดซื้อหม้อแปลง (ธุรกิจเสริม) กฟส.อ่าวลึก — หลังบ้าน (JSON API)
  * หน้าเว็บ: https://aloofpea-aul.github.io/tfbuy/  (GitHub Pages ในศูนย์รวมงาน)
@@ -16,7 +19,9 @@
  * ไม่มีค่าใช้จ่าย: ใช้ Google Sheets + Apps Script ฟรีทั้งหมด
  */
 
-const SPREADSHEET_ID = '';   // เว้นว่าง = ใช้ชีตที่ setup สร้างไว้ (เก็บรหัสใน Script Properties › TF_SHEET_ID)
+const SPREADSHEET_ID = '';
+// Web app: https://script.google.com/macros/s/AKfycbyeZSYM_uYyC1ZD2q3SdjVPWClHNFRsc_yfUclwPD9mnvw70hU_TG75CXsvmQjsQAAu/exec
+// ชีตข้อมูล: https://docs.google.com/spreadsheets/d/1-6dcnsft8yCySKmnXTIXRaBoOFH3xfhnHawEocO0ac4/edit   // เว้นว่าง = ใช้ชีตที่ setup สร้างไว้ (เก็บรหัสใน Script Properties › TF_SHEET_ID)
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
 const VERSION = '1.0';
@@ -272,7 +277,7 @@ function nowIso_() { return Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd'T'H
 function newId_() { return 'TF' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss') + Math.floor(Math.random() * 90 + 10); }
 
 /** Run ครั้งแรก: สร้างชีต + ขอสิทธิ์ + ทดสอบติดต่อศูนย์รวมงาน */
-function setup() {
+function setupAll_() {
   [JOBS, SETS, LOG].forEach(sheet_);
   const jobs = sheet_(JOBS);
   jobs.hideColumns(JOBS.cols.indexOf('data') + 1);
