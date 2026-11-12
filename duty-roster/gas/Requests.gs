@@ -1097,7 +1097,7 @@ function boxInfo_() {
   if (!duty.length && !bellHours_()) duty = [String(getConfig_().boxOfficeDuty || 'ผปร. : อติวิทย์')];
   const out = { duty: duty, crew: crewNow_(), open: rows.filter(live).length,
     today: rows.filter(function (x) { return x.st !== 'dup' && bkkYmd_(new Date(x.d.at)) === today; }).length,
-    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(), oc: ocBox_(), out: boxOut_(),
+    jobs: jobs, app: webUrl_('viewDaily', { tk: 1 }) || '', wx: boxWx_(), mk: boxMk_(), oc: ocBox_(), out: boxOut_(), plan: boxPlan_(),
     rot: String(getConfig_().boxRot || '20,10,5').split(',').map(function (x) { return Math.max(0, Math.min(120, Number(x) || 0)); }) };
   cache.put('boxInfo', JSON.stringify(out), 30);
   return out;
@@ -1112,7 +1112,7 @@ function boxOut_() {
       const d = x.d, off = d.actualOff || d.startAt, emg = d.type === 'emg'; if (d.outId) used[d.outId] = 1;
       L.push({ k: emg ? 'e' : 'p', t: T(off), a: tx([d.feeder, d.area].filter(String).join(' · ')).slice(0, 60),
         b: tx((emg ? 'ฉุกเฉิน · ดับ ' + hm(off) + ' (' + mins(off) + ')' : 'ตามแผน · ' + hm(d.startAt) + '-' + (d.endAt ? hm(d.endAt) : '?')) + (d.cust ? ' · ~' + d.cust + ' ราย' : '')),
-        c: tx(emg ? (d.endAt ? 'คาดไฟมา ~' + hm(d.endAt) : 'กำลังเร่งแก้ไข') + (d.reason ? ' · ' + d.reason : '') : (d.reason || '')).slice(0, 60),
+        c: tx(emg ? (d.endAt ? 'คาดไฟมา ~' + hm(d.endAt) : 'กำลังเร่งแก้ไข') + (d.reason ? ' · ' + d.reason : '') : (d.status === 'plan' ? 'ถึงเวลาแล้ว ยังไม่กดเริ่มดับ' + (d.reason ? ' · ' + d.reason : '') : (d.reason || ''))).slice(0, 60),
         s: tx((d.feeder ? d.feeder + ' ' : '') + String(d.area || '').split(/→|->| · /)[0] + ' ดับ ' + hm(off) + (d.endAt ? ' · ' + (emg ? 'คาดไฟมา ~' : 'ถึง ') + hm(d.endAt) : '')) });
     });
     let back = null;
@@ -1127,6 +1127,36 @@ function boxOut_() {
     L.sort(function (a, b) { return (a.k === 'p') - (b.k === 'p') || b.t - a.t; });
     return { n: L.length, list: L.slice(0, 3).map(function (x) { return { k: x.k, a: x.a, b: x.b, c: x.c, s: x.s.slice(0, 70) }; }), back: back ? back.s : '' };
   } catch (e) { return { n: 0, list: [], back: '', err: String(e).slice(0, 80) }; }
+}
+/** ประกาศดับไฟล่วงหน้า (แสดงบนกล่อง ไม่มีเสียง): 7 วันข้างหน้า · แถบเตือนวันก่อน/วันนี้ · เตือนก่อนเริ่ม 30 นาที · เลยเวลายังไม่กดเริ่มดับ · ปฏิทินเดือนนี้ */
+function boxPlan_() {
+  try {
+    const now = Date.now(), T = function (x) { return Date.parse(String(x) + ':00+07:00'); }, hm = function (x) { return String(x || '').slice(11, 16); };
+    const tx = function (t) { return ocBoxTxt_(String(t || '').replace(/→|->/g, '-')); }, today = bkkYmd_(), MS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const dd = function (ymd) { return Math.round((Date.parse(ymd + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 864e5); };
+    const N = ntRows_().filter(function (x) { return !x.deleted && !x.d.draft && x.d.status !== 'cancel'; }).map(function (x) { return x.d; });
+    const up = N.filter(function (d) { return d.type !== 'emg' && d.status === 'plan' && T(d.startAt) > now && dd(d.date) <= 7; }).sort(function (a, b) { return T(a.startAt) - T(b.startAt); });
+    const when = function (d) { const k = dd(d.date); return k === 0 ? 'วันนี้' : k === 1 ? 'พรุ่งนี้' : 'อีก ' + k + ' วัน'; };
+    const list = up.slice(0, 4).map(function (d) {
+      return { d: +d.date.slice(8, 10), m: MS[+d.date.slice(5, 7) - 1], t: hm(d.startAt) + '-' + (d.endAt ? hm(d.endAt) : '?') + (d.feeder ? ' · ' + d.feeder : ''),
+        a: tx(String(d.area || '')).slice(0, 60) + (d.cust ? ' · ~' + d.cust + ' ราย' : ''), w: tx(when(d) + (d.reason ? ' · ' + d.reason : '')).slice(0, 50), hot: dd(d.date) <= 1 ? 1 : 0 };
+    });
+    const hr = +Utilities.formatDate(new Date(), TZ, 'H');
+    const soon = up.filter(function (d) { const k = dd(d.date); return k === 0 || (k === 1 && hr >= 12); })[0];
+    const late = N.filter(function (d) { return d.type !== 'emg' && d.status === 'plan' && T(d.startAt) <= now && (!d.endAt || T(d.endAt) > now); })[0];
+    const pre = up.filter(function (d) { return T(d.startAt) - now <= 30 * 60000; })[0];
+    const strip = late ? { k: 'late', s: tx('ถึงเวลาแล้ว ยังไม่กดเริ่มดับ: ' + hm(late.startAt) + ' ' + (late.feeder || '') + ' ' + String(late.area || '').split(/→|->| · /)[0]).slice(0, 80) }
+      : soon ? { k: 'soon', s: tx(when(soon) + ' ' + hm(soon.startAt) + ' ดับไฟ ' + (soon.feeder || '') + ' ' + String(soon.area || '').split(/→|->| · /)[0] + (soon.cust ? ' ~' + soon.cust + ' ราย' : '')).slice(0, 80) } : null;
+    // ปฏิทินเดือนนี้: 1 = ตามแผน · 2 = ฉุกเฉิน · 3 = ทั้งสอง
+    const ym = today.slice(0, 7), y = +ym.slice(0, 4), m = +ym.slice(5, 7), days = new Date(Date.UTC(y, m, 0)).getUTCDate(), cal = [];
+    for (let i = 0; i < days; i++) cal.push(0);
+    N.forEach(function (d) { if (String(d.date).slice(0, 7) !== ym) return; const i = +d.date.slice(8, 10) - 1; cal[i] |= d.type === 'emg' ? 2 : 1; });
+    return { n: up.length, list: list, strip: strip ? strip.s : '', sk: strip ? strip.k : '',
+      pre: pre ? { id: pre.id, t: hm(pre.startAt) + '-' + (pre.endAt ? hm(pre.endAt) : '?'), a: tx([pre.feeder, String(pre.area || '').split(/→|->/)[0]].filter(String).join(' · ')).slice(0, 50),
+        b: tx(String(pre.area || '').indexOf('→') > 0 ? 'ถึง ' + String(pre.area).split('→').slice(1).join(' ').trim() : '').slice(0, 40) + (pre.cust ? ' · ~' + pre.cust + ' ราย' : '') + (pre.reason ? ' · ' + tx(pre.reason) : ''),
+        c: tx((pre.createdBy ? 'สร้างโดย ' + pre.createdBy : '') + (pre.pubBy ? ' · ประกาศโดย ' + pre.pubBy : '')).slice(0, 60), min: Math.max(0, Math.round((T(pre.startAt) - now) / 60000)) } : null,
+      cal: { y: y + 543, m: MS[m - 1], w0: new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), d: +today.slice(8, 10), v: cal } };
+  } catch (e) { return { n: 0, list: [], strip: '', err: String(e).slice(0, 80) }; }
 }
 /** tkCheck: ไล่แจ้งแทนกล่อง (ถ้ากล่องดับ) + เตือนเมื่อกล่องขาดการติดต่อเกิน 5 นาที (เฉพาะช่วงเวลาปลุก) */
 function bellWatch_() {
