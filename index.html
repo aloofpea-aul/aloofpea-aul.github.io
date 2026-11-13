@@ -155,6 +155,72 @@
     .fav-sec{grid-column:1 / -1;}
     .fav-grid{grid-template-columns:repeat(8,minmax(0,1fr));}
   }
+
+  /* ===================== หน้าจอคอม (กว้าง ≥1100) — แถบหมวดซ้าย · การ์ดหลายคอลัมน์ · มือถือไม่เปลี่ยน ===================== */
+  #hubSide,#hubHello,.s-kbd{display:none;}
+  .grp-h .dot,.grp-h em{display:none;}
+  #appSearch::-webkit-search-cancel-button{display:none;-webkit-appearance:none;}
+  @media (min-width:1100px){
+    header{padding:0 28px;height:72px;display:flex;align-items:center;}
+    .head-row{max-width:none;}
+    .head-ttl{flex:0 0 auto;}
+    .head-right{margin-left:auto;}
+    header h1{font-size:1.2rem;}
+    .search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;width:min(680px, calc(100% - 760px));}
+    #appSearch{height:46px;font-size:1rem;border-radius:12px;padding-right:96px;}
+    .s-kbd{display:inline-block;position:absolute;right:46px;top:50%;transform:translateY(-50%);font-size:.72rem;color:rgba(255,255,255,.75);
+      border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:1px 7px;pointer-events:none;}
+    #userBadge{font-size:.86rem;max-width:280px;}
+    main{max-width:1520px;padding:0 32px 40px;display:grid;grid-template-columns:232px minmax(0,1fr);column-gap:28px;align-items:start;}
+    main > *{grid-column:2;}
+    #hubSide{display:block;grid-column:1;grid-row:1 / span 30;position:sticky;top:96px;padding-top:24px;}
+    #hubSide a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;color:#3d3650;text-decoration:none;font-size:.95rem;cursor:pointer;margin-bottom:2px;transition:background .15s;}
+    #hubSide a:hover{background:rgba(255,255,255,.7);}
+    #hubSide a.on{background:#fff;color:var(--pea-purple);font-weight:700;box-shadow:0 1px 0 var(--line);}
+    #hubSide .dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto;}
+    #hubSide em{margin-left:auto;font-style:normal;font-size:.78rem;color:#8b8597;font-weight:400;}
+    #hubHello{display:flex;align-items:baseline;gap:14px;margin:24px 2px 4px;flex-wrap:wrap;}
+    #hubHello b{font-size:1.55rem;font-weight:700;}
+    #hubHello span{color:var(--muted);font-size:.95rem;}
+    #welcomeNote{margin-top:22px;font-size:.95rem;}
+    .app-grid{display:block !important;}
+    .app-grid[style*="display:none"],.app-grid[style*="display: none"]{display:none !important;}
+    .grp,.fav-sec{scroll-margin-top:96px;}
+    .grp-h{display:flex;align-items:center;gap:9px;font-size:1.02rem;color:#3d3650;letter-spacing:0;padding:26px 2px 12px;}
+    .grp-h .dot{display:inline-block;width:10px;height:10px;border-radius:3px;}
+    .grp-h em{display:inline;}
+    #appSearch:not(:placeholder-shown) ~ .s-kbd{display:none;}
+    .grp-h em{font-style:normal;font-weight:400;font-size:.85rem;color:#8b8597;}
+    .grp-box{background:none;border:0;box-shadow:none;overflow:visible;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+    .grp-box .app-tile{border:1px solid var(--line);border-radius:15px;padding:16px 16px;min-height:96px;gap:14px;align-items:center;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s;}
+    .grp-box .app-tile + .app-tile{border-top:1px solid var(--line);}
+    .grp-box .app-tile:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(75,46,131,.12);border-color:#d3c8ea;}
+    .grp-box .app-tile .icon{width:50px;height:50px;border-radius:14px;font-size:1.6rem;background:var(--tint,#f2eff8);}
+    .grp-box .app-tile .name{white-space:normal;font-size:1.02rem;}
+    .grp-box .app-tile .desc{white-space:normal;font-size:.84rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+    .grp-box .app-tile .tile-stat{font-size:.78rem;}
+    .grp-box .app-tile .chev{display:none;}
+    .grp-box .app-tile .status-badge{position:absolute;top:10px;right:10px;}
+    .grp-box .app-tile:has(.status-badge) .name{padding-right:54px;}
+    /* ใช้บ่อย — การ์ดใหญ่ เคลื่อนไหวนุ่มๆ */
+    .fav-grid{grid-template-columns:repeat(6,minmax(0,1fr)) !important;gap:14px;}
+    .fav-grid .app-tile{flex-direction:row;justify-content:flex-start;text-align:left;gap:12px;padding:16px;min-height:84px;border-radius:15px;
+      background:#fff;animation:favIn .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 70ms);
+      transition:transform .2s ease, box-shadow .2s ease, border-color .2s;}
+    .fav-grid .app-tile .icon{width:48px;height:48px;font-size:1.6rem;border-radius:14px;background:var(--tint,#f2eff8);transition:transform .25s ease;}
+    .fav-grid .app-tile:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 14px 28px rgba(75,46,131,.16);border-color:#cbbde6;}
+    .fav-grid .app-tile:hover .icon{animation:favWiggle .5s ease;}
+    .fav-name{font-size:.95rem;}
+    @keyframes favIn{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}
+    @keyframes favWiggle{0%{transform:rotate(0)}30%{transform:rotate(-9deg) scale(1.08)}60%{transform:rotate(7deg) scale(1.08)}100%{transform:rotate(0)}}
+    #noMatch{padding-top:60px;}
+  }
+  @media (min-width:1100px) and (prefers-reduced-motion:reduce){
+    .fav-grid .app-tile{animation:none;}
+    .fav-grid .app-tile:hover,.grp-box .app-tile:hover{transform:none;}
+    .fav-grid .app-tile:hover .icon{animation:none;}
+  }
 </style>
 </head>
 <body>
@@ -172,11 +238,14 @@
     <div class="search-wrap">
       <svg class="s-ic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="6.3"></circle><path d="M15.6 15.6L20 20"></path></svg>
       <input type="search" id="appSearch" name="hub-q-nofill" placeholder="พิมพ์ชื่องานที่ต้องการ…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" enterkeyhint="search" aria-label="ค้นหาโปรแกรม">
+      <span class="s-kbd">Ctrl K</span>
       <button type="button" id="searchClear" aria-label="ล้างคำค้น">✕</button>
     </div>
   </header>
 
   <main>
+    <nav id="hubSide" aria-label="หมวดงาน"></nav>
+    <div id="hubHello"></div>
     <p id="welcomeNote">รวมระบบงานของแผนกปฏิบัติการระบบไฟฟ้าไว้ในที่เดียว — <b>เข้าสู่ระบบครั้งเดียว ใช้ได้ทุกแอปในนี้</b> (จำไว้ในเครื่องนี้ ไม่ต้องล็อกอินซ้ำ)</p>
 
     <div id="gridLoader">
@@ -625,6 +694,7 @@ function updateUserBadge(){
   }
   // คำอธิบายต้อนรับมีประโยชน์เฉพาะคนที่ยังไม่ได้เข้าระบบ — เข้าแล้วเอาออกให้เห็นรายการงานเร็วขึ้น
   if(note) note.classList.toggle('hide', !!(CURRENT_USER.name && CURRENT_USER.role));
+  if(typeof setupDesktop === 'function') try{ setupDesktop(); }catch(e){}
   if(window.hubOnLogin) try{ hubOnLogin(); }catch(e){}   // สิทธิ์รายโปรแกรม + ปุ่มผู้ดูแล (hub-admin.js)
 }
 document.getElementById('userBadge').addEventListener('click', showUserPicker);
@@ -717,7 +787,7 @@ function buildFavRow(){
       .filter(x=>{ if(x.n <= 0) return false; if(seen[x.t.dataset.app]) return false; seen[x.t.dataset.app] = 1; return true; })
       .sort((a,b)=> b.n - a.n);
   }
-  hits = hits.slice(0, 4);
+  hits = hits.slice(0, window.matchMedia('(min-width:1100px)').matches ? 6 : 4);
   if(hits.length < 2){ sec.classList.add('hide'); box.innerHTML = ''; return; }
   box.innerHTML = '';
   hits.forEach(x=>{
@@ -787,6 +857,61 @@ function setupSearch(){
   inp.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ inp.value = ''; run(); } });
 }
 
+
+/* ===================== หน้าจอคอม: แถบหมวด · คำทักทาย · สีประจำหมวด · Ctrl+K ===================== */
+const HUB_TINTS = [['#EEE8F8','#4b2e83'],['#FFF1DC','#B26A00'],['#E3F1FB','#1B5E8C'],['#E6F4EA','#2e7d32'],['#F3ECE2','#8A5A2B'],['#E8EEF9','#2B4C8C'],['#FBE9EC','#B03A48']];
+function setupDesktop(){
+  const side = document.getElementById('hubSide');
+  const groups = Array.from(document.querySelectorAll('.app-grid .grp'));
+  const appTint = {};
+  groups.forEach((g,i)=>{
+    const t = HUB_TINTS[i % HUB_TINTS.length], h = g.querySelector('.grp-h');
+    g.id = g.id || ('grp' + i);
+    g.style.setProperty('--tint', t[0]);
+    g.querySelectorAll('.app-tile[data-app]').forEach(a=>{ appTint[a.dataset.app] = t[0]; });
+    if(h && !h.querySelector('.dot')){
+      const n = g.querySelectorAll('.app-tile').length;
+      h.insertAdjacentHTML('afterbegin', '<span class="dot" style="background:' + t[1] + '"></span>');
+      h.insertAdjacentHTML('beforeend', ' <em>' + n + '</em>');
+    }
+  });
+  // การ์ดใช้บ่อย: สีพื้นไอคอนตามหมวด + ลำดับเคลื่อนไหวทีละใบ
+  document.querySelectorAll('#favGrid .app-tile').forEach((a,i)=>{ a.style.setProperty('--i', i); if(appTint[a.dataset.app]) a.style.setProperty('--tint', appTint[a.dataset.app]); });
+  if(side && !side.dataset.ready){
+    side.dataset.ready = '1';
+    const total = document.querySelectorAll('.app-grid .grp .app-tile').length;
+    const label = h => (h.childNodes ? Array.from(h.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim() : '');
+    side.innerHTML = '<a data-go="top" class="on"><span class="dot" style="background:#4b2e83"></span>ทั้งหมด<em>' + total + '</em></a>' +
+      groups.map((g,i)=>'<a data-go="' + g.id + '"><span class="dot" style="background:' + HUB_TINTS[i % HUB_TINTS.length][1] + '"></span>' +
+        label(g.querySelector('.grp-h')) + '<em>' + g.querySelectorAll('.app-tile').length + '</em></a>').join('');
+    side.addEventListener('click', e=>{
+      const a = e.target.closest('a[data-go]'); if(!a) return;
+      const inp = document.getElementById('appSearch');
+      if(inp && inp.value){ inp.value = ''; inp.dispatchEvent(new Event('input')); }
+      if(a.dataset.go === 'top') window.scrollTo({ top:0, behavior:'smooth' });
+      else { const g = document.getElementById(a.dataset.go); if(g) g.scrollIntoView({ behavior:'smooth', block:'start' }); }
+    });
+    // ไฮไลต์หมวดที่กำลังดูอยู่
+    const mark = ()=>{
+      let cur = 'top';
+      if(window.scrollY > 60) groups.forEach(g=>{ if(g.offsetParent && g.getBoundingClientRect().top < 160) cur = g.id; });
+      side.querySelectorAll('a').forEach(a=> a.classList.toggle('on', a.dataset.go === cur));
+    };
+    window.addEventListener('scroll', mark, { passive:true });
+  }
+  const hello = document.getElementById('hubHello');
+  if(hello){
+    const d = new Date().toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const nm = (CURRENT_USER.name && CURRENT_USER.role) ? CURRENT_USER.name.split(/\s+/)[0] : '';
+    hello.innerHTML = '<b>' + (nm ? 'สวัสดีครับ คุณ' + nm.replace(/[<>&]/g,'') : 'สวัสดีครับ') + '</b><span>' + d + '</span>';
+  }
+}
+document.addEventListener('keydown', e=>{
+  if((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K' || e.key === 'ด')){
+    const inp = document.getElementById('appSearch'); if(!inp) return;
+    e.preventDefault(); inp.dispatchEvent(new Event('pointerdown')); inp.focus(); inp.select();
+  }
+});
 /* เริ่มทำงาน: แสดงรายการทันที (ใช้สถิติที่จำไว้) → ตรวจสิทธิ์ + ดึงสถิติใหม่ พร้อมกันเบื้องหลัง */
 function boot(){
   const has = CURRENT_USER.name && CURRENT_USER.password;
@@ -795,6 +920,7 @@ function boot(){
   buildFavRow();            // ต้องสร้างก่อน เพื่อให้ applyStats/hub-admin เห็นเป็นแถวปกติ
   setupSearch();
   updateUserBadge();
+  setupDesktop();
   const cached = lsGet(K_STATS);
   if(cached && cached.stats && CURRENT_USER.role) applyStats(cached.stats, cached.appList);
   showGridNow();
