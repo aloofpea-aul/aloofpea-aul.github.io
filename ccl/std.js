@@ -120,6 +120,18 @@
       '#sx .sx-it{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:8px}',
       '#sx .sx-it.f{border-color:#fca5a5;background:#fff7f7}',
       '#sx .sx-it.p{border-color:#bbf7d0}',
+      '#sx .sx-it.u{border:1.5px dashed #cbd5e1;background:#fcfcfd}',
+      '#sx .sx-ut{display:inline-block;font-size:11px;color:#64748b;background:#f1f5f9;border-radius:6px;padding:0 7px;margin-left:6px;vertical-align:1px}',
+      '#sx .sx-restw{position:relative}',
+      '#sx .sx-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;width:250px}',
+      '#sx .sx-pop button{display:block;width:100%;text-align:left;border:0;background:none;border-radius:9px;padding:10px 12px;font-size:14px;cursor:pointer;color:#334155}',
+      '#sx .sx-pop button:first-child{background:#f0fdf4;color:#15803d;font-weight:700}',
+      '#sx .sx-pop button:hover{background:#f1f5f9}',
+      '#sx .sx-una{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px 14px;margin:0 0 12px;font-size:13.5px}',
+      '#sx .sx-una b{display:block;margin-bottom:4px}',
+      '#sx .sx-una .r{display:flex;gap:8px;margin-top:10px}',
+      '#sx .sx-una .r button{flex:1;min-height:40px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #fdba74;background:#fff;color:#9a3412}',
+      '#sx .sx-una .r button.na{background:#64748b;border-color:#64748b;color:#fff}',
       '#sx .sx-it .t{font-size:14px;color:#0f172a;line-height:1.45}',
       '#sx .sx-it .sub{font-size:12px;color:#64748b;white-space:pre-line;line-height:1.45;margin-top:2px}',
       '#sx .sx-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}',
@@ -270,16 +282,16 @@
   function hasAnything() { return S && Object.keys(S.data).some(function (k) { return S.data[k].result; }); }
 
   function counts() {
-    var done = 0, total = 0, fail = 0, unset = [];
+    var done = 0, total = 0, fail = 0, na = 0, unset = [];
     SEC.forEach(function (s) {
       if (!S.sections[s.k]) return;
       resItems(s.k).forEach(function (x) {
         var k = x.k, r = S.data[k].result;
         if (S.recheck && S.fails.indexOf(k) < 0) return;
-        total++; if (r) done++; else unset.push(k); if (r === 'fail') fail++;
+        total++; if (r) done++; else unset.push(k); if (r === 'fail') fail++; if (r === 'na') na++;
       });
     });
-    return { done: done, total: total, fail: fail, unset: unset };
+    return { done: done, total: total, fail: fail, na: na, unset: unset };
   }
 
   function render() {
@@ -325,7 +337,7 @@
         return false;
       });
       if (!shown.some(function (x) { return !x.head; })) return;
-      h += '<div class="sx-sec"><b>' + s.t + '</b>' + (!S.recheck ? '<button class="sx-all" data-a="rest" data-k="' + s.k + '"><i class="fa-solid fa-check-double"></i> ข้อที่เหลือถูกต้อง</button>' : '') + '</div>';
+      h += '<div class="sx-sec"><b>' + s.t + '</b>' + (!S.recheck ? '<span class="sx-restw"><button class="sx-all" data-a="restmenu" data-k="' + s.k + '"><i class="fa-solid fa-check-double"></i> ข้อที่เหลือ ▾</button>' + (S.restOpen === s.k ? '<div class="sx-pop"><button data-a="rest" data-k="' + s.k + '" data-v="pass">✓ ข้อที่เหลือ = ถูกต้อง</button><button data-a="rest" data-k="' + s.k + '" data-v="na">— ข้อที่เหลือ = ไม่มี / ไม่ได้ตรวจ</button></div>' : '') + '</span>' : '') + '</div>';
       shown.forEach(function (x) {
         if (x.head) { h += '<div class="sx-grp">' + esc(x.t) + '</div>'; return; }
         h += itemHtml(x, S.recheck && S.fails.indexOf(x.k) < 0);
@@ -337,8 +349,9 @@
 
   function itemHtml(x, ro) {
     var k = x.k, d = S.data[k], r = d.result;
-    var h = '<div class="sx-it' + (x.sub ? ' sub' : '') + (r === 'fail' ? ' f' : r === 'pass' ? ' p' : '') + '" id="sxi_' + k + '"' + (ro ? ' style="opacity:.6"' : '') + '>' +
-      '<div class="t">' + (x.sub ? '<span class="sx-dash">–</span> ' : '') + esc(x.t) + '</div>';
+    var un = !r && !ro && !S.recheck;
+    var h = '<div class="sx-it' + (x.sub ? ' sub' : '') + (r === 'fail' ? ' f' : r === 'pass' ? ' p' : '') + (un ? ' u' : '') + '" id="sxi_' + k + '"' + (ro ? ' style="opacity:.6"' : '') + '>' +
+      '<div class="t">' + (x.sub ? '<span class="sx-dash">–</span> ' : '') + esc(x.t) + (un ? '<span class="sx-ut">ยังไม่เลือก</span>' : '') + '</div>';
     if (ro) {
       h += '<div class="sub" style="margin-top:4px">' + (r === 'pass' ? '✓ ถูกต้อง' : r === 'na' ? '— ไม่มีการตรวจ' : r === 'fail' ? '✗ ต้องแก้ไข' : '-') + (d.fixed ? ' · แก้ไขแล้ว' : '') + '</div></div>';
       return h;
@@ -422,6 +435,12 @@
     if (res === 'pass') h += '<div class="sx-res ok"><i class="fa-solid fa-circle-check"></i> ผ่านการตรวจมาตรฐาน' + (S.recheck ? ' (แก้ไขครบแล้ว)' : '') + '<small>ระบบสรุปให้จากผลรายข้อ</small></div>';
     else if (res === 'fail') h += '<div class="sx-res ng"><i class="fa-solid fa-circle-xmark"></i> ไม่ผ่าน · ต้องแก้ไข ' + c.fail + ' รายการ<small>ระบบสรุปให้จากผลรายข้อ — แจ้งผู้ควบคุมงาน แล้วตรวจซ้ำเมื่อแก้เสร็จ</small></div>';
     else h += '<div class="sx-res wait"><i class="fa-solid fa-hourglass-half"></i> ยังตรวจไม่ครบ ' + c.unset.length + ' ข้อ<small>บันทึกร่างไว้ก่อนได้ หรือ <button class="sx-link" data-a="gounset" style="padding:0;font-size:12px">ไปข้อที่ยังไม่ได้เลือก</button></small></div>';
+    if (!S.recheck && c.unset.length) {
+      var where = SEC.filter(function (s) { return S.sections[s.k]; }).map(function (s) {
+        var n = resItems(s.k).filter(function (x) { return !S.data[x.k].result; }).length; return n ? s.t + ' (' + n + ' ข้อ)' : ''; }).filter(Boolean).join(' · ');
+      h += '<div class="sx-una"><b>ไม่ได้เลือก ' + c.unset.length + ' ข้อ — จะบันทึกและพิมพ์เป็น "—" (ไม่มี/ไม่ได้ตรวจ)</b>' + esc(where) +
+        '<div class="r"><button data-a="gounset">ดูข้อที่ยังไม่เลือก</button><button class="na" data-a="fillna">ยืนยัน ใส่ — ทั้งหมด</button></div></div>';
+    }
     var fl = failList();
     if (fl.length) h += '<div class="sx-card"><div class="sx-lb">รายการที่ต้องแก้ไข</div>' + fl.map(function (x) { return '<div style="font-size:13px;margin:4px 0;color:#991b1b">• ' + esc(x.label) + (x.detail ? ' — <span style="color:#475569">' + esc(x.detail) + '</span>' : '') + '</div>'; }).join('') + '</div>';
     var com = committee();
@@ -454,8 +473,11 @@
     c = c || counts();
     if (!c.total) return '';
     if (c.fail) return 'fail';
-    if (c.unset.length) return '';
+    if (c.unset.length && S.recheck) return '';   // ตรวจซ้ำต้องตัดสินครบทุกข้อ · ตรวจปกติ ข้อที่ไม่ได้เลือก = — ไม่มี
     return 'pass';
+  }
+  function fillNa() {
+    SEC.forEach(function (s) { if (!S.sections[s.k]) return; resItems(s.k).forEach(function (x) { var d = S.data[x.k]; if (!d.result) d.result = 'na'; }); });
   }
   function failList() {
     var out = [];
@@ -468,6 +490,7 @@
 
   // ───── เหตุการณ์ ─────
   function onClick(e) {
+    if (S && S.restOpen && !e.target.closest('.sx-restw')) { S.restOpen = ''; S._keep = true; render(); }   // ปิดเมนู "ข้อที่เหลือ"
     var b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     if (b.tagName === 'SELECT') return;
     var a = b.dataset.a, k = b.dataset.k;
@@ -482,10 +505,13 @@
       if (v === 'fail' && d.result === 'fail') { var ta = document.querySelector('#sxi_' + k + ' textarea'); if (ta && !ta.value) ta.focus(); }
       return;
     }
+    if (a === 'restmenu') { S.restOpen = S.restOpen === k ? '' : k; S._keep = true; return render(); }
     if (a === 'rest') {
-      resItems(k).forEach(function (x) { var d = S.data[x.k]; if (!d.result) d.result = 'pass'; });
-      S.dirty = true; S._keep = true; return render();
+      var rv = b.dataset.v === 'na' ? 'na' : 'pass';
+      resItems(k).forEach(function (x) { var d = S.data[x.k]; if (!d.result) d.result = rv; });
+      S.restOpen = ''; S.dirty = true; S._keep = true; return render();
     }
+    if (a === 'fillna') { fillNa(); S.dirty = true; S._keep = true; return render(); }
     if (a === 'rem') { S['rem_' + k] = true; S._keep = true; render(); var x = document.querySelector('#sxi_' + k + ' input[data-f="remark"]'); if (x) x.focus(); return; }
     if (a === 'showall') { S.showAll = !S.showAll; return render(); }
     if (a === 'next') { syncInfo(); S.view = 'sum'; render(); $('sxBody').scrollTop = 0; return; }
@@ -601,6 +627,7 @@
     if (S.saving) return;
     var final = mode === 'final', res = resultNow();
     if (final && !res) return;
+    if (final && !S.recheck) fillNa();   // ข้อที่ไม่ได้เลือก = — ไม่มี (ให้ข้อมูลในระบบตรงกับใบที่พิมพ์)
     if (final && !(S.meta.committee || []).some(function (c) { return String(c.name || '').trim(); })) { alertErr('กรุณาระบุชื่อผู้ตรวจสอบฯ อย่างน้อย 1 ท่าน'); return; }
     if (final && !S.meta.inspDate) { alertErr('กรุณาระบุวันที่ตรวจ'); return; }
     if (final && res === 'fail') {
@@ -708,7 +735,7 @@
         if (col === 1 && ni !== undefined) runs[0].t = runs[0].t.replace(/\(.*\)/, '( ' + (cm[ni].name ? ' ' + cm[ni].name + '  ' : '.................................................') + ' )');
         var fill = col === 6 ? FILL[r + 'F'] : (col === 1 ? FILL[r] : null);
         if (it && col === 5) {   // ช่องผลการตรวจ
-          var d = D(it.k), sym = d.fixed ? '✓' : (SYM[d.result] || '');
+          var d = D(it.k), sym = d.fixed ? '✓' : (SYM[d.result] || SYM.na);
           fill = { v: [sym] };
         }
         inner = runsHtml(runs, fill);
