@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script src="/pea-hub.js" data-app="stock" data-perm="login" data-name="ระบบคลังพัสดุ"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ระบบคลังพัสดุ · กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#2a0f33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="คลังพัสดุ">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="preload" href="materials.webp" as="image">
+<style>
+:root{--top:#2a0f33;--pea:#6a1b74;--pea2:#4a0f52;--gold:#f2b33d;--bg:#f6f5f8;--card:#fff;--line:#e4e1ea;--ink:#1c1a22;--mute:#5f5a6b;--faint:#a39dae;--blue:#1a4fa0;--blueBg:#e6effc;--warn:#8a4500;--warnBg:#fff1dc;--red:#9b1c1c;--redBg:#fde8e8}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--pea);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.app{display:flex;flex-direction:column;position:fixed;inset:0}
+.top{background:var(--top);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px;flex:none}
+.top .logo{width:38px;height:38px;border-radius:10px;background:var(--gold);display:grid;place-items:center;flex:none}
+.top h1{font-size:17px;margin:0;font-weight:700;line-height:1.15}
+.top small{display:block;font-weight:400;color:#d9cfe0;font-size:12.5px}
+.top .sp{flex:1}
+.ibtn{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:10px;min-width:44px;height:44px;display:grid;place-items:center}
+.main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:1360px;margin:0 auto;padding:14px max(14px,env(safe-area-inset-left,0px)) 28px}
+.bnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.bnav button{flex:1;border:0;background:none;padding:8px 0 6px;color:var(--mute);font-size:12.5px;line-height:1.3;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px}
+.bnav button.on{color:var(--pea);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.muted{color:var(--mute);font-size:13px}
+.slocs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+@media (max-width:640px){.slocs{display:flex;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory}.slocs .sl{flex:0 0 148px;scroll-snap-align:start}}
+.sl{border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:12px;text-align:left;min-height:118px;display:flex;flex-direction:column;gap:2px}
+.sl .h{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.sl .code{font-size:12px;padding:1px 8px;border-radius:6px;background:#efe6f2;color:var(--pea2)}
+.sl .n{font-size:12px;color:var(--mute)}
+.sl .nm{font-size:18px;font-weight:700;margin-top:6px;line-height:1.2}
+.sl .bar{height:5px;border-radius:3px;background:#eeeaf2;margin-top:auto}
+.sl .bar i{display:block;height:5px;border-radius:3px;background:var(--pea)}
+.sl.on{background:var(--top);border-color:var(--top);color:#fff}
+.sl.on .code{background:var(--gold);color:var(--top)}
+.sl.on .n{color:#d9cfe0}
+.sl.on .bar{background:#4a2a55}.sl.on .bar i{background:var(--gold)}
+.head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:16px 0 10px}
+.head h2{margin:0;font-size:20px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.search{flex:1 1 300px;display:flex;align-items:center;gap:8px;border:1.5px solid #cfc9d8;border-radius:12px;padding:0 12px;height:48px;background:#fff}
+.search input{border:0;outline:none;flex:1;min-width:0;font-size:15px;height:44px;background:transparent}
+.seg{display:inline-flex;border:1px solid #cfc9d8;border-radius:12px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;min-height:46px;padding:0 14px;font-size:14px}
+.seg button.on{background:var(--pea);color:#fff;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+@media (max-width:640px){.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}}
+.chip{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #cfc9d8;background:#fff;font-size:14px}
+.chip.on{border-color:var(--pea);background:#efe6f2;color:var(--pea2);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-top:14px}
+@media (max-width:440px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+.it{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff;min-width:0}
+.it:hover{border-color:#cdb7d4}
+.pic{background-image:url(materials.webp);background-repeat:no-repeat;background-color:#fff;border-radius:10px;flex:none}
+.nopic{border:1.5px dashed #cfc9d8;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mute);font-size:11.5px;flex:none;text-align:center}
+.it .pw{display:flex;justify-content:center;background:#fff;border:1px solid #f0edf4;border-radius:10px}
+.it .m{font-size:11.5px;color:var(--mute)}
+.it .t{font-size:14px;font-weight:600;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.it .e{font-size:11.5px;color:var(--mute);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.it .q{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-top:auto;padding-top:6px;border-top:1px solid #f0edf4}
+.it .q b{font-size:21px}
+.it .q span{font-size:11.5px;color:var(--blue);text-align:right;line-height:1.25}
+.tbl{overflow-x:auto;margin-top:14px;border:1px solid #eeeaf2;border-radius:12px;background:#fff}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:14px}
+th{background:#faf8fc;color:var(--mute);font-weight:600;text-align:left;padding:9px 10px;position:sticky;top:0}
+th.r,td.r{text-align:right;font-variant-numeric:tabular-nums}
+td{border-top:1px solid #eeeaf2;padding:7px 10px;vertical-align:middle}
+td.z{color:var(--faint)}
+td.cur,th.cur{background:#f6eef8}
+tr.row{cursor:pointer}tr.row:hover td{background:#fbf9fc}
+.more{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+.btn{border:1px solid #cfc9d8;background:#fff;border-radius:12px;min-height:44px;padding:0 16px;font-size:14px;font-weight:600}
+.btn.p{background:var(--pea);border-color:var(--pea);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.empty{text-align:center;padding:40px 10px;color:var(--mute)}
+.note{background:var(--warnBg);border:1px solid #f1d9b0;color:#7a3d06;border-radius:12px;padding:10px 14px;font-size:13.5px}
+.note.b{background:var(--blueBg);border-color:#c9dbf5;color:var(--blue)}
+.tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600}
+.tag.ok{background:var(--blueBg);color:var(--blue)}.tag.w{background:var(--warnBg);color:var(--warn)}.tag.r{background:var(--redBg);color:var(--red)}
+/* sheet */
+.dim{position:fixed;inset:0;background:rgba(20,10,25,.45);display:none;z-index:50;align-items:flex-end;justify-content:center}
+.dim.show{display:flex}
+@media (min-width:760px){.dim{align-items:center}}
+.sheet{background:#fff;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (min-width:760px){.sheet{border-radius:20px}}
+.sheet .x{float:right}
+.bars .r{display:flex;align-items:center;gap:10px;padding:6px 0}
+.bars .r .l{width:118px;font-size:14px;line-height:1.2}
+.bars .r .l small{display:block;color:var(--mute);font-size:11px}
+.bars .r .b{flex:1;height:10px;border-radius:5px;background:#eeeaf2}
+.bars .r .b i{display:block;height:10px;border-radius:5px;background:var(--pea)}
+.bars .r .v{width:70px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #f0edf4;font-size:14px}
+.drop{border:2px dashed #b9a5c2;background:#fff;border-radius:18px;padding:26px 16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.drop.over{background:#f6eef8;border-color:var(--pea)}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2a0f33;color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;z-index:80;display:none;max-width:90vw}
+.sr{position:absolute;left:-9999px}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2a0f33" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg></div>
+    <div><h1>คลังพัสดุ กฟส.อ่าวลึก</h1><small id="sub">กำลังโหลด…</small></div>
+    <div class="sp"></div>
+    <button class="ibtn" id="reload" aria-label="โหลดข้อมูลใหม่"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg></button>
+    <a class="ibtn" href="/index.html" aria-label="กลับศูนย์รวมงาน"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg></a>
+  </header>
+  <main class="main" id="main"><div class="wrap" id="view"></div></main>
+  <nav class="bnav" aria-label="เมนูหลัก">
+    <button data-t="stock" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>คลัง</button>
+    <button data-t="import"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg>นำเข้า SAP</button>
+  </nav>
+</div>
+<div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+/* ---------------- ตั้งค่า ---------------- */
+const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้านระบบคลังพัสดุ (…/exec) · ว่าง = โหมดทดลอง เก็บในเครื่องนี้
+const lsr = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const API_URL = () => lsr('stock_api') || API_DEFAULT;
+const LOCAL = () => !API_URL();
+const cred = () => ({ user: lsr('pea_aoluek_username') || '', pass: lsr('pea_aoluek_password') || '' });
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => (!n ? '–' : Number(n).toLocaleString('th-TH', { maximumFractionDigits: 2 }));
+const toast = (m, ms) => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(() => t.style.display = 'none', ms || 2600); };
+const GROUPS = [['all', 'ทุกหมวด'], ['1-00', 'เสา / คอน / สมอ'], ['1-01', 'เหล็ก / น็อต / แหวน'], ['1-02', 'สาย / ข้อต่อ'], ['1-03', 'ลูกถ้วย / แร็ค'], ['1-04', 'ฟิวส์ / ป้องกัน / สวิตช์'], ['1-05', 'หม้อแปลง / คาปาซิเตอร์'], ['1-06', 'มิเตอร์ / CT / VT'], ['other', 'อื่นๆ']];
+const MAIN_G = ['1-00', '1-01', '1-02', '1-03', '1-04', '1-05', '1-06'];
+const DEF_SLOCS = [{ code: '0023', name: 'สำรองแก้ไฟ' }, { code: '2201', name: 'ผปร' }, { code: '1201', name: 'ผมต' }, { code: '6006', name: 'กองหมอน' }, { code: '0201', name: 'กฟส.อ่าวลึก' }];
+
+/* ---------------- สถานะ ---------------- */
+let DB = { slocs: DEF_SLOCS, rows: [], imports: {}, me: { name: cred().user, admin: false } };
+let MAT = {};             // รหัส 10 หลัก → [ชื่อไทย, ลำดับรูป]
+let ITEMS = [];           // รวมรายรหัส
+const ST = { tab: 'stock', s: lsr('stock_sloc') || '0023', g: 'all', q: '', view: lsr('stock_view') || 'cards', lim: 48 };
+
+/* ---------------- หลังบ้าน ---------------- */
+async function api(action, payload) {
+  if (LOCAL()) return localApi(action, payload || {});
+  const c = cred();
+  if (!c.user) { const e = new Error('ยังไม่ได้เข้าสู่ระบบศูนย์รวมงาน'); e.code = 'unauthorized'; throw e; }
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
+  let j;
+  try {
+    const r = await fetch(API_URL(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, user: c.user, pass: c.pass }, payload || {})), signal: ctrl.signal });
+    j = await r.json();
+  } catch (e) { throw new Error(e.name === 'AbortError' ? 'เซิร์ฟเวอร์ตอบช้าเกินไป ลองใหม่อีกครั้ง' : 'เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ต'); }
+  finally { clearTimeout(t); }
+  if (!j || !j.ok) { const e = new Error((j && (j.message || j.error)) || 'ไม่ทราบสาเหตุ'); e.code = j && j.error; throw e; }
+  return j;
+}
+/* โหมดทดลอง: เก็บในเครื่องนี้ด้วยกติกาเดียวกับหลังบ้าน */
+function localApi(action, b) {
+  const L = JSON.parse(lsr('stock_local') || '{"rows":[],"imports":{}}');
+  if (action === 'bootstrap') return Promise.resolve({ ok: true, slocs: DEF_SLOCS, rows: L.rows, imports: L.imports, me: { name: cred().user || 'ทดลอง', admin: true }, local: true });
+  if (action === 'importSap') {
+    const now = new Date().toISOString();
+    L.rows = L.rows.filter(r => r[0] !== b.sloc).concat(b.rows.map(r => [b.sloc, r[0], r[1], r[2], r[3], r[4], r[5]]));
+    L.imports[b.sloc] = { at: now, by: cred().user || 'ทดลอง', file: b.file };
+    lsr('stock_local', JSON.stringify(L));
+    return Promise.resolve({ ok: true, sloc: b.sloc, rows: b.rows.length });
+  }
+  if (action === 'moves') return Promise.resolve({ ok: true, moves: [] });
+  return Promise.reject(new Error('โหมดทดลองไม่รองรับ'));
+}
+
+/* ---------------- รวมข้อมูล ---------------- */
+function build() {
+  const idx = {}; ITEMS = [];
+  const sl = DB.slocs.map(s => s.code);
+  DB.rows.forEach(r => {
+    const [s, m, d, b, q, u, tr] = r;
+    let it = idx[m];
+    if (!it) {
+      const mm = MAT[m.replace(/-/g, '')] || ['', -1];
+      it = idx[m] = { m, en: String(d).replace(/^"|"$/g, ''), th: mm[0], img: mm[1], u, q: {}, b: {}, tr: 0, tot: 0 };
+      ITEMS.push(it);
+    }
+    it.q[s] = (it.q[s] || 0) + (Number(q) || 0);
+    if (Number(q)) { const k = s + '|' + (b || '-'); it.b[k] = (it.b[k] || 0) + Number(q); }
+    it.tr += Number(tr) || 0;
+  });
+  ITEMS.forEach(it => { it.tot = sl.reduce((a, s) => a + (it.q[s] || 0), 0); it.key = (it.m + ' ' + it.th + ' ' + it.en).toLowerCase(); });
+  ITEMS.sort((a, b) => a.m.localeCompare(b.m));
+}
+function slocName(c) { const s = DB.slocs.find(x => x.code === c); return s ? s.name : c; }
+function pic(i, s) {
+  if (i == null || i < 0) return `<div class="nopic" style="width:${s}px;height:${s}px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>${s >= 90 ? 'ยังไม่มีรูป' : ''}</div>`;
+  return `<div class="pic" role="img" aria-label="ภาพประกอบ" style="width:${s}px;height:${s}px;background-size:${12 * s}px auto;background-position:-${(i % 12) * s}px -${Math.floor(i / 12) * s}px"></div>`;
+}
+
+/* ---------------- หน้า: คลัง ---------------- */
+function viewStock() {
+  const slocs = [{ code: 'all', name: 'ทุกคลัง' }].concat(DB.slocs);
+  const cnt = c => c === 'all' ? [ITEMS.filter(i => i.tot > 0).length, ITEMS.length] : [ITEMS.filter(i => (i.q[c] || 0) > 0).length, ITEMS.filter(i => c in i.q).length];
+  if (!DB.rows.length) {
+    $('#view').innerHTML = `<div class="card empty"><div style="font-size:18px;font-weight:700;color:var(--ink)">ยังไม่มีข้อมูลยอดคลัง</div><p>นำเข้าไฟล์ที่ export จาก SAP (MB52) ก่อน วางได้ทีละหลายไฟล์</p><button class="btn p" onclick="go('import')">ไปหน้านำเข้า SAP</button></div>`;
+    return;
+  }
+  const q = ST.q.trim().toLowerCase(), si = ST.s;
+  const list = ITEMS.filter(i => {
+    if (si === 'all' ? !(i.tot > 0) : !((i.q[si] || 0) > 0)) return false;
+    if (ST.g === 'other') { if (MAIN_G.includes(i.m.slice(0, 4))) return false; } else if (ST.g !== 'all' && !i.m.startsWith(ST.g)) return false;
+    return !q || q.split(/\s+/).every(w => i.key.includes(w));
+  });
+  const show = list.slice(0, ST.lim);
+  const cur = slocs.find(s => s.code === si) || slocs[0];
+  const imp = si !== 'all' && DB.imports[si];
+  let h = `<section aria-label="เลือกคลังย่อย"><div class="slocs">` + slocs.map(s => {
+    const [nz, all] = cnt(s.code);
+    return `<button class="sl${s.code === si ? ' on' : ''}" data-s="${s.code}" aria-pressed="${s.code === si}"><span class="h"><span class="code mono">${s.code === 'all' ? 'ALL' : s.code}</span><span class="n">${nz} / ${all}</span></span><span class="nm">${esc(s.name)}</span><span class="n">${s.code === 'all' ? 'รวมทุกคลังย่อย' : 'มีของ / รหัสทั้งหมด'}</span><span class="bar"><i style="width:${all ? Math.round(nz / all * 100) : 0}%"></i></span></button>`;
+  }).join('') + `</div></section>`;
+  h += `<div class="head"><div><h2>${si === 'all' ? 'ทุกคลังย่อย' : 'คลัง ' + esc(cur.name) + ' <span class="mono" style="font-size:14px;color:var(--mute)">' + si + '</span>'}</h2>
+    <div class="muted">${si === 'all' ? 'ยอด SAP รวมทุกคลัง เทียบได้ในแถวเดียว' : 'แสดงเฉพาะพัสดุที่มียอดในคลังนี้' + (imp ? ' · ยอด SAP ณ ' + thDate(imp.at) : '')}</div></div></div>`;
+  h += `<div class="tools"><label class="search"><span class="sr">ค้นหาพัสดุ</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5f5a6b" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" value="${esc(ST.q)}" placeholder="ค้นหา ไทย / อังกฤษ / รหัส เช่น ฟิวส์, bolt, 1-04-003" autocomplete="off"></label>
+    <div class="seg" role="group" aria-label="มุมมอง"><button data-v="cards" class="${ST.view === 'cards' ? 'on' : ''}">การ์ดรูป</button><button data-v="table" class="${ST.view === 'table' ? 'on' : ''}">ตาราง</button></div></div>`;
+  h += `<div class="chips" role="group" aria-label="หมวดพัสดุ">` + GROUPS.map(g => `<button class="chip${ST.g === g[0] ? ' on' : ''}" data-g="${g[0]}">${g[1]}</button>`).join('') + `</div>`;
+  if (!show.length) h += `<div class="card empty" style="margin-top:14px">ไม่พบรายการที่ค้นหา</div>`;
+  else if (ST.view === 'cards') {
+    h += `<div class="grid">` + show.map(i => {
+      const here = si === 'all' ? i.tot : (i.q[si] || 0);
+      const oth = DB.slocs.filter(s => s.code !== si && (i.q[s.code] || 0) > 0);
+      const o = si === 'all' ? oth.length + ' คลังมีของ' : (oth.length ? 'คลังอื่นมี ' + oth.map(s => esc(s.name) + ' ' + fmt(i.q[s.code])).join(', ') : '');
+      return `<button class="it" data-m="${i.m}"><div class="pw">${pic(i.img, 110)}</div><div class="m mono">${i.m}</div><div class="t">${esc(i.th || i.en)}</div>${i.th ? `<div class="e">${esc(i.en)}</div>` : ''}<div class="q"><b>${fmt(here)} <small style="font-size:12px;font-weight:500;color:var(--mute)">${esc(i.u)}</small></b><span>${o}</span></div></button>`;
+    }).join('') + `</div>`;
+  } else {
+    h += `<div class="tbl"><table><thead><tr><th style="width:56px">รูป</th><th>รหัส / รายการ</th>` + DB.slocs.map(s => `<th class="r${s.code === si ? ' cur' : ''}">${esc(s.name)}<br><span class="mono" style="font-weight:400;font-size:11px">${s.code}</span></th>`).join('') + `<th class="r">รวม</th></tr></thead><tbody>` +
+      show.map(i => `<tr class="row" data-m="${i.m}"><td>${pic(i.img, 40)}</td><td><div class="mono" style="font-size:12px;color:var(--mute)">${i.m}</div>${esc(i.th || i.en)} <span class="muted">(${esc(i.u)})</span>${i.th ? `<div class="muted" style="font-size:12px">${esc(i.en)}</div>` : ''}</td>` +
+        DB.slocs.map(s => `<td class="r${(i.q[s.code] || 0) ? '' : ' z'}${s.code === si ? ' cur' : ''}">${fmt(i.q[s.code])}</td>`).join('') + `<td class="r"><b>${fmt(i.tot)}</b></td></tr>`).join('') + `</tbody></table></div>`;
+  }
+  h += `<div class="more"><div class="muted">แสดง ${show.length} จาก ${list.length} รายการ · มีภาพประกอบ ${list.filter(i => i.img >= 0).length} รายการ (จากคลังแบบมาตรฐาน)</div>${list.length > ST.lim ? '<button class="btn" id="moreBtn">แสดงเพิ่ม</button>' : ''}</div>`;
+  $('#view').innerHTML = h;
+  const qi = $('#q');
+  qi.oninput = () => { ST.q = qi.value; ST.lim = 48; clearTimeout(qi._t); qi._t = setTimeout(() => { const p = qi.selectionStart; viewStock(); const n = $('#q'); n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} }, 180); };
+  document.querySelectorAll('.sl').forEach(b => b.onclick = () => { ST.s = b.dataset.s; ST.lim = 48; lsr('stock_sloc', ST.s); viewStock(); });
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => { ST.g = b.dataset.g; ST.lim = 48; viewStock(); });
+  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { ST.view = b.dataset.v; lsr('stock_view', ST.view); viewStock(); });
+  document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => openItem(b.dataset.m));
+  const mb = $('#moreBtn'); if (mb) mb.onclick = () => { ST.lim += 48; viewStock(); };
+}
+function thDate(s) { if (!s) return ''; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) + ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); }
+
+/* ---------------- รายละเอียดพัสดุ ---------------- */
+function openItem(m) {
+  const i = ITEMS.find(x => x.m === m); if (!i) return;
+  const mx = Math.max(1, ...DB.slocs.map(s => i.q[s.code] || 0));
+  const bt = Object.keys(i.b).map(k => { const [s, b] = k.split('|'); return [s, b, i.b[k]]; });
+  $('#sheet').innerHTML = `<button class="ibtn x" style="background:#f0edf4;color:var(--ink)" onclick="closeSheet()" aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="mono muted">${i.m}</div><h2 id="dTitle" style="margin:2px 0 0;font-size:20px;line-height:1.3">${esc(i.th || i.en)}</h2>${i.th ? `<div class="muted">${esc(i.en)}</div>` : ''}
+    <div style="display:flex;gap:14px;align-items:center;margin:14px 0">${pic(i.img, 150)}<div><div class="muted">คงเหลือรวมทุกคลัง (SAP)</div><div style="font-size:36px;font-weight:700;line-height:1.1">${fmt(i.tot)} <span style="font-size:15px;font-weight:500;color:var(--mute)">${esc(i.u)}</span></div>${i.tr ? `<div class="tag w" style="margin-top:4px">ระหว่างโอน ${fmt(i.tr)}</div>` : ''}</div></div>
+    <h3 style="font-size:15px;margin:6px 0">แยกตามคลังย่อย</h3>
+    <div class="bars">` + DB.slocs.map(s => `<div class="r"><div class="l">${esc(s.name)}<small class="mono">${s.code}</small></div><div class="b"><i style="width:${Math.round((i.q[s.code] || 0) / mx * 100)}%"></i></div><div class="v"${(i.q[s.code] || 0) ? '' : ' style="color:var(--faint)"'}>${fmt(i.q[s.code])}</div></div>`).join('') + `</div>
+    ${bt.length ? `<h3 style="font-size:15px;margin:14px 0 4px">แบทช์ที่มีของ</h3>` + bt.map(x => `<div class="kv"><span>${esc(slocName(x[0]))} · <span class="mono">${esc(x[1])}</span></span><b>${fmt(x[2])}</b></div>`).join('') : ''}
+    <h3 style="font-size:15px;margin:14px 0 4px">ความเคลื่อนไหวจากการนำเข้า</h3><div id="mv" class="muted">กำลังโหลด…</div>`;
+  $('#dim').classList.add('show');
+  api('moves', { mat: m }).then(r => {
+    const el = $('#mv'); if (!el) return;
+    el.innerHTML = r.moves && r.moves.length ? r.moves.map(x => `<div class="kv"><span>${thDate(x.at)} · ${esc(slocName(x.sloc))}</span><b style="color:${x.diff < 0 ? 'var(--warn)' : 'var(--blue)'}">${x.diff > 0 ? '+' : ''}${fmt(x.diff) === '–' ? 0 : Number(x.diff).toLocaleString('th-TH')} → ${fmt(x.after)}</b></div>`).join('') : 'ยังไม่มี (จะแสดงเมื่อนำเข้าไฟล์รอบถัดไปแล้วยอดเปลี่ยน)';
+  }).catch(e => { const el = $('#mv'); if (el) el.textContent = e.message; });
+}
+function closeSheet() { $('#dim').classList.remove('show'); }
+$('#dim').onclick = e => { if (e.target.id === 'dim') closeSheet(); };
+addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+/* ---------------- อ่านไฟล์ SAP MB52 ---------------- */
+function decode(buf) {
+  const u = new Uint8Array(buf);
+  if (u[0] === 0xFF && u[1] === 0xFE) return new TextDecoder('utf-16le').decode(u);
+  if (u[0] === 0xFE && u[1] === 0xFF) return new TextDecoder('utf-16be').decode(u);
+  if (u.length > 3 && u[1] === 0 && u[3] === 0) return new TextDecoder('utf-16le').decode(u);
+  const t = new TextDecoder('utf-8').decode(u);
+  return t.includes('�') ? new TextDecoder('windows-874').decode(u) : t;
+}
+function num(s) { s = String(s || '').replace(/,/g, '').trim(); if (!s) return 0; let neg = false; if (s.endsWith('-')) { neg = true; s = s.slice(0, -1); } const n = parseFloat(s); return isNaN(n) ? 0 : (neg ? -n : n); }
+function parseMB52(text) {
+  const out = {}; let mat = null, desc = '', plant = '';
+  text.split(/\r?\n/).forEach(line => {
+    let c = line.split('\t').map(x => x.trim());
+    while (c.length && c[0] === '') c.shift();
+    if (!c.length) return;
+    if (/^\d-\d\d-\d{3}-\d{4}$/.test(c[0])) { mat = c[0]; desc = (c[2] || '').replace(/^"|"$/g, ''); plant = c.find(x => /^K\d{3}$/.test(x)) || plant; return; }
+    if (mat && /^\d{4}$/.test(c[0])) (out[c[0]] = out[c[0]] || []).push([mat, desc, c[1] || '', num(c[4]), c[5] || '', num(c[6])]);
+  });
+  return { slocs: out, plant };
+}
+
+/* ---------------- หน้า: นำเข้า ---------------- */
+let PENDING = [];
+function viewImport() {
+  const adm = DB.me && DB.me.admin;
+  let h = `<h2 style="margin:4px 0 4px;font-size:20px">นำเข้าไฟล์ SAP (MB52)</h2><p class="muted" style="margin:0 0 12px">export จาก SAP แยกทีละคลังย่อย แล้วลากมาวางพร้อมกันได้ ระบบอ่านรหัสคลังจากในไฟล์เอง · ไฟล์ใหม่จะแทนยอดเดิมของคลังนั้น และบันทึกรายการที่ยอดเปลี่ยนไว้ดูย้อนหลัง</p>`;
+  if (LOCAL()) h += `<div class="note" style="margin-bottom:12px">โหมดทดลอง: ยังไม่ได้ต่อหลังบ้าน ข้อมูลจะเก็บในเครื่องนี้เครื่องเดียว</div>`;
+  else if (!adm) h += `<div class="note" style="margin-bottom:12px">ดูตัวอย่างไฟล์ได้ แต่บันทึกได้เฉพาะผู้ดูแลระบบคลัง</div>`;
+  h += `<label class="drop" id="drop"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6a1b74" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+    <b style="font-size:16px">ลากไฟล์ .xls จาก SAP มาวาง หรือกดเลือกไฟล์</b><span class="muted">เลือกได้หลายไฟล์</span><span class="btn p" style="display:inline-flex;align-items:center">เลือกไฟล์</span>
+    <input type="file" id="file" multiple accept=".xls,.txt,.tsv,.csv" class="sr"></label>`;
+  h += `<div id="prev"></div>`;
+  const last = DB.slocs.filter(s => DB.imports[s.code]);
+  if (last.length) h += `<div class="card" style="margin-top:14px"><h3 style="margin:0 0 6px;font-size:16px">นำเข้าล่าสุด</h3>` + last.map(s => `<div class="kv"><span>${esc(s.name)} <span class="mono muted">${s.code}</span></span><span class="muted">${thDate(DB.imports[s.code].at)} · ${esc(DB.imports[s.code].by)}</span></div>`).join('') + `</div>`;
+  $('#view').innerHTML = h;
+  const f = $('#file'), d = $('#drop');
+  f.onchange = () => readFiles(f.files);
+  d.ondragover = e => { e.preventDefault(); d.classList.add('over'); };
+  d.ondragleave = () => d.classList.remove('over');
+  d.ondrop = e => { e.preventDefault(); d.classList.remove('over'); readFiles(e.dataTransfer.files); };
+  drawPending();
+}
+async function readFiles(files) {
+  for (const f of Array.from(files || [])) {
+    try {
+      const p = parseMB52(decode(await f.arrayBuffer()));
+      const ks = Object.keys(p.slocs);
+      if (!ks.length) { toast('อ่านไม่พบรายการพัสดุในไฟล์ ' + f.name, 4000); continue; }
+      ks.forEach(s => { PENDING = PENDING.filter(x => x.sloc !== s); PENDING.push({ sloc: s, file: f.name, rows: p.slocs[s], plant: p.plant, state: '' }); });
+    } catch (e) { toast('อ่านไฟล์ ' + f.name + ' ไม่ได้', 4000); }
+  }
+  drawPending();
+}
+function drawPending() {
+  const el = $('#prev'); if (!el) return;
+  if (!PENDING.length) { el.innerHTML = ''; return; }
+  const adm = DB.me && DB.me.admin;
+  el.innerHTML = `<div class="card" style="margin-top:14px"><h3 style="margin:0 0 8px;font-size:16px">ตรวจไฟล์ก่อนบันทึก</h3><div class="tbl" style="margin-top:0"><table style="min-width:620px"><thead><tr><th>ไฟล์</th><th>คลังย่อย</th><th class="r">แถว</th><th class="r">รหัส</th><th class="r">มีของ</th><th class="r">เทียบยอดเดิม</th><th>สถานะ</th></tr></thead><tbody>` +
+    PENDING.map(p => {
+      const mats = new Set(p.rows.map(r => r[0])), agg = {};
+      p.rows.forEach(r => agg[r[0]] = (agg[r[0]] || 0) + r[3]);
+      const stocked = Object.values(agg).filter(v => v > 0).length;
+      const old = {}; DB.rows.filter(r => r[0] === p.sloc).forEach(r => old[r[1]] = (old[r[1]] || 0) + Number(r[4]));
+      const had = Object.keys(old).length;
+      const ch = had ? [...new Set(Object.keys(old).concat(Object.keys(agg)))].filter(k => Math.round(((agg[k] || 0) - (old[k] || 0)) * 1000) !== 0).length : null;
+      const known = DB.slocs.some(s => s.code === p.sloc);
+      return `<tr><td>${esc(p.file)}</td><td><b>${esc(slocName(p.sloc))}</b> <span class="mono muted">${p.sloc}</span>${known ? '' : ' <span class="tag w">คลังใหม่</span>'}</td><td class="r">${p.rows.length}</td><td class="r">${mats.size}</td><td class="r">${stocked}</td><td class="r">${ch == null ? 'ครั้งแรก' : ch + ' รหัสเปลี่ยน'}</td><td>${p.state === 'ok' ? '<span class="tag ok">บันทึกแล้ว</span>' : p.state === 'run' ? 'กำลังบันทึก…' : p.state ? '<span class="tag r">' + esc(p.state) + '</span>' : '<span class="tag w">รอบันทึก</span>'}</td></tr>`;
+    }).join('') + `</tbody></table></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px"><button class="btn" id="clr">ล้างรายการ</button><button class="btn p" id="save"${adm ? '' : ' disabled'}>บันทึกเป็นยอด SAP ล่าสุด</button></div></div>`;
+  $('#clr').onclick = () => { PENDING = []; drawPending(); };
+  $('#save').onclick = saveAll;
+}
+async function saveAll() {
+  const b = $('#save'); b.disabled = true;
+  for (const p of PENDING.filter(x => x.state !== 'ok')) {
+    p.state = 'run'; drawPending();
+    try { await api('importSap', { sloc: p.sloc, file: p.file, rows: p.rows }); p.state = 'ok'; }
+    catch (e) { p.state = e.message || 'ผิดพลาด'; }
+    drawPending();
+  }
+  await load(true);
+  const bad = PENDING.filter(x => x.state !== 'ok').length;
+  toast(bad ? 'บันทึกไม่สำเร็จ ' + bad + ' ไฟล์' : 'บันทึกครบแล้ว', 3000);
+  if (!bad) { PENDING = []; go('stock'); }
+}
+
+/* ---------------- โหลด / สลับหน้า ---------------- */
+function render() { ST.tab === 'import' ? viewImport() : viewStock(); }
+function go(t) { ST.tab = t; document.querySelectorAll('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); render(); $('#main').scrollTop = 0; }
+document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => go(b.dataset.t));
+function setSub() {
+  const ts = Object.values(DB.imports || {}).map(x => x.at).sort().pop();
+  $('#sub').textContent = (LOCAL() ? 'โหมดทดลอง · ' : '') + 'Plant K040 · ' + (ts ? 'ยอด SAP ล่าสุด ' + thDate(ts) : 'ยังไม่มีข้อมูล');
+}
+async function load(quiet) {
+  const rb = $('#reload'); rb.innerHTML = '<span class="spin" aria-hidden="true"></span>';
+  try {
+    const j = await api('bootstrap');
+    DB = { slocs: j.slocs && j.slocs.length ? j.slocs : DEF_SLOCS, rows: j.rows || [], imports: j.imports || {}, me: j.me || {} };
+    if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB));
+    build(); setSub(); render();
+  } catch (e) {
+    if (!quiet) toast(e.message, 4000);
+    $('#sub').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + e.message;
+  } finally {
+    rb.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg>';
+  }
+}
+$('#reload').onclick = () => load();
+
+(async function boot() {
+  try { MAT = await (await fetch('materials.json', { cache: 'force-cache' })).json(); } catch (e) { MAT = {}; }
+  const c = !LOCAL() && lsr('stock_cache');
+  if (c) { try { DB = JSON.parse(c); build(); setSub(); render(); } catch (e) {} }   // เปิดทันทีจากข้อมูลครั้งก่อน แล้วค่อยอัปเดต
+  else render();
+  (function wait(n) { if (cred().user || LOCAL() || n > 600) load(!!c); else setTimeout(() => wait(n + 1), 500); })(0);
+})();
+</script>
+</body>
+</html>
