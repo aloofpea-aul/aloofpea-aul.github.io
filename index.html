@@ -617,7 +617,7 @@
       <input type="text" id="userPickInput" placeholder="พิมพ์ชื่อ..." autocomplete="off">
       <div id="userPickList" class="suggest-list" style="display:none;"></div>
     </div>
-    <input type="password" id="userPickPassword" placeholder="รหัสผ่าน" autocomplete="off" style="margin-top:8px;">
+    <input type="text" id="userPickPassword" placeholder="รหัสผ่าน" autocomplete="off" style="margin-top:8px;-webkit-text-security:disc;">
     <p id="userPickErr"></p>
     <div class="modal-actions">
       <button id="userPickCancelBtn">ยกเลิก</button>
@@ -708,6 +708,9 @@ function showUserPicker(){
     const err = document.getElementById('userPickErr');
     loadMembers().then(()=>{ if(overlay.classList.contains('show') && document.activeElement===input) renderList(); });
     input.value = CURRENT_USER.name || '';
+    // ช่องรหัสผ่านเป็นชนิด password เฉพาะตอนเปิดหน้าต่างเข้าระบบ — ถ้ามีอยู่ในหน้าตลอด
+    // Edge/Chrome จะเดาว่าช่องค้นหาคือช่องชื่อผู้ใช้ แล้วเติมชื่อผู้ใช้ที่จำไว้ (เช่น 495518) ลงช่องค้นหา
+    passInput.type = 'password';
     passInput.value = '';
     err.textContent = '';
     overlay.classList.add('show');
@@ -748,12 +751,12 @@ function showUserPicker(){
       localStorage.setItem('pea_aoluek_username', name);
       localStorage.setItem('pea_aoluek_password', password);
       updateUserBadge();
-      overlay.classList.remove('show');
+      overlay.classList.remove('show'); passInput.value = ''; passInput.type = 'text';
       resolve(true);
     }
     document.getElementById('userPickConfirmBtn').onclick = confirmLogin;
     passInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); confirmLogin(); } });
-    document.getElementById('userPickCancelBtn').onclick = ()=>{ overlay.classList.remove('show'); resolve(false); };
+    document.getElementById('userPickCancelBtn').onclick = ()=>{ overlay.classList.remove('show'); passInput.value = ''; passInput.type = 'text'; resolve(false); };
   });
 }
 
