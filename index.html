@@ -7,6 +7,8 @@
 <title>ศูนย์รวมงาน - กฟส.อ่าวลึก</title>
 
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="(min-width:1100px)">
 <meta name="theme-color" content="#4b2e83">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -156,69 +158,95 @@
     .fav-grid{grid-template-columns:repeat(8,minmax(0,1fr));}
   }
 
-  /* ===================== หน้าจอคอม (กว้าง ≥1100) — แถบหมวดซ้าย · การ์ดหลายคอลัมน์ · มือถือไม่เปลี่ยน ===================== */
-  #hubSide,#hubHello,.s-kbd{display:none;}
-  .grp-h .dot,.grp-h em{display:none;}
+  /* ===================== หน้าจอคอม (กว้าง ≥1100) — หัวจอใหญ่ · เมนูหมวดมีสี · การ์ดสีสัน · มือถือไม่เปลี่ยน ===================== */
+  #hubSide,#hubHello,.s-kbd,.fav-sub{display:none;}
+  .grp-h .dot,.grp-h em,.grp-h .gi{display:none;}
   #appSearch::-webkit-search-cancel-button{display:none;-webkit-appearance:none;}
   @media (min-width:1100px){
-    header{padding:0 28px;height:72px;display:flex;align-items:center;}
+    html,body{font-family:"IBM Plex Sans Thai","Noto Sans Thai","Segoe UI",sans-serif;background:#F6F4FB;font-size:17px;}
+    header{background:#3F1F7A;padding:22px 40px 78px;position:relative;z-index:1;overflow:hidden;box-shadow:none;}
+    header:before{content:"";position:absolute;right:-120px;top:-170px;width:540px;height:540px;border-radius:50%;background:#5B33A6;}
+    header:after{content:"";position:absolute;right:230px;top:70px;width:180px;height:180px;border-radius:50%;background:#FFC24B;opacity:.16;}
+    .head-row,.search-wrap,#hubHello{position:relative;z-index:1;}
     .head-row{max-width:none;}
-    .head-ttl{flex:0 0 auto;}
-    .head-right{margin-left:auto;}
-    header h1{font-size:1.2rem;}
-    .search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;width:min(680px, calc(100% - 760px));}
-    #appSearch{height:46px;font-size:1rem;border-radius:12px;padding-right:96px;}
-    .s-kbd{display:inline-block;position:absolute;right:46px;top:50%;transform:translateY(-50%);font-size:.72rem;color:rgba(255,255,255,.75);
-      border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:1px 7px;pointer-events:none;}
-    #userBadge{font-size:.86rem;max-width:280px;}
-    main{max-width:1520px;padding:0 32px 40px;display:grid;grid-template-columns:232px minmax(0,1fr);column-gap:28px;align-items:start;}
+    header h1{font-size:1.35rem;}
+    header .sub{font-size:.85rem;}
+    .head-right{margin-left:auto;gap:10px;}
+    #userBadge{background:#fff;color:#3F1F7A;font-weight:600;font-size:.9rem;max-width:320px;}
+    #userBadge.unauth{background:#e35d5d;color:#fff;}
+    .head-right #hubAdminBtn{background:rgba(255,255,255,.14) !important;color:#fff !important;font-size:.88rem;}
+    #hubHello{display:block;margin:26px 0 0;color:#fff;}
+    #hubHello b{display:block;font-size:2rem;font-weight:700;line-height:1.25;}
+    #hubHello span{display:block;font-size:1rem;opacity:.85;margin-top:4px;}
+    .search-wrap{max-width:820px;margin:20px 0 0;}
+    #appSearch{height:60px;border-radius:16px;background:#fff;color:#1E1838;font-size:1.06rem;padding:0 120px 0 54px;box-shadow:0 10px 30px rgba(20,8,50,.25);}
+    #appSearch::placeholder{color:#8A84A3;}
+    #appSearch:focus{outline:3px solid #FFC24B;background:#fff;}
+    .search-wrap .s-ic{left:20px;width:22px;height:22px;opacity:1;}
+    .search-wrap .s-ic *{stroke:#6D3FC0;}
+    #searchClear{color:#6D3FC0;right:8px;}
+    .s-kbd{display:inline-block;position:absolute;right:52px;top:50%;transform:translateY(-50%);font-size:.78rem;font-weight:600;
+      background:#F1EAFE;color:#6D3FC0;border-radius:8px;padding:4px 10px;pointer-events:none;}
+    #appSearch:not(:placeholder-shown) ~ .s-kbd{display:none;}
+    main{max-width:1840px;margin:-50px auto 0;padding:0 40px 40px;display:grid;grid-template-columns:280px minmax(0,1fr);column-gap:28px;align-items:start;position:relative;z-index:2;}
     main > *{grid-column:2;}
-    #hubSide{display:block;grid-column:1;grid-row:1 / span 30;position:sticky;top:96px;padding-top:24px;}
-    #hubSide a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;color:#3d3650;text-decoration:none;font-size:.95rem;cursor:pointer;margin-bottom:2px;transition:background .15s;}
-    #hubSide a:hover{background:rgba(255,255,255,.7);}
-    #hubSide a.on{background:#fff;color:var(--pea-purple);font-weight:700;box-shadow:0 1px 0 var(--line);}
-    #hubSide .dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto;}
-    #hubSide em{margin-left:auto;font-style:normal;font-size:.78rem;color:#8b8597;font-weight:400;}
-    #hubHello{display:flex;align-items:baseline;gap:14px;margin:24px 2px 4px;flex-wrap:wrap;}
-    #hubHello b{font-size:1.55rem;font-weight:700;}
-    #hubHello span{color:var(--muted);font-size:.95rem;}
-    #welcomeNote{margin-top:22px;font-size:.95rem;}
+    #hubSide{display:block;grid-column:1;grid-row:1 / span 30;position:sticky;top:16px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 6px 24px rgba(40,20,90,.08);}
+    #hubSide .sh{font-size:.78rem;font-weight:600;color:#8A84A3;letter-spacing:.04em;padding:4px 10px 8px;}
+    #hubSide a{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:14px;color:#3B3456;text-decoration:none;font-size:.97rem;cursor:pointer;margin-bottom:3px;transition:background .15s, transform .15s;}
+    #hubSide a:hover{background:var(--t);transform:translateX(3px);}
+    #hubSide .si{width:40px;height:40px;flex:0 0 auto;border-radius:12px;background:var(--t);display:flex;align-items:center;justify-content:center;font-size:1.2rem;}
+    #hubSide .sl{flex:1;min-width:0;line-height:1.3;}
+    #hubSide em{font-style:normal;font-size:.78rem;font-weight:600;color:var(--c);background:var(--t);border-radius:999px;padding:2px 10px;}
+    #hubSide a.on{background:var(--c);color:#fff;font-weight:600;transform:none;}
+    #hubSide a.on .si{background:rgba(255,255,255,.22);}
+    #hubSide a.on em{background:rgba(255,255,255,.22);color:#fff;}
+    #hubSide .tip{margin-top:12px;background:#FFF6E0;border-radius:16px;padding:12px 14px;font-size:.84rem;color:#7A5200;line-height:1.5;}
+    #welcomeNote{margin:0 0 18px;background:#fff;border-radius:18px;padding:16px 20px;font-size:.95rem;}
+    #gridLoader{padding-top:0;}
     .app-grid{display:block !important;}
     .app-grid[style*="display:none"],.app-grid[style*="display: none"]{display:none !important;}
-    .grp,.fav-sec{scroll-margin-top:96px;}
-    .grp-h{display:flex;align-items:center;gap:9px;font-size:1.02rem;color:#3d3650;letter-spacing:0;padding:26px 2px 12px;}
-    .grp-h .dot{display:inline-block;width:10px;height:10px;border-radius:3px;}
-    .grp-h em{display:inline;}
-    #appSearch:not(:placeholder-shown) ~ .s-kbd{display:none;}
-    .grp-h em{font-style:normal;font-weight:400;font-size:.85rem;color:#8b8597;}
-    .grp-box{background:none;border:0;box-shadow:none;overflow:visible;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-    .grp-box .app-tile{border:1px solid var(--line);border-radius:15px;padding:16px 16px;min-height:96px;gap:14px;align-items:center;
-      transition:transform .18s ease, box-shadow .18s ease, border-color .18s;}
-    .grp-box .app-tile + .app-tile{border-top:1px solid var(--line);}
-    .grp-box .app-tile:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(75,46,131,.12);border-color:#d3c8ea;}
-    .grp-box .app-tile .icon{width:50px;height:50px;border-radius:14px;font-size:1.6rem;background:var(--tint,#f2eff8);}
-    .grp-box .app-tile .name{white-space:normal;font-size:1.02rem;}
-    .grp-box .app-tile .desc{white-space:normal;font-size:.84rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-    .grp-box .app-tile .tile-stat{font-size:.78rem;}
-    .grp-box .app-tile .chev{display:none;}
-    .grp-box .app-tile .status-badge{position:absolute;top:10px;right:10px;}
-    .grp-box .app-tile:has(.status-badge) .name{padding-right:54px;}
-    /* ใช้บ่อย — การ์ดใหญ่ เคลื่อนไหวนุ่มๆ */
+    .grp,.fav-sec{scroll-margin-top:16px;}
+    .fav-sec{background:#fff;border-radius:22px;padding:18px 22px 22px;box-shadow:0 6px 24px rgba(40,20,90,.08);margin-bottom:8px;}
+    .fav-sec .grp-h{padding:0 0 14px;font-size:1.15rem;color:#1E1838;}
+    .fav-sec .grp-h:before{content:"⭐";margin-right:8px;}
     .fav-grid{grid-template-columns:repeat(6,minmax(0,1fr)) !important;gap:14px;}
-    .fav-grid .app-tile{flex-direction:row;justify-content:flex-start;text-align:left;gap:12px;padding:16px;min-height:84px;border-radius:15px;
-      background:#fff;animation:favIn .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 70ms);
-      transition:transform .2s ease, box-shadow .2s ease, border-color .2s;}
-    .fav-grid .app-tile .icon{width:48px;height:48px;font-size:1.6rem;border-radius:14px;background:var(--tint,#f2eff8);transition:transform .25s ease;}
-    .fav-grid .app-tile:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 14px 28px rgba(75,46,131,.16);border-color:#cbbde6;}
+    .fav-grid .app-tile{background:var(--c,#6D3FC0);color:#fff;border:0;border-radius:18px;padding:18px;min-height:132px;
+      flex-direction:column;align-items:flex-start;justify-content:space-between;text-align:left;gap:10px;overflow:hidden;
+      animation:favIn .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 80ms);
+      transition:transform .22s ease, box-shadow .22s ease;}
+    .fav-grid .app-tile + .app-tile{border-top:0;}
+    .fav-grid .app-tile:after{content:"";position:absolute;right:-30px;bottom:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.14);transition:transform .3s ease;}
+    .fav-grid .app-tile .icon{width:50px;height:50px;font-size:1.65rem;border-radius:14px;background:rgba(255,255,255,.95);transition:transform .25s ease;}
+    .fav-grid .app-tile:hover{transform:translateY(-6px);box-shadow:0 16px 30px rgba(30,10,70,.25);}
+    .fav-grid .app-tile:hover:after{transform:scale(1.25);}
     .fav-grid .app-tile:hover .icon{animation:favWiggle .5s ease;}
-    .fav-name{font-size:.95rem;}
-    @keyframes favIn{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}
-    @keyframes favWiggle{0%{transform:rotate(0)}30%{transform:rotate(-9deg) scale(1.08)}60%{transform:rotate(7deg) scale(1.08)}100%{transform:rotate(0)}}
-    #noMatch{padding-top:60px;}
+    .fav-name{font-size:1.02rem;font-weight:600;line-height:1.3;}
+    .fav-sub{display:block;font-size:.8rem;opacity:.88;margin-top:2px;font-weight:400;}
+    @keyframes favIn{from{opacity:0;transform:translateY(16px) scale(.95);}to{opacity:1;transform:none;}}
+    @keyframes favWiggle{0%{transform:rotate(0)}30%{transform:rotate(-10deg) scale(1.1)}60%{transform:rotate(8deg) scale(1.1)}100%{transform:rotate(0)}}
+    .grp-h{display:flex;align-items:center;gap:12px;font-size:1.2rem;font-weight:700;color:#1E1838;letter-spacing:0;padding:24px 2px 14px;}
+    .grp-h .gi{display:flex;width:40px;height:40px;border-radius:12px;background:var(--t);align-items:center;justify-content:center;font-size:1.2rem;}
+    .grp-h em{display:inline;font-style:normal;font-weight:500;font-size:.82rem;color:var(--c);background:var(--t);border-radius:999px;padding:2px 12px;}
+    .grp-box{background:none;border:0;box-shadow:none;overflow:visible;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;}
+    .grp-box .app-tile{border:1.5px solid #EEEAF6;border-left:6px solid var(--c);border-radius:18px;padding:18px 20px;min-height:104px;gap:16px;align-items:center;
+      box-shadow:0 4px 14px rgba(40,20,90,.05);transition:transform .18s ease, box-shadow .18s ease, border-color .18s;}
+    .grp-box .app-tile + .app-tile{border-top:1.5px solid #EEEAF6;}
+    .grp-box .app-tile:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(40,20,90,.14);border-color:var(--c);}
+    .grp-box .app-tile .icon{width:58px;height:58px;border-radius:16px;font-size:1.85rem;background:var(--t);}
+    .grp-box .app-tile .name{white-space:normal;font-size:1.06rem;font-weight:600;}
+    .grp-box .app-tile .desc{white-space:normal;font-size:.86rem;color:#6B6585;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-top:3px;}
+    .grp-box .app-tile .tile-stat{font-size:.8rem;}
+    .grp-box .app-tile .chev{border:0;transform:none;width:auto;height:auto;align-self:flex-start;margin:0;color:var(--c);opacity:.7;font-style:normal;font-weight:700;}
+    .grp-box .app-tile .chev:before{content:"↗";font-size:1.05rem;}
+    .grp-box .app-tile .status-badge{position:absolute;top:-10px;right:16px;font-size:.74rem;}
+    .grp-box .app-tile .status-badge.live{background:#16A34A;color:#fff;}
+    .grp-box .app-tile .status-badge.soon{background:#F59E0B;color:#fff;}
+    #noMatch{padding-top:60px;font-size:1rem;}
+    footer{font-size:.8rem;}
   }
   @media (min-width:1100px) and (prefers-reduced-motion:reduce){
     .fav-grid .app-tile{animation:none;}
-    .fav-grid .app-tile:hover,.grp-box .app-tile:hover{transform:none;}
+    .fav-grid .app-tile:hover,.grp-box .app-tile:hover,#hubSide a:hover{transform:none;}
     .fav-grid .app-tile:hover .icon{animation:none;}
   }
 </style>
@@ -235,9 +263,10 @@
         <span id="userBadge">เข้าสู่ระบบ</span>
       </div>
     </div>
+    <div id="hubHello"></div>
     <div class="search-wrap">
       <svg class="s-ic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="6.3"></circle><path d="M15.6 15.6L20 20"></path></svg>
-      <input type="search" id="appSearch" name="hub-q-nofill" placeholder="พิมพ์ชื่องานที่ต้องการ…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" enterkeyhint="search" aria-label="ค้นหาโปรแกรม">
+      <input type="search" id="appSearch" name="hub-q-nofill" placeholder="ค้นหาระบบงาน เช่น เวร งบ รถ พัสดุ" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" enterkeyhint="search" aria-label="ค้นหาโปรแกรม">
       <span class="s-kbd">Ctrl K</span>
       <button type="button" id="searchClear" aria-label="ล้างคำค้น">✕</button>
     </div>
@@ -245,7 +274,6 @@
 
   <main>
     <nav id="hubSide" aria-label="หมวดงาน"></nav>
-    <div id="hubHello"></div>
     <p id="welcomeNote">รวมระบบงานของแผนกปฏิบัติการระบบไฟฟ้าไว้ในที่เดียว — <b>เข้าสู่ระบบครั้งเดียว ใช้ได้ทุกแอปในนี้</b> (จำไว้ในเครื่องนี้ ไม่ต้องล็อกอินซ้ำ)</p>
 
     <div id="gridLoader">
@@ -805,6 +833,7 @@ function buildFavRow(){
     box.appendChild(a);
   });
   sec.classList.remove('hide');
+  if(typeof setupDesktop === 'function') try{ setupDesktop(); }catch(e){}
 }
 
 /* ===================== ค้นหา — กรองทันทีในเครื่อง ไม่ต้องรอเน็ต ===================== */
@@ -862,31 +891,41 @@ function setupSearch(){
 
 
 /* ===================== หน้าจอคอม: แถบหมวด · คำทักทาย · สีประจำหมวด · Ctrl+K ===================== */
-const HUB_TINTS = [['#EEE8F8','#4b2e83'],['#FFF1DC','#B26A00'],['#E3F1FB','#1B5E8C'],['#E6F4EA','#2e7d32'],['#F3ECE2','#8A5A2B'],['#E8EEF9','#2B4C8C'],['#FBE9EC','#B03A48']];
+const HUB_CATS = [['#6D3FC0','#F1EAFE','⚡'],['#E07B00','#FFF1DE','🏗'],['#0E7CC2','#E2F2FC','🚨'],['#1E9E5A','#E2F6EB','⏰'],['#C2410C','#FDEBDD','💼'],['#2563EB','#E5EDFE','📈'],['#D9365C','#FDE7EC','🛡']];
 function setupDesktop(){
   const side = document.getElementById('hubSide');
   const groups = Array.from(document.querySelectorAll('.app-grid .grp'));
-  const appTint = {};
+  const appCat = {};
+  const txt = h => h ? Array.from(h.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim() : '';
   groups.forEach((g,i)=>{
-    const t = HUB_TINTS[i % HUB_TINTS.length], h = g.querySelector('.grp-h');
+    const c = HUB_CATS[i % HUB_CATS.length], h = g.querySelector('.grp-h');
     g.id = g.id || ('grp' + i);
-    g.style.setProperty('--tint', t[0]);
-    g.querySelectorAll('.app-tile[data-app]').forEach(a=>{ appTint[a.dataset.app] = t[0]; });
-    if(h && !h.querySelector('.dot')){
-      const n = g.querySelectorAll('.app-tile').length;
-      h.insertAdjacentHTML('afterbegin', '<span class="dot" style="background:' + t[1] + '"></span>');
-      h.insertAdjacentHTML('beforeend', ' <em>' + n + '</em>');
+    g.style.setProperty('--c', c[0]); g.style.setProperty('--t', c[1]);
+    g.querySelectorAll('.app-tile[data-app]').forEach(a=>{ appCat[a.dataset.app + '|' + a.getAttribute('href')] = c; appCat[a.dataset.app] = appCat[a.dataset.app] || c; });
+    if(h && !h.querySelector('.gi')){
+      h.insertAdjacentHTML('afterbegin', '<span class="gi">' + c[2] + '</span>');
+      h.insertAdjacentHTML('beforeend', '<em>' + g.querySelectorAll('.app-tile').length + ' ระบบ</em>');
     }
   });
-  // การ์ดใช้บ่อย: สีพื้นไอคอนตามหมวด + ลำดับเคลื่อนไหวทีละใบ
-  document.querySelectorAll('#favGrid .app-tile').forEach((a,i)=>{ a.style.setProperty('--i', i); if(appTint[a.dataset.app]) a.style.setProperty('--tint', appTint[a.dataset.app]); });
+  // การ์ดใช้บ่อย: สีตามหมวด + จำนวนครั้งที่เปิด + เคลื่อนไหวทีละใบ
+  document.querySelectorAll('#favGrid .app-tile').forEach((a,i)=>{
+    a.style.setProperty('--i', i);
+    const c = appCat[a.dataset.app + '|' + a.getAttribute('href')] || appCat[a.dataset.app];
+    if(c) a.style.setProperty('--c', c[0]);
+    if(!a.querySelector('.fav-sub')){
+      const src = document.querySelector('.app-grid .grp .app-tile[data-app="' + a.dataset.app + '"][href="' + a.getAttribute('href') + '"] .tile-stat');
+      const m = src && /เปิดใช้\s*([\d,]+)\s*ครั้ง/.exec(src.textContent);
+      const nm = a.querySelector('.fav-name');
+      if(m && nm) nm.insertAdjacentHTML('beforeend', '<span class="fav-sub">เปิดใช้ ' + m[1] + ' ครั้ง</span>');
+    }
+  });
   if(side && !side.dataset.ready){
     side.dataset.ready = '1';
     const total = document.querySelectorAll('.app-grid .grp .app-tile').length;
-    const label = h => (h.childNodes ? Array.from(h.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim() : '');
-    side.innerHTML = '<a data-go="top" class="on"><span class="dot" style="background:#4b2e83"></span>ทั้งหมด<em>' + total + '</em></a>' +
-      groups.map((g,i)=>'<a data-go="' + g.id + '"><span class="dot" style="background:' + HUB_TINTS[i % HUB_TINTS.length][1] + '"></span>' +
-        label(g.querySelector('.grp-h')) + '<em>' + g.querySelectorAll('.app-tile').length + '</em></a>').join('');
+    side.innerHTML = '<div class="sh">หมวดงาน</div><a data-go="top" class="on" style="--c:#3F1F7A;--t:#EEE8F8"><span class="si">✦</span><span class="sl">ทั้งหมด</span><em>' + total + '</em></a>' +
+      groups.map((g,i)=>{ const c = HUB_CATS[i % HUB_CATS.length];
+        return '<a data-go="' + g.id + '" style="--c:' + c[0] + ';--t:' + c[1] + '"><span class="si">' + c[2] + '</span><span class="sl">' + txt(g.querySelector('.grp-h')) + '</span><em>' + g.querySelectorAll('.app-tile').length + '</em></a>'; }).join('') +
+      '<div class="tip">💡 กดการ์ดแล้วเปิดในแท็บใหม่ หน้านี้ยังเปิดค้างไว้ · กด Ctrl + K เพื่อค้นหา</div>';
     side.addEventListener('click', e=>{
       const a = e.target.closest('a[data-go]'); if(!a) return;
       const inp = document.getElementById('appSearch');
@@ -894,10 +933,9 @@ function setupDesktop(){
       if(a.dataset.go === 'top') window.scrollTo({ top:0, behavior:'smooth' });
       else { const g = document.getElementById(a.dataset.go); if(g) g.scrollIntoView({ behavior:'smooth', block:'start' }); }
     });
-    // ไฮไลต์หมวดที่กำลังดูอยู่
     const mark = ()=>{
       let cur = 'top';
-      if(window.scrollY > 60) groups.forEach(g=>{ if(g.offsetParent && g.getBoundingClientRect().top < 160) cur = g.id; });
+      if(window.scrollY > 200) groups.forEach(g=>{ if(g.offsetParent && g.getBoundingClientRect().top < 140) cur = g.id; });
       side.querySelectorAll('a').forEach(a=> a.classList.toggle('on', a.dataset.go === cur));
     };
     window.addEventListener('scroll', mark, { passive:true });
@@ -905,8 +943,8 @@ function setupDesktop(){
   const hello = document.getElementById('hubHello');
   if(hello){
     const d = new Date().toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const nm = (CURRENT_USER.name && CURRENT_USER.role) ? CURRENT_USER.name.split(/\s+/)[0] : '';
-    hello.innerHTML = '<b>' + (nm ? 'สวัสดีครับ คุณ' + nm.replace(/[<>&]/g,'') : 'สวัสดีครับ') + '</b><span>' + d + '</span>';
+    const nm = (CURRENT_USER.name && CURRENT_USER.role) ? CURRENT_USER.name.split(/\s+/)[0].replace(/[<>&]/g,'') : '';
+    hello.innerHTML = '<b>' + (nm ? 'สวัสดีครับ คุณ' + nm + ' 👋' : 'สวัสดีครับ 👋') + '</b><span>' + d + ' · วันนี้จะเปิดระบบไหนดีครับ</span>';
   }
 }
 document.addEventListener('keydown', e=>{
