@@ -245,6 +245,85 @@
     });
   }
 
+
+  /* ---------- แถบกลับศูนย์รวมงาน (มือถือ/แท็บเล็ต) ----------
+     แถบเล็กติดขอบซ้าย แตะแล้วมีแผง: กลับหน้าศูนย์รวม + สลับไปแอปที่ใช้บ่อย (รายการจากหน้าศูนย์รวม)
+     ลากขึ้นลงได้ จำตำแหน่งแยกแต่ละแอป · ไม่แสดงบนคอม (คอมเปิดแอปเป็นแท็บใหม่อยู่แล้ว) */
+  function homeDock() {
+    try {
+      if (window.top !== window.self) return;
+      if (me && me.dataset.dock === 'off') return;
+      if (location.pathname === '/' || location.pathname === HUB) return;
+      var mq = window.matchMedia && matchMedia('(max-width:1099px), (pointer:coarse)');
+      if (!mq || !mq.matches) return;
+      if (document.getElementById('peaDock')) return;
+      var css = document.createElement('style');
+      css.textContent =
+        '#peaDock{position:fixed;left:0;z-index:2147483000;width:28px;height:56px;border-radius:0 16px 16px 0;background:#3F1F7A;color:#FFC24B;' +
+        'display:flex;align-items:center;justify-content:center;font:700 17px/1 sans-serif;box-shadow:0 6px 16px rgba(30,10,70,.35);opacity:.9;touch-action:none;' +
+        'cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transition:width .15s}' +
+        '#peaDock:after{content:"";position:absolute;right:5px;top:50%;width:3px;height:20px;margin-top:-10px;border-radius:2px;background:rgba(255,255,255,.35)}' +
+        '#peaDock.drag{width:34px;opacity:1}' +
+        '#peaDim{position:fixed;inset:0;z-index:2147483001;background:rgba(20,10,40,.45);opacity:0;pointer-events:none;transition:opacity .2s}' +
+        '#peaDim.on{opacity:1;pointer-events:auto}' +
+        '#peaDrawer{position:fixed;left:0;top:0;bottom:0;z-index:2147483002;width:min(82vw,300px);background:#fff;border-radius:0 24px 24px 0;' +
+        'box-shadow:10px 0 30px rgba(0,0,0,.2);transform:translateX(-105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);overflow:auto;' +
+        'font-family:"IBM Plex Sans Thai","Noto Sans Thai","Segoe UI",sans-serif;color:#2A2347;padding-bottom:env(safe-area-inset-bottom)}' +
+        '#peaDrawer.on{transform:none}' +
+        '#peaDrawer .pd-h{background:#3F1F7A;color:#fff;padding:calc(22px + env(safe-area-inset-top)) 18px 18px;position:relative;overflow:hidden}' +
+        '#peaDrawer .pd-h:before{content:"";position:absolute;right:-50px;top:-60px;width:150px;height:150px;border-radius:50%;background:#5B33A6}' +
+        '#peaDrawer .pd-h b{position:relative;display:block;font-size:16px}#peaDrawer .pd-h small{position:relative;font-size:12px;opacity:.85}' +
+        '#peaDrawer .pd-home{display:flex;align-items:center;gap:10px;margin:14px 12px 6px;background:#FFC24B;color:#3F1F7A;border-radius:14px;padding:13px 14px;font-weight:700;font-size:15px;text-decoration:none}' +
+        '#peaDrawer .pd-sh{font-size:12px;color:#8A84A3;font-weight:600;padding:12px 18px 6px}' +
+        '#peaDrawer .pd-ap{display:flex;align-items:center;gap:11px;padding:8px 10px;margin:0 8px;border-radius:12px;font-size:14px;color:#2A2347;text-decoration:none}' +
+        '#peaDrawer .pd-ap i{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:19px;flex:none}' +
+        '#peaDrawer .pd-ap.cur{background:#F1EAFE}#peaDrawer .pd-ap em{margin-left:auto;font-style:normal;font-size:11px;color:#6D3FC0;font-weight:600}' +
+        '#peaDrawer .pd-note{font-size:12px;color:#8A84A3;padding:6px 18px 16px;line-height:1.5}';
+      document.head.appendChild(css);
+      var key = 'pea_dock_y_' + (APP || location.pathname), y = parseFloat(ls(key));
+      if (!(y >= 8 && y <= 92)) y = 47;
+      var dock = document.createElement('div'); dock.id = 'peaDock'; dock.setAttribute('role', 'button'); dock.setAttribute('aria-label', 'กลับศูนย์รวมงาน / สลับแอป'); dock.textContent = '⌂';
+      dock.style.top = 'calc(' + y + '% - 28px)';
+      var dim = document.createElement('div'); dim.id = 'peaDim';
+      var dr = document.createElement('nav'); dr.id = 'peaDrawer'; dr.setAttribute('aria-label', 'ศูนย์รวมงาน');
+      document.body.appendChild(dock); document.body.appendChild(dim); document.body.appendChild(dr);
+      function esc(t) { return String(t || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+      function render() {
+        var favs = []; try { favs = JSON.parse(ls('pea_hub_favs') || '[]') || []; } catch (e) {}
+        var here = location.pathname.replace(/index\.html$/, '');
+        var nm = creds().name || '';
+        dr.innerHTML = '<div class="pd-h"><b>ศูนย์รวมงาน กฟส.อ่าวลึก</b><small>' + esc(nm || 'ยังไม่ได้เข้าสู่ระบบ') + '</small></div>' +
+          '<a class="pd-home" href="' + HUB + '">🏠 กลับหน้าศูนย์รวมงาน</a>' +
+          (favs.length ? '<div class="pd-sh">สลับไปแอปที่ใช้บ่อย</div>' + favs.map(function (f) {
+            var cur = String(f.href || '').replace(/index\.html$/, '') === here;
+            return '<a class="pd-ap' + (cur ? ' cur' : '') + '" href="' + esc(f.href) + '?from=hub"><i style="background:' + esc(f.tint || '#F1EAFE') + '">' + esc(f.icon) + '</i>' + esc(f.name) + (cur ? '<em>อยู่ที่นี่</em>' : '') + '</a>';
+          }).join('') : '<div class="pd-note">เปิดหน้าศูนย์รวมงานสักครั้ง รายการแอปที่ใช้บ่อยจะมาแสดงที่นี่</div>') +
+          '<div class="pd-note">แถบ ⌂ บังปุ่มของแอป? กดค้างแล้วลากขึ้นลงได้</div>';
+      }
+      function open() { render(); dim.classList.add('on'); dr.classList.add('on'); }
+      function close() { dim.classList.remove('on'); dr.classList.remove('on'); }
+      dim.addEventListener('click', close);
+      dr.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a.cur'); if (a) { e.preventDefault(); close(); } });
+      // แตะ = เปิดแผง · ลาก = ย้ายตำแหน่ง
+      var sy = 0, moved = false, down = false;
+      dock.addEventListener('pointerdown', function (e) { down = true; moved = false; sy = e.clientY; try { dock.setPointerCapture(e.pointerId); } catch (x) {} });
+      dock.addEventListener('pointermove', function (e) {
+        if (!down) return;
+        if (!moved && Math.abs(e.clientY - sy) < 8) return;
+        moved = true; dock.classList.add('drag');
+        y = Math.max(8, Math.min(92, e.clientY / window.innerHeight * 100));
+        dock.style.top = 'calc(' + y + '% - 28px)';
+      });
+      var lastDrag = 0;
+      function up() { if (!down) return; down = false; dock.classList.remove('drag'); if (moved) { ls(key, String(Math.round(y))); lastDrag = Date.now(); } }
+      dock.addEventListener('pointerup', up);
+      dock.addEventListener('click', function (e) { e.preventDefault(); if (Date.now() - lastDrag < 400) return; open(); });
+      dock.addEventListener('pointercancel', function () { down = false; dock.classList.remove('drag'); });
+      window.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeDock); else homeDock();
+
   window.PEAHub = { app: APP, source: SRC, logout: logout, user: function () { return creds().name; } };
   start();
 })();

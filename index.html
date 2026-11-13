@@ -924,6 +924,13 @@ function buildFavRow(){
     box.appendChild(a);
   });
   sec.classList.remove('hide');
+  // แผงกลับศูนย์รวมในแต่ละแอป (pea-hub.js) ใช้รายการใช้บ่อยชุดนี้
+  try{
+    const cats = (typeof HUB_CATS !== 'undefined') ? HUB_CATS : [];
+    const grpIdx = t=> Array.from(document.querySelectorAll('.app-grid .grp')).indexOf(t.closest('.grp'));
+    lsSet('pea_hub_favs', hits.map(x=>{ const c = cats[grpIdx(x.t)] || []; const ic = x.t.querySelector('.icon');
+      return { app:x.t.dataset.app, href:new URL(x.t.getAttribute('href'), location.href).pathname, name:(x.t.dataset.short || x.t.querySelector('.name').textContent).trim(), icon: ic ? ic.textContent.trim() : '', tint:c[1] || '#F1EAFE' }; }));
+  }catch(e){}
   if(typeof setupDesktop === 'function') try{ setupDesktop(); }catch(e){}
 }
 
