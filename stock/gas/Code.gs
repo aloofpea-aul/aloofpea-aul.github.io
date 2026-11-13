@@ -15,7 +15,9 @@
  * ไม่มีค่าใช้จ่าย: ใช้ Google Sheets + Apps Script ฟรีทั้งหมด
  */
 
-const SPREADSHEET_ID = '';   // เว้นว่าง = ใช้ชีตที่ผูกกับสคริปต์
+const SPREADSHEET_ID = '';   // ชีตเก็บข้อมูล: setup สร้างให้แล้ว (Script Properties › STOCK_SHEET_ID = 1IKvWOiuLhYFrxoSfR18kZ3sic5o5Y52Ei9-i8ZCLsdQ)
+// Web app: https://script.google.com/macros/s/AKfycby536q10bjzfwQPQLrxbv-BXY33WNggpQi06VdRLniht_zUZjArNZ5V9fQIBKCY0dAHzw/exec
+// โปรเจ็กต์ Apps Script: https://script.google.com/home/projects/1u-jmdU92q1pSOCRJLxBGrlW9vIQroS1WXuvOViijqUMQ5dZtaV-6WWbm/edit
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
 const VERSION = '1.0';
@@ -166,7 +168,14 @@ function hubRole_(user, pass) {
 }
 
 /* ---------------- ชีต ---------------- */
-function ss_() { return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet(); }
+let SS_ = null;
+function ss_() {
+  if (SS_) return SS_;
+  const id = SPREADSHEET_ID || PropertiesService.getScriptProperties().getProperty('STOCK_SHEET_ID');
+  SS_ = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+  if (!SS_) throw new Error('ยังไม่ได้ตั้งชีตเก็บข้อมูล — Run ฟังก์ชัน setup ก่อน');
+  return SS_;
+}
 function sheet_(def) {
   let sh = ss_().getSheetByName(def.name);
   if (!sh) {
@@ -191,17 +200,23 @@ function setSetting_(key, val) {
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function err_(code, msg) { const e = new Error(msg); e.code = code; return e; }
 function clean_(s) { return String(s == null ? '' : s).replace(/[\r\n\t]+/g, ' ').trim().slice(0, 200); }
-function nm_(s) { return String(s == null ? '' : s).replace(/[\s​-‍﻿]/g, '').toLowerCase(); }
+function nm_(s) { return String(s == null ? '' : s).replace(/[\s\u200b-\u200d\ufeff]/g, '').toLowerCase(); }
 function parse_(s) { try { return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function round_(n) { return Math.round(Number(n) * 1000) / 1000; }
 function iso_(d) { return d instanceof Date ? Utilities.formatDate(d, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX") : String(d || ''); }
 
 /** Run ครั้งแรก: สร้างชีต + ขอสิทธิ์ + ทดสอบติดต่อศูนย์รวมงาน */
 function setup() {
+  const props = PropertiesService.getScriptProperties();
+  if (!SPREADSHEET_ID && !props.getProperty('STOCK_SHEET_ID') && !SpreadsheetApp.getActiveSpreadsheet()) {
+    const ss = SpreadsheetApp.create('ระบบคลังพัสดุ กฟส.อ่าวลึก (หลังบ้าน)');
+    props.setProperty('STOCK_SHEET_ID', ss.getId());
+    SS_ = ss;
+  }
   [CUR, MOVE, IMP, SETS].forEach(sheet_);
   if (!getSetting_('slocs')) setSetting_('slocs', DEFAULT_SLOCS);
   const def = ss_().getSheetByName('Sheet1') || ss_().getSheetByName('ชีต1');
   if (def && def.getLastRow() === 0 && ss_().getSheets().length > 1) ss_().deleteSheet(def);
   UrlFetchApp.fetch(HUB_API + '?action=ping', { muteHttpExceptions: true });
-  Logger.log('พร้อมใช้งาน — Deploy เป็น Web app แล้วนำลิงก์ …/exec ไปใส่ในหน้าเว็บ');
+  Logger.log('พร้อมใช้งาน — ชีต: ' + ss_().getUrl() + ' — Deploy เป็น Web app แล้วนำลิงก์ …/exec ไปใส่ในหน้าเว็บ');
 }

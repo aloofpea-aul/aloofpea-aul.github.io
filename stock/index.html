@@ -137,7 +137,7 @@ tr.row{cursor:pointer}tr.row:hover td{background:#fbf9fc}
 <script>
 'use strict';
 /* ---------------- ตั้งค่า ---------------- */
-const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้านระบบคลังพัสดุ (…/exec) · ว่าง = โหมดทดลอง เก็บในเครื่องนี้
+const API_DEFAULT = 'https://script.google.com/macros/s/AKfycby536q10bjzfwQPQLrxbv-BXY33WNggpQi06VdRLniht_zUZjArNZ5V9fQIBKCY0dAHzw/exec';   // ← ลิงก์ Web app หลังบ้านระบบคลังพัสดุ (…/exec) · ว่าง = โหมดทดลอง เก็บในเครื่องนี้
 const lsr = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
 const API_URL = () => lsr('stock_api') || API_DEFAULT;
 const LOCAL = () => !API_URL();
