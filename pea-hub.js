@@ -53,28 +53,58 @@
     return String(v || creds().name || '').replace(/\s+/g, ' ').trim().slice(0, 60);   // ชื่อจากชีตบางคนมีเว้นวรรคซ้ำ — รวมให้เป็นคนเดียวกัน
   }
 
-  var counted = false;
+  /* ---------- ตัวนับ "เปิดใช้" — กติกาเดียวทุกช่องทาง ----------
+     เปิดแอป 1 ครั้ง = นับ 1 (จากศูนย์รวม/ไอคอน/ลิงก์ตรง/แถบสลับแอป เหมือนกันหมด)
+     รีโหลด/เปลี่ยนหน้าในแอปเดิม ภายใน 30 นาทีนับจากใช้งานล่าสุด = ไม่นับซ้ำ · ทิ้งไว้เกิน 30 นาทีแล้วกลับมาใช้ = นับใหม่
+     ส่งไม่สำเร็จ = เก็บไว้ในเครื่อง ส่งให้ครั้งถัดไป */
+  var counted = false, everCounted = false;
+  var ACT_KEY = 'pea_hub_act_' + APP, Q_KEY = 'pea_hub_pending';
+  function lastAct() { return parseInt(ls(ACT_KEY), 10) || 0; }
+  function touch() { if (APP) ls(ACT_KEY, String(Date.now())); }
+  function queue(p) {
+    try { var q = JSON.parse(ls(Q_KEY) || '[]') || []; p.queuedAt = Date.now(); q.push(p); ls(Q_KEY, JSON.stringify(q.slice(-30))); } catch (e) {}
+  }
+  function sendOpen(p, ka) {
+    return api(p, ka).catch(function () { if (!ka) queue(p); });   // เก็บไว้ส่งใหม่เฉพาะกรณีเครือข่ายล้ม (เซิร์ฟเวอร์ตอบแล้ว = จบ)
+  }
+  function flushPending() {
+    var q; try { q = JSON.parse(ls(Q_KEY) || '[]') || []; } catch (e) { q = []; }
+    if (!q.length) return;
+    ls(Q_KEY, null);
+    q.forEach(function (p) { if (Date.now() - (p.queuedAt || 0) < 7 * 86400000) sendOpen(p); });   // ค้างเกิน 7 วันทิ้ง
+  }
   function countVisit() {
     if (counted || !APP) return;
-    if (me && me.dataset.count === 'off') return;   // โปรแกรมนับการเข้าใช้เองอยู่แล้ว ใช้แค่แถบกลับศูนย์รวม
-    counted = true;
-    var key = 'pea_hub_seen_' + APP, now = Date.now(), last = 0;
-    try { last = parseInt(sessionStorage.getItem(key), 10) || 0; sessionStorage.setItem(key, String(now)); } catch (e) {}
-    if (!fromHub && last && now - last < IDLE_MS) return;      // ยังอยู่ในการเปิดครั้งเดิม
+    if (me && me.dataset.count === 'off') return;   // ใช้แค่แถบกลับศูนย์รวม ไม่นับ
+    counted = true; everCounted = true;
+    var now = Date.now(), last = lastAct();
+    touch();
+    try { flushPending(); } catch (e) {}
+    if (last && now - last < IDLE_MS) return;      // ยังอยู่ในการใช้งานรอบเดิม
+    var payload = function () { return { action: 'appOpen', app: APP, src: SRC, page: location.pathname, userHint: userHint() }; };
     // ยังไม่รู้ชื่อเลย (เครื่องใหม่ ยังไม่ได้เข้าระบบ) แต่โปรแกรมจำชื่อเองได้ → รอให้เข้าระบบก่อนค่อยนับ จะได้มีชื่อ
     // รอได้ไม่เกิน 5 นาที หรือจนปิด/ออกจากหน้า (ส่งแบบ keepalive) — นับ 1 ครั้งเท่าเดิม
     if (!creds().name && !userHint() && me && me.dataset.userKey) {
       var sent = false, t0 = Date.now();
       var send = function (ka) {
         if (sent) return; sent = true; clearInterval(iv);
-        api({ action: 'appOpen', app: APP, src: SRC, page: location.pathname, userHint: userHint() }, ka).catch(function () {});
+        sendOpen(payload(), ka);
       };
       var iv = setInterval(function () { if (userHint() || creds().name || Date.now() - t0 > 5 * 60000) send(false); }, 2000);
       window.addEventListener('pagehide', function () { send(true); });
       return;
     }
     // มีบัญชีศูนย์รวมงาน = นับพร้อมชื่อที่ยืนยันแล้ว · ไม่มี = หลังบ้านนับแบบ "ไม่ได้ยืนยันตัวตน" ด้วยชื่อจาก userHint
-    api({ action: 'appOpen', app: APP, src: SRC, page: location.pathname, userHint: userHint() }).catch(function () {});
+    sendOpen(payload());
+  }
+  // ใช้งานอยู่ = ต่อเวลา · สลับกลับมาหลังทิ้งไว้เกิน 30 นาที = นับเป็นการเปิดใช้ครั้งใหม่ (แอปที่ติดตั้งบนมือถือไม่โหลดหน้าใหม่)
+  if (APP) {
+    setInterval(function () { if (everCounted && document.visibilityState === 'visible') touch(); }, 60000);
+    document.addEventListener('visibilitychange', function () {
+      if (!everCounted) return;
+      if (document.visibilityState === 'hidden') { touch(); return; }
+      if (Date.now() - lastAct() >= IDLE_MS) { counted = false; SRC = standalone ? 'app' : 'direct'; countVisit(); } else touch();
+    });
   }
 
   /* ---------- หน้าจอกั้น ---------- */
