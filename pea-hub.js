@@ -219,6 +219,7 @@
   function start() {
     var c = creds();
     if (!GATE) {
+      if (me && me.dataset.count === 'off') return;   // ใช้แค่แถบกลับศูนย์รวม ไม่เรียกหลังบ้าน
       countVisit();
       if (c.name) api({ action: 'whoAmI' }).then(function (r) { if (r && r.role) decide(r); }).catch(function () {});
       return;
