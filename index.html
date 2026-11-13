@@ -171,7 +171,7 @@
     </div>
     <div class="search-wrap">
       <svg class="s-ic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="6.3"></circle><path d="M15.6 15.6L20 20"></path></svg>
-      <input type="search" id="appSearch" placeholder="พิมพ์ชื่องานที่ต้องการ…" autocomplete="off" enterkeyhint="search" aria-label="ค้นหาโปรแกรม">
+      <input type="search" id="appSearch" name="hub-q-nofill" placeholder="พิมพ์ชื่องานที่ต้องการ…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" enterkeyhint="search" aria-label="ค้นหาโปรแกรม">
       <button type="button" id="searchClear" aria-label="ล้างคำค้น">✕</button>
     </div>
   </header>
@@ -773,7 +773,16 @@ function setupSearch(){
     });
     noMatch.classList.toggle('show', total === 0);
   }
-  inp.addEventListener('input', run);
+  // ช่องค้นหาว่างเสมอตอนเปิดหน้า: เบราว์เซอร์ (Edge/Chrome) ชอบเติมคำเก่าหรือชื่อผู้ใช้ที่จำไว้ให้เอง
+  // รับเฉพาะสิ่งที่ผู้ใช้พิมพ์/วางเอง ค่าที่เบราว์เซอร์เติมก่อนผู้ใช้แตะช่อง ล้างทิ้ง
+  let touched = false;
+  const mark = ()=>{ touched = true; };
+  ['keydown','paste','drop','compositionstart','pointerdown','touchstart'].forEach(ev=> inp.addEventListener(ev, mark));
+  inp.addEventListener('beforeinput', e=>{ if(e.inputType && e.inputType !== 'insertReplacementText') mark(); });
+  function wipe(){ if(!touched && inp.value){ inp.value = ''; run(); } }
+  wipe(); [150, 500, 1200, 2500].forEach(t=> setTimeout(wipe, t));
+  window.addEventListener('pageshow', ()=>{ touched = false; inp.value = ''; run(); });
+  inp.addEventListener('input', ()=>{ if(!touched){ wipe(); return; } run(); });
   clr.addEventListener('click', ()=>{ inp.value = ''; run(); inp.focus(); });
   inp.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ inp.value = ''; run(); } });
 }
