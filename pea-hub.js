@@ -56,6 +56,7 @@
   var counted = false;
   function countVisit() {
     if (counted || !APP) return;
+    if (me && me.dataset.count === 'off') return;   // โปรแกรมนับการเข้าใช้เองอยู่แล้ว ใช้แค่แถบกลับศูนย์รวม
     counted = true;
     var key = 'pea_hub_seen_' + APP, now = Date.now(), last = 0;
     try { last = parseInt(sessionStorage.getItem(key), 10) || 0; sessionStorage.setItem(key, String(now)); } catch (e) {}
