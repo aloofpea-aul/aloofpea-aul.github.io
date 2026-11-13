@@ -348,7 +348,7 @@ function viewEdit(){
   setTimeout(hint, 0);
   return h;
 }
-function sessionPin(){ try{return sessionStorage.getItem('k04pin')||'';}catch(e){return '';} }
+function sessionPin(){ try{return localStorage.getItem('k04pin')||sessionStorage.getItem('k04pin')||'';}catch(e){return '';} }   // จำ PIN ไว้ในเครื่อง ไม่ต้องใส่ซ้ำทุกครั้ง
 function hint(){
   var el=document.getElementById('v'); if(!el) return;
   var s=findSheet(ST.sheet), a=findAct(s,ST.act), r=a.rows[ST.ri], q=r.q[ST.q-1];
@@ -369,7 +369,7 @@ function save(){
   apiPost({ action:'save', sheet:s.name, actKey:a.key, gk:r.gk||'', group:r.group||'', code:a.code, title:a.title, office:r.office, q:ST.q, value:v,
     note:document.getElementById('n').value, srcValue:r.q[qi].r, pin:pin, by:myName() }).then(function(res){
     OV[res.key]=res.rec; D.overrides=OV; lsSet(LS_KEY,D);
-    try{ if(pin) sessionStorage.setItem('k04pin',pin);}catch(e){}
+    try{ if(pin) localStorage.setItem('k04pin',pin);}catch(e){}
     toast('บันทึกแล้ว'); history.back();
   }).catch(function(e){ btn.disabled=false; btn.textContent='บันทึก'; err.textContent=e.message; });
 }
