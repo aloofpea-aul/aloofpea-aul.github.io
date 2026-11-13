@@ -112,6 +112,34 @@ tr.row{cursor:pointer}tr.row:hover td{background:#fbf9fc}
 .drop.over{background:#f6eef8;border-color:var(--pea)}
 .toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2a0f33;color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;z-index:80;display:none;max-width:90vw}
 .sr{position:absolute;left:-9999px}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tiles>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}
+.tiles span{font-size:12px;color:var(--mute)}.tiles b{font-size:22px}
+.tiles .ok b{color:var(--blue)}.tiles .w b{color:#b45309}.tiles .p b{color:var(--pea)}
+.chk{display:flex;align-items:center;gap:8px;font-size:13.5px;min-height:44px}.chk input{width:20px;height:20px;accent-color:var(--pea)}
+.clist,.rlist{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.ci{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:8px 10px;width:100%}
+.ci:hover{border-color:#cdb7d4}
+.ci .t,.ri .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.ci .t b,.ri .t b{font-size:14.5px}
+.ci .v{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;min-width:84px}.ci .v b{font-size:20px}
+.tag.p{background:#efe6f2;color:#5a1763}
+.kpi{background:#f6f5f8;border-radius:12px;padding:8px 12px;display:flex;flex-direction:column}.kpi span{font-size:12px;color:var(--mute)}.kpi b{font-size:24px;line-height:1.2}.kpi small{font-size:12px;color:var(--mute)}
+.kpi.ok{background:var(--blueBg)}.kpi.ok b{color:var(--blue)}.kpi.w{background:var(--warnBg)}.kpi.w b{color:var(--warn)}.kpi.p{background:#efe6f2}.kpi.p b{color:#5a1763}
+.stepper{display:flex;gap:8px;margin-top:6px}.stepper button{width:58px;height:58px;border-radius:14px;border:1px solid #cfc9d8;background:#fff;font-size:28px}
+.stepper input{flex:1;min-width:0;height:58px;border-radius:14px;border:2px solid var(--pea);text-align:center;font-size:28px;font-weight:700}
+label.f{display:block}label.f>span{display:block;font-size:13px;color:var(--mute);margin-bottom:3px}label.f input{width:100%;border:1px solid #cfc9d8;border-radius:10px;min-height:44px;padding:0 12px;font-size:15px}
+.ri{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:8px 10px}
+.ri.done{opacity:.75}.ri input[type=checkbox]{width:22px;height:22px;accent-color:var(--pea);flex:none}
+.ri .t{border:0;background:none;text-align:left;padding:0;flex:1 1 200px}
+.ri .nums{display:grid;grid-template-columns:repeat(3,64px);gap:6px;text-align:center;flex:none}.ri .nums span{display:block;font-size:11px;color:var(--mute)}.ri .nums b{font-size:17px}
+.ri .nums .w b{color:#b45309}.ri .nums .ok b{color:var(--blue)}
+.ri .sug{flex:1 1 220px;display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.actbar{position:sticky;bottom:0;margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 -4px 14px rgba(40,10,50,.06)}
+.tin{width:110px;min-height:40px;border:1px solid #cfc9d8;border-radius:10px;text-align:right;padding:0 10px;font-size:15px}
+.doc select{min-height:44px;border:1px solid #cfc9d8;border-radius:10px;padding:0 8px;background:#fff}
+@media (max-width:440px){.bnav button{font-size:11.5px}}
 .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 </style>
@@ -128,6 +156,8 @@ tr.row{cursor:pointer}tr.row:hover td{background:#fbf9fc}
   <main class="main" id="main"><div class="wrap" id="view"></div></main>
   <nav class="bnav" aria-label="เมนูหลัก">
     <button data-t="stock" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>คลัง</button>
+    <button data-t="count"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2"/></svg>ตรวจนับ</button>
+    <button data-t="restock"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l5 5v5h-2"/><path d="M3 7v10h2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/><path d="M9.5 17.5h5"/></svg>จัดหาให้ครบ</button>
     <button data-t="import"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg>นำเข้า SAP</button>
   </nav>
 </div>
@@ -174,7 +204,7 @@ async function api(action, payload) {
 /* โหมดทดลอง: เก็บในเครื่องนี้ด้วยกติกาเดียวกับหลังบ้าน */
 function localApi(action, b) {
   const L = JSON.parse(lsr('stock_local') || '{"rows":[],"imports":{}}');
-  if (action === 'bootstrap') return Promise.resolve({ ok: true, slocs: DEF_SLOCS, rows: L.rows, imports: L.imports, me: { name: cred().user || 'ทดลอง', admin: true }, local: true });
+  if (action === 'bootstrap') return Promise.resolve({ ok: true, slocs: DEF_SLOCS, rows: L.rows, imports: L.imports, me: { name: cred().user || 'ทดลอง', admin: true }, local: true, round: L.round || null, counts: L.counts || [], targets: L.targets || [], requests: L.requests || [] });
   if (action === 'importSap') {
     const now = new Date().toISOString();
     L.rows = L.rows.filter(r => r[0] !== b.sloc).concat(b.rows.map(r => [b.sloc, r[0], r[1], r[2], r[3], r[4], r[5]]));
@@ -183,6 +213,14 @@ function localApi(action, b) {
     return Promise.resolve({ ok: true, sloc: b.sloc, rows: b.rows.length });
   }
   if (action === 'moves') return Promise.resolve({ ok: true, moves: [] });
+  const me = cred().user || 'ทดลอง', now = new Date().toISOString(), save = () => lsr('stock_local', JSON.stringify(L));
+  L.counts = L.counts || []; L.targets = L.targets || []; L.requests = L.requests || [];
+  if (action === 'startRound') { L.round = { id: 'R' + Date.now(), name: b.name, open: true, by: me, at: now }; L.counts = []; save(); return Promise.resolve({ ok: true, round: L.round }); }
+  if (action === 'closeRound') { L.round.open = false; L.round.closedAt = now; save(); return Promise.resolve({ ok: true }); }
+  if (action === 'saveCount') { L.counts = L.counts.filter(c => !(c[0] === b.sloc && c[1] === b.mat)); if (b.qty !== null) L.counts.push([b.sloc, b.mat, b.sap, b.qty, b.note || '', me, now]); save(); return Promise.resolve({ ok: true }); }
+  if (action === 'saveTargets') { b.items.forEach(([m, t]) => { L.targets = L.targets.filter(x => !(x[0] === b.sloc && x[1] === m)); if (t != null) L.targets.push([b.sloc, m, t]); }); save(); return Promise.resolve({ ok: true, targets: L.targets }); }
+  if (action === 'createRequest') { const r = { id: (b.kind === 'transfer' ? 'TR' : 'RQ') + Date.now() + L.requests.length, kind: b.kind, from: b.from || 'K040 คลังกระบี่', to: b.to, items: b.items, status: 'ขอแล้ว', note: b.note || '', by: me, at: now }; L.requests.unshift(r); save(); return Promise.resolve({ ok: true, request: r }); }
+  if (action === 'setRequestStatus') { const r = L.requests.find(x => x.id === b.id); if (r) r.status = b.status; save(); return Promise.resolve({ ok: true }); }
   return Promise.reject(new Error('โหมดทดลองไม่รองรับ'));
 }
 
@@ -204,12 +242,16 @@ function build() {
   });
   ITEMS.forEach(it => { it.tot = sl.reduce((a, s) => a + (it.q[s] || 0), 0); it.key = (it.m + ' ' + it.th + ' ' + it.en).toLowerCase(); });
   ITEMS.sort((a, b) => a.m.localeCompare(b.m));
+  buildExtra();
 }
 const pad4 = v => { const t = String(v == null ? '' : v).trim(); return /^\d{1,4}$/.test(t) ? t.padStart(4, '0') : t; };
 function norm() {   // ชีตอาจเก็บ "0023" เป็นตัวเลข 23 → คืนเป็น 4 หลัก
   DB.rows.forEach(r => { r[0] = pad4(r[0]); });
   const im = {}; Object.keys(DB.imports || {}).forEach(k => { im[pad4(k)] = DB.imports[k]; }); DB.imports = im;
   (DB.slocs || []).forEach(x => { x.code = pad4(x.code); });
+  (DB.counts || []).forEach(c => { c[0] = pad4(c[0]); });
+  (DB.targets || []).forEach(t => { t[0] = pad4(t[0]); });
+  (DB.requests || []).forEach(r => { r.to = pad4(r.to); if (/^\d{1,4}$/.test(String(r.from))) r.from = pad4(r.from); });
 }
 function slocName(c) { const s = DB.slocs.find(x => x.code === c); return s ? s.name : c; }
 function pic(i, s) {
@@ -377,8 +419,338 @@ async function saveAll() {
   if (!bad) { PENDING = []; go('stock'); }
 }
 
+/* ---------------- ใช้ร่วม: เลือกคลัง / พิมพ์ ---------------- */
+const key2 = (s, m) => s + '|' + m;
+let CNT = {}, TGT = {};
+function buildExtra() {
+  CNT = {}; (DB.counts || []).forEach(c => { CNT[key2(c[0], c[1])] = { sap: c[2], q: c[3], note: c[4], by: c[5], at: c[6] }; });
+  TGT = {}; (DB.targets || []).forEach(t => { TGT[key2(t[0], t[1])] = t[2]; });
+}
+function slocCode() { return ST.s === 'all' ? (DB.slocs[0] || {}).code : ST.s; }
+function slocBar(sel, stat, onPick) {
+  return `<div class="slocs">` + DB.slocs.map(s => {
+    const st = stat(s.code);
+    return `<button class="sl${s.code === sel ? ' on' : ''}" data-ss="${s.code}" aria-pressed="${s.code === sel}"><span class="h"><span class="code mono">${s.code}</span><span class="n">${st.right}</span></span><span class="nm">${esc(s.name)}</span><span class="n">${st.sub}</span><span class="bar"><i style="width:${Math.max(0, Math.min(100, st.pct))}%"></i></span></button>`;
+  }).join('') + `</div>`;
+}
+function bindSloc(cb) { document.querySelectorAll('[data-ss]').forEach(b => b.onclick = () => { ST.s = b.dataset.ss; lsr('stock_sloc', ST.s); cb(); }); }
+function itemName(i) { return i.th || i.en; }
+function picUrl() { return new URL('materials.webp', location.href).href; }
+function printDoc(title, body) {
+  const w = window.open('', '_blank');
+  if (!w) { toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up ก่อน', 4000); return; }
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
+<style>@page{size:A4;margin:12mm 10mm}body{font-family:Sarabun,sans-serif;font-size:13px;color:#111;margin:0}
+h1{font-size:19px;margin:0}.hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}
+.box{border:2px solid #111;border-radius:6px;padding:3px 10px;font-weight:700;font-size:16px}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:3px 5px;vertical-align:middle}th{background:#eee}thead{display:table-header-group}tr{page-break-inside:avoid}
+.r{text-align:right}.c{text-align:center}.m{font-family:monospace;font-size:11px}.s{font-size:10.5px;color:#444}
+.pic{background-image:url(${picUrl()});background-repeat:no-repeat;width:34px;height:34px;background-size:408px auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sig{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:22px;text-align:center;margin-top:28px;page-break-inside:avoid}.sig div div{border-bottom:1px dotted #111;height:34px}
+.bar{position:fixed;top:8px;right:8px}.bar button{font:inherit;padding:6px 14px}@media print{.bar{display:none}}</style></head><body>
+<div class="bar"><button onclick="print()">พิมพ์</button></div>${body}</body></html>`);
+  w.document.close();
+  setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 900);
+}
+function pPic(i) { return i >= 0 ? `<div class="pic" style="background-position:-${(i % 12) * 34}px -${Math.floor(i / 12) * 34}px"></div>` : ''; }
+function sigs(names) { return `<div class="sig" style="--n:${names.length}">` + names.map(n => `<div><div></div>${n}<div style="border:0;height:auto;font-size:11px">วันที่ ......./......./.......</div></div>`).join('') + `</div>`; }
+function thDay(d) { return (d ? new Date(d) : new Date()).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function csv(name, rows) {
+  const t = '﻿' + rows.map(r => r.map(v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/csv;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ---------------- หน้า: ตรวจนับ ---------------- */
+const CS = { f: 'todo', q: '', zero: false };
+function countList(s) {   // รายการที่ต้องนับในคลัง s: มียอด SAP หรือมีผลนับแล้ว (+ รหัสยอด 0 ถ้าเลือก)
+  return ITEMS.filter(i => (i.q[s] || 0) > 0 || CNT[key2(s, i.m)] || (CS.zero && s in i.q));
+}
+function cstat(s) {
+  const l = countList(s); let done = 0, ok = 0, short = 0, over = 0;
+  l.forEach(i => { const c = CNT[key2(s, i.m)]; if (!c) return; done++; const d = c.q - (i.q[s] || 0); if (Math.abs(d) < 1e-9) ok++; else if (d < 0) short++; else over++; });
+  return { all: l.length, done, ok, short, over, left: l.length - done };
+}
+function viewCount() {
+  const R = DB.round, adm = DB.me && DB.me.admin;
+  if (!DB.rows.length) { $('#view').innerHTML = `<div class="card empty">ยังไม่มียอดคลัง — นำเข้าไฟล์ SAP ก่อน</div>`; return; }
+  if (ST.s === 'all') ST.s = slocCode();
+  const s = ST.s;
+  let h = `<div class="card" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div><div class="muted">รอบตรวจนับ</div><div style="font-size:19px;font-weight:700">${R ? esc(R.name) : 'ยังไม่มีรอบ'} ${R ? (R.open ? '<span class="tag ok">เปิดอยู่</span>' : '<span class="tag w">ปิดแล้ว</span>') : ''}</div>
+    ${R ? `<div class="muted">เริ่ม ${thDate(R.at)} โดย ${esc(R.by)}${R.open ? '' : ' · ปิด ' + thDate(R.closedAt)}</div>` : '<div class="muted">ผู้ดูแลกด "เริ่มรอบตรวจนับ" แล้วทุกคนช่วยนับพร้อมกันได้</div>'}</div>
+    <div class="tools">${adm && (!R || !R.open) ? '<button class="btn p" id="startR">เริ่มรอบตรวจนับใหม่</button>' : ''}${adm && R && R.open ? '<button class="btn" id="closeR">ปิดรอบ</button>' : ''}</div></div>`;
+  h += slocBar(s, c => { const t = cstat(c); return { right: t.done + ' / ' + t.all, sub: t.done ? `ตรง ${t.ok} · ไม่ตรง ${t.short + t.over}` : 'ยังไม่นับ', pct: t.all ? t.done / t.all * 100 : 0 }; });
+  const t = cstat(s);
+  h += `<div class="tiles">
+    <div><span>ต้องนับ</span><b>${t.all}</b></div><div><span>นับแล้ว</span><b>${t.done}</b></div>
+    <div class="ok"><span>ตรง SAP</span><b>${t.ok}</b></div><div class="w"><span>ขาด</span><b>${t.short}</b></div><div class="p"><span>เกิน</span><b>${t.over}</b></div></div>`;
+  h += `<div class="tools" style="margin-top:12px"><label class="search"><span class="sr">ค้นหา</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5f5a6b" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="cq" type="search" value="${esc(CS.q)}" placeholder="ค้นหารายการที่จะนับ" autocomplete="off"></label>
+    <div class="seg" role="group" aria-label="กรอง"><button data-cf="todo" class="${CS.f === 'todo' ? 'on' : ''}">ยังไม่นับ ${t.left}</button><button data-cf="diff" class="${CS.f === 'diff' ? 'on' : ''}">ไม่ตรง ${t.short + t.over}</button><button data-cf="all" class="${CS.f === 'all' ? 'on' : ''}">ทั้งหมด</button></div></div>
+    <div class="tools" style="margin-top:8px"><label class="chk"><input type="checkbox" id="cz" ${CS.zero ? 'checked' : ''}> รวมรหัสที่ยอด SAP เป็น 0 (ของมีจริงแต่ระบบเป็น 0)</label><span style="flex:1"></span>
+    <button class="btn" id="pSheet">พิมพ์ใบตรวจนับ</button><button class="btn" id="pDiff">พิมพ์รายงานผลต่าง</button><button class="btn" id="xCsv">ส่งออก Excel</button></div>`;
+  const q = CS.q.trim().toLowerCase();
+  const list = countList(s).filter(i => {
+    const c = CNT[key2(s, i.m)];
+    if (CS.f === 'todo' && c) return false;
+    if (CS.f === 'diff' && !(c && Math.abs(c.q - (i.q[s] || 0)) > 1e-9)) return false;
+    return !q || q.split(/\s+/).every(w => i.key.includes(w));
+  });
+  ST.clist = list.map(i => i.m);
+  if (!R || !R.open) h += `<div class="note" style="margin-top:12px">${R ? 'รอบนี้ปิดแล้ว ดูผลและพิมพ์รายงานได้ ' : ''}${adm ? 'กด "เริ่มรอบตรวจนับใหม่" เพื่อเริ่มนับ' : 'รอผู้ดูแลเริ่มรอบตรวจนับ'}</div>`;
+  h += list.length ? `<div class="clist">` + list.map(i => {
+    const c = CNT[key2(s, i.m)], sap = i.q[s] || 0, d = c ? c.q - sap : null;
+    const tag = !c ? '<span class="tag">ยังไม่นับ</span>' : Math.abs(d) < 1e-9 ? '<span class="tag ok">ตรง</span>' : d < 0 ? `<span class="tag w">ขาด ${fmt(-d)}</span>` : `<span class="tag p">เกิน ${fmt(d)}</span>`;
+    return `<button class="ci" data-cm="${i.m}">${pic(i.img, 52)}<span class="t"><span class="mono muted" style="font-size:11.5px">${i.m}</span><b>${esc(itemName(i))}</b>${i.th ? `<span class="muted" style="font-size:12px">${esc(i.en)}</span>` : ''}</span>
+      <span class="v"><span class="muted" style="font-size:11.5px">SAP ${fmt(sap)} ${esc(i.u)}</span><b>${c ? fmt(c.q) || '0' : '—'}</b>${tag}</span></button>`;
+  }).join('') + `</div>` : `<div class="card empty" style="margin-top:12px">${CS.f === 'todo' ? 'นับครบทุกรายการในคลังนี้แล้ว' : 'ไม่มีรายการ'}</div>`;
+  $('#view').innerHTML = h;
+  bindSloc(viewCount);
+  const qi = $('#cq'); qi.oninput = () => { CS.q = qi.value; clearTimeout(qi._t); qi._t = setTimeout(() => { const p = qi.selectionStart; viewCount(); const n = $('#cq'); n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} }, 180); };
+  document.querySelectorAll('[data-cf]').forEach(b => b.onclick = () => { CS.f = b.dataset.cf; viewCount(); });
+  $('#cz').onchange = e => { CS.zero = e.target.checked; viewCount(); };
+  document.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => openCount(b.dataset.cm));
+  $('#pSheet').onclick = () => printCountSheet(s);
+  $('#pDiff').onclick = () => printDiff(s);
+  $('#xCsv').onclick = () => exportCount(s);
+  const sr = $('#startR'); if (sr) sr.onclick = startRound;
+  const cr = $('#closeR'); if (cr) cr.onclick = closeRound;
+}
+async function startRound() {
+  const d = new Date(), def = 'ตรวจนับ ' + d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  sheetHtml(`<h2 id="dTitle" style="margin:0 0 10px;font-size:19px">เริ่มรอบตรวจนับใหม่</h2><label class="f"><span>ชื่อรอบ</span><input id="rName" value="${esc(def)}"></label>
+    <p class="muted">ทุกคนในศูนย์รวมงานจะนับในรอบนี้ได้พร้อมกัน ผลนับเทียบกับยอด SAP ล่าสุดที่นำเข้า</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn" onclick="closeSheet()">ยกเลิก</button><button class="btn p" id="rGo">เริ่มรอบ</button></div>`);
+  $('#rGo').onclick = async () => {
+    $('#rGo').disabled = true;
+    try { const r = await api('startRound', { name: $('#rName').value }); DB.round = r.round; DB.counts = []; buildExtra(); closeSheet(); CS.f = 'todo'; viewCount(); toast('เริ่มรอบแล้ว'); }
+    catch (e) { toast(e.message, 4000); $('#rGo').disabled = false; }
+  };
+}
+async function closeRound() {
+  const t = DB.slocs.map(s => cstat(s.code)).reduce((a, x) => ({ left: a.left + x.left, diff: a.diff + x.short + x.over }), { left: 0, diff: 0 });
+  sheetHtml(`<h2 id="dTitle" style="margin:0 0 10px;font-size:19px">ปิดรอบ "${esc(DB.round.name)}"</h2>
+    <p>ยังไม่ได้นับ <b>${t.left}</b> รายการ · ไม่ตรง SAP <b>${t.diff}</b> รายการ</p><p class="muted">ปิดแล้วจะนับเพิ่มไม่ได้ แต่ยังดูผลและพิมพ์รายงานได้</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn" onclick="closeSheet()">ยกเลิก</button><button class="btn p" id="rClose">ปิดรอบ</button></div>`);
+  $('#rClose').onclick = async () => {
+    $('#rClose').disabled = true;
+    try { await api('closeRound', { round: DB.round.id }); DB.round.open = false; DB.round.closedAt = new Date().toISOString(); closeSheet(); viewCount(); toast('ปิดรอบแล้ว'); }
+    catch (e) { toast(e.message, 4000); $('#rClose').disabled = false; }
+  };
+}
+function sheetHtml(h) {
+  $('#sheet').innerHTML = `<button class="ibtn x" style="background:#f0edf4;color:var(--ink)" onclick="closeSheet()" aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>` + h;
+  $('#dim').classList.add('show');
+}
+function openCount(m) {
+  const s = ST.s, i = ITEMS.find(x => x.m === m); if (!i) return;
+  const R = DB.round, can = R && R.open, c = CNT[key2(s, m)], sap = i.q[s] || 0;
+  const oth = DB.slocs.filter(x => x.code !== s && (i.q[x.code] || 0) > 0).map(x => esc(x.name) + ' ' + fmt(i.q[x.code])).join(' · ');
+  sheetHtml(`<div class="mono muted">${i.m}</div><h2 id="dTitle" style="margin:2px 0 0;font-size:20px;line-height:1.3">${esc(itemName(i))}</h2>${i.th ? `<div class="muted">${esc(i.en)}</div>` : ''}
+    <div style="display:flex;gap:12px;align-items:center;margin:12px 0">${pic(i.img, 112)}<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="kpi"><span>ยอด SAP · ${esc(slocName(s))}</span><b>${fmt(sap) === '–' ? 0 : fmt(sap)}</b><small>${esc(i.u)}</small></div>
+      <div class="kpi" id="dBox"><span>ผลต่าง</span><b id="dVal">—</b></div></div></div>
+    ${oth ? `<div class="muted" style="margin-bottom:8px">คลังอื่นมี: ${oth}</div>` : ''}
+    <label for="cQty" style="font-weight:600">นับได้จริง</label>
+    <div class="stepper"><button type="button" id="cMinus" aria-label="ลด 1" ${can ? '' : 'disabled'}>−</button><input id="cQty" inputmode="decimal" autocomplete="off" value="${c ? c.q : ''}" placeholder="0" ${can ? '' : 'disabled'}><button type="button" id="cPlus" aria-label="เพิ่ม 1" ${can ? '' : 'disabled'}>+</button></div>
+    <div class="tools" style="margin-top:8px"><button class="btn" id="cSame" ${can ? '' : 'disabled'}>ตรงกับ SAP</button>${c && can ? '<button class="btn" id="cClear">ล้างผลนับ</button>' : ''}</div>
+    <label class="f" style="margin-top:8px"><span>หมายเหตุ (ถ้ามี)</span><input id="cNote" value="${esc(c ? c.note : '')}" placeholder="เช่น ชำรุด 2, อยู่ชั้น B" ${can ? '' : 'disabled'}></label>
+    ${c ? `<div class="muted">นับล่าสุดโดย ${esc(c.by)} · ${thDate(c.at)}</div>` : ''}
+    <div style="display:flex;gap:10px;margin-top:14px">${can ? `<button class="btn" id="cSave" style="flex:1">บันทึก</button><button class="btn p" id="cNext" style="flex:2;min-height:52px">บันทึก &amp; ถัดไป</button>` : '<div class="note" style="flex:1">รอบตรวจนับปิดอยู่</div>'}</div>`);
+  const qi = $('#cQty');
+  const upd = () => {
+    const v = qi.value.trim(), box = $('#dBox'), dv = $('#dVal');
+    if (v === '' || isNaN(+v)) { dv.textContent = '—'; box.className = 'kpi'; return; }
+    const d = Math.round((+v - sap) * 1000) / 1000;
+    dv.textContent = d === 0 ? 'ตรง' : (d > 0 ? '+' : '') + d.toLocaleString('th-TH');
+    box.className = 'kpi ' + (d === 0 ? 'ok' : d < 0 ? 'w' : 'p');
+  };
+  upd(); qi.oninput = upd;
+  if (!can) return;
+  setTimeout(() => { qi.focus(); qi.select(); }, 50);
+  $('#cMinus').onclick = () => { qi.value = Math.max(0, (+qi.value || 0) - 1); upd(); };
+  $('#cPlus').onclick = () => { qi.value = (+qi.value || 0) + 1; upd(); };
+  $('#cSame').onclick = () => { qi.value = sap; upd(); };
+  const save = async next => {
+    const v = qi.value.trim();
+    if (v === '' || isNaN(+v) || +v < 0) { toast('ใส่จำนวนที่นับได้ก่อน'); qi.focus(); return; }
+    const k = key2(s, m), old = CNT[k];
+    CNT[k] = { sap, q: +v, note: $('#cNote').value.trim(), by: DB.me.name, at: new Date().toISOString() };
+    const nextM = next ? nextOf(m) : null;
+    if (nextM) openCount(nextM); else closeSheet();
+    viewCount();
+    try { await api('saveCount', { round: R.id, sloc: s, mat: m, qty: +v, sap, desc: i.en, unit: i.u, note: CNT[k].note }); syncCounts(); }
+    catch (e) { if (old) CNT[k] = old; else delete CNT[k]; syncCounts(); viewCount(); toast('บันทึก ' + itemName(i) + ' ไม่สำเร็จ: ' + e.message, 5000); }
+  };
+  $('#cSave').onclick = () => save(false);
+  $('#cNext').onclick = () => save(true);
+  qi.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save(true); } };
+  const cl = $('#cClear'); if (cl) cl.onclick = async () => {
+    const k = key2(s, m), old = CNT[k]; delete CNT[k]; closeSheet(); viewCount();
+    try { await api('saveCount', { round: R.id, sloc: s, mat: m, qty: null }); syncCounts(); }
+    catch (e) { CNT[k] = old; viewCount(); toast(e.message, 4000); }
+  };
+}
+function nextOf(m) {   // รายการถัดไปที่ยังไม่นับ ตามลำดับในรายการที่เห็นอยู่
+  const l = ST.clist || [], s = ST.s, i = l.indexOf(m);
+  for (let k = i + 1; k < l.length; k++) if (!CNT[key2(s, l[k])]) return l[k];
+  for (let k = 0; k < i; k++) if (!CNT[key2(s, l[k])]) return l[k];
+  return null;
+}
+function syncCounts() { DB.counts = Object.keys(CNT).map(k => { const [s, m] = k.split('|'), c = CNT[k]; return [s, m, c.sap, c.q, c.note, c.by, c.at]; }); if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB)); }
+function printCountSheet(s) {
+  const l = countList(s);
+  const rows = l.map((i, n) => `<tr><td class="c">${n + 1}</td><td>${pPic(i.img)}</td><td class="m">${i.m}</td><td>${esc(itemName(i))}${i.th ? `<div class="s">${esc(i.en)}</div>` : ''}</td><td class="c">${esc(i.u)}</td><td class="r"><b>${fmt(i.q[s]) === '–' ? 0 : fmt(i.q[s])}</b></td><td style="width:62px"></td><td style="width:48px"></td><td style="width:80px"></td></tr>`).join('');
+  printDoc('ใบตรวจนับ ' + slocName(s), `<div class="hd"><div><h1>ใบตรวจนับพัสดุคงคลัง</h1><div>กฟส.อ่าวลึก · Plant K040${DB.round ? ' · ' + esc(DB.round.name) : ''}</div></div>
+    <div style="text-align:right"><div class="box">คลัง${esc(slocName(s))} · ${s}</div><div class="s">ยอด SAP ณ ${DB.imports[s] ? thDate(DB.imports[s].at) : '-'} · ${l.length} รายการ</div></div></div>
+    <table><thead><tr><th>ที่</th><th>รูป</th><th>รหัสพัสดุ</th><th>รายการ</th><th>หน่วย</th><th>ยอด SAP</th><th>นับได้</th><th>ผลต่าง</th><th>หมายเหตุ</th></tr></thead><tbody>${rows}</tbody></table>
+    ${sigs(['ผู้ตรวจนับ', 'ผู้ตรวจนับ', 'ผู้ควบคุมคลัง'])}`);
+}
+function printDiff(s) {
+  const l = countList(s).filter(i => { const c = CNT[key2(s, i.m)]; return c && Math.abs(c.q - (i.q[s] || 0)) > 1e-9; });
+  const t = cstat(s);
+  const rows = l.map((i, n) => { const c = CNT[key2(s, i.m)], sap = i.q[s] || 0, d = Math.round((c.q - sap) * 1000) / 1000;
+    return `<tr><td class="c">${n + 1}</td><td class="m">${i.m}</td><td>${esc(itemName(i))}${i.th ? `<div class="s">${esc(i.en)}</div>` : ''}</td><td class="c">${esc(i.u)}</td><td class="r">${sap.toLocaleString('th-TH')}</td><td class="r">${c.q.toLocaleString('th-TH')}</td><td class="r"><b>${d > 0 ? '+' : ''}${d.toLocaleString('th-TH')}</b></td><td>${esc(c.note)}</td></tr>`; }).join('');
+  printDoc('รายงานผลต่าง ' + slocName(s), `<div class="hd"><div><h1>รายงานผลการตรวจนับพัสดุ (รายการที่ไม่ตรง SAP)</h1><div>กฟส.อ่าวลึก${DB.round ? ' · ' + esc(DB.round.name) : ''} · พิมพ์ ${thDay()}</div></div><div class="box">คลัง${esc(slocName(s))} · ${s}</div></div>
+    <p>ต้องนับ ${t.all} รายการ · นับแล้ว ${t.done} · ตรง ${t.ok} · ขาด ${t.short} · เกิน ${t.over} · ยังไม่นับ ${t.left}</p>
+    ${l.length ? `<table><thead><tr><th>ที่</th><th>รหัสพัสดุ</th><th>รายการ</th><th>หน่วย</th><th>ยอด SAP</th><th>นับได้</th><th>ผลต่าง</th><th>หมายเหตุ</th></tr></thead><tbody>${rows}</tbody></table>` : '<p><b>ไม่มีรายการที่ยอดไม่ตรง</b></p>'}
+    ${sigs(['ผู้ตรวจนับ', 'ผู้ควบคุมคลัง', 'ผู้จัดการ'])}`);
+}
+function exportCount(s) {
+  const rows = [['คลังย่อย', 'รหัสพัสดุ', 'รายการ (ไทย)', 'รายการ (SAP)', 'หน่วย', 'ยอด SAP', 'นับได้', 'ผลต่าง', 'หมายเหตุ', 'ผู้นับ', 'นับเมื่อ']];
+  countList(s).forEach(i => { const c = CNT[key2(s, i.m)], sap = i.q[s] || 0; rows.push([s, i.m, i.th, i.en, i.u, sap, c ? c.q : '', c ? Math.round((c.q - sap) * 1000) / 1000 : '', c ? c.note : '', c ? c.by : '', c ? thDate(c.at) : '']); });
+  csv('ตรวจนับ-' + s + '-' + new Date().toISOString().slice(0, 10) + '.csv', rows);
+}
+
+/* ---------------- หน้า: จัดหาให้ครบ ---------------- */
+const RS = { mode: 'short', q: '', sel: {}, edit: {} };
+function surplus(i, s) { const t = TGT[key2(s, i.m)]; return Math.max(0, (i.q[s] || 0) - (t || 0)); }
+function plan(i, s) {   // ขาดเท่าไร โอนจากคลังไหนได้ ที่เหลือเบิก
+  const t = TGT[key2(s, i.m)]; if (t == null) return null;
+  const have = i.q[s] || 0, short = Math.max(0, Math.round((t - have) * 1000) / 1000);
+  let need = short; const moves = [];
+  DB.slocs.filter(x => x.code !== s).map(x => [x.code, surplus(i, x.code)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])
+    .forEach(([c, sp]) => { if (need <= 0) return; const q = Math.min(sp, need); moves.push([c, q]); need -= q; });
+  return { have, target: t, short, moves, req: Math.round(need * 1000) / 1000 };
+}
+function rstat(s) {
+  const l = ITEMS.filter(i => TGT[key2(s, i.m)] != null); let ok = 0;
+  l.forEach(i => { if ((i.q[s] || 0) >= TGT[key2(s, i.m)]) ok++; });
+  return { all: l.length, ok, short: l.length - ok };
+}
+function viewRestock() {
+  const adm = DB.me && DB.me.admin;
+  if (!DB.rows.length) { $('#view').innerHTML = `<div class="card empty">ยังไม่มียอดคลัง — นำเข้าไฟล์ SAP ก่อน</div>`; return; }
+  if (ST.s === 'all') ST.s = slocCode();
+  const s = ST.s, st = rstat(s);
+  let h = slocBar(s, c => { const t = rstat(c); return { right: t.all ? Math.round(t.ok / t.all * 100) + '%' : '–', sub: t.all ? `พร้อม ${t.ok} / ${t.all} · ขาด ${t.short}` : 'ยังไม่ตั้งระดับ', pct: t.all ? t.ok / t.all * 100 : 0 }; });
+  h += `<div class="head"><div><h2>ความพร้อมคลัง${esc(slocName(s))} <span class="mono" style="font-size:14px;color:var(--mute)">${s}</span></h2>
+    <div class="muted">${st.all ? `ตั้งระดับที่ต้องมีไว้ ${st.all} รายการ · พร้อม ${st.ok} · ต่ำกว่าระดับ ${st.short}` : 'ยังไม่ได้ตั้งระดับที่ต้องมีของคลังนี้'}</div></div>
+    <div class="seg" role="group" aria-label="มุมมอง"><button data-rm="short" class="${RS.mode === 'short' ? 'on' : ''}">ที่ขาด ${st.short}</button><button data-rm="all" class="${RS.mode === 'all' ? 'on' : ''}">ที่ตั้งไว้ ${st.all}</button>${adm ? `<button data-rm="edit" class="${RS.mode === 'edit' ? 'on' : ''}">ตั้งระดับต้องมี</button>` : ''}<button data-rm="docs" class="${RS.mode === 'docs' ? 'on' : ''}">ใบโอน/ใบเบิก ${(DB.requests || []).filter(r => r.to === s && (r.status === 'ขอแล้ว' || r.status === 'อนุมัติ')).length || ''}</button></div></div>`;
+  if (RS.mode === 'edit') h += editTargetsHtml(s);
+  else if (RS.mode === 'docs') h += docsHtml(s);
+  else {
+    if (!st.all) h += `<div class="card empty">ยังไม่ได้ตั้งว่าคลังนี้ต้องมีพัสดุอะไร อย่างละเท่าไร${adm ? '<br><br><button class="btn p" data-rm="edit">ตั้งระดับที่ต้องมี</button>' : ' — ให้ผู้ดูแลระบบคลังตั้งค่า'}</div>`;
+    else {
+      const l = ITEMS.map(i => [i, plan(i, s)]).filter(x => x[1] && (RS.mode === 'all' || x[1].short > 0));
+      if (!l.length) h += `<div class="card empty">พร้อมครบทุกรายการแล้ว</div>`;
+      else {
+        h += `<div class="rlist">` + l.map(([i, p]) => {
+          const okk = p.short <= 0, sel = RS.sel[i.m] !== false && !okk;
+          return `<div class="ri${okk ? ' done' : ''}">${okk ? '<span style="width:22px"></span>' : `<input type="checkbox" data-rs="${i.m}" ${sel ? 'checked' : ''} aria-label="เลือก ${esc(itemName(i))}">`}${pic(i.img, 52)}
+            <button class="t" data-m="${i.m}"><span class="mono muted" style="font-size:11.5px">${i.m}</span><b>${esc(itemName(i))}</b>${i.th ? `<span class="muted" style="font-size:12px">${esc(i.en)}</span>` : ''}</button>
+            <div class="nums"><div><span>มีอยู่</span><b>${fmt(p.have) === '–' ? 0 : fmt(p.have)}</b></div><div><span>ต้องมี</span><b>${fmt(p.target)}</b></div><div class="${okk ? 'ok' : 'w'}"><span>${okk ? 'พร้อม' : 'ขาด'}</span><b>${okk ? '✓' : fmt(p.short)}</b></div></div>
+            <div class="sug">${okk ? '' : p.moves.map(([c, q]) => `<span class="tag ok">โอนจาก ${esc(slocName(c))} ${fmt(q)}</span>`).join(' ') + (p.req > 0 ? ` <span class="tag p">เบิกคลังกระบี่ ${fmt(p.req)}</span>` : '')}</div></div>`;
+        }).join('') + `</div>`;
+        const pick = l.filter(([i, p]) => p.short > 0 && RS.sel[i.m] !== false);
+        const nMove = new Set(pick.flatMap(([, p]) => p.moves.map(m => m[0]))).size, nReq = pick.filter(([, p]) => p.req > 0).length;
+        if (adm) h += `<div class="actbar"><span>เลือก ${pick.length} รายการ → ใบโอน ${nMove} ใบ · ใบขอเบิก ${nReq ? 1 : 0} ใบ (${nReq} รายการ)</span><button class="btn p" id="mkDocs" ${pick.length ? '' : 'disabled'}>สร้างเอกสาร + พิมพ์</button></div>`;
+      }
+    }
+  }
+  $('#view').innerHTML = h;
+  bindSloc(viewRestock);
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { RS.mode = b.dataset.rm; RS.edit = {}; viewRestock(); });
+  document.querySelectorAll('[data-rs]').forEach(b => b.onchange = () => { RS.sel[b.dataset.rs] = b.checked; viewRestock(); });
+  document.querySelectorAll('.ri [data-m]').forEach(b => b.onclick = () => openItem(b.dataset.m));
+  const mk = $('#mkDocs'); if (mk) mk.onclick = makeDocs;
+  if (RS.mode === 'edit') bindEdit(s);
+  if (RS.mode === 'docs') bindDocs();
+}
+function editList(s) {
+  const q = RS.q.trim().toLowerCase();
+  return ITEMS.filter(i => ((i.q[s] || 0) > 0 || TGT[key2(s, i.m)] != null || (q && s in i.q)) && (!q || q.split(/\s+/).every(w => i.key.includes(w))));
+}
+function editTargetsHtml(s) {
+  const l = editList(s), n = Object.keys(RS.edit).length;
+  return `<div class="note b" style="margin-bottom:10px">ใส่จำนวนที่คลังนี้ "ต้องมีเสมอ" (ระดับสำรองขั้นต่ำ) · เว้นว่าง = ไม่ติดตามรายการนั้น · ค้นหาเพื่อเพิ่มรหัสที่ยอดเป็น 0 ได้</div>
+    <div class="tools"><label class="search"><span class="sr">ค้นหา</span><input id="tq" type="search" value="${esc(RS.q)}" placeholder="ค้นหารายการ" autocomplete="off"></label>
+    <button class="btn" id="tFill">ใช้ยอดปัจจุบันเติมช่องที่ว่าง</button><button class="btn p" id="tSave" ${n ? '' : 'disabled'}>บันทึก ${n ? n + ' รายการ' : ''}</button></div>
+    <div class="tbl"><table style="min-width:640px"><thead><tr><th style="width:56px">รูป</th><th>รหัส / รายการ</th><th class="r">มีอยู่ (SAP)</th><th class="r" style="width:150px">ต้องมี</th></tr></thead><tbody>` +
+    l.map(i => { const k = i.m, cur = k in RS.edit ? RS.edit[k] : (TGT[key2(s, k)] != null ? TGT[key2(s, k)] : '');
+      return `<tr><td>${pic(i.img, 40)}</td><td><div class="mono" style="font-size:12px;color:var(--mute)">${i.m}</div>${esc(itemName(i))} <span class="muted">(${esc(i.u)})</span></td><td class="r">${fmt(i.q[s])}</td>
+      <td class="r"><input class="tin" data-tm="${k}" inputmode="decimal" value="${esc(cur)}" aria-label="ต้องมี ${esc(itemName(i))}"></td></tr>`; }).join('') + `</tbody></table></div>`;
+}
+function bindEdit(s) {
+  const tq = $('#tq'); tq.oninput = () => { RS.q = tq.value; clearTimeout(tq._t); tq._t = setTimeout(() => { const p = tq.selectionStart; viewRestock(); const n = $('#tq'); n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} }, 220); };
+  document.querySelectorAll('[data-tm]').forEach(inp => inp.oninput = () => { RS.edit[inp.dataset.tm] = inp.value.trim(); const b = $('#tSave'); const n = Object.keys(RS.edit).length; b.disabled = !n; b.textContent = 'บันทึก ' + n + ' รายการ'; });
+  $('#tFill').onclick = () => { editList(s).forEach(i => { if (TGT[key2(s, i.m)] == null && !(i.m in RS.edit) && (i.q[s] || 0) > 0) RS.edit[i.m] = String(i.q[s]); }); viewRestock(); };
+  $('#tSave').onclick = async () => {
+    const items = Object.keys(RS.edit).map(m => [m, RS.edit[m] === '' ? null : +RS.edit[m]]);
+    if (items.some(x => x[1] != null && (isNaN(x[1]) || x[1] < 0))) { toast('จำนวนต้องเป็นตัวเลข 0 ขึ้นไป'); return; }
+    $('#tSave').disabled = true;
+    try { const r = await api('saveTargets', { sloc: s, items }); DB.targets = r.targets; buildExtra(); RS.edit = {}; if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB)); toast('บันทึกระดับที่ต้องมีแล้ว'); viewRestock(); }
+    catch (e) { toast(e.message, 4000); $('#tSave').disabled = false; }
+  };
+}
+async function makeDocs() {
+  const s = ST.s, pick = ITEMS.map(i => [i, plan(i, s)]).filter(([i, p]) => p && p.short > 0 && RS.sel[i.m] !== false);
+  const by = {}; const reqItems = [];
+  pick.forEach(([i, p]) => { p.moves.forEach(([c, q]) => (by[c] = by[c] || []).push([i.m, itemName(i), i.u, q])); if (p.req > 0) reqItems.push([i.m, itemName(i), i.u, p.req]); });
+  const jobs = Object.keys(by).map(c => ({ kind: 'transfer', from: c, to: s, items: by[c] }));
+  if (reqItems.length) jobs.push({ kind: 'requisition', from: '', to: s, items: reqItems });
+  const b = $('#mkDocs'); b.disabled = true; b.textContent = 'กำลังสร้าง…';
+  const made = [];
+  for (const j of jobs) { try { const r = await api('createRequest', j); made.push(r.request); } catch (e) { toast(e.message, 5000); } }
+  DB.requests = made.concat(DB.requests || []);
+  if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB));
+  if (made.length) { printReqs(made); toast('สร้างเอกสาร ' + made.length + ' ใบแล้ว'); }
+  RS.mode = 'docs'; viewRestock();
+}
+const ST_TAG = { 'ขอแล้ว': 'w', 'อนุมัติ': 'ok', 'รับของแล้ว': 'ok', 'ยกเลิก': 'r' };
+function docsHtml(s) {
+  const l = (DB.requests || []).filter(r => r.to === s || r.from === s), adm = DB.me && DB.me.admin;
+  if (!l.length) return `<div class="card empty">ยังไม่มีใบโอนหรือใบขอเบิกของคลังนี้</div>`;
+  return `<div class="rlist">` + l.map(r => `<div class="card doc"><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center">
+      <div><b>${r.kind === 'transfer' ? 'ใบโอน' : 'ใบขอเบิก'}</b> <span class="mono muted">${r.id}</span> <span class="tag ${ST_TAG[r.status] || ''}">${esc(r.status)}</span>
+      <div class="muted">${r.kind === 'transfer' ? 'จาก ' + esc(slocName(r.from)) : 'เบิกจาก ' + esc(r.from)} → ${esc(slocName(r.to))} · ${r.items.length} รายการ · ${thDate(r.at)} โดย ${esc(r.by)}</div></div>
+      <div class="tools">${adm ? `<select data-rq="${r.id}" aria-label="สถานะ ${r.id}">${['ขอแล้ว', 'อนุมัติ', 'รับของแล้ว', 'ยกเลิก'].map(x => `<option${x === r.status ? ' selected' : ''}>${x}</option>`).join('')}</select>` : ''}<button class="btn" data-pr="${r.id}">พิมพ์</button></div></div>
+      <div class="muted" style="margin-top:6px;font-size:13px">${r.items.slice(0, 6).map(it => esc(MAT[it[0].replace(/-/g, '')] && MAT[it[0].replace(/-/g, '')][0] || it[1]) + ' ' + fmt(it[3])).join(' · ')}${r.items.length > 6 ? ' …' : ''}</div></div>`).join('') + `</div>`;
+}
+function bindDocs() {
+  document.querySelectorAll('[data-pr]').forEach(b => b.onclick = () => printReqs([(DB.requests || []).find(r => r.id === b.dataset.pr)]));
+  document.querySelectorAll('[data-rq]').forEach(sel => sel.onchange = async () => {
+    const r = DB.requests.find(x => x.id === sel.dataset.rq), old = r.status; r.status = sel.value;
+    try { await api('setRequestStatus', { id: r.id, status: r.status }); toast('อัปเดตสถานะแล้ว'); if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB)); viewRestock(); }
+    catch (e) { r.status = old; toast(e.message, 4000); viewRestock(); }
+  });
+}
+function printReqs(list) {
+  const body = list.filter(Boolean).map((r, n) => {
+    const tr = r.kind === 'transfer';
+    const rows = r.items.map((it, k) => { const mm = MAT[it[0].replace(/-/g, '')]; return `<tr><td class="c">${k + 1}</td><td class="m">${it[0]}</td><td>${esc(mm && mm[0] || it[1])}${mm && mm[0] && mm[0] !== it[1] ? `<div class="s">${esc(it[1])}</div>` : ''}</td><td class="c">${esc(it[2])}</td><td class="r"><b>${Number(it[3]).toLocaleString('th-TH')}</b></td><td style="width:90px"></td></tr>`; }).join('');
+    return `<div style="${n ? 'page-break-before:always' : ''}"><div class="hd"><div><h1>${tr ? 'ใบโอนพัสดุระหว่างคลังย่อย' : 'ใบขอเบิกพัสดุ'}</h1><div>กฟส.อ่าวลึก · Plant K040</div></div>
+      <div style="text-align:right"><div class="box">${r.id}</div><div>วันที่ ${thDay(r.at)}</div></div></div>
+      <p><b>${tr ? 'จากคลัง' : 'ขอเบิกจาก'}:</b> ${tr ? esc(slocName(r.from)) + ' (' + r.from + ')' : esc(r.from)} &nbsp; → &nbsp; <b>เข้าคลัง:</b> ${esc(slocName(r.to))} (${r.to})${r.note ? '<br><b>หมายเหตุ:</b> ' + esc(r.note) : ''}</p>
+      <table><thead><tr><th>ที่</th><th>รหัสพัสดุ</th><th>รายการ</th><th>หน่วย</th><th>จำนวน</th><th>หมายเหตุ</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="s">วัตถุประสงค์: จัดหาให้ครบตามระดับที่คลัง${esc(slocName(r.to))}ต้องมี (จากระบบคลังพัสดุ)</p>
+      ${sigs(tr ? ['ผู้ขอโอน', 'ผู้อนุมัติ', 'ผู้จ่าย (คลังต้นทาง)', 'ผู้รับ (คลังปลายทาง)'] : ['ผู้ขอเบิก', 'ผู้อนุมัติ', 'ผู้รับของ'])}</div>`;
+  }).join('');
+  printDoc(list.length === 1 ? list[0].id : 'ใบโอนและใบขอเบิก', body);
+}
+
 /* ---------------- โหลด / สลับหน้า ---------------- */
-function render() { ST.tab === 'import' ? viewImport() : viewStock(); }
+function render() { ({ import: viewImport, count: viewCount, restock: viewRestock }[ST.tab] || viewStock)(); }
 function go(t) { ST.tab = t; document.querySelectorAll('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); render(); $('#main').scrollTop = 0; }
 document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => go(b.dataset.t));
 function setSub() {
@@ -389,7 +761,7 @@ async function load(quiet) {
   const rb = $('#reload'); rb.innerHTML = '<span class="spin" aria-hidden="true"></span>';
   try {
     const j = await api('bootstrap');
-    DB = { slocs: j.slocs && j.slocs.length ? j.slocs : DEF_SLOCS, rows: j.rows || [], imports: j.imports || {}, me: j.me || {} };
+    DB = { slocs: j.slocs && j.slocs.length ? j.slocs : DEF_SLOCS, rows: j.rows || [], imports: j.imports || {}, me: j.me || {}, round: j.round || null, counts: j.counts || [], targets: j.targets || [], requests: j.requests || [] };
     norm();
     if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB));
     build(); setSub(); render();

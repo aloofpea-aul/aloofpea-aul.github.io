@@ -20,12 +20,17 @@ const SPREADSHEET_ID = '';   // ชีตเก็บข้อมูล: setup �
 // โปรเจ็กต์ Apps Script: https://script.google.com/home/projects/1u-jmdU92q1pSOCRJLxBGrlW9vIQroS1WXuvOViijqUMQ5dZtaV-6WWbm/edit
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '1.1';
+const VERSION = '2.0';   // ตรวจนับ + จัดหาให้ครบ
 
 const CUR  = { name: 'ยอดปัจจุบัน', labels: ['คลังย่อย (SLoc)', 'รหัสพัสดุ', 'คำอธิบาย', 'แบทช์', 'ที่ใช้ได้', 'หน่วย', 'ระหว่างโอน', 'นำเข้าเมื่อ'] };
 const MOVE = { name: 'ความเคลื่อนไหว', labels: ['วันเวลา', 'คลังย่อย', 'รหัสพัสดุ', 'คำอธิบาย', 'หน่วย', 'ยอดเดิม', 'ยอดใหม่', 'เปลี่ยนแปลง', 'นำเข้าโดย'] };
 const IMP  = { name: 'ประวัตินำเข้า', labels: ['วันเวลา', 'ผู้นำเข้า', 'คลังย่อย', 'ไฟล์', 'จำนวนแถว', 'จำนวนรหัส', 'รหัสที่มีของ', 'รหัสที่ยอดเปลี่ยน'] };
 const SETS = { name: 'ตั้งค่า', labels: ['รายการ', 'ค่า (JSON)'] };
+const ROUND = { name: 'รอบตรวจนับ', labels: ['รหัสรอบ', 'ชื่อรอบ', 'สถานะ', 'เริ่มโดย', 'เริ่มเมื่อ', 'ปิดเมื่อ', 'ปิดโดย'] };
+const CNT  = { name: 'ผลตรวจนับ', labels: ['รหัสรอบ', 'คลังย่อย', 'รหัสพัสดุ', 'คำอธิบาย', 'หน่วย', 'ยอด SAP', 'นับได้', 'ผลต่าง', 'หมายเหตุ', 'ผู้นับ', 'นับเมื่อ'] };
+const TGT  = { name: 'ระดับที่ต้องมี', labels: ['คลังย่อย', 'รหัสพัสดุ', 'ต้องมี', 'แก้ไขโดย', 'แก้ไขเมื่อ'] };
+const REQ  = { name: 'ใบโอนและใบขอเบิก', labels: ['เลขที่', 'ประเภท', 'จากคลัง', 'ถึงคลัง', 'รายการ (JSON)', 'จำนวนรายการ', 'สถานะ', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ'] };
+const REQ_STATUS = ['ขอแล้ว', 'อนุมัติ', 'รับของแล้ว', 'ยกเลิก'];
 
 const DEFAULT_SLOCS = [
   { code: '0023', name: 'สำรองแก้ไฟ' },
@@ -116,6 +121,92 @@ const ACTIONS = {
     return { sloc: sloc, rows: fresh.length, mats: mats.length, changed: first ? null : mv.length };
   },
 
+  /* ---------- ตรวจนับ ---------- */
+  startRound: function (b, me) {
+    if (!me.admin) throw err_('forbidden', 'เริ่มรอบตรวจนับได้เฉพาะผู้ดูแลระบบคลัง');
+    if (openRound_()) throw err_('bad', 'มีรอบตรวจนับที่ยังเปิดอยู่ ปิดรอบเดิมก่อน');
+    const id = 'R' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmm');
+    sheet_(ROUND).appendRow([id, clean_(b.name) || ('ตรวจนับ ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy')), 'เปิด', me.name, new Date(), '', '']);
+    return { round: openRound_() };
+  },
+  closeRound: function (b, me) {
+    if (!me.admin) throw err_('forbidden', 'ปิดรอบได้เฉพาะผู้ดูแลระบบคลัง');
+    const sh = sheet_(ROUND), v = sh.getDataRange().getValues();
+    for (let i = 1; i < v.length; i++) if (String(v[i][0]) === String(b.round) && v[i][2] === 'เปิด') {
+      sh.getRange(i + 1, 3, 1, 5).setValues([['ปิด', v[i][3], v[i][4], new Date(), me.name]]);
+      return { closed: true };
+    }
+    throw err_('bad', 'ไม่พบรอบที่เปิดอยู่');
+  },
+  /** บันทึกผลนับ 1 รายการ (ผู้ใช้ศูนย์รวมงานทุกคนนับได้) · qty = null → ลบผลนับ */
+  saveCount: function (b, me) {
+    const r = openRound_();
+    if (!r || r.id !== String(b.round)) throw err_('bad', 'รอบตรวจนับปิดแล้ว หรือไม่ตรงกับรอบปัจจุบัน — กดโหลดใหม่');
+    const sloc = sl_(b.sloc), mat = String(b.mat || '');
+    if (!/^\d{4}$/.test(sloc) || !/^\d-\d\d-\d{3}-\d{4}$/.test(mat)) throw err_('bad', 'ข้อมูลไม่ครบ');
+    const sh = sheet_(CNT), n = sh.getLastRow();
+    const v = n > 1 ? sh.getRange(2, 1, n - 1, 3).getValues() : [];
+    let row = -1;
+    for (let i = 0; i < v.length; i++) if (String(v[i][0]) === r.id && sl_(v[i][1]) === sloc && String(v[i][2]) === mat) { row = i + 2; break; }
+    if (b.qty === null || b.qty === '') { if (row > 0) sh.deleteRow(row); return { removed: true }; }
+    const q = Number(b.qty), sap = Number(b.sap) || 0;
+    if (!isFinite(q) || q < 0) throw err_('bad', 'จำนวนไม่ถูกต้อง');
+    const rec = [r.id, sloc, mat, clean_(b.desc), clean_(b.unit), sap, q, round_(q - sap), clean_(b.note), me.name, new Date()];
+    if (row < 0) row = sh.getLastRow() + 1;
+    sh.getRange(row, 2).setNumberFormat('@');
+    sh.getRange(row, 1, 1, rec.length).setValues([rec]);
+    return { count: cntOut_(rec) };
+  },
+
+  /* ---------- จัดหาให้ครบ ---------- */
+  /** ตั้งระดับที่ต้องมี: items = [[รหัส, จำนวน]] · จำนวนว่าง = ลบ */
+  saveTargets: function (b, me) {
+    if (!me.admin) throw err_('forbidden', 'ตั้งระดับที่ต้องมีได้เฉพาะผู้ดูแลระบบคลัง');
+    const sloc = sl_(b.sloc);
+    if (!/^\d{4}$/.test(sloc)) throw err_('bad', 'รหัสคลังย่อยไม่ถูกต้อง');
+    const sh = sheet_(TGT), n = sh.getLastRow();
+    const all = n > 1 ? sh.getRange(2, 1, n - 1, TGT.labels.length).getValues() : [];
+    const idx = {};
+    all.forEach(function (r, i) { if (sl_(r[0]) === sloc) idx[String(r[1])] = i; });
+    const now = new Date(), del = {};
+    (b.items || []).forEach(function (it) {
+      const m = String(it[0] || ''); if (!/^\d-\d\d-\d{3}-\d{4}$/.test(m)) return;
+      const empty = it[1] === null || it[1] === '' || it[1] === undefined, t = Number(it[1]);
+      if (empty || !isFinite(t) || t < 0) { if (m in idx) del[idx[m]] = 1; return; }
+      if (m in idx) all[idx[m]] = [sloc, m, t, me.name, now];
+      else { idx[m] = all.length; all.push([sloc, m, t, me.name, now]); }
+    });
+    const out = all.filter(function (r, i) { return !del[i]; }).map(function (r) { r[0] = sl_(r[0]); return r; });
+    if (n > 1) sh.getRange(2, 1, n - 1, TGT.labels.length).clearContent();
+    if (out.length) { sh.getRange(2, 1, out.length, 1).setNumberFormat('@'); sh.getRange(2, 1, out.length, TGT.labels.length).setValues(out); }
+    return { targets: targets_() };
+  },
+  /** สร้างใบโอน (transfer) / ใบขอเบิก (requisition): items = [[รหัส, คำอธิบาย, หน่วย, จำนวน]] */
+  createRequest: function (b, me) {
+    if (!me.admin) throw err_('forbidden', 'สร้างใบโอน/ใบขอเบิกได้เฉพาะผู้ดูแลระบบคลัง');
+    const kind = b.kind === 'transfer' ? 'transfer' : 'requisition';
+    const items = (b.items || []).filter(function (it) { return it && /^\d-\d\d-\d{3}-\d{4}$/.test(String(it[0])) && Number(it[3]) > 0; })
+      .map(function (it) { return [String(it[0]), clean_(it[1]), clean_(it[2]), Number(it[3])]; });
+    if (!items.length) throw err_('bad', 'ไม่มีรายการที่จำนวนมากกว่า 0');
+    const id = (kind === 'transfer' ? 'TR' : 'RQ') + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss');
+    const sh = sheet_(REQ), row = sh.getLastRow() + 1, now = new Date();
+    sh.getRange(row, 3, 1, 2).setNumberFormat('@');
+    sh.getRange(row, 1, 1, REQ.labels.length).setValues([[id, kind === 'transfer' ? 'ใบโอน' : 'ใบขอเบิก', b.from ? sl_(b.from) : 'K040 คลังกระบี่', sl_(b.to),
+      JSON.stringify(items), items.length, 'ขอแล้ว', clean_(b.note), me.name, now, me.name, now]]);
+    return { request: requests_().filter(function (r) { return r.id === id; })[0] };
+  },
+  setRequestStatus: function (b, me) {
+    if (!me.admin) throw err_('forbidden', 'เปลี่ยนสถานะได้เฉพาะผู้ดูแลระบบคลัง');
+    if (REQ_STATUS.indexOf(b.status) < 0) throw err_('bad', 'สถานะไม่ถูกต้อง');
+    const sh = sheet_(REQ), v = sh.getDataRange().getValues();
+    for (let i = 1; i < v.length; i++) if (String(v[i][0]) === String(b.id)) {
+      sh.getRange(i + 1, 7).setValue(b.status);
+      sh.getRange(i + 1, 11, 1, 2).setValues([[me.name, new Date()]]);
+      return { ok: true };
+    }
+    throw err_('bad', 'ไม่พบเอกสาร');
+  },
+
   saveSlocs: function (b, me) {
     if (!me.admin) throw err_('forbidden', 'เฉพาะผู้ดูแลระบบคลัง');
     const list = (b.slocs || []).filter(function (s) { return s && /^\d{4}$/.test(String(s.code)); })
@@ -134,7 +225,34 @@ function bootstrap_(me) {
   const imp = sheet_(IMP), iv = imp.getLastRow() > 1 ? imp.getRange(2, 1, imp.getLastRow() - 1, IMP.labels.length).getValues() : [];
   const last = {};
   iv.forEach(function (r) { last[sl_(r[2])] = { at: iso_(r[0]), by: String(r[1]), file: String(r[3]) }; });
-  return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, slocs: getSetting_('slocs') || DEFAULT_SLOCS, rows: rows, imports: last };
+  const round = openRound_() || lastRound_();
+  return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, slocs: getSetting_('slocs') || DEFAULT_SLOCS, rows: rows, imports: last,
+    round: round, counts: round ? counts_(round.id) : [], targets: targets_(), requests: requests_() };
+}
+
+/* ---------------- ตรวจนับ / จัดหา: อ่าน ---------------- */
+function rounds_() {
+  const sh = sheet_(ROUND); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, ROUND.labels.length).getValues().filter(function (r) { return r[0]; })
+    .map(function (r) { return { id: String(r[0]), name: String(r[1]), open: r[2] === 'เปิด', by: String(r[3]), at: iso_(r[4]), closedAt: iso_(r[5]), closedBy: String(r[6] || '') }; });
+}
+function openRound_() { return rounds_().filter(function (r) { return r.open; }).pop() || null; }
+function lastRound_() { return rounds_().pop() || null; }
+function cntOut_(r) { return [sl_(r[1]), String(r[2]), Number(r[5]) || 0, Number(r[6]) || 0, String(r[8] || ''), String(r[9] || ''), iso_(r[10])]; }
+function counts_(id) {
+  const sh = sheet_(CNT); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, CNT.labels.length).getValues().filter(function (r) { return String(r[0]) === id; }).map(cntOut_);
+}
+function targets_() {
+  const sh = sheet_(TGT); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues().filter(function (r) { return r[1] !== ''; })
+    .map(function (r) { return [sl_(r[0]), String(r[1]), Number(r[2]) || 0]; });
+}
+function requests_() {
+  const sh = sheet_(REQ); if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, REQ.labels.length).getValues().filter(function (r) { return r[0]; }).slice(-60).reverse()
+    .map(function (r) { return { id: String(r[0]), kind: r[1] === 'ใบโอน' ? 'transfer' : 'requisition', from: String(r[2]).length <= 4 ? sl_(r[2]) : String(r[2]), to: sl_(r[3]),
+      items: parse_(r[4]) || [], status: String(r[6]), note: String(r[7] || ''), by: String(r[8]), at: iso_(r[9]), upBy: String(r[10] || ''), upAt: iso_(r[11]) }; });
 }
 
 function moves_(mat) {
@@ -216,7 +334,7 @@ function setup() {
     props.setProperty('STOCK_SHEET_ID', ss.getId());
     SS_ = ss;
   }
-  [CUR, MOVE, IMP, SETS].forEach(sheet_);
+  [CUR, MOVE, IMP, SETS, ROUND, CNT, TGT, REQ].forEach(sheet_);
   if (!getSetting_('slocs')) setSetting_('slocs', DEFAULT_SLOCS);
   const def = ss_().getSheetByName('Sheet1') || ss_().getSheetByName('ชีต1');
   if (def && def.getLastRow() === 0 && ss_().getSheets().length > 1) ss_().deleteSheet(def);
