@@ -20,7 +20,7 @@ const SPREADSHEET_ID = '';   // ชีตเก็บข้อมูล: setup �
 // โปรเจ็กต์ Apps Script: https://script.google.com/home/projects/1u-jmdU92q1pSOCRJLxBGrlW9vIQroS1WXuvOViijqUMQ5dZtaV-6WWbm/edit
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '1.0';
+const VERSION = '1.1';
 
 const CUR  = { name: 'ยอดปัจจุบัน', labels: ['คลังย่อย (SLoc)', 'รหัสพัสดุ', 'คำอธิบาย', 'แบทช์', 'ที่ใช้ได้', 'หน่วย', 'ระหว่างโอน', 'นำเข้าเมื่อ'] };
 const MOVE = { name: 'ความเคลื่อนไหว', labels: ['วันเวลา', 'คลังย่อย', 'รหัสพัสดุ', 'คำอธิบาย', 'หน่วย', 'ยอดเดิม', 'ยอดใหม่', 'เปลี่ยนแปลง', 'นำเข้าโดย'] };
@@ -86,7 +86,7 @@ const ACTIONS = {
     const all = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, CUR.labels.length).getValues() : [];
     const keep = [], before = {}, info = {};
     all.forEach(function (r) {
-      if (String(r[0]) === sloc) { const m = String(r[1]); before[m] = (before[m] || 0) + (Number(r[4]) || 0); info[m] = [r[2], r[5]]; }
+      if (sl_(r[0]) === sloc) { const m = String(r[1]); before[m] = (before[m] || 0) + (Number(r[4]) || 0); info[m] = [r[2], r[5]]; }
       else keep.push(r);
     });
     const after = {};
@@ -107,10 +107,11 @@ const ACTIONS = {
     }
     const out = keep.concat(fresh);
     if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, CUR.labels.length).clearContent();
-    if (out.length) sh.getRange(2, 1, out.length, CUR.labels.length).setValues(out);
-    if (mv.length) { const ms = sheet_(MOVE); ms.getRange(ms.getLastRow() + 1, 1, mv.length, MOVE.labels.length).setValues(mv); }
+    if (out.length) { sh.getRange(2, 1, out.length, 4).setNumberFormat('@'); sh.getRange(2, 1, out.length, CUR.labels.length).setValues(out.map(function (r) { r[0] = sl_(r[0]); return r; })); }
+    if (mv.length) { const ms = sheet_(MOVE); ms.getRange(ms.getLastRow() + 1, 2, mv.length, 1).setNumberFormat('@'); ms.getRange(ms.getLastRow() + 1, 1, mv.length, MOVE.labels.length).setValues(mv); }
     const mats = Object.keys(after);
-    sheet_(IMP).appendRow([now, me.name, sloc, clean_(b.file), fresh.length, mats.length,
+    const ih = sheet_(IMP); ih.getRange(ih.getLastRow() + 1, 3).setNumberFormat('@');
+    ih.appendRow([now, me.name, sloc, clean_(b.file), fresh.length, mats.length,
       mats.filter(function (m) { return after[m] > 0; }).length, first ? 'ครั้งแรก' : mv.length]);
     return { sloc: sloc, rows: fresh.length, mats: mats.length, changed: first ? null : mv.length };
   },
@@ -129,10 +130,10 @@ function bootstrap_(me) {
   const v = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, CUR.labels.length).getValues() : [];
   // [sloc, mat, desc, batch, qty, unit, transit]
   const rows = v.filter(function (r) { return r[0] && r[1]; })
-    .map(function (r) { return [String(r[0]), String(r[1]), String(r[2]), String(r[3]), Number(r[4]) || 0, String(r[5]), Number(r[6]) || 0]; });
+    .map(function (r) { return [sl_(r[0]), String(r[1]), String(r[2]), String(r[3]), Number(r[4]) || 0, String(r[5]), Number(r[6]) || 0]; });
   const imp = sheet_(IMP), iv = imp.getLastRow() > 1 ? imp.getRange(2, 1, imp.getLastRow() - 1, IMP.labels.length).getValues() : [];
   const last = {};
-  iv.forEach(function (r) { last[String(r[2])] = { at: iso_(r[0]), by: String(r[1]), file: String(r[3]) }; });
+  iv.forEach(function (r) { last[sl_(r[2])] = { at: iso_(r[0]), by: String(r[1]), file: String(r[3]) }; });
   return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, slocs: getSetting_('slocs') || DEFAULT_SLOCS, rows: rows, imports: last };
 }
 
@@ -142,7 +143,7 @@ function moves_(mat) {
   return sh.getRange(2, 1, sh.getLastRow() - 1, MOVE.labels.length).getValues()
     .filter(function (r) { return String(r[2]) === mat; })
     .slice(-50).reverse()
-    .map(function (r) { return { at: iso_(r[0]), sloc: String(r[1]), before: r[5], after: r[6], diff: r[7], by: String(r[8]) }; });
+    .map(function (r) { return { at: iso_(r[0]), sloc: sl_(r[1]), before: r[5], after: r[6], diff: r[7], by: String(r[8]) }; });
 }
 
 /* ---------------- ผู้ใช้ ---------------- */
@@ -202,6 +203,8 @@ function err_(code, msg) { const e = new Error(msg); e.code = code; return e; }
 function clean_(s) { return String(s == null ? '' : s).replace(/[\r\n\t]+/g, ' ').trim().slice(0, 200); }
 function nm_(s) { return String(s == null ? '' : s).replace(/[\s\u200b-\u200d\ufeff]/g, '').toLowerCase(); }
 function parse_(s) { try { return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+/** รหัสคลังย่อย 4 หลักเสมอ (ชีตอาจแปลง "0023" เป็นตัวเลข 23) */
+function sl_(v) { const s = String(v == null ? '' : v).trim(); return /^\d{1,4}$/.test(s) ? ('0000' + s).slice(-4) : s; }
 function round_(n) { return Math.round(Number(n) * 1000) / 1000; }
 function iso_(d) { return d instanceof Date ? Utilities.formatDate(d, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX") : String(d || ''); }
 

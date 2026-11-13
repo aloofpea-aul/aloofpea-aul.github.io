@@ -205,6 +205,12 @@ function build() {
   ITEMS.forEach(it => { it.tot = sl.reduce((a, s) => a + (it.q[s] || 0), 0); it.key = (it.m + ' ' + it.th + ' ' + it.en).toLowerCase(); });
   ITEMS.sort((a, b) => a.m.localeCompare(b.m));
 }
+const pad4 = v => { const t = String(v == null ? '' : v).trim(); return /^\d{1,4}$/.test(t) ? t.padStart(4, '0') : t; };
+function norm() {   // ชีตอาจเก็บ "0023" เป็นตัวเลข 23 → คืนเป็น 4 หลัก
+  DB.rows.forEach(r => { r[0] = pad4(r[0]); });
+  const im = {}; Object.keys(DB.imports || {}).forEach(k => { im[pad4(k)] = DB.imports[k]; }); DB.imports = im;
+  (DB.slocs || []).forEach(x => { x.code = pad4(x.code); });
+}
 function slocName(c) { const s = DB.slocs.find(x => x.code === c); return s ? s.name : c; }
 function pic(i, s) {
   if (i == null || i < 0) return `<div class="nopic" style="width:${s}px;height:${s}px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>${s >= 90 ? 'ยังไม่มีรูป' : ''}</div>`;
@@ -384,6 +390,7 @@ async function load(quiet) {
   try {
     const j = await api('bootstrap');
     DB = { slocs: j.slocs && j.slocs.length ? j.slocs : DEF_SLOCS, rows: j.rows || [], imports: j.imports || {}, me: j.me || {} };
+    norm();
     if (!LOCAL()) lsr('stock_cache', JSON.stringify(DB));
     build(); setSub(); render();
   } catch (e) {
@@ -398,7 +405,7 @@ $('#reload').onclick = () => load();
 (async function boot() {
   try { MAT = await (await fetch('materials.json', { cache: 'force-cache' })).json(); } catch (e) { MAT = {}; }
   const c = !LOCAL() && lsr('stock_cache');
-  if (c) { try { DB = JSON.parse(c); build(); setSub(); render(); } catch (e) {} }   // เปิดทันทีจากข้อมูลครั้งก่อน แล้วค่อยอัปเดต
+  if (c) { try { DB = JSON.parse(c); norm(); build(); setSub(); render(); } catch (e) {} }   // เปิดทันทีจากข้อมูลครั้งก่อน แล้วค่อยอัปเดต
   else render();
   (function wait(n) { if (cred().user || LOCAL() || n > 600) load(!!c); else setTimeout(() => wait(n + 1), 500); })(0);
 })();
