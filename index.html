@@ -1018,6 +1018,13 @@ document.addEventListener('click', e=>{
   if(tile.classList.contains('no-perm')) return;          // hub-admin.js จัดการเอง (กล่องขอสิทธิ์)
   favBump(tile.dataset.app + '|' + tile.getAttribute('href'));
   const app = tile.dataset.app, href = tile.getAttribute('href');
+  // บนคอม: เปิดโปรแกรมในแท็บใหม่ หน้าศูนย์รวมยังเปิดค้างไว้ (ปุ่ม Ctrl/กลางเมาส์ ให้เบราว์เซอร์จัดการเอง)
+  if(window.matchMedia('(min-width:1100px)').matches && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0){
+    e.preventDefault();
+    window.open(href, '_blank');
+    if(CURRENT_USER.name && CURRENT_USER.role && tile.dataset.track !== 'self') callApi({ action:'appOpen', app:app }).catch(()=>{});
+    return;
+  }
   if(!CURRENT_USER.name || !CURRENT_USER.role) return;    // ยังไม่ล็อกอิน ปล่อยให้ไปตามปกติ
   if(tile.dataset.track === 'self') return;               // โปรแกรมนี้นับเองตอนเปิด (pea-hub.js) ไม่ต้องนับซ้ำที่นี่
   e.preventDefault();
