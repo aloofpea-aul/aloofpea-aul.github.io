@@ -181,6 +181,12 @@ function cclTokSecret_() {
   if (!k) { k = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('CCL_TOKEN_SECRET', k); }
   return k;
 }
+// คีย์แคชยาวได้ไม่เกิน 250 ตัวอักษร แต่ token แบบใหม่ (มีชื่อภาษาไทยในตัว) ยาวกว่านั้น → ใช้ค่าแฮชของ token เป็นคีย์
+function cclTokKey_(token) {
+  var t = String(token || '');
+  if (t.length <= 200) return 'ccl_tok_' + t;
+  return 'ccl_tokh_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t, Utilities.Charset.UTF_8));
+}
 function cclSign_(s) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(s, cclTokSecret_())).replace(/=+$/, ''); }
 
 // ลายนิ้วมือของรหัสผ่าน — Admin ตั้งรหัสใหม่/ผู้ใช้เปลี่ยนรหัส = token เก่าใช้ไม่ได้ทันที
@@ -190,14 +196,14 @@ function cclNewToken_(user, pv) {
   var body = Utilities.base64EncodeWebSafe(JSON.stringify({ u: user, p: pv || '', x: Date.now() + CCL_TOKEN_DAYS * 86400000, n: Utilities.getUuid().slice(0, 8) }), Utilities.Charset.UTF_8).replace(/=+$/, '');
   var token = 'v2.' + body + '.' + cclSign_(body);
   var cached = {}; for (var k in user) cached[k] = user[k]; cached.pv = pv || '';
-  CacheService.getScriptCache().put('ccl_tok_' + token, JSON.stringify(cached), CCL_TOKEN_TTL);
+  CacheService.getScriptCache().put(cclTokKey_(token), JSON.stringify(cached), CCL_TOKEN_TTL);
   return token;
 }
 
 function cclSession_(token) {
   if (!token) return null;
   var cache = CacheService.getScriptCache();
-  var key = 'ccl_tok_' + token;
+  var key = cclTokKey_(token);
   var raw = cache.get(key);
   if (!raw) {
     // แคชหมดอายุ (ไม่ได้ใช้เกิน 6 ชม.) → ตรวจลายเซ็นของ token แทน
@@ -223,7 +229,7 @@ function cclRefreshSess_(sess, token) {
   if (!sh) return null;
   var rows = sh.getDataRange().getValues(), found = null;
   for (var i = 1; i < rows.length; i++) if (String(rows[i][0]) === String(sess.username)) { found = rows[i]; break; }
-  if (!found || (found[6] || 'Active') !== 'Active' || (sess.pv && cclPwv_(found[1]) !== sess.pv)) { try { CacheService.getScriptCache().remove('ccl_tok_' + token); } catch (e) {} return null; }
+  if (!found || (found[6] || 'Active') !== 'Active' || (sess.pv && cclPwv_(found[1]) !== sess.pv)) { try { CacheService.getScriptCache().remove(cclTokKey_(token)); } catch (e) {} return null; }
   var role = String(found[3]);
   var sup = !!(hb.home && role === 'Admin');
   if (sess.superAdmin && !sup) {            // ถูกลดสิทธิ์ผู้ดูแลสูงสุด → กลับไปหน่วยงานตัวเอง
@@ -244,7 +250,7 @@ function cclSwitchBranch_(sess, oldToken, branchId) {
     superAdmin: true
   };
   var token = cclNewToken_(user, sess.pv);
-  try { CacheService.getScriptCache().remove('ccl_tok_' + oldToken); } catch (e) {}
+  try { CacheService.getScriptCache().remove(cclTokKey_(oldToken)); } catch (e) {}
   return { success: true, user: user, token: token };
 }
 
@@ -461,7 +467,7 @@ function cclCtDispatch_(sess, token, fn, args) {
     var d = sh ? sh.getDataRange().getValues() : [], row = null;
     for (var i = 1; i < d.length; i++) if (String(d[i][0]).trim() === sess.username) { row = d[i]; break; }
     if (!row || String(row[5]).trim() === 'Inactive' || String(row[3]).trim() !== sess.company || (sess.pv && cclPwv_(row[1]) !== sess.pv)) {
-      try { CacheService.getScriptCache().remove('ccl_tok_' + token); } catch (e) {}
+      try { CacheService.getScriptCache().remove(cclTokKey_(token)); } catch (e) {}
       return { ok: false, error: 'AUTH_REQUIRED' };
     }
     var h = CCL_CT_FNS[fn];
