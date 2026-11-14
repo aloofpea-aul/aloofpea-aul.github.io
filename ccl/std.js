@@ -758,7 +758,7 @@
           return '<tr style="height:' + row.h + 'pt">' + row.cells.map(function (c) { return cell(row, c); }).join('') + '</tr>';
         }).join('') + '</table></div>';
     }).join('');
-    var L = T.logo, M = T.margin;
+    var L = T.logo, M = { t: T.margin.t, l: Math.max(T.margin.l, Math.round((595.28 - tw) / 2 * 100) / 100) };   // จัดตารางกึ่งกลางหน้ากระดาษ A4 (กว้าง 595.28pt)
     return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>FM.กมฟ.01-59-00 ' + esc(job.receiveNo || '') + '</title>' +
       '<meta name="viewport" content="width=820"><link href="https://fonts.googleapis.com/css2?family=Sarabun&display=swap" rel="stylesheet"><style>' +
       '@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;background:#e5e7eb;-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
