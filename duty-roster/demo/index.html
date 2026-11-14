@@ -984,12 +984,13 @@ function setBadge(st){const b=$('hdrBadge');b.textContent=st||'';b.className='ba
 S.repOpen=null;
 /* ---------- ติดตามรายงานการอยู่เวร (กำหนดส่ง 3 วันหลังวันเข้าเวร) ---------- */
 const prevKey=k=>{const {y,m}=parseKey(k);return m===1?(y-1)+'-12':y+'-'+String(m-1).padStart(2,'0');};
-function trackOf(key){ return (S.track&&S.track[key])||LS.get('trk_'+key)||[]; }
+// ตัดรายการก่อนวันเริ่มติดตาม (config repTrackFrom) ทิ้งเสมอ — กันข้อมูลเก่าที่ค้างในเครื่องโผล่มาเป็น "ค้างส่ง"
+function trackOf(key){ const L=(S.track&&S.track[key])||LS.get('trk_'+key)||[], f=S.trackFromIso||LS.get('trkFrom')||'2026-11-09'; return L.filter(x=>String(x.k).slice(0,10)>=f); }
 function loadTrack(key,force){
   S.track=S.track||{}; S.trackAt=S.trackAt||{};
   if(!force&&S.trackAt[key]&&Date.now()-S.trackAt[key]<120e3) return Promise.resolve(trackOf(key));
   S.trackAt[key]=Date.now();
-  return apiGet({action:'repTrack',m:key}).then(j=>{ if(j.from){ const d=new Date(j.from+'T00:00:00Z'); S.trackFrom=d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]+' '+(d.getUTCFullYear()+543); } const ch=JSON.stringify(j.items)!==JSON.stringify(trackOf(key)); S.track[key]=j.items; LS.set('trk_'+key,j.items);
+  return apiGet({action:'repTrack',m:key}).then(j=>{ if(j.from){ S.trackFromIso=j.from; LS.set('trkFrom',j.from); const d=new Date(j.from+'T00:00:00Z'); S.trackFrom=d.getUTCDate()+' '+TH_MS[d.getUTCMonth()]+' '+(d.getUTCFullYear()+543); } const ch=JSON.stringify(j.items)!==JSON.stringify(trackOf(key)); S.track[key]=j.items; LS.set('trk_'+key,j.items);
     if(ch){ if(currentView()==='viewDaily'&&S.dMonth===key){ paintRepDue(key); if(S.months[key]) renderRepCard(S.months[key].data); } if(currentView()==='viewReport'&&$('rKind').value==='track') drawTrack(); }
     repPopup(); return j.items; }).catch(()=>trackOf(key));
 }
