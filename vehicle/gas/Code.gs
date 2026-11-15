@@ -17,12 +17,12 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '17.2';
+const VERSION = '17.3';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
-  CARS:  { name: 'รายการใช้รถ', cols: ['ID', 'Plate', 'Model', 'Status', 'Mile', 'Image', 'User', 'UserId', 'CreatedDate'],
-           labels: ['ID', 'ทะเบียน', 'รุ่น', 'สถานะ', 'เลขไมล์', 'รูป', 'ผู้ใช้', 'รหัสผู้ใช้', 'วันที่เพิ่ม'] },
+  CARS:  { name: 'รายการใช้รถ', cols: ['ID', 'Plate', 'Model', 'Status', 'Mile', 'Image', 'User', 'UserId', 'CreatedDate', 'FleetNo', 'Dept'],
+           labels: ['ID', 'ทะเบียน', 'รุ่น', 'สถานะ', 'เลขไมล์', 'รูป', 'ผู้ใช้', 'รหัสผู้ใช้', 'วันที่เพิ่ม', 'เลขประจำรถ', 'แผนก'] },
   LOGS:  { name: 'Logใช้งานรถ', cols: ['Date', 'User', 'Action', 'Detail', 'StartMile', 'EndMile', 'Status', 'CarId', 'ReturnDate', 'ReturnBy'],
            labels: ['วันเวลา', 'ผู้ใช้', 'รถ', 'ภารกิจ', 'เลขไมล์ก่อนออก', 'เลขไมล์กลับ', 'สถานะ', 'รหัสรถ', 'วันเวลาคืน', 'ผู้คืน'] },
   BOOK:  { name: 'การจอง', cols: ['ID', 'StartDate', 'EndDate', 'Mission', 'Status', 'User', 'CarPlate', 'CreatedDate'],
@@ -234,13 +234,13 @@ const ACTIONS = {
     if (b.id) {
       const r = findRow_(t, 'ID', b.id);
       if (r == null) throw new Error('ไม่พบรถ');
-      const v = { Plate: plate, Model: model };
+      const v = { Plate: plate, Model: model, FleetNo: clean_(b.fleet), Dept: clean_(b.dept) };
       if (String(get_(t, r, 'Status')) !== 'in-use') v.Mile = mile;   // ระหว่างใช้งาน เลขไมล์ = ไมล์ตอนออก ห้ามแก้
       if (img) v.Image = img;
       set_(t, r, v);
       return 'แก้ไขข้อมูลรถแล้ว';
     }
-    append_(t, { ID: nextId_(t), Plate: plate, Model: model, Status: 'available', Mile: mile, Image: img, User: '', UserId: '', CreatedDate: new Date() });
+    append_(t, { ID: nextId_(t), Plate: plate, Model: model, Status: 'available', Mile: mile, Image: img, User: '', UserId: '', CreatedDate: new Date(), FleetNo: clean_(b.fleet), Dept: clean_(b.dept) });
     return 'เพิ่มรถ ' + plate + ' แล้ว';
   },
 
@@ -321,13 +321,21 @@ function bootstrap_(me) {
     if (r[L.h.CarId] !== '') since['id:' + r[L.h.CarId]] = v;
     since['p:' + np_(r[L.h.Action])] = v;
   });
+  const myUse = {}, myN = nm_(me.name);                 // คันที่ฉันเคยใช้: จำนวนครั้ง + ครั้งล่าสุด
+  L.rows.forEach(function (r) {
+    if (nm_(r[L.h.User]) !== myN) return;
+    const k = np_(r[L.h.Action]), d = parseDate_(r[L.h.Date]);
+    (myUse[k] = myUse[k] || { n: 0, last: 0 }); myUse[k].n++; if (d && d.getTime() > myUse[k].last) myUse[k].last = d.getTime();
+  });
   const vehicles = C.rows.filter(function (r) { return r[C.h.ID] !== '' && r[C.h.Plate] !== ''; }).map(function (r) {
     const inUse = String(r[C.h.Status]) === 'in-use';
     const sc = inUse ? (since['id:' + r[C.h.ID]] || since['p:' + np_(r[C.h.Plate])] || {}) : {};
     return { id: String(r[C.h.ID]), plate: String(r[C.h.Plate]), model: String(r[C.h.Model] || ''),
       status: inUse ? 'in-use' : 'available', mile: Number(r[C.h.Mile]) || 0, image: imgUrl_(r[C.h.Image]), imageId: imgId_(r[C.h.Image]),
       user: inUse ? String(r[C.h.User] || '') : '', since: sc.at || '', mission: sc.mission || '',
-      checked: checked[String(r[C.h.ID])] || null };
+      checked: checked[String(r[C.h.ID])] || null,
+      fleet: String(r[C.h.FleetNo] || ''), dept: String(r[C.h.Dept] || ''),
+      myTrips: (myUse[np_(r[C.h.Plate])] || {}).n || 0, myLast: (myUse[np_(r[C.h.Plate])] || {}).last ? iso_(new Date(myUse[np_(r[C.h.Plate])].last)) : '' };
   });
   const logs = L.rows.filter(filled).slice(-200).reverse().map(function (r) {
     return { date: iso_(r[L.h.Date]), user: String(r[L.h.User] || ''), plate: String(r[L.h.Action] || ''),
@@ -344,7 +352,8 @@ function bootstrap_(me) {
       type: String(r[M.h.Type] || ''), cost: num_(String(r[M.h.Cost]).replace(/[,฿\s]/g, '')), note: String(r[M.h.Note] || ''),
       by: String(r[M.h.By] || ''), mile: num_(r[M.h.Mile]) };
   });
-  return { ok: true, version: VERSION, me: me, checkItems: CHECK_6103, vehicles: vehicles, logs: logs, bookings: bookings, maint: maint, at: iso_(new Date()) };
+  const depts = members_().rows.map(function (r) { return String(r[4] || '').trim(); }).filter(function (x, i, a) { return x && !/ทดสอบ|แอนดรอยด์/.test(x) && a.indexOf(x) === i; });
+  return { ok: true, version: VERSION, me: me, depts: depts, checkItems: CHECK_6103, vehicles: vehicles, logs: logs, bookings: bookings, maint: maint, at: iso_(new Date()) };
 }
 
 /* ====================================================================== *
@@ -449,7 +458,7 @@ function who_(user, pass) {
   const hub = hubRole_(user, pass);                     // อาจ throw ถ้าเชื่อมศูนย์รวมงานไม่ได้
   if (!hub) return null;
   const local = memberByName_(user);                    // ชื่อตรงกับสมาชิกเดิม → ใช้บทบาทเดิมด้วย
-  return { name: local ? local.name : user, empId: local ? local.empId : '', role: hub,
+  return { name: local ? local.name : user, empId: local ? local.empId : '', role: hub, dept: local ? local.dept : '',
     admin: hub === 'admin' || (local && local.role === 'admin') || extraAdmins_().indexOf(nm_(user)) >= 0, via: 'hub' };
 }
 
@@ -470,14 +479,14 @@ function localMember_(user, pass) {
     if (stored === pass) M.sh.getRange(i + 2, 2).setValue(hashPass_(pass));   // รหัสเดิมเป็นข้อความธรรมดา → เข้ารหัสเก็บ
     const role = String(r[5] || 'user').toLowerCase();
     const name = String(r[2]).trim();
-    return { name: name, empId: String(r[0]).trim(), role: role,
+    return { name: name, empId: String(r[0]).trim(), role: role, dept: String(r[4] || '').trim(),
       admin: role === 'admin' || extraAdmins_().indexOf(nm_(name)) >= 0, via: 'vehicle' };
   }
   return null;
 }
 function memberByName_(name) {
   const key = nm_(name), r = members_().rows.find(function (x) { return nm_(x[2]) === key; });
-  return r ? { name: String(r[2]).trim(), empId: String(r[0]).trim(), role: String(r[5] || 'user').toLowerCase() } : null;
+  return r ? { name: String(r[2]).trim(), empId: String(r[0]).trim(), role: String(r[5] || 'user').toLowerCase(), dept: String(r[4] || '').trim() } : null;
 }
 function extraAdmins_() {
   return String(PropertiesService.getScriptProperties().getProperty('VEHICLE_ADMINS') || '').split(',').map(nm_).filter(String);
@@ -570,7 +579,7 @@ function append_(t, obj) {
  */
 function migrate_() {
   const cache = CacheService.getScriptCache();
-  if (cache.get('layout16') === 'ok') return;
+  if (cache.get('layout17') === 'ok') return;
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const ENG = ['ID', 'Plate', 'Model', 'Status', 'Mile', 'Image', 'User', 'UserId', 'CreatedDate', 'Date', 'Action', 'Detail',
     'StartMile', 'EndMile', 'CarId', 'ReturnDate', 'ReturnBy', 'StartDate', 'EndDate', 'Mission', 'CarPlate', 'Type', 'Cost', 'Note', 'By'];
@@ -588,7 +597,7 @@ function migrate_() {
       if (empty || onlyIds) col.clearContent();
     }
   });
-  cache.put('layout16', 'ok', 600);
+  cache.put('layout17', 'ok', 600);
 }
 
 /* ---------- รูป ---------- */
