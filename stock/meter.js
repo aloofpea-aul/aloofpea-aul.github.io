@@ -470,6 +470,7 @@ function meterSheet(m, log, z) {
       ${IN_STORE.includes(m.status) || m.status === ST.FIELD ? `<button class="btn grow" id="mSort">คัดแยก</button>` : ''}
       ${m.status === ST.GOOD ? `<button class="btn grow" id="mIssue">เบิกใช้ (Batch R)</button>` : ''}
       <button class="btn grow" id="mEdit">แก้ไข/เพิ่มรูป</button>
+      <button class="btn grow" id="mForms">แบบฟอร์ม</button>
     </div>
     ${log.length ? `<details class="more" style="margin-top:10px"><summary>ประวัติ (${log.length})</summary><div class="log">${log.map(l => `<div><b>${esc(l.ev)}</b> ${l.detail ? '· ' + esc(l.detail) : ''}<br><span class="muted">${thDateTime(l.at)} · ${esc(l.by)}</span></div>`).join('')}</div></details>` : ''}`);
   $$('[data-sap]').forEach(cb => cb.onchange = async () => {
@@ -482,6 +483,7 @@ function meterSheet(m, log, z) {
   if ($('#mSort')) $('#mSort').onclick = () => { closeSheet(); UI.sortSel = m.pea; go('sort'); };
   if ($('#mIssue')) $('#mIssue').onclick = () => issueSheet(m);
   $('#mEdit').onclick = () => editSheet(m);
+  $('#mForms').onclick = () => formsMenu(MAP[m.pea] || m);
   if ($('#toShip')) $('#toShip').onclick = e => { e.preventDefault(); closeSheet(); UI.shipSel = ship.id; go('ship'); };
 }
 function issueSheet(m) {
@@ -505,6 +507,7 @@ function editSheet(m) {
     <div><label class="lab" for="eSloc">คลังย่อย</label><select class="inp" id="eSloc">${slocOpts(m.sloc)}</select></div></div>
     <label class="lab" for="eSym">อาการ</label><select class="inp" id="eSym"><option value="">–</option>${SYMPTOMS.map(s => `<option${s[0] === m.symptom ? ' selected' : ''}>${esc(s[0])}</option>`).join('')}</select>
     <label class="lab" for="ePol">เลขที่ใบแจ้งความ</label><input class="inp" id="ePol" value="${esc(m.police)}">
+    <details class="more"${m.custName || m.newPea ? ' open' : ''}><summary>ข้อมูลสำหรับแบบฟอร์ม</summary>${formFields(m)}</details>
     <label class="lab" for="eNote">หมายเหตุ</label><textarea class="inp" id="eNote">${esc(m.note)}</textarea>
     <label class="lab">เพิ่มรูปถ่าย</label><input type="file" accept="image/*" capture="environment" multiple id="ePh">
     <button class="btn p blk" style="margin-top:14px" id="eGo">บันทึก</button>`);
@@ -513,7 +516,7 @@ function editSheet(m) {
     const b = $('#eGo'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก';
     try {
       const add = await uploadPhotos($('#ePh').files, m.pea);
-      const f = Object.assign(readSpec(), { wo: $('#eWo').value, ca: $('#eCa').value, lastUnit: $('#eUnit').value, sloc: $('#eSloc').value, symptom: $('#eSym').value, police: $('#ePol').value, note: $('#eNote').value });
+      const f = Object.assign(readSpec(), readFormFields(), { wo: $('#eWo').value, ca: $('#eCa').value, lastUnit: $('#eUnit').value, sloc: $('#eSloc').value, symptom: $('#eSym').value, police: $('#ePol').value, note: $('#eNote').value });
       if (add.length) f.addPhotos = add;
       const j = await api('meterUpdate', { pea: m.pea, fields: f }); setMeter(j.meter); toast('บันทึกแล้ว', 'ok'); openMeter(m.pea); render();
     } catch (e) { toast(e.message, 'err'); b.disabled = false; b.textContent = 'บันทึก'; }
@@ -626,6 +629,7 @@ function viewField() {
     <div class="g2"><div><label class="lab" for="fUnit">หน่วยสุดท้าย (kWh)</label><input class="inp" id="fUnit" inputmode="decimal"></div>
       <div><label class="lab" for="fDate">วันที่ถอด</label><input class="inp" type="date" id="fDate" value="${todayStr()}"></div></div>
     <details class="more" open><summary>ข้อมูลตัวมิเตอร์ (ใช้แนะนำผลคัดแยก)</summary>${meterSpecFields({})}</details>
+    <details class="more"><summary>ข้อมูลสำหรับแบบฟอร์ม มต.15 / มต.ตม.4 / มต.ทม.7 (ถ้ามี)</summary>${formFields({})}</details>
     <div id="fPolWrap" hidden><label class="lab r" for="fPol">เลขที่ใบแจ้งความ *</label><input class="inp" id="fPol" placeholder="เลขที่/วันที่ สถานีตำรวจ"></div>
     <label class="lab" id="fPhLab">รูปถ่าย (มิเตอร์ + จุดติดตั้ง)</label><input type="file" accept="image/*" capture="environment" multiple id="fPh"><div class="photos" id="fPhPrev" style="margin-top:6px"></div>
     <label class="lab" for="fNote">หมายเหตุ</label><textarea class="inp" id="fNote" placeholder="รายละเอียดเพิ่มเติม"></textarea>
@@ -664,7 +668,7 @@ function fInfo() {
   else if (FORM.cause) h += `<div class="note ${FORM.causeGroup === 'กระทำ' ? 'r' : 'g'}">${esc(CAUSE_REF[FORM.cause] || '')}${FORM.causeGroup === 'กระทำ' ? '<br>ค่าแรงสับเปลี่ยน: 1 เฟส 100 · 3 เฟส 150 · ประกอบ CT แรงต่ำ 500 · ประกอบ CT VT แรงสูง 2,000 บาท + ค่ามิเตอร์ (ราคามาตรฐาน +15%)' : ''}</div>`;
   else if (withdraw) h += `<div class="note b">ถอนคืน: ถ้ามิเตอร์ไม่ชำรุด ไม่ต้องเลือกสาเหตุ ระบบจะเสนอผลคัดแยกเป็น "สภาพดี" (นำกลับมาใช้ Batch R ข้อ 79.2)</div>`;
   if (evid && !lost) h += `<div class="note k" style="margin-top:8px">เข้าข่ายหลักฐานคดี: เก็บมิเตอร์ไว้จนคดีถึงที่สุด (ข้อ 68.1.2) ระบบจะพิมพ์ฉลาก "หลักฐานคดี"</div>`;
-  if (FORM.cause === 'ใช้ไฟเกินพิกัด') h += `<div class="note" style="margin-top:8px">ถ้ามองไม่เห็นความเสียหายจากภายนอก การตัดตราตะกั่วเปิดฝาครอบต้องมีกรรมการ 3 คนที่ ผจก. แต่งตั้ง และลงหมายเหตุในแบบ มต.15 ป.62 (ข้อ 68.1.1 (5))</div>`;
+  if (FORM.cause === 'ใช้ไฟเกินพิกัด') h += `<div class="note" style="margin-top:8px">ถ้ามองไม่เห็นความเสียหายจากภายนอก การตัดตราตะกั่วเปิดฝาครอบต้องมีกรรมการ 3 คนที่ ผจก. แต่งตั้ง และลงหมายเหตุในแบบ มต.15 ป.58 (ข้อ 68.1.1 (5))</div>`;
   $('#fInfo').innerHTML = h;
 }
 async function saveField(andPrint) {
@@ -680,7 +684,7 @@ async function saveField(andPrint) {
   try {
     const photos = await uploadPhotos($('#fPh').files, pea);
     const rec = Object.assign({ pea, wo: $('#fWo').value.trim(), ca: $('#fCa').value.trim(), job: FORM.job, causeGroup: FORM.causeGroup, cause: FORM.cause, symptom: $('#fSym').value,
-      lastUnit: $('#fUnit').value.trim(), removedAt: $('#fDate').value, police: $('#fPol').value.trim(), note: $('#fNote').value.trim(), photos, sloc: UI.recvSloc }, readSpec());
+      lastUnit: $('#fUnit').value.trim(), removedAt: $('#fDate').value, police: $('#fPol').value.trim(), note: $('#fNote').value.trim(), photos, sloc: UI.recvSloc }, readSpec(), readFormFields());
     const j = await api('meterIntake', { rec });
     setMeter(j.meter);
     toast('บันทึก ' + pea + ' แล้ว', 'ok');
@@ -928,6 +932,8 @@ function shipEdit(s) {
         <button class="btn grow" id="dLabBox">ฉลากลัง (${D.boxes})</button>
         <button class="btn grow" id="dLabM">ฉลากฝาครอบ (${D.items.length})</button>
         <button class="btn grow" id="dRep">ใบรายการนำส่ง</button>
+        ${kind === 'warranty' ? '<button class="btn grow" id="dF23">บันทึกนำส่ง (แบบที่ 23)</button>' : ''}
+        ${kind === 'repair' ? '<button class="btn grow" id="dF24">บันทึกขออนุมัติ (แบบที่ 24)</button><button class="btn grow" id="dFSort">ผลคัดแยก (แนบแบบที่ 24)</button>' : ''}
       </div>
       <div class="stick"><button class="btn grow" id="dCancel">ยกเลิก</button><button class="btn p grow" id="dSave" style="flex:1.6"${closed ? ' disabled' : ''}>บันทึกชุด</button></div>`;
     const sync = () => { D.dest = $('#dDest').value; D.status = $('#dStatus').value; D.memo = $('#dMemo').value.trim(); D.approvedAt = $('#dApp').value; D.approvalNo = $('#dAppNo').value.trim(); D.note = $('#dNote').value; D.boxes = Math.max(1, Math.min(99, Number($('#dBoxes').value) || 1)); D.items.forEach(i => { if (i[1] > D.boxes) i[1] = D.boxes; }); };
@@ -944,6 +950,10 @@ function shipEdit(s) {
     $('#dLabBox').onclick = () => { sync(); printLabels(() => Array.from({ length: D.boxes }, (_, i) => labelBox(Object.assign({ id: D.id || '(ยังไม่บันทึก)', at: D.at || new Date().toISOString() }, D), i + 1)), 'ฉลากลัง'); };
     $('#dLabM').onclick = () => { sync(); if (!D.items.length) { toast('ยังไม่มีมิเตอร์ในชุด'); return; } printLabels(() => D.items.map(i => labelMeter(MAP[i[0]], D.memo)), 'ฉลากฝาครอบ'); };
     $('#dRep').onclick = () => { sync(); reportShip(D); };
+    const shipMs = () => D.items.map(i => MAP[i[0]]).filter(Boolean);
+    if ($('#dF23')) $('#dF23').onclick = () => { sync(); if (!D.items.length) { toast('ยังไม่มีมิเตอร์ในชุด'); return; } openForm('f23', { ship: D, ms: shipMs() }); };
+    if ($('#dF24')) $('#dF24').onclick = () => { sync(); if (!D.items.length) { toast('ยังไม่มีมิเตอร์ในชุด'); return; } openForm('f24', { ship: D, ms: shipMs() }); };
+    if ($('#dFSort')) $('#dFSort').onclick = () => { sync(); if (!D.items.length) { toast('ยังไม่มีมิเตอร์ในชุด'); return; } openForm('sort', { ms: shipMs(), range: 'ชุดนำส่ง ' + (D.id || '(ยังไม่บันทึก)') }); };
     $('#dSave').onclick = async () => {
       sync();
       if (D.status === 'ส่งแล้ว' && !confirm('ยืนยันว่า' + (kind === 'sale' ? 'ขาย/ส่งมอบผู้ซื้อ' : 'ส่ง') + 'แล้ว?\nมิเตอร์ ' + D.items.length + ' เครื่องจะเปลี่ยนเป็น "' + (kind === 'sale' ? ST.SOLD : ST.SENT) + '"')) return;
@@ -977,8 +987,15 @@ function reportMenu() {
       <button class="mi" id="r3"><div class="t"><b style="font-family:inherit">รายงานตรวจนับรอบล่าสุด</b><span>ผลต่าง + สาเหตุ + ลงนามกรรมการ (ข้อ 76)</span></div></button>
       <button class="mi" id="r4"><div class="t"><b style="font-family:inherit">มิเตอร์ชำรุดตามสาเหตุ (ข้อ 68)</b><span>สรุปคิดค่าใช้จ่าย/ไม่คิด แยกตามสาเหตุ</span></div></button>
       <button class="mi" id="r5"><div class="t"><b style="font-family:inherit">ส่งออก CSV ทั้งหมด</b><span>เปิดด้วย Excel</span></div></button>
-    </div>`);
+    </div>
+    <h3 style="margin-top:16px">แบบฟอร์มตามระเบียบ (ภาคผนวก ข)</h3>
+    <div class="list">
+      <button class="mi" id="rf1"><div class="t"><b style="font-family:inherit">มต.4/1 สมุดควบคุมมิเตอร์คงคลัง</b><span>รายเดือน · รับ–จ่าย–คงเหลือ แยกขนาด</span></div></button>
+      <button class="mi" id="rf2"><div class="t"><b style="font-family:inherit">รายงานผลการคัดแยกมิเตอร์ (แนบแบบที่ 24)</b><span>คณะกรรมการสอบหาข้อเท็จจริง · เลือกช่วงวันที่</span></div></button>
+    </div>
+    <p class="muted">แบบรายเครื่อง (มต.15, มต.ตม.4, มต.ทม.7, ผคต.กพร.-01, มต.ตต.2/3) อยู่ที่ปุ่ม "แบบฟอร์ม" ในหน้ารายละเอียดมิเตอร์ · แบบที่ 23/24 อยู่ในหน้าชุดนำส่ง</p>`);
   $('#r1').onclick = () => reportSort(); $('#r2').onclick = reportStock; $('#r3').onclick = () => reportCount(); $('#r4').onclick = reportCause; $('#r5').onclick = exportCsv;
+  $('#rf1').onclick = ledgerSheet; $('#rf2').onclick = sortFormSheet;
 }
 function reportSort(from) {
   if (!from) {
@@ -1038,8 +1055,102 @@ function exportCsv() {
 }
 
 /* ================= ตั้งค่า + นำเข้า ZDMR101 ================= */
+/* ================= แบบฟอร์มภาคผนวก ข (meter-form.html) =================
+ * ระบบส่งข้อมูลไปหน้าแบบฟอร์มผ่าน localStorage แล้วเปิดแท็บใหม่ (ต้องเรียกจากการกดปุ่มโดยตรง) */
+const FORM_LIST = {
+  mt15: ['มต.15 ป.58', 'แบบฟอร์มแสดงหน่วยค้างภายในมิเตอร์'],
+  tm4: ['มต.ตม.4 ป.58', 'ขออนุมัติสับเปลี่ยนมิเตอร์ชำรุด'],
+  tm7: ['มต.ทม.7 ป.58', 'รายงานการสับเปลี่ยนมิเตอร์'],
+  amr: ['ผคต.กพร.-01 ป.62', 'แจ้งมิเตอร์ระบบ AMR และ/หรืออุปกรณ์ประกอบชำรุด'],
+  tt2: ['มต.ตต.2 ป.59', 'บันทึกการตรวจสอบมิเตอร์ (หลักฐานคดี)'],
+  tt3: ['มต.ตต.3 ป.59', 'บันทึกรับรองการบรรจุหีบห่อของกลาง']
+};
+function formOrg() {
+  const s = DB.settings || {}, f = s.forms || {};
+  return Object.assign({ amp: 'อ่าวลึก', prov: 'กระบี่' }, Object.fromEntries(Object.entries(f).filter(e => e[1])), { branch: f.branch || owner(), committee: s.sortCommittee || [] });
+}
+function openForm(id, extra) {
+  const payload = Object.assign({ f: id, org: formOrg(), today: todayStr() }, extra || {});
+  try { localStorage.setItem('mt_form', JSON.stringify(payload)); } catch (e) { toast('บันทึกข้อมูลแบบฟอร์มไม่ได้ (พื้นที่เบราว์เซอร์เต็ม)', 'err'); return; }
+  const w = window.open('meter-form.html?f=' + id, '_blank');
+  if (!w) location.href = 'meter-form.html?f=' + id;
+}
+function formsMenu(m) {
+  const evid = EVID_CAUSES.includes(m.cause) || m.status === ST.EVID, amr = /AMR|Smart/i.test(m.kind || '');
+  const main = ['mt15', 'tm4', 'tm7'].concat(amr ? ['amr'] : [], evid ? ['tt2', 'tt3'] : []);
+  const rest = Object.keys(FORM_LIST).filter(k => !main.includes(k));
+  const btn = k => `<button class="mi" data-form="${k}"><div class="t"><b style="font-family:inherit">${esc(FORM_LIST[k][0])}</b><span>${esc(FORM_LIST[k][1])}</span></div></button>`;
+  const miss = [!m.custName && 'ชื่อผู้ใช้ไฟ', !m.custAddr && 'ที่อยู่', !m.serial && 'หมายเลขเครื่อง', !m.newPea && m.job !== 'สูญหาย' && !/^ถอนคืน/.test(m.job) && 'PEA เครื่องใหม่'].filter(Boolean);
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>แบบฟอร์ม <span class="mono">${esc(m.pea)}</span></h2>
+    <p class="muted" style="margin-top:-4px">ระบบเติมข้อมูลจากมิเตอร์นี้ให้ ช่องที่เหลือพิมพ์เพิ่มในหน้าแบบฟอร์มก่อนสั่งพิมพ์ได้</p>
+    ${miss.length ? `<div class="note" style="margin-bottom:10px">ยังไม่มี: ${esc(miss.join(', '))} — <a href="#" id="fmEdit">กรอกเก็บไว้ในระบบ</a> หรือพิมพ์ในแบบฟอร์มตอนพิมพ์ก็ได้</div>` : ''}
+    <div class="list">${main.map(btn).join('')}</div>
+    ${rest.length ? `<details class="more" style="margin-top:10px"><summary>แบบอื่น</summary><div class="list">${rest.map(btn).join('')}</div></details>` : ''}`);
+  $$('[data-form]').forEach(b => b.onclick = () => openForm(b.dataset.form, { m }));
+  if ($('#fmEdit')) $('#fmEdit').onclick = e => { e.preventDefault(); editSheet(m); };
+}
+function formFields(m) {
+  return `<div class="g2"><div><label class="lab" for="ffName">ชื่อผู้ใช้ไฟ</label><input class="inp" id="ffName" value="${esc(m.custName || '')}"></div>
+    <div><label class="lab" for="ffSerial">หมายเลขเครื่อง (Serial)</label><input class="inp mono" id="ffSerial" value="${esc(m.serial || '')}"></div></div>
+    <label class="lab" for="ffAddr">ที่อยู่ที่ติดตั้ง</label><input class="inp" id="ffAddr" value="${esc(m.custAddr || '')}" placeholder="บ้านเลขที่ หมู่ ถนน ตำบล">
+    <div class="g2"><div><label class="lab" for="ffNewPea">PEA No. เครื่องที่ติดตั้งแทน</label><input class="inp mono" id="ffNewPea" value="${esc(m.newPea || '')}"></div>
+    <div><label class="lab" for="ffNewUnit">หน่วยเริ่มต้นเครื่องใหม่</label><input class="inp" id="ffNewUnit" inputmode="decimal" value="${esc(m.newUnit || '')}"></div></div>`;
+}
+function readFormFields() {
+  const v = id => ($(id) ? $(id).value.trim() : undefined);
+  const o = { custName: v('#ffName'), custAddr: v('#ffAddr'), serial: v('#ffSerial'), newPea: v('#ffNewPea'), newUnit: v('#ffNewUnit') };
+  Object.keys(o).forEach(k => o[k] === undefined && delete o[k]);
+  return o;
+}
+/** มต.4/1 — สร้างรายการรับ–จ่าย–คงเหลือรายเดือนจากทะเบียนมิเตอร์ */
+function ledgerRows(ym) {
+  const start = ym + '-01', end = addDays(addDays(start, 32).slice(0, 8) + '01', 0);
+  const cat = m => { const k = (String(m.phase || '').startsWith('3') ? '3' : '1') + '-' + String(m.size || '').replace(/\s*A.*$/i, ''); return { '1-5(15)': 0, '1-15(45)': 1, '3-15(45)': 2 }[k] ?? 3; };
+  const ev = [];
+  DB.meters.forEach(m => {
+    if (m.status === ST.LOST || m.status === ST.FIELD) return;
+    const inD = String(m.removedAt || '').slice(0, 10); if (!inD) return;
+    let outD = '', outT = '', ref = '';
+    if (m.status === ST.SENT || m.status === ST.SOLD) { const sh = DB.ships.find(x => x.id === m.ship); outD = String((sh && (sh.doneAt || sh.upAt)) || m.updatedAt || '').slice(0, 10); outT = (m.status === ST.SOLD ? 'จ่ายจำหน่ายโดยวิธีขาย' : 'จ่ายนำส่ง ' + (sh && sh.kind === 'warranty' ? 'กมต. (เคลมประกัน)' : 'แปรสภาพ (ซ่อมได้)')) + (sh ? ' ชุด ' + sh.id : ''); ref = sh ? (sh.memo || sh.approvalNo || '') : ''; }
+    else if (m.status === ST.USED) { outD = String(m.updatedAt || '').slice(0, 10); outT = 'เบิกใช้ใหม่ (Batch R)'; }
+    ev.push({ d: inD, k: 'in', g: 'รับคืนมิเตอร์ (' + (m.job || 'ถอดคืน') + ')', ref: m.wo, c: cat(m) });
+    if (outD) ev.push({ d: outD, k: 'out', g: outT, ref, c: cat(m) });
+  });
+  const bal = [0, 0, 0, 0];
+  ev.filter(e => e.d < start).forEach(e => bal[e.c] += e.k === 'in' ? 1 : -1);
+  const tot = () => bal.reduce((a, b) => a + b, 0);
+  const rows = [{ d: start, t: 'ยอดยกมา', ref: '', bal: tot(), s: bal.slice() }];
+  const grp = {};
+  ev.filter(e => e.d >= start && e.d < end).forEach(e => { const key = e.d + '|' + e.k + '|' + e.g; (grp[key] = grp[key] || { d: e.d, k: e.k, t: e.g, refs: [], n: 0, c: [0, 0, 0, 0] }); grp[key].n++; grp[key].c[e.c]++; if (e.ref && !grp[key].refs.includes(e.ref)) grp[key].refs.push(e.ref); });
+  Object.values(grp).sort((a, b) => a.d.localeCompare(b.d) || (a.k === 'in' ? -1 : 1)).forEach(g => {
+    g.c.forEach((n, i) => bal[i] += g.k === 'in' ? n : -n);
+    rows.push({ d: g.d, t: g.t, ref: (g.k === 'in' ? 'WO ' : '') + g.refs.slice(0, 2).join(', ') + (g.refs.length > 2 ? ' +' + (g.refs.length - 2) : ''), in: g.k === 'in' ? g.n : '', out: g.k === 'out' ? g.n : '', bal: tot(), s: bal.slice() });
+  });
+  return rows;
+}
+function ledgerSheet() {
+  const ym = todayStr().slice(0, 7);
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>มต.4/1 สมุดควบคุมมิเตอร์คงคลัง</h2>
+    <p class="muted" style="margin-top:0">ระบบสรุปรับคืน (ตามวันที่ถอด) และจ่าย (นำส่ง/ขาย/เบิกใช้) ของเดือนที่เลือก พร้อมยอดคงเหลือแยกขนาด · ผู้ตรวจสอบลงนามในช่องท้ายแถว</p>
+    <div class="g2"><div><label class="lab" for="lgM">เดือน</label><input class="inp" type="month" id="lgM" value="${ym}"></div>
+    <div><label class="lab">&nbsp;</label><button class="btn p blk" id="lgGo">เปิดแบบฟอร์ม</button></div></div>`);
+  $('#lgGo').onclick = () => { const v = $('#lgM').value || ym, d = toD(v + '-01'); openForm('mt41', { rows: ledgerRows(v), monthName: d ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'][d.getMonth()] + ' ' + (d.getFullYear() + 543) : '' }); };
+}
+function sortFormSheet() {
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>รายงานผลการคัดแยกมิเตอร์</h2>
+    <p class="muted" style="margin-top:0">แบบของคณะกรรมการสอบหาข้อเท็จจริง (แนบแบบที่ 24) · นับมิเตอร์ที่คัดแยกในช่วงวันที่ พร้อมเอกสารแนบรายการ PEA No.</p>
+    <div class="g2"><div><label class="lab" for="sfFrom">ตั้งแต่</label><input class="inp" type="date" id="sfFrom" value="${addDays(todayStr(), -30)}"></div>
+    <div><label class="lab" for="sfTo">ถึง</label><input class="inp" type="date" id="sfTo" value="${todayStr()}"></div></div>
+    <button class="btn p blk" style="margin-top:12px" id="sfGo">เปิดแบบฟอร์ม</button>`);
+  $('#sfGo').onclick = () => {
+    const a = $('#sfFrom').value || '2000-01-01', b = $('#sfTo').value || todayStr();
+    const ms = DB.meters.filter(m => m.result && m.sortedAt && String(m.sortedAt).slice(0, 10) >= a && String(m.sortedAt).slice(0, 10) <= b).sort((x, y) => String(x.sortedAt).localeCompare(String(y.sortedAt)));
+    if (!ms.length) { toast('ไม่มีมิเตอร์ที่คัดแยกในช่วงนี้'); return; }
+    openForm('sort', { ms, range: thDate(a) + ' – ' + thDate(b) });
+  };
+}
 function settingsSheet() {
-  const s = DB.settings || {};
+  const s = DB.settings || {}, sf = s.forms || {};
   sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>ตั้งค่าโมดูลมิเตอร์</h2>
     <label class="lab" for="sOwner">การไฟฟ้าเจ้าของทรัพย์สิน (พิมพ์บนฉลาก)</label><input class="inp" id="sOwner" value="${esc(s.owner || 'กฟส.อ่าวลึก')}">
     <label class="lab" for="sSortC">คณะกรรมการสอบหาข้อเท็จจริง/คัดแยก (คั่นด้วย ,)</label><input class="inp" id="sSortC" value="${esc((s.sortCommittee || []).join(', '))}">
@@ -1047,13 +1158,26 @@ function settingsSheet() {
     <div class="g2"><div><label class="lab" for="sWarn">เตือนก่อนหมดประกัน (วัน)</label><input class="inp" type="number" id="sWarn" value="${esc(s.warnDays || 30)}"></div>
       <div><label class="lab" for="sDef">คลังย่อยมิเตอร์ (ค่าเริ่มต้น)</label><select class="inp" id="sDef">${slocOpts(s.defaultSloc || '1201')}</select></div></div>
     <label class="lab" for="sBrands">ยี่ห้อมิเตอร์ที่ใช้บ่อย (คั่นด้วย ,)</label><input class="inp" id="sBrands" value="${esc((s.brands || []).join(', '))}" placeholder="Mahajak, Holley, Mitsubishi, …">
+    <details class="more"><summary>ข้อมูลหัวแบบฟอร์ม (ภาคผนวก ข)</summary>
+      <div class="g2"><div><label class="lab" for="sfBranch">ชื่อหน่วยงานในแบบฟอร์ม</label><input class="inp" id="sfBranch" value="${esc(sf.branch || s.owner || 'กฟส.อ่าวลึก')}"></div>
+        <div><label class="lab" for="sfDoc">เลขที่หนังสือ (คำนำหน้า)</label><input class="inp" id="sfDoc" value="${esc(sf.docPrefix || '')}" placeholder="เช่น กฟส.อล.(ปร.)"></div></div>
+      <div class="g2"><div><label class="lab" for="sfAmp">อำเภอ</label><input class="inp" id="sfAmp" value="${esc(sf.amp || 'อ่าวลึก')}"></div>
+        <div><label class="lab" for="sfProv">จังหวัด</label><input class="inp" id="sfProv" value="${esc(sf.prov || 'กระบี่')}"></div></div>
+      <div class="g2"><div><label class="lab" for="sfMgr">ชื่อ ผจก.</label><input class="inp" id="sfMgr" value="${esc(sf.mgr || '')}"></div>
+        <div><label class="lab" for="sfHead">ชื่อ หผ. ที่ดูแลมิเตอร์</label><input class="inp" id="sfHead" value="${esc(sf.head || '')}"></div></div>
+      <label class="lab" for="sfAddr">ที่อยู่สำนักงาน (มต.ตต.3)</label><input class="inp" id="sfAddr" value="${esc(sf.addr || '')}">
+      <div class="g2"><div><label class="lab" for="sfTel">โทรศัพท์</label><input class="inp" id="sfTel" value="${esc(sf.tel || '')}"></div>
+        <div><label class="lab" for="sfPol">สถานีตำรวจ (สภ.)</label><input class="inp" id="sfPol" value="${esc(sf.police || '')}" placeholder="อ่าวลึก"></div></div>
+      <label class="lab" for="sfMaker">ผู้จัดทำ/ผู้ประสานงาน</label><input class="inp" id="sfMaker" value="${esc(sf.maker || '')}">
+    </details>
     <button class="btn p blk" style="margin-top:12px" id="sSave">บันทึกตั้งค่า</button>
     <h3 style="margin-top:20px">รายงาน ZDMR101 (ระบบ DM)</h3>
     <p class="muted" style="margin-top:0">${DB.zdmr.length ? 'มี ' + DB.zdmr.length + ' รายการ · นำเข้า ' + thDateTime(DB.zdmrAt) : 'ยังไม่ได้นำเข้า'}</p>
     <button class="btn blk" id="sZd">นำเข้า ZDMR101</button>`);
   $('#sSave').onclick = async () => {
     const list = id => $(id).value.split(',').map(x => x.trim()).filter(Boolean);
-    try { const j = await api('meterSettings', { settings: { owner: $('#sOwner').value.trim(), sortCommittee: list('#sSortC'), countCommittee: list('#sCntC'), warnDays: Number($('#sWarn').value), defaultSloc: $('#sDef').value, brands: list('#sBrands') } }); DB.settings = j.settings; toast('บันทึกแล้ว', 'ok'); closeSheet(); render(); }
+    try { const j = await api('meterSettings', { settings: { owner: $('#sOwner').value.trim(), sortCommittee: list('#sSortC'), countCommittee: list('#sCntC'), warnDays: Number($('#sWarn').value), defaultSloc: $('#sDef').value, brands: list('#sBrands'),
+      forms: { branch: $('#sfBranch').value, docPrefix: $('#sfDoc').value, amp: $('#sfAmp').value, prov: $('#sfProv').value, mgr: $('#sfMgr').value, head: $('#sfHead').value, addr: $('#sfAddr').value, tel: $('#sfTel').value, police: $('#sfPol').value, maker: $('#sfMaker').value } } }); DB.settings = j.settings; toast('บันทึกแล้ว', 'ok'); closeSheet(); render(); }
     catch (e) { toast(e.message, 'err'); }
   };
   $('#sZd').onclick = zdmrSheet;

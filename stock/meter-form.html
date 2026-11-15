@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบฟอร์มมิเตอร์ – กฟส.อ่าวลึก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* แบบฟอร์มภาคผนวก ข ระเบียบ กฟภ. ว่าด้วยวิธีปฏิบัติเกี่ยวกับมิเตอร์ พ.ศ. 2562 — เลย์เอาต์ตามต้นฉบับ */
+:root{--top:#2a0f33;--pea:#6a1b74;--gold:#f2b33d;--auto:#e3effd;--autoB:#3b7bd8;--man:#fff4cc;--manB:#d9a400}
+*{box-sizing:border-box}
+html,body{margin:0;background:#ece8ef;font-family:'IBM Plex Sans Thai',sans-serif;color:#222}
+.bar{position:sticky;top:0;z-index:5;background:var(--top);color:#fff;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:15px;margin:0;font-weight:600;flex:1 1 220px}
+.bar button{font:inherit;font-size:13px;border:1px solid #ffffff50;background:#ffffff14;color:#fff;border-radius:8px;padding:7px 11px}
+.bar button.pri{background:var(--gold);color:var(--top);border-color:var(--gold);font-weight:600}
+.legend{font-size:12px;padding:6px 12px;background:#fff;border-bottom:1px solid #ddd;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.legend i{width:13px;height:13px;border-radius:3px;display:inline-block;vertical-align:-2px;margin-right:3px}
+.stage{padding:12px 8px 40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.sheet{flex:none;background:#fff;box-shadow:0 2px 12px #0002;font-family:'Sarabun',serif;font-size:14.5px;line-height:1.62;color:#000;position:relative;transform-origin:top left}
+.p{width:210mm;min-height:297mm;padding:14mm 16mm 12mm 22mm}
+.l{width:297mm;min-height:210mm;padding:12mm 12mm 10mm 14mm}
+.f{display:inline-block;min-width:10mm;border-bottom:1px dotted #000;padding:0 3px;text-align:center;line-height:1.25;vertical-align:baseline;outline:none;white-space:nowrap;text-indent:0}
+.f.w{white-space:normal;text-align:left}
+.f:empty::after{content:'\00a0'}
+body.tint .f.a{background:var(--auto);box-shadow:inset 0 -2px 0 var(--autoB)}
+body.tint .f.m{background:var(--man);box-shadow:inset 0 -2px 0 var(--manB)}
+body.tint td.a{background:var(--auto)} body.tint td.m{background:var(--man)}
+.f:focus{background:#fff !important;box-shadow:0 0 0 2px var(--pea) !important}
+td[contenteditable]:focus{outline:2px solid var(--pea)}
+.c{text-align:center}.r{text-align:right}.b{font-weight:700}.u{text-decoration:underline}
+.logo{width:19mm;height:19mm;border:1.5px dashed #888;border-radius:50%;display:grid;place-items:center;font-size:11px;color:#777;margin:0 auto;line-height:1.2;text-align:center;overflow:hidden}
+.logo.img{border:0;border-radius:0}.logo img{width:100%;height:100%;object-fit:contain}
+.peaN{font-weight:700;font-size:17px;line-height:1.1}.peaE{font-size:8px;letter-spacing:.3px}
+.hdrL{display:flex;flex-direction:column;align-items:flex-start;width:max-content}
+.hdrL .logo{margin:0 0 2px 6mm}
+.foot{position:absolute;left:22mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;font-size:13px}
+.l .foot{left:14mm;right:12mm;bottom:7mm}
+table.g{border-collapse:collapse;width:100%}
+table.g td,table.g th{border:1px solid #000;padding:1px 4px;font-weight:400;vertical-align:middle;line-height:1.45}
+table.g th{text-align:center}
+table.g td{text-align:center} table.g td.w,table.g td.L{text-align:left}
+.ind{text-indent:18mm}
+.row{display:flex;justify-content:space-between;gap:8px}
+.sig{display:inline-block;text-align:center;line-height:1.9}
+.box2{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin-top:4mm}
+.box2>div{padding:3mm 4mm}.box2>div+div{border-left:1px solid #000}
+.ck{display:inline-block;width:4mm;height:4mm;border:1px solid #000;vertical-align:-2px;margin-right:3px;text-align:center;line-height:4mm;font-size:12px;cursor:pointer}
+.hr{border-top:1px solid #000;margin:3mm 0}
+.dl{border-bottom:1px dotted #000;min-height:7.2mm}
+.err{max-width:520px;margin:40px auto;background:#fff;padding:20px;border-radius:12px;text-align:center}
+@media print{
+  body{background:#fff}
+  .bar,.legend{display:none !important}
+  .stage{padding:0;display:block}
+  .sheet{box-shadow:none;transform:none !important;margin:0 !important;page-break-after:always;break-after:page}
+  .sheet:last-child{page-break-after:auto;break-after:auto}
+  body .f.a,body .f.m{background:none !important;box-shadow:none !important}
+  body td.a,body td.m{background:none !important}
+}
+</style>
+<style id="pageSize">@page{size:A4 portrait;margin:0}</style>
+</head>
+<body class="tint">
+<div class="bar">
+  <h1 id="ttl">แบบฟอร์ม</h1>
+  <button class="pri" onclick="doPrint()">🖨 พิมพ์ / บันทึก PDF</button>
+  <button id="thBtn" onclick="toggleTH()">เลขไทย</button>
+  <button onclick="document.body.classList.toggle('tint')">สีช่อง</button>
+  <button onclick="render()">ล้างที่แก้</button>
+</div>
+<div class="legend"><span><i style="background:var(--auto);box-shadow:inset 0 -2px 0 var(--autoB)"></i>ระบบเติมให้</span><span><i style="background:var(--man);box-shadow:inset 0 -2px 0 var(--manB)"></i>กรอกเพิ่ม/ลงนาม</span><span style="opacity:.7">แตะช่องเพื่อพิมพ์แก้ก่อนสั่งพิมพ์ได้ทุกช่อง · สีไม่ออกตอนพิมพ์</span></div>
+<div class="stage" id="stage"></div>
+
+<script>
+'use strict';
+/* ข้อมูลส่งมาจาก meter.js ผ่าน localStorage 'mt_form' (เปิดในแท็บใหม่) */
+let P = null;
+try { P = JSON.parse(localStorage.getItem('mt_form') || 'null'); } catch (e) {}
+const FID = new URLSearchParams(location.search).get('f') || (P && P.f);
+let TH = false; try { TH = localStorage.getItem('mt_form_th') === '1'; } catch (e) {}
+
+const TH_MF = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const toD = s => { if (!s) return null; const d = new Date(String(s).length === 10 ? s + 'T00:00:00' : s); return isNaN(d) ? null : d; };
+const dmy = s => { const d = toD(s); return d ? String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + (d.getFullYear() + 543) : ''; };
+const dParts = s => { const d = toD(s); return d ? [String(d.getDate()), TH_MF[d.getMonth()], String(d.getFullYear() + 543)] : ['', '', '']; };
+const dLong = s => { const p = dParts(s); return p[0] ? p.join(' ') : ''; };
+const hm = s => { const d = toD(s); return d && String(s).length > 10 ? String(d.getHours()).padStart(2, '0') + '.' + String(d.getMinutes()).padStart(2, '0') : ''; };
+const thd = s => TH ? String(s).replace(/[0-9]/g, d => '๐๑๒๓๔๕๖๗๘๙'[d]) : String(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+/* ช่องกรอก: A = ระบบเติม (ฟ้า) · B = ว่างให้กรอก (เหลือง) · V = เติมถ้ามีข้อมูล ไม่มีก็ว่าง */
+const A = (v, w = 20, x = '') => `<span class="f a ${x}" contenteditable style="min-width:${w}mm">${esc(thd(v))}</span>`;
+const B = (w = 20, x = '') => `<span class="f m ${x}" contenteditable style="min-width:${w}mm"></span>`;
+const V = (v, w = 20, x = '') => (v == null || v === '') ? B(w, x) : A(v, w, x);
+const td = (v, c, x = '') => `<td class="${c == null ? (v === '' || v == null ? '' : 'a') : c} ${x}" contenteditable>${esc(thd(v ?? ''))}</td>`;
+const tdV = (v, x = '') => td(v, v === '' || v == null ? 'm' : 'a', x);
+const LOGO = 'img/pea-logo.png';
+const logoBox = () => `<div class="logo img" data-logo><img src="${LOGO}" alt="" onerror="this.parentNode.className='logo';this.parentNode.innerHTML='ตรา<br>กฟภ.'"></div>`;
+const logoC = () => `<div class="c">${logoBox()}<div class="peaN" style="margin-top:2px">การไฟฟ้าส่วนภูมิภาค</div><div class="peaE">PROVINCIAL ELECTRICITY AUTHORITY</div></div>`;
+const logoL = () => `<div class="hdrL">${logoBox()}<div class="peaN">การไฟฟ้าส่วนภูมิภาค</div><div class="peaE">PROVINCIAL ELECTRICITY AUTHORITY</div></div>`;
+const foot = (l, r) => `<div class="foot"><span>${l}</span><span>หน้า&nbsp;&nbsp;${r}</span></div>`;
+
+/* ===== ข้อมูลกลาง ===== */
+const O = Object.assign({ branch: 'กฟส.อ่าวลึก', amp: 'อ่าวลึก', prov: 'กระบี่', docPrefix: '', mgr: '', head: '', addr: '', tel: '', police: '', maker: '', committee: [] }, (P && P.org) || {});
+const short = () => O.branch.replace(/^กฟ[สจฟย]\.?\s*/, '');
+const ph = m => /^3/.test(String(m.phase || '')) ? '3' : (/^1/.test(String(m.phase || '')) ? '1' : '');
+const wire = m => ph(m) === '3' ? '4' : (ph(m) === '1' ? '2' : '');
+const volt = m => ph(m) === '3' ? '400' : (ph(m) === '1' ? '230' : '');
+const amp = m => String(m.size || '').replace(/\s*A.*$/i, '').trim();
+const SZ = [['1', '5(15)'], ['1', '15(45)'], ['1', '30(100)'], ['3', '15(45)'], ['3', '30(100)']];
+const szKey = m => ph(m) + '-' + amp(m);
+const szName = (p, s) => `มิเตอร์ ${p} เฟส ${p === '1' ? 2 : 4} สาย ขนาด ${s} แอมป์`;
+const today = () => (P && P.today) || new Date().toISOString().slice(0, 10);
+const M0 = () => (P && P.m) || {};
+
+/* ===== แบบฟอร์ม ===== */
+const FORMS = {
+mt41: { code: 'มต.๔/๑ ป.๕๘', name: 'สมุดควบคุมมิเตอร์คงคลัง', o: 'l', r() {
+  const rows = (P.rows || []).slice(0, 15);
+  const body = rows.map(r => `<tr style="height:8.6mm">${td(dmy(r.d))}${td(r.t, null, 'w')}${td(r.ref, null, 'w')}${td(r.in || '')}${td(r.out || '')}${td(r.bal)}${td(r.s[0])}${td(r.s[1])}${td(r.s[2])}${td(r.s[3])}<td class="m" contenteditable></td><td contenteditable></td></tr>`).join('');
+  const blank = Array.from({ length: Math.max(0, 15 - rows.length) }, () => `<tr style="height:8.6mm">${'<td contenteditable></td>'.repeat(12)}</tr>`).join('');
+  return `<div style="display:flex;align-items:center;gap:8mm;margin-bottom:3mm"><div style="flex:none">${logoBox().replace('class="logo img"', 'class="logo img" style="margin:0"')}</div>
+  <div class="b" style="font-size:18px">สมุดควบคุมมิเตอร์คงคลังของ กฟย. ${A(short(), 50)} <span style="font-weight:400;font-size:15px">ประจำเดือน ${A(P.monthName || '', 40)}</span></div></div>
+  <table class="g" style="font-size:13.5px"><colgroup><col style="width:22mm"><col><col style="width:34mm"><col style="width:11mm"><col style="width:11mm"><col style="width:14mm"><col style="width:16mm"><col style="width:16mm"><col style="width:16mm"><col style="width:16mm"><col style="width:24mm"><col style="width:18mm"></colgroup>
+  <tr><th rowspan="2">วันเดือนปี</th><th rowspan="2">รายละเอียดการเคลื่อนไหว</th><th rowspan="2">เลขที่ใบส่งของ</th><th colspan="3">จำนวนมิเตอร์คงคลัง</th><th colspan="4">มิเตอร์</th><th rowspan="2">ลงชื่อ<br>ผู้ตรวจสอบ</th><th rowspan="2">หมายเหตุ</th></tr>
+  <tr><th>รับ</th><th>จ่าย</th><th>คงเหลือ</th><th>1 เฟส<br>5(15) A</th><th>1 เฟส<br>15(45) A</th><th contenteditable>3 เฟส<br>15(45) A</th><th contenteditable>อื่น ๆ</th></tr>
+  ${body}${blank}</table>${(P.rows || []).length > 15 ? '<div style="font-size:12px">* มีรายการเกิน 15 บรรทัด แสดงต่อหน้าถัดไป</div>' : ''}${foot(thd('มต.๔/๑ ป.๕๘'), 'ข-๑-๓')}`;
+} },
+mt15: { code: 'มต.๑๕ ป.๕๘', name: 'แบบฟอร์มแสดงหน่วยค้างภายในมิเตอร์', o: 'l', r() {
+  const m = M0();
+  return `<div class="row" style="align-items:flex-start"><div style="padding-top:20mm">เลขที่งาน ${V(m.wo, 40)}</div>${logoC()}<div style="line-height:2">เล่มที่ ${B(22)}<br>เลขที่ ${B(22)}</div></div>
+  <div class="c" style="margin:-1mm 0 3mm">แบบฟอร์มแสดงหน่วยค้างภายในมิเตอร์</div>
+  <div style="padding-left:40mm;line-height:2.05">
+   สำนักงานไฟฟ้า ${A(O.branch, 90)}<br>
+   ชื่อ (ผู้ใช้ไฟ) ${V(m.custName, 100)}<br>
+   ที่อยู่ ${V(m.custAddr, 110, 'w')}<br>
+   รหัสลูกค้า ${V(m.ca, 38)} เฟส ${V(ph(m), 10)} สาย ${V(wire(m), 10)} โวลท์ ${V(volt(m), 14)} แอมป์ ${V(amp(m), 18)}<br>
+   หมายเลข พีอีเอ. เครื่องก่อนหน้า ${A(m.pea, 50)}<br>
+   หมายเลข พีอีเอ. เครื่องหลัง ${V(m.newPea, 50)}</div>
+  <table class="g" style="margin-top:3mm"><colgroup><col style="width:34mm"><col style="width:34mm"><col style="width:30mm"><col style="width:30mm"><col style="width:30mm"><col style="width:30mm"><col></colgroup>
+   <tr><th colspan="2">มิเตอร์</th><th rowspan="2">วันที่ติดตั้ง</th><th rowspan="2">หน่วยค้าง<br>ภายในมิเตอร์</th><th rowspan="2">วันที่ถอดกลับ</th><th rowspan="2">หน่วยค้าง<br>ภายในมิเตอร์</th><th rowspan="2">หมายเหตุ</th></tr>
+   <tr><th>หมายเลข พีอีเอ.</th><th>หมายเลขเครื่อง</th></tr>
+   <tr style="height:12mm">${td(m.pea)}${tdV(m.serial)}${td('', 'm')}${td('', 'm')}${tdV(dmy(m.removedAt))}${tdV(m.lastUnit)}${td([m.job, m.cause].filter(Boolean).join(' · '), null, 'w')}</tr>
+   <tr style="height:12mm">${tdV(m.newPea)}${td('', 'm')}${tdV(m.newPea ? dmy(m.removedAt) : '')}${tdV(m.newUnit)}<td contenteditable></td><td contenteditable></td>${td(m.newPea ? 'ติดตั้งแทน' : '', null, 'w')}</tr>
+   <tr style="height:12mm">${'<td contenteditable></td>'.repeat(7)}</tr></table>
+  <div style="padding-left:95mm;margin-top:6mm;line-height:2.1">(ลงชื่อ) ${B(60)} ผู้ติดตั้ง , ถอดกลับ<br><span style="padding-left:12mm">(${V(m.removedBy, 55)})</span><br>
+  (ลงชื่อ) ${B(60)} ผู้ใช้ไฟฟ้า หรือ ผู้แทน<br><span style="padding-left:12mm">(${V(m.custName, 55)})</span></div>
+  ${foot(thd('(มต.๑๕ ป.๕๘)'), 'ข-๑-๕')}`;
+} },
+tm4: { code: 'มต.ตม.๔ ป.๕๘', name: 'ใบฟอร์มการขออนุมัติสับเปลี่ยนมิเตอร์ชำรุด', o: 'p', r() {
+  const m = M0(), act = m.causeGroup === 'กระทำ';
+  return `${logoC()}<div class="hr"></div>
+  <div class="c b" style="margin-bottom:3mm">ใบฟอร์มการขออนุมัติสับเปลี่ยนมิเตอร์ชำรุด</div>
+  <div style="padding-left:62mm">วันที่ ${A(dLong(m.removedAt || today()), 50)}</div>
+  เรียน ผจก. ${A(O.branch, 70)}<br>
+  <span style="padding-left:18mm">จากการตรวจสอบมิเตอร์ของนาย, นาง, น.ส.</span> ${V(m.custName, 80)}<br>
+  หมายเลขผู้ใช้ไฟ ${V(m.ca, 42)} ติดตั้งบ้านเลขที่ ${V(m.custAddr, 18 + (m.custAddr ? 40 : 0), 'w')}${m.custAddr ? '' : ' ถนน ' + B(36)}<br>
+  ตำบล ${B(38)} อำเภอ ${A(O.amp, 38)} จังหวัด ${A(O.prov, 38)}<br>
+  มิเตอร์ผลิตภัณฑ์ ${V(m.brand, 30)} ขนาด ${V(amp(m), 16)} แอมป์ ${V(ph(m), 8)} เฟส ${V(wire(m), 8)} สาย ${V(volt(m), 14)} โวลท์ ชำรุด<br>
+  เนื่องจาก ${V([m.symptom, m.cause ? '(' + m.cause + ')' : ''].filter(Boolean).join(' '), 100, 'w')} จึงขออนุมัติสับเปลี่ยนมิเตอร์ใหม่<br>
+  <span style="padding-left:18mm">จึงเรียนมาเพื่อโปรดทราบและพิจารณาอนุมัติต่อไป</span>
+  <div style="padding-left:80mm;line-height:2">(ลงชื่อ) ${B(60)}<br><span style="padding-left:12mm">(${V(m.removedBy, 55)})</span></div>
+  <div class="row"><div>คำสั่ง ผจก. ${B(55)}</div><div style="padding-right:8mm">ตำแหน่ง ${B(50)}</div></div>
+  เรียน หผ. ${V(O.head, 55)}<br><span style="padding-left:18mm">อนุมัติดำเนินการตามระเบียบต่อไป</span>
+  <div style="padding-left:80mm;line-height:2">(ลงชื่อ) ${B(60)} ผจก.<br><span style="padding-left:12mm">(${V(O.mgr, 55)})</span></div>
+  <div class="hr"></div>
+  ได้เรียกเก็บเงินจากผู้ใช้ไฟ ดังนี้ บัตรประชาชนเลขที่ ${B(62)}<br>
+  ${[['๑. ค่ามิเตอร์ชำรุด'], ['๒. ค่ามิเตอร์ชำรุด'], ['๓.'], ['๔.'], ['๕.']].map(r => `<span style="padding-left:12mm;display:inline-block;width:46mm">${r[0]}</span>${B(28)} บาท บิลเลขที่ ${B(34)} ลว. ${B(26)}`).join('<br>')}
+  ${act ? '' : '<div style="font-size:12px;padding-left:12mm">(สาเหตุไม่เกิดจากการกระทำ — ไม่คิดค่าใช้จ่าย ข้อ 66)</div>'}
+  <div style="padding-left:80mm;line-height:2;margin-top:2mm">(ลงชื่อ) ${B(60)} ผจก.<br><span style="padding-left:12mm">(${V(O.mgr, 55)})</span></div>
+  <div class="row" style="margin-top:3mm;line-height:1.95"><div>มิเตอร์เก่ารับเข้า<br>ผลิตภัณฑ์ ${V(m.brand, 26)} ชนิด ${V(m.kind, 22)}<br>พีอีเอ ${A(m.pea, 28)} เลขเครื่อง ${V(m.serial, 22)}<br>แอมป์ ${V(amp(m), 22)} หน่วยที่อ่าน ${V(m.lastUnit, 20)}<br>เฟส ${V(ph(m), 10)} สาย ${V(wire(m), 10)} โวลท์ ${V(volt(m), 14)}</div>
+  <div>มิเตอร์จ่ายออก<br>ผลิตภัณฑ์ ${B(26)} ชนิด ${B(22)}<br>พีอีเอ ${V(m.newPea, 28)} เลขเครื่อง ${B(22)}<br>แอมป์ ${B(22)} หน่วยที่อ่าน ${V(m.newUnit, 20)}<br>เฟส ${V(ph(m), 10)} สาย ${V(wire(m), 10)} โวลท์ ${V(volt(m), 14)}</div></div>
+  ${foot(thd('มต.ตม.๔ ป.๕๘'), 'ข-๑-๙')}`;
+} },
+tm7: { code: 'มต.ทม.๗ ป.๕๘', name: 'รายงานการสับเปลี่ยนมิเตอร์', o: 'p', r() {
+  const m = M0(), d = dParts(m.removedAt);
+  const blk = (t, brand, size, pea) => `<span class="u">${t}</span><br>
+   <span style="padding-left:18mm">ผลิตภัณฑ์</span> ${brand} แบบ ${B(20)} ขนาด ${size} แอมป์ ${V(volt(m), 14)} โวลท์<br>
+   ${V(ph(m), 8)} เฟส ${V(wire(m), 8)} สาย ${B(10)} รอบ/กว.-ชม.หมายเลขพีอีเอ ${pea} หมายเลขเครื่อง ${t === 'มิเตอร์ติดตั้งอยู่เดิม' ? V(m.serial, 20) : B(20)}<br>
+   กว.-ชม. X ${B(10)} กว.สูงสุด X ${B(10)} กว.สะสม X ${B(10)} ตราตะกั่วฝาครอบตัวมิเตอร์หมายเลข กนต ${B(16)}`;
+  const read = u => `<div style="padding-left:52mm;margin-top:2mm;line-height:1.95"><span class="u">ค่ามิเตอร์ที่อ่านได้</span>&nbsp; ค่ากิโลวัตต์-ชั่วโมง ${V(u, 40)} กว.-ชม.<br>
+  <span style="padding-left:30mm">ค่ากิโลวัตต์สูงสุด</span> ${B(40)} กว.<br><span style="padding-left:30mm">ค่ากิโลวัตต์สะสม</span> ${B(40)} กว.</div>`;
+  return `${logoC()}<div class="c b u" style="margin:2mm 0 3mm">รายงานการสับเปลี่ยนมิเตอร์</div>
+  ชื่อ ${V(m.custName, 60)} หมายเลขผู้ใช้ไฟ ${V(m.ca, 34)} กฟ ${A(O.branch, 24)}<br>
+  ใช้ร่วมกับ ซีที.ขนาด ${B(20)} แอมป์ พีที.ขนาด ${B(20)} โวลท์ หม้อแปลงขนาด ${B(22)} เควีเอ.<br>
+  สับเปลี่ยนมิเตอร์เมื่อวันที่ ${V(d[0], 12)} เดือน ${V(d[1], 32)} พ.ศ. ${V(d[2], 16)} เวลา ${V(hm(m.createdAt), 16)}<br>
+  ${blk('มิเตอร์ติดตั้งอยู่เดิม', V(m.brand, 30), V(amp(m), 16), A(m.pea, 24))}
+  ${read(m.lastUnit)}
+  <span class="b u">สาเหตุที่ตัดกลับ</span> ${V([m.job, m.cause, m.symptom].filter(Boolean).join(' – '), 135, 'w')}<br>
+  ${blk('มิเตอร์ติดตั้งใหม่', B(30), B(16), V(m.newPea, 24))}<br>
+  จำนวน ${B(12)} ดวงตรา เป็นตราที่ประทับมาจากกองมิเตอร์ การไฟฟ้าส่วนภูมิภาค กรุงเทพฯ อยู่ในสภาพปกติ
+  ${read(m.newUnit)}
+  <div style="padding-left:45mm;margin-top:3mm;line-height:1.95">ลงชื่อ ${B(60)} ผู้ใช้ไฟฟ้าหรือผู้แทน<br><span style="padding-left:10mm">(${V(m.custName, 58)})</span><br>
+  ลงชื่อ ${B(60)} ผู้สับเปลี่ยน<br><span style="padding-left:10mm">(${V(m.removedBy, 58)})</span><br>
+  ลงชื่อ ${B(60)} พยาน<br><span style="padding-left:10mm">(${B(58)})</span><br>ลงชื่อ ${B(60)} พยาน<br><span style="padding-left:10mm">(${B(58)})</span></div>
+  ${foot(thd('มต.ทม.๗ ป.๕๘'), 'ข-๑-๑๑')}`;
+} },
+f23: { code: 'แบบที่ ๒๓', name: 'ขอนำส่งมิเตอร์ชำรุดที่อยู่ระหว่างรับประกันคุณภาพ ให้ กมต.', o: 'p', r() {
+  const S = P.ship || {}, ms = P.ms || [], g = {};
+  ms.forEach(m => { const k = m.mat || ('(ไม่มีรหัส) ' + [m.phase, m.size].join(' ')); (g[k] = g[k] || { n: 0, d: [m.brand, m.phase, m.size].filter(Boolean).join(' ') }).n++; });
+  const L = Object.keys(g).sort(); while (L.length < 5) L.push('');
+  const lines = L.map((k, i) => `<div style="padding-left:20mm">${thd(i + 1)}. รหัส ${k ? A(k + (g[k].d ? '  ' + g[k].d : ''), 95, 'w') : B(95)} จำนวน ${k ? A(g[k].n, 22) : B(22)} เครื่อง</div>`).join('');
+  return `${logoL()}
+  <div class="row" style="margin-top:1mm"><div>จาก&nbsp;&nbsp; ผมต., ผบต. ${A(O.branch, 40)}</div><div style="width:68mm">ถึง&nbsp;&nbsp; ผจก. ${A(O.branch, 42)}</div></div>
+  <div class="row"><div>เลขที่ ${V(S.memo || O.docPrefix, 54)}</div><div style="width:68mm">วันที่ ${A(dLong(today()), 42)}</div></div>
+  เรื่อง&nbsp;&nbsp; ขอนำส่งมิเตอร์ชำรุดที่อยู่ระหว่างรับประกันคุณภาพ ให้ กมต.<br>
+  สิ่งที่ส่งมาด้วย&nbsp; 1. บันทึกแจ้งบริษัท<br><span style="padding-left:23mm">2. รายละเอียดมิเตอร์ชำรุดที่อยู่ระหว่างรับประกันคุณภาพ</span><br>
+  <div style="margin-top:2mm">เรียน&nbsp;&nbsp; ผจก. ${A(O.branch, 45)}</div>
+  <div class="ind" style="margin-top:2mm">ผมต., ผบต. ${A(O.branch, 40)} ขอนำส่งมิเตอร์ชำรุดที่อยู่ระหว่างรับประกันคุณภาพ ให้ กมต. จำนวน ${A(ms.length, 22)} เครื่อง ตามรายละเอียด ดังนี้</div>
+  <div style="line-height:2.1">${lines}</div>
+  <div style="padding-left:20mm">จึงเรียนมาเพื่อโปรดทราบ</div>
+  <div style="padding-left:80mm;margin-top:10mm;text-align:center;width:150mm;white-space:nowrap">(${V(O.head, 55)})<br>หผ.มต., หผ.บต.</div>
+  ${V(O.maker, 30)}<br>โทร. ${V(O.tel, 26)}
+  <div class="box2" style="font-size:14.5px;line-height:1.85"><div>- บันทึกเลขที่ ${B(30)}<br>- เรียน&nbsp;&nbsp; อก.ม.ต.<br><span style="padding-left:12mm">เพื่อโปรดดำเนินการต่อไป</span><br><br><br><div class="c">(${V(O.mgr, 50)})<br>ผจก. ${A(O.branch, 34)}</div></div>
+  <div>เลขที่ ${B(40)}<br>เรียน&nbsp; ผจก. ${A(O.branch, 36)}<br><span style="padding-left:12mm">กมต. ได้รับมิเตอร์ชำรุดที่อยู่ระหว่างรับประกันคุณภาพ เรียบร้อยแล้ว ทั้งนี้ กมต. ได้ทำโอนมิเตอร์จากที่จัดเก็บต้นทางแล้ว (ตามเอกสารแนบ)</span><br><span style="padding-left:12mm">จึงเรียนมาเพื่อโปรดทราบ</span><br><div class="c">(${B(50)})<br>หผ. ${B(36)}</div></div></div>
+  ${foot('', 'ข-๒-๒๓')}`;
+} },
+f24: { code: 'แบบที่ ๒๔', name: 'ขออนุมัตินำส่งมิเตอร์ชำรุด (ซ่อมได้) ให้ กมต.', o: 'p', r() {
+  const S = P.ship || {}, ms = P.ms || [], c = {}, other = {};
+  ms.forEach(m => { const k = szKey(m); if (SZ.some(z => z.join('-') === k)) c[k] = (c[k] || 0) + 1; else { const n = [m.phase, m.size].filter(Boolean).join(' ') || 'ไม่ระบุขนาด'; other[n] = (other[n] || 0) + 1; } });
+  const ox = Object.keys(other);
+  const rows = SZ.map((z, i) => `<tr>${td(i + 1, '')}<td class="L">${szName(z[0], z[1])}</td>${td(c[z.join('-')] || '', null)}<td contenteditable></td><td contenteditable></td></tr>`).join('')
+    + [0, 1].map(i => `<tr>${td(6 + i, '')}${ox[i] ? td('มิเตอร์ ' + ox[i], null, 'w') + td(other[ox[i]], null) : '<td contenteditable></td><td contenteditable></td>'}<td contenteditable></td><td contenteditable></td></tr>`).join('');
+  return `${logoL()}
+  <div class="row" style="margin-top:1mm"><div>จาก ${A(O.branch, 46)}</div><div style="width:68mm">ถึง ${A('ผจก. ' + O.branch, 46)}</div></div>
+  <div class="row"><div>เลขที่ ${V(S.memo || O.docPrefix, 54)}</div><div style="width:68mm">วันที่ ${A(dLong(today()), 42)}</div></div>
+  เรื่อง&nbsp;&nbsp; ขออนุมัตินำส่งมิเตอร์ชำรุดไม่อยู่ในเงื่อนไขการรับประกัน(ชำรุดซ่อมได้) ให้ กมต.<br>
+  สิ่งที่ส่งมาด้วย&nbsp; 1. บันทึกอนุมัติจำหน่ายทรัพย์สินโดยวิธีการแปรสภาพ${S.approvalNo ? ' เลขที่ ' + A(S.approvalNo, 30) : ''}<br>
+  <span style="padding-left:23mm">2. รายงานการขออนุมัติจำหน่ายมิเตอร์ชำรุด (ZAAR020)</span><br>
+  <span style="padding-left:23mm">3. บันทึกผลการคัดแยกจากคณะกรรมการสอบหาข้อเท็จจริง</span>
+  <div style="margin-top:2mm">เรียน&nbsp;&nbsp; ผจก. ${A(O.branch, 45)}</div>
+  <div class="ind" style="margin-top:1mm">ผมต./ผบต. ${A(O.branch, 34)} ขออนุมัตินำส่งมิเตอร์ชำรุดไม่อยู่ในเงื่อนไขการรับประกัน ซึ่งเป็นมิเตอร์ชำรุดที่สามารถนำไปซ่อมสร้างได้ ให้ กมต.หรือศูนย์ซ่อมและทดสอบมิเตอร์ จำนวน ${A(ms.length, 18)} เครื่อง โดยมีรายละเอียดดังนี้</div>
+  <table class="g" style="font-size:14px;margin-top:2mm"><colgroup><col style="width:13mm"><col><col style="width:25mm"><col style="width:27mm"><col style="width:36mm"></colgroup>
+   <tr><th>ลำดับ</th><th>รายการ</th><th>กฟฟ. จัดส่ง<br>(เครื่อง)</th><th>กมต. รับมิเตอร์<br>(เครื่อง)</th><th>ไม่เข้าเงื่อนไข<br>ส่งคืน กฟฟ. (เครื่อง)</th></tr>${rows}</table>
+  <div style="padding-left:84mm;margin-top:4mm;line-height:1.9;white-space:nowrap">ลงชื่อ ${B(55)}<br><span style="padding-left:6mm">(${V(O.head, 44)}) ตำแหน่ง ${B(14)}</span></div>
+  <div class="box2" style="font-size:14px;line-height:1.65"><div>- อนุมัติ.<br>- เรียน อก.ม.ต.<br><span style="padding-left:12mm">เพื่อโปรดทราบและดำเนินการต่อไป</span><br><br>ลงชื่อ ${B(45)}<br><span style="padding-left:8mm">(${V(O.mgr, 45)})</span><br><span style="padding-left:8mm">ผจก. ${A(O.branch, 34)}</span></div>
+  <div>- เลขที่ กมต.(${B(10)}/${B(10)})<br>- เรียน&nbsp; ผจก. ${B(30)}<br><span style="padding-left:12mm">คณะกรรมการแปรสภาพ ได้รับมิเตอร์ทั้งหมด จำนวน ${B(14)} เครื่อง สามารถนำไปแยกส่วนทำความสะอาดและซ่อมสร้างใหม่ (Rebuild) ได้ จำนวน ${B(14)} เครื่อง ไม่สามารถนำไปซ่อมสร้างใหม่ได้จำนวน ${B(14)} เครื่อง</span><br><span style="padding-left:12mm">จึงเรียนมาเพื่อโปรดทราบและดำเนินการในส่วนเกี่ยวข้องต่อไป</span><br>
+  <div class="c">ลงชื่อ (${B(45)})<br>ตำแหน่ง ปฏิบัติงานแทน อก.มต.</div></div></div>
+  ${foot('', 'ข-๒-๒๔')}`;
+} },
+sort: { code: 'แนบแบบที่ ๒๔', name: 'รายงานผลการคัดแยกมิเตอร์', o: 'p', r() {
+  const ms = P.ms || [], G = [['ในประกัน', 'มิเตอร์ชำรุดระหว่างประกัน'], ['ซ่อมได้', 'มิเตอร์ชำรุดซ่อมได้'], ['ซ่อมไม่ได้', 'มิเตอร์ชำรุดซ่อมไม่ได้']];
+  const extra = ms.filter(m => !G.some(g => g[0] === m.result));
+  const sec = (g, i) => {
+    const L = ms.filter(m => m.result === g[0]), c = {};
+    L.forEach(m => { const k = [ph(m) ? ph(m) + ' เฟส ' + wire(m) + ' สาย' : (m.phase || ''), amp(m) ? 'ขนาด ' + amp(m) + ' แอมป์' : ''].filter(Boolean).join(' ') || 'ไม่ระบุขนาด'; c[k] = (c[k] || 0) + 1; });
+    const ks = Object.keys(c); if (!ks.length) ks.push('');
+    return `<div style="padding-left:24mm">${i + 1}.${g[1]} จำนวน ${A(L.length, 12)} เครื่อง (เอกสารแนบ)</div>` + ks.map((k, j) => `<div style="padding-left:32mm">${i + 1}.${j + 1} ${k ? 'มิเตอร์ ' + esc(k) : B(70)} <span style="float:right;width:44mm">จำนวน ${k ? A(c[k], 12) : B(12)} เครื่อง</span></div>`).join('');
+  };
+  const coms = (O.committee || []).concat(['', '', '']).slice(0, Math.max(3, (O.committee || []).length));
+  return `${logoL()}
+  <div class="row" style="margin-top:1mm"><div>จาก&nbsp;&nbsp; คณะกรรมการสอบหาข้อเท็จจริง</div><div style="width:68mm">ถึง&nbsp;&nbsp; ผจก.กฟฟ. ${A(short(), 30)}</div></div>
+  <div class="row"><div>เลขที่ ${V(O.docPrefix, 50)}</div><div style="width:68mm">วันที่ ${A(dLong(today()), 42)}</div></div>
+  เรื่อง&nbsp;&nbsp; รายงานผลการคัดแยกมิเตอร์<br>
+  <div style="margin-top:2mm">เรียน&nbsp;&nbsp; ผจก.กฟฟ. ${A(short(), 30)}</div>
+  <div class="ind" style="margin-top:2mm">ด้วย ผบต./ผมต. ได้ดำเนินการตัดกลับมิเตอร์จากการใช้งาน จำนวน ${A(ms.length, 14)} เครื่อง โดยคณะกรรมการได้คัดแยกตามรายละเอียดดังนี้</div>
+  <div style="line-height:2.05;margin-top:2mm">${G.map(sec).join('')}
+  ${extra.length ? `<div style="padding-left:24mm">4.อื่น ๆ (สภาพดี/หลักฐานคดี) จำนวน ${A(extra.length, 12)} เครื่อง (เอกสารแนบ)</div>` : ''}
+  <div style="padding-left:24mm">จึงเรียนมาเพื่อโปรดทราบและดำเนินการต่อไป</div></div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4mm;margin-top:8mm;padding-right:6mm">
+   ${coms.map((n, i) => `<div class="sig">(ลงชื่อ) ${B(52)} ${i === 0 ? 'ประธานกรรมการ' : 'กรรมการ'}<br>(${V(n, 52)})</div>`).join('')}</div>
+  ${foot(P.range ? 'คัดแยก ' + esc(P.range) : '', 'ข-๒-๒๔')}`;
+}, more() { // เอกสารแนบ: รายการ PEA No.
+  const ms = P.ms || []; if (!ms.length) return [];
+  const pages = []; for (let i = 0; i < ms.length; i += 30) pages.push(ms.slice(i, i + 30));
+  return pages.map((L, pi) => `<div class="c b" style="font-size:16px">เอกสารแนบ รายงานผลการคัดแยกมิเตอร์ ${pages.length > 1 ? '(' + (pi + 1) + '/' + pages.length + ')' : ''}</div>
+   <div class="c" style="margin-bottom:2mm">${esc(O.branch)} · ${esc(P.range || '')}</div>
+   <table class="g" style="font-size:13px"><tr><th>ลำดับ</th><th>PEA No.</th><th>ยี่ห้อ / เฟส / ขนาด</th><th>สาเหตุ / อาการ</th><th>ประกันถึง</th><th>ผลคัดแยก</th></tr>
+   ${L.map((m, i) => `<tr>${td(pi * 30 + i + 1, '')}${td(m.pea, '')}${td([m.brand, m.phase, m.size].filter(Boolean).join(' / '), '', 'w')}${td([m.cause, m.symptom].filter(Boolean).join(' / '), '', 'w')}${td(dmy(m.warranty), '')}${td(m.result, '')}</tr>`).join('')}</table>`);
+} },
+amr: { code: 'ผคต.กพร.-๐๑ ป.๖๒', name: 'แจ้งมิเตอร์ระบบ AMR และ/หรืออุปกรณ์ประกอบชำรุด', o: 'p', r() {
+  const ms = (P.ms && P.ms.length ? P.ms : [M0()]).slice(0, 2);
+  const blk = (m, n) => `<div style="margin-top:3mm">${thd(n)}.</div><table class="g" style="font-size:14.5px"><colgroup><col style="width:44mm"><col></colgroup>
+   <tr><td class="L">ชื่อผู้ใช้ไฟฟ้า</td>${m ? tdV(m.custName, 'w') : '<td contenteditable></td>'}</tr><tr><td class="L">บัญชีผู้ใช้ไฟฟ้า</td>${m ? tdV(m.ca, 'w') : '<td contenteditable></td>'}</tr>
+   <tr><td class="L">หมายเลขมิเตอร์</td>${m ? tdV(m.pea, 'w') : '<td contenteditable></td>'}</tr><tr><td class="L">รหัสพัสดุ</td>${m ? tdV(m.mat, 'w') : '<td contenteditable></td>'}</tr>
+   <tr><td class="L">รายการอุปกรณ์ที่ต้องการ</td><td class="L">${['มิเตอร์แรงสูง', 'มิเตอร์แรงต่ำ', 'โมเด็ม', 'ซิมการ์ด', 'ตู้แรงสูง', 'ตู้แรงต่ำ'].map(x => `<span class="ck" onclick="this.textContent=this.textContent?'':'✓'"></span>${x} `).join('')}</td></tr>
+   <tr><td class="L">สาเหตุการชำรุดเบื้องต้น</td>${m ? tdV([m.symptom, m.cause].filter(Boolean).join(' / '), 'w') : '<td contenteditable></td>'}</tr></table>`;
+  return `${logoL()}
+  <div class="row b" style="margin-top:1mm"><div>จาก <span style="font-weight:400">${A(O.branch, 46)}</span></div><div style="width:68mm">ถึง <span style="font-weight:400">กพร.</span></div></div>
+  <div class="row b"><div>เลขที่ <span style="font-weight:400">${V(O.docPrefix, 54)}</span></div><div style="width:68mm">วันที่ <span style="font-weight:400">${A(dLong(today()), 42)}</span></div></div>
+  <b>เรื่อง</b>&nbsp; แจ้งมิเตอร์ระบบ AMR และ/หรืออุปกรณ์ประกอบชำรุด<br>เรียน&nbsp; อก.พร.<br>
+  <div class="ind">กฟฟ. ${A(short(), 30)} ขอแจ้งมิเตอร์และ/หรืออุปกรณ์ประกอบชำรุด จำนวน ${A(ms.length, 10)} ราย ดังนี้</div>
+  ${blk(ms[0], 1)}${blk(ms[1], 2)}
+  <div class="ind" style="margin-top:2mm">จึงเรียนมาเพื่อโปรดทราบ และดำเนินการในส่วนที่เกี่ยวข้องต่อไป</div>
+  <div style="margin-top:12mm;font-size:13px;line-height:1.6">ชื่อแผนก ${V(O.dept || ('ผปร. ' + O.branch), 50)}<br>ชื่อผู้จัดทำข้อมูล ${V(O.maker, 50)}<br>เบอร์ติดต่อ ${V(O.tel, 40)}</div>
+  ${foot('', 'ข-๒-๒๕')}`;
+} },
+tt2: { code: 'มต.ตต.๒ ป.๕๙', name: 'บันทึกการตรวจสอบมิเตอร์', o: 'p', r() {
+  const m = M0(), d = dParts(m.removedAt);
+  return `${logoC()}<div class="c b u" style="margin:2mm 0 3mm">บันทึกการตรวจสอบมิเตอร์</div>
+  <div class="ind">ตามที่เจ้าหน้าที่ของการไฟฟ้าส่วนภูมิภาค ได้มาตรวจสอบมิเตอร์ ${V(m.kind, 26)} เฟส ${V(ph(m), 14)} สาย</div>
+  ${V(wire(m), 10)} โวลท์ ${V(volt(m), 14)} แอมป์ ${V(amp(m), 16)} ผลิตภัณฑ์ ${V(m.brand, 28)} หมายเลข พีอีเอ ${A(m.pea, 24)}<br>
+  หมายเลขเครื่อง ${V(m.serial, 26)} ใช้ร่วมกับ ซีที. ขนาด ${B(18)} แอมป์ วีที. ขนาด ${B(18)} โวลท์<br>
+  หม้อแปลงขนาด ${B(18)} เควีเอ. ซึ่งติดตั้งที่ ${V(m.custAddr, 36, 'w')} หมายเลขผู้ใช้ไฟฟ้า ${V(m.ca, 30)}<br>
+  ของข้าพเจ้าเมื่อ วันที่ ${V(d[0], 12)} เดือน ${V(d[1], 30)} พ.ศ. ${V(d[2], 16)} เวลา ${V(hm(m.createdAt), 16)} น. นั้น ข้าพเจ้าได้ร่วม<br>
+  ในการตรวจสอบครั้งนี้ด้วย ผลปรากฏว่า มีสภาพดังนี้
+  <div class="dl" contenteditable style="outline:none">${esc([m.symptom, m.note].filter(Boolean).join(' · '))}</div>
+  ${Array.from({ length: 6 }, () => '<div class="dl" contenteditable style="outline:none"></div>').join('')}
+  <div class="ind" style="margin-top:3mm">ในระหว่างร่วมกันตรวจสอบนั้น เจ้าหน้าที่ของการไฟฟ้าส่วนภูมิภาค มิได้ขู่เข็ญเรียกร้องหรือทำความเสียหาย แก่มิเตอร์ และทรัพย์สินอื่นใดของข้าพเจ้าแต่ประการใด ข้าพเจ้าได้ลงชื่อไว้เป็นหลักฐาน</div>
+  <div class="row" style="margin-top:4mm;line-height:2;font-size:14.5px"><div>(ลงชื่อ) ${B(48)} ผู้ใช้ไฟฟ้า/ผู้แทน<br><span style="padding-left:8mm">(${V(m.custName, 46)}) /ผู้ครอบครอง</span><br>บัตรประชาชน ${B(56)}<br><br>(ลงชื่อ) ${B(48)} พยาน<br><span style="padding-left:8mm">(${B(46)})</span></div>
+  <div>(ลงชื่อ) ${B(48)} ผู้ตรวจสอบ<br><span style="padding-left:8mm">(${V(m.removedBy, 46)})</span><br><br><br>(ลงชื่อ) ${B(48)} พยาน<br><span style="padding-left:8mm">(${B(46)})</span></div></div>
+  <div class="u b" style="margin-top:3mm">หมายเหตุ</div>
+  <div class="ind">ข้าพเจ้ายินดีไปพบผู้จัดการ การไฟฟ้า ${A(O.branch, 32)} ในวันที่ ${B(12)} เดือน ${B(24)} พ.ศ. ${B(14)} เวลา ๘.๓๐ น. ถึง ๑๖.๓๐ น. หากพ้นจากวันเวลาดังกล่าวแล้ว ข้าพเจ้ายินดีให้ดำเนินการตามระเบียบของการไฟฟ้าส่วนภูมิภาคต่อไป และได้รับสำเนาการตรวจสอบไว้แล้ว</div>
+  <div style="padding-left:50mm;margin-top:3mm;line-height:2">(ลงชื่อ) ${B(48)} ผู้ใช้ไฟฟ้า/ผู้แทน/ผู้ครอบครอง<br><span style="padding-left:12mm">(${V(m.custName, 55)})</span></div>
+  ${foot(thd('มต.ตต.๒ ป.๕๙'), 'ข-๒-๓๐')}`;
+} },
+tt3: { code: 'มต.ตต.๓ ป.๕๙', name: 'บันทึกรับรองการบรรจุหีบห่อของกลาง', o: 'p', r() {
+  const m = M0(), d = dParts(m.removedAt);
+  const item = `มิเตอร์ ${[m.brand, m.phase, m.size].filter(Boolean).join(' ')} หมายเลข PEA ${m.pea} จำนวน 1 เครื่อง`;
+  return `${logoC()}<div class="c b" style="line-height:1.5;margin-top:1mm">${V(O.addr, 110)}<br>โทรศัพท์ ${V(O.tel, 40)}</div>
+  <div class="c b u" style="margin:3mm 0">บันทึกรับรองการบรรจุหีบห่อของกลาง</div>
+  <div class="ind">ตามที่พนักงานการไฟฟ้าส่วนภูมิภาค ได้มาตรวจสอบมิเตอร์หมายเลข พีอีเอ ${A(m.pea, 34)}</div>
+  ซึ่งติดตั้งให้กับ ${V(m.custName, 78)} หมายเลขผู้ใช้ไฟฟ้า ${V(m.ca, 38)}<br>
+  การไฟฟ้า ${A(O.branch, 52)} เมื่อวันที่ ${V(d[0], 12)} เดือน ${V(d[1], 32)} พ.ศ. ${V(d[2], 16)}<br>
+  และได้ร่วมกับผู้ใช้ไฟฟ้าทำการบรรจุ ${A(item, 120, 'w')}<br>
+  <div class="dl">${A('ตราตะกั่วเดิมที่ฝาครอบมิเตอร์ จำนวน ... ดวง', 150, 'w')}</div>
+  ${Array.from({ length: 2 }, () => '<div class="dl"><span class="f m w" contenteditable style="min-width:150mm;border:0"></span></div>').join('')}
+  <div class="r">ลงในหีบห่อพร้อมกับปิดผนึกอย่างเรียบร้อย</div>
+  <div class="ind" style="margin-top:4mm">เพื่อเป็นการรับรองการบรรจุหีบห่อ จึงลงชื่อไว้เป็นหลักฐานร่วมกัน</div>
+  <div style="padding-left:30mm;line-height:2.05;margin-top:3mm">
+   (ลงชื่อ) ${B(60)} ผู้ใช้ไฟฟ้าหรือตัวแทน<br><span style="padding-left:10mm">(${V(m.custName, 58)})</span><br><br>
+   (ลงชื่อ) ${B(60)} พนักงานการไฟฟ้าส่วนภูมิภาค<br><span style="padding-left:10mm">(${V(m.removedBy, 58)})</span><br><br>
+   (ลงชื่อ) ${B(60)} เจ้าหน้าที่ตำรวจ สภอ. ${V(O.police || O.amp, 26)}<br><span style="padding-left:10mm">(${B(58)})</span><br><br>
+   (ลงชื่อ) ${B(60)} พยาน<br><span style="padding-left:10mm">(${B(58)})</span></div>
+  <div style="margin-top:6mm"><span class="u">หมายเหตุ</span> ให้เขียนรายละเอียดสิ่งของที่บรรจุ และลงชื่อรับรองในแบบฟอร์ม พร้อมเก็บสำเนาไว้เป็นหลักฐาน ทากาวด้านหลังบันทึกฉบับนี้แล้วปิดลงบนฝากล่อง เพื่อป้องกันการเปิดหีบห่อ</div>
+  ${foot(thd('มต.ตต.๓ ป.๕๙'), 'ข-๒-๓๑')}`;
+} }
+};
+
+/* ===== แสดงผล ===== */
+function render() {
+  const st = document.getElementById('stage'), F = FORMS[FID];
+  if (!P || !F) { st.innerHTML = '<div class="err">ไม่พบข้อมูลแบบฟอร์ม<br>เปิดจากหน้าโมดูลมิเตอร์อีกครั้ง</div>'; return; }
+  document.getElementById('ttl').textContent = F.code + ' · ' + F.name;
+  document.title = F.code + ' ' + F.name + (P.m && P.m.pea ? ' ' + P.m.pea : '');
+  document.getElementById('pageSize').textContent = `@page{size:A4 ${F.o === 'l' ? 'landscape' : 'portrait'};margin:0}`;
+  const pages = [F.r()].concat(F.more ? F.more() : []);
+  st.innerHTML = pages.map(h => `<div class="sheet ${F.o}">${h}</div>`).join('');
+  document.getElementById('thBtn').textContent = 'เลขไทย: ' + (TH ? 'เปิด' : 'ปิด');
+  fit();
+}
+function fit() {
+  const st = document.getElementById('stage');
+  document.querySelectorAll('.sheet').forEach(s => {
+    s.style.transform = ''; s.style.marginBottom = ''; s.style.marginRight = '';
+    const w = s.offsetWidth, k = Math.min(1, (st.clientWidth - 16) / w);
+    if (k < 1) { s.style.transform = `scale(${k})`; s.style.marginBottom = `-${s.offsetHeight * (1 - k)}px`; s.style.marginRight = `-${w * (1 - k)}px`; }
+  });
+}
+function unfit() { document.querySelectorAll('.sheet').forEach(s => { s.style.transform = ''; s.style.marginBottom = ''; s.style.marginRight = ''; }); }
+function toggleTH() { TH = !TH; try { localStorage.setItem('mt_form_th', TH ? '1' : '0'); } catch (e) {} render(); }
+function doPrint() { unfit(); setTimeout(() => { window.print(); }, 50); }
+window.addEventListener('beforeprint', unfit);
+window.addEventListener('afterprint', fit);
+window.addEventListener('resize', fit);
+render();
+</script>
+</body>
+</html>
