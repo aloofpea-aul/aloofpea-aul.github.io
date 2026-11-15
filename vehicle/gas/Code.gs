@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '17.1';
+const VERSION = '17.2';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -72,6 +72,7 @@ function doPost(e) {
     if (!me) return json_({ ok: false, error: 'unauthorized', message: 'รหัสพนักงาน/ชื่อ หรือรหัสผ่านไม่ถูกต้อง' });
     if (b.action === 'bootstrap') return json_(bootstrap_(me));
     if (b.action === 'photo') return json_({ ok: true, data: photo_(String(b.fileId || '')) });
+    if (b.action === 'stats') return json_({ ok: true, stats: stats_(me) });
     if (b.action === 'checks') return json_({ ok: true, rows: checksMonth_(String(b.carId || ''), String(b.ym || '')) });
 
     const fn = ACTIONS[b.action];
@@ -344,6 +345,86 @@ function bootstrap_(me) {
       by: String(r[M.h.By] || ''), mile: num_(r[M.h.Mile]) };
   });
   return { ok: true, version: VERSION, me: me, checkItems: CHECK_6103, vehicles: vehicles, logs: logs, bookings: bookings, maint: maint, at: iso_(new Date()) };
+}
+
+/* ====================================================================== *
+ *  สถิติ: แบบ A (ของฉัน) + แบบ B (ภาพรวมกองรถ)
+ * ====================================================================== */
+const LEVELS = [[0, 'มือใหม่'], [10, 'เริ่มคุ้นมือ'], [30, 'ผู้ใช้ประจำ'], [60, 'นักขับประจำ'], [120, 'มือโปร'], [250, 'ตำนานอ่าวลึก']];
+const CATS = [['แก้ไฟฟ้าขัดข้อง', /แก้ไฟ|แก้กระแส|ไฟดับ|ขัดข้อง/], ['ตรวจคำร้อง/ขยายเขต', /คำร้อง|ขยายเขต|ติดตั้งมิเตอร์|มิเตอร์/],
+  ['สำรวจ/ก่อสร้าง', /สำรวจ|ก่อสร้าง|ปักเสา|ตรวจงาน/], ['ช่วยงานหน่วยอื่น', /ช่วยงาน|กฟส\.|กฟจ\./], ['ประชุม/ราชการ', /ประชุม|ราชการ|ติดต่อ|ธนาคาร|เอกสาร|อบรม/]];
+
+function stats_(me) {
+  const now = new Date(), ym = Utilities.formatDate(now, TZ, 'yyyy-MM');
+  const C = table_(SH.CARS), L = table_(SH.LOGS);
+  const cars = C.rows.filter(function (r) { return r[C.h.ID] !== '' && r[C.h.Plate] !== ''; })
+    .map(function (r) { return { plate: String(r[C.h.Plate]), model: String(r[C.h.Model] || ''), key: np_(r[C.h.Plate]) }; });
+  const carKey = {}; cars.forEach(function (c) { carKey[c.key] = c; });
+  // เที่ยวที่ใช้ได้: ทะเบียนตรงกับรถจริง และไม่ใช่บัญชีทดสอบ
+  const trips = [];
+  L.rows.forEach(function (r) {
+    const d = parseDate_(r[L.h.Date]), u = String(r[L.h.User] || '').trim(), k = np_(r[L.h.Action]);
+    if (!d || !u || /ทดสอบ/.test(u) || !carKey[k]) return;
+    const s0 = Number(r[L.h.StartMile]) || 0, e0 = Number(r[L.h.EndMile]) || 0, st = String(r[L.h.Status] || '');
+    trips.push({ d: d, ym: Utilities.formatDate(d, TZ, 'yyyy-MM'), u: u, n: nm_(u), car: k, m: String(r[L.h.Detail] || ''),
+      km: e0 > s0 && e0 - s0 < 2000 ? e0 - s0 : 0, done: st === 'completed', hasKm: e0 > s0 });
+  });
+  const myN = nm_(me.name), mine = trips.filter(function (t) { return t.n === myN; });
+
+  /* ---------- แบบ A: ของฉัน ---------- */
+  const byUser = {};
+  trips.forEach(function (t) { (byUser[t.n] = byUser[t.n] || { name: t.u, trips: 0, km: 0, month: 0 }); byUser[t.n].trips++; byUser[t.n].km += t.km; if (t.ym === ym) byUser[t.n].month++; });
+  const users = Object.keys(byUser).map(function (k) { return byUser[k]; }).sort(function (a, b) { return b.trips - a.trips; });
+  const myTrips = mine.length, myKm = mine.reduce(function (a, t) { return a + t.km; }, 0);
+  const rank = myTrips ? users.filter(function (u) { return u.trips > myTrips; }).length + 1 : null;
+  let lv = 0; LEVELS.forEach(function (l, i) { if (myTrips >= l[0]) lv = i; });
+  const nextLv = LEVELS[lv + 1] || null;
+  let streak = 0, best = 0;                                // บันทึกไมล์คืนครบติดกัน
+  mine.filter(function (t) { return t.done; }).forEach(function (t) { streak = t.hasKm ? streak + 1 : 0; if (streak > best) best = streak; });
+  const fixes = mine.filter(function (t) { return CATS[0][1].test(t.m); }).length;
+  let checks = 0, books = 0;
+  try { const K = table_(SH.CHECK); checks = K.rows.filter(function (r) { return nm_(r[K.h.By]) === myN; }).length; } catch (e) {}
+  try { const B = table_(SH.BOOK); books = B.rows.filter(function (r) { return nm_(r[B.h.User]) === myN; }).length; } catch (e) {}
+  const badge = function (id, name, short, val, goal) { return { id: id, name: name, short: short, val: Math.min(val, goal), goal: goal, got: val >= goal }; };
+  const badges = [
+    badge('t50', 'ครบ 50 เที่ยว', '50', myTrips, 50), badge('t100', 'ครบ 100 เที่ยว', '100', myTrips, 100),
+    badge('k5', 'วิ่งครบ 5,000 กม.', '5k', myKm, 5000), badge('k10', 'วิ่งครบ 10,000 กม.', '10k', myKm, 10000),
+    badge('fix', 'ออกแก้ไฟ 10 ครั้ง', 'แก้ไฟ', fixes, 10), badge('mile', 'บันทึกไมล์คืนครบ 20 เที่ยวติด', 'ไมล์', best, 20),
+    badge('chk', 'ตรวจรถก่อนใช้ 10 ครั้ง', 'ตรวจ', checks, 10), badge('book', 'จองรถล่วงหน้า 5 ครั้ง', 'จอง', books, 5)];
+  const near = badges.filter(function (x) { return !x.got; }).sort(function (a, b) { return b.val / b.goal - a.val / a.goal; })[0] || null;
+  const monthDone = trips.filter(function (t) { return t.ym === ym && t.done; });
+  const board = users.filter(function (u) { return u.month > 0; }).sort(function (a, b) { return b.month - a.month; })
+    .map(function (u, i, arr) { return { name: u.name, trips: u.month, me: nm_(u.name) === myN, rank: arr.filter(function (x) { return x.month > u.month; }).length + 1 }; });
+
+  /* ---------- แบบ B: ภาพรวมกองรถ ---------- */
+  const fleet = function (list) {
+    const km = list.reduce(function (a, t) { return a + t.km; }, 0), us = {}, perCar = {}, cats = {}, hours = new Array(24).fill(0), dow = new Array(7).fill(0);
+    list.forEach(function (t) {
+      us[t.n] = 1; perCar[t.car] = (perCar[t.car] || 0) + 1; hours[t.d.getHours()]++; dow[t.d.getDay()]++;
+      const c = CATS.filter(function (x) { return x[1].test(t.m); })[0]; cats[c ? c[0] : 'อื่น ๆ'] = (cats[c ? c[0] : 'อื่น ๆ'] || 0) + 1;
+    });
+    return { trips: list.length, km: km, users: Object.keys(us).length, avgKm: (function () { const n = list.filter(function (t) { return t.km; }).length; return n ? Math.round(km / n) : 0; })(),
+      cars: cars.map(function (c) { return { plate: c.plate, model: c.model, trips: perCar[c.key] || 0 }; }).sort(function (a, b) { return b.trips - a.trips; }),
+      cats: CATS.map(function (x) { return { name: x[0], n: cats[x[0]] || 0 }; }).concat([{ name: 'อื่น ๆ', n: cats['อื่น ๆ'] || 0 }]),
+      peak: list.length ? Math.round((hours[8] + hours[9]) / list.length * 100) : 0,
+      weekday: list.length ? Math.round((dow[1] + dow[2] + dow[3] + dow[4] + dow[5]) / list.length * 100) : 0,
+      sat: dow[6], sun: dow[0] };
+  };
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1), k = Utilities.formatDate(d, TZ, 'yyyy-MM');
+    months.push({ ym: k, m: d.getMonth(), trips: trips.filter(function (t) { return t.ym === k; }).length });
+  }
+  const since60 = new Date(now.getTime() - 60 * 86400000);
+  const idle = cars.filter(function (c) { return !trips.some(function (t) { return t.car === c.key && t.d >= since60; }); }).map(function (c) { return c.plate; });
+  return {
+    from: trips.length ? iso_(trips[0].d) : '', to: iso_(now), ym: ym,
+    me: { name: me.name, trips: myTrips, km: myKm, rank: rank, team: users.length, level: lv + 1, levelName: LEVELS[lv][1],
+      nextAt: nextLv ? nextLv[0] : null, nextName: nextLv ? nextLv[1] : null, month: mine.filter(function (t) { return t.ym === ym; }).length,
+      badges: badges, near: near },
+    board: board, goal: { done: monthDone.filter(function (t) { return t.hasKm; }).length, total: monthDone.length },
+    all: fleet(trips), month: fleet(trips.filter(function (t) { return t.ym === ym; })), months: months, idle: idle
+  };
 }
 
 /** รถคันเดียวกันห้ามจองซ้อนเวลา (ไม่นับที่ไม่อนุมัติ/รับรถแล้ว และแถวที่กำลังแก้) */
