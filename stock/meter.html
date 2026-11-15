@@ -24,8 +24,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--pea);outline-offset:2px}
 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
-.app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;height:var(--appH,100dvh);background:var(--bg)}
-.top{background:var(--top);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px;flex:none}
+/* เลย์เอาต์แบบเดียวกับงานเวรแก้ไฟ: ทั้งหน้าเลื่อน · หัวติดบน · เมนูติดล่าง (position:fixed) */
+.app{min-height:100vh;display:flex;flex-direction:column;padding-bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+.top{background:var(--top);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px;flex:none;position:sticky;top:0;z-index:5}
 .top .logo{width:38px;height:38px;border-radius:10px;background:var(--gold);display:grid;place-items:center;flex:none}
 .top h1{font-size:17px;margin:0;font-weight:700;line-height:1.15}
 .top small{display:block;font-weight:400;color:#d9cfe0;font-size:12.5px}
@@ -33,11 +34,10 @@ button{cursor:pointer}
 .ibtn{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:10px;min-width:44px;height:44px;display:grid;place-items:center;position:relative;text-decoration:none}
 .ibtn .dot{position:absolute;right:7px;top:7px;width:9px;height:9px;border-radius:50%;background:#9b8fa3;border:2px solid var(--top)}
 .ibtn .dot.on{background:#4ade80}
-.main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.main{flex:1}
 .wrap{max-width:980px;margin:0 auto;padding:14px max(14px,env(safe-area-inset-left,0px)) 28px}
 /* เมนูล่างชิดขอบจอ (แบบแอปทั่วไป) — พื้นขาวต่อยาวลงใต้ขอบจอ กันแถบสีขาดบน iPhone */
-.bnav{flex:none;display:flex;position:relative;background:#fff;border-top:1px solid var(--line);padding:2px max(6px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px)}
-.bnav::after{content:'';position:absolute;left:0;right:0;top:100%;height:200px;background:#fff}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:#fff;border-top:1px solid var(--line);padding:2px max(6px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px)}
 .bnav button{flex:1;border:0;background:none;padding:6px 0 4px;color:var(--mute);font-size:12px;line-height:1.25;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:54px;position:relative;min-width:0;white-space:nowrap}
 .bnav button svg{padding:3px 14px;box-sizing:content-box;border-radius:14px;transition:background .15s}
 .bnav button.on{color:var(--pea);font-weight:700}
@@ -138,7 +138,7 @@ th.r,td.r{text-align:right;font-variant-numeric:tabular-nums}
 .toast.err{background:#9b1c1c}
 .toast.ok{background:#13633a}
 .sr{position:absolute;left:-9999px}
-.stick{position:sticky;bottom:0;margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;box-shadow:0 -4px 14px rgba(40,10,50,.06);z-index:2}
+.stick{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;box-shadow:0 -4px 14px rgba(40,10,50,.06);z-index:2}
 .labs{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .labs canvas,.labs img{width:min(300px,100%);height:auto;border:1px solid #d8d2df;border-radius:8px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .empty{text-align:center;padding:36px 10px;color:var(--mute)}
@@ -178,21 +178,8 @@ details.more summary{cursor:pointer;color:var(--pea);font-weight:600;font-size:1
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script>
-/* iOS (ติดตั้งเป็นแอปบนหน้าจอโฮม) บางรุ่นให้ความสูงหน้าเว็บสั้นกว่าจอจริง เมนูล่างจึงลอย — ยืดให้เต็มจอ */
-(function () {
-  var sa = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-  if (!sa) return;
-  function fit() {
-    var h = window.innerHeight, sh = (window.innerWidth > window.innerHeight) ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-    if (sh - h > 8 && sh - h < 120) document.documentElement.style.setProperty('--appH', sh + 'px');
-    else document.documentElement.style.removeProperty('--appH');
-  }
-  fit(); addEventListener('resize', fit); addEventListener('orientationchange', function () { setTimeout(fit, 300); });
-})();
-</script>
 <script src="vendor/qrcode.js?v=1.4.4"></script>
 <script src="vendor/niimbot.js?v=2.6.0"></script>
-<script src="meter.js?v=1.1.2"></script>
+<script src="meter.js?v=1.1.3"></script>
 </body>
 </html>

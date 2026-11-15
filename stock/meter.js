@@ -1241,7 +1241,7 @@ function render() {
   stopCam();
   ({ intake: viewIntake, sort: viewSort, count: viewCount, ship: viewShip }[UI.tab] || viewHome)();
 }
-function go(t) { UI.tab = t; $$('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#main').scrollTop = 0; SCAN_HANDLER = null; render(); }
+function go(t) { UI.tab = t; $$('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); window.scrollTo(0, 0); SCAN_HANDLER = null; render(); }
 $$('.bnav button').forEach(b => b.onclick = () => { if (b.dataset.t === 'ship') UI.shipSel = null; go(b.dataset.t); });
 $('#reload').onclick = () => load();
 $('#prnBtn').onclick = printerSheet;
