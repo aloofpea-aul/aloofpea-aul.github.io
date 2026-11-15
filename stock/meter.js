@@ -509,13 +509,13 @@ function editSheet(m) {
     <label class="lab" for="ePol">เลขที่ใบแจ้งความ</label><input class="inp" id="ePol" value="${esc(m.police)}">
     <details class="more"${m.custName || m.newPea ? ' open' : ''}><summary>ข้อมูลสำหรับแบบฟอร์ม</summary>${formFields(m)}</details>
     <label class="lab" for="eNote">หมายเหตุ</label><textarea class="inp" id="eNote">${esc(m.note)}</textarea>
-    <label class="lab">เพิ่มรูปถ่าย</label><input type="file" accept="image/*" capture="environment" multiple id="ePh">
+    <label class="lab">เพิ่มรูปถ่าย</label>${photoPicker('ePh')}
     <button class="btn p blk" style="margin-top:14px" id="eGo">บันทึก</button>`);
-  bindSpec.cb = null; bindSpec();
+  bindSpec.cb = null; bindSpec(); bindPicker('ePh');
   $('#eGo').onclick = async () => {
     const b = $('#eGo'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก';
     try {
-      const add = await uploadPhotos($('#ePh').files, m.pea);
+      const add = await uploadPhotos(picked('ePh'), m.pea);
       const f = Object.assign(readSpec(), readFormFields(), { wo: $('#eWo').value, ca: $('#eCa').value, lastUnit: $('#eUnit').value, sloc: $('#eSloc').value, symptom: $('#eSym').value, police: $('#ePol').value, note: $('#eNote').value });
       if (add.length) f.addPhotos = add;
       const j = await api('meterUpdate', { pea: m.pea, fields: f }); setMeter(j.meter); toast('บันทึกแล้ว', 'ok'); openMeter(m.pea); render();
@@ -543,6 +543,23 @@ async function shrink(file) {
   c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.8);
 }
+/* ===== เลือกรูป: ให้ผู้ใช้เลือกเองว่าจะเปิดกล้องหรือเลือกจากคลังภาพ/ไฟล์ ===== */
+const PICK = {};
+function photoPicker(id) {
+  PICK[id] = [];
+  return `<div class="pick" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-pk="${id}Cam">📷 ถ่ายรูป</button><button type="button" class="btn sm" data-pk="${id}Gal">🖼 เลือกจากคลังภาพ / ไฟล์</button></div>
+    <input type="file" accept="image/*" capture="environment" id="${id}Cam" hidden><input type="file" accept="image/*" multiple id="${id}Gal" hidden>
+    <div class="photos" id="${id}Prev" style="margin-top:6px"></div>`;
+}
+function bindPicker(id, max) {
+  max = max || 6;
+  const draw = () => { const box = $('#' + id + 'Prev'); if (!box) return; box.innerHTML = PICK[id].map((f, i) => `<span style="position:relative;display:inline-block"><img src="${URL.createObjectURL(f)}" alt="รูปที่เลือก ${i + 1}"><button type="button" data-rm="${i}" aria-label="เอารูปออก" style="position:absolute;top:2px;right:2px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:15px;line-height:26px;padding:0">×</button></span>`).join(''); $$('#' + id + 'Prev [data-rm]').forEach(b => b.onclick = () => { PICK[id].splice(Number(b.dataset.rm), 1); draw(); }); };
+  ['Cam', 'Gal'].forEach(k => { const inp = $('#' + id + k); if (!inp) return;
+    inp.onchange = () => { Array.from(inp.files).forEach(f => { if (PICK[id].length < max) PICK[id].push(f); }); if (inp.files.length && PICK[id].length >= max) toast('แนบได้สูงสุด ' + max + ' รูป'); inp.value = ''; draw(); }; });
+  $$('[data-pk^="' + id + '"]').forEach(b => b.onclick = () => $('#' + b.dataset.pk).click());
+  draw();
+}
+const picked = id => PICK[id] || [];
 async function uploadPhotos(files, pea) {
   const ids = [];
   for (const f of Array.from(files || []).slice(0, 6)) { const data = await shrink(f); const j = await api('meterPhoto', { pea, data }); ids.push(j.id); }
@@ -631,7 +648,7 @@ function viewField() {
     <details class="more" open><summary>ข้อมูลตัวมิเตอร์ (ใช้แนะนำผลคัดแยก)</summary>${meterSpecFields({})}</details>
     <details class="more"><summary>ข้อมูลสำหรับแบบฟอร์ม มต.15 / มต.ตม.4 / มต.ทม.7 (ถ้ามี)</summary>${formFields({})}</details>
     <div id="fPolWrap" hidden><label class="lab r" for="fPol">เลขที่ใบแจ้งความ *</label><input class="inp" id="fPol" placeholder="เลขที่/วันที่ สถานีตำรวจ"></div>
-    <label class="lab" id="fPhLab">รูปถ่าย (มิเตอร์ + จุดติดตั้ง)</label><input type="file" accept="image/*" capture="environment" multiple id="fPh"><div class="photos" id="fPhPrev" style="margin-top:6px"></div>
+    <label class="lab" id="fPhLab">รูปถ่าย (มิเตอร์ + จุดติดตั้ง)</label>${photoPicker('fPh')}
     <label class="lab" for="fNote">หมายเหตุ</label><textarea class="inp" id="fNote" placeholder="รายละเอียดเพิ่มเติม"></textarea>
     <div class="stick"><button class="btn grow" id="fSave">บันทึก</button><button class="btn p grow" id="fSavePrint" style="flex:1.6">บันทึก + พิมพ์ฉลาก</button></div>`;
   bindScan('fPea', c => { $('#fPea').value = peaOf(c) || c; checkPea(); });
@@ -640,7 +657,7 @@ function viewField() {
   $$('#fJob .chip').forEach(b => b.onclick = () => { $$('#fJob .chip').forEach(x => x.classList.remove('on')); b.classList.add('on'); FORM.job = b.dataset.v; fInfo(); });
   $$('[data-c]').forEach(b => b.onclick = () => { const on = !b.classList.contains('on'); $$('[data-c]').forEach(x => x.classList.remove('on')); if (on) { b.classList.add('on'); FORM.cause = b.dataset.c; FORM.causeGroup = b.dataset.g; } else { FORM.cause = ''; FORM.causeGroup = ''; } fInfo(); });
   $('#fSym').onchange = fInfo; bindSpec.cb = fInfo; bindSpec();
-  $('#fPh').onchange = () => { const box = $('#fPhPrev'); box.innerHTML = ''; Array.from($('#fPh').files).slice(0, 6).forEach(f => { const i = document.createElement('img'); i.src = URL.createObjectURL(f); i.alt = 'รูปที่เลือก'; box.appendChild(i); }); };
+  bindPicker('fPh');
   $('#fSave').onclick = () => saveField(false);
   $('#fSavePrint').onclick = () => saveField(true);
   if (pre) { $('#fPea').value = pre; checkPea(); }
@@ -677,12 +694,12 @@ async function saveField(andPrint) {
   const lost = FORM.job === 'สูญหาย';
   if (!$('#fWo').value.trim() && !lost) { toast('กรอกเลขใบสั่งงาน (ข้อ 52, 65, 66)', 'err'); $('#fWo').focus(); return; }
   const needPhoto = lost || FORM.cause === 'ภัยธรรมชาติ' || FORM.cause === 'เพลิงไหม้ (วางเพลิง/การกระทำ)';
-  if (needPhoto && !$('#fPh').files.length) { toast('กรณีนี้ต้องแนบรูปถ่าย', 'err'); return; }
+  if (needPhoto && !picked('fPh').length) { toast('กรณีนี้ต้องแนบรูปถ่าย', 'err'); return; }
   if (!$('#fPolWrap').hidden && !$('#fPol').value.trim()) { toast('กรอกเลขที่ใบแจ้งความ', 'err'); $('#fPol').focus(); return; }
   const btns = [$('#fSave'), $('#fSavePrint')]; btns.forEach(b => b.disabled = true);
   const orig = $('#fSavePrint').textContent; $('#fSavePrint').innerHTML = '<span class="spin"></span> กำลังบันทึก';
   try {
-    const photos = await uploadPhotos($('#fPh').files, pea);
+    const photos = await uploadPhotos(picked('fPh'), pea);
     const rec = Object.assign({ pea, wo: $('#fWo').value.trim(), ca: $('#fCa').value.trim(), job: FORM.job, causeGroup: FORM.causeGroup, cause: FORM.cause, symptom: $('#fSym').value,
       lastUnit: $('#fUnit').value.trim(), removedAt: $('#fDate').value, police: $('#fPol').value.trim(), note: $('#fNote').value.trim(), photos, sloc: UI.recvSloc }, readSpec(), readFormFields());
     const j = await api('meterIntake', { rec });
@@ -974,9 +991,12 @@ function openReport(title, body) {
   <style>@page{size:A4;margin:14mm 12mm}body{font-family:'Sarabun',sans-serif;font-size:14px;color:#000;margin:0;padding:16px}h1{font-size:19px;text-align:center;margin:0 0 4px}h2{font-size:16px;margin:16px 0 6px}.c{text-align:center}.m{color:#333;font-size:13px}
   table{border-collapse:collapse;width:100%;margin-top:6px}th,td{border:1px solid #000;padding:4px 6px;font-size:12.5px;vertical-align:top}th{background:#eee}td.r,th.r{text-align:right}
   .sig{display:flex;flex-wrap:wrap;gap:24px 40px;justify-content:space-around;margin-top:34px}.sig div{text-align:center;min-width:200px}.bar{position:sticky;top:0;background:#fff;padding:8px 0;margin-bottom:8px;border-bottom:1px solid #ccc}
-  .bar button{font:inherit;padding:8px 18px;border-radius:8px;border:1px solid #6a1b74;background:#6a1b74;color:#fff}@media print{.bar{display:none}body{padding:0}}</style></head>
-  <body><div class="bar"><button onclick="print()">พิมพ์ / บันทึก PDF</button></div>${body}</body></html>`);
+  .bar{display:flex;gap:8px;padding-top:calc(8px + env(safe-area-inset-top,0px))}.bar button{font:inherit;padding:8px 18px;border-radius:8px;border:1px solid #6a1b74;background:#6a1b74;color:#fff}.bar button.bk{background:#fff;color:#6a1b74}@media print{.bar{display:none}body{padding:0}}</style>
+  </head>
+  <body><div class="bar"><button class="bk" onclick="goBack()">‹ กลับ</button><button onclick="print()">พิมพ์ / บันทึก PDF</button></div>${body}</body></html>`);
   w.document.close();
+  const back = location.href.split('#')[0];
+  w.goBack = () => { try { w.close(); } catch (e) {} setTimeout(() => { try { if (w.history.length > 1) w.history.back(); else w.location.replace(back); } catch (e) {} }, 300); };
 }
 const sigs = names => `<div class="sig">${(names.length ? names : ['', '', '']).map((n, i) => `<div>ลงชื่อ ..................................................<br>(${esc(n || '..................................................')})<br>${i === 0 ? 'ประธานกรรมการ' : 'กรรมการ'}</div>`).join('')}</div>`;
 function reportMenu() {

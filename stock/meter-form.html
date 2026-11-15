@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>แบบฟอร์มมิเตอร์ – กฟส.อ่าวลึก</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
 :root{--top:#2a0f33;--pea:#6a1b74;--gold:#f2b33d;--auto:#e3effd;--autoB:#3b7bd8;--man:#fff4cc;--manB:#d9a400}
 *{box-sizing:border-box}
 html,body{margin:0;background:#ece8ef;font-family:'IBM Plex Sans Thai',sans-serif;color:#222}
-.bar{position:sticky;top:0;z-index:5;background:var(--top);color:#fff;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bar{position:sticky;top:0;z-index:5;background:var(--top);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .bar h1{font-size:15px;margin:0;font-weight:600;flex:1 1 220px}
 .bar button{font:inherit;font-size:13px;border:1px solid #ffffff50;background:#ffffff14;color:#fff;border-radius:8px;padding:7px 11px}
 .bar button.pri{background:var(--gold);color:var(--top);border-color:var(--gold);font-weight:600}
@@ -64,6 +64,7 @@ table.g td{text-align:center} table.g td.w,table.g td.L{text-align:left}
 </head>
 <body class="tint">
 <div class="bar">
+  <button onclick="goBack()" aria-label="กลับหน้ามิเตอร์">‹ กลับ</button>
   <h1 id="ttl">แบบฟอร์ม</h1>
   <button class="pri" onclick="doPrint()">🖨 พิมพ์ / บันทึก PDF</button>
   <button id="thBtn" onclick="toggleTH()">เลขไทย</button>
@@ -350,6 +351,7 @@ function fit() {
 }
 function unfit() { document.querySelectorAll('.sheet').forEach(s => { s.style.transform = ''; s.style.marginBottom = ''; s.style.marginRight = ''; }); }
 function toggleTH() { TH = !TH; try { localStorage.setItem('mt_form_th', TH ? '1' : '0'); } catch (e) {} render(); }
+function goBack() { try { window.close(); } catch (e) {} setTimeout(() => { if (history.length > 1) history.back(); else location.replace('meter.html'); }, 300); }
 function doPrint() { unfit(); setTimeout(() => { window.print(); }, 50); }
 window.addEventListener('beforeprint', unfit);
 window.addEventListener('afterprint', fit);
