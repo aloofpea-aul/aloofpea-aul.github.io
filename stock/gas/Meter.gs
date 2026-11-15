@@ -7,7 +7,8 @@
  *   ข้อ 76 การตรวจนับ (ZDMR101 + MB52) · ข้อ 79 รับ/เบิก Batch R · ข้อ 80–82 มิเตอร์ชำรุด/AMR/โมเด็ม · ข้อ 84 การบรรจุ
  * แอปเป็นเครื่องมือช่วยงาน: การบันทึกจริงยังทำในระบบ SAP (MM/DM) ตามระเบียบ
  *
- * ติดตั้ง: เพิ่มไฟล์นี้ในโปรเจ็กต์เดิม › Run setupMeter (ครั้งเดียว) › Deploy › Manage deployments › New version
+ * ติดตั้ง: ในโปรเจ็กต์ Apps Script จริง ไฟล์นี้วางต่อท้าย Code.gs (รหัส.gs) ในไฟล์เดียวกัน
+ *   › Run setupMeter (ครั้งเดียว ขอสิทธิ์ Drive สำหรับรูป) › Deploy › Manage deployments › New version (v2.1 = เวอร์ชัน 4)
  */
 
 const METER_VERSION = '1.0';
