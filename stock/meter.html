@@ -24,7 +24,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--pea);outline-offset:2px}
 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
-.app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;background:var(--bg)}
+.app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;height:var(--appH,100dvh);background:var(--bg)}
 .top{background:var(--top);color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px;flex:none}
 .top .logo{width:38px;height:38px;border-radius:10px;background:var(--gold);display:grid;place-items:center;flex:none}
 .top h1{font-size:17px;margin:0;font-weight:700;line-height:1.15}
@@ -35,10 +35,13 @@ button{cursor:pointer}
 .ibtn .dot.on{background:#4ade80}
 .main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 .wrap{max-width:980px;margin:0 auto;padding:14px max(14px,env(safe-area-inset-left,0px)) 28px}
-/* เมนูล่างแบบแคปซูลลอย (คล้าย LINE) — พื้นรอบเป็นสีเดียวกับหน้า จึงไม่เกิดแถบขาด/ล้นที่ขอบล่าง */
-.bnav{flex:none;display:flex;gap:2px;margin:6px max(12px,env(safe-area-inset-left,0px)) max(10px,calc(env(safe-area-inset-bottom,0px) - 10px));padding:5px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:30px;box-shadow:0 6px 22px rgba(42,15,51,.14)}
-.bnav button{flex:1;border:0;background:none;padding:6px 0 5px;color:var(--mute);font-size:12px;line-height:1.25;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:54px;position:relative;border-radius:24px;transition:background .15s,color .15s;min-width:0;white-space:nowrap}
-.bnav button.on{color:var(--pea);font-weight:700;background:#f1e6f4}
+/* เมนูล่างชิดขอบจอ (แบบแอปทั่วไป) — พื้นขาวต่อยาวลงใต้ขอบจอ กันแถบสีขาดบน iPhone */
+.bnav{flex:none;display:flex;position:relative;background:#fff;border-top:1px solid var(--line);padding:2px max(6px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px)}
+.bnav::after{content:'';position:absolute;left:0;right:0;top:100%;height:200px;background:#fff}
+.bnav button{flex:1;border:0;background:none;padding:6px 0 4px;color:var(--mute);font-size:12px;line-height:1.25;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:54px;position:relative;min-width:0;white-space:nowrap}
+.bnav button svg{padding:3px 14px;box-sizing:content-box;border-radius:14px;transition:background .15s}
+.bnav button.on{color:var(--pea);font-weight:700}
+.bnav button.on svg{background:#f1e6f4}
 .bnav .bd{position:absolute;top:4px;left:calc(50% + 6px);background:#c2410c;color:#fff;border-radius:9px;font-size:10.5px;padding:0 5px;line-height:16px;font-weight:700}
 @media (max-width:440px){.bnav button{font-size:11px}}
 @media (max-width:360px){.bnav button{font-size:10px}}
@@ -131,7 +134,7 @@ th.r,td.r{text-align:right;font-variant-numeric:tabular-nums}
 @media (min-width:760px){.sheet{border-radius:20px}}
 .sheet .x{float:right}
 .sheet h2{margin:2px 0 12px;font-size:19px}
-.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2a0f33;color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;z-index:90;display:none;max-width:92vw;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2a0f33;color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;z-index:90;display:none;max-width:92vw;text-align:center}
 .toast.err{background:#9b1c1c}
 .toast.ok{background:#13633a}
 .sr{position:absolute;left:-9999px}
@@ -175,8 +178,21 @@ details.more summary{cursor:pointer;color:var(--pea);font-weight:600;font-size:1
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* iOS (ติดตั้งเป็นแอปบนหน้าจอโฮม) บางรุ่นให้ความสูงหน้าเว็บสั้นกว่าจอจริง เมนูล่างจึงลอย — ยืดให้เต็มจอ */
+(function () {
+  var sa = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  if (!sa) return;
+  function fit() {
+    var h = window.innerHeight, sh = (window.innerWidth > window.innerHeight) ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+    if (sh - h > 8 && sh - h < 120) document.documentElement.style.setProperty('--appH', sh + 'px');
+    else document.documentElement.style.removeProperty('--appH');
+  }
+  fit(); addEventListener('resize', fit); addEventListener('orientationchange', function () { setTimeout(fit, 300); });
+})();
+</script>
 <script src="vendor/qrcode.js?v=1.4.4"></script>
 <script src="vendor/niimbot.js?v=2.6.0"></script>
-<script src="meter.js?v=1.1.1"></script>
+<script src="meter.js?v=1.1.2"></script>
 </body>
 </html>
