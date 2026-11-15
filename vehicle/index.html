@@ -882,7 +882,7 @@ function openCar(id){
     <label class="fld"><span>ยี่ห้อ / รุ่น</span><input id="cModel" value="${v?esc(v.model):''}" placeholder="เช่น TOYOTA Hilux Revo"></label>
     <div class="row2"><label class="fld"><span>เลขประจำรถ</span><input id="cFleet" value="${v?esc(v.fleet||''):''}" placeholder="เช่น อล.07" autocomplete="off"></label>
     <label class="fld"><span>แผนกที่ใช้รถ</span><input id="cDept" list="deptList" value="${v?esc(v.dept||''):''}" placeholder="เช่น ผปร." autocomplete="off"></label></div>
-    <datalist id="deptList">${(S.d.depts||[]).map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
+    <datalist id="deptList">${(S.d.depts||[]).filter((d,i,A)=>A.findIndex(x=>dn(x)===dn(d))===i).map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
     <label class="fld"><span>เลขไมล์ (กม.)</span><input id="cMile" type="number" inputmode="numeric" value="${v?v.mile:''}"></label>
     <label class="fld"><span>รูปรถ ${v?'(เลือกใหม่เพื่อเปลี่ยน)':'(ไม่บังคับ)'}</span><input id="cImg" type="file" accept="image/*" style="padding-top:12px"></label>
     <img id="cPrev" class="preview ${v&&v.image?'':'hide'}" src="${v?esc(v.image):''}" alt="">
