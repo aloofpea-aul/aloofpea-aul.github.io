@@ -20,7 +20,7 @@ const SPREADSHEET_ID = '';   // ชีตเก็บข้อมูล: setup �
 // โปรเจ็กต์ Apps Script: https://script.google.com/home/projects/1u-jmdU92q1pSOCRJLxBGrlW9vIQroS1WXuvOViijqUMQ5dZtaV-6WWbm/edit
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '2.0';   // ตรวจนับ + จัดหาให้ครบ
+const VERSION = '2.1';   // ตรวจนับ + จัดหาให้ครบ + โมดูลมิเตอร์ (Meter.gs)
 
 const CUR  = { name: 'ยอดปัจจุบัน', labels: ['คลังย่อย (SLoc)', 'รหัสพัสดุ', 'คำอธิบาย', 'แบทช์', 'ที่ใช้ได้', 'หน่วย', 'ระหว่างโอน', 'นำเข้าเมื่อ'] };
 const MOVE = { name: 'ความเคลื่อนไหว', labels: ['วันเวลา', 'คลังย่อย', 'รหัสพัสดุ', 'คำอธิบาย', 'หน่วย', 'ยอดเดิม', 'ยอดใหม่', 'เปลี่ยนแปลง', 'นำเข้าโดย'] };
@@ -61,8 +61,11 @@ function doPost(e) {
 
     if (b.action === 'bootstrap') return json_(bootstrap_(me));
     if (b.action === 'moves') return json_({ ok: true, moves: moves_(String(b.mat || '')) });
+    // โมดูลมิเตอร์ (Meter.gs)
+    if (b.action === 'meterBoot') return json_(meterBoot_(me));
+    if (b.action === 'meterGet') { const g = METER_ACTIONS.meterGet(b, me); g.ok = true; return json_(g); }
 
-    const fn = ACTIONS[b.action];
+    const fn = ACTIONS[b.action] || (typeof METER_ACTIONS !== 'undefined' ? METER_ACTIONS[b.action] : null);
     if (!fn) return json_({ ok: false, error: 'unknown action' });
     const lock = LockService.getScriptLock();
     lock.waitLock(25000);
@@ -338,6 +341,7 @@ function setup() {
   if (!getSetting_('slocs')) setSetting_('slocs', DEFAULT_SLOCS);
   const def = ss_().getSheetByName('Sheet1') || ss_().getSheetByName('ชีต1');
   if (def && def.getLastRow() === 0 && ss_().getSheets().length > 1) ss_().deleteSheet(def);
+  if (typeof setupMeter === 'function') setupMeter();
   UrlFetchApp.fetch(HUB_API + '?action=ping', { muteHttpExceptions: true });
   Logger.log('พร้อมใช้งาน — ชีต: ' + ss_().getUrl() + ' — Deploy เป็น Web app แล้วนำลิงก์ …/exec ไปใส่ในหน้าเว็บ');
 }

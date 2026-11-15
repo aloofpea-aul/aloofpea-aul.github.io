@@ -159,6 +159,7 @@ label.f{display:block}label.f>span{display:block;font-size:13px;color:var(--mute
     <button data-t="count"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2"/></svg>ตรวจนับ</button>
     <button data-t="restock"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l5 5v5h-2"/><path d="M3 7v10h2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/><path d="M9.5 17.5h5"/></svg>จัดหาให้ครบ</button>
     <button data-t="import"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg>นำเข้า SAP</button>
+    <button data-href="meter.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.5l3 2"/></svg>มิเตอร์</button>
   </nav>
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
@@ -752,7 +753,7 @@ function printReqs(list) {
 /* ---------------- โหลด / สลับหน้า ---------------- */
 function render() { ({ import: viewImport, count: viewCount, restock: viewRestock }[ST.tab] || viewStock)(); }
 function go(t) { ST.tab = t; document.querySelectorAll('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); render(); $('#main').scrollTop = 0; }
-document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => go(b.dataset.t));
+document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => b.dataset.href ? (location.href = b.dataset.href) : go(b.dataset.t));
 function setSub() {
   const ts = Object.values(DB.imports || {}).map(x => x.at).sort().pop();
   $('#sub').textContent = (LOCAL() ? 'โหมดทดลอง · ' : '') + 'Plant K040 · ' + (ts ? 'ยอด SAP ล่าสุด ' + thDate(ts) : 'ยังไม่มีข้อมูล');
