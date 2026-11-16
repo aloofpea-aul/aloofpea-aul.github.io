@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.9.0';
+const VERSION = '1.9.1';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -49,47 +49,79 @@ const iunit = c => DB.items[c]?.[1] ?? '';
 
 /* ---------- store ---------- */
 const LS = { jobs: 'ccs_jobs', prices: 'ccs_prices', cfg: 'ccs_cfg' };
+/* อ่าน localStorage แบบปลอดภัย — ถ้าข้อมูลเสีย เก็บสำเนาไว้แล้วเริ่มใหม่ ไม่ให้แอปขึ้นจอขาว */
+function lsRead(k, def) { const t = localStorage.getItem(k); if (!t) return def; try { const v = JSON.parse(t); return v && typeof v === 'object' ? v : def; } catch (e) { try { localStorage.setItem(k + '_broken_' + Date.now(), t); } catch (e2) {} console.warn('ข้อมูลเสีย', k); return def; } }
 const S = {
-  jobs: JSON.parse(localStorage.getItem(LS.jobs) || '{}'),
-  prices: JSON.parse(localStorage.getItem(LS.prices) || '{}'),
-  cfg: Object.assign({ gasUrl: DEFAULT_GAS, lineDiv: 1000, branch: 'กฟส.อ่าวลึก', addr: '', tel: '', manager: '', hvWire: '1020060101', lvWire: '1020070003', ohPct: 0, valid: 30, volt: '33' }, JSON.parse(localStorage.getItem(LS.cfg) || '{}'))
+  jobs: lsRead(LS.jobs, {}),
+  prices: lsRead(LS.prices, {}),
+  cfg: Object.assign({ gasUrl: DEFAULT_GAS, lineDiv: 1000, branch: 'กฟส.อ่าวลึก', addr: '', tel: '', manager: '', hvWire: '1020060101', lvWire: '1020070003', ohPct: 0, valid: 30, volt: '33' }, lsRead(LS.cfg, {}))
 };
 if (!S.cfg.gasUrl) S.cfg.gasUrl = DEFAULT_GAS;
-const saveLocal = k => localStorage.setItem(LS[k], JSON.stringify(S[k]));
+let quotaWarned = 0;
+const saveLocal = k => { try { localStorage.setItem(LS[k], JSON.stringify(S[k])); return true; } catch (e) { if (Date.now() - quotaWarned > 60000) { quotaWarned = Date.now(); setTimeout(() => toast('พื้นที่เก็บข้อมูลในเครื่องเต็ม — งานยังส่งขึ้น Google Sheet ได้ ควรสำรองข้อมูล/ลบงานเก่า', 6000), 0); } return false; } };
 let pushTimer = {};
 function saveJob(job) {
-  job.updated = Date.now(); S.jobs[job.id] = job; saveLocal('jobs');
+  job.updated = Date.now(); S.jobs[job.id] = job;
+  if (S.cfg.gasUrl) markDirty(job.id, true);
+  saveLocal('jobs');
   if (S.cfg.gasUrl) { markDirty(job.id, true); clearTimeout(pushTimer[job.id]); pushTimer[job.id] = setTimeout(() => pushJob(job.id), 1500); }
 }
 /* งานที่ยังไม่ได้ส่งขึ้น Sheet (เช่น ตอนไม่มีสัญญาณ) — ส่งให้เองเมื่อกลับมามีสัญญาณ */
 function dirtySet() { try { return new Set(JSON.parse(localStorage.getItem('ccs_dirty') || '[]')); } catch (e) { return new Set(); } }
-function markDirty(id, on) { const d = dirtySet(); on ? d.add(id) : d.delete(id); localStorage.setItem('ccs_dirty', JSON.stringify([...d])); }
-async function pushJob(id) { const j = S.jobs[id]; if (!j || !S.cfg.gasUrl || !navigator.onLine) return; try { await gas('saveJob', { job: j }); markDirty(id, false); } catch (e) {} }
-async function pushDirty() { for (const id of dirtySet()) await pushJob(id); }
+function markDirty(id, on) { const d = dirtySet(); on ? d.add(id) : d.delete(id); try { localStorage.setItem('ccs_dirty', JSON.stringify([...d])); } catch (e) {} }
+async function pushJob(id) { const j = S.jobs[id]; if (!j || !S.cfg.gasUrl || !navigator.onLine) return; const ver = j.updated; try { await gas('saveJob', { job: j }); if (S.jobs[id] && S.jobs[id].updated === ver) markDirty(id, false); } catch (e) {} }
+/* งานที่ลบตอนออฟไลน์ — ต้องส่งคำสั่งลบซ้ำจนสำเร็จ ไม่งั้นซิงค์แล้วงานจะกลับมา */
+const delQ = () => new Set(lsRead('ccs_deleted', []));
+function queueDel(id, on) { const d = delQ(); on ? d.add(id) : d.delete(id); try { localStorage.setItem('ccs_deleted', JSON.stringify([...d])); } catch (e) {} }
+async function pushDirty() {
+  for (const id of delQ()) { try { await gas('deleteJob', { id }); queueDel(id, false); } catch (e) {} }
+  for (const id of dirtySet()) await pushJob(id);
+  if (localStorage.getItem('ccs_prices_dirty')) await pushPrices();
+}
+async function pushPrices() { try { await gas('savePrices', { prices: S.prices }); localStorage.removeItem('ccs_prices_dirty'); } catch (e) {} }
 function savePrice(code, price) {
   if (price === '' || price == null || (DB.std && DB.std[code] != null && num(price) === DB.std[code])) delete S.prices[code]; else S.prices[code] = num(price);
   saveLocal('prices');
-  if (S.cfg.gasUrl) { clearTimeout(pushTimer.p); pushTimer.p = setTimeout(() => gas('savePrices', { prices: S.prices }).catch(() => {}), 1500); }
+  if (S.cfg.gasUrl) { localStorage.setItem('ccs_prices_dirty', '1'); clearTimeout(pushTimer.p); pushTimer.p = setTimeout(pushPrices, 1500); }
 }
+function fetchT(url, opt = {}, ms = 20000) { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), ms); return fetch(url, { ...opt, signal: ac.signal }).finally(() => clearTimeout(t)); }
 async function gas(action, body) {
-  const r = await fetch(S.cfg.gasUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, ...body }) });
+  const r = await fetchT(S.cfg.gasUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, ...body }) }, action === 'savePhoto' ? 60000 : 20000);
   const j = await r.json(); if (!j.ok) throw new Error(j.error || 'GAS error'); return j;
 }
 async function syncPull(silent) {
   if (!S.cfg.gasUrl) return;
   try {
-    const j = await (await fetch(S.cfg.gasUrl + '?action=list')).json();
+    const j = await (await fetchT(S.cfg.gasUrl + '?action=list', {}, 15000)).json();
     if (!j.ok) throw new Error(j.error);
-    let n = 0;
-    (j.jobs || []).forEach(rj => { const l = S.jobs[rj.id]; if (!l || (rj.updated || 0) > (l.updated || 0)) { S.jobs[rj.id] = rj; n++; } });
-    (j.deleted || []).forEach(id => delete S.jobs[id]);
-    if (j.prices) Object.assign(S.prices, j.prices);
+    let n = 0; const dq = delQ(), dirty = dirtySet();
+    (j.jobs || []).forEach(rj => {
+      if (!rj || !rj.id || dq.has(rj.id)) return;
+      const l = S.jobs[rj.id]; if (l && dirty.has(rj.id) && (l.updated || 0) >= (rj.updated || 0)) return;
+      if (!l || (rj.updated || 0) > (l.updated || 0)) {
+        fixJob(rj);
+        if (cur.job && cur.job.id === rj.id) { Object.keys(cur.job).forEach(k => delete cur.job[k]); Object.assign(cur.job, rj); S.jobs[rj.id] = cur.job; } else S.jobs[rj.id] = rj;
+        n++;
+      }
+    });
+    (j.deleted || []).forEach(id => { if (!(cur.job && cur.job.id === id && dirty.has(id))) delete S.jobs[id]; });
+    if (j.prices && !localStorage.getItem('ccs_prices_dirty')) { Object.keys(S.prices).forEach(k => { if (!(k in j.prices)) delete S.prices[k]; }); Object.assign(S.prices, j.prices); }
     saveLocal('jobs'); saveLocal('prices');
     if (!silent) toast(`ซิงค์แล้ว · อัปเดต ${n} งาน`);
   } catch (e) { if (!silent) toast('ซิงค์ไม่สำเร็จ: ' + e.message); }
 }
 
 /* ---------- job model ---------- */
+/* เติมฟิลด์ที่ขาดของงานเก่า/งานจาก Sheet กันแอปล่ม */
+function fixJob(j) {
+  if (!j || typeof j !== 'object') return j;
+  j.poles = Array.isArray(j.poles) ? j.poles : []; j.spans = Array.isArray(j.spans) ? j.spans : []; j.cust = j.cust || { n: '', a: '', t: '' };
+  j.poles.forEach(p => { p.sets = Array.isArray(p.sets) ? p.sets : []; p.items = Array.isArray(p.items) ? p.items : []; p.photos = Array.isArray(p.photos) ? p.photos : []; });
+  const ids = new Set(j.poles.map(p => p.id)); j.spans = j.spans.filter(s => s && ids.has(s.a) && ids.has(s.b));
+  if (j.volt == null) j.volt = '33'; if (j.phase == null) j.phase = 3; if (j.case == null) j.case = 0;
+  return j;
+}
+Object.values(S.jobs).forEach(fixJob);
 const STATUS = ['กำลังสำรวจ', 'รอถอดแบบ', 'ส่งใบเสนอราคาแล้ว', 'ชำระเงินแล้ว'];
 function newJob(kind = 'map') {
   return { id: uid(), kind, name: kind === 'quick' ? 'ประมาณราคาด่วน' : 'งานสำรวจใหม่', status: 0, cust: { n: '', a: '', t: '' }, place: '', reqNo: '', qNo: '',
@@ -245,7 +277,7 @@ function go(h) { location.hash = h; }
 function route() {
   const h = location.hash.replace(/^#\/?/, '') || 'home';
   const [v, id, sub] = h.split('/');
-  if (cur.map && v !== 'map') { cur.map.remove(); cur.map = null; }
+  if (cur.map) { try { cur.map.stop(); cur.map.off(); cur.map.remove(); } catch (e) {} cur.map = null; cur.gpsMk = null; }
   app.classList.toggle('full', v === 'map'); window.scrollTo(0, 0);
   if (v === 'home') return vHome();
   if (v === 'settings') return vSettings();
@@ -332,8 +364,10 @@ window.saveInfo = () => {
   saveJob(j); toast('บันทึกแล้ว'); go((j.kind === 'quick' ? 'list/' : 'map/') + j.id);
 };
 window.delJob = () => {
-  if (!confirm('ลบงานนี้ถาวร?')) return; const id = cur.job.id; delete S.jobs[id]; saveLocal('jobs');
-  if (S.cfg.gasUrl) gas('deleteJob', { id }).catch(() => {}); go('home');
+  if (!confirm('ลบงานนี้ถาวร?')) return; const job = cur.job, id = job.id;
+  (job.poles || []).forEach(p => (p.photos || []).forEach(ph => { IDB.del(ph.id).catch(() => {}); if (S.cfg.gasUrl && ph.up) gas('deletePhoto', { id: ph.id }).catch(() => {}); }));
+  delete S.jobs[id]; markDirty(id, false); saveLocal('jobs');
+  if (S.cfg.gasUrl) { queueDel(id, true); gas('deleteJob', { id }).then(() => queueDel(id, false)).catch(() => {}); } go('home');
 };
 
 /* ---------- สัญลักษณ์เสา: สีตามขนาด + หัวเสา ---------- */
@@ -350,12 +384,21 @@ const fH = h => +h ? (String(+h) + ' ม.') : '';
 const BASES = {
   longdo: { name: 'Longdo Map', desc: 'แผนที่ไทย ชื่อถนน ซอย สถานที่ภาษาไทย (เหมือนงานพาโทรล)', url: 'https://ms.longdo.com/mmmap/tile.php?key=' + LONGDO_KEY + '&proj=epsg3857&zoom={z}&x={x}&y={y}&HD=1', max: 20, attr: '© Longdo Map' },
   sat: { name: 'ภาพดาวเทียม', desc: 'ภาพถ่ายดาวเทียม Esri — ดูแนวต้นไม้ หลังคาบ้าน', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max: 19, attr: 'Esri' },
-  osm: { name: 'OpenStreetMap', desc: 'แผนที่สากล (สำรอง)', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: '© OpenStreetMap' }
+  osm: { name: 'OpenStreetMap', desc: 'แผนที่สากล (สำรอง)', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: '© OpenStreetMap' }
 };
 
 /* ---------- map ---------- */
 const mapState = { dmode: localStorage.getItem('ccs_dmode') || 'hand', lockM: +localStorage.getItem('ccs_lockm') || 40, straight: false, moving: null, tool: 'sel', kind: 'HV', sel: null, spanA: null, auto: true, layer: localStorage.getItem('ccs_layer') || 'longdo', history: [], net: true };
+/* กัน Leaflet error หลังปิดแผนที่ (แอนิเมชันซูม/วาด canvas ที่ค้างอยู่ทำงานหลัง map.remove) */
+function patchLeaflet() {
+  if (L.__ccsPatched) return; L.__ccsPatched = true;
+  const guard = (proto, fn, ok) => { const f = proto[fn]; if (f) proto[fn] = function () { if (!ok(this)) return; return f.apply(this, arguments); }; };
+  ['_onZoomTransitionEnd', '_move'].forEach(fn => guard(L.Map.prototype, fn, m => !!m._mapPane));
+  ['_redraw', '_update', '_updatePaths', '_draw'].forEach(fn => guard(L.Canvas.prototype, fn, r => !!r._ctx && !!r._map));
+}
 function vMap(job) {
+  patchLeaflet();
+  if (mapState.histJob !== job.id) { mapState.history = []; mapState.histJob = job.id; mapState.sel = null; mapState.spanA = null; mapState.moving = null; }
   const c = jobCounts(job);
   app.innerHTML = topbar(job.name, `${job.volt} kV ${job.phase} เฟส · กรณีที่ ${job.case + 1}`, '#home', `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
   <div class="mapwrap"><div id="map"></div>
@@ -401,14 +444,14 @@ window.setTool = t => { mapState.tool = t; mapState.spanA = null; mapState.movin
 function aimFrom(job) { const id = mapState.tool === 'span' ? mapState.spanA : mapState.sel; const p = id && poleById(job, id); return p && p.lat != null ? p : null; }
 // ---- ระยะเล็ง: ลากเอง / พิมพ์ระยะ (ล็อกระยะ) ----
 const M_LAT = 111320;
-function bearing(a, b) { return Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat); }
+function brRad(a, b) { return Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat); }
 function offsetLL(a, br, m) { return L.latLng(a.lat + m * Math.cos(br) / M_LAT, a.lng + m * Math.sin(br) / (M_LAT * Math.cos(a.lat * Math.PI / 180))); }
 function prevOf(job, from) { const sp = [...job.spans].reverse().find(x => x.a === from.id || x.b === from.id); const q = sp && poleById(job, sp.a === from.id ? sp.b : sp.a); return q && q.lat != null ? q : null; }
 function lockOn(job) { return ['pole', 'expole'].includes(mapState.tool) && mapState.dmode === 'type' && mapState.lockM > 0 && !mapState.moving; }
 function lockPoint(job, to) {
   const from = aimFrom(job); if (!from || !lockOn(job)) return to;
   const pv = mapState.straight && prevOf(job, from);
-  const br = pv ? bearing(pv, from) : (hav(from, to) < 0.5 ? 0 : bearing(from, to));
+  const br = pv ? brRad(pv, from) : (hav(from, to) < 0.5 ? 0 : brRad(from, to));
   return offsetLL(from, br, mapState.lockM);
 }
 function updateAim(job) {
@@ -442,8 +485,8 @@ window.toggleStraight = () => { const f = aimFrom(cur.job); if (!mapState.straig
 window.startMove = id => { const p = poleById(cur.job, id); if (!p || p.lat == null) return; mapState.moving = id; mapState.sel = id; cur.hover = null; drawMap(cur.job); renderSheet(cur.job); cur.map.invalidateSize(); cur.map.setView([p.lat, p.lng], Math.max(cur.map.getZoom(), 19), { animate: false }); updateAim(cur.job); };
 window.cancelMove = () => { mapState.moving = null; drawMap(cur.job); renderSheet(cur.job); cur.map.invalidateSize(); updateAim(cur.job); };
 function dropMove() { const j = cur.job, p = poleById(j, mapState.moving); if (!p) return cancelMove(); pushHist(j); const c = cur.map.getCenter(); p.lat = +c.lat.toFixed(7); p.lng = +c.lng.toFixed(7); mapState.moving = null; saveJob(j); drawMap(j); renderSheet(j); cur.map.invalidateSize(); updateAim(j); toast(`ย้าย ${p.label} แล้ว`); }
-function pushHist(job) { mapState.history.push(JSON.stringify({ poles: job.poles, spans: job.spans })); if (mapState.history.length > 30) mapState.history.shift(); }
-window.undo = () => { const h = mapState.history.pop(); if (!h) return toast('ไม่มีอะไรให้ย้อน'); const j = cur.job, o = JSON.parse(h); j.poles = o.poles; j.spans = o.spans; saveJob(j); drawMap(j); renderSheet(j); };
+function pushHist(job) { if (mapState.histJob !== job.id) { mapState.history = []; mapState.histJob = job.id; } mapState.history.push(JSON.stringify({ poles: job.poles, spans: job.spans })); if (mapState.history.length > 30) mapState.history.shift(); }
+window.undo = () => { const j = cur.job; if (!j || mapState.histJob !== j.id) { mapState.history = []; mapState.histJob = j && j.id; } const h = mapState.history.pop(); if (!h) return toast('ไม่มีอะไรให้ย้อน'); const o = JSON.parse(h); const now = new Map(j.poles.map(p => [p.id, p])); o.poles.forEach(p => { const n = now.get(p.id); if (n) p.photos = n.photos; }); j.poles = o.poles; j.spans = o.spans; fixJob(j); saveJob(j); drawMap(j); renderSheet(j); };
 function onMapClick(job, ll) {
   const t = mapState.tool;
   if (t !== 'pole' && t !== 'expole') { if (t === 'sel') { mapState.sel = null; drawMap(job); renderSheet(job); } return; }
@@ -460,7 +503,7 @@ function onPoleClick(job, p) {
   if (t === 'span') {
     if (!mapState.spanA) { mapState.spanA = p.id; mapState.sel = p.id; }
     else if (mapState.spanA !== p.id) {
-      if (job.spans.some(s => (s.a === mapState.spanA && s.b === p.id) || (s.b === mapState.spanA && s.a === p.id) && s.k === mapState.kind)) toast('มีช่วงสายนี้แล้ว');
+      if (job.spans.some(s => ((s.a === mapState.spanA && s.b === p.id) || (s.b === mapState.spanA && s.a === p.id)) && s.k === mapState.kind)) toast('มีช่วงสายนี้แล้ว');
       else { pushHist(job); job.spans.push(newSpan(job, mapState.spanA, p.id, mapState.kind)); saveJob(job); }
       mapState.spanA = p.id; mapState.sel = p.id;
     }
@@ -533,7 +576,8 @@ window.delPole = id => { const j = cur.job; if (!confirm('ลบเสานี�
 window.locate = silent => {
   if (!navigator.geolocation) return toast('อุปกรณ์ไม่รองรับ GPS');
   navigator.geolocation.getCurrentPosition(pos => {
-    const ll = [pos.coords.latitude, pos.coords.longitude]; cur.map?.setView(ll, 18);
+    if (!cur.map || !location.hash.startsWith('#map/')) return;
+    const ll = [pos.coords.latitude, pos.coords.longitude]; cur.map.setView(ll, 18);
     if (cur.gpsMk) cur.gpsMk.remove();
     cur.gpsMk = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#1A73E8', fillOpacity: 1 }).addTo(cur.map).bindTooltip(`GPS ±${Math.round(pos.coords.accuracy)} ม.`);
     if (!silent) toast(`GPS ±${Math.round(pos.coords.accuracy)} ม.`);
@@ -579,7 +623,7 @@ function loadNet() {
     if (d.status === 'fulfilled') { const acc = e.status === 'fulfilled' ? parseCsv(e.value) : []; NET.mvm = parseCsv(d.value).filter(x => +x.Lat && +x.Lon).map(x => ({ ...x, acc: acc.filter(y => y.Lat === x.Lat && y.Lon === x.Lon).map(y => y.CustomerAccount) })); }
     if (a.status === 'fulfilled') NET.lines = a.value; if (b.status === 'fulfilled') NET.poles = b.value;
     if (c.status === 'fulfilled') NET.trs = parseCsv(c.value).filter(x => +x.Lat && +x.Lon);
-    if (!NET.lines && !NET.poles) NET.err = 'โหลดข้อมูลระบบเดิมไม่ได้';
+    if (!NET.lines && !NET.poles) { NET.err = 'โหลดข้อมูลระบบเดิมไม่ได้'; NET.p = null; } else NET.err = null;
   });
   return NET.p;
 }
@@ -762,7 +806,7 @@ function openPicker({ job, pole, preset = 'set', after }) {
 }
 function setLabour(code, c) { const s = DB.sets[code]; return s ? s.i.reduce((a, [ic, q]) => a + labourOf(ic, q, c).lab, 0) : 0; }
 function showSet(code, job) {
-  const s = DB.sets[code]; const c = job?.case || 0;
+  const s = DB.sets[code]; const c = job?.case || 0; if (!s) return toast(`ไม่พบชุด ${code} ในฐานข้อมูล`);
   const prev = $('#modal'); prev && (prev.style.display = 'none');
   const m = document.createElement('div'); m.className = 'modal'; m.style.zIndex = 2100;
   m.innerHTML = `<div class="box"><div class="hd"><b>${code}</b><button class="x" aria-label="ปิด">×</button></div><div class="bd"><p class="b" style="margin-top:0">${esc(s.n)}</p>${DB.dwg[code] ? `<p style="margin-top:-6px"><a href="/pea-drawings/d/${DB.dwg[code]}" target="_blank" rel="noopener">ดูแบบประกอบในคลังแบบมาตรฐาน ↗</a></p>` : ''}<div class="scroll"><table class="tbl"><thead><tr><th>รหัส</th><th>รายการ</th><th class="r">จำนวน</th><th>หน่วย</th><th class="r">นำกลับ</th><th class="r">ค่าแรง</th></tr></thead><tbody>${s.i.map(([ic, q, r]) => `<tr><td class="code">${ic}</td><td>${esc(iname(ic))}</td><td class="r">${fq(q)}</td><td>${esc(iunit(ic))}</td><td class="r">${r ? fq(r) : '—'}</td><td class="r">${fm(labourOf(ic, q, c).lab)}</td></tr>`).join('')}</tbody></table></div><p class="kv b"><span>รวมค่าแรงชุดนี้ (กรณีที่ ${c + 1})</span><span>${fm(setLabour(code, c))}</span></p></div></div>`;
@@ -1097,7 +1141,8 @@ function vQuote(job) {
     </div>
   </div></div></div>${navbar(job, 'quote')}`;
   setPageSize('A4 portrait'); fitQuote(); setTimeout(fitQuote, 300); document.fonts && document.fonts.ready.then(fitQuote);
-  $$('.paper [contenteditable]').forEach(el => el.addEventListener('blur', () => {
+  $$('.paper [contenteditable]').forEach(el => { el._t0 = el.innerText; el.addEventListener('blur', () => {
+    if (el.innerText === el._t0) return; el._t0 = el.innerText;
     const t = el.innerText.trim().replace(/^\(|\)$/g, '');
     if (el.dataset.c) job.cust[el.dataset.c] = t;
     else if (el.dataset.j === 'terms') job.terms = el.innerText.replace(/^เงื่อนไข\s*/, '').trim();
@@ -1105,7 +1150,7 @@ function vQuote(job) {
     else if (el.dataset.k === 'manager') { S.cfg.manager = t; saveLocal('cfg'); }
     else if (el.dataset.k === 'addr') { S.cfg.addr = t; saveLocal('cfg'); }
     saveJob(job);
-  }));
+  }); });
 }
 function fitQuote() {
   const w = $('#pwrap'), p = $('#paper'); if (!w || !p) return;
@@ -1167,7 +1212,7 @@ window.importPrices = async f => {
 };
 window.exportPrices = () => { const ws = XLSX.utils.aoa_to_sheet([['รหัสพัสดุ', 'ชื่อ', 'หน่วย', 'ราคา'], ...Object.entries(S.prices).map(([c, p]) => [c, iname(c), iunit(c), p])]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'ราคาวัสดุ'); XLSX.writeFile(wb, 'ราคาวัสดุ.xlsx'); };
 window.backup = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ v: VERSION, jobs: S.jobs, prices: S.prices, cfg: S.cfg })], { type: 'application/json' })); a.download = `สำรอง_สำรวจออกแบบ_${new Date().toISOString().slice(0, 10)}.json`; a.click(); };
-window.restore = async f => { if (!f) return; try { const o = JSON.parse(await f.text()); Object.assign(S.jobs, o.jobs || {}); Object.assign(S.prices, o.prices || {}); saveLocal('jobs'); saveLocal('prices'); toast('กู้คืนแล้ว'); go('home'); } catch (e) { toast('ไฟล์ไม่ถูกต้อง'); } };
+window.restore = async f => { if (!f) return; try { const o = JSON.parse(await f.text()); const js = o.jobs || {}; Object.values(js).forEach(j => { fixJob(j); j.updated = Date.now(); S.jobs[j.id] = j; markDirty(j.id, true); queueDel(j.id, false); }); Object.assign(S.prices, o.prices || {}); if (o.prices) localStorage.setItem('ccs_prices_dirty', '1'); saveLocal('jobs'); saveLocal('prices'); pushDirty(); toast('กู้คืนแล้ว'); go('home'); } catch (e) { toast('ไฟล์ไม่ถูกต้อง'); } };
 
 /* ---------- ออฟไลน์ ---------- */
 function netBadge() { let b = $('#offb'); if (navigator.onLine) { b && b.remove(); return; } if (!b) { b = document.createElement('div'); b.id = 'offb'; b.textContent = 'ออฟไลน์ · งานและรูปเก็บในเครื่อง ส่งเองเมื่อมีสัญญาณ'; b.style.cssText = 'position:fixed;left:50%;top:calc(54px + env(safe-area-inset-top));transform:translateX(-50%);z-index:2500;background:#8A4B00;color:#fff;font-size:12px;font-weight:600;border-radius:12px;padding:3px 10px;white-space:nowrap;pointer-events:none'; document.body.appendChild(b); } }
@@ -1178,11 +1223,17 @@ if ('serviceWorker' in navigator) addEventListener('load', () => navigator.servi
 /* ---------- boot ---------- */
 (async function boot() {
   app.innerHTML = '<div class="empty" style="margin-top:40vh">กำลังโหลดฐานข้อมูลพัสดุ…</div>';
-  try { await loadData(); } catch (e) { app.innerHTML = `<div class="empty" style="margin-top:30vh">โหลดฐานข้อมูลไม่สำเร็จ (${esc(e.message)})<br>ตรวจว่ามีโฟลเดอร์ data/ อยู่ข้าง index.html</div>`; return; }
+  try { await loadData(); } catch (e) { app.innerHTML = `<div class="empty" style="margin-top:30vh">โหลดฐานข้อมูลไม่สำเร็จ (${esc(e.message)})<br>ถ้าใช้ครั้งแรก ต้องเปิดตอนมีสัญญาณ 1 ครั้งก่อน<br><button class="btn p" style="margin-top:12px" onclick="location.reload()">ลองใหม่</button></div>`; return; }
   netBadge();
-  if (S.cfg.gasUrl && navigator.onLine) await syncPull(true);
   route();
-  setTimeout(() => { pushDirty(); Object.values(S.jobs).forEach(j => uploadPending(j)); }, 3000);
+  /* ซิงค์เบื้องหลัง ไม่ให้หน้าค้างตอนสัญญาณอ่อน: ส่งของค้างก่อน แล้วค่อยดึงของใหม่ */
+  if (S.cfg.gasUrl && navigator.onLine) {
+    await pushDirty();
+    await syncPull(true);
+    const v = (location.hash.replace(/^#\/?/, '') || 'home').split('/')[0];
+    if (v === 'home') route();
+    setTimeout(() => Object.values(S.jobs).forEach(j => uploadPending(j)), 2000);
+  }
 })();
 
 // iOS: ความสูงจอตอนเปิดแอปครั้งแรกบางครั้งยังไม่ถูก — วัดใหม่หลังโหลดเสร็จ

@@ -24,6 +24,7 @@ function wireShort(code) {
 
 async function vPlan(job) {
   await Promise.all([loadNet(), planOpts().meters ? loadLv() : null]);
+  if (location.hash !== '#plan/' + job.id) return;
   const o = planOpts(), [PW, PH] = PAPER[o.paper] || PAPER.A4;
   const pts = job.poles.filter(p => p.lat != null);
   app.innerHTML = topbar('ผังงาน', job.name, `#bom/${job.id}`, `<button class="ib" aria-label="พิมพ์ผัง" onclick="window.print()">⎙</button>`) + `

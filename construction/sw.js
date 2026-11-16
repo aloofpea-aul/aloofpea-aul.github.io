@@ -5,26 +5,32 @@
  *  - ภาพแผนที่ (Longdo / ดาวเทียม / OSM): เก็บทุกแผ่นที่เคยเปิดดู + ที่กด "บันทึกแผนที่บริเวณนี้"
  *  - Google Apps Script: ไม่ยุ่ง (แอปมีคิวรอส่งของตัวเอง)
  */
-const V = 'ccs-v1.9.0';
+const V = 'ccs-v1.9.1';
 const APP = 'ccs-app-' + V, DATA = 'ccs-data', TILES = 'ccs-tiles';
-const SHELL = ['./', './index.html', './app.js?v=1.9.0', './plan.js?v=1.9.0', './manifest.json', './guide.html', './icon.svg?v=1', './icon-192.png', './apple-touch-icon.png?v=1'];
-const DATA_FILES = ['./data/items.json?v=1.9.0', './data/sets.json?v=1.9.0', './data/labour.json?v=1.9.0', './data/drawings.json?v=1.9.0', './data/stdprice.json?v=1.9.0',
+const SHELL = ['./', './index.html', './app.js?v=1.9.1', './plan.js?v=1.9.1', './manifest.json', './guide.html', './icon.svg?v=1', './icon-192.png', './apple-touch-icon.png?v=1'];
+const DATA_FILES = ['./data/items.json?v=1.9.1', './data/sets.json?v=1.9.1', './data/labour.json?v=1.9.1', './data/drawings.json?v=1.9.1', './data/stdprice.json?v=1.9.1',
   '/sld-ala/mv-lines.json', '/sld-ala/poles.json', '/sld-ala/gis_transformers.csv',
   '/sld-ala/gis_mv_meters.csv', '/sld-ala/lvmeters.json', '/sld-ala/gis_mv_meter_accounts.csv'];
 const TILE_HOST = /(^|\.)(ms\.longdo\.com|tile\.openstreetmap\.org|server\.arcgisonline\.com)$/;
 const LIB_HOST = /(^|\.)(unpkg\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|api\.longdo\.com)$/;
-const MAX_TILES = 6000;
+const MAX_TILES = 8000;
 
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil((async () => {
-    const a = await caches.open(APP); await Promise.all(SHELL.map(u => a.add(u).catch(() => {})));
+    /* ไฟล์หลักต้องโหลดครบ ไม่งั้นยกเลิกการอัปเดต (ใช้เวอร์ชันเดิมที่ใช้งานได้ต่อ) */
+    const a = await caches.open(APP); await a.addAll(SHELL.slice(1, 4));
+    await Promise.all(SHELL.map(u => a.add(u).catch(() => {})));
     const d = await caches.open(DATA); await Promise.all(DATA_FILES.map(u => d.add(u).catch(() => {})));
   })());
 });
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     for (const n of await caches.keys()) if (n.startsWith('ccs-app-') && n !== APP) await caches.delete(n);
+    /* ลบไฟล์ข้อมูลเวอร์ชันเก่า (?v= ไม่ตรง) และตัดภาพแผนที่ส่วนเกิน */
+    const d = await caches.open(DATA), ver = 'v=' + V.replace('ccs-v', '');
+    for (const r of await d.keys()) { const u = new URL(r.url); if (u.pathname.includes('/construction/data/') && u.search && !u.search.includes(ver)) await d.delete(r); }
+    await trim(await caches.open(TILES));
     await self.clients.claim();
   })());
 });
@@ -75,6 +81,7 @@ self.addEventListener('message', e => {
       }));
       port && port.postMessage({ done, fail, total: urls.length });
     }
+    await trim(c);
     port && port.postMessage({ done, fail, total: urls.length, end: true });
   })());
 });
