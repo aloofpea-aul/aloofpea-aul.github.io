@@ -86,12 +86,55 @@ const OBSOLETE_SIZES = ['3(6) A', '10(20) A', '10(30) A', '20(40) A'];
 const SAP = {
   '262': 'MIGO 262 รับคืนเข้าคลังย่อย Batch R (ข้อ 79.1)', '344': 'MIGO 344 ระงับใช้ Block Stock (ข้อ 80.1.1)', '343': 'MIGO 343 ปลด Block ก่อนส่งเคลม (ข้อ 80.2.3)',
   '349': 'MIGO 349 เปลี่ยนเป็น QI เสียซ่อมได้ (ข้อ 80.4.3)', 'ZARR020': 'จัดทำรายงาน ZARR020 แนบขออนุมัติจำหน่าย (ข้อ 80.3.3/80.4.3)',
-  'ZMME024': 'ZMME024 ตัดจำหน่ายในระบบ MM (ข้อ 80.3.7/80.4.9)', '261': 'MIGO 261 เบิกใช้ Batch R อ้างอิงใบสั่งงาน (ข้อ 79.2)', '301': 'MIGO 301 โอนระหว่างที่จัดเก็บ'
+  'ZMME024': 'ZMME024 ตัดจำหน่ายในระบบ MM (ข้อ 80.3.7/80.4.9)', '261': 'MIGO 261 เบิกใช้ Batch R อ้างอิงใบสั่งงาน (ข้อ 79.2)', '301': 'MIGO 301 โอนระหว่างที่จัดเก็บ',
+  // หลักฐานคดี / สูญหาย / เพลิงไหม้
+  'E_REP': 'บันทึกรายงานผู้บังคับบัญชา: วัน เวลา สถานที่ ผู้ใช้ไฟ PEA ยี่ห้อ ราคา (ข้อ 67.1) · มต.ตต.2',
+  'E_PACK': 'บรรจุหีบห่อของกลาง ปิดผนึก ลงนามร่วม (มต.ตต.3 + ฉลากของกลาง)',
+  'E_POL': 'แจ้งความร้องทุกข์ (นิติกร/ผู้รับมอบอำนาจ) ข้อ 67.2, 68.1.4',
+  'E_3002': 'Block Stock ระบุสาเหตุใน Doc.Text จุดจัดเก็บ 3002 รอสอบสวน (ข้อ 76.2 หมายเหตุ 2)',
+  'E_COM': 'ตั้งกรรมการสอบหาข้อเท็จจริง สรุปผลเสนอ ผจก. ภายใน 15 วันหลังได้ข้อยุติ (ข้อ 76.2 (2.3.1))',
+  'E_END': 'คดีถึงที่สุด/ได้รับชดใช้ครบ → คัดแยกใหม่เป็น "ซ่อมไม่ได้" เพื่อขาย (ข้อ 68.1.2 (2))'
 };
+/* ขั้นตอนชุดนำส่งตามระเบียบ: who = we (ผมต./ผบต.) | ext (หน่วยงานอื่น · บันทึกผล) · bind = ผูกกับช่องของชุด · close = ส่ง/ขายเสร็จ */
+const SHIP_STEPS = {
+  warranty: [
+    { k: 'w1', t: 'กรรมการตรวจวันประกัน (IQ09/ZMMR023) และอาการ สรุปผลคัดแยก', ref: '80.2.1', who: 'we', doc: 'sort' },
+    { k: 'w2', t: 'หนังสือแจ้งบริษัทผู้ผลิต (ไปรษณีย์ลงทะเบียนตอบรับ) สำเนา กมต.', ref: '80.2.2', who: 'we', ph: 'เลขที่หนังสือ', due: 'warranty' },
+    { k: 'w3', t: 'MIGO 343 ปลด Block + บันทึกขออนุมัติ ผจก. นำส่ง', ref: '80.2.3', who: 'we', ph: 'เลขที่บันทึก (แบบที่ 23)', bind: 'memo', doc: 'f23' },
+    { k: 'w4', t: 'บรรจุกล่องแนวนอน ติดกระดาษกาว (ห้ามปากกาเคมี) ติดฉลากลัง', ref: '80.2.5', who: 'we', doc: 'labels' },
+    { k: 'w5', t: 'นำส่ง กมต. พร้อมบันทึกอนุมัติ + ZDMR101 · MB90 ลงนามร่วม (ห้ามส่งไปรษณีย์/ขนส่งเอกชน)', ref: '80.2.4', who: 'we', ph: 'เลขที่เอกสาร MB90', close: true },
+    { k: 'w6', t: 'กมต. แจ้งผลการเคลม', ref: '80.2.6', who: 'ext', ph: 'เลขที่บันทึกแจ้งผล' },
+    { k: 'w7', t: 'รับมิเตอร์คืนที่ กมต. ตรวจความถูกต้อง + ใบโอน MB90', ref: '80.2.7', who: 'we', due: ['w6', 30] }
+  ],
+  repair: [
+    { k: 'r1', t: 'กรรมการสรุปผลคัดแยก "ซ่อมได้" เสนอ ผจก.', ref: '80.4.2', who: 'we', doc: 'sort' },
+    { k: 'r2', t: 'MIGO 349 (QI) + รายงาน ZARR020 เสนอ ผจก. ส่ง กบล. ขออนุมัติจำหน่ายวิธีแปรสภาพ แนบ ZAAR020 + รายงานกรรมการ', ref: '80.4.3', who: 'we', ph: 'เลขที่หนังสือถึง กบล.' },
+    { k: 'r3', t: 'กบล. ได้รับอนุมัติจำหน่าย ส่งสำเนาให้', ref: '80.4.4', who: 'ext', ph: 'เลขที่อนุมัติจำหน่าย', bind: 'approval' },
+    { k: 'r4', t: 'บันทึกขออนุมัติ ผจก. นำส่ง ส่งคลังพัสดุ → กมต./ศูนย์ซ่อม', ref: '80.4.5', who: 'we', ph: 'เลขที่บันทึก (แบบที่ 24)', bind: 'memo', doc: 'f24', due: ['r3', 15] },
+    { k: 'r5', t: 'ผู้ส่งและผู้รับลงนามร่วมในแบบที่ 24 เก็บสำเนาไว้', ref: '80.4.6', who: 'we', close: true },
+    { k: 'r6', t: 'ZMME024 ตัดจำหน่ายในระบบ MM', ref: '80.4.9', who: 'we', ph: 'เลขที่เอกสาร' }
+  ],
+  sale: [
+    { k: 's1', t: 'กรรมการสรุปผลคัดแยก "ซ่อมไม่ได้" เสนอ ผจก.', ref: '80.3.2', who: 'we', doc: 'sort' },
+    { k: 's2', t: 'MIGO 344 Block + รายงาน ZARR020 เสนอ ผจก. ส่ง กบล. ขออนุมัติจำหน่ายวิธีขาย ระบุมูลค่าที่ได้มา แนบ ZAAR020 + รายงานกรรมการ', ref: '80.3.3', who: 'we', ph: 'เลขที่หนังสือถึง กบล.' },
+    { k: 's3', t: 'กบล. ได้รับอนุมัติจำหน่าย ส่ง กบญ. และสำเนาให้', ref: '80.3.4', who: 'ext', ph: 'เลขที่อนุมัติจำหน่าย', bind: 'approval' },
+    { k: 's4', t: 'ผจก. มอบผู้มีหน้าที่ขาย/กรรมการขาย ดำเนินการขาย (ทุบ nameplate ก่อนขายได้)', ref: '80.3.5', who: 'we', ph: 'เลขที่คำสั่ง', due: ['s3', 60] },
+    { k: 's5', t: 'หนังสือสนองรับราคา · ผู้ซื้อชำระเงินที่ กกง./ผบป.', ref: '80.3.6 (1)', who: 'we', ph: 'เลขที่ใบเสร็จรับเงิน' },
+    { k: 's6', t: 'ผู้ซื้อแสดงใบเสร็จ รับมิเตอร์ไป', ref: '80.3.6 (2)', who: 'we', close: true },
+    { k: 's7', t: 'ZMME024 บันทึกเลขใบเสร็จ + เลขที่อนุมัติ ส่งสำเนาอนุมัติ/ใบเสร็จให้ กบญ.', ref: '80.3.7', who: 'we', ph: 'เลขที่เอกสาร' }
+  ]
+};
+/** วันครบกำหนดของขั้น (ถ้ามี) */
+function stepDue(S, st) {
+  if (!st.due) return '';
+  if (st.due === 'warranty') return S.items.map(i => MAP[i[0]] && MAP[i[0]].warranty).filter(Boolean).sort()[0] || '';
+  const base = S.steps && S.steps[st.due[0]]; return base && base.d ? addDays(base.d, st.due[1]) : '';
+}
 function sapNeed(m) {
   const s = m.status, r = m.result;
   if (s === ST.FIELD) return [];
-  if (s === ST.LOST) return ['262', '344'];
+  if (s === ST.LOST) return ['262', '344', 'E_REP', 'E_POL', 'E_3002', 'E_COM'];
+  if (s === ST.EVID || r === ST.EVID) return ['262', '344', 'E_REP', 'E_PACK', 'E_POL', 'E_3002', 'E_COM', 'E_END'];
   if (s === ST.USED) return ['262', '261'];
   if (r === ST.GOOD) return ['262'];
   if (r === ST.WARR) return ['262', '344', '343'];
@@ -490,7 +533,7 @@ function meterSheet(m, log, z) {
     ${m.note ? `<div class="kv"><span>หมายเหตุ</span><span>${esc(m.note)}</span></div>` : ''}
     ${m.photos.length ? `<h3 style="margin-top:14px">รูปถ่าย</h3><div class="photos">${m.photos.map(id => `<a href="https://drive.google.com/file/d/${encodeURIComponent(id)}/view" target="_blank" rel="noopener"><img alt="รูปมิเตอร์" loading="lazy" src="https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w300"></a>`).join('')}</div>` : ''}
     ${sug && sug.r && !m.result ? `<div class="note b" style="margin-top:12px">ระบบแนะนำ: <b>${esc(sug.r)}</b><br>${sug.why.map(esc).join('<br>')}</div>` : ''}
-    <h3 style="margin-top:16px">ขั้นตอนในระบบ SAP</h3>
+    <h3 style="margin-top:16px">ขั้นตอนที่ต้องทำ (SAP / เอกสาร)</h3>
     <div class="sap">${Object.keys(SAP).filter(k => need.includes(k) || m.sap[k]).map(k => `<label class="${need.includes(k) && !m.sap[k] ? 'need' : ''}"><input type="checkbox" data-sap="${k}"${m.sap[k] ? ' checked' : ''}><span class="grow">${esc(SAP[k])}</span>${m.sap[k] ? `<span class="muted">${thDate(m.sap[k])}</span>` : ''}</label>`).join('') || '<p class="muted">ยังไม่มีขั้นตอน SAP สำหรับสถานะนี้</p>'}</div>
     <div class="row" style="margin-top:14px">
       <button class="btn p grow" id="mPrint">พิมพ์ฉลาก</button>
@@ -607,6 +650,12 @@ function alerts() {
     out.push([d < 0 ? '' : 'b', (s.kind === 'repair' ? 'ส่งแปรสภาพ ' : 'ขายมิเตอร์ซ่อมไม่ได้ ') + s.id + (d < 0 ? ' เลยกำหนด ' + (-d) + ' วัน' : ' เหลือ ' + d + ' วัน'),
       'ครบกำหนด ' + thDate(due) + ' (' + (s.kind === 'repair' ? 'ภายใน 15 วันหลังอนุมัติ ข้อ 80.4.5' : 'ภายใน 60 วันหลังอนุมัติ ข้อ 80.3.5') + ')', () => { UI.shipSel = s.id; go('ship'); }]);
   });
+  DB.ships.filter(s => s.kind === 'warranty' && s.status !== 'ยกเลิก').forEach(s => {
+    const S = Object.assign({ steps: {} }, s); ['w2', 'w7'].forEach(k => { const st = SHIP_STEPS.warranty.find(x => x.k === k); if (S.steps[k]) return; const due = stepDue(S, st); if (!due) return; const d = daysTo(due); if (d > 14) return;
+      out.push([d < 0 ? '' : 'b', (k === 'w2' ? 'แจ้งบริษัทผู้ผลิต ' : 'รับมิเตอร์คืนจาก กมต. ') + s.id + (d < 0 ? ' เลยกำหนด ' + (-d) + ' วัน' : ' เหลือ ' + d + ' วัน'), st.t + ' (ข้อ ' + st.ref + ')', () => { UI.shipSel = s.id; go('ship'); }]); });
+  });
+  const ev = DB.meters.filter(m => (m.status === ST.EVID || m.status === ST.LOST) && sapNeed(m).some(k => k.startsWith('E_') && k !== 'E_END' && !m.sap[k]));
+  if (ev.length) out.push(['b', 'หลักฐานคดี/สูญหาย ยังทำขั้นตอนไม่ครบ ' + ev.length + ' เครื่อง', 'รายงานผู้บังคับบัญชา · แจ้งความ · Block 3002 · กรรมการสอบหาข้อเท็จจริง (ข้อ 67, 68.1.2, 76.2)', () => listSheet('หลักฐานคดี/สูญหาย ขั้นตอนไม่ครบ', ev)]);
   const w = DB.meters.filter(m => m.status === ST.WAIT).length;
   if (w) out.push(['g', 'รอคัดแยก ' + w + ' เครื่อง', 'คณะกรรมการสอบหาข้อเท็จจริงคัดแยก (ข้อ 80.1.2)', () => go('sort')]);
   const lastM = DB.round;
@@ -951,10 +1000,40 @@ function viewShip() {
   $$('[data-new]').forEach(b => b.onclick = () => { UI.shipSel = 'new'; UI.shipKind = b.dataset.new; viewShip(); });
   $$('[data-ship]').forEach(b => b.onclick = () => { UI.shipSel = b.dataset.ship; viewShip(); });
 }
+/* ===== ขั้นตอนตามระเบียบของชุดนำส่ง ===== */
+function stepsCard(D, kind, locked) {
+  const L = SHIP_STEPS[kind] || [], done = L.filter(st => D.steps[st.k]).length, next = L.find(st => !D.steps[st.k]);
+  return `<div class="card" style="margin-top:14px"><div class="head" style="margin:0 0 6px"><h3 style="margin:0">ขั้นตอนตามระเบียบ ${done}/${L.length}</h3>${next ? `<span class="muted">ถัดไป: ${esc(next.ref)}</span>` : '<span style="color:var(--green);font-weight:700">ครบแล้ว</span>'}</div>
+    ${L.map((st, i) => { const x = D.steps[st.k], due = stepDue(D, st), dd = due ? daysTo(due) : null;
+      return `<div class="step${x ? ' ok' : ''}" style="display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)">
+        <input type="checkbox" data-step="${st.k}"${x ? ' checked' : ''}${locked ? ' disabled' : ''} aria-label="ทำขั้น ${i + 1} แล้ว" style="width:22px;height:22px;margin-top:2px;flex:none">
+        <div style="flex:1;min-width:0"><div style="font-size:14px;line-height:1.45${st.who === 'ext' ? ';color:var(--mute)' : ''}"><b>${i + 1}.</b> ${esc(st.t)} <span class="muted" style="font-size:12px">ข้อ ${esc(st.ref)}${st.who === 'ext' ? ' · หน่วยงานอื่นทำ บันทึกผล' : ''}</span></div>
+          ${due && !x ? `<div style="font-size:12.5px;font-weight:700;color:${dd < 0 ? 'var(--red)' : dd <= 7 ? '#b45309' : 'var(--mute)'}">⏱ ${st.due === 'warranty' ? 'ก่อนประกันเครื่องแรกหมด' : 'ครบกำหนด'} ${thDate(due)} (${dd < 0 ? 'เลย ' + (-dd) : 'อีก ' + dd} วัน)</div>` : ''}
+          ${x ? `<div class="g2" style="margin-top:4px"><input class="inp" type="date" data-sd="${st.k}" value="${esc(x.d || '')}"${locked ? ' disabled' : ''} aria-label="วันที่ทำ"><input class="inp" data-sr="${st.k}" value="${esc(x.ref || '')}" placeholder="${esc(st.ph || 'หมายเหตุ/เลขที่')}"${locked ? ' disabled' : ''} aria-label="${esc(st.ph || 'หมายเหตุ')}"></div><div class="muted" style="font-size:11.5px">${x.by ? 'โดย ' + esc(x.by) : ''}</div>` : ''}
+          ${st.doc && !x ? `<button type="button" class="btn sm" data-sdoc="${st.doc}" style="margin-top:4px">${{ sort: 'พิมพ์รายงานผลคัดแยก', f23: 'พิมพ์แบบที่ 23', f24: 'พิมพ์แบบที่ 24', labels: 'พิมพ์ฉลากลัง' }[st.doc]}</button>` : ''}
+        </div></div>`; }).join('')}</div>`;
+}
+function bindSteps(D, kind, sync, redraw, docs) {
+  const L = SHIP_STEPS[kind] || [], get = k => L.find(st => st.k === k);
+  const apply = st => { const x = D.steps[st.k]; if (!x) return;
+    if (st.bind === 'approval') { if (x.ref) D.approvalNo = x.ref; if (x.d) D.approvedAt = x.d; }
+    if (st.bind === 'memo' && x.ref) D.memo = x.ref;
+    if (st.close && D.status !== 'ส่งแล้ว') D.status = 'ส่งแล้ว'; };
+  $$('[data-step]').forEach(cb => cb.onchange = () => { sync(); const st = get(cb.dataset.step);
+    if (cb.checked) { D.steps[st.k] = { done: true, d: todayStr(), ref: st.bind === 'approval' ? (D.approvalNo || '') : st.bind === 'memo' ? (D.memo || '') : '' }; apply(st);
+      if (st.close) toast('สถานะชุดจะเปลี่ยนเป็น "ส่งแล้ว" เมื่อกดบันทึก', '', 4000); }
+    else delete D.steps[st.k];
+    redraw(); });
+  $$('[data-sd]').forEach(i => i.onchange = () => { sync(); const x = D.steps[i.dataset.sd]; if (x) { x.d = i.value; apply(get(i.dataset.sd)); redraw(); } });
+  $$('[data-sr]').forEach(i => i.onchange = () => { sync(); const x = D.steps[i.dataset.sr]; if (x) { x.ref = i.value.trim(); apply(get(i.dataset.sr)); redraw(); } });
+  $$('[data-sdoc]').forEach(b => b.onclick = () => docs[b.dataset.sdoc] && docs[b.dataset.sdoc]());
+}
 function shipEdit(s) {
   const isNew = !s;
   const kind = s ? s.kind : UI.shipKind, K = SHIPK[kind];
-  const D = s ? JSON.parse(JSON.stringify(s)) : { kind, dest: K.dest, status: 'กำลังบรรจุ', memo: '', approvedAt: '', approvalNo: '', boxes: 1, items: [], note: '' };
+  const D = s ? JSON.parse(JSON.stringify(s)) : { kind, dest: K.dest, status: 'กำลังบรรจุ', memo: '', approvedAt: '', approvalNo: '', boxes: 1, items: [], note: '', steps: {} };
+  D.steps = D.steps || {};
+  const stepOnly = ['ส่งแล้ว'].includes(s && s.status) && !DB.me.admin;
   const closed = ['ส่งแล้ว', 'ยกเลิก'].includes(D.status) && !DB.me.admin;
   const pool = () => DB.meters.filter(m => m.result === K.result && (!m.ship || m.ship === D.id) && (!TERMINAL.includes(m.status) || m.ship === D.id));
   const inSet = () => new Set(D.items.map(i => i[0]));
@@ -976,6 +1055,7 @@ function shipEdit(s) {
       <div class="g2"><div><label class="lab" for="dBoxes">จำนวนลัง</label><input class="inp" type="number" min="1" max="99" id="dBoxes" value="${D.boxes}"${closed ? ' disabled' : ''}></div>
         <div><label class="lab">&nbsp;</label><button class="btn blk" id="dAuto"${closed ? ' disabled' : ''}>แบ่งลังอัตโนมัติ</button></div></div>
       <label class="lab" for="dNote">หมายเหตุ</label><input class="inp" id="dNote" value="${esc(D.note)}"${closed ? ' disabled' : ''}>
+      ${stepsCard(D, kind, stepOnly ? false : closed)}
       ${closed ? '' : `<div style="margin-top:12px">${scanBox('dScan', 'สแกนมิเตอร์ใส่ลัง')}</div>`}
       <div class="head"><h2 style="font-size:16px">ในชุดนี้ ${D.items.length} เครื่อง · พร้อมบรรจุ ${P.filter(m => !ins.has(m.pea)).length}</h2><button class="btn sm" id="dAll"${closed ? ' disabled' : ''}>เลือกทั้งหมด</button></div>
       <div class="list">${P.map(m => { const it = D.items.find(i => i[0] === m.pea);
@@ -988,7 +1068,7 @@ function shipEdit(s) {
         ${kind === 'warranty' ? '<button class="btn grow" id="dF23">บันทึกนำส่ง (แบบที่ 23)</button>' : ''}
         ${kind === 'repair' ? '<button class="btn grow" id="dF24">บันทึกขออนุมัติ (แบบที่ 24)</button><button class="btn grow" id="dFSort">ผลคัดแยก (แนบแบบที่ 24)</button>' : ''}
       </div>
-      <div class="stick"><button class="btn grow" id="dCancel">ยกเลิก</button><button class="btn p grow" id="dSave" style="flex:1.6"${closed ? ' disabled' : ''}>บันทึกชุด</button></div>`;
+      <div class="stick"><button class="btn grow" id="dCancel">ยกเลิก</button><button class="btn p grow" id="dSave" style="flex:1.6"${closed && !stepOnly ? ' disabled' : ''}>${stepOnly ? 'บันทึกขั้นตอน' : 'บันทึกชุด'}</button></div>`;
     const sync = () => { D.dest = $('#dDest').value; D.status = $('#dStatus').value; D.memo = $('#dMemo').value.trim(); D.approvedAt = $('#dApp').value; D.approvalNo = $('#dAppNo').value.trim(); D.note = $('#dNote').value; D.boxes = Math.max(1, Math.min(99, Number($('#dBoxes').value) || 1)); D.items.forEach(i => { if (i[1] > D.boxes) i[1] = D.boxes; }); };
     ['#dDest', '#dStatus', '#dMemo', '#dApp', '#dAppNo', '#dNote'].forEach(id => $(id).onchange = sync);
     $('#dBoxes').onchange = () => { sync(); draw(); };
@@ -999,6 +1079,7 @@ function shipEdit(s) {
     $('#dAll').onclick = () => { sync(); P.forEach(m => { if (!inSet().has(m.pea)) D.items.push([m.pea, D.boxes]); }); draw(); };
     $('#dAuto').onclick = () => { sync(); const per = Math.ceil(D.items.length / D.boxes) || 1; D.items.forEach((it, i) => it[1] = Math.min(D.boxes, Math.floor(i / per) + 1)); draw(); toast('แบ่ง ' + D.items.length + ' เครื่อง เป็น ' + D.boxes + ' ลัง'); };
     $$('.list [data-pea]').forEach(b => b.onclick = () => openMeter(b.dataset.pea));
+    bindSteps(D, kind, sync, draw, { f23: () => $('#dF23') && $('#dF23').click(), f24: () => $('#dF24') && $('#dF24').click(), sort: () => (kind === 'repair' ? $('#dFSort').click() : sortFormSheet()), labels: () => $('#dLabBox').click() });
     if (!closed) { const fn = c => { const p = peaOf(c), m = MAP[p]; if (!m) { toast('ไม่พบ ' + c + ' ในระบบ', 'err'); return; } if (m.result !== K.result) { toast(p + ' ผลคัดแยกเป็น "' + (m.result || 'ยังไม่คัดแยก') + '"', 'err', 4000); return; } if (m.ship && m.ship !== D.id) { toast(p + ' อยู่ในชุด ' + m.ship + ' แล้ว', 'err'); return; } sync(); if (!inSet().has(p)) { D.items.push([p, D.boxes]); toast('ใส่ ' + p + ' ลัง ' + D.boxes, 'ok'); } else toast(p + ' อยู่ในชุดนี้แล้ว'); draw(); }; bindScan('dScan', fn); SCAN_HANDLER = fn; }
     $('#dLabBox').onclick = () => { sync(); printLabels(() => Array.from({ length: D.boxes }, (_, i) => labelBox(Object.assign({ id: D.id || '(ยังไม่บันทึก)', at: D.at || new Date().toISOString() }, D), i + 1)), 'ฉลากลัง'); };
     $('#dLabM').onclick = () => { sync(); if (!D.items.length) { toast('ยังไม่มีมิเตอร์ในชุด'); return; } printLabels(() => D.items.map(i => labelMeter(MAP[i[0]], D.memo)), 'ฉลากฝาครอบ'); };
@@ -1009,7 +1090,7 @@ function shipEdit(s) {
     if ($('#dFSort')) $('#dFSort').onclick = () => { sync(); if (!D.items.length) { toast('ยังไม่มีมิเตอร์ในชุด'); return; } openForm('sort', { ms: shipMs(), range: 'ชุดนำส่ง ' + (D.id || '(ยังไม่บันทึก)') }); };
     $('#dSave').onclick = async () => {
       sync();
-      if (D.status === 'ส่งแล้ว' && !confirm('ยืนยันว่า' + (kind === 'sale' ? 'ขาย/ส่งมอบผู้ซื้อ' : 'ส่ง') + 'แล้ว?\nมิเตอร์ ' + D.items.length + ' เครื่องจะเปลี่ยนเป็น "' + (kind === 'sale' ? ST.SOLD : ST.SENT) + '"')) return;
+      if (D.status === 'ส่งแล้ว' && !stepOnly && !confirm('ยืนยันว่า' + (kind === 'sale' ? 'ขาย/ส่งมอบผู้ซื้อ' : 'ส่ง') + 'แล้ว?\nมิเตอร์ ' + D.items.length + ' เครื่องจะเปลี่ยนเป็น "' + (kind === 'sale' ? ST.SOLD : ST.SENT) + '"')) return;
       const b = $('#dSave'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก';
       try { const j = await api('shipSave', { ship: D }); toast('บันทึกชุด ' + j.ship.id + ' แล้ว', 'ok'); await load(true); UI.shipSel = j.ship.id; go('ship'); }
       catch (e) { toast(e.message, 'err', 5000); b.disabled = false; b.textContent = 'บันทึกชุด'; }
