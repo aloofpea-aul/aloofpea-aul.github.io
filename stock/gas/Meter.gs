@@ -11,7 +11,7 @@
  *   › Run setupMeter (ครั้งเดียว ขอสิทธิ์ Drive สำหรับรูป) › Deploy › Manage deployments › New version (v2.1 = เวอร์ชัน 4)
  */
 
-const METER_VERSION = '1.4';
+const METER_VERSION = '1.5';
 
 const MT_FIELDS = [
   ['pea', 'PEA No.'], ['status', 'สถานะ'], ['sloc', 'คลังย่อย'], ['job', 'ประเภทงาน'], ['wo', 'ใบสั่งงาน'], ['ca', 'หมายเลขผู้ใช้ไฟ'],
@@ -230,6 +230,8 @@ const METER_ACTIONS = {
     return { meter: meterOut_(o) };
   },
 
+  /** ข้อความสรุปที่จะส่ง LINE (ดูตัวอย่างก่อนเปิดใช้) */
+  meterDigest: function (b, me) { return meterDigestText_(); },
   /** อัปโหลดรูป (ข้อ 67, 68.2.2 — ภาพถ่ายมิเตอร์/สถานที่) */
   meterPhoto: function (b, me) {
     const m = String(b.data || '').match(/^data:(image\/(jpeg|png|webp));base64,(.+)$/);
@@ -527,4 +529,55 @@ function setupMeter() {
   if (!getSetting_('meter')) setSetting_('meter', { owner: 'กฟส.อ่าวลึก', sortCommittee: [], countCommittee: [], warnDays: 30, brands: [], defaultSloc: '1201' });
   photoFolder_();
   Logger.log('โมดูลมิเตอร์พร้อมใช้งาน — ชีต: ' + ss_().getUrl());
+}
+
+/* ====================================================================== */
+/* ===== แจ้งเตือน LINE กลุ่มคลัง (สรุปงานค้างเช้าวันทำการ) =====
+ * เปิดใช้: Script properties → LINE_TOKEN (Channel access token ของ OA เดิม) และ MT_LINE_GROUP (groupId ของกลุ่มที่จะส่ง)
+ * แล้วรัน installMeterLine() ครั้งเดียว — ยังไม่ตั้งค่า = ไม่ส่งอะไร */
+function meterDigest_() {
+  const ms = readMeters_().map(function (x) { return x.obj; }), st = getSetting_('meter') || {};
+  const cnt = function (s) { return ms.filter(function (m) { return m.status === s; }).length; };
+  const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  const dd = function (s) { if (!s) return null; const a = String(s).slice(0, 10).split('-'); const t = today.split('-'); return Math.round((Date.UTC(+a[0], a[1] - 1, +a[2]) - Date.UTC(+t[0], t[1] - 1, +t[2])) / 86400000); };
+  const inStore = [M_ST.WAIT, M_ST.GOOD, M_ST.WARR, M_ST.REP, M_ST.UNREP, M_ST.EVID, M_ST.NEW, M_ST.NEWHOLD];
+  const late = [], soon = [], todo = [], low = [];
+  const warn = Number(st.warnDays) || 30;
+  const wexp = ms.filter(function (m) { const d = dd(m.warranty); return m.status === M_ST.WARR && d !== null && d <= warn; });
+  if (wexp.length) (wexp.some(function (m) { return dd(m.warranty) < 0; }) ? late : soon).push('ในประกัน ' + wexp.length + ' เครื่อง ประกันหมด/ใกล้หมด — แจ้งบริษัทเคลม (ข้อ 80.2)');
+  readShips_().forEach(function (s) {
+    if (s.status === 'ยกเลิก') return;
+    const due = { warranty: ['w7', 'w6', 30], repair: ['r4', 'r3', 15], sale: ['s4', 's3', 60] }[s.kind];
+    if (due && s.steps && !(s.steps[due[0]] && s.steps[due[0]].done) && s.steps[due[1]] && s.steps[due[1]].d) {
+      const left = dd(s.steps[due[1]].d) + due[2];
+      if (left < 0) late.push('ชุด ' + s.id + ' เลยกำหนด ' + (-left) + ' วัน'); else if (left <= 7) soon.push('ชุด ' + s.id + ' ครบกำหนดใน ' + left + ' วัน');
+    }
+  });
+  const f = cnt(M_ST.FIELD), w = cnt(M_ST.WAIT), h = cnt(M_ST.NEWHOLD);
+  if (f) todo.push('รอรับเข้าคลัง ' + f); if (w) todo.push('รอคัดแยก ' + w); if (h) todo.push('มิเตอร์ใหม่พักไว้ (ไม่ตรงใบสั่งโอน) ' + h);
+  const lv = st.levels || {}, ns = {};
+  ms.filter(function (m) { return m.status === M_ST.NEW; }).forEach(function (m) { const k = [m.phase, m.size].filter(String).join(' '); ns[k] = (ns[k] || 0) + 1; });
+  Object.keys(lv).forEach(function (k) { if (lv[k][0] && (ns[k] || 0) < lv[k][0]) low.push(k + ' เหลือ ' + (ns[k] || 0) + ' / ขั้นต่ำ ' + lv[k][0]); });
+  const total = ms.filter(function (m) { return inStore.indexOf(m.status) >= 0; }).length;
+  return { total: total, fresh: cnt(M_ST.NEW), late: late, soon: soon, todo: todo, low: low, empty: !(late.length + soon.length + todo.length + low.length) };
+}
+function meterDigestText_() {
+  const d = meterDigest_(), L = ['งานมิเตอร์วันนี้ · ในคลัง ' + d.total + ' เครื่อง (ใหม่ ' + d.fresh + ')'];
+  [['🔴 เลยกำหนด', d.late], ['🟠 ใกล้ครบ', d.soon], ['🔵 รอทำ', d.todo], ['🔵 สำรองต่ำ (ข้อ 78)', d.low]].forEach(function (g) { if (g[1].length) { L.push(''); L.push(g[0]); g[1].forEach(function (t) { L.push('• ' + t); }); } });
+  if (d.empty) L.push('ไม่มีงานค้าง ✓');
+  L.push(''); L.push('https://aloofpea-aul.github.io/stock/meter.html');
+  return { text: L.join('\n'), empty: d.empty };
+}
+/** ทริกเกอร์รายวัน 07:30 — ส่งเฉพาะวันจันทร์–ศุกร์ที่มีงานค้าง */
+function meterLineDaily() {
+  const P = PropertiesService.getScriptProperties(), tok = P.getProperty('LINE_TOKEN'), gid = P.getProperty('MT_LINE_GROUP');
+  if (!tok || !gid) return;
+  const wd = Number(Utilities.formatDate(new Date(), TZ, 'u')); if (wd > 5) return;
+  const d = meterDigestText_(); if (d.empty) return;
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', { method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + tok }, muteHttpExceptions: true,
+    payload: JSON.stringify({ to: gid, messages: [{ type: 'text', text: d.text.slice(0, 4900) }] }) });
+}
+function installMeterLine() {
+  ScriptApp.getProjectTriggers().filter(function (t) { return t.getHandlerFunction() === 'meterLineDaily'; }).forEach(function (t) { ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('meterLineDaily').timeBased().everyDays(1).atHour(7).nearMinute(30).inTimezone(TZ).create();
 }
