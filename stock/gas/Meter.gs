@@ -11,7 +11,7 @@
  *   › Run setupMeter (ครั้งเดียว ขอสิทธิ์ Drive สำหรับรูป) › Deploy › Manage deployments › New version (v2.1 = เวอร์ชัน 4)
  */
 
-const METER_VERSION = '1.2';
+const METER_VERSION = '1.3';
 
 const MT_FIELDS = [
   ['pea', 'PEA No.'], ['status', 'สถานะ'], ['sloc', 'คลังย่อย'], ['job', 'ประเภทงาน'], ['wo', 'ใบสั่งงาน'], ['ca', 'หมายเลขผู้ใช้ไฟ'],
@@ -28,7 +28,7 @@ const MT_FIELDS = [
 ];
 const MT = { name: 'มิเตอร์', labels: MT_FIELDS.map(function (f) { return f[1]; }) };
 const MLOG = { name: 'ประวัติมิเตอร์', labels: ['วันเวลา', 'PEA No.', 'เหตุการณ์', 'รายละเอียด', 'ผู้ทำ'] };
-const MSHIP = { name: 'ชุดนำส่งมิเตอร์', labels: ['เลขที่', 'ประเภท', 'ปลายทาง', 'สถานะ', 'เลขที่บันทึกนำส่ง', 'อนุมัติเมื่อ', 'เลขที่อนุมัติจำหน่าย', 'จำนวนลัง', 'รายการ (JSON)', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ', 'ส่ง/ขายเมื่อ'] };
+const MSHIP = { name: 'ชุดนำส่งมิเตอร์', labels: ['เลขที่', 'ประเภท', 'ปลายทาง', 'สถานะ', 'เลขที่บันทึกนำส่ง', 'อนุมัติเมื่อ', 'เลขที่อนุมัติจำหน่าย', 'จำนวนลัง', 'รายการ (JSON)', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ', 'ส่ง/ขายเมื่อ', 'ขั้นตอน (JSON)'] };
 const MROUND = { name: 'รอบนับมิเตอร์', labels: ['รหัสรอบ', 'ชนิด', 'ชื่อรอบ', 'สถานะ', 'กรรมการ (JSON)', 'เริ่มโดย', 'เริ่มเมื่อ', 'ปิดโดย', 'ปิดเมื่อ', 'สาเหตุผลต่าง (JSON)', 'สรุปเมื่อปิด (JSON)'] };
 const MSCAN = { name: 'ผลนับมิเตอร์', labels: ['รหัสรอบ', 'PEA No.', 'คลังย่อย', 'ผล', 'หมายเหตุ', 'ผู้สแกน', 'สแกนเมื่อ'] };
 const ZDMR = { name: 'ZDMR101', labels: ['PEA No.', 'รหัสพัสดุ', 'คำอธิบาย', 'คลังย่อย', 'แบทช์', 'สถานะ', 'นำเข้าเมื่อ', 'นำเข้าโดย'] };
@@ -38,7 +38,15 @@ const M_ST = { FIELD: 'ถอดคืนแล้ว', WAIT: 'รอคัด�
 const M_TERMINAL = [M_ST.USED, M_ST.SENT, M_ST.SOLD];
 const M_RESULTS = [M_ST.GOOD, M_ST.WARR, M_ST.REP, M_ST.UNREP, M_ST.EVID];
 const M_EVID_CAUSES = ['ละเมิดการใช้ไฟฟ้า', 'เพลิงไหม้ (วางเพลิง/การกระทำ)'];
-const M_SAP_KEYS = ['262', '344', '343', '349', '261', '301', 'ZARR020', 'ZMME024'];
+const M_SAP_KEYS = ['262', '344', '343', '349', '261', '301', 'ZARR020', 'ZMME024',
+  // v2.4 ขั้นตอนหลักฐานคดี/สูญหาย (ข้อ 67, 68.1.2, 68.1.4, 76.2)
+  'E_REP', 'E_PACK', 'E_POL', 'E_3002', 'E_COM', 'E_END'];
+/** ขั้นตอนของชุดนำส่ง (ข้อ 80.2–80.4) และขั้นตอน SAP รายเครื่องที่ติ๊กให้อัตโนมัติเมื่อทำขั้นนั้นแล้ว */
+const SHIP_STEPS = {
+  warranty: { w1: [], w2: [], w3: ['343'], w4: [], w5: [], w6: [], w7: [] },
+  repair: { r1: [], r2: ['349', 'ZARR020'], r3: [], r4: [], r5: [], r6: ['ZMME024'] },
+  sale: { s1: [], s2: ['344', 'ZARR020'], s3: [], s4: [], s5: [], s6: [], s7: ['ZMME024'] }
+};
 const SHIP_KINDS = {
   warranty: { label: 'เคลมประกัน', box: 'ชำรุดเนื่องจากคุณภาพ', result: M_ST.WARR, done: M_ST.SENT, dest: 'กมต. (กองมิเตอร์)' },
   repair: { label: 'ส่งแปรสภาพ (ซ่อมได้)', box: 'ชำรุดซ่อมได้', result: M_ST.REP, done: M_ST.SENT, dest: 'ศูนย์ซ่อมและทดสอบมิเตอร์ภาคใต้' },
@@ -190,12 +198,25 @@ const METER_ACTIONS = {
     const kind = SHIP_KINDS[s.kind] ? s.kind : null;
     if (!kind) throw err_('bad', 'ประเภทชุดนำส่งไม่ถูกต้อง');
     const K = SHIP_KINDS[kind];
-    const sh = sheet_(MSHIP), v = sh.getDataRange().getValues();
+    const sh = sheet_(MSHIP);
+    if (sh.getLastColumn() < MSHIP.labels.length) sh.getRange(1, 1, 1, MSHIP.labels.length).setValues([MSHIP.labels]).setFontWeight('bold');
+    const v = sh.getDataRange().getValues();
     let row = -1, old = null;
     if (s.id) for (let i = 1; i < v.length; i++) if (String(v[i][0]) === String(s.id)) { row = i + 1; old = v[i]; break; }
     if (s.id && row < 0) throw err_('notfound', 'ไม่พบชุดนำส่ง');
     const status = SHIP_STATUS.indexOf(s.status) >= 0 ? s.status : (old ? String(old[3]) : 'กำลังบรรจุ');
-    if (old && (String(old[3]) === 'ส่งแล้ว' || String(old[3]) === 'ยกเลิก') && !me.admin) throw err_('bad', 'ชุดนี้ปิดแล้ว');
+    if (old && (String(old[3]) === 'ส่งแล้ว' || String(old[3]) === 'ยกเลิก') && !me.admin) {
+      // ชุดที่ส่งแล้ว: ยังติ๊กขั้นตอนที่เหลือได้ (เช่น รับคืนจาก กมต., ZMME024) แต่แก้อย่างอื่นไม่ได้
+      if (String(old[3]) === 'ยกเลิก' || !s.steps) throw err_('bad', 'ชุดนี้ปิดแล้ว');
+      const os = jv_(old[15], {}) || {}, SK0 = SHIP_STEPS[kind], ns = {};
+      Object.keys(SK0).forEach(function (k) { const x = s.steps[k]; if (x && x.done) ns[k] = { done: true, d: dateStr_(x.d) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), ref: clean_(x.ref).slice(0, 120), by: (os[k] && os[k].by) || me.name }; });
+      const add = []; Object.keys(ns).forEach(function (k) { if (!os[k]) SK0[k].forEach(function (c) { if (add.indexOf(c) < 0) add.push(c); }); });
+      if (add.length) { const items0 = parse_(old[8]) || []; const ms = readMeters_(), bp = {}; ms.forEach(function (x) { bp[x.obj.pea] = x; });
+        items0.forEach(function (it) { const x = bp[it[0]]; if (!x) return; const sp = jv_(x.obj.sap, {}); add.forEach(function (c) { if (!sp[c]) sp[c] = iso_(new Date()); }); x.obj.sap = JSON.stringify(sp); x.obj.updatedAt = new Date(); x.obj.updatedBy = me.name; writeMeter_(x.obj, x.row); }); }
+      old[15] = JSON.stringify(ns); old[12] = me.name; old[13] = new Date();
+      sh.getRange(row, 13, 1, 2).setValues([[old[12], old[13]]]); sh.getRange(row, 16).setValue(old[15]);
+      return { ship: shipOut_(old) };
+    }
     const items = (s.items || []).map(function (it) { return [peaOf_(it[0]), Math.max(1, Number(it[1]) || 1)]; }).filter(function (it) { return it[0]; });
     const boxes = Math.max(1, Number(s.boxes) || items.reduce(function (a, it) { return Math.max(a, it[1]); }, 1));
     const id = s.id || ('SH' + Utilities.formatDate(new Date(), TZ, 'yyMMddHHmmss'));
@@ -212,6 +233,14 @@ const METER_ACTIONS = {
       inNew[it[0]] = it[1];
     });
     const now = new Date();
+    // ขั้นตอนของชุด: เก็บเฉพาะขั้นที่รู้จัก · ขั้นที่เพิ่งทำครั้งแรกจะติ๊ก SAP ของทุกเครื่องในชุดให้
+    const oldSteps = old ? (jv_(old[15], {}) || {}) : {}, SK = SHIP_STEPS[kind], steps = {}, newly = [];
+    Object.keys(SK).forEach(function (k) {
+      const x = (s.steps || {})[k]; if (!x || !x.done) return;
+      steps[k] = { done: true, d: dateStr_(x.d) || Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), ref: clean_(x.ref).slice(0, 120), by: (oldSteps[k] && oldSteps[k].by) || me.name };
+      if (!oldSteps[k]) newly.push(k);
+    });
+    const autoSap = []; newly.forEach(function (k) { SK[k].forEach(function (c) { if (autoSap.indexOf(c) < 0) autoSap.push(c); }); });
     // นำออกจากชุด
     prevItems.forEach(function (it) {
       const x = byPea[it[0]];
@@ -221,6 +250,7 @@ const METER_ACTIONS = {
     items.forEach(function (it) {
       const x = byPea[it[0]], o = x.obj, was = o.ship;
       o.ship = id; o.box = it[1];
+      if (autoSap.length) { const sp = jv_(o.sap, {}); autoSap.forEach(function (c) { if (!sp[c]) sp[c] = iso_(now); }); o.sap = JSON.stringify(sp); }
       if (done) o.status = K.done; else if (status === 'ยกเลิก') { o.ship = ''; o.box = ''; o.status = o.result; }
       else o.status = o.result;
       o.updatedAt = now; o.updatedBy = me.name; writeMeter_(o, x.row);
@@ -228,7 +258,7 @@ const METER_ACTIONS = {
       if (done) mlog_(o.pea, K.done, id + (clean_(s.memo) ? ' · บันทึก ' + clean_(s.memo) : ''), me);
     });
     const rec = [id, kind, clean_(s.dest) || K.dest, status, clean_(s.memo), dateStr_(s.approvedAt), clean_(s.approvalNo), boxes, JSON.stringify(items), clean_(s.note),
-      old ? old[10] : me.name, old ? old[11] : now, me.name, now, done ? (old && old[14] ? old[14] : now) : ''];
+      old ? old[10] : me.name, old ? old[11] : now, me.name, now, done ? (old && old[14] ? old[14] : now) : '', JSON.stringify(steps)];
     if (row < 0) row = sh.getLastRow() + 1;
     sh.getRange(row, 1, 1, rec.length).setValues([rec]);
     return { ship: shipOut_(rec) };
@@ -399,7 +429,7 @@ function zdmrOf_(pea) {
 }
 function shipOut_(r) {
   return { id: String(r[0]), kind: String(r[1]), dest: String(r[2]), status: String(r[3]), memo: String(r[4] || ''), approvedAt: r[5] instanceof Date ? Utilities.formatDate(r[5], TZ, 'yyyy-MM-dd') : String(r[5] || ''),
-    approvalNo: String(r[6] || ''), boxes: Number(r[7]) || 1, items: parse_(r[8]) || [], note: String(r[9] || ''), by: String(r[10] || ''), at: iso_(r[11]), upBy: String(r[12] || ''), upAt: iso_(r[13]), doneAt: iso_(r[14]) };
+    approvalNo: String(r[6] || ''), boxes: Number(r[7]) || 1, items: parse_(r[8]) || [], note: String(r[9] || ''), by: String(r[10] || ''), at: iso_(r[11]), upBy: String(r[12] || ''), upAt: iso_(r[13]), doneAt: iso_(r[14]), steps: jv_(r[15], {}) || {} };
 }
 function readShips_() {
   const sh = sheet_(MSHIP), n = sh.getLastRow(); if (n < 2) return [];
