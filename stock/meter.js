@@ -207,7 +207,7 @@ async function load(quiet) {
     DB.mb52 = (DB.mb52 || []).map(r => { r[0] = pad4(r[0]); return r; });
     MAP = {}; DB.meters.forEach(m => MAP[m.pea] = m);
     if (!UI.recvSloc) UI.recvSloc = pad4((DB.settings && DB.settings.defaultSloc) || '1201');
-    $('#sub').textContent = (DB.me.name || '') + ' · ในคลัง ' + DB.meters.filter(m => IN_STORE.includes(m.status)).length + ' เครื่อง';
+    $('#sub').textContent = 'ในคลัง ' + DB.meters.filter(m => IN_STORE.includes(m.status)).length + ' เครื่อง · ' + (DB.me.name || '');
     badges(); render();
   } catch (e) {
     $('#sub').textContent = 'โหลดไม่สำเร็จ';
@@ -690,13 +690,14 @@ function viewHome() {
       ${[[ST.FIELD, 'ถอดคืน รอรับเข้า'], [ST.WAIT, 'รอคัดแยก'], [ST.GOOD, 'สภาพดี (Batch R)'], [ST.WARR, 'ในประกัน'], [ST.REP, 'ซ่อมได้'], [ST.UNREP, 'ซ่อมไม่ได้'], [ST.EVID, 'หลักฐานคดี'], [ST.LOST, 'สูญหาย'], [ST.NEW, 'ใหม่ Batch N'], [ST.NEWHOLD, 'ใหม่ รอแก้ไข']].map(([s, l]) => `<button class="kpi" data-st="${esc(s)}"><span>${esc(l)}</span><b>${cnt(s)}</b></button>`).join('')}
     </div>
     ${al.length ? `<div class="head"><h2>งานที่ต้องทำ</h2></div><div class="alerts">${al.map((a, i) => `<button class="al ${a[0]}" data-al="${i}"><div><b>${esc(a[1])}</b><span>${esc(a[2])}</span></div></button>`).join('')}</div>` : `<div class="note g" style="margin-top:14px">ไม่มีงานค้าง</div>`}
-    <div class="head"><h2>อัปเดตล่าสุด</h2><div class="row"><button class="btn sm" id="hReport">รายงาน</button>${DB.me.admin ? '<button class="btn sm" id="hSet">ตั้งค่า / ZDMR101</button>' : ''}</div></div>
+    <div class="head"><h2>อัปเดตล่าสุด</h2><div class="row"><button class="btn sm" id="hReport">รายงาน</button><button class="btn sm" id="hShelf">ป้ายชั้นวาง</button>${DB.me.admin ? '<button class="btn sm" id="hSet">ตั้งค่า / ZDMR101</button>' : ''}</div></div>
     <div class="list">${recent.map(miRow).join('') || '<div class="empty">ยังไม่มีข้อมูลมิเตอร์ — เริ่มที่เมนู "รับมิเตอร์"</div>'}</div>`;
   bindScan('homeScan', c => openMeter(c));
   $$('[data-st]').forEach(b => b.onclick = () => listSheet(b.dataset.st, DB.meters.filter(m => m.status === b.dataset.st)));
   $$('[data-al]').forEach(b => b.onclick = () => al[Number(b.dataset.al)][3]());
   bindRows();
   $('#hReport').onclick = reportMenu;
+  $('#hShelf').onclick = shelfSheet;
   if ($('#hSet')) $('#hSet').onclick = settingsSheet;
 }
 function miRow(m, extra) {
@@ -1137,7 +1138,7 @@ function viewNew() {
       ${miss.length ? `<div class="muted" style="margin-top:6px">ยังไม่สแกน ${miss.length} เครื่อง: ${esc(miss.slice(0, 8).join(', '))}${miss.length > 8 ? ' …' : ''}</div>` : ''}</div>
     <label class="chk" style="display:flex;gap:10px;align-items:center;min-height:46px;margin-top:6px"><input type="checkbox" id="n101" style="width:22px;height:22px;accent-color:var(--pea)"> ทำ MIGO รับพัสดุอ้างอิงใบสั่งโอนใน SAP แล้ว</label>
     <div class="note b" style="margin-top:6px">หลังรับ: ตรวจ Serialize (PEA / Register group / วันประกัน) ถ้าไม่ถูกห้ามนำไปติดตั้ง (ข้อ 73.2.2) · เก็บในคลังทึบเป็นหมวดหมู่ (ข้อ 74.1)</div>
-    <h3 style="margin-top:14px">คงคลังมิเตอร์ใหม่ (สำรองตามข้อ 78)</h3>
+    <div class="head" style="margin-top:14px"><h3 style="margin:0">คงคลังมิเตอร์ใหม่ (สำรองตามข้อ 78)</h3><button class="btn sm" id="nShelf">พิมพ์ป้ายชั้นวาง</button></div>
     <div class="list">${Object.keys(Object.assign({}, lv, st)).map(k => { const n = st[k] || 0, L = lv[k] || []; const low = L[0] && n < L[0], hi = L[1] && n > L[1];
       return `<div class="mi"><div class="t"><b>${esc(k)}</b><span>${L.length ? 'ขั้นต่ำ ' + L[0] + ' · สูงสุด ' + L[1] : 'ยังไม่กำหนดระดับสำรอง'}</span></div><b style="font-size:18px;color:${low ? 'var(--red)' : hi ? '#b45309' : 'inherit'}">${n}</b></div>`; }).join('') || '<div class="empty">ยังไม่มีมิเตอร์ใหม่ในคลัง</div>'}</div>
     <div class="stick"><button class="btn grow" id="nClear">ล้างรายการ</button><button class="btn p grow" id="nSave" style="flex:1.6">ยืนยันรับเข้า ${NEWRX.got.length} เครื่อง</button></div>`;
@@ -1152,6 +1153,7 @@ function viewNew() {
     NEWRX.got.unshift({ pea: p, hold: !!h, why: h ? 'ไม่อยู่ในใบสั่งโอน' : '' }); if (h && navigator.vibrate) navigator.vibrate([80, 60, 80]); viewNew(); };
   bindScan('nScan', fn); SCAN_HANDLER = fn;
   $$('[data-nrm]').forEach(b => b.onclick = () => { keep(); NEWRX.got.splice(Number(b.dataset.nrm), 1); viewNew(); });
+  $('#nShelf').onclick = shelfSheet;
   $('#nClear').onclick = () => { NEWRX = { sto: '', exp: [], got: [] }; viewNew(); };
   $('#nSave').onclick = async () => {
     keep(); if (!NEWRX.sto) { toast('กรอกเลขที่ใบสั่งโอน', 'err'); $('#nSto').focus(); return; }
@@ -1174,6 +1176,128 @@ function releaseSheet(m) {
   $('#relGo').onclick = async () => { if (!$('#relWhy').value.trim()) { toast('ระบุการแก้ไข', 'err'); return; }
     try { const j = await api('newRelease', { pea: m.pea, why: $('#relWhy').value.trim() }); setMeter(j.meter); toast('ปลดพักแล้ว', 'ok'); closeSheet(); render(); } catch (e) { toast(e.message, 'err'); } };
 }
+/* ================= ป้ายชั้นวาง/โซน (ข้อ 74.1 เก็บเป็นหมวดหมู่) ================= */
+const ZONES = [
+  { t: 'มิเตอร์ชำรุด', big: 'รอคัดแยก', sub: 'ถอดคืนรับเข้าคลังแล้ว รอคณะกรรมการคัดแยก (ข้อ 69)' },
+  { t: 'มิเตอร์ Batch R', big: 'สภาพดี', sub: 'คัดแยกแล้ว นำกลับมาใช้ได้ (ข้อ 79.2)' },
+  { t: 'มิเตอร์ชำรุด · รอนำส่ง', big: 'ในประกัน', sub: 'ชำรุดเนื่องจากคุณภาพ ส่ง กมต. เคลมบริษัท (ข้อ 80.2)' },
+  { t: 'มิเตอร์ชำรุด · รอนำส่ง', big: 'ซ่อมได้', sub: 'ส่งศูนย์ซ่อมแปรสภาพ (ข้อ 80.4)' },
+  { t: 'มิเตอร์ชำรุด · รอจำหน่าย', big: 'ซ่อมไม่ได้', sub: 'จำหน่ายโดยวิธีขาย (ข้อ 80.3)' },
+  { t: 'มิเตอร์ชำรุด · หลักฐานคดี', big: 'ห้ามเคลื่อนย้าย', sub: 'บรรจุ มต.ตต.3 · จำหน่ายได้เมื่อคดีถึงที่สุด (ข้อ 68.1.2)', inv: true }
+];
+function labelZone(o) {
+  const [c, x, s] = lcanvas(), W = c.width, H = c.height, pad = 10 * s;
+  x.fillRect(pad, pad, Math.min(W * 0.62, 230 * s), 24 * s); x.fillStyle = '#fff'; txt(x, o.t, pad + 6 * s, pad + 2 * s, 16 * s, 700, Math.min(W * 0.62, 230 * s) - 12 * s); x.fillStyle = '#000';
+  txt(x, 'คลัง ' + (o.sloc || ''), W - pad, pad + 3 * s, 15 * s, 600, W * 0.3, 'right');
+  if (o.inv) { x.fillRect(pad, pad + 32 * s, W - 2 * pad, 56 * s); x.fillStyle = '#fff'; }
+  txt(x, o.big, o.inv ? W / 2 : pad, pad + 36 * s, 40 * s, 700, W - 2 * pad - 8 * s, o.inv ? 'center' : 'left'); x.fillStyle = '#000';
+  txt(x, o.sub || '', pad, pad + 96 * s, 14 * s, 500, W - 2 * pad);
+  if (o.sub2) txt(x, o.sub2, pad, pad + 116 * s, 14 * s, 600, W - 2 * pad);
+  if (o.code) { c128(x, o.code, pad, H - pad - 64 * s, W - 2 * pad - 100 * s, 52 * s); txt(x, 'รหัสพัสดุ', W - pad, H - pad - 56 * s, 12 * s, 500, 96 * s, 'right'); txt(x, o.code, W - pad, H - pad - 38 * s, 13 * s, 600, 96 * s, 'right'); }
+  else txt(x, owner(), pad, H - pad - 20 * s, 14 * s, 700, W - 2 * pad);
+  return c;
+}
+function shelfSheet() {
+  const sloc = UI.recvSloc || '1201', lv = (DB.settings && DB.settings.levels) || {};
+  const nm = {}; DB.meters.filter(m => isNew(m) || m.job === NEWJOB).forEach(m => { const k = lvKey(m); if (k && !nm[k]) nm[k] = m; });
+  const keys = Array.from(new Set(LEVEL_KEYS.filter(k => lv[k]).concat(Object.keys(nm))));
+  const opts = keys.map(k => { const m = nm[k] || {}, L = lv[k]; return { k: 'n:' + k, label: 'มิเตอร์ใหม่ ' + k, mk: () => labelZone({ t: 'มิเตอร์ใหม่ · Batch N', big: k, sloc, sub: [m.kind, m.brand].filter(Boolean).join(' · ') || 'ยังไม่ผ่านการใช้งาน', sub2: L ? 'ขั้นต่ำ ' + L[0] + ' / สูงสุด ' + L[1] + ' (ข้อ 78)' : '', code: m.mat || '' }) }; })
+    .concat(ZONES.map((z, i) => ({ k: 'z:' + i, label: z.t + ' — ' + z.big, mk: () => labelZone(Object.assign({ sloc }, z)) })));
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>ป้ายชั้นวาง / โซน</h2>
+    <p class="muted" style="margin-top:0">ข้อ 74.1 เก็บมิเตอร์เป็นหมวดหมู่ในคลังทึบ · ป้ายลังนำส่งพิมพ์จากชุดนำส่ง · ป้ายรายเครื่องพิมพ์จากหน้ารายละเอียด</p>
+    <div class="list" id="shL">${opts.map(o => `<label class="mi" style="cursor:pointer"><div class="t"><b style="font-family:inherit">${esc(o.label)}</b></div><input type="checkbox" data-sk="${esc(o.k)}" checked style="width:22px;height:22px;accent-color:var(--pea)"></label>`).join('')}</div>
+    <button class="btn p blk" style="margin-top:12px" id="shGo">พิมพ์ป้ายที่เลือก</button>`);
+  $('#shGo').onclick = () => { const sel = $$('#shL [data-sk]').filter(b => b.checked).map(b => opts.find(o => o.k === b.dataset.sk)); if (!sel.length) { toast('เลือกอย่างน้อย 1 ป้าย'); return; } printLabels(() => sel.map(o => o.mk()), 'ป้ายชั้นวาง/โซน'); };
+}
+
+/* ================= รายงานสรุปประจำเดือน ================= */
+const TH_MF = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+function monthData(ym) {
+  const start = ym + '-01', end = addDays(start, 32).slice(0, 8) + '01';
+  const d10 = v => String(v || '').slice(0, 10);
+  const mv = { R: { open: 0, in: 0, out: 0 }, N: { open: 0, in: 0, out: 0 } };
+  DB.meters.forEach(m => {
+    if (m.status === ST.FIELD || m.status === ST.LOST) return;
+    const b = m.job === NEWJOB ? 'N' : 'R', inD = d10(m.removedAt); if (!inD) return;
+    let outD = '';
+    if (TERMINAL.includes(m.status)) { const sh = m.ship && DB.ships.find(x => x.id === m.ship); outD = d10((sh && (sh.doneAt || sh.upAt)) || m.updatedAt); }
+    if (inD < start && !(outD && outD < start)) mv[b].open++;
+    if (inD >= start && inD < end) mv[b].in++;
+    if (outD && outD >= start && outD < end) mv[b].out++;
+  });
+  ['R', 'N'].forEach(b => mv[b].close = mv[b].open + mv[b].in - mv[b].out);
+  const sorted = DB.meters.filter(m => m.result && d10(m.sortedAt) >= start && d10(m.sortedAt) < end);
+  const res = {}; [ST.GOOD, ST.WARR, ST.REP, ST.UNREP, ST.EVID].forEach(r => res[r] = sorted.filter(m => m.result === r).length);
+  const lost = DB.meters.filter(m => m.status === ST.LOST && d10(m.removedAt) >= start && d10(m.removedAt) < end).length;
+  const cz = {}; DB.meters.filter(m => m.job !== NEWJOB && d10(m.removedAt) >= start && d10(m.removedAt) < end).forEach(m => { const k = m.cause || m.symptom || 'ไม่ระบุ'; cz[k] = (cz[k] || 0) + 1; });
+  const causes = Object.entries(cz).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const ships = DB.ships.filter(s => s.status !== 'ยกเลิก' && (s.status !== 'ส่งแล้ว' || d10(s.doneAt || s.upAt) >= start)).map(s => {
+    const L = SHIP_STEPS[s.kind] || [], st = s.steps || {}, done = L.filter(x => st[x.k] && st[x.k].done).length, nx = L.find(x => !(st[x.k] && st[x.k].done));
+    const due = nx ? stepDue(s, nx) : null;
+    return { id: s.id, kind: (SHIPK[s.kind] || {}).label || s.kind, n: (s.items || []).length, steps: done + '/' + L.length, status: s.status === 'ส่งแล้ว' && !nx ? 'ครบทุกขั้น' : (nx ? nx.t.split(/[ ·(]/)[0] : s.status), late: due && daysTo(due) < 0 ? -daysTo(due) : 0 };
+  });
+  const noSap = DB.meters.filter(m => !TERMINAL.includes(m.status) && sapNeed(m).some(k => !(m.sap || {})[k])).length;
+  const oldWait = DB.meters.filter(m => m.status === ST.WAIT && daysTo(m.removedAt) !== null && daysTo(m.removedAt) < -30).length;
+  const hold = DB.meters.filter(m => m.status === ST.NEWHOLD).length;
+  return { start, mv, res, lost, causes, ships, noSap, oldWait, hold };
+}
+function reportMonth(ym) {
+  if (!ym) {
+    sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>รายงานสรุปประจำเดือน</h2>
+      <p class="muted" style="margin-top:0">สรุปรับ–จ่าย–คงเหลือ ผลคัดแยก สาเหตุชำรุด ชุดนำส่ง และงานค้าง เสนอ ผจก.</p>
+      <div class="g2"><div><label class="lab" for="rmM">เดือน</label><input class="inp" type="month" id="rmM" value="${todayStr().slice(0, 7)}"></div>
+      <div><label class="lab">&nbsp;</label><button class="btn p blk" id="rmGo">เปิดรายงาน</button></div></div>`);
+    $('#rmGo').onclick = () => reportMonth($('#rmM').value || todayStr().slice(0, 7));
+    return;
+  }
+  const D = monthData(ym), mo = TH_MF[Number(ym.slice(5, 7)) - 1] + ' ' + (Number(ym.slice(0, 4)) + 543);
+  const R = DB.round, cs = R ? Object.values(R.open ? countSummary() : (R.summary || countSummary())) : [], cnt = cs.length ? { found: cs.reduce((a, x) => a + (x.scan || 0), 0), reg: cs.reduce((a, x) => a + (x.app || 0), 0), diff: cs.reduce((a, x) => a + (x.missDM || []).length + (x.missApp || []).length + (x.extra || []).length, 0) } : null;
+  const mx = Math.max(1, ...D.causes.map(c => c[1]));
+  const f = DB.settings && DB.settings.forms || {};
+  openReport('รายงานสรุปมิเตอร์ ' + mo, `<h1>รายงานสรุปมิเตอร์ชำรุดและมิเตอร์ใหม่ ประจำเดือน${esc(mo)}</h1><p style="text-align:center;margin:0">${esc(owner())}</p>
+    <h2>1. ความเคลื่อนไหว (เครื่อง)</h2>
+    <table><thead><tr><th>ประเภท</th><th class="r">ยกมา</th><th class="r">รับเข้า</th><th class="r">จ่ายออก</th><th class="r">คงเหลือ</th></tr></thead><tbody>
+      <tr><td>มิเตอร์ชำรุด/ถอดคืน (Batch R)</td><td class="r">${D.mv.R.open}</td><td class="r">${D.mv.R.in}</td><td class="r">${D.mv.R.out}</td><td class="r"><b>${D.mv.R.close}</b></td></tr>
+      <tr><td>มิเตอร์ใหม่ (Batch N)</td><td class="r">${D.mv.N.open}</td><td class="r">${D.mv.N.in}</td><td class="r">${D.mv.N.out}</td><td class="r"><b>${D.mv.N.close}</b></td></tr></tbody></table>
+    <p style="font-size:12px;margin:4px 0 0">รับเข้านับตามวันที่ถอดคืน/รับโอน · จ่ายออก = เบิกใช้ นำส่ง จำหน่าย · ไม่รวมมิเตอร์ที่ยังไม่รับเข้าคลังและสูญหาย</p>
+    <h2>2. ผลคัดแยกในเดือน</h2>
+    <table><thead><tr>${[ST.GOOD, ST.WARR, ST.REP, ST.UNREP, ST.EVID].map(r => `<th>${r}</th>`).join('')}<th>สูญหาย</th></tr></thead><tbody><tr>${[ST.GOOD, ST.WARR, ST.REP, ST.UNREP, ST.EVID].map(r => `<td style="text-align:center">${D.res[r]}</td>`).join('')}<td style="text-align:center">${D.lost}</td></tr></tbody></table>
+    <h2>3. สาเหตุชำรุด (ข้อ 68) — 5 อันดับแรก</h2>
+    ${D.causes.length ? `<table><tbody>${D.causes.map(([k, n]) => `<tr><td style="width:42%;border:0">${esc(k)}</td><td style="border:0"><div style="display:inline-block;height:12px;background:#6a1b74;width:${Math.round(n / mx * 300)}px;-webkit-print-color-adjust:exact;print-color-adjust:exact"></div> ${n}</td></tr>`).join('')}</tbody></table>` : '<p>ไม่มีมิเตอร์ถอดคืนในเดือนนี้</p>'}
+    <h2>4. ชุดนำส่ง/จำหน่าย</h2>
+    ${D.ships.length ? `<table><thead><tr><th>ชุด</th><th>ประเภท</th><th class="r">จำนวน</th><th>ขั้นตอน</th><th>สถานะ/ขั้นถัดไป</th></tr></thead><tbody>${D.ships.map(s => `<tr><td>${esc(s.id)}</td><td>${esc(s.kind)}</td><td class="r">${s.n}</td><td style="text-align:center">${s.steps}</td><td>${esc(s.status)}${s.late ? ` <b>(เลยกำหนด ${s.late} วัน)</b>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p>ไม่มีชุดนำส่งที่ดำเนินการในเดือนนี้</p>'}
+    <h2>5. งานค้าง / ข้อสังเกต</h2>
+    <p>• ยังไม่ติ๊กขั้นตอน SAP ${D.noSap} เครื่อง · รอคัดแยกเกิน 30 วัน ${D.oldWait} เครื่อง · มิเตอร์ใหม่พักไว้ (ไม่ตรงใบสั่งโอน) ${D.hold} เครื่อง<br>
+    • ตรวจนับรอบล่าสุด: ${R ? esc(thDate(R.at || R.closedAt || '')) + (cnt ? ' · นับได้ ' + cnt.found + '/' + cnt.reg + ' เครื่อง · ผลต่าง ' + cnt.diff + ' รายการ' : '') + (R.open ? ' (ยังไม่ปิดรอบ)' : '') : 'ยังไม่มี'}</p>
+    <div class="sig">${[[f.maker, 'ผู้รายงาน'], [f.mgr, 'ผู้จัดการ']].map(([n, r]) => `<div>ลงชื่อ ..................................................<br>(${esc(n || '..................................................')})<br>${r}</div>`).join('')}</div>`);
+}
+
+/* ================= คู่มือใช้งาน ================= */
+const GUIDE = [
+  { t: 'ถอดคืนหน้างาน', ref: 'ข้อ 52, 65–68', s: ['เมนู "รับมิเตอร์" → แท็บ "ถอดคืน"', 'สแกน PEA No. บนมิเตอร์ (เครื่อง Deli ยิงได้เลยไม่ต้องแตะช่อง)', 'กรอกเลขใบสั่งงาน เลือกประเภทงานและสาเหตุ — แตะ "ดูคำอธิบายสาเหตุ" ถ้าไม่แน่ใจ', 'ฝาครอบแตก: เลือกว่ามีผู้ชดใช้หรือไม่ · สูญหาย/วางเพลิง: ต้องมีเลขใบแจ้งความ', 'ถ่ายรูปมิเตอร์/สถานที่ แล้วกดบันทึก → พิมพ์ฉลากติดฝาครอบ (ห้ามเขียนปากกาเคมี)'] },
+  { t: 'รับเข้าคลังย่อย', ref: 'ข้อ 79.1', s: ['เมนู "รับมิเตอร์" → แท็บ "รับเข้าคลัง" เลือกคลังย่อย', 'ติ๊ก "ทำ MIGO 262 แล้ว" ถ้าทำใน SAP แล้ว', 'สแกนต่อเนื่องทีละเครื่อง ระบบบอกผลทุกเครื่อง (สีแดง = ยังไม่ได้บันทึกถอดคืน แตะเพื่อบันทึก)'] },
+  { t: 'คัดแยก (คณะกรรมการ)', ref: 'ข้อ 69, 80.1', s: ['เมนู "คัดแยก" สแกนหรือแตะมิเตอร์ที่รอคัดแยก', 'ระบบแนะนำผลตามสาเหตุ/วันประกัน เลือก สภาพดี / ในประกัน / ซ่อมได้ / ซ่อมไม่ได้ / หลักฐานคดี', 'จบรอบแล้วพิมพ์ "รายงานผลการคัดแยก" เสนอ ผจก.'] },
+  { t: 'นำส่ง/จำหน่าย', ref: 'ข้อ 80.2–80.4', s: ['เมนู "นำส่ง/จำหน่าย" → สร้างชุด เลือกประเภท สแกนมิเตอร์ใส่ลัง', 'ทำตามการ์ด "ขั้นตอนตามระเบียบ" ติ๊กทีละขั้น ใส่วันที่และเลขที่เอกสาร', 'ขั้นที่มีเอกสารจะมีปุ่มพิมพ์ (แบบที่ 23/24, ฉลากลัง) · ⏱ บอกวันที่เหลือ', 'ติ๊กขั้นส่ง/ส่งมอบแล้วชุดเป็น "ส่งแล้ว" ระบบติ๊ก SAP ให้ทุกเครื่องในชุด'] },
+  { t: 'ตรวจนับประจำเดือน', ref: 'ข้อ 76', s: ['ผู้ดูแลกด "เริ่มรอบตรวจนับใหม่" ใส่ยอด ZDMR101 และ MB52', 'สแกนทุกเครื่องในคลัง ระบบแยก ตรง / เกิน / ขาด', 'ใส่สาเหตุของผลต่าง แล้วปิดรอบ พิมพ์รายงานให้กรรมการลงนาม'] },
+  { t: 'มิเตอร์ใหม่ Batch N', ref: 'ข้อ 72.2.4, 78', s: ['เมนู "รับมิเตอร์" → แท็บ "มิเตอร์ใหม่" กรอกเลขใบสั่งโอน วางรายการ PEA จาก SAP', 'กรอกยี่ห้อ ชนิด ขนาด ครั้งเดียว แล้วสแกนทีละเครื่อง', 'เครื่องไม่ตรงใบสั่งโอนถูกพักไว้ ห้ามใช้จนกด "ปลดพัก"', 'เบิกติดตั้ง: เปิดรายละเอียด → "เบิกติดตั้ง (Batch N)" ใส่ใบสั่งงาน'] }
+];
+const FAQ = [
+  ['สแกนแล้วขึ้น "ไม่มีในระบบ"', 'ยังไม่ได้บันทึกถอดคืน — กดปุ่ม "บันทึกถอดคืนมิเตอร์นี้" ในหน้าที่ขึ้นมาได้เลย'],
+  ['สแกนแล้วตัวอักษรเพี้ยนเป็นภาษาไทย', 'ระบบแปลงให้เองอยู่แล้ว ถ้ายังผิดให้สลับแป้นพิมพ์เป็นภาษาอังกฤษ'],
+  ['มิเตอร์หาย/ถูกขโมย', 'ถอดคืน → เลือกประเภทงาน "สูญหาย" ต้องมีเลขใบแจ้งความ แล้วทำตามรายการขั้นตอนในหน้ารายละเอียด (ข้อ 67)'],
+  ['พิมพ์ฉลากไม่ออก', 'iPhone ใช้บลูทูธในเบราว์เซอร์ไม่ได้ — ระบบจะแสดงรูปฉลากให้บันทึกแล้วพิมพ์ผ่านแอป NIIMBOT แทน · Android ใช้ Chrome แล้วเปิดบลูทูธ'],
+  ['บันทึกผิด', 'เปิดรายละเอียดมิเตอร์ → "แก้ไข" · ถ้าคัดแยกผิดให้คัดแยกใหม่ได้ (ยกเว้นอยู่ในชุดนำส่งแล้ว ให้นำออกจากชุดก่อน)']
+];
+function guideSheet() {
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>วิธีใช้ระบบมิเตอร์</h2>
+    <p class="muted" style="margin-top:0">6 ขั้นตามเส้นทางมิเตอร์ แตะหัวข้อเพื่อดูวิธีทีละขั้น</p>
+    ${GUIDE.map((g, i) => `<details class="more" style="background:#fff;border:1px solid var(--line,#e4e1ea);border-radius:12px;padding:8px 12px;margin-top:8px"><summary style="display:flex;gap:10px;align-items:center;cursor:pointer"><span style="width:26px;height:26px;border-radius:50%;background:var(--pea);color:#fff;display:grid;place-items:center;font-weight:700;flex:none">${i + 1}</span><span style="flex:1"><b>${esc(g.t)}</b><br><span class="muted" style="font-size:12px">${esc(g.ref)}</span></span></summary>
+      <ol style="margin:8px 0 4px;padding-left:22px;line-height:1.6">${g.s.map(x => `<li>${esc(x)}</li>`).join('')}</ol></details>`).join('')}
+    <h3 style="margin-top:16px">คำถามที่พบบ่อย</h3>
+    ${FAQ.map(([q, a]) => `<details class="more" style="margin-top:6px"><summary><b>${esc(q)}</b></summary><p style="margin:6px 0">${esc(a)}</p></details>`).join('')}
+    <p class="muted" style="margin-top:14px">สถานะสีบนการ์ด: แดง = เลยกำหนด · ส้ม = ใกล้ครบ · ฟ้า = รอทำ</p>`);
+}
+
 /* ================= รายงาน (A4 พิมพ์ได้) ================= */
 function openReport(title, body) {
   const w = window.open('', '_blank');
@@ -1194,6 +1318,7 @@ const sigs = names => `<div class="sig">${(names.length ? names : ['', '', '']).
 function reportMenu() {
   sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>รายงาน</h2>
     <div class="list">
+      <button class="mi" id="r0"><div class="t"><b style="font-family:inherit">รายงานสรุปประจำเดือน</b><span>รับ–จ่าย–คงเหลือ · ผลคัดแยก · สาเหตุ · ชุดนำส่ง · งานค้าง</span></div></button>
       <button class="mi" id="r1"><div class="t"><b style="font-family:inherit">รายงานผลการคัดแยก</b><span>เสนอ ผจก. · คณะกรรมการสอบหาข้อเท็จจริง (ข้อ 80.1.2)</span></div></button>
       <button class="mi" id="r2"><div class="t"><b style="font-family:inherit">ทะเบียนมิเตอร์คงคลัง</b><span>แยกตามคลังย่อยและสถานะ</span></div></button>
       <button class="mi" id="r3"><div class="t"><b style="font-family:inherit">รายงานตรวจนับรอบล่าสุด</b><span>ผลต่าง + สาเหตุ + ลงนามกรรมการ (ข้อ 76)</span></div></button>
@@ -1206,6 +1331,7 @@ function reportMenu() {
       <button class="mi" id="rf2"><div class="t"><b style="font-family:inherit">รายงานผลการคัดแยกมิเตอร์ (แนบแบบที่ 24)</b><span>คณะกรรมการสอบหาข้อเท็จจริง · เลือกช่วงวันที่</span></div></button>
     </div>
     <p class="muted">แบบรายเครื่อง (มต.15, มต.ตม.4, มต.ทม.7, ผคต.กพร.-01, มต.ตต.2/3) อยู่ที่ปุ่ม "แบบฟอร์ม" ในหน้ารายละเอียดมิเตอร์ · แบบที่ 23/24 อยู่ในหน้าชุดนำส่ง</p>`);
+  $('#r0').onclick = () => reportMonth();
   $('#r1').onclick = () => reportSort(); $('#r2').onclick = reportStock; $('#r3').onclick = () => reportCount(); $('#r4').onclick = reportCause; $('#r5').onclick = exportCsv;
   $('#rf1').onclick = ledgerSheet; $('#rf2').onclick = sortFormSheet;
 }
@@ -1460,6 +1586,7 @@ function render() {
 function go(t) { UI.tab = t; $$('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); window.scrollTo(0, 0); SCAN_HANDLER = null; render(); }
 $$('.bnav button').forEach(b => b.onclick = () => { if (b.dataset.t === 'ship') UI.shipSel = null; go(b.dataset.t); });
 $('#reload').onclick = () => load();
+$('#helpBtn').onclick = guideSheet;
 $('#prnBtn').onclick = printerSheet;
 window.load = load; window.closeSheet = closeSheet;
 if (document.fonts && document.fonts.load) { document.fonts.load('700 20px "IBM Plex Sans Thai"'); document.fonts.load('500 20px "IBM Plex Sans Thai"'); }
