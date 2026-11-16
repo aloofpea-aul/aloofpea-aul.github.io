@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.9.1';
+const VERSION = '1.9.2';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -60,8 +60,25 @@ if (!S.cfg.gasUrl) S.cfg.gasUrl = DEFAULT_GAS;
 let quotaWarned = 0;
 const saveLocal = k => { try { localStorage.setItem(LS[k], JSON.stringify(S[k])); return true; } catch (e) { if (Date.now() - quotaWarned > 60000) { quotaWarned = Date.now(); setTimeout(() => toast('พื้นที่เก็บข้อมูลในเครื่องเต็ม — งานยังส่งขึ้น Google Sheet ได้ ควรสำรองข้อมูล/ลบงานเก่า', 6000), 0); } return false; } };
 let pushTimer = {};
+/* งานว่าง = กดสร้างแล้วไม่ได้ใส่อะไรเลย → ไม่ส่งขึ้น Sheet และลบทิ้งเองเมื่อออกจากงาน */
+const DEFAULT_NAMES = new Set(['งานสำรวจใหม่', 'งานไม่มีชื่อ', 'ประมาณราคาด่วน', '']);
+function isEmptyJob(j) {
+  return !!j && !(j.poles || []).length && !(j.spans || []).length && !(j.cust && (j.cust.n || j.cust.a || j.cust.t)) && !j.place && !j.reqNo && !j.qNo && !j.note
+    && (DEFAULT_NAMES.has((j.name || '').trim()) || (typeof QUICK !== 'undefined' && QUICK.some(q => q.n === j.name)));
+}
+function pruneEmpty(keepId) {
+  let n = 0;
+  for (const j of Object.values(S.jobs)) {
+    if (j.id === keepId || !isEmptyJob(j)) continue;
+    delete S.jobs[j.id]; markDirty(j.id, false); n++;
+    if (S.cfg.gasUrl) { queueDel(j.id, true); gas('deleteJob', { id: j.id }).then(() => queueDel(j.id, false)).catch(() => {}); }
+  }
+  if (n) saveLocal('jobs');
+  return n;
+}
 function saveJob(job) {
   job.updated = Date.now(); S.jobs[job.id] = job;
+  if (isEmptyJob(job)) { saveLocal('jobs'); return; }
   if (S.cfg.gasUrl) markDirty(job.id, true);
   saveLocal('jobs');
   if (S.cfg.gasUrl) { markDirty(job.id, true); clearTimeout(pushTimer[job.id]); pushTimer[job.id] = setTimeout(() => pushJob(job.id), 1500); }
@@ -279,10 +296,13 @@ function route() {
   const [v, id, sub] = h.split('/');
   if (cur.map) { try { cur.map.stop(); cur.map.off(); cur.map.remove(); } catch (e) {} cur.map = null; cur.gpsMk = null; }
   app.classList.toggle('full', v === 'map'); window.scrollTo(0, 0);
+  if (['home', 'settings', 'quick'].includes(v)) { pruneEmpty(null); cur.job = null; }
   if (v === 'home') return vHome();
   if (v === 'settings') return vSettings();
   if (v === 'quick') return vQuick();
-  const job = S.jobs[id]; if (!job) return go('home');
+  const job = S.jobs[id];
+  if (cur.job && cur.job.id !== id && S.jobs[cur.job.id] && isEmptyJob(cur.job)) pruneEmpty(id);
+  if (!job) return go('home');
   cur.job = job;
   if (v === 'map') return vMap(job);
   if (v === 'list') return vList(job);
