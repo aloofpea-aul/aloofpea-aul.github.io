@@ -23,10 +23,12 @@ const addDays = (s, n) => { const d = toD(s); if (!d) return ''; d.setDate(d.get
 const pad4 = v => { const t = String(v == null ? '' : v).trim(); return /^\d{1,4}$/.test(t) ? t.padStart(4, '0') : t; };
 
 /* ================= กติกาตามระเบียบ ================= */
-const ST = { FIELD: 'ถอดคืนแล้ว', WAIT: 'รอคัดแยก', GOOD: 'สภาพดี', WARR: 'ในประกัน', REP: 'ซ่อมได้', UNREP: 'ซ่อมไม่ได้', EVID: 'หลักฐานคดี', LOST: 'สูญหาย', USED: 'เบิกใช้แล้ว', SENT: 'ส่งออกแล้ว', SOLD: 'จำหน่ายแล้ว' };
+const ST = { FIELD: 'ถอดคืนแล้ว', WAIT: 'รอคัดแยก', GOOD: 'สภาพดี', WARR: 'ในประกัน', REP: 'ซ่อมได้', UNREP: 'ซ่อมไม่ได้', EVID: 'หลักฐานคดี', LOST: 'สูญหาย', USED: 'เบิกใช้แล้ว', SENT: 'ส่งออกแล้ว', SOLD: 'จำหน่ายแล้ว', NEW: 'ใหม่ Batch N', NEWHOLD: 'ใหม่ รอแก้ไข' };
+const NEWJOB = 'รับโอนใหม่ (Batch N)';
+const isNew = m => m.status === ST.NEW || m.status === ST.NEWHOLD;
 const TERMINAL = [ST.USED, ST.SENT, ST.SOLD];
-const IN_STORE = [ST.WAIT, ST.GOOD, ST.WARR, ST.REP, ST.UNREP, ST.EVID];
-const TAGCLS = { [ST.FIELD]: 't-field', [ST.WAIT]: 't-wait', [ST.GOOD]: 't-good', [ST.WARR]: 't-warr', [ST.REP]: 't-rep', [ST.UNREP]: 't-unrep', [ST.EVID]: 't-evid', [ST.LOST]: 't-lost', [ST.USED]: 't-done', [ST.SENT]: 't-done', [ST.SOLD]: 't-done' };
+const IN_STORE = [ST.WAIT, ST.GOOD, ST.WARR, ST.REP, ST.UNREP, ST.EVID, ST.NEW, ST.NEWHOLD];
+const TAGCLS = { [ST.FIELD]: 't-field', [ST.WAIT]: 't-wait', [ST.GOOD]: 't-good', [ST.WARR]: 't-warr', [ST.REP]: 't-rep', [ST.UNREP]: 't-unrep', [ST.EVID]: 't-evid', [ST.LOST]: 't-lost', [ST.USED]: 't-done', [ST.SENT]: 't-done', [ST.SOLD]: 't-done', [ST.NEW]: 't-good', [ST.NEWHOLD]: 't-unrep' };
 const tag = s => `<span class="tag ${TAGCLS[s] || 't-field'}">${esc(s)}</span>`;
 const JOBS = ['สับเปลี่ยนชำรุด', 'สับเปลี่ยนตามวาระ', 'ถอนคืน (เลิกใช้ไฟ)', 'ถอนคืน (งดจ่าย/ค้างชำระ)', 'ถอนคืน (ไม่มีการใช้ไฟ)', 'สูญหาย'];
 const CAUSE_ACT = ['ใช้ไฟเกินพิกัด', 'ละเมิดการใช้ไฟฟ้า', 'ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ)', 'เพลิงไหม้ (วางเพลิง/การกระทำ)'];
@@ -93,7 +95,9 @@ const SAP = {
   'E_POL': 'แจ้งความร้องทุกข์ (นิติกร/ผู้รับมอบอำนาจ) ข้อ 67.2, 68.1.4',
   'E_3002': 'Block Stock ระบุสาเหตุใน Doc.Text จุดจัดเก็บ 3002 รอสอบสวน (ข้อ 76.2 หมายเหตุ 2)',
   'E_COM': 'ตั้งกรรมการสอบหาข้อเท็จจริง สรุปผลเสนอ ผจก. ภายใน 15 วันหลังได้ข้อยุติ (ข้อ 76.2 (2.3.1))',
-  'E_END': 'คดีถึงที่สุด/ได้รับชดใช้ครบ → คัดแยกใหม่เป็น "ซ่อมไม่ได้" เพื่อขาย (ข้อ 68.1.2 (2))'
+  'E_END': 'คดีถึงที่สุด/ได้รับชดใช้ครบ → คัดแยกใหม่เป็น "ซ่อมไม่ได้" เพื่อขาย (ข้อ 68.1.2 (2))',
+  'N101': 'MIGO รับพัสดุอ้างอิงใบสั่งโอน ตรวจ Serialize ถูกต้อง (ข้อ 72.2.4, 73.2.2)',
+  'N261': 'MIGO 261 เบิกจ่าย Batch N อ้างอิงใบสั่งงานติดตั้ง/สับเปลี่ยน'
 };
 /* ขั้นตอนชุดนำส่งตามระเบียบ: who = we (ผมต./ผบต.) | ext (หน่วยงานอื่น · บันทึกผล) · bind = ผูกกับช่องของชุด · close = ส่ง/ขายเสร็จ */
 const SHIP_STEPS = {
@@ -132,7 +136,9 @@ function stepDue(S, st) {
 }
 function sapNeed(m) {
   const s = m.status, r = m.result;
-  if (s === ST.FIELD) return [];
+  if (s === ST.FIELD || s === ST.NEWHOLD) return [];
+  if (s === ST.NEW) return ['N101'];
+  if (m.job === NEWJOB) return ['N101', 'N261'];
   if (s === ST.LOST) return ['262', '344', 'E_REP', 'E_POL', 'E_3002', 'E_COM'];
   if (s === ST.EVID || r === ST.EVID) return ['262', '344', 'E_REP', 'E_PACK', 'E_POL', 'E_3002', 'E_COM', 'E_END'];
   if (s === ST.USED) return ['262', '261'];
@@ -508,7 +514,7 @@ function meterMissing(pea, z) {
   $('#goIntake').onclick = () => { closeSheet(); UI.intake = 'field'; UI.prefill = pea; go('intake'); };
 }
 function meterSheet(m, log, z) {
-  const need = sapNeed(m), sug = IN_STORE.includes(m.status) && m.status !== ST.EVID ? suggest(m) : null;
+  const need = sapNeed(m), sug = IN_STORE.includes(m.status) && m.status !== ST.EVID && !isNew(m) ? suggest(m) : null;
   const ship = m.ship ? DB.ships.find(s => s.id === m.ship) : null;
   const wd = daysTo(m.warranty);
   sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button>
@@ -537,7 +543,8 @@ function meterSheet(m, log, z) {
     <div class="sap">${Object.keys(SAP).filter(k => need.includes(k) || m.sap[k]).map(k => `<label class="${need.includes(k) && !m.sap[k] ? 'need' : ''}"><input type="checkbox" data-sap="${k}"${m.sap[k] ? ' checked' : ''}><span class="grow">${esc(SAP[k])}</span>${m.sap[k] ? `<span class="muted">${thDate(m.sap[k])}</span>` : ''}</label>`).join('') || '<p class="muted">ยังไม่มีขั้นตอน SAP สำหรับสถานะนี้</p>'}</div>
     <div class="row" style="margin-top:14px">
       <button class="btn p grow" id="mPrint">พิมพ์ฉลาก</button>
-      ${IN_STORE.includes(m.status) || m.status === ST.FIELD ? `<button class="btn grow" id="mSort">คัดแยก</button>` : ''}
+      ${(IN_STORE.includes(m.status) || m.status === ST.FIELD) && !isNew(m) ? `<button class="btn grow" id="mSort">คัดแยก</button>` : ''}
+      ${m.status === ST.NEW ? `<button class="btn grow" id="mNIssue">เบิกติดตั้ง (Batch N)</button>` : ''}${m.status === ST.NEWHOLD ? `<button class="btn grow" id="mNRel">ปลดพัก (แก้ไขแล้ว)</button>` : ''}
       ${m.status === ST.GOOD ? `<button class="btn grow" id="mIssue">เบิกใช้ (Batch R)</button>` : ''}
       <button class="btn grow" id="mEdit">แก้ไข/เพิ่มรูป</button>
       <button class="btn grow" id="mForms">แบบฟอร์ม</button>
@@ -552,19 +559,22 @@ function meterSheet(m, log, z) {
   $('#mPrint').onclick = () => printLabels(() => [labelMeter(MAP[m.pea] || m, ship && ship.memo)], 'ฉลาก ' + m.pea);
   if ($('#mSort')) $('#mSort').onclick = () => { closeSheet(); UI.sortSel = m.pea; go('sort'); };
   if ($('#mIssue')) $('#mIssue').onclick = () => issueSheet(m);
+  if ($('#mNIssue')) $('#mNIssue').onclick = () => issueSheet(m, true);
+  if ($('#mNRel')) $('#mNRel').onclick = () => releaseSheet(m);
   $('#mEdit').onclick = () => editSheet(m);
   $('#mForms').onclick = () => formsMenu(MAP[m.pea] || m);
   if ($('#toShip')) $('#toShip').onclick = e => { e.preventDefault(); closeSheet(); UI.shipSel = ship.id; go('ship'); };
 }
-function issueSheet(m) {
-  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>เบิกใช้มิเตอร์สภาพดี <span class="mono">${esc(m.pea)}</span></h2>
-    <p class="muted" style="margin-top:0">ข้อ 79.2: บันทึกเบิกจ่าย MIGO MVT 261 Batch R อ้างอิงใบสั่งติดตั้ง/สับเปลี่ยน ตรวจ PEA No. ให้ตรงตัวเครื่องจริง</p>
+function issueSheet(m, n) {
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>${n ? 'เบิกติดตั้งมิเตอร์ใหม่' : 'เบิกใช้มิเตอร์สภาพดี'} <span class="mono">${esc(m.pea)}</span></h2>
+    <p class="muted" style="margin-top:0">${n ? 'บันทึกเบิกจ่าย MIGO MVT 261 Batch N อ้างอิงใบสั่งติดตั้ง/สับเปลี่ยน ตรวจ PEA No. และ Register group ให้ตรงตัวเครื่องจริง' : 'ข้อ 79.2: บันทึกเบิกจ่าย MIGO MVT 261 Batch R อ้างอิงใบสั่งติดตั้ง/สับเปลี่ยน ตรวจ PEA No. ให้ตรงตัวเครื่องจริง'}</p>
+    ${n ? '<label class="lab" for="isCa">หมายเลขผู้ใช้ไฟที่ติดตั้ง</label><input class="inp mono" id="isCa" inputmode="numeric">' : ''}
     <label class="lab r" for="isWo">เลขใบสั่งงานติดตั้ง/สับเปลี่ยน *</label><input class="inp mono" id="isWo" inputmode="numeric">
     <label class="chk" style="display:flex;gap:10px;align-items:center;min-height:46px;margin-top:8px"><input type="checkbox" id="is261" style="width:22px;height:22px;accent-color:var(--pea)"> ทำ MIGO 261 ในระบบ SAP แล้ว</label>
     <button class="btn p blk" style="margin-top:10px" id="isGo">บันทึกเบิกใช้</button>`);
   $('#isGo').onclick = async () => {
     const b = $('#isGo'); b.disabled = true;
-    try { const j = await api('meterIssue', { pea: m.pea, wo: $('#isWo').value.trim(), sap261: $('#is261').checked }); setMeter(j.meter); toast('เบิกใช้แล้ว', 'ok'); closeSheet(); render(); }
+    try { const j = await api(n ? 'newIssue' : 'meterIssue', { pea: m.pea, wo: $('#isWo').value.trim(), ca: $('#isCa') ? $('#isCa').value.trim() : '', sap261: $('#is261').checked }); setMeter(j.meter); toast('เบิกใช้แล้ว', 'ok'); closeSheet(); render(); }
     catch (e) { toast(e.message, 'err'); b.disabled = false; }
   };
 }
@@ -656,6 +666,12 @@ function alerts() {
   });
   const ev = DB.meters.filter(m => (m.status === ST.EVID || m.status === ST.LOST) && sapNeed(m).some(k => k.startsWith('E_') && k !== 'E_END' && !m.sap[k]));
   if (ev.length) out.push(['b', 'หลักฐานคดี/สูญหาย ยังทำขั้นตอนไม่ครบ ' + ev.length + ' เครื่อง', 'รายงานผู้บังคับบัญชา · แจ้งความ · Block 3002 · กรรมการสอบหาข้อเท็จจริง (ข้อ 67, 68.1.2, 76.2)', () => listSheet('หลักฐานคดี/สูญหาย ขั้นตอนไม่ครบ', ev)]);
+  const nh = DB.meters.filter(m => m.status === ST.NEWHOLD);
+  if (nh.length) out.push(['', 'มิเตอร์ใหม่พักไว้ ' + nh.length + ' เครื่อง', 'ไม่ตรงใบสั่งโอน ห้ามนำไปใช้ — แจ้งคลังผู้โอนแก้ไข แล้วกดปลดพัก (ข้อ 72.2.4)', () => listSheet('มิเตอร์ใหม่ รอแก้ไข', nh)]);
+  const lv = (DB.settings && DB.settings.levels) || {}, ns = newStock();
+  const lows = Object.keys(lv).filter(k => lv[k][0] && (ns[k] || 0) < lv[k][0]), highs = Object.keys(lv).filter(k => lv[k][1] && (ns[k] || 0) > lv[k][1]);
+  if (lows.length) out.push(['b', 'มิเตอร์ใหม่ต่ำกว่าระดับสำรอง ' + lows.length + ' ขนาด', lows.map(k => k + ' เหลือ ' + (ns[k] || 0) + '/' + lv[k][0]).join(' · ') + ' — แจ้งความต้องการให้คลังภาค (ข้อ 78)', () => { UI.intake = 'new'; go('intake'); }]);
+  if (highs.length) out.push(['b', 'มิเตอร์ใหม่เกินระดับสำรอง ' + highs.length + ' ขนาด', highs.map(k => k + ' มี ' + ns[k] + '/' + lv[k][1]).join(' · ') + ' — ระวัง Overstock (ข้อ 78)', () => { UI.intake = 'new'; go('intake'); }]);
   const w = DB.meters.filter(m => m.status === ST.WAIT).length;
   if (w) out.push(['g', 'รอคัดแยก ' + w + ' เครื่อง', 'คณะกรรมการสอบหาข้อเท็จจริงคัดแยก (ข้อ 80.1.2)', () => go('sort')]);
   const lastM = DB.round;
@@ -671,7 +687,7 @@ function viewHome() {
   $('#view').innerHTML = `${scanBox('homeScan', 'สแกน PEA No. เพื่อดูประวัติ')}
     <p class="hint">สแกนด้วยเครื่อง Deli ได้ทุกหน้าโดยไม่ต้องแตะช่อง · ระบบแปลงตัวอักษรให้เองถ้าแป้นพิมพ์เป็นภาษาไทย</p>
     <div class="kpis" style="margin-top:12px">
-      ${[[ST.FIELD, 'ถอดคืน รอรับเข้า'], [ST.WAIT, 'รอคัดแยก'], [ST.GOOD, 'สภาพดี (Batch R)'], [ST.WARR, 'ในประกัน'], [ST.REP, 'ซ่อมได้'], [ST.UNREP, 'ซ่อมไม่ได้'], [ST.EVID, 'หลักฐานคดี'], [ST.LOST, 'สูญหาย']].map(([s, l]) => `<button class="kpi" data-st="${esc(s)}"><span>${esc(l)}</span><b>${cnt(s)}</b></button>`).join('')}
+      ${[[ST.FIELD, 'ถอดคืน รอรับเข้า'], [ST.WAIT, 'รอคัดแยก'], [ST.GOOD, 'สภาพดี (Batch R)'], [ST.WARR, 'ในประกัน'], [ST.REP, 'ซ่อมได้'], [ST.UNREP, 'ซ่อมไม่ได้'], [ST.EVID, 'หลักฐานคดี'], [ST.LOST, 'สูญหาย'], [ST.NEW, 'ใหม่ Batch N'], [ST.NEWHOLD, 'ใหม่ รอแก้ไข']].map(([s, l]) => `<button class="kpi" data-st="${esc(s)}"><span>${esc(l)}</span><b>${cnt(s)}</b></button>`).join('')}
     </div>
     ${al.length ? `<div class="head"><h2>งานที่ต้องทำ</h2></div><div class="alerts">${al.map((a, i) => `<button class="al ${a[0]}" data-al="${i}"><div><b>${esc(a[1])}</b><span>${esc(a[2])}</span></div></button>`).join('')}</div>` : `<div class="note g" style="margin-top:14px">ไม่มีงานค้าง</div>`}
     <div class="head"><h2>อัปเดตล่าสุด</h2><div class="row"><button class="btn sm" id="hReport">รายงาน</button>${DB.me.admin ? '<button class="btn sm" id="hSet">ตั้งค่า / ZDMR101</button>' : ''}</div></div>
@@ -694,9 +710,9 @@ function listSheet(title, list) {
 
 /* ================= หน้า: รับมิเตอร์ ================= */
 function viewIntake() {
-  $('#view').innerHTML = `<div class="seg" style="width:100%"><button data-i="field" class="${UI.intake === 'field' ? 'on' : ''}">ถอดคืนหน้างาน</button><button data-i="recv" class="${UI.intake === 'recv' ? 'on' : ''}">รับเข้าคลังย่อย</button></div><div id="inBody"></div>`;
+  $('#view').innerHTML = `<div class="seg" style="width:100%"><button data-i="field" class="${UI.intake === 'field' ? 'on' : ''}">ถอดคืน</button><button data-i="recv" class="${UI.intake === 'recv' ? 'on' : ''}">รับเข้าคลัง</button><button data-i="new" class="${UI.intake === 'new' ? 'on' : ''}">มิเตอร์ใหม่</button></div><div id="inBody"></div>`;
   $$('[data-i]').forEach(b => b.onclick = () => { UI.intake = b.dataset.i; viewIntake(); });
-  if (UI.intake === 'recv') viewRecv(); else viewField();
+  if (UI.intake === 'recv') viewRecv(); else if (UI.intake === 'new') viewNew(); else viewField();
 }
 let FORM = {};
 function viewField() {
@@ -1099,6 +1115,65 @@ function shipEdit(s) {
   draw();
 }
 
+/* ================= มิเตอร์ใหม่ Batch N (ข้อ 72.2.4, 74, 77.1, 78) ================= */
+const LEVEL_KEYS = ['1 เฟส 5(15) A', '1 เฟส 15(45) A', '1 เฟส 30(100) A', '1 เฟส 5(100) A', '3 เฟส 15(45) A', '3 เฟส 30(100) A', '3 เฟส 5(6) A (ประกอบ CT)'];
+const lvKey = m => [m.phase, m.size].filter(Boolean).join(' ');
+function newStock() { const c = {}; DB.meters.filter(m => m.status === ST.NEW).forEach(m => { const k = lvKey(m) || 'ไม่ระบุขนาด'; c[k] = (c[k] || 0) + 1; }); return c; }
+let NEWRX = { sto: '', exp: [], got: [] };
+function viewNew() {
+  const st = newStock(), lv = (DB.settings && DB.settings.levels) || {};
+  const expSet = new Set(NEWRX.exp), gotSet = new Set(NEWRX.got.map(g => g.pea));
+  const miss = NEWRX.exp.filter(p => !gotSet.has(p));
+  $('#inBody').innerHTML = `
+    <p class="muted" style="margin:12px 0 6px">รับโอนมิเตอร์ใหม่จากคลังภาค · ตรวจ PEA No. ให้ตรงใบสั่งโอน ถ้าไม่ตรงระบบพักไว้ "รอแก้ไข" ห้ามนำไปใช้จนคลังผู้โอนแก้ไข (ข้อ 72.2.4)</p>
+    <div class="g2"><div><label class="lab r" for="nSto">เลขที่ใบสั่งโอน *</label><input class="inp mono" id="nSto" value="${esc(NEWRX.sto)}"></div>
+      <div><label class="lab" for="nSloc">เข้าคลังย่อย</label><select class="inp" id="nSloc">${slocOpts(UI.recvSloc)}</select></div></div>
+    <details class="more"${NEWRX.exp.length ? ' open' : ''}><summary>รายการ PEA ตามใบสั่งโอน (${NEWRX.exp.length}) — วางจาก SAP เพื่อให้ระบบเทียบ</summary>
+      <textarea class="inp" id="nExp" rows="3" placeholder="วางเลข PEA No. ทีละบรรทัด หรือคั่นด้วยช่องว่าง">${esc(NEWRX.exp.join('\n'))}</textarea></details>
+    <details class="more" open><summary>ข้อมูลรุ่นนี้ (ใช้กับทุกเครื่องที่สแกน)</summary>${meterSpecFields(NEWRX.spec || { kind: 'อิเล็กทรอนิกส์', phase: '1 เฟส' })}</details>
+    <div style="margin-top:10px">${scanBox('nScan', 'สแกนมิเตอร์ใหม่ทีละเครื่อง')}</div>
+    <div class="card" style="margin-top:10px"><div class="head" style="margin:0"><b>สแกนแล้ว ${NEWRX.got.length}${NEWRX.exp.length ? ' / ' + NEWRX.exp.length : ''} เครื่อง</b>${NEWRX.got.some(g => g.hold) ? `<span style="color:var(--red);font-weight:700">ไม่ตรง ${NEWRX.got.filter(g => g.hold).length}</span>` : ''}</div>
+      <div class="scanlog">${NEWRX.got.map((g, i) => `<div class="sl ${g.hold ? 'bad' : 'ok'}"><b>${esc(g.pea)}</b><span class="grow">${esc(g.hold ? g.why : 'ตรงใบสั่งโอน')}</span><button class="btn sm" data-nrm="${i}" aria-label="เอาออก">×</button></div>`).join('') || '<div class="empty">ยังไม่ได้สแกน</div>'}</div>
+      ${miss.length ? `<div class="muted" style="margin-top:6px">ยังไม่สแกน ${miss.length} เครื่อง: ${esc(miss.slice(0, 8).join(', '))}${miss.length > 8 ? ' …' : ''}</div>` : ''}</div>
+    <label class="chk" style="display:flex;gap:10px;align-items:center;min-height:46px;margin-top:6px"><input type="checkbox" id="n101" style="width:22px;height:22px;accent-color:var(--pea)"> ทำ MIGO รับพัสดุอ้างอิงใบสั่งโอนใน SAP แล้ว</label>
+    <div class="note b" style="margin-top:6px">หลังรับ: ตรวจ Serialize (PEA / Register group / วันประกัน) ถ้าไม่ถูกห้ามนำไปติดตั้ง (ข้อ 73.2.2) · เก็บในคลังทึบเป็นหมวดหมู่ (ข้อ 74.1)</div>
+    <h3 style="margin-top:14px">คงคลังมิเตอร์ใหม่ (สำรองตามข้อ 78)</h3>
+    <div class="list">${Object.keys(Object.assign({}, lv, st)).map(k => { const n = st[k] || 0, L = lv[k] || []; const low = L[0] && n < L[0], hi = L[1] && n > L[1];
+      return `<div class="mi"><div class="t"><b>${esc(k)}</b><span>${L.length ? 'ขั้นต่ำ ' + L[0] + ' · สูงสุด ' + L[1] : 'ยังไม่กำหนดระดับสำรอง'}</span></div><b style="font-size:18px;color:${low ? 'var(--red)' : hi ? '#b45309' : 'inherit'}">${n}</b></div>`; }).join('') || '<div class="empty">ยังไม่มีมิเตอร์ใหม่ในคลัง</div>'}</div>
+    <div class="stick"><button class="btn grow" id="nClear">ล้างรายการ</button><button class="btn p grow" id="nSave" style="flex:1.6">ยืนยันรับเข้า ${NEWRX.got.length} เครื่อง</button></div>`;
+  bindSpec.cb = null; bindSpec();
+  const keep = () => { NEWRX.sto = $('#nSto').value.trim(); NEWRX.spec = readSpec(); NEWRX.exp = Array.from(new Set(($('#nExp').value.match(/[A-Za-z0-9-]+/g) || []).map(peaOf).filter(Boolean))); NEWRX.got.forEach(g => { const h = NEWRX.exp.length && !NEWRX.exp.includes(g.pea); g.hold = !!h; g.why = h ? 'ไม่อยู่ในใบสั่งโอน' : ''; }); };
+  $('#nSto').onchange = keep; $('#nExp').onchange = () => { keep(); viewNew(); };
+  $('#nSloc').onchange = () => { UI.recvSloc = $('#nSloc').value; lsr('mt_recv_sloc', UI.recvSloc); };
+  const fn = c => { keep(); const p = peaOf(c); if (!p) { toast('ไม่ใช่ PEA No.: ' + c, 'err'); return; }
+    if (NEWRX.got.some(g => g.pea === p)) { toast(p + ' สแกนแล้ว'); return; }
+    const m = MAP[p]; if (m && !TERMINAL.includes(m.status) && m.status !== ST.LOST) { toast(p + ' มีในระบบแล้ว (' + m.status + ')', 'err', 4000); return; }
+    const h = NEWRX.exp.length && !NEWRX.exp.includes(p);
+    NEWRX.got.unshift({ pea: p, hold: !!h, why: h ? 'ไม่อยู่ในใบสั่งโอน' : '' }); if (h && navigator.vibrate) navigator.vibrate([80, 60, 80]); viewNew(); };
+  bindScan('nScan', fn); SCAN_HANDLER = fn;
+  $$('[data-nrm]').forEach(b => b.onclick = () => { keep(); NEWRX.got.splice(Number(b.dataset.nrm), 1); viewNew(); });
+  $('#nClear').onclick = () => { NEWRX = { sto: '', exp: [], got: [] }; viewNew(); };
+  $('#nSave').onclick = async () => {
+    keep(); if (!NEWRX.sto) { toast('กรอกเลขที่ใบสั่งโอน', 'err'); $('#nSto').focus(); return; }
+    if (!NEWRX.got.length) { toast('ยังไม่ได้สแกนมิเตอร์', 'err'); return; }
+    const sp = NEWRX.spec, hold = NEWRX.got.filter(g => g.hold).length;
+    if (NEWRX.exp.length && NEWRX.got.length - hold < NEWRX.exp.length && !confirm('สแกนยังไม่ครบใบสั่งโอน (' + (NEWRX.got.length - hold) + '/' + NEWRX.exp.length + ') รับเข้าเท่าที่สแกนไว้?')) return;
+    const b = $('#nSave'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก';
+    try { const j = await api('newReceive', { sto: NEWRX.sto, sloc: UI.recvSloc, sap101: $('#n101').checked, items: NEWRX.got.map(g => Object.assign({ pea: g.pea, hold: g.hold, why: g.why }, sp)) });
+      (j.meters || []).forEach(setMeter); toast('รับเข้า ' + (j.meters || []).length + ' เครื่อง' + (hold ? ' (พักไว้ ' + hold + ')' : ''), 'ok', 4000);
+      if (j.skipped && j.skipped.length) toast('ข้าม: ' + j.skipped.join(', '), 'err', 6000);
+      NEWRX = { sto: '', exp: [], got: [], spec: sp }; viewNew(); }
+    catch (e) { toast(e.message, 'err', 5000); b.disabled = false; b.textContent = 'ยืนยันรับเข้า'; }
+  };
+}
+function releaseSheet(m) {
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>ปลดพักมิเตอร์ใหม่ <span class="mono">${esc(m.pea)}</span></h2>
+    <p class="muted" style="margin-top:0">ใช้เมื่อคลังผู้โอนแก้ไขข้อมูลให้ถูกต้องแล้ว และบันทึกรับในระบบอ้างอิงใบสั่งโอนแล้ว (ข้อ 72.2.4 (1))</p>
+    <label class="lab r" for="relWhy">แก้ไขอย่างไร / อ้างอิงเอกสาร *</label><input class="inp" id="relWhy">
+    <button class="btn p blk" style="margin-top:10px" id="relGo">ปลดพัก พร้อมใช้</button>`);
+  $('#relGo').onclick = async () => { if (!$('#relWhy').value.trim()) { toast('ระบุการแก้ไข', 'err'); return; }
+    try { const j = await api('newRelease', { pea: m.pea, why: $('#relWhy').value.trim() }); setMeter(j.meter); toast('ปลดพักแล้ว', 'ok'); closeSheet(); render(); } catch (e) { toast(e.message, 'err'); } };
+}
 /* ================= รายงาน (A4 พิมพ์ได้) ================= */
 function openReport(title, body) {
   const w = window.open('', '_blank');
@@ -1249,8 +1324,8 @@ function ledgerRows(ym) {
     const inD = String(m.removedAt || '').slice(0, 10); if (!inD) return;
     let outD = '', outT = '', ref = '';
     if (m.status === ST.SENT || m.status === ST.SOLD) { const sh = DB.ships.find(x => x.id === m.ship); outD = String((sh && (sh.doneAt || sh.upAt)) || m.updatedAt || '').slice(0, 10); outT = (m.status === ST.SOLD ? 'จ่ายจำหน่ายโดยวิธีขาย' : 'จ่ายนำส่ง ' + (sh && sh.kind === 'warranty' ? 'กมต. (เคลมประกัน)' : 'แปรสภาพ (ซ่อมได้)')) + (sh ? ' ชุด ' + sh.id : ''); ref = sh ? (sh.memo || sh.approvalNo || '') : ''; }
-    else if (m.status === ST.USED) { outD = String(m.updatedAt || '').slice(0, 10); outT = 'เบิกใช้ใหม่ (Batch R)'; }
-    ev.push({ d: inD, k: 'in', g: 'รับคืนมิเตอร์ (' + (m.job || 'ถอดคืน') + ')', ref: m.wo, c: cat(m) });
+    else if (m.status === ST.USED) { outD = String(m.updatedAt || '').slice(0, 10); outT = m.job === NEWJOB ? 'เบิกติดตั้ง (Batch N)' : 'เบิกใช้ใหม่ (Batch R)'; }
+    ev.push({ d: inD, k: 'in', g: m.job === NEWJOB ? 'รับโอนมิเตอร์ใหม่ (Batch N)' : 'รับคืนมิเตอร์ (' + (m.job || 'ถอดคืน') + ')', ref: m.job === NEWJOB ? m.wo : m.wo, c: cat(m) });
     if (outD) ev.push({ d: outD, k: 'out', g: outT, ref, c: cat(m) });
   });
   const bal = [0, 0, 0, 0];
@@ -1261,7 +1336,7 @@ function ledgerRows(ym) {
   ev.filter(e => e.d >= start && e.d < end).forEach(e => { const key = e.d + '|' + e.k + '|' + e.g; (grp[key] = grp[key] || { d: e.d, k: e.k, t: e.g, refs: [], n: 0, c: [0, 0, 0, 0] }); grp[key].n++; grp[key].c[e.c]++; if (e.ref && !grp[key].refs.includes(e.ref)) grp[key].refs.push(e.ref); });
   Object.values(grp).sort((a, b) => a.d.localeCompare(b.d) || (a.k === 'in' ? -1 : 1)).forEach(g => {
     g.c.forEach((n, i) => bal[i] += g.k === 'in' ? n : -n);
-    rows.push({ d: g.d, t: g.t, ref: (g.k === 'in' ? 'WO ' : '') + g.refs.slice(0, 2).join(', ') + (g.refs.length > 2 ? ' +' + (g.refs.length - 2) : ''), in: g.k === 'in' ? g.n : '', out: g.k === 'out' ? g.n : '', bal: tot(), s: bal.slice() });
+    rows.push({ d: g.d, t: g.t, ref: (g.k === 'in' ? (g.t.startsWith('รับโอน') ? 'ใบสั่งโอน ' : 'WO ') : '') + g.refs.slice(0, 2).join(', ') + (g.refs.length > 2 ? ' +' + (g.refs.length - 2) : ''), in: g.k === 'in' ? g.n : '', out: g.k === 'out' ? g.n : '', bal: tot(), s: bal.slice() });
   });
   return rows;
 }
@@ -1307,6 +1382,10 @@ function settingsSheet() {
         <div><label class="lab" for="sfPol">สถานีตำรวจ (สภ.)</label><input class="inp" id="sfPol" value="${esc(sf.police || '')}" placeholder="อ่าวลึก"></div></div>
       <label class="lab" for="sfMaker">ผู้จัดทำ/ผู้ประสานงาน</label><input class="inp" id="sfMaker" value="${esc(sf.maker || '')}">
     </details>
+    <details class="more"><summary>ระดับสำรองมิเตอร์ใหม่ (ข้อ 78)</summary>
+      <p class="muted" style="margin:4px 0">ตามที่ ผอ.ฝ่ายที่ดูแลมิเตอร์ของ กฟข. อนุมัติ · เว้นว่าง = ไม่เตือน</p>
+      ${LEVEL_KEYS.map((k, i) => { const v = (s.levels || {})[k] || ['', '']; return `<div class="g3" style="align-items:end"><div style="font-size:13px;padding-bottom:12px">${esc(k)}</div><div><label class="lab" for="lvMin${i}">ขั้นต่ำ</label><input class="inp" type="number" min="0" id="lvMin${i}" value="${esc(v[0])}"></div><div><label class="lab" for="lvMax${i}">สูงสุด</label><input class="inp" type="number" min="0" id="lvMax${i}" value="${esc(v[1])}"></div></div>`; }).join('')}
+    </details>
     <button class="btn p blk" style="margin-top:12px" id="sSave">บันทึกตั้งค่า</button>
     <h3 style="margin-top:20px">รายงาน ZDMR101 (ระบบ DM)</h3>
     <p class="muted" style="margin-top:0">${DB.zdmr.length ? 'มี ' + DB.zdmr.length + ' รายการ · นำเข้า ' + thDateTime(DB.zdmrAt) : 'ยังไม่ได้นำเข้า'}</p>
@@ -1314,7 +1393,7 @@ function settingsSheet() {
   $('#sSave').onclick = async () => {
     const list = id => $(id).value.split(',').map(x => x.trim()).filter(Boolean);
     try { const j = await api('meterSettings', { settings: { owner: $('#sOwner').value.trim(), sortCommittee: list('#sSortC'), countCommittee: list('#sCntC'), warnDays: Number($('#sWarn').value), defaultSloc: $('#sDef').value, brands: list('#sBrands'),
-      forms: { branch: $('#sfBranch').value, docPrefix: $('#sfDoc').value, amp: $('#sfAmp').value, prov: $('#sfProv').value, mgr: $('#sfMgr').value, head: $('#sfHead').value, addr: $('#sfAddr').value, tel: $('#sfTel').value, police: $('#sfPol').value, maker: $('#sfMaker').value } } }); DB.settings = j.settings; toast('บันทึกแล้ว', 'ok'); closeSheet(); render(); }
+      forms: { branch: $('#sfBranch').value, docPrefix: $('#sfDoc').value, amp: $('#sfAmp').value, prov: $('#sfProv').value, mgr: $('#sfMgr').value, head: $('#sfHead').value, addr: $('#sfAddr').value, tel: $('#sfTel').value, police: $('#sfPol').value, maker: $('#sfMaker').value }, levels: Object.fromEntries(LEVEL_KEYS.map((k, i) => [k, [Number($('#lvMin' + i).value) || 0, Number($('#lvMax' + i).value) || 0]])) } }); DB.settings = j.settings; toast('บันทึกแล้ว', 'ok'); closeSheet(); render(); }
     catch (e) { toast(e.message, 'err'); }
   };
   $('#sZd').onclick = zdmrSheet;

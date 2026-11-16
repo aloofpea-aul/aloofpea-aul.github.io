@@ -11,7 +11,7 @@
  *   › Run setupMeter (ครั้งเดียว ขอสิทธิ์ Drive สำหรับรูป) › Deploy › Manage deployments › New version (v2.1 = เวอร์ชัน 4)
  */
 
-const METER_VERSION = '1.3';
+const METER_VERSION = '1.4';
 
 const MT_FIELDS = [
   ['pea', 'PEA No.'], ['status', 'สถานะ'], ['sloc', 'คลังย่อย'], ['job', 'ประเภทงาน'], ['wo', 'ใบสั่งงาน'], ['ca', 'หมายเลขผู้ใช้ไฟ'],
@@ -34,13 +34,18 @@ const MSCAN = { name: 'ผลนับมิเตอร์', labels: ['รห�
 const ZDMR = { name: 'ZDMR101', labels: ['PEA No.', 'รหัสพัสดุ', 'คำอธิบาย', 'คลังย่อย', 'แบทช์', 'สถานะ', 'นำเข้าเมื่อ', 'นำเข้าโดย'] };
 
 const M_ST = { FIELD: 'ถอดคืนแล้ว', WAIT: 'รอคัดแยก', GOOD: 'สภาพดี', WARR: 'ในประกัน', REP: 'ซ่อมได้', UNREP: 'ซ่อมไม่ได้', EVID: 'หลักฐานคดี',
-  LOST: 'สูญหาย', USED: 'เบิกใช้แล้ว', SENT: 'ส่งออกแล้ว', SOLD: 'จำหน่ายแล้ว' };
+  LOST: 'สูญหาย', USED: 'เบิกใช้แล้ว', SENT: 'ส่งออกแล้ว', SOLD: 'จำหน่ายแล้ว',
+  // v2.5 มิเตอร์ใหม่ยังไม่ผ่านการใช้งาน (ข้อ 72.2.4, 74, 77.1, 78)
+  NEW: 'ใหม่ Batch N', NEWHOLD: 'ใหม่ รอแก้ไข' };
+const M_NEWJOB = 'รับโอนใหม่ (Batch N)';
 const M_TERMINAL = [M_ST.USED, M_ST.SENT, M_ST.SOLD];
 const M_RESULTS = [M_ST.GOOD, M_ST.WARR, M_ST.REP, M_ST.UNREP, M_ST.EVID];
 const M_EVID_CAUSES = ['ละเมิดการใช้ไฟฟ้า', 'เพลิงไหม้ (วางเพลิง/การกระทำ)'];
 const M_SAP_KEYS = ['262', '344', '343', '349', '261', '301', 'ZARR020', 'ZMME024',
   // v2.4 ขั้นตอนหลักฐานคดี/สูญหาย (ข้อ 67, 68.1.2, 68.1.4, 76.2)
-  'E_REP', 'E_PACK', 'E_POL', 'E_3002', 'E_COM', 'E_END'];
+  'E_REP', 'E_PACK', 'E_POL', 'E_3002', 'E_COM', 'E_END',
+  // v2.5 Batch N
+  'N101', 'N261'];
 /** ขั้นตอนของชุดนำส่ง (ข้อ 80.2–80.4) และขั้นตอน SAP รายเครื่องที่ติ๊กให้อัตโนมัติเมื่อทำขั้นนั้นแล้ว */
 const SHIP_STEPS = {
   warranty: { w1: [], w2: [], w3: ['343'], w4: [], w5: [], w6: [], w7: [] },
@@ -130,6 +135,7 @@ const METER_ACTIONS = {
     if (M_RESULTS.indexOf(res) < 0) throw err_('bad', 'ผลคัดแยกไม่ถูกต้อง');
     if (M_TERMINAL.indexOf(o.status) >= 0) throw err_('bad', 'มิเตอร์นี้ปิดงานแล้ว (' + o.status + ')');
     if (o.ship) throw err_('bad', 'มิเตอร์อยู่ในชุดนำส่ง ' + o.ship + ' — นำออกจากชุดก่อน');
+    if (o.status === M_ST.NEW || o.status === M_ST.NEWHOLD) throw err_('bad', 'มิเตอร์ใหม่ (Batch N) ไม่ต้องคัดแยก');
     if (o.status === M_ST.EVID && res !== M_ST.EVID) {
       if (!me.admin) throw err_('forbidden', 'มิเตอร์หลักฐานคดี ปลดได้เฉพาะผู้ดูแลระบบ เมื่อคดีถึงที่สุดแล้ว (ข้อ 68.1.2)');
       if (!clean_(b.note)) throw err_('bad', 'ระบุเหตุผลการปลดหลักฐานคดี (เช่น คดีถึงที่สุด/ได้รับชดใช้ครบ)');
@@ -177,6 +183,50 @@ const METER_ACTIONS = {
     o.note = (o.note ? o.note + ' · ' : '') + 'เบิกใช้ ใบสั่งงาน ' + clean_(b.wo);
     writeMeter_(o, m.row);
     mlog_(o.pea, 'เบิกใช้ (Batch R)', 'ใบสั่งงาน ' + clean_(b.wo), me);
+    return { meter: meterOut_(o) };
+  },
+
+  /* ---------- มิเตอร์ใหม่ Batch N (ข้อ 72.2.4, 77.1, 78) ---------- */
+  /** รับโอนมิเตอร์ใหม่ตามใบสั่งโอน: เครื่องที่ไม่ตรงใบสั่งโอนพักไว้ "รอแก้ไข" ห้ามใช้ (ข้อ 72.2.4 (1)) */
+  newReceive: function (b, me) {
+    const sto = clean_(b.sto); if (!sto) throw err_('bad', 'กรุณากรอกเลขที่ใบสั่งโอน');
+    const items = (b.items || []).slice(0, 300); if (!items.length) throw err_('bad', 'ยังไม่มีรายการมิเตอร์');
+    const sloc = sl_(b.sloc || '1201'), now = new Date(), out = [], skip = [];
+    const all = readMeters_(), last = {}; all.forEach(function (x) { last[x.obj.pea] = x; });
+    const sh = sheet_(MT); mtHeader_(sh);
+    const rows = [];
+    items.forEach(function (it) {
+      const pea = peaOf_(it.pea); if (!pea) return;
+      const ex = last[pea];
+      if (ex && M_TERMINAL.indexOf(ex.obj.status) < 0 && ex.obj.status !== M_ST.LOST) { skip.push(pea + ' (' + ex.obj.status + ')'); return; }
+      const o = {}; MT_FIELDS.forEach(function (f) { o[f[0]] = ''; });
+      Object.assign(o, { pea: pea, status: it.hold ? M_ST.NEWHOLD : M_ST.NEW, sloc: sloc, job: M_NEWJOB, wo: sto, brand: clean_(it.brand), kind: clean_(it.kind), phase: clean_(it.phase), size: clean_(it.size),
+        mat: clean_(it.mat), warranty: dateStr_(it.warranty), removedAt: now, removedBy: me.name, sap: JSON.stringify(b.sap101 ? { N101: iso_(now) } : {}), photos: '[]',
+        note: it.hold ? 'ไม่ตรงใบสั่งโอน: ' + (clean_(it.why) || 'ตรวจสอบ') : '', createdAt: now, updatedAt: now, updatedBy: me.name, cycle: ex ? (Number(ex.obj.cycle) || 1) + 1 : 1 });
+      rows.push(MT_FIELDS.map(function (f) { return o[f[0]]; })); out.push(o);
+    });
+    if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, MT_FIELDS.length).setValues(rows);
+    out.forEach(function (o) { mlog_(o.pea, o.status === M_ST.NEWHOLD ? 'รับโอนใหม่ (พักไว้ รอแก้ไข)' : 'รับโอนใหม่ Batch N', 'ใบสั่งโอน ' + sto + ' · คลัง ' + sloc, me); });
+    return { meters: out.map(meterOut_), skipped: skip };
+  },
+  /** ปลดพัก เมื่อคลังผู้โอนแก้ไขแล้ว */
+  newRelease: function (b, me) {
+    const m = findMeter_(b.pea); if (!m) throw err_('notfound', 'ไม่พบ PEA No.');
+    if (m.obj.status !== M_ST.NEWHOLD) throw err_('bad', 'มิเตอร์นี้ไม่ได้อยู่ในสถานะรอแก้ไข');
+    m.obj.status = M_ST.NEW; m.obj.note = (m.obj.note ? m.obj.note + ' · ' : '') + 'แก้ไขแล้ว: ' + clean_(b.why); m.obj.updatedAt = new Date(); m.obj.updatedBy = me.name;
+    writeMeter_(m.obj, m.row); mlog_(m.obj.pea, 'ปลดพัก (แก้ไขข้อมูลแล้ว)', clean_(b.why), me);
+    return { meter: meterOut_(m.obj) };
+  },
+  /** เบิกติดตั้ง MIGO 261 Batch N อ้างอิงใบสั่งงาน */
+  newIssue: function (b, me) {
+    const m = findMeter_(b.pea); if (!m) throw err_('notfound', 'ไม่พบ PEA No.');
+    const o = m.obj;
+    if (o.status !== M_ST.NEW) throw err_('bad', o.status === M_ST.NEWHOLD ? 'มิเตอร์นี้พักไว้ (ไม่ตรงใบสั่งโอน) ห้ามใช้จนแก้ไขเสร็จ (ข้อ 72.2.4)' : 'เบิกได้เฉพาะมิเตอร์ใหม่ที่พร้อมใช้');
+    if (!clean_(b.wo)) throw err_('bad', 'กรุณากรอกเลขใบสั่งงานติดตั้ง/สับเปลี่ยน');
+    const sap = jv_(o.sap, {}); if (b.sap261) sap.N261 = iso_(new Date());
+    o.sap = JSON.stringify(sap); o.status = M_ST.USED; o.updatedAt = new Date(); o.updatedBy = me.name;
+    o.note = (o.note ? o.note + ' · ' : '') + 'เบิกติดตั้ง ใบสั่งงาน ' + clean_(b.wo) + (clean_(b.ca) ? ' · CA ' + clean_(b.ca) : '');
+    writeMeter_(o, m.row); mlog_(o.pea, 'เบิกติดตั้ง (Batch N)', 'ใบสั่งงาน ' + clean_(b.wo), me);
     return { meter: meterOut_(o) };
   },
 
@@ -343,7 +393,8 @@ const METER_ACTIONS = {
       warnDays: Math.max(1, Math.min(180, Number(s.warnDays) || 30)),
       brands: (s.brands || []).map(clean_).filter(String).slice(0, 40),
       defaultSloc: sl_(s.defaultSloc || '1201'),
-      forms: formsSet_(s.forms || {})
+      forms: formsSet_(s.forms || {}),
+      levels: levelsSet_(s.levels || {})
     };
     setSetting_('meter', clean);
     return { settings: clean };
@@ -388,6 +439,10 @@ function findMeter_(pea) {
   const all = readMeters_();
   for (let i = all.length - 1; i >= 0; i--) if (all[i].obj.pea === pea) { return { row: all[i].row, obj: meterOut_(all[i].obj) }; }
   return null;
+}
+function levelsSet_(lv) {
+  const o = {}; Object.keys(lv || {}).slice(0, 30).forEach(function (k) { const v = lv[k] || []; const mn = Math.max(0, Number(v[0]) || 0), mx = Math.max(0, Number(v[1]) || 0); if (mn || mx) o[clean_(k).slice(0, 40)] = [mn, mx]; });
+  return o;
 }
 function formsSet_(f) {
   const o = {}; ['branch', 'parent', 'amp', 'prov', 'addr', 'tel', 'docPrefix', 'mgr', 'head', 'police', 'maker'].forEach(function (k) { o[k] = clean_(f[k]).slice(0, 160); });
