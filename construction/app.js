@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.8.0';
+const VERSION = '1.9.0';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -42,6 +42,7 @@ async function loadData() {
   const [items, sets, lab] = await Promise.all(['items', 'sets', 'labour'].map(n => fetch(`data/${n}.json?v=${VERSION}`).then(r => { if (!r.ok) throw new Error(n); return r.json(); })));
   DB.items = items; DB.sets = sets; DB.types = lab.types; DB.rates = lab.rates;
   try { DB.dwg = await (await fetch(`data/drawings.json?v=${VERSION}`)).json(); } catch (e) {}
+  try { const sp = await (await fetch(`data/stdprice.json?v=${VERSION}`)).json(); DB.std = sp.p; DB.stdSrc = sp.src; } catch (e) { DB.std = {}; }
 }
 const iname = c => DB.items[c]?.[0] ?? DB.sets[c]?.n ?? c;
 const iunit = c => DB.items[c]?.[1] ?? '';
@@ -66,7 +67,7 @@ function markDirty(id, on) { const d = dirtySet(); on ? d.add(id) : d.delete(id)
 async function pushJob(id) { const j = S.jobs[id]; if (!j || !S.cfg.gasUrl || !navigator.onLine) return; try { await gas('saveJob', { job: j }); markDirty(id, false); } catch (e) {} }
 async function pushDirty() { for (const id of dirtySet()) await pushJob(id); }
 function savePrice(code, price) {
-  if (price === '' || price == null) delete S.prices[code]; else S.prices[code] = num(price);
+  if (price === '' || price == null || (DB.std && DB.std[code] != null && num(price) === DB.std[code])) delete S.prices[code]; else S.prices[code] = num(price);
   saveLocal('prices');
   if (S.cfg.gasUrl) { clearTimeout(pushTimer.p); pushTimer.p = setTimeout(() => gas('savePrices', { prices: S.prices }).catch(() => {}), 1500); }
 }
@@ -135,6 +136,8 @@ function suggestTerms(job, p) {
   if (a.n <= 1 || a.dev > 30) out.push('GUY, GY-');
   return { angle: a, terms: out };
 }
+/* ราคาวัสดุ: ราคาที่แก้เอง (S.prices) ก่อน ไม่มีจึงใช้ราคามาตรฐาน กฟภ. (data/stdprice.json) */
+const priceOf = c => S.prices[c] != null ? S.prices[c] : (DB.std && DB.std[c] != null ? DB.std[c] : undefined);
 /* ---------- แยกอุปกรณ์ระบบ 22 kV / 33 kV ---------- */
 const RE22 = /(^|[^\d])(22|24)\s*(K\s?V|-\s?0\.|\/\s?0\.|\/4\.)|12\.7\s*KV/i;
 const RE33 = /(^|[^\d])(33|36)\s*(K\s?V|-\s?0\.|\/\s?0\.|GRD)|(^|[^\d])19\s*(K\s?V|-\s?0\.|\/\s?0\.)/i;
@@ -203,12 +206,12 @@ function computeBOM(job) {
   const map = new Map();
   contrib.forEach(x => {
     let m = map.get(x.code);
-    if (!m) { m = { code: x.code, name: iname(x.code), unit: iunit(x.code), qty: 0, reuse: 0, lab: 0, g: x.g, srcs: [], price: S.prices[x.code], hasPrice: S.prices[x.code] != null }; map.set(x.code, m); }
+    if (!m) { m = { code: x.code, name: iname(x.code), unit: iunit(x.code), qty: 0, reuse: 0, lab: 0, g: x.g, srcs: [], price: priceOf(x.code), hasPrice: priceOf(x.code) != null, own: S.prices[x.code] != null && DB.std?.[x.code] != null && S.prices[x.code] !== DB.std[x.code], std: DB.std?.[x.code] }; map.set(x.code, m); }
     m.qty += x.qty; m.reuse += x.reuse; m.lab += x.lab; m.srcs.push(x.src);
   });
   const mats = [...map.values()].map(m => ({ ...m, mat: m.qty * num(m.price) }));
   const groups = {};
-  contrib.forEach(x => { const g = groups[x.g] || (groups[x.g] = { mat: 0, lab: 0, qty: 0 }); g.mat += x.qty * num(S.prices[x.code]); g.lab += x.lab; });
+  contrib.forEach(x => { const g = groups[x.g] || (groups[x.g] = { mat: 0, lab: 0, qty: 0 }); g.mat += x.qty * num(priceOf(x.code)); g.lab += x.lab; });
   const mat = mats.reduce((a, m) => a + m.mat, 0), lab = contrib.reduce((a, x) => a + x.lab, 0);
   const sub = mat + lab, oh = sub * num(job.ohPct) / 100, pre = sub + oh, vat = pre * num(job.vat) / 100;
   return { contrib, mats, groups, mat, lab, sub, oh, pre, vat, grand: pre + vat, noPrice: mats.filter(m => !m.hasPrice).length };
@@ -737,7 +740,7 @@ function openPicker({ job, pole, preset = 'set', after }) {
       if (st.tab === 'set') {
         for (const [c, s] of Object.entries(DB.sets)) { if (!s.i.length) continue; if (cat && s.c !== cat) continue; if (!all && otherSys(s.n, job.volt)) continue; const hay = (c + ' ' + s.n).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, s.n, `${s.i.length} รายการ · ค่าแรง ${fm(setLabour(c, job.case))}`]); if (rows.length >= 80) break; }
       } else {
-        for (const [c, it] of Object.entries(DB.items)) { if (it[2] === 0) continue; if (!all && otherSys(it[0], job.volt)) continue; const hay = (c + ' ' + it[0]).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, it[0], `${it[1]} · ค่าแรง ${fm(labourRate(c, job.case).rate)}${S.prices[c] != null ? ' · ราคา ' + fm(S.prices[c]) : ''}`]); if (rows.length >= 80) break; }
+        for (const [c, it] of Object.entries(DB.items)) { if (it[2] === 0) continue; if (!all && otherSys(it[0], job.volt)) continue; const hay = (c + ' ' + it[0]).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, it[0], `${it[1]} · ค่าแรง ${fm(labourRate(c, job.case).rate)}${priceOf(c) != null ? ' · ราคา ' + fm(priceOf(c)) : ''}`]); if (rows.length >= 80) break; }
       }
       res.innerHTML = rows.length ? rows.map(([c, n, m]) => `<div class="li"><div class="grow"><div class="code">${c}</div><div class="s14">${esc(n)}</div><div class="s12 muted">${m}</div></div>${st.tab === 'set' ? `<button class="btn sm g" data-view="${c}">ดู</button>` : ''}<button class="btn sm p" data-add="${c}">เพิ่ม</button></div>`).join('') : '<div class="empty">ไม่พบรายการ</div>';
     };
@@ -943,7 +946,7 @@ function vBom(job) {
       <div class="tabs noprint">${[['mat', `รวมพัสดุ (${B.mats.length})`], ['lab', `ค่าแรง (${labRows.length})`], ['reuse', `นำกลับมาใช้ใหม่ (${B.mats.filter(m => m.reuse).length})`]].map(([k, l]) => `<button class="${bomTab === k ? 'on' : ''}" onclick="bomTab='${k}';vBom(cur.job)">${l}</button>`).join('')}</div>
       <div class="card scroll" style="padding:0">${bomTab === 'mat' ? `
         <table class="tbl"><thead><tr><th>รหัสพัสดุ</th><th>รายการ</th><th>หน่วย</th><th class="r">จำนวน</th><th class="r">ราคา/หน่วย</th><th class="r">ค่าวัสดุ</th><th class="r">ค่าแรง</th></tr></thead><tbody>
-        ${B.mats.map(m => `<tr class="${m.hasPrice ? '' : 'noprice'}"><td class="code">${m.code}</td><td>${esc(m.name)}<div class="s12 muted">${esc([...new Set(m.srcs.map(s => s.split(' · ')[0]))].slice(0, 6).join(', '))}</div></td><td>${esc(m.unit)}</td><td class="r">${fq(m.qty)}</td><td class="r"><label class="sr" for="pr_${m.code}">ราคา ${m.code}</label><input id="pr_${m.code}" inputmode="decimal" value="${m.hasPrice ? m.price : ''}" placeholder="ใส่ราคา" onchange="setPrice('${m.code}',this.value)"></td><td class="r">${m.hasPrice ? fm(m.mat) : '—'}</td><td class="r">${fm(m.lab)}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">ยังไม่มีรายการ — เพิ่มเสา ชุด Set หรือสายก่อน</td></tr>'}
+        ${B.mats.map(m => `<tr class="${m.hasPrice ? '' : 'noprice'}"><td class="code">${m.code}</td><td>${esc(m.name)}<div class="s12 muted">${esc([...new Set(m.srcs.map(s => s.split(' · ')[0]))].slice(0, 6).join(', '))}</div></td><td>${esc(m.unit)}</td><td class="r">${fq(m.qty)}</td><td class="r"><label class="sr" for="pr_${m.code}">ราคา ${m.code}</label><input id="pr_${m.code}" inputmode="decimal" value="${m.hasPrice ? m.price : ''}" placeholder="ใส่ราคา" onchange="setPrice('${m.code}',this.value)"${m.own ? ` style="color:#B54708;font-weight:700" title="ราคาที่แก้เอง · ราคามาตรฐาน ${fm(m.std)} (ลบตัวเลขเพื่อกลับไปใช้ราคามาตรฐาน)"` : ''}>${m.own ? `<div class="s12" style="color:#B54708">แก้เอง · มาตรฐาน ${fm(m.std)}</div>` : ''}</td><td class="r">${m.hasPrice ? fm(m.mat) : '—'}</td><td class="r">${fm(m.lab)}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">ยังไม่มีรายการ — เพิ่มเสา ชุด Set หรือสายก่อน</td></tr>'}
         </tbody><tfoot><tr><td colspan="5" class="r b">รวม</td><td class="r b">${fm(B.mat)}</td><td class="r b">${fm(B.lab)}</td></tr></tfoot></table>` : bomTab === 'lab' ? `
         <table class="tbl"><thead><tr><th>ที่มา</th><th>รหัส</th><th>รายการ</th><th class="r">จำนวน</th><th>อัตรา</th><th class="r">ค่าแรง</th></tr></thead><tbody>
         ${labRows.map(x => `<tr><td class="s12">${esc(x.src)}</td><td class="code">${x.code}</td><td>${esc(iname(x.code))}</td><td class="r">${fq(x.qty)} ${esc(iunit(x.code))}</td><td class="s12">${fm(x.rate)}${x.perKm ? ` /${S.cfg.lineDiv === 1000 ? 'กม.' : S.cfg.lineDiv + ' ม.'}` : ''}<div class="muted">${esc(DB.types[x.t] || '')}</div></td><td class="r">${fm(x.lab)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">ไม่มีค่าแรง</td></tr>'}
@@ -1134,7 +1137,7 @@ function vSettings() {
       <div class="fld"><label for="c_oh">ค่าดำเนินการเริ่มต้น %</label><input id="c_oh" class="in" type="number" step="0.01" value="${cfg.ohPct}"></div></div>
       <div class="fld"><label for="c_val">อายุใบเสนอราคา (วัน)</label><input id="c_val" class="in" type="number" value="${cfg.valid}"></div>
     </div>
-    <div class="card stack"><b>ราคาวัสดุ (${Object.keys(S.prices).length} รายการ)</b>
+    <div class="card stack"><b>ราคาวัสดุ</b><div class="s13">ใช้<b>ราคามาตรฐานพัสดุ (งบลงทุน) ปี 2569 ครั้งที่ 4</b> ${Object.keys(DB.std || {}).length.toLocaleString('th-TH')} รายการ (ผลิตภัณฑ์คอนกรีตใช้ราคาภาคใต้) · ราคาที่แก้เองในหน้าถอดแบบ ${Object.keys(S.prices).length} รายการ จะใช้แทนราคามาตรฐาน</div>
       <span class="s13 muted">นำเข้าไฟล์ Excel ที่มีคอลัมน์ "รหัสพัสดุ" และ "ราคา" (ชื่อคอลัมน์ที่มีคำว่า ราคา) หรือกรอกทีละรายการในหน้าถอดแบบ</span>
       <div class="row" style="flex-wrap:wrap"><label class="btn g" for="c_imp">นำเข้าราคาจาก Excel</label><input id="c_imp" type="file" accept=".xlsx,.xls,.csv" class="sr" onchange="importPrices(this.files[0])"><button class="btn g" onclick="exportPrices()">ส่งออกราคา</button></div>
     </div>
