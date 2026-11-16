@@ -11,7 +11,7 @@
  *   › Run setupMeter (ครั้งเดียว ขอสิทธิ์ Drive สำหรับรูป) › Deploy › Manage deployments › New version (v2.1 = เวอร์ชัน 4)
  */
 
-const METER_VERSION = '1.1';
+const METER_VERSION = '1.2';
 
 const MT_FIELDS = [
   ['pea', 'PEA No.'], ['status', 'สถานะ'], ['sloc', 'คลังย่อย'], ['job', 'ประเภทงาน'], ['wo', 'ใบสั่งงาน'], ['ca', 'หมายเลขผู้ใช้ไฟ'],
@@ -22,7 +22,9 @@ const MT_FIELDS = [
   ['sap', 'ขั้นตอน SAP (JSON)'], ['ship', 'ชุดนำส่ง'], ['box', 'ลังที่'], ['police', 'ใบแจ้งความ'], ['photos', 'รูป (JSON)'],
   ['note', 'หมายเหตุ'], ['createdAt', 'บันทึกเมื่อ'], ['updatedAt', 'อัปเดตเมื่อ'], ['updatedBy', 'อัปเดตโดย'], ['cycle', 'รอบที่'],
   // v2.2 ข้อมูลสำหรับแบบฟอร์มภาคผนวก ข (มต.15, มต.ตม.4, มต.ทม.7, มต.ตต.2/3)
-  ['custName', 'ชื่อผู้ใช้ไฟ'], ['custAddr', 'ที่อยู่ติดตั้ง'], ['serial', 'หมายเลขเครื่อง'], ['newPea', 'PEA เครื่องใหม่'], ['newUnit', 'หน่วยเครื่องใหม่']
+  ['custName', 'ชื่อผู้ใช้ไฟ'], ['custAddr', 'ที่อยู่ติดตั้ง'], ['serial', 'หมายเลขเครื่อง'], ['newPea', 'PEA เครื่องใหม่'], ['newUnit', 'หน่วยเครื่องใหม่'],
+  // v2.3 ข้อ 68.1.3 ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ): มี/ไม่มี ผู้รับผิดชอบชดใช้
+  ['payer', 'ผู้ชดใช้ (68.1.3)']
 ];
 const MT = { name: 'มิเตอร์', labels: MT_FIELDS.map(function (f) { return f[1]; }) };
 const MLOG = { name: 'ประวัติมิเตอร์', labels: ['วันเวลา', 'PEA No.', 'เหตุการณ์', 'รายละเอียด', 'ผู้ทำ'] };
@@ -77,7 +79,7 @@ const METER_ACTIONS = {
       warranty: dateStr_(r.warranty), removedAt: dateStr_(r.removedAt) || Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), removedBy: clean_(r.removedBy) || me.name,
       result: lost ? M_ST.EVID : '', sortedAt: '', sortedBy: '', sap: '{}', ship: '', box: '', police: clean_(r.police),
       photos: JSON.stringify((r.photos || []).filter(String).slice(0, 8)), note: clean_(r.note), createdAt: now, updatedAt: now, updatedBy: me.name, cycle: cycle,
-      custName: clean_(r.custName), custAddr: clean_(r.custAddr), serial: clean_(r.serial), newPea: peaOf_(r.newPea) || clean_(r.newPea), newUnit: clean_(r.newUnit)
+      custName: clean_(r.custName), custAddr: clean_(r.custAddr), serial: clean_(r.serial), newPea: peaOf_(r.newPea) || clean_(r.newPea), newUnit: clean_(r.newUnit), payer: clean_(r.payer)
     };
     if (evid && !lost) o.note = (o.note ? o.note + ' · ' : '') + 'สาเหตุเข้าข่ายหลักฐานคดี (ข้อ 68.1.2)';
     writeMeter_(o, ex ? ex.row : 0);
@@ -143,7 +145,7 @@ const METER_ACTIONS = {
   meterUpdate: function (b, me) {
     const m = findMeter_(b.pea); if (!m) throw err_('notfound', 'ไม่พบ PEA No.');
     const f = b.fields || {}, o = m.obj, ch = [];
-    ['wo', 'ca', 'job', 'causeGroup', 'cause', 'symptom', 'lastUnit', 'brand', 'kind', 'phase', 'size', 'mat', 'police', 'note', 'removedBy', 'custName', 'custAddr', 'serial', 'newPea', 'newUnit'].forEach(function (k) {
+    ['wo', 'ca', 'job', 'causeGroup', 'cause', 'symptom', 'lastUnit', 'brand', 'kind', 'phase', 'size', 'mat', 'police', 'note', 'removedBy', 'custName', 'custAddr', 'serial', 'newPea', 'newUnit', 'payer'].forEach(function (k) {
       if (f[k] !== undefined && clean_(f[k]) !== String(o[k] || '')) { ch.push(k); o[k] = clean_(f[k]); }
     });
     ['warranty', 'removedAt'].forEach(function (k) { if (f[k] !== undefined && dateStr_(f[k]) !== String(o[k] || '')) { ch.push(k); o[k] = dateStr_(f[k]); } });

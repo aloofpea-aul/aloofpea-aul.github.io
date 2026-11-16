@@ -150,7 +150,7 @@ mt15: { code: 'มต.๑๕ ป.๕๘', name: 'แบบฟอร์มแส�
   ${foot(thd('(มต.๑๕ ป.๕๘)'), 'ข-๑-๕')}`;
 } },
 tm4: { code: 'มต.ตม.๔ ป.๕๘', name: 'ใบฟอร์มการขออนุมัติสับเปลี่ยนมิเตอร์ชำรุด', o: 'p', r() {
-  const m = M0(), act = m.causeGroup === 'กระทำ';
+  const m = M0(), act = m.causeGroup === 'กระทำ' && !(m.cause === 'ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ)' && m.payer === 'ไม่มี');
   return `${logoC()}<div class="hr"></div>
   <div class="c b" style="margin-bottom:3mm">ใบฟอร์มการขออนุมัติสับเปลี่ยนมิเตอร์ชำรุด</div>
   <div style="padding-left:62mm">วันที่ ${A(dLong(m.removedAt || today()), 50)}</div>

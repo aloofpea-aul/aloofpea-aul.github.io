@@ -43,6 +43,33 @@ const CAUSE_REF = {
   'ฝาครอบแก้วแตก (เกี่ยวคุณภาพ)': 'ข้อ 68.2.4 · ไม่คิดค่าใช้จ่าย (ข้อ 66)',
   'เสื่อมสภาพ/สนิม/หมดอายุ': 'ข้อ 68.2.5 · ไม่คิดค่าใช้จ่าย (ข้อ 66)'
 };
+/* คำอธิบายแต่ละสาเหตุตามข้อ 68 (ใช้แสดงใต้ตัวเลือก และในหน้ารวม ⓘ) — ระเบียบมี 9 กรณีเท่านั้น */
+const CAUSE_INFO = {
+  'ใช้ไฟเกินพิกัด': { ref: '68.1.1', use: 'ผู้ใช้ไฟเพิ่มโหลดเกินขนาดมิเตอร์/ซีที. หรือใช้เกินเป็นครั้งคราว (มักไหม้ที่ Current Coil)', charge: 'คิดค่าใช้จ่าย (ข้อ 65): ค่ามิเตอร์ราคามาตรฐาน +15% + ค่าแรง 1 เฟส 100 / 3 เฟส 150 / ประกอบ CT แรงต่ำ 500 / CT VT แรงสูง 2,000 บาท · ใบแจ้งหนี้ชำระใน 15 วัน ไม่ชำระ → งดจ่ายไฟชั่วคราว', todo: ['ตรวจอุปกรณ์ไฟฟ้าผู้ใช้ไฟ ว่าควรเพิ่มขนาดมิเตอร์หรือไม่ แล้วทำหนังสือแจ้ง', 'แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟเพื่อปรับปรุงค่าไฟ', 'ถ้ามองไม่เห็นความเสียหายจากภายนอก การตัดตราตะกั่วเปิดฝาต้องมีกรรมการ 3 คน และลงหมายเหตุใน มต.15 / มต.ทม.7'], sort: 'ตามยี่ห้อและอาการ (Current coil ไหม้ = ซ่อมไม่ได้)' },
+  'ละเมิดการใช้ไฟฟ้า': { ref: '68.1.2', use: 'พบการละเมิดการใช้ไฟฟ้า (ดำเนินการตามระเบียบการตรวจสอบมิเตอร์ฯ)', charge: 'คิดค่าใช้จ่าย (ข้อ 65) + ค่าเบี้ยปรับ/ค่าไฟปรับปรุงตามระเบียบตรวจสอบมิเตอร์', todo: ['บันทึกการตรวจสอบ มต.ตต.2 และบรรจุหีบห่อของกลาง มต.ตต.3', 'เก็บมิเตอร์เป็นหลักฐานจนคดีถึงที่สุดหรือได้รับชดใช้ครบ', 'แจ้ง ผบป./ผบง. ตรวจสถิติเพื่อปรับปรุงค่าไฟ'], sort: 'หลักฐานคดี (ห้ามจำหน่ายจนคดีจบ)' },
+  'ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ)': { ref: '68.1.3', use: 'ฝาครอบแตกจากการถูกกระทำ (ถ้าร้าว/เสื่อมจากคุณภาพ ให้เลือก 68.2.4)', charge: 'มีผู้ชดใช้ → คิดค่าใช้จ่าย (ข้อ 65) ใบแจ้งหนี้ชำระใน 15 วัน · หาผู้ชดใช้ไม่ได้ → ไม่คิดค่าใช้จ่าย (ข้อ 66)', todo: ['บันทึกรายงานผู้บังคับบัญชา: วัน เวลา สถานที่ ผู้ใช้ไฟ PEA ยี่ห้อ ขนาด ราคา วันติดตั้งครั้งแรก', 'ตรวจสถิติการใช้ไฟ หน่วยที่มิเตอร์ และหน่วยที่จดเดือนสุดท้าย', 'หาผู้ชดใช้ไม่ได้: ขออนุมัติ ผจก. แจ้งความ · ให้ผู้ใช้ไฟลงนามหนังสือรับรองว่าถ้าแตกอีกจะชดใช้ · ติดตามผลการสอบสวน'], sort: 'ซ่อมไม่ได้ (80.3.1 ฝาครอบแก้วแตก)' },
+  'เพลิงไหม้ (วางเพลิง/การกระทำ)': { ref: '68.1.4', use: 'มิเตอร์ไหม้จากการวางเพลิงหรือการกระทำของบุคคล', charge: 'คิดค่าใช้จ่าย (ข้อ 65) เรียกเก็บจากผู้ก่อเหตุ', todo: ['บันทึกรายงานผู้บังคับบัญชา + แนบรูป', 'นิติกร/ผู้รับมอบอำนาจแจ้งความร้องทุกข์', 'ขออนุมัติตั้งคณะกรรมการสอบสวนหาข้อเท็จจริงและผู้รับผิดชอบ', 'แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟ'], sort: 'หลักฐานคดี แล้วจำหน่ายโดยวิธีขาย' },
+  'คุณภาพมิเตอร์': { ref: '68.2.1', use: 'มิเตอร์เสียเองจากการผลิต เช่น หมุนติดขัด หมุนขณะไม่มีโหลด จอไม่แสดง', charge: 'ไม่คิดค่าใช้จ่าย (ข้อ 66)', todo: ['แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟ', 'ตรวจวันหมดประกัน ถ้ายังอยู่ในประกันให้กรรมการคัดแยกส่งเคลม (ข้อ 80.2)'], sort: 'ในประกัน → เคลม กมต. · หมดประกัน → ตามยี่ห้อ' },
+  'ภัยธรรมชาติ': { ref: '68.2.2', use: 'ชำรุดหรือสูญหายจากน้ำท่วม พายุ ดินถล่ม ฯลฯ', charge: 'ไม่คิดค่าใช้จ่าย (ข้อ 66)', todo: ['บันทึกรายงานผู้บังคับบัญชา + รูปมิเตอร์และสถานที่เกิดเหตุ (บังคับ)', 'ขออนุมัติตั้งกรรมการสอบหาข้อเท็จจริง เพื่อขออนุมัติยุติเรื่อง', 'แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟ'], sort: 'ตามยี่ห้อและอาการ (ไม่เข้าเงื่อนไขประกัน)' },
+  'ฟ้าผ่า/แรงดันเกิน': { ref: '68.2.3', use: 'ไหม้/ระเบิดจากฟ้าผ่าหรือแรงดันเสิร์จ', charge: 'ไม่คิดค่าใช้จ่าย (ข้อ 66)', todo: ['แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟ', 'ถ้า Potential coil ขาด ให้ตรวจค่ากราวด์ (ข้อ 15)'], sort: 'ส่วนใหญ่ซ่อมไม่ได้ (coil ไหม้/ขาด)' },
+  'ฝาครอบแก้วแตก (เกี่ยวคุณภาพ)': { ref: '68.2.4', use: 'ฝาครอบร้าว/แตกเองจากคุณภาพ ไม่มีร่องรอยถูกกระทำ', charge: 'ไม่คิดค่าใช้จ่าย (ข้อ 66)', todo: ['แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟ', 'ถ้ายังอยู่ในประกัน "ฝาครอบแก้วร้าว" เคลมได้ (80.2.1)'], sort: 'ในประกัน → เคลม · หมดประกัน → ซ่อมไม่ได้' },
+  'เสื่อมสภาพ/สนิม/หมดอายุ': { ref: '68.2.5', use: 'เสื่อมจากการใช้งานปกติ เช่น สนิมแถบชายทะเล หรืออายุเกินกำหนด', charge: 'ไม่คิดค่าใช้จ่าย (ข้อ 66)', todo: ['แจ้ง ผบป./ผบง. ตรวจสถิติการใช้ไฟ'], sort: 'ส่วนใหญ่ซ่อมไม่ได้ (มิเตอร์เป็นสนิม 80.3.1)' }
+};
+const JOB_INFO = {
+  'สับเปลี่ยนตามวาระ': 'ข้อ 69 · 1 เฟสจานหมุนครบ 15 ปี · อิเล็กทรอนิกส์/Smart/3 เฟส/AMR ครบ 10 ปี · มิเตอร์ที่ถอดคืนต้องจำหน่ายโดยวิธีขายเท่านั้น (ซ่อมไม่ได้ ข้อ 69.2.7) · ไม่ต้องเลือกสาเหตุ',
+  'ถอนคืน (เลิกใช้ไฟ)': 'ถอนคืน: ถ้าไม่ชำรุดไม่ต้องเลือกสาเหตุ ระบบเสนอ "สภาพดี" นำกลับมาใช้ Batch R (ข้อ 79.2)',
+  'ถอนคืน (งดจ่าย/ค้างชำระ)': 'ถอนคืน: ถ้าไม่ชำรุดไม่ต้องเลือกสาเหตุ ระบบเสนอ "สภาพดี" นำกลับมาใช้ Batch R (ข้อ 79.2)',
+  'ถอนคืน (ไม่มีการใช้ไฟ)': 'ถอนคืน: ถ้าไม่ชำรุดไม่ต้องเลือกสาเหตุ ระบบเสนอ "สภาพดี" นำกลับมาใช้ Batch R (ข้อ 79.2)'
+};
+/** คิดค่าใช้จ่ายผู้ใช้ไฟหรือไม่ (ข้อ 65/66) — 68.1.3 ที่หาผู้ชดใช้ไม่ได้ ไม่คิด */
+const charged = m => m.causeGroup === 'กระทำ' && !(m.cause === 'ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ)' && m.payer === 'ไม่มี');
+function causeHelp() {
+  const card = (c, g) => { const i = CAUSE_INFO[c]; return `<div class="card" style="margin-bottom:8px;border-left:4px solid ${g ? 'var(--red)' : 'var(--green)'}"><b>${esc(c)}</b> <span class="muted">ข้อ ${i.ref}</span><div style="font-size:13px;margin-top:4px;line-height:1.55">ใช้เมื่อ: ${esc(i.use)}<br><b>${esc(i.charge)}</b><br>ต้องทำ: ${i.todo.map(esc).join(' · ')}<br><span class="muted">ผลคัดแยกที่มักได้: ${esc(i.sort)}</span></div></div>`; };
+  sheet(`<button class="btn sm x" onclick="closeSheet()">ปิด</button><h2>สาเหตุชำรุด ข้อ 68</h2>
+    <p class="muted" style="margin-top:-4px">ระเบียบกำหนดไว้ 9 กรณีเท่านั้น · มิเตอร์หายจากจุดติดตั้ง เลือก "ประเภทงาน → สูญหาย" (ข้อ 67) · ถอนคืน/ตามวาระที่ไม่ชำรุด ไม่ต้องเลือกสาเหตุ</p>
+    <h3 style="color:var(--red)">เกิดจากการกระทำ · คิดค่าใช้จ่าย (ข้อ 65)</h3>${CAUSE_ACT.map(c => card(c, 1)).join('')}
+    <h3 style="color:var(--green)">ไม่เกิดจากการกระทำ · ไม่คิดค่าใช้จ่าย (ข้อ 66)</h3>${CAUSE_NON.map(c => card(c, 0)).join('')}`);
+}
 // อาการ: q = ลักษณะชำรุดเนื่องจากคุณภาพ (80.2.1), u = ลักษณะชำรุดซ่อมไม่ได้ (80.3.1)
 const SYMPTOMS = [
   ['หมุนติดขัด หรือไม่หมุน', 'q'], ['หมุนขณะไม่มีโหลด', 'q'], ['มดหรือแมลงเข้าในตัวมิเตอร์', 'q'], ['ค่าความคลาดเคลื่อนเกินพิกัด/วัดไม่ถูกต้อง', 'q'],
@@ -449,7 +476,7 @@ function meterSheet(m, log, z) {
     <div class="kv"><span>ประเภทงาน</span><span>${esc(m.job)}</span></div>
     <div class="kv"><span>ใบสั่งงาน</span><span class="mono">${esc(m.wo || '–')}</span></div>
     ${m.ca ? `<div class="kv"><span>หมายเลขผู้ใช้ไฟ</span><span class="mono">${esc(m.ca)}</span></div>` : ''}
-    <div class="kv"><span>สาเหตุ</span><span>${esc(m.cause || '–')}${m.causeGroup ? ` <span class="muted">(${m.causeGroup === 'กระทำ' ? 'เกิดจากการกระทำ' : 'ไม่เกิดจากการกระทำ'})</span>` : ''}</span></div>
+    <div class="kv"><span>สาเหตุ</span><span>${esc(m.cause || '–')}${m.cause && CAUSE_INFO[m.cause] ? ` <span class="muted">(ข้อ ${CAUSE_INFO[m.cause].ref} · ${charged(m) ? 'คิดค่าใช้จ่าย' : 'ไม่คิดค่าใช้จ่าย'}${m.payer ? ' · ผู้ชดใช้: ' + esc(m.payer) : ''})</span>` : ''}</span></div>
     <div class="kv"><span>อาการ</span><span>${esc(m.symptom || '–')}</span></div>
     <div class="kv"><span>มิเตอร์</span><span>${esc([m.brand, m.kind, m.phase, m.size].filter(Boolean).join(' · ') || '–')}</span></div>
     ${m.mat ? `<div class="kv"><span>รหัสพัสดุ</span><span class="mono">${esc(m.mat)}</span></div>` : ''}
@@ -625,7 +652,7 @@ function viewIntake() {
 let FORM = {};
 function viewField() {
   const pre = UI.prefill || ''; UI.prefill = '';
-  FORM = { job: 'สับเปลี่ยนชำรุด', causeGroup: '', cause: '' };
+  FORM = { job: 'สับเปลี่ยนชำรุด', causeGroup: '', cause: '', payer: '' };
   $('#inBody').innerHTML = `
     <p class="muted" style="margin:12px 0 6px">บันทึกตอนถอด/สับเปลี่ยน/ถอนคืน (ข้อ 52, 65–68) แล้วพิมพ์ฉลากติดฝาครอบ</p>
     <label class="lab r">PEA No. *</label>${scanBox('fPea', 'สแกน PEA No. บนมิเตอร์')}
@@ -634,11 +661,13 @@ function viewField() {
       <div><label class="lab" for="fCa">หมายเลขผู้ใช้ไฟ (CA)</label><input class="inp mono" id="fCa" inputmode="numeric"></div></div>
     <label class="lab">ประเภทงาน</label><div class="chips" id="fJob">${JOBS.map(j => `<button type="button" class="chip sm${j === FORM.job ? ' on' : ''}" data-v="${esc(j)}">${esc(j)}</button>`).join('')}</div>
     <div id="fCauseWrap">
-      <label class="lab">สาเหตุชำรุด (ข้อ 68)</label>
+      <label class="lab">สาเหตุชำรุด (ข้อ 68) · <a href="#" id="fCauseHelp">ⓘ ดูคำอธิบายทั้ง 9 กรณี</a></label>
       <div class="muted" style="font-weight:700;color:var(--red)">เกิดจากการกระทำ · คิดค่าใช้จ่าย (ข้อ 65)</div>
-      <div class="chips" style="margin:6px 0 10px">${CAUSE_ACT.map(c => `<button type="button" class="chip sm" data-c="${esc(c)}" data-g="กระทำ">${esc(c)}</button>`).join('')}</div>
+      <div class="chips" style="margin:6px 0 10px">${CAUSE_ACT.map(c => `<button type="button" class="chip sm" data-c="${esc(c)}" data-g="กระทำ">${esc(c)} <small class="muted">${CAUSE_INFO[c].ref}</small></button>`).join('')}</div>
       <div class="muted" style="font-weight:700;color:var(--green)">ไม่เกิดจากการกระทำ · ไม่คิดค่าใช้จ่าย (ข้อ 66)</div>
-      <div class="chips" style="margin-top:6px">${CAUSE_NON.map(c => `<button type="button" class="chip sm" data-c="${esc(c)}" data-g="ไม่กระทำ">${esc(c)}</button>`).join('')}</div>
+      <div class="chips" style="margin-top:6px">${CAUSE_NON.map(c => `<button type="button" class="chip sm" data-c="${esc(c)}" data-g="ไม่กระทำ">${esc(c)} <small class="muted">${CAUSE_INFO[c].ref}</small></button>`).join('')}</div>
+      <div id="fPayerWrap" hidden style="margin-top:10px"><label class="lab r">มีผู้รับผิดชอบชดใช้หรือไม่ * (ข้อ 68.1.3 (2))</label>
+        <div class="seg" id="fPayer" style="display:flex"><button type="button" data-p="มี">มีผู้ชดใช้</button><button type="button" data-p="ไม่มี">หาผู้ชดใช้ไม่ได้</button></div></div>
     </div>
     <div id="fInfo" style="margin-top:10px"></div>
     <label class="lab" for="fSym">อาการ (ตามข้อ 80.2.1 / 80.3.1)</label>
@@ -655,7 +684,9 @@ function viewField() {
   $('#fPea').onblur = checkPea; $('#fPea').oninput = () => { clearTimeout(viewField._t); viewField._t = setTimeout(checkPea, 600); };
   SCAN_HANDLER = c => { const p = peaOf(c); if (!$('#fPea').value && p) { $('#fPea').value = p; checkPea(); } else if (/^\d{6,12}$/.test(c) && !$('#fWo').value) $('#fWo').value = c; else if (p) { $('#fPea').value = p; checkPea(); } };
   $$('#fJob .chip').forEach(b => b.onclick = () => { $$('#fJob .chip').forEach(x => x.classList.remove('on')); b.classList.add('on'); FORM.job = b.dataset.v; fInfo(); });
-  $$('[data-c]').forEach(b => b.onclick = () => { const on = !b.classList.contains('on'); $$('[data-c]').forEach(x => x.classList.remove('on')); if (on) { b.classList.add('on'); FORM.cause = b.dataset.c; FORM.causeGroup = b.dataset.g; } else { FORM.cause = ''; FORM.causeGroup = ''; } fInfo(); });
+  $$('[data-c]').forEach(b => b.onclick = () => { const on = !b.classList.contains('on'); $$('[data-c]').forEach(x => x.classList.remove('on')); if (on) { b.classList.add('on'); FORM.cause = b.dataset.c; FORM.causeGroup = b.dataset.g; } else { FORM.cause = ''; FORM.causeGroup = ''; } FORM.payer = ''; $$('#fPayer button').forEach(x => x.classList.remove('on')); fInfo(); });
+  $$('#fPayer button').forEach(b => b.onclick = () => { $$('#fPayer button').forEach(x => x.classList.remove('on')); b.classList.add('on'); FORM.payer = b.dataset.p; fInfo(); });
+  $('#fCauseHelp').onclick = e => { e.preventDefault(); causeHelp(); };
   $('#fSym').onchange = fInfo; bindSpec.cb = fInfo; bindSpec();
   bindPicker('fPh');
   $('#fSave').onclick = () => saveField(false);
@@ -676,14 +707,18 @@ function checkPea() {
 }
 function fInfo() {
   const job = FORM.job, lost = job === 'สูญหาย', withdraw = /^ถอนคืน/.test(job);
-  const evid = EVID_CAUSES.includes(FORM.cause) || lost, police = lost || FORM.cause === 'เพลิงไหม้ (วางเพลิง/การกระทำ)';
+  const glass = FORM.cause === 'ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ)';
+  const evid = EVID_CAUSES.includes(FORM.cause) || lost, police = lost || FORM.cause === 'เพลิงไหม้ (วางเพลิง/การกระทำ)' || (glass && FORM.payer === 'ไม่มี');
+  $('#fPayerWrap').hidden = !glass;
   const needPhoto = lost || FORM.cause === 'ภัยธรรมชาติ' || FORM.cause === 'เพลิงไหม้ (วางเพลิง/การกระทำ)';
   $('#fPolWrap').hidden = !police;
   $('#fPhLab').className = 'lab' + (needPhoto ? ' r' : ''); $('#fPhLab').textContent = needPhoto ? 'รูปถ่ายมิเตอร์ + สถานที่เกิดเหตุ * (ข้อ ' + (lost ? '67' : '68.2.2') + ')' : 'รูปถ่าย (มิเตอร์ + จุดติดตั้ง)';
   let h = '';
   if (lost) h += `<div class="note r">ข้อ 67 มิเตอร์สูญหาย: รายงานผู้บังคับบัญชา · แจ้งความร้องทุกข์ · ใน SAP รับคืน MVT 262 "รับคืนจากการสูญหาย" แล้ว Block 344 ที่ Location 3002 (รอสอบสวน) · ติดตั้งทดแทนระบุ "ต.ทดแทนสูญหาย"</div>`;
-  else if (FORM.cause) h += `<div class="note ${FORM.causeGroup === 'กระทำ' ? 'r' : 'g'}">${esc(CAUSE_REF[FORM.cause] || '')}${FORM.causeGroup === 'กระทำ' ? '<br>ค่าแรงสับเปลี่ยน: 1 เฟส 100 · 3 เฟส 150 · ประกอบ CT แรงต่ำ 500 · ประกอบ CT VT แรงสูง 2,000 บาท + ค่ามิเตอร์ (ราคามาตรฐาน +15%)' : ''}</div>`;
-  else if (withdraw) h += `<div class="note b">ถอนคืน: ถ้ามิเตอร์ไม่ชำรุด ไม่ต้องเลือกสาเหตุ ระบบจะเสนอผลคัดแยกเป็น "สภาพดี" (นำกลับมาใช้ Batch R ข้อ 79.2)</div>`;
+  else if (FORM.cause) { const i = CAUSE_INFO[FORM.cause], ch = charged(FORM);
+    h += `<div class="note ${ch ? 'r' : 'g'}"><b>ข้อ ${i.ref} · ${ch ? 'คิดค่าใช้จ่าย (ข้อ 65)' : 'ไม่คิดค่าใช้จ่าย (ข้อ 66)'}</b><br>ใช้เมื่อ: ${esc(i.use)}<br>${esc(i.charge)}<br><b>ต้องทำ:</b><br>${i.todo.map((t, k) => (k + 1) + '. ' + esc(t)).join('<br>')}<br><span style="opacity:.8">ผลคัดแยกที่มักได้: ${esc(i.sort)}</span>${glass && !FORM.payer ? '<br><b>เลือกด้านล่างว่ามีผู้ชดใช้หรือไม่</b>' : ''}</div>`; }
+  else if (JOB_INFO[job]) h += `<div class="note b">${esc(JOB_INFO[job])}</div>`;
+  else if (withdraw) h += `<div class="note b">${esc(JOB_INFO['ถอนคืน (เลิกใช้ไฟ)'])}</div>`;
   if (evid && !lost) h += `<div class="note k" style="margin-top:8px">เข้าข่ายหลักฐานคดี: เก็บมิเตอร์ไว้จนคดีถึงที่สุด (ข้อ 68.1.2) ระบบจะพิมพ์ฉลาก "หลักฐานคดี"</div>`;
   if (FORM.cause === 'ใช้ไฟเกินพิกัด') h += `<div class="note" style="margin-top:8px">ถ้ามองไม่เห็นความเสียหายจากภายนอก การตัดตราตะกั่วเปิดฝาครอบต้องมีกรรมการ 3 คนที่ ผจก. แต่งตั้ง และลงหมายเหตุในแบบ มต.15 ป.58 (ข้อ 68.1.1 (5))</div>`;
   $('#fInfo').innerHTML = h;
@@ -695,12 +730,13 @@ async function saveField(andPrint) {
   if (!$('#fWo').value.trim() && !lost) { toast('กรอกเลขใบสั่งงาน (ข้อ 52, 65, 66)', 'err'); $('#fWo').focus(); return; }
   const needPhoto = lost || FORM.cause === 'ภัยธรรมชาติ' || FORM.cause === 'เพลิงไหม้ (วางเพลิง/การกระทำ)';
   if (needPhoto && !picked('fPh').length) { toast('กรณีนี้ต้องแนบรูปถ่าย', 'err'); return; }
+  if (FORM.cause === 'ฝาครอบแก้วแตก (ไม่เกี่ยวคุณภาพ)' && !FORM.payer) { toast('เลือกว่ามีผู้รับผิดชอบชดใช้หรือไม่ (ข้อ 68.1.3)', 'err'); return; }
   if (!$('#fPolWrap').hidden && !$('#fPol').value.trim()) { toast('กรอกเลขที่ใบแจ้งความ', 'err'); $('#fPol').focus(); return; }
   const btns = [$('#fSave'), $('#fSavePrint')]; btns.forEach(b => b.disabled = true);
   const orig = $('#fSavePrint').textContent; $('#fSavePrint').innerHTML = '<span class="spin"></span> กำลังบันทึก';
   try {
     const photos = await uploadPhotos(picked('fPh'), pea);
-    const rec = Object.assign({ pea, wo: $('#fWo').value.trim(), ca: $('#fCa').value.trim(), job: FORM.job, causeGroup: FORM.causeGroup, cause: FORM.cause, symptom: $('#fSym').value,
+    const rec = Object.assign({ pea, wo: $('#fWo').value.trim(), ca: $('#fCa').value.trim(), job: FORM.job, causeGroup: FORM.causeGroup, cause: FORM.cause, payer: FORM.payer, symptom: $('#fSym').value,
       lastUnit: $('#fUnit').value.trim(), removedAt: $('#fDate').value, police: $('#fPol').value.trim(), note: $('#fNote').value.trim(), photos, sloc: UI.recvSloc }, readSpec(), readFormFields());
     const j = await api('meterIntake', { rec });
     setMeter(j.meter);
@@ -1067,7 +1103,7 @@ function reportShip(D) {
     <div class="sig"><div>ลงชื่อ ......................................... ผู้จัดส่ง<br>(..................................................)<br>วันที่ ............/............/............</div><div>ลงชื่อ ......................................... ผู้รับ<br>(..................................................)<br>วันที่ ............/............/............</div></div>`);
 }
 function exportCsv() {
-  const cols = ['pea', 'status', 'sloc', 'job', 'wo', 'ca', 'causeGroup', 'cause', 'symptom', 'lastUnit', 'brand', 'kind', 'phase', 'size', 'mat', 'warranty', 'removedAt', 'removedBy', 'result', 'sortedAt', 'sortedBy', 'ship', 'box', 'police', 'note'];
+  const cols = ['pea', 'status', 'sloc', 'job', 'wo', 'ca', 'causeGroup', 'cause', 'payer', 'symptom', 'lastUnit', 'brand', 'kind', 'phase', 'size', 'mat', 'warranty', 'removedAt', 'removedBy', 'result', 'sortedAt', 'sortedBy', 'ship', 'box', 'police', 'note'];
   const head = ['PEA No.', 'สถานะ', 'คลังย่อย', 'ประเภทงาน', 'ใบสั่งงาน', 'หมายเลขผู้ใช้ไฟ', 'กลุ่มสาเหตุ', 'สาเหตุ', 'อาการ', 'หน่วยสุดท้าย', 'ยี่ห้อ', 'ชนิด', 'เฟส', 'ขนาด', 'รหัสพัสดุ', 'ประกันถึง', 'ถอดเมื่อ', 'ถอดโดย', 'ผลคัดแยก', 'คัดแยกเมื่อ', 'คัดแยกโดย', 'ชุดนำส่ง', 'ลัง', 'ใบแจ้งความ', 'หมายเหตุ', 'SAP'];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const csv = '﻿' + head.map(q).join(',') + '\n' + DB.meters.map(m => cols.map(c => q(m[c])).concat([q(Object.keys(m.sap).join(' '))]).join(',')).join('\n');
