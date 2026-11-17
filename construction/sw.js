@@ -5,10 +5,10 @@
  *  - ภาพแผนที่ (Longdo / ดาวเทียม / OSM): เก็บทุกแผ่นที่เคยเปิดดู + ที่กด "บันทึกแผนที่บริเวณนี้"
  *  - Google Apps Script: ไม่ยุ่ง (แอปมีคิวรอส่งของตัวเอง)
  */
-const V = 'ccs-v1.9.2';
+const V = 'ccs-v2.0.0';
 const APP = 'ccs-app-' + V, DATA = 'ccs-data', TILES = 'ccs-tiles';
-const SHELL = ['./', './index.html', './app.js?v=1.9.2', './plan.js?v=1.9.2', './manifest.json', './guide.html', './icon.svg?v=1', './icon-192.png', './apple-touch-icon.png?v=1'];
-const DATA_FILES = ['./data/items.json?v=1.9.2', './data/sets.json?v=1.9.2', './data/labour.json?v=1.9.2', './data/drawings.json?v=1.9.2', './data/stdprice.json?v=1.9.2',
+const SHELL = ['./', './index.html', './assist.js?v=2.0.0', './app.js?v=2.0.0', './plan.js?v=2.0.0', './manifest.json', './guide.html', './icon.svg?v=1', './icon-192.png', './apple-touch-icon.png?v=1'];
+const DATA_FILES = ['./data/items.json?v=2.0.0', './data/sets.json?v=2.0.0', './data/labour.json?v=2.0.0', './data/drawings.json?v=2.0.0', './data/stdprice.json?v=2.0.0',
   '/sld-ala/mv-lines.json', '/sld-ala/poles.json', '/sld-ala/gis_transformers.csv',
   '/sld-ala/gis_mv_meters.csv', '/sld-ala/lvmeters.json', '/sld-ala/gis_mv_meter_accounts.csv'];
 const TILE_HOST = /(^|\.)(ms\.longdo\.com|tile\.openstreetmap\.org|server\.arcgisonline\.com)$/;
@@ -19,7 +19,7 @@ self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil((async () => {
     /* ไฟล์หลักต้องโหลดครบ ไม่งั้นยกเลิกการอัปเดต (ใช้เวอร์ชันเดิมที่ใช้งานได้ต่อ) */
-    const a = await caches.open(APP); await a.addAll(SHELL.slice(1, 4));
+    const a = await caches.open(APP); await a.addAll(SHELL.slice(1, 5));
     await Promise.all(SHELL.map(u => a.add(u).catch(() => {})));
     const d = await caches.open(DATA); await Promise.all(DATA_FILES.map(u => d.add(u).catch(() => {})));
   })());

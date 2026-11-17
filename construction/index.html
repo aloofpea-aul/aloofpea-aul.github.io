@@ -111,7 +111,19 @@ textarea.in{height:auto;padding:8px 10px}
 #xhair::before{left:21px;top:0;width:2px;height:44px}#xhair::after{top:21px;left:0;height:2px;width:44px}
 #dist{position:absolute;left:50%;top:50%;transform:translate(14px,-40px);z-index:451;pointer-events:none;background:#1E1A22;color:#fff;font-size:13px;font-weight:700;border-radius:8px;padding:3px 8px;white-space:nowrap;display:none}
 .mapwrap.aim #xhair{display:block}.mapwrap.aim .leaflet-container{cursor:crosshair}
-.legend{position:absolute;left:64px;right:76px;top:8px;margin:0 auto;max-width:250px;z-index:500;background:rgba(255,255,255,.94);border-radius:10px;padding:4px 8px;font-size:10.5px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none}
+.legend{position:absolute;left:64px;right:76px;top:8px;margin:0 auto;max-width:250px;z-index:500;background:rgba(255,255,255,.94);border-radius:10px;padding:4px 8px;font-size:10.5px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;box-shadow:0 1px 4px rgba(0,0,0,.15);cursor:pointer}
+.legend.off{display:none}
+.legbtn{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:499;background:rgba(255,255,255,.94);border:0;border-radius:14px;padding:4px 12px;font:inherit;font-size:12px;font-weight:600;color:#5B1A63;box-shadow:0 1px 4px rgba(0,0,0,.15);cursor:pointer}
+.qrow{display:flex;gap:5px;align-items:center;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.qrow::-webkit-scrollbar{display:none}
+.qk{flex:none;font-size:12px;color:#6B6372;min-width:44px}
+.qc{flex:none;border:1px solid #CFC6D3;background:#fff;border-radius:16px;padding:6px 12px;font:inherit;font-size:13px;color:#5B1A63;cursor:pointer;white-space:nowrap}
+.qc.on{background:#5B1A63;border-color:#5B1A63;color:#fff;font-weight:700}
+.qbox{background:#F6F1F8;border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;gap:2px;max-height:96px;overflow:auto}
+.qset{display:flex;align-items:center;gap:6px;font-size:12.5px;line-height:1.35}
+.qx{flex:none;border:0;background:none;color:#B42318;font-size:18px;line-height:1;cursor:pointer;padding:2px 6px}
+.ck{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #EEE8F1}
+.ckok{background:#EAF6F1;color:#0B4F3A;border-radius:12px;padding:12px 14px;font-weight:600}
+.ckb{position:relative}.badge{display:inline-block;margin-left:4px;background:#B42318;color:#fff;border-radius:10px;font-size:11px;padding:0 6px;line-height:18px}
 .hint{transition:opacity .4s}.hint.off{opacity:0}
 .legend span{display:flex;align-items:center;gap:5px}.legend i.b{width:10px;height:10px;display:inline-block;border:1px solid rgba(0,0,0,.4)}
 .ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
@@ -176,8 +188,9 @@ textarea.in{height:auto;padding:8px 10px}
 <div id="app"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="app.js?v=1.9.2"></script>
-<script src="plan.js?v=1.9.2"></script>
+<script src="assist.js?v=2.0.0"></script>
+<script src="app.js?v=2.0.0"></script>
+<script src="plan.js?v=2.0.0"></script>
 <script async src="https://api.longdo.com/map/?key=f61a87ff70c39e610385809783d5a1b3"></script>
 </body>
 </html>

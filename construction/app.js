@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '1.9.2';
+const VERSION = '2.0.0';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -417,7 +417,7 @@ function patchLeaflet() {
   ['_redraw', '_update', '_updatePaths', '_draw'].forEach(fn => guard(L.Canvas.prototype, fn, r => !!r._ctx && !!r._map));
 }
 function vMap(job) {
-  patchLeaflet();
+  patchLeaflet(); cur.lineLyr = null; LINE.pts = [];
   if (mapState.histJob !== job.id) { mapState.history = []; mapState.histJob = job.id; mapState.sel = null; mapState.spanA = null; mapState.moving = null; }
   const c = jobCounts(job);
   app.innerHTML = topbar(job.name, `${job.volt} kV ${job.phase} เฟส · กรณีที่ ${job.case + 1}`, '#home', `<a class="ib" href="#info/${job.id}" aria-label="ข้อมูลงาน">${I.gear}</a>`) + `
@@ -425,11 +425,13 @@ function vMap(job) {
     <div class="mtl${localStorage.getItem('ccs_lcol')==='1'?' col':''}" id="mtl"><button class="colbtn" aria-label="ย่อหรือขยายเมนูซ้าย" onclick="toggleCol('l')">${localStorage.getItem('ccs_lcol')==='1'?'›':'‹'}</button><button aria-label="ตำแหน่งปัจจุบัน" onclick="locate()">${I.gps}</button><button aria-label="สลับภาพถ่ายดาวเทียม" onclick="toggleLayer()">${I.layers}</button><button aria-label="ค้นหามิเตอร์ หม้อแปลง เสา" onclick="openSearch()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F1A24" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button aria-label="ดูทั้งงาน" onclick="fitJob()">${I.fit}</button><button aria-label="บันทึกแผนที่บริเวณนี้ไว้ใช้ออฟไลน์" onclick="saveArea()" style="font-size:10px;font-weight:700;line-height:1.1">เก็บ<br>แผนที่</button><button aria-label="ย้อนกลับ" onclick="undo()">${I.undo}</button><button aria-label="แสดงระบบไฟฟ้าเดิม" id="netBtn" onclick="toggleNet()" style="font-size:11px;font-weight:700;${mapState.net ? 'background:#5B1A63;color:#fff' : ''}">เดิม</button></div>
     <div class="tools${localStorage.getItem('ccs_rcol')==='1'?' col':''}" id="tools"></div>
     <div id="xhair"></div><div id="dist"></div>
-    <div class="legend"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span><span><i class="mtr" style="width:12px;height:12px;font-size:8px">M</i>มิเตอร์แรงสูง</span><span><i class="b" style="background:#0F8F7E;border-radius:50%"></i>มิเตอร์แรงต่ำ</span></div>
+    <button class="legbtn" onclick="toggleLegend()" aria-label="แสดงหรือซ่อนสัญลักษณ์">สัญลักษณ์</button><div class="legend${localStorage.getItem('ccs_leg') !== '1' ? ' off' : ''}" onclick="toggleLegend()"><span><i class="b" style="background:#1E9E4A"></i>แรงต่ำ 8–9 ม.</span><span><i class="b" style="background:#D62828"></i>12 ม. ขึ้นไป</span><span><i class="b" style="background:#7B2CBF"></i>22 ม. 115 kV</span><span><i class="tri n" style="display:inline-block"></i>หม้อแปลง</span><span><i class="mtr" style="width:12px;height:12px;font-size:8px">M</i>มิเตอร์แรงสูง</span><span><i class="b" style="background:#0F8F7E;border-radius:50%"></i>มิเตอร์แรงต่ำ</span></div>
     <div class="hint" id="hint"></div>
   </div>
   <div class="sheet" id="sheet"></div>${navbar(job, 'map')}`;
   const m = cur.map = L.map('map', { zoomControl: false, attributionControl: true }).setView(job.center || [8.3755, 98.7280], job.center ? 17 : 14);
+  /* แถบล่างสูง/เตี้ยลง → ขนาดแผนที่เปลี่ยน ต้องแจ้ง Leaflet ไม่งั้นกากบาทกลางจอไม่ตรงกับจุดที่ปักจริง */
+  try { cur.ro && cur.ro.disconnect(); cur.ro = new ResizeObserver(() => { if (cur.map === m) { m.invalidateSize({ pan: false }); updateAim(job); } }); cur.ro.observe($('#map')); } catch (e) {}
   cur.bases = {};
   for (const [k, b] of Object.entries(BASES)) cur.bases[k] = L.tileLayer(b.url, { maxZoom: 21, maxNativeZoom: b.max, attribution: b.attr });
   (cur.bases[mapState.layer] || cur.bases.longdo).addTo(m);
@@ -452,15 +454,15 @@ function vMap(job) {
   drawMap(job); renderTools(); renderSheet(job); sheetSwipe();
   if (job.poles.length) fitJob(); else if (!job.center) locate(true);
 }
-const TOOLS = [['sel', '☝', 'เลือก'], ['pole', '●', 'ปักเสา'], ['expole', '◌', 'เสาเดิม'], ['span', '⟋', 'พาดสาย'], ['tr', 'TR', 'หม้อแปลง'], ['guy', '↘', 'ยึดโยง'], ['meter', 'M', 'มิเตอร์']];
-const HINTS = { sel: 'แตะเสาเพื่อเลือก · ลากหมุด หรือกด "ย้าย" เพื่อแก้ตำแหน่ง', pole: 'แตะแผนที่เพื่อปักเสาใหม่ (ต่อสายจากเสาที่เลือกอัตโนมัติ)', expole: 'แตะตำแหน่งเสาเดิมของระบบ (จุดเชื่อม)', span: 'แตะเสาต้นแรก แล้วแตะเสาต้นถัดไป', tr: 'แตะเสาที่จะติดตั้งหม้อแปลง', guy: 'แตะเสาที่จะยึดโยง', meter: 'แตะเสาที่จะติดตั้งมิเตอร์' };
+const TOOLS = [['sel', '☝', 'เลือก'], ['pole', '●', 'ปักเสา'], ['line', '〰', 'วาดแนว'], ['expole', '◌', 'เสาเดิม'], ['span', '⟋', 'พาดสาย'], ['tr', 'TR', 'หม้อแปลง'], ['guy', '↘', 'ยึดโยง'], ['meter', 'M', 'มิเตอร์']];
+const HINTS = { line: 'แตะจุดเริ่ม แล้วแตะตามแนวถนน · กด "ปักเสา" เพื่อปักตามระยะ', sel: 'แตะเสาเพื่อเลือก · ลากหมุด หรือกด "ย้าย" เพื่อแก้ตำแหน่ง', pole: 'แตะแผนที่เพื่อปักเสาใหม่ (ต่อสายจากเสาที่เลือกอัตโนมัติ)', expole: 'แตะตำแหน่งเสาเดิมของระบบ (จุดเชื่อม)', span: 'แตะเสาต้นแรก แล้วแตะเสาต้นถัดไป', tr: 'แตะเสาที่จะติดตั้งหม้อแปลง', guy: 'แตะเสาที่จะยึดโยง', meter: 'แตะเสาที่จะติดตั้งมิเตอร์' };
 function renderTools() {
   const rc = localStorage.getItem('ccs_rcol') === '1';
   $('#tools').innerHTML = `<button class="colbtn" aria-label="ย่อหรือขยายเมนูขวา" onclick="toggleCol('r')">${rc ? '‹' : '›'}</button>` + TOOLS.map(([k, ic, l]) => `<button class="${mapState.tool === k ? 'on' : ''}" onclick="setTool('${k}')" aria-label="${l}"><b>${ic}</b>${l}</button>`).join('');
   const hn = $('#hint'); hn.textContent = (mapState.tool === 'span' && mapState.spanA ? 'แตะเสาปลายทาง · ' : '') + HINTS[mapState.tool] + (['pole', 'span'].includes(mapState.tool) ? ` · สาย ${mapState.kind}` : '');
   hn.classList.remove('off'); clearTimeout(cur.hintT); cur.hintT = setTimeout(() => hn.classList.add('off'), 4000);
 }
-window.setTool = t => { mapState.tool = t; mapState.spanA = null; mapState.moving = null; renderTools(); drawMap(cur.job); renderSheet(cur.job); updateAim(cur.job); };
+window.setTool = t => { if (t !== 'line' || mapState.tool !== 'line') lineReset(); mapState.tool = t; mapState.spanA = null; mapState.moving = null; renderTools(); drawMap(cur.job); renderSheet(cur.job); updateAim(cur.job); };
 function aimFrom(job) { const id = mapState.tool === 'span' ? mapState.spanA : mapState.sel; const p = id && poleById(job, id); return p && p.lat != null ? p : null; }
 // ---- ระยะเล็ง: ลากเอง / พิมพ์ระยะ (ล็อกระยะ) ----
 const M_LAT = 111320;
@@ -477,6 +479,7 @@ function lockPoint(job, to) {
 function updateAim(job) {
   if (!cur.map) return;
   const mv = mapState.moving && poleById(job, mapState.moving);
+  if (mapState.tool === 'line' && !mv) { const w = $('.mapwrap'); w && w.classList.toggle('aim', !cur.hover); cur.rubber.setLatLngs([]); const d = $('#dist'), lp = LINE.pts[LINE.pts.length - 1]; if (d) { if (lp) { const to = cur.hover || cur.map.getCenter(); d.textContent = `ห่าง ${Math.round(hav(lp, to)).toLocaleString('th-TH')} ม. จากจุดล่าสุด`; d.style.display = 'block'; d.style.background = '#1E1A22'; if (cur.hover) { const c = cur.map.latLngToContainerPoint(to); d.style.left = c.x + 'px'; d.style.top = c.y + 'px'; } else { d.style.left = '50%'; d.style.top = '50%'; } } else d.style.display = 'none'; } return; }
   const aim = ['pole', 'expole', 'span'].includes(mapState.tool) || !!mv;
   const w = $('.mapwrap'); w && w.classList.toggle('aim', aim && !cur.hover && mapState.tool !== 'span' || !!mv);
   const d = $('#dist'), from = aim && !mv ? aimFrom(job) : null, lk = !!from && lockOn(job);
@@ -509,6 +512,7 @@ function pushHist(job) { if (mapState.histJob !== job.id) { mapState.history = [
 window.undo = () => { const j = cur.job; if (!j || mapState.histJob !== j.id) { mapState.history = []; mapState.histJob = j && j.id; } const h = mapState.history.pop(); if (!h) return toast('ไม่มีอะไรให้ย้อน'); const o = JSON.parse(h); const now = new Map(j.poles.map(p => [p.id, p])); o.poles.forEach(p => { const n = now.get(p.id); if (n) p.photos = n.photos; }); j.poles = o.poles; j.spans = o.spans; fixJob(j); saveJob(j); drawMap(j); renderSheet(j); };
 function onMapClick(job, ll) {
   const t = mapState.tool;
+  if (t === 'line') return lineAddPoint(job, ll);
   if (t !== 'pole' && t !== 'expole') { if (t === 'sel') { mapState.sel = null; drawMap(job); renderSheet(job); } return; }
   if (mapState.moving) return;
   ll = lockPoint(job, ll);
@@ -520,6 +524,7 @@ function onMapClick(job, ll) {
 }
 function onPoleClick(job, p) {
   const t = mapState.tool;
+  if (t === 'line') return lineAddPoint(job, { lat: p.lat, lng: p.lng }, p.id);
   if (t === 'span') {
     if (!mapState.spanA) { mapState.spanA = p.id; mapState.sel = p.id; }
     else if (mapState.spanA !== p.id) {
@@ -570,6 +575,14 @@ function renderSheet(job) {
     html += `<div class="row"><i class="sq" style="background:${PCOL[poleCls(poleH(p), p.volt)]}"></i><div class="grow" style="flex:1;min-width:0"><b>${esc(p.label)}</b> <span class="s13 muted">${p.ex ? 'เสาเดิม' : 'เสาใหม่'}${poleH(p) ? ' ' + fH(poleH(p)) : ''}${poleHead(p) ? ' · ' + esc(poleHead(p)) : ''}${ang.dev != null ? ` · มุม ${ang.dev}°` : ''}${p.photos?.length ? ` · รูป ${p.photos.length}` : ''}</span><div class="s12 muted">${p.sets.length ? p.sets.map(s => s.c + (s.q > 1 ? '×' + s.q : '')).join(', ') : 'ยังไม่มีชุด Set'}</div></div>
       <button class="btn sm g" onclick="delPole('${p.id}')">ลบ</button>${mapState.moving ? '' : `<button class="btn sm g" onclick="startMove('${p.id}')">ย้าย</button>`}<a class="btn sm p" href="#pole/${job.id}/${p.id}">แก้ไขเสา</a></div>`;
   }
+  if (p && !mapState.moving && ['sel', 'tr', 'guy', 'meter'].includes(mapState.tool)) {
+    html += quickPoleHtml(job, p);
+    $('#sheet').innerHTML = html; return;
+  }
+  if (mapState.tool === 'line') {
+    html += lineSheetHtml(job) + `<div class="seg sm">${['HV', 'LV'].map(k => `<button class="${mapState.kind === k ? 'on' : ''}" onclick="mapState.kind='${k}';drawLine();renderSheet(cur.job)">สาย ${k === 'HV' ? 'แรงสูง' : 'แรงต่ำ'}</button>`).join('')}</div>`;
+    $('#sheet').innerHTML = html; return;
+  }
   if (mapState.moving && p) {
     html += `<div class="s13 muted">เลื่อนแผนที่ให้กากบาทอยู่ตำแหน่งใหม่ของ <b>${esc(p.label)}</b> แล้วกด "วางที่จุดเล็ง"</div><div class="row"><button class="btn g" style="flex:1" onclick="cancelMove()">ยกเลิก</button><button class="btn p" style="flex:2" onclick="placeAtAim()">วางที่จุดเล็ง</button></div>`;
     $('#sheet').innerHTML = html; return;
@@ -578,7 +591,7 @@ function renderSheet(job) {
   if (placing) html += `<div class="seg sm">${[['hand', 'ลากเอง'], ['type', 'พิมพ์ระยะ']].map(([k, l]) => `<button class="${mapState.dmode === k ? 'on' : ''}" onclick="setDmode('${k}')">${l}</button>`).join('')}</div>${mapState.dmode === 'type' ? `<div class="row" style="gap:6px"><button class="btn g" style="width:44px;padding:0" onclick="bumpLock(-1)" aria-label="ลดระยะ 1 เมตร">−</button><label style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;border:1.5px solid var(--brand);border-radius:10px;height:42px"><input id="lockIn" type="number" inputmode="decimal" min="1" value="${mapState.lockM || ''}" oninput="setLockM(this.value)" aria-label="ระยะล็อก (เมตร)" style="width:70px;border:0;text-align:center;font-size:20px;font-weight:700;background:none;outline:none"><span class="s13 muted">ม.</span></label><button class="btn g" style="width:44px;padding:0" onclick="bumpLock(1)" aria-label="เพิ่มระยะ 1 เมตร">+</button></div><div class="row" style="gap:6px;flex-wrap:wrap">${[30, 40, 50, 80].map(v => `<button class="lkch ${mapState.lockM === v ? 'on' : ''}" data-v="${v}" onclick="setLockM(${v},true)">${v}</button>`).join('')}<button class="lkch ${mapState.straight ? 'on' : ''}" style="margin-left:auto" onclick="toggleStraight()">ต่อแนวตรง</button></div>` : ''}`;
   else html += `<div class="sum4"><div><b>${c.np}</b><span class="s12 muted">เสาใหม่</span></div><div><b>${c.hv}</b><span class="s12 muted">ม. HV</span></div><div><b>${c.lv}</b><span class="s12 muted">ม. LV</span></div><div><b>${c.tr}</b><span class="s12 muted">หม้อแปลง</span></div></div>`;
   html += `<div class="row"><div class="seg" style="flex:1">${['HV', 'LV'].map(k => `<button class="${mapState.kind === k ? 'on' : ''}" onclick="mapState.kind='${k}';renderSheet(cur.job);renderTools()">สาย ${k === 'HV' ? 'แรงสูง' : 'แรงต่ำ'}</button>`).join('')}</div>
-  ${placing ? `<button class="btn p" onclick="placeAtAim()">${mapState.tool === 'pole' ? 'ปักที่จุดเล็ง' : 'วางเสาเดิม'}</button>` : `<a class="btn p" href="#bom/${job.id}">ถอดแบบ →</a>`}</div>`;
+  ${placing ? `<button class="btn p" onclick="placeAtAim()">${mapState.tool === 'pole' ? 'ปักที่จุดเล็ง' : 'วางเสาเดิม'}</button>` : `${job.poles.length ? (n => `<button class="btn g ckb" onclick="openCheck()">เช็คแบบ${n ? `<span class="badge">${n}</span>` : ' ✓'}</button>`)(checkCount(job)) : ''}<a class="btn p" href="#bom/${job.id}">ถอดแบบ →</a>`}</div>`;
   $('#sheet').innerHTML = html;
 }
 window.toggleCol = side => {
@@ -588,6 +601,7 @@ window.toggleCol = side => {
   el.classList.toggle('col', on);
   const b = el.querySelector('.colbtn'); if (b) b.textContent = side === 'l' ? (on ? '›' : '‹') : (on ? '‹' : '›');
 };
+window.toggleLegend = () => { const l = $('.legend'); if (!l) return; const off = !l.classList.contains('off'); l.classList.toggle('off', off); localStorage.setItem('ccs_leg', off ? '0' : '1'); };
 window.toggleSheet = () => { const on = localStorage.getItem('ccs_sheet_min') !== '1'; localStorage.setItem('ccs_sheet_min', on ? '1' : '0'); renderSheet(cur.job); setTimeout(() => { cur.map && cur.map.invalidateSize(); updateAim(cur.job); }, 60); };
 function sheetSwipe() { const el = $('#sheet'); if (!el) return; let y0 = null;
   el.addEventListener('touchstart', e => { if (e.target.closest('.grabbtn')) y0 = e.touches[0].clientY; }, { passive: true });
@@ -736,6 +750,7 @@ function onNetPole(job, p) {
     L.popup().setLatLng([p[0], p[1]]).setContent(`<b>${esc(info)}</b><br><button class="btn sm p" style="margin-top:6px" onclick="useNetPole(${p[0]},${p[1]})">ใช้เป็นจุดเชื่อม</button>`).openOn(cur.map); return;
   }
   const ex = useNetPole(p[0], p[1], true, no, info);
+  if (mapState.tool === 'line') return lineAddPoint(job, { lat: ex.lat, lng: ex.lng }, ex.id);
   if (mapState.tool === 'pole' || mapState.tool === 'expole') { mapState.sel = ex.id; drawMap(job); renderSheet(job); toast('เลือกเสาเดิมเป็นจุดเชื่อม · แตะแผนที่เพื่อปักเสาใหม่ต่อจากต้นนี้'); }
   else if (mapState.tool === 'span') onPoleClick(job, ex);
 }
@@ -786,14 +801,17 @@ function modal(title, body, foot, onOpen) {
 window.closeModal = () => $('#modal')?.remove();
 
 /* ---------- picker (sets / items) ---------- */
+const PK_GROUPS = [['', 'ทั้งหมด', null], ['head', 'หัวเสา', /^(X-ARM|A-ARM|RACK|POST|SAC |STEEL BRACKET)/], ['guy', 'ยึดโยง', /^GUY/], ['tr', 'หม้อแปลง', /TR\.INST|TRANSFORMER/], ['meter', 'มิเตอร์', /METER/], ['prot', 'กับดัก/สายดิน', /ARRESTER|GROUND|CUT.?OUT|DROPOUT|SWITCH/]];
+function poleHRe(p) { const h = p && poleH(p); if (!h) return null; const t = h === 12.2 ? '12\\.20?' : h === 14.3 ? '14\\.30?' : String(h).replace('.', '\\.'); return new RegExp('\\(' + t + ' M|POLE ' + t + ' M'); }
 const PRESET = { tr: { tab: 'set', q: 'TR.INST', cat: 'TRM', title: 'เลือกชุดติดตั้งหม้อแปลง' }, guy: { tab: 'set', q: 'GUY', title: 'เลือกชุดยึดโยง' }, meter: { tab: 'set', q: 'METER INS', cat: 'TRM', title: 'เลือกชุดติดตั้งมิเตอร์' }, set: { tab: 'set', q: '', title: 'เพิ่มชุด Set' }, item: { tab: 'item', q: '', title: 'เพิ่มพัสดุเดี่ยว' }, transformer: { tab: 'item', q: 'TRANSFORMER', title: 'เลือกหม้อแปลง' } };
 function openPicker({ job, pole, preset = 'set', after }) {
-  const P = PRESET[preset]; const st = { tab: P.tab, q: P.q, cat: P.cat || '', all: false }; const ov = (job.volt || '33') === '33' ? '22' : '33';
+  const P = PRESET[preset]; const st = { tab: P.tab, q: P.q, cat: P.cat || '', all: false, grp: P.grp || '' }; const ov = (job.volt || '33') === '33' ? '22' : '33';
   modal(P.title + ` · ${pole.label}`, `
     <div class="stack">
       <div class="tabs" id="pk_tab"><button data-v="set" class="${st.tab === 'set' ? 'on' : ''}">ชุด Set</button><button data-v="item" class="${st.tab === 'item' ? 'on' : ''}">พัสดุเดี่ยว</button></div>
       <div class="row"><label class="sr" for="pk_q">ค้นหา</label><input id="pk_q" class="in" placeholder="ค้นหารหัสหรือชื่อ เช่น 30213, GUY, TR.INST" value="${esc(st.q)}"><select id="pk_cat" class="in" style="max-width:130px" aria-label="หมวด"><option value="">ทุกหมวด</option><option value="HV33" ${st.cat === 'HV33' ? 'selected' : ''}>ระบบ 33 kV</option><option value="LV" ${st.cat === 'LV' ? 'selected' : ''}>ระบบแรงต่ำ</option><option value="TRM" ${st.cat === 'TRM' ? 'selected' : ''}>หม้อแปลง/มิเตอร์</option></select></div>
       <label class="row s13 muted" style="gap:6px;cursor:pointer"><input type="checkbox" id="pk_all"> แสดงอุปกรณ์ระบบ ${ov} kV ด้วย</label>
+      <div class="qrow" id="pk_grp">${PK_GROUPS.map(g => `<button class="qc ${g[0] === (P.grp || '') ? 'on' : ''}" data-g="${g[0]}">${g[1]}</button>`).join('')}</div>
       <div id="pk_res" class="list"></div>
     </div>`, '', box => {
     const res = $('#pk_res', box);
@@ -802,20 +820,24 @@ function openPicker({ job, pole, preset = 'set', after }) {
       $('#pk_cat', box).style.display = st.tab === 'set' ? '' : 'none';
       let rows = []; const all = $('#pk_all', box).checked;
       if (st.tab === 'set') {
-        for (const [c, s] of Object.entries(DB.sets)) { if (!s.i.length) continue; if (cat && s.c !== cat) continue; if (!all && otherSys(s.n, job.volt)) continue; const hay = (c + ' ' + s.n).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, s.n, `${s.i.length} รายการ · ค่าแรง ${fm(setLabour(c, job.case))}`]); if (rows.length >= 80) break; }
+        const gre = PK_GROUPS.find(g => g[0] === st.grp)?.[2], hre = poleHRe(pole);
+        for (const [c, s] of Object.entries(DB.sets)) { if (!s.i.length) continue; if (cat && s.c !== cat) continue; if (!all && otherSys(s.n, job.volt)) continue; if (gre && !gre.test(s.n)) continue; const hay = (c + ' ' + s.n).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, s.n, `${s.i.length} รายการ · ค่าแรง ${fm(setLabour(c, job.case))}`]); }
+        if (hre) rows.sort((a, b) => (hre.test(b[1]) ? 1 : 0) - (hre.test(a[1]) ? 1 : 0)); rows = rows.slice(0, 80);
       } else {
         for (const [c, it] of Object.entries(DB.items)) { if (it[2] === 0) continue; if (!all && otherSys(it[0], job.volt)) continue; const hay = (c + ' ' + it[0]).toUpperCase(); if (words.every(w => hay.includes(w))) rows.push([c, it[0], `${it[1]} · ค่าแรง ${fm(labourRate(c, job.case).rate)}${priceOf(c) != null ? ' · ราคา ' + fm(priceOf(c)) : ''}`]); if (rows.length >= 80) break; }
       }
       res.innerHTML = rows.length ? rows.map(([c, n, m]) => `<div class="li"><div class="grow"><div class="code">${c}</div><div class="s14">${esc(n)}</div><div class="s12 muted">${m}</div></div>${st.tab === 'set' ? `<button class="btn sm g" data-view="${c}">ดู</button>` : ''}<button class="btn sm p" data-add="${c}">เพิ่ม</button></div>`).join('') : '<div class="empty">ไม่พบรายการ</div>';
     };
+    $('#pk_grp', box).onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; st.grp = b.dataset.g; $$('#pk_grp .qc', box).forEach(x => x.classList.toggle('on', x === b)); if (st.grp && $('#pk_q', box).value === P.q) $('#pk_q', box).value = ''; render(); };
     $('#pk_q', box).oninput = render; $('#pk_cat', box).onchange = render; $('#pk_all', box).onchange = render;
     $('#pk_tab', box).onclick = e => { const b = e.target.closest('button'); if (!b) return; st.tab = b.dataset.v; $$('#pk_tab button', box).forEach(x => x.classList.toggle('on', x === b)); render(); };
     res.onclick = e => {
-      const v = e.target.closest('[data-view]'), a = e.target.closest('[data-add]');
+      const v = e.target.closest('[data-view]'); let a = e.target.closest('[data-add]');
+      if (!v && !a) { const li = e.target.closest('.li'); a = li && li.querySelector('[data-add]'); }
       if (v) return showSet(v.dataset.view, job);
       if (a) {
         const c = a.dataset.add, arr = st.tab === 'set' ? pole.sets : pole.items, ex = arr.find(x => x.c === c);
-        ex ? ex.q++ : arr.push({ c, q: 1 }); saveJob(job); toast(`เพิ่ม ${c} ที่ ${pole.label}`);
+        ex ? ex.q++ : arr.push({ c, q: 1 }); if (st.tab === 'set') pushRecent(c); saveJob(job); toast(`เพิ่ม ${c} ที่ ${pole.label}`);
         if (preset === 'tr' && st.tab === 'set' && !pole.items.some(i => groupOfItem(i.c) === 'tr')) { closeModal(); return openPicker({ job, pole, preset: 'transformer', after }); }
         if (['tr', 'guy', 'meter', 'transformer'].includes(preset)) { closeModal(); after ? after() : (drawMap(job), renderSheet(job)); }
         else if (after) after();
@@ -913,7 +935,7 @@ function vPole(job, pid) {
   cur.pole = p; fillThumbs(p); uploadPending(job);
 }
 window.pset = (k, v) => { if ((k === 'h' && !v) || (k === 'head' && !v)) delete cur.pole[k]; else cur.pole[k] = v; saveJob(cur.job); vPole(cur.job, cur.pole.id); };
-window.addSet = c => { const p = cur.pole, ex = p.sets.find(x => x.c === c); ex ? ex.q++ : p.sets.push({ c, q: 1 }); saveJob(cur.job); vPole(cur.job, p.id); };
+window.addSet = c => { const p = cur.pole, ex = p.sets.find(x => x.c === c); ex ? ex.q++ : p.sets.push({ c, q: 1 }); pushRecent(c); saveJob(cur.job); vPole(cur.job, p.id); };
 window.pq = (kind, i, d, v) => { const arr = kind === 'set' ? cur.pole.sets : cur.pole.items; const x = arr[i]; x.q = v != null ? num(v) : Math.round((num(x.q) + d) * 1000) / 1000; if (x.q <= 0) arr.splice(i, 1); saveJob(cur.job); vPole(cur.job, cur.pole.id); };
 window.pick = preset => openPicker({ job: cur.job, pole: cur.pole, preset, after: () => vPole(cur.job, cur.pole.id) });
 
@@ -990,7 +1012,7 @@ function vBom(job) {
      <div class="fld" style="width:120px"><label for="b_oh">ค่าดำเนินการ %</label><input id="b_oh" class="in" type="number" step="0.01" value="${job.ohPct}" onchange="bset('ohPct',num(this.value))"></div>
      <div class="fld" style="width:100px"><label for="b_vat">VAT %</label><input id="b_vat" class="in" type="number" step="0.01" value="${job.vat}" onchange="bset('vat',num(this.value))"></div>
      <span style="flex:1"></span>
-     <button class="btn g" onclick="exportXlsx()">ส่งออก Excel</button><button class="btn g" onclick="toProcure()">ส่งไประบบงานจัดซื้อ</button><button class="btn g" onclick="toCCL()">เปิดงานใน CCL</button><a class="btn g" href="#plan/${job.id}">ผังงาน</a><a class="btn p" href="#quote/${job.id}">ออกใบเสนอราคา</a>
+     <button class="btn g" onclick="openCheck()">เช็คแบบ</button><button class="btn g" onclick="exportXlsx()">ส่งออก Excel</button><button class="btn g" onclick="toProcure()">ส่งไประบบงานจัดซื้อ</button><button class="btn g" onclick="toCCL()">เปิดงานใน CCL</button><a class="btn g" href="#plan/${job.id}">ผังงาน</a><a class="btn p" href="#quote/${job.id}">ออกใบเสนอราคา</a>
    </div>
    <div class="cols">
     <aside class="side stack">
