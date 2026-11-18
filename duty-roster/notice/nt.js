@@ -419,6 +419,21 @@ function ntApplySum(F){ const B=ntSum(F); if(!B) return; F._sld=B; if(B.cust) F.
   if(!F.area||F._autoArea){ F.area=secs.map(x=>{ const a=nm(x.a); if(x.b.length) return a+' → ก่อนถึง '+x.b.map(nm).join(', '); const B=ntBelow(x.a.id), pl=B?B.places:[]; return pl.length&&pl[pl.length-1]!==a?a+' → '+pl[pl.length-1]:a; }).join(' · '); F._autoArea=1; }
   if(!(F.villages||[]).length||F._autoV){ F.villages=B.places.slice(0,6); F._autoV=1; } }
 /* ---------- ฟอร์มสร้าง/แก้ประกาศ ---------- */
+/* ดับไฟฉุกเฉิน: เวลาเริ่มจากปุ่ม (อีก N นาที) หรือพิมพ์เอง — พิมพ์เวลา: ย้อนหลังไม่เกิน 12 ชม. = ดับไปแล้ว (วันนี้/เมื่อวาน) · ที่เหลือ = ข้างหน้า (ข้ามเที่ยงคืนให้เอง) */
+function ntEmgAt(F){
+  if(F.startIn!=null) return Date.now()+F.startIn*6e4;
+  if(!/^\d\d:\d\d$/.test(F.stHm||'')) return null;
+  const now=Date.now(); let t=Date.parse(isoAt(now).slice(0,10)+'T'+F.stHm+':00+07:00');
+  while(t-now>12*36e5) t-=864e5; while(now-t>12*36e5) t+=864e5;
+  return t;
+}
+function ntEmgSum(F){
+  const ms=ntEmgAt(F); if(ms==null) return '<span class="muted">เลือกปุ่มด้านบน หรือพิมพ์เวลาเริ่มดับ</span>';
+  const now=Date.now(), iso=isoAt(ms), td=isoAt(now).slice(0,10), dl=iso.slice(0,10)!==td?' ('+ntDateTh(iso.slice(0,10))+')':'';
+  const m=Math.round(Math.abs(ms-now)/6e4), dur=m>=60?Math.floor(m/60)+' ชม.'+(m%60?' '+(m%60)+' นาที':''):m+' นาที';
+  const end=F.estMin?isoAt(ms+F.estMin*6e4):'', endTxt=end?' · คาดว่าไฟมา <b>~'+end.slice(11,16)+'</b>'+(end.slice(0,10)!==iso.slice(0,10)?' ('+ntDateTh(end.slice(0,10))+')':''):' · ยังไม่ทราบเวลาไฟมา';
+  return '⏱ '+(ms<=now+6e4?(m<=1?'<b>ดับแล้ว ตอนนี้ '+iso.slice(11,16)+'</b>':'<b>ดับแล้วตั้งแต่ '+iso.slice(11,16)+'</b>'+dl+' ('+dur+'ก่อน) → ประกาศเป็น "กำลังดับ" ทันที'):'เริ่มดับ <b>'+iso.slice(11,16)+'</b>'+dl+' · อีก '+dur)+endTxt;
+}
 async function ntForm(n0){
   const c=ntCfg(), td=ntNow().slice(0,10);
   const REV=!!(n0&&!n0._copy&&!n0.draft), LIVE=REV&&ntState(n0)==='live';
@@ -430,7 +445,9 @@ async function ntForm(n0){
      ${REV?`<div class="nt-revb">⚠️ ประกาศนี้ส่งลูกค้าไปแล้ว — บันทึกแล้วเป็น <b>คำขอแก้ไข</b> รอหัวหน้า/ผู้ช่วยอนุมัติ · ระหว่างนี้ประกาศเดิมยังใช้อยู่ · อนุมัติแล้วภาพมีป้าย <b>"ฉบับแก้ไข"</b> ให้ส่งซ้ำ${LIVE?'<br>⏱ กำลังดับอยู่: แก้วัน/เวลาเริ่มไม่ได้ (ใช้ปุ่ม "ขยายเวลา" ถ้าไฟมาช้ากว่าเดิม)':''}</div>`:''}
      ${n0?'':`<div class="nt-typ"><button type="button" data-ty="plan" class="${!emg?'on':''}">📅 แจ้งล่วงหน้า<small>ปรับปรุง / บำรุงรักษา</small></button><button type="button" data-ty="emg" class="${emg?'on em':''}">⚠️ ฉุกเฉิน<small>ต้องดับเดี๋ยวนี้ / ภายในวันนี้</small></button></div>`}
      ${emg&&!n0?`<div class="lb">เริ่มดับ</div><div class="chips">${[[0,'ดับแล้ว (ตอนนี้)'],[15,'อีก 15 นาที'],[30,'อีก 30 นาที'],[60,'อีก 1 ชม.']].map(([v,l])=>`<button type="button" class="ch ${F.startIn===v?'on':''}" data-si="${v}">${l}</button>`).join('')}</div>
-       <div class="lb">คาดว่าใช้เวลา</div><div class="chips">${[[60,'1 ชม.'],[120,'2 ชม.'],[180,'3 ชม.'],[240,'4 ชม.'],[0,'ยังไม่ทราบ']].map(([v,l])=>`<button type="button" class="ch ${F.estMin===v?'on':''}" data-es="${v}">${l}</button>`).join('')}</div>`
+       <div class="nt-sthm">หรือระบุเวลา <input type="text" class="hm" inputmode="numeric" id="ntSt" maxlength="5" placeholder="--:--" value="${esc(F.startIn!=null?isoAt(Date.now()+F.startIn*6e4).slice(11,16):(F.stHm||''))}"> น.</div>
+       <div class="lb">คาดว่าใช้เวลา</div><div class="chips">${[[60,'1 ชม.'],[120,'2 ชม.'],[180,'3 ชม.'],[240,'4 ชม.'],[0,'ยังไม่ทราบ']].map(([v,l])=>`<button type="button" class="ch ${F.estMin===v?'on':''}" data-es="${v}">${l}</button>`).join('')}</div>
+       <div class="nt-stsum" id="ntStSum">${ntEmgSum(F)}</div>`
       :`<div class="grid3" style="margin-top:6px"><label class="tf">วันที่<input type="date" id="ntD" value="${esc(F.date)}" min="${emg?'':td}"></label><label class="tf">เริ่ม<input type="text" class="hm" inputmode="numeric" id="ntS" value="${esc(F.start||'')}" maxlength="5"></label>${emg?`<label class="tf">คาดว่าใช้ (นาที)<input type="number" id="ntE" value="${F.estMin||''}"></label>`:`<label class="tf">สิ้นสุด<input type="text" class="hm" inputmode="numeric" id="ntEn" value="${esc(F.end||'')}" maxlength="5"></label>`}</div>`}
      <div class="lb">สาเหตุ</div><div class="chips">${NT_RS[F.type].map(([k,l])=>`<button type="button" class="ch ${F.reasonKey===k?'on':''}" data-rk="${k}">${esc(l)}</button>`).join('')}</div>
      <input type="text" id="ntR" value="${esc(F.reason||'')}" placeholder="รายละเอียดสาเหตุ (แสดงบนโปสเตอร์)" style="margin-top:6px">
@@ -465,7 +482,9 @@ async function ntForm(n0){
   const bind=()=>{
     document.querySelectorAll('#ntF [data-ty]').forEach(b=>b.onclick=()=>{ keep(); F.type=b.dataset.ty; F.reasonKey=NT_RS[F.type][0][0]; F.reason=NT_RS[F.type][0][1]; if(F.type==='emg'){ F.startIn=0; F.estMin=120; } else { F.date=new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10); F.start='08:30'; F.end='16:30'; } draw(); });
     document.querySelectorAll('#ntF [data-sl]').forEach(b=>b.onclick=()=>{ keep(); const L=ntSlogans(); F.slogan=b.dataset.sl==='rnd'?(()=>{ const p=L.filter(x=>x!==F.slogan); return p[Math.floor(Math.random()*p.length)]||L[0]; })():L[+b.dataset.sl]; draw(); });
-    document.querySelectorAll('#ntF [data-si]').forEach(b=>b.onclick=()=>{ keep(); F.startIn=+b.dataset.si; draw(); });
+    document.querySelectorAll('#ntF [data-si]').forEach(b=>b.onclick=()=>{ keep(); F.startIn=+b.dataset.si; F.stHm=''; draw(); });
+    if($('ntSt')){ const st=$('ntSt'); st.addEventListener('input',()=>{ const h=hmNorm(st.value); if(h&&st.value.length>=4){ F.stHm=h; F.startIn=null; document.querySelectorAll('#ntF [data-si]').forEach(b=>b.classList.remove('on')); $('ntStSum').innerHTML=ntEmgSum(F); } });
+      st.addEventListener('change',()=>{ const h=hmNorm(st.value); if(h){ F.stHm=h; F.startIn=null; } keep(); draw(); }); }
     document.querySelectorAll('#ntF [data-es]').forEach(b=>b.onclick=()=>{ keep(); F.estMin=+b.dataset.es; draw(); });
     document.querySelectorAll('#ntF [data-rk]').forEach(b=>b.onclick=()=>{ keep(); const r=NT_RS[F.type].find(x=>x[0]===b.dataset.rk); F.reasonKey=r[0]; F.reason=r[0]==='other'?'':r[1]; draw(); });
     document.querySelectorAll('#ntF [data-fd]').forEach(b=>b.onclick=()=>{ keep(); F.feeder=F.feeder===b.dataset.fd?'':b.dataset.fd; if(F.dev&&F.dev.feeder!==F.feeder) F.dev=null; draw(); });
@@ -513,7 +532,7 @@ async function ntForm(n0){
       const o={type:F.type,slogan:F.slogan||'',reason:F.reason,reasonKey:F.reasonKey,feeder:F.feeder,dev:F.dev,stops:F.dev?(F.stops||[]):[],more:F.dev?(F.more||[]):[],cust:F.cust,area:F.area.trim(),sub:F.sub,villages:F.villages,speech:F.speech};
       if(n0&&!n0._copy) Object.assign(o,{id:n0.id,date:F.date,start:F.start,end:F.end,estMin:F.estMin},REV?{why:F.why.trim()}:{});
       else if(n0&&n0._copy&&F.type!=='emg'){ if(!F.date||!F.start||!F.end){ msg('ntFMsg','ใส่วันและเวลาให้ครบ','err'); return; } Object.assign(o,{date:F.date,start:F.start,end:F.end}); }
-      else if(F.type==='emg'){ const at=isoAt(Date.now()+F.startIn*6e4); Object.assign(o,{date:at.slice(0,10),start:at.slice(11,16),estMin:F.estMin,live:F.startIn===0}); }
+      else if(F.type==='emg'){ const ms=ntEmgAt(F); if(ms==null){ msg('ntFMsg','เลือกเวลาเริ่มดับ หรือพิมพ์เวลา เช่น 23:55','err'); return; } const at=isoAt(ms); Object.assign(o,{date:at.slice(0,10),start:at.slice(11,16),estMin:F.estMin,live:ms<=Date.now()+6e4}); }
       else { if(!F.date||!F.start||!F.end){ msg('ntFMsg','ใส่วันและเวลาให้ครบ','err'); return; } Object.assign(o,{date:F.date,start:F.start,end:F.end}); }
       if(F.slogan) LS.set('ntLastSlogan',F.slogan);
       $('ntSave').disabled=true; $('ntSave').innerHTML='<span class="spin"></span>กำลังบันทึก…';
