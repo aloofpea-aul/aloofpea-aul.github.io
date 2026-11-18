@@ -1,0 +1,58 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ตัวอย่างเลเยอร์แผนที่</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDE7F2;--ink:#2A1F33;--pu:#4A1B66;--mu:#6B5A78}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',sans-serif;padding:16px}
+h1{margin:0 0 2px;font-size:22px;color:var(--pu)}.sub{color:var(--mu);font-size:14px;margin-bottom:12px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.c{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px #0001}
+.c h3{margin:0;padding:8px 12px;font-size:16px;background:var(--pu);color:#fff}.c h3 small{font-weight:400;opacity:.85}
+.m{height:330px}.d{padding:8px 12px;font-size:13.5px;line-height:1.5}.d b{color:var(--pu)}
+.ok{color:#0B7A3B}.wa{color:#B4530A}
+.poi{background:#fff;border:1.5px solid #4A1B66;border-radius:10px;padding:0 5px;font-size:11px;white-space:nowrap;color:#4A1B66;font-family:'IBM Plex Sans Thai'}
+.vil{background:rgba(255,255,255,.85);border-radius:6px;padding:0 6px;font-size:13px;font-weight:700;color:#B91C1C;white-space:nowrap;font-family:'IBM Plex Sans Thai';border:1px solid #B91C1C}
+#st{font-size:13px;color:var(--mu);margin:8px 0}
+</style></head><body>
+<h1>ตัวอย่างเลเยอร์แผนที่ สำหรับโปสเตอร์ประกาศ</h1>
+<div class="sub">ทุกช่องแสดงพื้นที่เดียวกัน · เส้นแดง = แนวสายแรงสูงจาก SLD (ตัวอย่าง) · ลากหรือซูมช่องใดก็ได้ ช่องอื่นจะตามไปด้วย</div>
+<div id="st">กำลังโหลดเส้นจาก SLD…</div>
+<div class="g">
+ <div class="c"><h3>ก. แบบปัจจุบัน <small>OpenStreetMap</small></h3><div class="m" id="m0"></div><div class="d">ที่ใช้อยู่ตอนนี้ · ชื่อถนนบางเส้นเป็นภาษาอังกฤษ สีค่อนข้างแรง แข่งกับเส้นแดง<br><span class="ok">ฟรี ใช้ได้เลย</span></div></div>
+ <div class="c"><h3>ข. ถนนละเอียด สีอ่อน <small>CARTO Voyager</small></h3><div class="m" id="m1"></div><div class="d">ชื่อถนน/หมู่บ้านอ่านง่าย พื้นสีอ่อน เส้นแดงเด่นขึ้น<br><span class="wa">ฟรีสำหรับงานไม่แสวงกำไร ไม่เกิน 75,000 ครั้ง/เดือน (เราใช้ไม่ถึง 1%)</span></div></div>
+ <div class="c"><h3>ค. ภาพดาวเทียม <small>Esri World Imagery</small></h3><div class="m" id="m2"></div><div class="d">เห็นหลังคาบ้าน สวน ถนนจริง · ชาวบ้านจำบ้านตัวเองได้<br><span class="wa">ฟรี แต่เงื่อนไขเขียนว่าควรมีบัญชี ArcGIS (สมัครฟรี) — ต้องใส่เครดิต</span></div></div>
+ <div class="c"><h3>ง. ดาวเทียม + ชื่อถนน + จุดสังเกต</h3><div class="m" id="m3"></div><div class="d">ภาพ ค. + ชื่อถนนทับ + <b>วัด/โรงเรียน/อบต.</b> จาก OpenStreetMap + <b>ป้ายหมู่บ้าน</b> ตรงพื้นที่ดับ<br><span class="wa">ละเอียดสุด แต่รกที่สุดเมื่อย่อเป็นโปสเตอร์</span></div></div>
+ <div class="c"><h3>จ. ถนนสีอ่อน + จุดสังเกต <small>แนะนำ</small></h3><div class="m" id="m4"></div><div class="d">ภาพ ข. + จุดสังเกต + ป้ายหมู่บ้าน · อ่านง่ายเมื่อย่อในโปสเตอร์ ไฟล์ภาพเล็ก ส่ง LINE เร็ว<br><span class="ok">ฟรี</span></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const T={osm:['https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png','© OpenStreetMap'],
+ voy:['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','© OpenStreetMap © CARTO'],
+ sat:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','Imagery © Esri, Maxar'],
+ lab:['https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png','© CARTO']};
+const C=[8.3888,98.7311], Z=15, maps=[];
+const mk=(id,layers)=>{ const m=L.map(id,{zoomControl:true,attributionControl:true}).setView(C,Z); layers.forEach(k=>L.tileLayer(T[k][0],{attribution:T[k][1],maxZoom:19,subdomains:'abcd'.slice(0,k==='osm'?3:4)}).addTo(m)); maps.push(m); return m; };
+const M=[mk('m0',['osm']),mk('m1',['voy']),mk('m2',['sat']),mk('m3',['sat','lab']),mk('m4',['voy'])];
+let sync=false; M.forEach(m=>m.on('moveend',()=>{ if(sync) return; sync=true; M.forEach(o=>{ if(o!==m) o.setView(m.getCenter(),m.getZoom(),{animate:false}); }); sync=false; }));
+(async()=>{
+  const st=document.getElementById('st');
+  try{
+    const LN=await fetch('../../sld-ala/mv-lines.json').then(r=>r.json());
+    // หาเส้นของฟีดเดอร์ที่มีจุดหนาแน่นสุดรอบอำเภอ แล้วเลือกช่วงประมาณ 1.5 กม.
+    let best=null; for(const f in LN.lines){ for(const ln of LN.lines[f]){ const v=ln.v; if(!v||v.length<4) continue; const mid=v[Math.floor(v.length/2)]; const d=Math.hypot(mid[0]-C[0],mid[1]-C[1]); if(!best||d<best.d) best={d,f,mid}; } }
+    const c=best.mid, R=0.008, segs=[]; for(const ln of LN.lines[best.f]){ const v=ln.v.filter(p=>Math.abs(p[0]-c[0])<R&&Math.abs(p[1]-c[1])<R); if(v.length>1) segs.push(v); }
+    M.forEach((m,i)=>{ segs.forEach(v=>{ L.polyline(v,{color:'#fff',weight:8,opacity:.9}).addTo(m); L.polyline(v,{color:'#E03131',weight:5}).addTo(m); }); m.setView(c,15,{animate:false}); });
+    st.textContent='ตัวอย่างใช้แนวสายของฟีดเดอร์ '+best.f+' รอบ ๆ ตัวอำเภอ · กำลังโหลดจุดสังเกตจาก OpenStreetMap…';
+    // จุดสังเกต (วัด โรงเรียน หน่วยงาน) + หมู่บ้าน จาก Overpass
+    const b=[c[0]-0.012,c[1]-0.012,c[0]+0.012,c[1]+0.012].join(',');
+    const q='[out:json][timeout:20];(node["amenity"~"place_of_worship|school|townhall|hospital|fuel|marketplace"]('+b+');way["amenity"~"place_of_worship|school|townhall|hospital"]('+b+');node["place"~"village|hamlet"]('+b+'););out center 60;';
+    const o=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>r.json());
+    const ic={place_of_worship:'🛕',school:'🏫',townhall:'🏛️',hospital:'🏥',fuel:'⛽',marketplace:'🛒'};
+    let n=0,nv=0; o.elements.forEach(e=>{ const la=e.lat||(e.center&&e.center.lat), lo=e.lon||(e.center&&e.center.lon), t=e.tags||{}, nm=t['name:th']||t.name; if(!la||!nm) return;
+      if(t.place){ nv++; [3,4].forEach(i=>L.marker([la,lo],{icon:L.divIcon({className:'',html:'<span class="vil">'+nm+'</span>',iconSize:null})}).addTo(M[i])); return; }
+      n++; [3,4].forEach(i=>L.marker([la,lo],{icon:L.divIcon({className:'',html:'<span class="poi">'+(ic[t.amenity]||'📍')+' '+nm+'</span>',iconSize:null})}).addTo(M[i])); });
+    st.textContent='ตัวอย่างใช้แนวสายของฟีดเดอร์ '+best.f+' รอบ ๆ ตัวอำเภอ · จุดสังเกตจาก OpenStreetMap '+n+' จุด · หมู่บ้าน '+nv+' จุด';
+  }catch(e){ st.textContent='โหลดข้อมูลบางส่วนไม่ได้: '+e; }
+})();
+</script></body></html>
