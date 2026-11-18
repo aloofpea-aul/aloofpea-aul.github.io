@@ -1,7 +1,7 @@
 /* ระบบสำรวจออกแบบงานก่อสร้าง กฟส.อ่าวลึก — v1.0.0
    GitHub Pages + (ไม่บังคับ) Google Apps Script สำหรับเก็บงานลง Google Sheet */
 'use strict';
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const LONGDO_KEY = 'f61a87ff70c39e610385809783d5a1b3';   // คีย์ Longdo Map เดียวกับงานพาโทรล (ผูกกับโดเมน aloofpea-aul.github.io)
 const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx2wmhdFi462Xx3fbLnOuW9M0g_Ouy3WQmDRGax0-q6u93yzwLh49tyviaas4BN7MrmPg/exec';   // ชีต "ฐานข้อมูลสำรวจงานก่อสร้าง กฟส.อ่าวลึก"
 const HUB_USER = () => { try { return localStorage.getItem('pea_aoluek_username') || ''; } catch (e) { return ''; } };
@@ -1216,6 +1216,7 @@ function vSettings() {
       <div class="fld"><label for="c_ad">ที่อยู่</label><input id="c_ad" class="in" value="${esc(cfg.addr)}"></div>
       <div class="grid2"><div class="fld"><label for="c_tel">โทร</label><input id="c_tel" class="in" value="${esc(cfg.tel)}"></div><div class="fld"><label for="c_mg">ชื่อผู้จัดการ</label><input id="c_mg" class="in" value="${esc(cfg.manager)}"></div></div>
     </div>
+    ${rulebookHtml()}
     <div class="card stack"><b>ค่าเริ่มต้นการคำนวณ</b>
       <div class="fld"><label for="c_volt">ระบบไฟฟ้าในพื้นที่ (งานใหม่ + รายการอุปกรณ์ที่แสดง)</label><select id="c_volt" class="in"><option value="33" ${(cfg.volt || '33') === '33' ? 'selected' : ''}>33 kV (ซ่อนอุปกรณ์ 22 kV)</option><option value="22" ${cfg.volt === '22' ? 'selected' : ''}>22 kV (ซ่อนอุปกรณ์ 33 kV)</option></select></div>
       <div class="fld"><label for="c_hv">สายแรงสูงเริ่มต้น</label><select id="c_hv" class="in">${wireOptions(cfg.hvWire, 'HV', cfg.volt)}</select></div>
