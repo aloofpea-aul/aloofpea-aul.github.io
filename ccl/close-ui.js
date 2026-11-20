@@ -45,12 +45,13 @@
         var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
         var hi = -1, cW = -1, cS = -1;
         for (var i = 0; i < Math.min(rows.length, 15) && hi < 0; i++) {
-          rows[i].forEach(function (h, c) { h = String(h).trim(); if (/WBS/i.test(h)) cW = c; if (/^สถานะ$|^status$/i.test(h)) cS = c; });
+          rows[i].forEach(function (h, c) { h = String(h).trim(); if (/WBS|^หมายเลขงาน$/i.test(h)) cW = c; if (/^สถานะ$|^สถานะระบบ$|^status$|^system.?status$/i.test(h)) cS = c; });
           if (cW >= 0 && cS >= 0) hi = i;
         }
-        if (hi < 0) throw new Error('ไม่พบคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ" ในไฟล์');
+        if (hi < 0) throw new Error('ไม่พบคอลัมน์หมายเลขงาน ("องค์ประกอบ WBS" หรือ "หมายเลขงาน") และ "สถานะ" ในไฟล์');
         var need = {}; (g('allData', []) || []).forEach(function (j) { jobIds(j).forEach(function (x) { (need[key(x)] = need[key(x)] || []).push(x); }); });
-        var map = {}, n = 0, pref = {};
+        // รวมกับผลนำเข้าครั้งก่อน (ไฟล์ใหม่ทับเฉพาะหมายเลขที่มีในไฟล์) — ใช้ไฟล์รายงานที่กรองมาบางส่วนได้
+        var old = C.sap || {}, map = Object.assign({}, old.map || {}), n = 0, pref = Object.assign({}, old.pref || {});
         for (var r = hi + 1; r < rows.length; r++) {
           var w = normId(rows[r][cW]); if (!w) continue; n++; pref[w.split('.')[0]] = 1;
           var hit = need[key(w)]; if (!hit) continue;
@@ -58,7 +59,8 @@
           hit.forEach(function (x) { if (!map[x] || x === w) map[x] = [sys, usr]; });
         }
         var u = g('currentUser', {}) || {};
-        C.sap = { map: map, pref: pref, rows: n, matched: Object.keys(map).length, file: file.name, at: Date.now(), by: u.name || '' };
+        var files = (old.files || (old.file ? [{ file: old.file, at: old.at }] : [])).concat([{ file: file.name, at: Date.now() }]).slice(-5);
+        C.sap = { map: map, pref: pref, rows: n, matched: Object.keys(map).length, file: file.name, files: files, at: Date.now(), by: u.name || '' };
         try { localStorage.setItem(LS, JSON.stringify(C.sap)); } catch (e) {}
         C.sel = {}; C.autoSel = true;
         if (window.Swal) Swal.close();
@@ -139,7 +141,7 @@
     x.innerHTML = '<div class="ttl"><div class="ic"><i class="fa-solid fa-paper-plane"></i></div>ระบบส่งปิดงาน<span class="sp"></span>' +
       '<button class="tb" onclick="showPage(\'completed\')"><i class="fa-solid fa-circle-check" style="color:#16a34a"></i><span>งานแล้วเสร็จ</span></button></div>' +
       '<div id="clImp"><div class="ic"><i class="fa-solid fa-file-import"></i></div><div class="tx"><b id="clImpT">นำเข้าสถานะจาก SAP</b><span id="clLast"></span></div>' +
-      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> <span id="clPickT">เลือกไฟล์ SAP</span></button></div>' +
+      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb" id="clReset" style="display:none" title="ล้างผลนำเข้าทั้งหมด แล้วเริ่มนำเข้าใหม่"><i class="fa-solid fa-rotate-left"></i> ล้างผล</button><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> <span id="clPickT">เลือกไฟล์ SAP</span></button></div>' +
       '<div id="clCmp"></div>' +
       '<div class="f1"><div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input id="clQ" placeholder="ค้นหาเลขที่ / ชื่องาน / หมายเลขงาน / ผู้รับจ้าง"></div>' +
       '<select class="ch" id="clEnt"></select><button class="ch" id="clSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>';
@@ -151,6 +153,11 @@
     sel.innerHTML = '<i class="fa-solid fa-square-check"></i><span id="clSelT"></span><button class="c" id="clSelC">ล้าง</button><button class="p" id="clSelP"><i class="fa-solid fa-circle-check"></i> ปิดงานที่เลือก</button>';
     card.appendChild(sel);
     $('clPick').onclick = function () { $('clFile').click(); };
+    $('clReset').onclick = function () {
+      var go = function () { C.sap = null; C.sel = {}; C.st = ''; try { localStorage.removeItem(LS); } catch (e) {} render(); };
+      if (window.Swal) Swal.fire({ icon: 'question', title: 'ล้างผลนำเข้า SAP?', text: 'ข้อมูลงานใน CCL ไม่เปลี่ยน — แค่ลบผลเทียบกับ SAP ในเครื่องนี้ แล้วนำเข้าไฟล์ใหม่', showCancelButton: true, confirmButtonText: 'ล้างผล', cancelButtonText: 'ยกเลิก' }).then(function (r) { if (r.isConfirmed) go(); });
+      else go();
+    };
     $('clFile').onchange = function () { if (this.files[0]) readSap(this.files[0]); this.value = ''; };
     var imp = $('clImp');
     ['dragenter', 'dragover'].forEach(function (t) { imp.addEventListener(t, function (e) { e.preventDefault(); imp.classList.add('over'); }); });
@@ -263,9 +270,9 @@
     C.rows0 = data;
     var cmp = $('clCmp');
     if (C.sap) {
-      $('clImpT').textContent = 'สถานะ SAP: ' + (C.sap.file || '-');
+      $('clImpT').textContent = 'สถานะ SAP: ' + (C.sap.files && C.sap.files.length > 1 ? C.sap.files.map(function (f) { return f.file; }).join(' + ') : (C.sap.file || '-'));
       $('clLast').textContent = 'นำเข้าเมื่อ ' + new Date(C.sap.at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) + (C.sap.by ? ' โดย ' + C.sap.by : '') + ' · เทียบกับงานใน CCL ด้วยหมายเลขงาน (WBS) · ลากไฟล์ใหม่มาวางได้';
-      $('clPickT').textContent = 'นำเข้าไฟล์ใหม่';
+      $('clPickT').textContent = 'นำเข้าไฟล์เพิ่ม'; $('clReset').style.display = '';
       var cnt = { clsd: 0, teco: 0, rel: 0, none: 0 }; base.forEach(function (j) { cnt[grp(j)]++; });
       var other = C.other = all.filter(function (j) { return j.status !== 'ส่งปิดงาน' && j.status !== 'ปิดงานแล้วเสร็จ' && j.status !== 'ยกเลิก' && isClosed(sapOf(j)); });
       var row = function (k) {
@@ -281,7 +288,7 @@
             : '<div class="ok">✔ ไม่มีงานค้าง — สถานะ CCL ตรงกับ SAP แล้ว</div>') + '</div>';
       cmp.classList.add('on');
     } else {
-      C.st = ''; cmp.classList.remove('on');
+      C.st = ''; cmp.classList.remove('on'); $('clReset').style.display = 'none'; $('clPickT').textContent = 'เลือกไฟล์ SAP';
       $('clImpT').textContent = 'นำเข้าสถานะจาก SAP';
       $('clLast').textContent = 'ลากไฟล์ Excel ที่ export จาก SAP (มีคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ") มาวาง หรือกดเลือกไฟล์ — ระบบจะบอกว่างานไหนปิดใน CCL ได้';
     }
