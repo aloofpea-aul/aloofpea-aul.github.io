@@ -3,8 +3,8 @@
    ไม่แตะข้อมูล — แค่จัดวางการ์ดที่หน้าอื่นวาดไว้ใหม่ */
 (function () {
   'use strict';
-  var KEY = 'ccl_compact_v1';
-  function get() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+  var KEY = 'ccl_compact_v2'; // ค่าเริ่มต้น = เปิด (กดปิดได้ที่ปุ่มมุมขวาล่าง)
+  function get() { try { return localStorage.getItem(KEY) !== '0'; } catch (e) { return true; } }
   function set(v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} }
   var q = /[?&]compact=([01])/.exec(location.search); if (q) set(q[1] === '1');
 
