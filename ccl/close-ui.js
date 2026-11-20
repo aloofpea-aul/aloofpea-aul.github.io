@@ -50,20 +50,20 @@
         }
         if (hi < 0) throw new Error('ไม่พบคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ" ในไฟล์');
         var need = {}; (g('allData', []) || []).forEach(function (j) { jobIds(j).forEach(function (x) { (need[key(x)] = need[key(x)] || []).push(x); }); });
-        var map = {}, n = 0;
+        var map = {}, n = 0, pref = {};
         for (var r = hi + 1; r < rows.length; r++) {
-          var w = normId(rows[r][cW]); if (!w) continue; n++;
+          var w = normId(rows[r][cW]); if (!w) continue; n++; pref[w.split('.')[0]] = 1;
           var hit = need[key(w)]; if (!hit) continue;
           var st = String(rows[r][cS] || ''), sys = (st.trim().split(/\s+/)[0] || '').toUpperCase(), usr = (st.split('//')[1] || '').trim();
           hit.forEach(function (x) { if (!map[x] || x === w) map[x] = [sys, usr]; });
         }
         var u = g('currentUser', {}) || {};
-        C.sap = { map: map, rows: n, matched: Object.keys(map).length, file: file.name, at: Date.now(), by: u.name || '' };
+        C.sap = { map: map, pref: pref, rows: n, matched: Object.keys(map).length, file: file.name, at: Date.now(), by: u.name || '' };
         try { localStorage.setItem(LS, JSON.stringify(C.sap)); } catch (e) {}
         C.sel = {}; C.autoSel = true;
         if (window.Swal) Swal.close();
         render();
-        var ui = $('clRes'); if (ui) ui.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var ui = $('clCmp'); if (ui) ui.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (e) { alertMsg('error', 'อ่านไฟล์ SAP ไม่ได้', (e && e.message) || String(e)); }
     };
     fr.onerror = function () { alertMsg('error', 'อ่านไฟล์ไม่ได้', ''); };
@@ -80,13 +80,26 @@
     '#clx .st{display:flex;gap:8px;margin:14px 0 12px;overflow-x:auto;padding:2px}#clx .st::-webkit-scrollbar{display:none}' +
     '#clx .s{flex:1;min-width:120px;border-radius:14px;padding:8px 12px;border:2px solid transparent;cursor:pointer;text-align:left;font-family:inherit}' +
     '#clx .s small{display:block;font-size:12.5px;font-weight:600;white-space:nowrap}#clx .s b{font-size:22px;line-height:1.25;display:block}#clx .s.on{border-color:currentColor;box-shadow:0 2px 8px rgba(0,0,0,.1)}' +
-    '#clImp{border:2px dashed #a7f3d0;background:#f0fdf4;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;transition:all .15s}#clImp.over{border-color:#059669;background:#dcfce7}' +
+    '#clImp{margin-top:12px;border:2px dashed #a7f3d0;background:#f0fdf4;border-radius:14px;padding:10px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;transition:all .15s}#clImp.over{border-color:#059669;background:#dcfce7}' +
     '#clImp .ic{width:44px;height:44px;border-radius:12px;background:#059669;color:#fff;display:grid;place-items:center;font-size:20px;flex-shrink:0}' +
     '#clImp .tx{flex:1;min-width:200px;font-size:13.5px;color:#065f46;line-height:1.5}#clImp .tx b{font-size:15px;display:block}#clImp small{color:#64748b}' +
     '#clRes{margin-top:10px;background:#fff;border:1px solid #d1fae5;border-radius:14px;padding:10px 14px;display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13.5px}' +
     '#clRes .k{display:flex;align-items:center;gap:6px}#clRes .k b{font-size:18px}#clRes .warn{color:#dc2626;cursor:pointer;text-decoration:underline dotted}' +
     '#clWarn{display:none;margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 12px;font-size:13px;color:#7f1d1d}#clWarn.on{display:block}' +
     '#clWarn a{color:#1d4ed8;cursor:pointer;font-weight:600}' +
+    '#clCmp{display:none;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;margin-top:12px}#clCmp.on{display:grid}' +
+    '#clCmp .bx{border:1.5px solid #e2e8f0;border-radius:16px;padding:12px;min-width:0}#clCmp h4{margin:0 0 2px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;color:#1e293b}#clCmp h4 b{margin-left:auto;font-size:22px}' +
+    '#clCmp p{margin:0 0 6px;font-size:12.5px;color:#64748b}' +
+    '#clCmp .rw{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 10px;border-radius:12px;margin-top:6px;cursor:pointer;border:2px solid transparent;text-align:left;width:100%;font-family:inherit}' +
+    '#clCmp .rw.on{border-color:currentColor}#clCmp .rw .i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:rgba(255,255,255,.85)}' +
+    '#clCmp .rw .t b{display:block;font-size:14px;color:#1e293b}#clCmp .rw .t small{font-size:12px;color:#64748b}#clCmp .rw .n{font-size:22px;font-weight:700}' +
+    '#clCmp .rw .a{height:32px;padding:0 11px;border-radius:9px;font-size:12.5px;font-weight:700;display:flex;align-items:center;white-space:nowrap;background:#fff}' +
+    '#clCmp .sum{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#64748b;border-top:1px dashed #e2e8f0;margin-top:8px;padding-top:8px}' +
+    '#clCmp .ok{text-align:center;padding:22px 8px;color:#16a34a;font-size:14px;background:#f0fdf4;border-radius:12px;margin-top:6px}' +
+    '#clCmp .ol{max-height:230px;overflow:auto;margin-top:6px;font-size:13px}#clCmp .ol div{padding:5px 2px;border-bottom:1px solid #fef2f2;cursor:pointer}#clCmp .ol b{color:#1d4ed8}#clCmp .ol small{color:#b45309}' +
+    '#clFocus{display:none;align-items:center;gap:10px;margin:2px 18px 0;font-size:14px;font-weight:700}#clFocus.on{display:flex}#clFocus button{margin-left:auto;border:0;background:none;color:#64748b;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}' +
+    '.clc .todo{grid-column:1/-1;margin-top:8px;border-radius:10px;padding:7px 11px;font-size:13px;line-height:1.5}' +
+    '@media(max-width:760px){#clCmp{grid-template-columns:1fr}}' +
     '#clx .f1{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}' +
     '#clx .srch{flex:1;min-width:220px;position:relative}#clx .srch>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8}' +
     '#clx .srch input{width:100%;height:46px;border:1.5px solid #cbd5e1;border-radius:12px;padding:0 12px 0 40px;font-size:15px;background:#f8fafc}' +
@@ -125,13 +138,14 @@
     var x = document.createElement('div'); x.id = 'clx';
     x.innerHTML = '<div class="ttl"><div class="ic"><i class="fa-solid fa-paper-plane"></i></div>ระบบส่งปิดงาน<span class="sp"></span>' +
       '<button class="tb" onclick="showPage(\'completed\')"><i class="fa-solid fa-circle-check" style="color:#16a34a"></i><span>งานแล้วเสร็จ</span></button></div>' +
-      '<div class="st" id="clSt"></div>' +
-      '<div id="clImp"><div class="ic"><i class="fa-solid fa-file-import"></i></div><div class="tx"><b>นำเข้าสถานะจาก SAP</b>ลากไฟล์ Excel ที่ export จาก SAP มาวาง หรือกดเลือกไฟล์ — จับคู่ด้วย "องค์ประกอบ WBS" กับหมายเลขงาน<br><small id="clLast"></small></div>' +
-      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> เลือกไฟล์ SAP</button></div>' +
-      '<div id="clRes" style="display:none"></div><div id="clWarn"></div>' +
+      '<div id="clImp"><div class="ic"><i class="fa-solid fa-file-import"></i></div><div class="tx"><b id="clImpT">นำเข้าสถานะจาก SAP</b><span id="clLast"></span></div>' +
+      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> <span id="clPickT">เลือกไฟล์ SAP</span></button></div>' +
+      '<div id="clCmp"></div>' +
       '<div class="f1"><div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input id="clQ" placeholder="ค้นหาเลขที่ / ชื่องาน / หมายเลขงาน / ผู้รับจ้าง"></div>' +
       '<select class="ch" id="clEnt"></select><button class="ch" id="clSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>';
     card.insertBefore(x, oldHead); oldHead.style.display = 'none'; if (wrap) wrap.style.display = 'none';
+    var fo = document.createElement('div'); fo.id = 'clFocus'; fo.innerHTML = '<span></span><button type="button">✕ แสดงทั้งหมด</button>'; card.appendChild(fo);
+    fo.querySelector('button').onclick = function () { C.st = ''; render(); };
     var list = document.createElement('div'); list.id = 'clList'; card.appendChild(list);
     var sel = document.createElement('div'); sel.id = 'clSel';
     sel.innerHTML = '<i class="fa-solid fa-square-check"></i><span id="clSelT"></span><button class="c" id="clSelC">ล้าง</button><button class="p" id="clSelP"><i class="fa-solid fa-circle-check"></i> ปิดงานที่เลือก</button>';
@@ -142,7 +156,12 @@
     ['dragenter', 'dragover'].forEach(function (t) { imp.addEventListener(t, function (e) { e.preventDefault(); imp.classList.add('over'); }); });
     ['dragleave', 'drop'].forEach(function (t) { imp.addEventListener(t, function (e) { e.preventDefault(); imp.classList.remove('over'); }); });
     imp.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) readSap(f); });
-    $('clSt').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (b) { C.st = b.dataset.s; render(); } });
+    $('clCmp').addEventListener('click', function (e) {
+      var a = e.target.closest('[data-close]'); if (a) { e.stopPropagation(); C.sel = {}; C.rows0.filter(function (j) { return grp(j) === 'clsd'; }).forEach(function (j) { C.sel[j.id] = 1; }); C.st = 'clsd'; render(); bulkClose(); return; }
+      var o = e.target.closest('[data-other]'); if (o) { e.stopPropagation(); bulkClose(C.other, true); return; }
+      var j = e.target.closest('[data-job]'); if (j) { openDetailModal(Number(j.dataset.job)); return; }
+      var b = e.target.closest('[data-s]'); if (b) { C.st = C.st === b.dataset.s ? '' : b.dataset.s; render(); var l = $('clFocus'); if (l && C.st) l.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
     $('clQ').oninput = render;
     $('clEnt').onchange = function () { C.ent = this.value; render(); };
     $('clSort').onclick = function () { C.sort = !C.sort; render(); };
@@ -171,6 +190,32 @@
     return e ? new Date(e.timestamp) : null;
   }
 
+  var GR = {
+    clsd: ['✅', 'SAP ปิดสมบูรณ์ (CLSD)', 'ปิดงานใน CCL ได้เลย', '#059669', '#ecfdf5'],
+    teco: ['🔧', 'SAP ปิดทางเทคนิค (TECO)', 'ยังไม่ถือว่าปิด · รอ SAP เป็น CLSD', '#0d9488', '#f0fdfa'],
+    rel: ['⏳', 'SAP ยังเปิดอยู่ (REL)', 'ตามเรื่องให้ปิดใน SAP ก่อน', '#475569', '#f1f5f9'],
+    none: ['❓', 'ไม่พบในไฟล์ SAP', 'หมายเลขงานไม่ตรง หรือไฟล์ไม่มีงานกลุ่มนี้', '#d97706', '#fffbeb']
+  };
+  function grp(j) { var s = j.__s; if (!C.sap || !s) return ''; return s.k === 'CLSD' ? 'clsd' : s.k === 'TECO' ? 'teco' : s.k === 'NONE' ? 'none' : 'rel'; }
+  var ID_OK = /^(C-\d{2}-K-[A-Z]{3}[A-Z0-9]{2}\.\d{4}\.\d{2}\.\d|I-\d{2}-K-[A-Z0-9]+\.[A-Z0-9]+\.\d{4}|P-[A-Z0-9.]+-K-[A-Z0-9]+\.[A-Z0-9]+(\.\d+)*)$/;
+  function todo(j) {
+    var k = grp(j), s = j.__s; if (!k) return '';
+    var t;
+    if (k === 'clsd') t = '<b>ปิดงานได้เลย</b> — SAP ปิดสมบูรณ์แล้ว';
+    else if (k === 'teco') t = '<b>รอ SAP ปิดสมบูรณ์</b> — ตอนนี้เป็น TECO (ปิดทางเทคนิค) ยังไม่ปิดงานใน CCL';
+    else if (k === 'rel') t = s.k === 'PART' ? '<b>ปิดใน SAP ยังไม่ครบ</b> — บางหมายเลขงานยังไม่เป็น CLSD' : '<b>ตามเรื่องให้ปิดใน SAP</b> — SAP ยังเปิดอยู่ (' + esc(s.k) + ')';
+    else {
+      var ids = (s.ids || []).map(function (f) { return f.id; });
+      var bad = ids.filter(function (i) { return !ID_OK.test(i); });
+      var pre = ids.map(function (i) { return i.split('.')[0]; }).filter(function (p) { return C.sap.pref && !C.sap.pref[p]; });
+      if (!ids.length) t = '<b>ยังไม่มีหมายเลขงาน</b> — ใส่หมายเลขงานก่อน จึงจะเทียบกับ SAP ได้';
+      else if (bad.length) t = '<b>ตรวจหมายเลขงาน</b> — รูปแบบอาจพิมพ์ผิด: ' + bad.map(esc).join(', ');
+      else if (pre.length) t = '<b>ไฟล์ SAP ไม่มีงานกลุ่ม ' + esc(pre[0]) + '</b> — export SAP ให้รวมงานกลุ่มนี้ด้วย';
+      else t = '<b>ตรวจหมายเลขงาน</b> — ไม่พบเลขนี้ในไฟล์ SAP';
+    }
+    var c = GR[k];
+    return '<div class="todo" style="background:' + c[4] + ';color:' + c[3] + '">👉 ' + t + '</div>';
+  }
   function card(j) {
     var s = j.__s, closed = isClosed(s), L = s ? SAPL[s.k] : null, mo = money(j), sent = j.__sent;
     var days = sent && !isNaN(sent) ? Math.max(0, Math.ceil((Date.now() - sent) / 86400000)) : null;
@@ -179,7 +224,8 @@
       return '<span class="' + (f.sys === 'CLSD' ? 'o' : !f.sys ? 'x' : '') + '" title="' + esc(f.sys || 'ไม่พบใน SAP') + '">' + esc(f.id) + (f.sys ? ' · ' + esc(f.sys) : ' · ไม่พบ') + '</span>';
     }).join('') : esc(j.jobIds || '-');
     var ent = String(j.responsibleEntity || '').trim(), self = !ent || ent === 'ไฟฟ้าดำเนินการเอง';
-    return '<div class="clc' + (on ? ' sel' : '') + '" data-id="' + j.id + '" style="--sc:' + (closed ? '#059669' : '#7c3aed') + ';--sb:' + (closed ? '#ecfdf5' : '#f5f3ff') + '">' +
+    var gk = grp(j), gc = gk ? GR[gk] : null;
+    return '<div class="clc' + (on ? ' sel' : '') + '" data-id="' + j.id + '" style="--sc:' + (gc ? gc[3] : '#7c3aed') + ';--sb:' + (gc ? gc[4] : '#f5f3ff') + '">' +
       '<div style="min-width:0"><div class="l1">' + (closed ? '<input type="checkbox" value="' + j.id + '"' + (on ? ' checked' : '') + ' aria-label="เลือกปิดงาน">' : '') +
         '<span class="tg rn">' + esc(j.receiveNo || '-') + '</span>' +
         (L ? '<span class="sap" style="color:' + L[1] + ';background:' + L[2] + '">SAP: ' + (s.k === 'NONE' || s.k === 'PART' ? '' : s.k + ' · ') + L[0] + (s.usr ? ' · ' + esc(s.usr) : '') + '</span>' : '') + '</div>' +
@@ -188,9 +234,11 @@
         '<div class="meta"><span><i class="fa-solid fa-circle-check" style="color:#16a34a;margin-right:4px"></i>' + esc(j.inspectionStatus || 'รอตรวจสอบ') + '</span>' + (j.budgetType ? '<span>' + esc(j.budgetType) + '</span>' : '') + '</div></div>' +
       '<div class="r"><small>รอปิดงาน</small><b style="color:' + (days > 14 ? '#dc2626' : '#334155') + '">' + (days == null ? '-' : days + ' วัน') + '</b><span class="d">' + (sent ? 'ส่งปิดงาน ' + esc(dth(sent)) : '') + '</span></div>' +
       (mo.bud ? '<div class="bar"><div class="bt2"><i class="' + (pct > 100 ? 'ov' : '') + '" style="width:' + Math.min(pct, 100) + '%"></i></div><div class="bl"><span>ใช้ไป <b>' + m(mo.sp) + '</b> (' + pct.toFixed(1) + '%)</span><span>คงเหลือ <b>' + m(mo.bud - mo.sp) + '</b></span><span>งบ <b>' + m(mo.bud) + '</b></span></div></div>' : '') +
+      todo(j) +
       '<div class="ft"><div class="who">' + (self ? '<span><i class="fa-solid fa-bolt" style="color:#eab308"></i>ไฟฟ้าดำเนินการเอง</span>' : '<span><i class="fa-solid fa-helmet-safety" style="color:#f97316"></i><span>' + esc(ent) + '</span></span>') +
         '<span><i class="fa-solid fa-user-tie"></i>' + esc(j.assignee || '-') + '</span></div>' +
-        '<button class="btn" onclick="returnJobToInspection(' + j.id + ')"><i class="fa-solid fa-rotate-left" style="color:#f97316"></i>ส่งกลับตรวจรับ</button>' +
+        (gk === 'none' ? '<button class="btn" onclick="openEditModal(' + j.id + ')"><i class="fa-solid fa-pen" style="color:#f97316"></i>แก้หมายเลขงาน</button>'
+          : '<button class="btn" onclick="returnJobToInspection(' + j.id + ')"><i class="fa-solid fa-rotate-left" style="color:#f97316"></i>ส่งกลับตรวจรับ</button>') +
         '<button class="btn" onclick="openDetailModal(' + j.id + ')"><i class="fa-solid fa-eye" style="color:#3b82f6"></i>รายละเอียด</button>' +
         '<button class="btn p" onclick="completeJob(' + j.id + ')"><i class="fa-solid fa-circle-check"></i>ปิดงาน</button></div></div>';
   }
@@ -212,33 +260,34 @@
       if (C.ent && String(j.responsibleEntity || '').trim() !== C.ent) return false;
       return !q || [j.jobName, j.receiveNo, j.jobIds, j.responsibleEntity, j.assignee].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
     });
-    var grp = function (j) { return !C.sap ? '' : isClosed(j.__s) ? 'closed' : j.__s && j.__s.k === 'NONE' ? 'none' : 'open'; };
-    var cnt = { '': base.length, closed: 0, open: 0, none: 0 }; base.forEach(function (j) { var k = grp(j); if (k) cnt[k]++; });
-    var tabs = [['', 'รอปิดงาน', '#7c3aed', '#f5f3ff']];
-    if (C.sap) tabs = tabs.concat([['closed', 'SAP ปิดแล้ว · ปิดใน CCL ได้', '#059669', '#ecfdf5'], ['open', 'SAP ยังไม่ปิด (REL/TECO)', '#64748b', '#f1f5f9'], ['none', 'ไม่พบใน SAP', '#d97706', '#fffbeb']]);
-    else C.st = '';
-    $('clSt').innerHTML = tabs.map(function (x) { return '<button class="s' + (C.st === x[0] ? ' on' : '') + '" data-s="' + x[0] + '" style="color:' + x[2] + ';background:' + x[3] + '"><small>' + x[1] + '</small><b>' + cnt[x[0]] + '</b></button>'; }).join('');
-    // ผลนำเข้า + งานขั้นอื่นที่ SAP ปิดแล้ว
-    var res = $('clRes'), warn = $('clWarn');
+    C.rows0 = data;
+    var cmp = $('clCmp');
     if (C.sap) {
-      $('clLast').textContent = 'นำเข้าล่าสุด: ' + (C.sap.file || '-') + ' · ' + new Date(C.sap.at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) + (C.sap.by ? ' โดย ' + C.sap.by : '');
-      var other = all.filter(function (j) { return j.status !== 'ส่งปิดงาน' && j.status !== 'ปิดงานแล้วเสร็จ' && j.status !== 'ยกเลิก' && isClosed(sapOf(j)); });
-      var closable = data.filter(function (j) { return isClosed(j.__s); });
-      res.style.display = 'flex';
-      res.innerHTML = '<span class="k"><i class="fa-solid fa-file-lines" style="color:#94a3b8"></i>อ่านได้ <b>' + (C.sap.rows || 0).toLocaleString() + '</b> แถว</span>' +
-        '<span class="k"><i class="fa-solid fa-link" style="color:#94a3b8"></i>ตรงกับหมายเลขงานใน CCL <b>' + (C.sap.matched || 0) + '</b></span>' +
-        '<span class="k" style="color:#059669"><i class="fa-solid fa-circle-check"></i>รอปิดงาน + SAP ปิดแล้ว <b>' + closable.length + '</b></span>' +
-        (other.length ? '<span class="k warn" id="clWarnBtn"><i class="fa-solid fa-triangle-exclamation"></i>งานขั้นอื่นที่ SAP ปิดแล้ว <b>' + other.length + '</b></span>' : '') +
-        '<span style="flex:1"></span><button class="tb g" id="clAll"' + (closable.length ? '' : ' disabled') + '><i class="fa-solid fa-circle-check"></i> เลือกงานที่ SAP ปิดแล้ว (' + closable.length + ')</button>';
-      $('clAll').onclick = function () { closable.forEach(function (j) { C.sel[j.id] = 1; }); C.st = 'closed'; render(); };
-      warn.innerHTML = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><b style="flex:1;min-width:220px">งานที่ SAP ปิดแล้ว แต่ใน CCL ยังไม่ถึงขั้นส่งปิดงาน (' + other.length + ' งาน)</b>' +
-        '<button type="button" id="clOtherAll" style="border:0;border-radius:10px;background:#dc2626;color:#fff;font-weight:700;padding:8px 14px;cursor:pointer;font-family:inherit"><i class="fa-solid fa-circle-check"></i> ปิดงานตาม SAP ทั้งหมด (' + other.length + ')</button></div>' +
-        other.map(function (j) { return '• <a onclick="openDetailModal(' + j.id + ')">' + esc(j.receiveNo || '-') + ' ' + esc(j.jobName || '') + '</a> — CCL: ' + esc(j.status) + ' · SAP: ' + esc(sapOf(j).k); }).join('<br>');
-      var wb = $('clWarnBtn'); if (wb) wb.onclick = function () { warn.classList.toggle('on'); };
-      var oa = $('clOtherAll'); if (oa) oa.onclick = function () { bulkClose(other, true); };
-      if (!other.length) warn.classList.remove('on');
-    } else { $('clLast').textContent = 'ยังไม่เคยนำเข้า — ใช้ไฟล์รายงานโครงสร้าง WBS ที่มีคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ"'; res.style.display = 'none'; }
+      $('clImpT').textContent = 'สถานะ SAP: ' + (C.sap.file || '-');
+      $('clLast').textContent = 'นำเข้าเมื่อ ' + new Date(C.sap.at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) + (C.sap.by ? ' โดย ' + C.sap.by : '') + ' · เทียบกับงานใน CCL ด้วยหมายเลขงาน (WBS) · ลากไฟล์ใหม่มาวางได้';
+      $('clPickT').textContent = 'นำเข้าไฟล์ใหม่';
+      var cnt = { clsd: 0, teco: 0, rel: 0, none: 0 }; base.forEach(function (j) { cnt[grp(j)]++; });
+      var other = C.other = all.filter(function (j) { return j.status !== 'ส่งปิดงาน' && j.status !== 'ปิดงานแล้วเสร็จ' && j.status !== 'ยกเลิก' && isClosed(sapOf(j)); });
+      var row = function (k) {
+        var c = GR[k], act = k === 'clsd' ? (cnt.clsd ? '<span class="a" data-close="1" style="background:#059669;color:#fff">ปิดงาน ' + cnt.clsd + '</span>' : '<span class="a" style="color:#94a3b8">—</span>') : '<span class="a" style="color:' + c[3] + '">' + (k === 'none' ? 'ตรวจ' : 'รอ') + '</span>';
+        return '<button type="button" class="rw' + (C.st === k ? ' on' : '') + '" data-s="' + k + '" style="background:' + c[4] + ';color:' + c[3] + '"><div class="i">' + c[0] + '</div><div class="t"><b>' + c[1] + '</b><small>' + c[2] + '</small></div><div class="n">' + cnt[k] + '</div>' + act + '</button>';
+      };
+      cmp.innerHTML = '<div class="bx" style="border-color:#ddd6fe"><h4>📤 งานรอปิดใน CCL<b style="color:#7c3aed">' + base.length + '</b></h4><p>สถานะใน SAP ของงานที่ส่งปิดงานแล้ว — กดแถวเพื่อดูเฉพาะกลุ่ม</p>' +
+          ['clsd', 'teco', 'rel', 'none'].map(row).join('') +
+          '<div class="sum"><span>CLSD ' + cnt.clsd + ' + TECO ' + cnt.teco + ' + REL ' + cnt.rel + ' + ไม่พบ ' + cnt.none + '</span><b style="color:#7c3aed">= รอปิด ' + base.length + ' งาน</b></div></div>' +
+        '<div class="bx" style="border-color:#fecaca"><h4>⚠️ งานขั้นอื่นที่ SAP ปิดแล้ว<b style="color:' + (other.length ? '#dc2626' : '#16a34a') + '">' + other.length + '</b></h4><p>SAP เป็น CLSD แต่ใน CCL ยังไม่ถึงขั้นส่งปิดงาน</p>' +
+          (other.length ? '<button type="button" data-other="1" style="width:100%;border:0;border-radius:10px;background:#dc2626;color:#fff;font-weight:700;padding:9px 14px;cursor:pointer;font-family:inherit;margin-top:4px"><i class="fa-solid fa-circle-check"></i> ปิดงานตาม SAP ทั้งหมด (' + other.length + ')</button>' +
+            '<div class="ol">' + other.map(function (j) { return '<div data-job="' + j.id + '"><b>' + esc(j.receiveNo || '-') + '</b> ' + esc(j.jobName || '') + ' <small>· CCL: ' + esc(j.status || '-') + '</small></div>'; }).join('') + '</div>'
+            : '<div class="ok">✔ ไม่มีงานค้าง — สถานะ CCL ตรงกับ SAP แล้ว</div>') + '</div>';
+      cmp.classList.add('on');
+    } else {
+      C.st = ''; cmp.classList.remove('on');
+      $('clImpT').textContent = 'นำเข้าสถานะจาก SAP';
+      $('clLast').textContent = 'ลากไฟล์ Excel ที่ export จาก SAP (มีคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ") มาวาง หรือกดเลือกไฟล์ — ระบบจะบอกว่างานไหนปิดใน CCL ได้';
+    }
+    var fo = $('clFocus');
     var rows = C.st ? base.filter(function (j) { return grp(j) === C.st; }) : base;
+    fo.classList.toggle('on', !!C.st); if (C.st) { fo.style.color = GR[C.st][3]; fo.querySelector('span').textContent = GR[C.st][0] + ' แสดง: ' + GR[C.st][1] + ' · ' + rows.length + ' งาน'; }
     if (C.sort) rows = rows.slice().sort(function (a, b) { return (a.__sent || 0) - (b.__sent || 0); });
     $('clSort').querySelector('span').textContent = C.sort ? 'รอนานสุดก่อน' : 'เรียงตามเดิม';
     var b = $('closeCountBadge'); if (b) b.innerText = data.length + ' รายการ';
@@ -292,7 +341,7 @@
     });
   }
 
-  window.cclCloseGo = function (st) { C.st = C.sap ? (st || '') : ''; try { showPage('close'); } catch (e) {} window.renderCloseTable(); window.scrollTo(0, 0); };
+  window.cclCloseGo = function (st) { C.st = C.sap ? ({ closed: 'clsd' }[st] || st || '') : ''; try { showPage('close'); } catch (e) {} window.renderCloseTable(); window.scrollTo(0, 0); };
   window.cclSapClosedCount = function () { return (g('allData', []) || []).filter(function (j) { return j.status === 'ส่งปิดงาน' && isClosed(sapOf(j)); }).length; };
   window.cclSapInfo = function () { return C.sap ? { file: C.sap.file, at: C.sap.at } : null; };
   window.renderCloseTable = function () { try { render(); } catch (e) { console.error('[close-ui]', e); } };
