@@ -280,7 +280,8 @@
       '<div style="min-width:0"><div class="l1"><span class="pc-tg pc-rn">' + esc(r.receiveNo || '-') + '</span><span class="sb">' + s[0] + (f.stage === 'std' && f.stdFail ? ' (ไม่ผ่านครั้งก่อน)' : '') + '</span></div>' +
         '<div class="nm">' + esc(r.jobName || '-') + '</div>' +
         '<div class="meta">' + (r.budgetType ? '<span class="pc-tg pc-bt">' + esc(r.budgetType) + '</span>' : '') + idsHtml(r.jobIds) +
-          (atts.length ? '<span class="att"><i class="fa-solid fa-paperclip"></i>เอกสาร ' + atts.length + ' ไฟล์</span>' : '') + '</div></div>' +
+          (atts.length ? '<span class="att"><i class="fa-solid fa-paperclip"></i>เอกสาร ' + atts.length + ' ไฟล์</span>' : '') +
+          (r.jobStatus ? '<span class="pc-tg" style="background:#fef9c3;color:#854d0e">📌 สถานะงาน ' + esc(r.jobStatus) + '</span>' : '') + '</div></div>' +
       '<div class="r"><small>' + cap + '</small><b style="color:' + dc + '">' + big + '</b><span class="d">' + (f.dlv ? 'ส่งมอบ ' + esc(dth(r.payDate)) : 'ยังไม่ระบุวันส่งมอบ') + '</span></div>' +
       (atts.length ? '<div class="atl">' + atts.map(function (a) {
         return '<a href="' + esc(a.fileUrl) + '" target="_blank" rel="noopener"><i class="fa-solid ' + (a.mimeType === 'application/pdf' ? 'fa-file-pdf" style="color:#ef4444' : 'fa-file-image" style="color:#3b82f6') + '"></i> ' + esc(a.fileName) + '</a>';

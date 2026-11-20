@@ -47,7 +47,8 @@
     'body.cx .cx2 .meta,body.cx .cx2 .pc-who,body.cx .cx2 .who,body.cx .cx2 .pc-ids,body.cx .cx2 .ids{display:contents !important}' +
     'body.cx .cx-dots{display:flex;gap:3px;flex-shrink:0}body.cx .cx-dots i{width:14px;height:5px;border-radius:3px;background:#e2e8f0;display:block}' +
     'body.cx .cx-dots i.ok{background:#10b981}body.cx .cx-dots i.now{background:var(--sc,#2563eb)}body.cx .cx-dots i.bad{background:#ef4444}' +
-    'body.cx .cx-note{background:#f1f5f9;color:#475569;border-radius:6px;padding:0 6px;overflow:hidden;text-overflow:ellipsis}body.cx .cx-note.bad{background:#fef2f2;color:#b91c1c}' +
+    'body.cx .cx-dots{align-items:center}body.cx .cx-stg{margin-left:5px;font-size:12px;font-weight:700;color:var(--sc,#2563eb);white-space:nowrap}body.cx .cx-stg.bad{color:#dc2626}body.cx .cx-stg.ok{color:#059669}' +
+    'body.cx .cx-note{flex-shrink:0 !important;max-width:45%;background:#f1f5f9;color:#475569;border-radius:6px;padding:0 6px;overflow:hidden;text-overflow:ellipsis}body.cx .cx-note.bad{background:#fef2f2;color:#b91c1c}' +
     'body.cx .cx-btns{display:flex;gap:4px;flex-shrink:0}' +
     'body.cx .cx-btns .btn{height:30px !important;min-width:32px;padding:0 8px !important;border-radius:8px !important;font-size:0 !important;gap:0 !important;border-width:1px !important}' +
     'body.cx .cx-btns .btn i{font-size:14px !important;margin:0 !important}' +
@@ -58,7 +59,7 @@
     'body.cx .cx-card input[type=checkbox]{width:18px !important;height:18px !important}' +
     'body.cx .cx-card .rk{width:24px !important;height:24px !important;font-size:12px !important;margin:0 !important}' +
     '@media(min-width:1300px){body.cx .pc-list,body.cx #clList,body.cx #bgList{grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important}}' +
-    '@media(max-width:700px){body.cx .cx2 .cx-hm,body.cx .cx2 .pc-ids,body.cx .cx2 .ids,body.cx .cx2 .pc-tg.pc-bt,body.cx .cx2 .tg.bt{display:none !important}body.cx .pcx>.f1,body.cx #clx>.f1,body.cx #bgx>.f1,body.cx #apx>.f1{flex-basis:100%}body.cx .cx2{flex-wrap:wrap}body.cx .cx2 .cx-l{flex-basis:100%}body.cx .cx2 .cx-r{margin-left:auto}body.cx .cx1 .cx-r .sb,body.cx .cx1 .cx-r .sap{display:none}}' +
+    '@media(max-width:700px){body.cx .cx2 .cx-hm,body.cx .cx2 .pc-ids,body.cx .cx2 .ids,body.cx .cx2 .pc-tg.pc-bt,body.cx .cx2 .tg.bt{display:none !important}body.cx .pcx>.f1,body.cx #clx>.f1,body.cx #bgx>.f1,body.cx #apx>.f1{flex-basis:100%}body.cx .cx2{flex-wrap:wrap}body.cx .cx2 .cx-l{flex-basis:100%}body.cx .cx2 .cx-r{margin-left:auto}body.cx .cx1 .cx-r .sb,body.cx .cx1 .cx-r .sap{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}body.cx .cx-note{max-width:100%}}' +
     /* Dashboard */
     'body.cx #dbx{gap:8px !important}body.cx #dbx .card{padding:10px 12px !important;border-radius:14px !important}body.cx #dbx h3{margin-bottom:6px !important;font-size:15px !important}' +
     'body.cx #dbx .hi h2{font-size:17px !important}body.cx #dbx .hi p{font-size:12.5px !important}body.cx #dbx .flow{margin-top:8px !important}body.cx #dbx .fs{padding:6px 10px !important}body.cx #dbx .fs b{font-size:20px !important}' +
@@ -79,6 +80,10 @@
       var i = document.createElement('i'); i.className = p.classList.contains('ok') ? 'ok' : p.classList.contains('bad') ? 'bad' : p.classList.contains('now') ? 'now' : '';
       i.title = txt(p.querySelector('span')); d.appendChild(i);
     });
+    // ป้ายขั้นตอนปัจจุบัน ต่อท้ายจุด (เช่น "ดำเนินงาน" / "ตรวจรับ ✕")
+    var cur = pipe.querySelector('.p.bad, .p.now'), all = pipe.querySelectorAll('.p.ok');
+    var lab = cur ? txt(cur.querySelector('span')) + (cur.classList.contains('bad') ? ' ✕' : '') : (all.length ? txt(all[all.length - 1].querySelector('span')) + ' ✓' : '');
+    if (lab) { var t = document.createElement('b'); t.className = 'cx-stg' + (cur && cur.classList.contains('bad') ? ' bad' : !cur ? ' ok' : ''); t.textContent = lab; d.appendChild(t); }
     return d;
   }
   function row(cls) { var r = document.createElement('div'); r.className = cls; var l = document.createElement('div'); l.className = 'cx-l'; var rr = document.createElement('div'); rr.className = 'cx-r'; r.appendChild(l); r.appendChild(rr); return { el: r, l: l, r: rr }; }
@@ -120,7 +125,7 @@
     // บรรทัด 2: ขั้นตอนย่อ · ข้อมูล · ผู้รับผิดชอบ · หมายเหตุ … ปุ่มไอคอน
     var d = dotsFrom(pipe); if (d) r2.l.insertBefore(d, r2.l.firstChild);
     var who = ft.querySelector('.pc-who, .who'); if (who) { Array.prototype.slice.call(who.children).forEach(function (x, i) { if (i > 0) x.classList.add('cx-hm'); }); r2.l.appendChild(who); }
-    if (note) { var n = document.createElement('span'); n.className = 'cx-note cx-shrink' + (note.classList.contains('bad') ? ' bad' : ''); n.textContent = '📝 ' + txt(note).replace(/^สถานะงาน:\s*/, ''); n.title = txt(note); r2.l.appendChild(n); }
+    if (note) { var n = document.createElement('span'); n.className = 'cx-note cx-shrink' + (note.classList.contains('bad') ? ' bad' : ''); n.textContent = /^สถานะงาน:/.test(txt(note)) ? '📌 ' + txt(note).replace(/^สถานะงาน:\s*/, 'สถานะงาน ') : '📝 ' + txt(note); n.title = txt(note); r2.l.appendChild(n); }
     var hasAge = c.querySelector('.cx1 .cx-big');
     r2.r.appendChild(btns(ft));
     // ใส่กลับเข้าการ์ด (คงส่วนพิเศษ: แถบงบ / สิ่งที่ต้องทำ / รายการไฟล์)
