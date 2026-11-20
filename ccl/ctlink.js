@@ -75,6 +75,7 @@
   function soon() { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; decorate(); }); }
 
   // ───── การ์ดสรุปผู้รับจ้าง ─────
+  var openedAt = 0;
   function closePop() { var p = document.getElementById('ctlPop'); if (p) p.remove(); }
   function jobIdNear(el) {
     var n = el;
@@ -99,7 +100,7 @@
     var list = jobs().filter(function (j) { return String(j.responsibleEntity || '').trim() === company; });
     var doing = 0, wait = 0, done = 0, last = null;
     list.forEach(function (j) {
-      if (DONE.indexOf(j.status) >= 0) done++; else if (j.status === 'ตรวจรับงาน') wait++; else doing++;
+      if (j.status === 'ยกเลิก') {} else if (DONE.indexOf(j.status) >= 0 || j.inspectionStatus === 'ผ่านการตรวจรับ') done++; else if (j.status === 'ตรวจรับงาน') wait++; else doing++;
       (Array.isArray(j.contractorUpdates) ? j.contractorUpdates : []).forEach(function (u) {
         if (!u || u.updateType === 'pea_reply' || !u.timestamp) return;
         var t = new Date(u.timestamp).getTime();
@@ -119,7 +120,7 @@
       (ok ? '<button class="b1"><i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดโปรแกรมผู้รับจ้าง (มุมมองของ ' + esc(company) + ')</button>'
           : '<div class="no">เปิดโปรแกรมผู้รับจ้างได้เฉพาะ Admin, ผู้ควบคุมงาน และคณะกรรมการตรวจรับ</div>') +
       '<button class="b2"><i class="fa-solid fa-filter"></i> ดูงานทั้งหมดของผู้รับจ้างนี้ใน CCL</button></div>';
-    document.body.appendChild(p);
+    document.body.appendChild(p); openedAt = Date.now();
     // วางการ์ดใต้ชื่อที่กด (ล้นจอ → ขึ้นด้านบน)
     var r = el.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
     var left = Math.min(Math.max(12, r.left), window.innerWidth - pw - 12);
@@ -167,7 +168,7 @@
     if (p && !p.contains(e.target)) closePop();
   }, true);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePop(); });
-  window.addEventListener('scroll', function (e) { var p = document.getElementById('ctlPop'); if (p && !p.contains(e.target)) closePop(); }, true);
+  window.addEventListener('scroll', function (e) { var p = document.getElementById('ctlPop'); if (p && !p.contains(e.target) && Date.now() - openedAt > 600) closePop(); }, true);
 
   function start() {
     decorate();
