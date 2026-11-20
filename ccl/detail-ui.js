@@ -110,7 +110,8 @@
     var job = (g('allData', []) || []).find(function (j) { return j.id === id; }); if (!job) return;
     var M = $('detailModal'); if (!M) return; css(); M.classList.add('dmx');
     var panel = M.firstElementChild, scroll = panel.querySelector('.flex-1.overflow-y-auto');
-    var code = String(job.jobStatus || '').trim(), ci = CODES.indexOf(code.toUpperCase());
+    var code = String(job.jobStatus || '').trim(), ci = CODES.indexOf(code.toUpperCase()), exact = ci >= 0;
+    if (!exact && code && window.cclCode) { var rk = window.cclCode.rank(code); ci = -1; CODES.forEach(function (c, i) { if (window.cclCode.rank(c) <= rk) ci = i; }); }
     var st = ST[job.status] || ['•', '#475569', '#f1f5f9'];
     var age = days(job.receiveDate), due = job.payDate ? days(new Date(), new Date(job.payDate)) : null;
     var closed = /ปิดงานแล้วเสร็จ|อนุมัติ\/เสร็จสิ้น|ยกเลิก/.test(job.status || '');
@@ -135,10 +136,10 @@
     var next = closed ? null : ci < CODES.indexOf('C1') ? 'C1' : (/รับเรื่อง|สำรวจงาน|ดำเนินงาน/.test(job.status) && ci < 5) ? 'D1' : (job.status === 'ตรวจรับงาน' && ci < 6) ? 'D2' : null;
     var step = scroll.querySelector('.dmx-step');
     if (!step) { step = document.createElement('div'); step.className = 'dmx-step'; scroll.insertBefore(step, scroll.firstChild); }
-    step.innerHTML = '<div class="h"><span>ความคืบหน้าสถานะงาน (Job Code)' + (ci < 0 && code ? ' · ค่าปัจจุบัน "' + esc(code) + '" ไม่อยู่ในลำดับ' : '') + '</span>' +
+    step.innerHTML = '<div class="h"><span>ความคืบหน้าสถานะงาน (Job Code)' + (!exact && code ? ' · ปัจจุบัน <b style="color:#ca8a04">' + esc(code) + '</b>' : '') + '</span>' +
       (next ? '<span>ขั้นต่อไป: <b>เปลี่ยนเป็น ' + next + ' → ' + GATE[next] + '</b></span>' : '') + '</div>' +
       '<div class="dmx-sr">' + CODES.map(function (c, i) {
-        return '<div class="dmx-s' + (i < ci ? ' ok' : i === ci ? ' now' : '') + '"><i></i>' + c + (GATE[c] ? '<small>' + GATE[c] + '</small>' : '') + '</div>';
+        return '<div class="dmx-s' + (i < ci || (i === ci && !exact) ? ' ok' : i === ci ? ' now' : '') + '"><i></i>' + c + (GATE[c] ? '<small>' + GATE[c] + '</small>' : '') + '</div>';
       }).join('') + '</div>';
 
     // ===== ข้อมูลงาน =====

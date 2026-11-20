@@ -80,7 +80,23 @@
     var w = function () { if (pre.apply(this, arguments) === false) return; return o.apply(this, arguments); };
     w.__jc = 1; window[name] = w;
   }
+  // รหัสสถานะงานทั้งหมดที่พบใน SAP — เติมลงช่องเลือกในฟอร์มแก้ไข
+  var ALL = ['A0', 'A1', 'A2', 'A5', 'B1', 'B2', 'C1', 'C3', 'C4', 'C5', 'D1', 'D2', 'E2', 'F2', 'F4', 'Z0'];
+  function fillSel(sel, extra) {
+    if (!sel) return;
+    var have = {}; Array.prototype.forEach.call(sel.options, function (o) { have[o.value] = 1; });
+    var list = ALL.slice(); if (extra && list.indexOf(extra) < 0) list.push(extra);
+    list.sort(function (a, b) { return rank(a) - rank(b); });
+    list.forEach(function (c) {
+      if (have[c]) return;
+      var o = document.createElement('option'); o.value = c; o.textContent = c;
+      var nx = Array.prototype.find.call(sel.options, function (x) { return x.value && rank(x.value) > rank(c); });
+      sel.insertBefore(o, nx || null); have[c] = 1;
+    });
+  }
   function boot() {
+    fillSel(document.getElementById('editJobStatus'));
+    wrap('openEditModal', function (id) { var j = job(id); fillSel(document.getElementById('editJobStatus'), j && String(j.jobStatus || '').trim().toUpperCase()); });
     wrap('sendToCloseFromInspection', function (id) { if (!ok(codeOf(id), 'D2')) { warn(id, 'D2'); return false; } });
     wrap('openCutBudgetFromTable', function (id) { if (job(id) && !ok(codeOf(id), EXP)) { warn(id, EXP); return false; } });
     wrap('openCutBudget', function () { var id = g('currentBudgetJobId', null); if (id != null && job(id) && !ok(codeOf(id), EXP)) { warn(id, EXP); return false; } });
