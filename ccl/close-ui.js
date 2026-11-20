@@ -231,9 +231,11 @@
         (other.length ? '<span class="k warn" id="clWarnBtn"><i class="fa-solid fa-triangle-exclamation"></i>งานขั้นอื่นที่ SAP ปิดแล้ว <b>' + other.length + '</b></span>' : '') +
         '<span style="flex:1"></span><button class="tb g" id="clAll"' + (closable.length ? '' : ' disabled') + '><i class="fa-solid fa-circle-check"></i> เลือกงานที่ SAP ปิดแล้ว (' + closable.length + ')</button>';
       $('clAll').onclick = function () { closable.forEach(function (j) { C.sel[j.id] = 1; }); C.st = 'closed'; render(); };
-      warn.innerHTML = '<b>งานที่ SAP ปิดแล้ว แต่ใน CCL ยังไม่ถึงขั้นส่งปิดงาน</b> — ตรวจสอบแล้วดำเนินการเองทีละงาน (ระบบไม่ปิดให้อัตโนมัติ)<br>' +
+      warn.innerHTML = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><b style="flex:1;min-width:220px">งานที่ SAP ปิดแล้ว แต่ใน CCL ยังไม่ถึงขั้นส่งปิดงาน (' + other.length + ' งาน)</b>' +
+        '<button type="button" id="clOtherAll" style="border:0;border-radius:10px;background:#dc2626;color:#fff;font-weight:700;padding:8px 14px;cursor:pointer;font-family:inherit"><i class="fa-solid fa-circle-check"></i> ปิดงานตาม SAP ทั้งหมด (' + other.length + ')</button></div>' +
         other.map(function (j) { return '• <a onclick="openDetailModal(' + j.id + ')">' + esc(j.receiveNo || '-') + ' ' + esc(j.jobName || '') + '</a> — CCL: ' + esc(j.status) + ' · SAP: ' + esc(sapOf(j).k); }).join('<br>');
       var wb = $('clWarnBtn'); if (wb) wb.onclick = function () { warn.classList.toggle('on'); };
+      var oa = $('clOtherAll'); if (oa) oa.onclick = function () { bulkClose(other, true); };
       if (!other.length) warn.classList.remove('on');
     } else { $('clLast').textContent = 'ยังไม่เคยนำเข้า — ใช้ไฟล์รายงานโครงสร้าง WBS ที่มีคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ"'; res.style.display = 'none'; }
     var rows = C.st ? base.filter(function (j) { return grp(j) === C.st; }) : base;
@@ -261,14 +263,14 @@
     $('clSelP').innerHTML = '<i class="fa-solid fa-circle-check"></i> ปิดงานที่เลือก (' + n + ')';
   }
 
-  function bulkClose() {
+  function bulkClose(given, other) {
     var all = g('allData', []) || [], ids = Object.keys(C.sel).map(Number);
-    var list = all.filter(function (j) { return ids.indexOf(j.id) >= 0 && j.status === 'ส่งปิดงาน'; });
+    var list = Array.isArray(given) ? given.slice() : all.filter(function (j) { return ids.indexOf(j.id) >= 0 && j.status === 'ส่งปิดงาน'; });
     if (!list.length || !window.Swal) return;
     Swal.fire({
       icon: 'question', title: 'ปิดงาน ' + list.length + ' งาน?', width: 600,
       html: '<div style="text-align:left;font-size:13.5px"><div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:8px 12px;margin-bottom:8px">งานจะย้ายไปเมนู <b>"งานแล้วเสร็จ"</b> (เหมือนกดปิดงานทีละงาน)</div>' +
-        '<div style="max-height:40vh;overflow:auto">' + list.map(function (j) { return '<div style="padding:5px 2px;border-bottom:1px solid #f1f5f9"><b style="color:#1d4ed8">' + esc(j.receiveNo || '-') + '</b> ' + esc(j.jobName || '') + ' <small style="color:#059669">SAP: ' + esc((sapOf(j) || {}).k || '-') + '</small></div>'; }).join('') + '</div></div>',
+        '<div style="max-height:40vh;overflow:auto">' + list.map(function (j) { return '<div style="padding:5px 2px;border-bottom:1px solid #f1f5f9"><b style="color:#1d4ed8">' + esc(j.receiveNo || '-') + '</b> ' + esc(j.jobName || '') + ' <small style="color:#059669">SAP: ' + esc((sapOf(j) || {}).k || '-') + '</small>' + (other ? ' <small style="color:#b45309">· CCL: ' + esc(j.status || '-') + '</small>' : '') + '</div>'; }).join('') + '</div></div>',
       showCancelButton: true, confirmButtonText: 'ยืนยัน ปิดงาน ' + list.length + ' งาน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#059669'
     }).then(function (r) {
       if (!r.isConfirmed) return;
