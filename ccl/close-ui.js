@@ -290,6 +290,9 @@
     });
   }
 
+  window.cclCloseGo = function (st) { C.st = C.sap ? (st || '') : ''; try { showPage('close'); } catch (e) {} window.renderCloseTable(); window.scrollTo(0, 0); };
+  window.cclSapClosedCount = function () { return (g('allData', []) || []).filter(function (j) { return j.status === 'ส่งปิดงาน' && isClosed(sapOf(j)); }).length; };
+  window.cclSapInfo = function () { return C.sap ? { file: C.sap.file, at: C.sap.at } : null; };
   window.renderCloseTable = function () { try { render(); } catch (e) { console.error('[close-ui]', e); } };
   function boot() { var d = g('allData', null); if (Array.isArray(d) && d.length) window.renderCloseTable(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

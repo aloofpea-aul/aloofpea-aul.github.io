@@ -353,6 +353,12 @@
     });
   }
 
+  // ให้หน้าอื่น (Dashboard) สั่งเปิดพร้อมตัวกรอง
+  window.cclPagesGo = {
+    track: function (st, over) { T.st = st || ''; T.over = !!over; T.sort = !!over; try { showPage('list'); } catch (e) {} window.renderTable(); window.scrollTo(0, 0); },
+    insp: function (st, over) { I.st = st || ''; I.over = !!over; I.sort = !!over; try { showPage('inspection'); } catch (e) {} window.renderInspectionTable(); window.scrollTo(0, 0); }
+  };
+
   // แทนที่ฟังก์ชันวาดตารางเดิม (ข้อมูลที่ส่งเข้ามาถูกกรองใหม่จาก allData ตามตัวกรองบนหน้า)
   window.renderTable = function () { try { trackRender(); } catch (e) { console.error('[pages-ui track]', e); } };
   window.filterTable = window.renderTable;
