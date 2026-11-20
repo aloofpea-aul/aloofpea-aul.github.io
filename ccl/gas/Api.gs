@@ -126,6 +126,7 @@ function doPost(e) {
     else {
       var f = globalThis[fn];
       if (typeof f !== 'function') return cclJson_({ ok: false, error: 'ไม่พบฟังก์ชัน ' + fn + ' ในระบบหลังบ้าน' });
+      cclJobCodeGate_(fn, args);
       out = f.apply(null, args);
     }
     return cclJson_({ ok: true, data: out === undefined ? null : out });
@@ -560,4 +561,26 @@ function cclCtChangePassword_(sess, oldP, newP) {
 
 function cclJson_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// ===== เงื่อนไขสถานะงาน (Job Code, คอลัมน์ 29 ของชีต Data) =====
+// ตรวจรับงาน ต้อง D1 ขึ้นไป / ส่งปิดงาน ต้อง D2 ขึ้นไป / ตัดงบหรือแก้ค่าใช้จ่าย ต้อง C1 ขึ้นไป
+var CCL_CODE_NEED = { 'ตรวจรับงาน': 'D1', 'ส่งปิดงาน': 'D2' };
+function cclCodeRank_(c) {
+  var m = /^([A-Z])\s*(\d+)/.exec(String(c || '').trim().toUpperCase());
+  return m ? (m[1].charCodeAt(0) - 64) * 100 + parseInt(m[2], 10) : -1;
+}
+function cclJobCodeGate_(fn, args) {
+  var id = null, min = null, what = '';
+  if (fn === 'updateWorkStatus') { id = args[0]; min = CCL_CODE_NEED[String(args[1] || '')] || null; what = String(args[1] || ''); }
+  else if (fn === 'addExpense') { id = args[0] && args[0].jobId; min = 'C1'; what = 'ตัดงบ'; }
+  else if (fn === 'updateExpense') { id = args[0]; min = 'C1'; what = 'แก้ไขค่าใช้จ่าย'; }
+  if (!min) return;
+  var r = parseInt(id, 10); if (!(r >= 2)) return;
+  var sh = cclSS_().getSheetByName(SHEET_DATA_NAME); if (!sh || r > sh.getLastRow()) return;
+  if (fn === 'updateWorkStatus' && ['ส่งปิดงาน', 'ปิดงานแล้วเสร็จ', 'อนุมัติ/เสร็จสิ้น'].indexOf(String(sh.getRange(r, 16).getValue() || '')) >= 0 && what === 'ตรวจรับงาน') return; // ส่งคืนย้อนกลับ ไม่ต้องตรวจ
+  var code = String(sh.getRange(r, 29).getValue() || '').trim();
+  if (cclCodeRank_(code) < cclCodeRank_(min))
+    throw new Error('สถานะงาน (Job Code) ' + (code ? 'ยังเป็น ' + code : 'ยังไม่ได้ระบุ') + ' — ต้องเปลี่ยนเป็น ' + min + ' ขึ้นไปก่อน จึงจะ' + what + 'ได้');
 }

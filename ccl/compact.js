@@ -125,7 +125,7 @@
     // บรรทัด 2: ขั้นตอนย่อ · ข้อมูล · ผู้รับผิดชอบ · หมายเหตุ … ปุ่มไอคอน
     var d = dotsFrom(pipe); if (d) r2.l.insertBefore(d, r2.l.firstChild);
     var who = ft.querySelector('.pc-who, .who'); if (who) { Array.prototype.slice.call(who.children).forEach(function (x, i) { if (i > 0) x.classList.add('cx-hm'); }); r2.l.appendChild(who); }
-    if (note) { var n = document.createElement('span'); n.className = 'cx-note cx-shrink' + (note.classList.contains('bad') ? ' bad' : ''); n.textContent = /^สถานะงาน:/.test(txt(note)) ? '📌 ' + txt(note).replace(/^สถานะงาน:\s*/, 'สถานะงาน ') : '📝 ' + txt(note); n.title = txt(note); r2.l.appendChild(n); }
+    if (note) { var n = document.createElement('span'); n.className = 'cx-note cx-shrink' + (note.classList.contains('bad') ? ' bad' : ''); n.textContent = /^สถานะงาน:/.test(txt(note)) ? '📌 ' + txt(note).replace(/^สถานะงาน:\s*/, 'สถานะงาน ') : (/^🔒/.test(txt(note)) ? '' : '📝 ') + txt(note); n.title = txt(note); r2.l.appendChild(n); }
     var hasAge = c.querySelector('.cx1 .cx-big');
     r2.r.appendChild(btns(ft));
     // ใส่กลับเข้าการ์ด (คงส่วนพิเศษ: แถบงบ / สิ่งที่ต้องทำ / รายการไฟล์)

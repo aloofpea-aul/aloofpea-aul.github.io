@@ -219,6 +219,7 @@
     wait: ['รอตรวจรับ', '#ca8a04', '#fefce8'], fail: ['ไม่ผ่าน · รอแก้ไข', '#dc2626', '#fef2f2'],
     std: ['รอตรวจมาตรฐาน', '#0d9488', '#f0fdfa'], ready: ['พร้อมส่งปิดงาน', '#7c3aed', '#f5f3ff']
   };
+  function codeOk(r, min) { return !window.cclCode || window.cclCode.ok(r.jobStatus, min); }
   function iInfo(r) {
     var tl = Array.isArray(r.jobTimeline) ? r.jobTimeline : [];
     var ins = r.inspectionStatus || 'รอตรวจสอบ', pass = ins === 'ผ่านการตรวจรับ', fail = /ไม่ผ่าน/.test(ins);
@@ -275,6 +276,7 @@
     var next = f.stage === 'wait' ? ['inspectJob(' + r.id + ',\'' + esc(f.ins) + '\')', 'fa-clipboard-check', 'ตรวจรับ', '#16a34a']
       : f.stage === 'fail' ? ['inspectJob(' + r.id + ',\'' + esc(f.ins) + '\')', 'fa-clipboard-check', 'ตรวจรับซ้ำ', '#16a34a']
       : f.stage === 'std' ? ['openStdFormModal(' + r.id + ')', 'fa-star-half-stroke', f.stdFail ? 'ตรวจมาตรฐานซ้ำ' : 'ตรวจมาตรฐาน', '#0d9488']
+      : !codeOk(r, 'D2') ? ['cclCode.warn(' + r.id + ',\'D2\')', 'fa-lock', 'ต้อง D2 ก่อน', '#94a3b8']
       : ['sendToCloseFromInspection(' + r.id + ')', 'fa-paper-plane', 'ส่งปิดงาน', '#7c3aed'];
     return '<div class="pc" data-id="' + r.id + '" style="--sc:' + s[1] + ';--sb:' + s[2] + ';--bc:' + next[3] + '">' +
       '<div style="min-width:0"><div class="l1"><span class="pc-tg pc-rn">' + esc(r.receiveNo || '-') + '</span><span class="sb">' + s[0] + (f.stage === 'std' && f.stdFail ? ' (ไม่ผ่านครั้งก่อน)' : '') + '</span></div>' +
@@ -287,6 +289,7 @@
         return '<a href="' + esc(a.fileUrl) + '" target="_blank" rel="noopener"><i class="fa-solid ' + (a.mimeType === 'application/pdf' ? 'fa-file-pdf" style="color:#ef4444' : 'fa-file-image" style="color:#3b82f6') + '"></i> ' + esc(a.fileName) + '</a>';
       }).join('') + '</div>' : '') +
       pipe(['ตรวจรับ', 'ตรวจมาตรฐาน', 'ส่งปิดงาน'], cur, f.stage === 'fail') +
+      (f.stage === 'ready' && !codeOk(r, 'D2') ? '<div class="note bad"><b>🔒 ยังส่งปิดงานไม่ได้:</b> สถานะงาน ' + esc(r.jobStatus || 'ไม่ระบุ') + ' → ต้องเปลี่ยนเป็น D2</div>' : '') +
       (f.stage === 'fail' ? '<div class="note bad"><b>ต้องแก้ไข:</b> ' + esc(f.failNote || 'ดูรายละเอียดในประวัติงาน') + '</div>' : '') +
       '<div class="ft">' + who(r) + '<span><i class="fa-regular fa-clock"></i>อายุงาน ' + age + ' วัน</span></div>' +
         '<button class="btn" onclick="openDetailModal(' + r.id + ')"><i class="fa-solid fa-eye" style="color:#3b82f6"></i>รายละเอียด</button>' +
@@ -316,7 +319,7 @@
     $('isFocus').classList.toggle('on', !!I.focus); if (I.focus) $('isFocus').querySelector('span').innerHTML = 'แสดงเฉพาะ: <b>' + esc(I.focus.label) + '</b> · ' + rows.length + ' งาน';
     if (I.sort) rows = rows.slice().sort(function (a, b) { return (b.__i.pass ? -1 : b.__i.d || 0) - (a.__i.pass ? -1 : a.__i.d || 0); });
     $('isSort').querySelector('span').textContent = I.sort ? 'รอนานสุดก่อน' : 'เรียงตามเดิม';
-    I.ready = base.filter(function (r) { return r.__i.stage === 'ready'; });
+    I.ready = base.filter(function (r) { return r.__i.stage === 'ready' && codeOk(r, 'D2'); });
     $('isBulk').style.display = I.ready.length ? '' : 'none'; $('isBulkN').textContent = '(' + I.ready.length + ')';
     var b = $('inspectionCountBadge'); if (b) b.innerText = data.length + ' รายการ';
     I.pager.set(rows, '<div class="pc-empty"><i class="fa-solid fa-clipboard-check"></i><div style="font-weight:700;color:#64748b">ไม่มีงานในกลุ่มนี้</div></div>');
