@@ -111,7 +111,7 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
       return cclJson_({ ok: false, error: 'เฉพาะ Admin ของหน่วยงานเท่านั้น' });
@@ -122,6 +122,7 @@ function doPost(e) {
     if (fn === 'cclWhoAmI') { out = {}; for (var k in sess) if (k !== 'pv') out[k] = sess[k]; }
     else if (fn === 'cclSwitchBranch') out = cclSwitchBranch_(sess, b.token, args[0]);
     else if (fn === 'cclCtPreview') out = cclCtPreview_(sess, args[0]);
+    else if (fn === 'cclExpStage') out = cclExpStage_(sess, args[0], args[1], args[2]);
     else if (CCL_API_SUPER.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) out = globalThis[fn + '_'].apply(null, [sess].concat(args));
     else {
       var f = globalThis[fn];
@@ -583,4 +584,46 @@ function cclJobCodeGate_(fn, args) {
   var code = String(sh.getRange(r, 29).getValue() || '').trim();
   if (cclCodeRank_(code) < cclCodeRank_(min))
     throw new Error('สถานะงาน (Job Code) ' + (code ? 'ยังเป็น ' + code : 'ยังไม่ได้ระบุ') + ' — ต้องเปลี่ยนเป็น ' + min + ' ขึ้นไปก่อน จึงจะ' + what + 'ได้');
+}
+
+
+// ===== ขั้นตอนอนุมัติรายจ่าย (เก็บในรายการตัดงบ คอลัมน์ 28) =====
+// stage: print=รอพิมพ์, sign=พิมพ์แล้วรอเซ็น, ok=อนุมัติแล้ว, back=ตีกลับ, file=แนบสแกนอย่างเดียว
+var CCL_EXP_STAGE = { print: 'ส่งกลับไปรอพิมพ์ใบอนุมัติ', sign: 'พิมพ์ใบอนุมัติแล้ว รอเซ็น', ok: 'อนุมัติแล้ว', back: 'ตีกลับให้แก้ไข', file: 'แนบสแกนใบอนุมัติที่เซ็นแล้ว' };
+var CCL_EXP_TL = { labor: 'ค่าแรง', supervision: 'ค่าคุมงาน', misc: 'ค่าเบ็ดเตล็ด' };
+function cclExpStage_(sess, items, stage, note) {
+  if (!CCL_EXP_STAGE[stage]) throw new Error('ขั้นตอนไม่ถูกต้อง');
+  if (!Array.isArray(items) || !items.length) return { success: true, done: 0, miss: 0 };
+  if (items.length > 300) throw new Error('เลือกได้ครั้งละไม่เกิน 300 รายการ');
+  note = String(note || '').slice(0, 300);
+  if (stage === 'back' && !note) throw new Error('กรุณาระบุเหตุผลที่ตีกลับ');
+  var who = String(sess.name || sess.username || '-'), now = new Date().toISOString();
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  var done = 0, miss = 0, logs = [];
+  try {
+    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME), last = sh.getLastRow();
+    var byRow = {};
+    items.forEach(function (it) { var r = parseInt(it && it.jobId, 10); if (r >= 2 && r <= last) (byRow[r] = byRow[r] || []).push(it); else miss++; });
+    Object.keys(byRow).forEach(function (rk) {
+      var r = Number(rk), cell = sh.getRange(r, 28), arr;
+      try { arr = JSON.parse(cell.getValue() || '[]'); } catch (e) { arr = null; }
+      if (!Array.isArray(arr)) { miss += byRow[rk].length; return; }
+      var changed = false;
+      byRow[rk].forEach(function (it) {
+        var ts = String(it.ts || ''), k = -1, i = parseInt(it.idx, 10);
+        if (arr[i] && String(arr[i].timestamp || '') === ts) k = i;
+        else if (ts) { for (var j = 0; j < arr.length; j++) if (String(arr[j].timestamp || '') === ts) { k = j; break; } }
+        if (k < 0) { miss++; return; }
+        var e = arr[k];
+        if (stage === 'file') { var f = String(it.file || ''); if (!/^https:\/\/(drive|docs)\.google\.com\//.test(f)) { miss++; return; } e.apFile = f; }
+        else { e.apSt = stage; e.apBy = who; e.apAt = now; if (stage === 'back') e.apNote = note; else if (stage === 'print') delete e.apNote; }
+        var lg = Array.isArray(e.apLog) ? e.apLog : []; lg.push({ st: stage, by: who, at: now, note: note || undefined }); e.apLog = lg.slice(-10);
+        changed = true; done++;
+        logs.push([r, CCL_EXP_STAGE[stage] + ' · ' + (CCL_EXP_TL[e.type] || e.type || '') + ' ' + (Number(e.amount) || 0).toLocaleString() + ' บาท' + (e.desc ? ' (' + e.desc + ')' : '') + (note ? ' — ' + note : '')]);
+      });
+      if (changed) cell.setValue(JSON.stringify(arr));
+    });
+  } finally { lock.releaseLock(); }
+  logs.forEach(function (l) { try { logHistory(l[0], 'อนุมัติรายจ่าย', who, l[1]); } catch (e) {} });
+  return { success: true, done: done, miss: miss };
 }
