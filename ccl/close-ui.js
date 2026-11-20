@@ -1,0 +1,295 @@
+/* CCL — หน้า "ปิดงาน" แบบการ์ด + นำเข้าสถานะจาก SAP (ไฟล์ Excel: Proj.def. / องค์ประกอบ WBS / ระดับ / ชื่อ / สถานะ …)
+   - อ่านไฟล์ในเครื่อง (ไม่อัปโหลดไฟล์ SAP ไปไหน) จับคู่ "องค์ประกอบ WBS" กับหมายเลขงานใน CCL
+   - CLSD = ปิดแล้ว · TECO = ปิดทางเทคนิค · REL/CRTD = ยังเปิด
+   - ปิดงานหลายงานพร้อมกันด้วย updateWorkStatus(id,'ปิดงานแล้วเสร็จ') ตัวเดียวกับปุ่มปิดงานเดิม */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function g(n, d) { try { return eval(n); } catch (e) { return d; } }
+  function m(n) { return (Number(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  var TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function dth(v) { var d = new Date(v); if (isNaN(d)) return ''; return d.getDate() + ' ' + TH_M[d.getMonth()] + ' ' + String(d.getFullYear() + 543).slice(-2); }
+  var LS = 'ccl_sap_status_v1';
+  var C = { st: '', ent: '', sort: false, sel: {}, sap: null, ui: false, shown: 0, rows: [] };
+  try { C.sap = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { C.sap = null; }
+
+  var SAPL = { CLSD: ['ปิดสมบูรณ์', '#059669', '#ecfdf5'], TECO: ['ปิดทางเทคนิค', '#0d9488', '#f0fdfa'], REL: ['ยังเปิดอยู่', '#64748b', '#f1f5f9'], CRTD: ['สร้างแล้ว ยังไม่ปล่อย', '#64748b', '#f1f5f9'], PART: ['ปิดบางหมายเลข', '#d97706', '#fffbeb'], NONE: ['ไม่พบในไฟล์ SAP', '#d97706', '#fffbeb'] };
+
+  function normId(s) { return String(s || '').toUpperCase().replace(/\s+/g, '').replace(/[,;]+$/, ''); }
+  function jobIds(j) { return String(j.jobIds || '').split(',').map(normId).filter(function (x) { return x && x.length > 5; }); }
+
+  // สถานะ SAP ของงาน (รวมทุกหมายเลขงาน)
+  function sapOf(j) {
+    if (!C.sap || !C.sap.map) return null;
+    var ids = jobIds(j); if (!ids.length) return { k: 'NONE', ids: [] };
+    var found = ids.map(function (i) { var s = C.sap.map[i]; return s ? { id: i, sys: s[0], usr: s[1] } : { id: i, sys: '' }; });
+    var got = found.filter(function (f) { return f.sys; });
+    if (!got.length) return { k: 'NONE', ids: found };
+    var closed = function (f) { return f.sys === 'CLSD' || f.sys === 'TECO'; };
+    var k = got.every(function (f) { return f.sys === 'CLSD'; }) ? 'CLSD' : got.every(closed) ? 'TECO' : got.some(closed) ? 'PART' : (got[0].sys === 'CRTD' ? 'CRTD' : 'REL');
+    var usr = got.map(function (f) { return f.usr; }).filter(Boolean);
+    return { k: k, ids: found, usr: usr[0] || '', miss: found.length - got.length };
+  }
+  function isClosed(s) { return s && (s.k === 'CLSD' || s.k === 'TECO'); }
+
+  // ───── อ่านไฟล์ SAP ─────
+  function readSap(file) {
+    if (!window.XLSX) { alertMsg('warning', 'ยังโหลดตัวอ่าน Excel ไม่เสร็จ', 'ลองใหม่อีกครั้งในอีกสักครู่'); return; }
+    var fr = new FileReader();
+    busy('กำลังอ่านไฟล์ SAP…');
+    fr.onload = function () {
+      try {
+        var wb = XLSX.read(new Uint8Array(fr.result), { type: 'array' });
+        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+        var hi = -1, cW = -1, cS = -1;
+        for (var i = 0; i < Math.min(rows.length, 15) && hi < 0; i++) {
+          rows[i].forEach(function (h, c) { h = String(h).trim(); if (/WBS/i.test(h)) cW = c; if (/^สถานะ$|^status$/i.test(h)) cS = c; });
+          if (cW >= 0 && cS >= 0) hi = i;
+        }
+        if (hi < 0) throw new Error('ไม่พบคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ" ในไฟล์');
+        var need = {}; (g('allData', []) || []).forEach(function (j) { jobIds(j).forEach(function (x) { need[x] = 1; }); });
+        var map = {}, n = 0;
+        for (var r = hi + 1; r < rows.length; r++) {
+          var w = normId(rows[r][cW]); if (!w) continue; n++;
+          if (!need[w]) continue;
+          var st = String(rows[r][cS] || ''), sys = (st.trim().split(/\s+/)[0] || '').toUpperCase(), usr = (st.split('//')[1] || '').trim();
+          map[w] = [sys, usr];
+        }
+        var u = g('currentUser', {}) || {};
+        C.sap = { map: map, rows: n, matched: Object.keys(map).length, file: file.name, at: Date.now(), by: u.name || '' };
+        try { localStorage.setItem(LS, JSON.stringify(C.sap)); } catch (e) {}
+        C.sel = {}; C.autoSel = true;
+        if (window.Swal) Swal.close();
+        render();
+        var ui = $('clRes'); if (ui) ui.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (e) { alertMsg('error', 'อ่านไฟล์ SAP ไม่ได้', (e && e.message) || String(e)); }
+    };
+    fr.onerror = function () { alertMsg('error', 'อ่านไฟล์ไม่ได้', ''); };
+    fr.readAsArrayBuffer(file);
+  }
+  function busy(t) { if (window.Swal) Swal.fire({ title: t, allowOutsideClick: false, showConfirmButton: false, didOpen: function () { Swal.showLoading(); } }); }
+  function alertMsg(icon, t, x) { if (window.Swal) Swal.fire({ icon: icon, title: t, text: x }); else alert(t + '\n' + x); }
+
+  var css =
+    '#clx{padding:16px 18px 6px}#clx .ttl{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:700;color:#1e293b}' +
+    '#clx .ttl .ic{width:38px;height:38px;border-radius:11px;background:#ede9fe;color:#7c3aed;display:grid;place-items:center;font-size:17px}#clx .ttl .sp{flex:1}' +
+    '#clx .tb{height:40px;padding:0 15px;border-radius:11px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;background:#fff;color:#475569;white-space:nowrap;cursor:pointer;font-family:inherit}' +
+    '#clx .tb.g{background:#059669;border-color:#059669;color:#fff}#clx .tb:disabled{opacity:.5;cursor:not-allowed}' +
+    '#clx .st{display:flex;gap:8px;margin:14px 0 12px;overflow-x:auto;padding:2px}#clx .st::-webkit-scrollbar{display:none}' +
+    '#clx .s{flex:1;min-width:120px;border-radius:14px;padding:8px 12px;border:2px solid transparent;cursor:pointer;text-align:left;font-family:inherit}' +
+    '#clx .s small{display:block;font-size:12.5px;font-weight:600;white-space:nowrap}#clx .s b{font-size:22px;line-height:1.25;display:block}#clx .s.on{border-color:currentColor;box-shadow:0 2px 8px rgba(0,0,0,.1)}' +
+    '#clImp{border:2px dashed #a7f3d0;background:#f0fdf4;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;transition:all .15s}#clImp.over{border-color:#059669;background:#dcfce7}' +
+    '#clImp .ic{width:44px;height:44px;border-radius:12px;background:#059669;color:#fff;display:grid;place-items:center;font-size:20px;flex-shrink:0}' +
+    '#clImp .tx{flex:1;min-width:200px;font-size:13.5px;color:#065f46;line-height:1.5}#clImp .tx b{font-size:15px;display:block}#clImp small{color:#64748b}' +
+    '#clRes{margin-top:10px;background:#fff;border:1px solid #d1fae5;border-radius:14px;padding:10px 14px;display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13.5px}' +
+    '#clRes .k{display:flex;align-items:center;gap:6px}#clRes .k b{font-size:18px}#clRes .warn{color:#dc2626;cursor:pointer;text-decoration:underline dotted}' +
+    '#clWarn{display:none;margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 12px;font-size:13px;color:#7f1d1d}#clWarn.on{display:block}' +
+    '#clWarn a{color:#1d4ed8;cursor:pointer;font-weight:600}' +
+    '#clx .f1{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}' +
+    '#clx .srch{flex:1;min-width:220px;position:relative}#clx .srch>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8}' +
+    '#clx .srch input{width:100%;height:46px;border:1.5px solid #cbd5e1;border-radius:12px;padding:0 12px 0 40px;font-size:15px;background:#f8fafc}' +
+    '#clx .ch{height:38px;padding:0 13px;border-radius:999px;border:1.5px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:600;color:#475569;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;font-family:inherit}' +
+    '#clx select.ch{max-width:230px}' +
+    '#clList{display:grid;gap:10px;padding:8px 18px 20px}' +
+    '.clc{background:#fff;border-radius:16px;padding:14px 16px;border:1px solid #eef2f7;box-shadow:0 1px 3px rgba(15,23,42,.06);border-left:5px solid var(--sc);display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:4px 18px;cursor:pointer}' +
+    '.clc.sel{background:#f6fefb;border-color:#a7f3d0}' +
+    '.clc .l1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.clc input[type=checkbox]{width:20px;height:20px;accent-color:#059669;cursor:pointer}' +
+    '.clc .tg{border-radius:7px;padding:2px 8px;font-weight:600;font-size:12px;white-space:nowrap}.clc .rn{background:#eff6ff;color:#1d4ed8;font-family:"IBM Plex Mono",monospace;font-size:13px}' +
+    '.clc .sap{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}' +
+    '.clc .nm{font-size:16px;font-weight:700;line-height:1.4;margin-top:5px;color:#1e293b;word-break:break-word}' +
+    '.clc .meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:5px;align-items:center;font-size:13px;color:#64748b}' +
+    '.clc .ids{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;display:flex;flex-wrap:wrap;gap:4px 10px}.clc .ids .x{color:#dc2626}.clc .ids .o{color:#059669}' +
+    '.clc .r{text-align:right}.clc .r small{display:block;font-size:12px;color:#64748b;font-weight:600}.clc .r b{display:block;font-size:26px;line-height:1.2;white-space:nowrap}.clc .r .d{font-size:12px;color:#64748b}' +
+    '.clc .bar{grid-column:1/-1;margin-top:8px}.clc .bt2{height:9px;background:#e2e8f0;border-radius:99px;overflow:hidden}.clc .bt2 i{display:block;height:100%;background:linear-gradient(90deg,#f97316,#fb923c)}.clc .bt2 i.ov{background:#ef4444}' +
+    '.clc .bl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#64748b;margin-top:4px}.clc .bl b{color:#334155}' +
+    '.clc .ft{grid-column:1/-1;display:flex;align-items:center;gap:8px 10px;margin-top:8px;padding-top:10px;border-top:1px dashed #e2e8f0;flex-wrap:wrap}' +
+    '.clc .who{font-size:13px;color:#64748b;display:flex;gap:4px 14px;flex-wrap:wrap;flex:1;min-width:0}.clc .who i{margin-right:4px;color:#94a3b8}' +
+    '.clc .btn{height:38px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid #e2e8f0;background:#fff;color:#475569;white-space:nowrap;cursor:pointer;font-family:inherit}' +
+    '.clc .btn.p{background:#059669;border-color:#059669;color:#fff;padding:0 18px}' +
+    '#clSel{position:sticky;bottom:var(--cl-nav,0px);z-index:20;margin:0 18px 14px;background:#064e3b;color:#fff;border-radius:14px;padding:10px 14px;display:none;align-items:center;gap:12px;font-size:14px;box-shadow:0 6px 20px rgba(15,23,42,.25)}' +
+    '#clSel.on{display:flex}#clSel button{border:0;border-radius:10px;padding:9px 16px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}#clSel .p{margin-left:auto;background:#10b981;color:#fff}#clSel .c{background:transparent;color:#a7f3d0}' +
+    '.cl-empty{text-align:center;padding:50px 16px;color:#94a3b8}.cl-empty i{font-size:44px;opacity:.35;display:block;margin-bottom:10px}' +
+    '#clMore{display:block;margin:0 auto;height:40px;padding:0 18px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-weight:600;color:#475569;cursor:pointer}' +
+    '@media(max-width:700px){#clx{padding:12px 12px 4px}#clList{padding:6px 10px 16px}#clx .ttl .tb span{display:none}' +
+    ' .clc{grid-template-columns:1fr;padding:12px}.clc .r{text-align:left;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;background:var(--sb);border-radius:10px;padding:6px 10px;margin-top:6px}.clc .r b{font-size:20px;display:inline}.clc .r small{display:inline}' +
+    ' .clc .ft .btn{flex:1}.clc .who{flex-basis:100%}#clSel{margin:0 10px 12px}}';
+
+  function build() {
+    if (C.ui) return true;
+    var page = $('page-close'); if (!page) return false;
+    var card = page.querySelector('.bg-white.rounded-xl'); if (!card) return false;
+    var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
+    var oldHead = card.firstElementChild, wrap = card.querySelector('.overflow-x-auto');
+    var x = document.createElement('div'); x.id = 'clx';
+    x.innerHTML = '<div class="ttl"><div class="ic"><i class="fa-solid fa-paper-plane"></i></div>ระบบส่งปิดงาน<span class="sp"></span>' +
+      '<button class="tb" onclick="showPage(\'completed\')"><i class="fa-solid fa-circle-check" style="color:#16a34a"></i><span>งานแล้วเสร็จ</span></button></div>' +
+      '<div class="st" id="clSt"></div>' +
+      '<div id="clImp"><div class="ic"><i class="fa-solid fa-file-import"></i></div><div class="tx"><b>นำเข้าสถานะจาก SAP</b>ลากไฟล์ Excel ที่ export จาก SAP มาวาง หรือกดเลือกไฟล์ — จับคู่ด้วย "องค์ประกอบ WBS" กับหมายเลขงาน<br><small id="clLast"></small></div>' +
+      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> เลือกไฟล์ SAP</button></div>' +
+      '<div id="clRes" style="display:none"></div><div id="clWarn"></div>' +
+      '<div class="f1"><div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input id="clQ" placeholder="ค้นหาเลขที่ / ชื่องาน / หมายเลขงาน / ผู้รับจ้าง"></div>' +
+      '<select class="ch" id="clEnt"></select><button class="ch" id="clSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>';
+    card.insertBefore(x, oldHead); oldHead.style.display = 'none'; if (wrap) wrap.style.display = 'none';
+    var list = document.createElement('div'); list.id = 'clList'; card.appendChild(list);
+    var sel = document.createElement('div'); sel.id = 'clSel';
+    sel.innerHTML = '<i class="fa-solid fa-square-check"></i><span id="clSelT"></span><button class="c" id="clSelC">ล้าง</button><button class="p" id="clSelP"><i class="fa-solid fa-circle-check"></i> ปิดงานที่เลือก</button>';
+    card.appendChild(sel);
+    $('clPick').onclick = function () { $('clFile').click(); };
+    $('clFile').onchange = function () { if (this.files[0]) readSap(this.files[0]); this.value = ''; };
+    var imp = $('clImp');
+    ['dragenter', 'dragover'].forEach(function (t) { imp.addEventListener(t, function (e) { e.preventDefault(); imp.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (t) { imp.addEventListener(t, function (e) { e.preventDefault(); imp.classList.remove('over'); }); });
+    imp.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) readSap(f); });
+    $('clSt').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (b) { C.st = b.dataset.s; render(); } });
+    $('clQ').oninput = render;
+    $('clEnt').onchange = function () { C.ent = this.value; render(); };
+    $('clSort').onclick = function () { C.sort = !C.sort; render(); };
+    $('clSelC').onclick = function () { C.sel = {}; render(); };
+    $('clSelP').onclick = bulkClose;
+    list.addEventListener('click', function (e) {
+      var cb = e.target.closest('input[type=checkbox]');
+      if (cb) { e.stopPropagation(); if (cb.checked) C.sel[cb.value] = 1; else delete C.sel[cb.value]; cb.closest('.clc').classList.toggle('sel', cb.checked); syncSel(); return; }
+      if (e.target.closest('.ft, a, .ctl-name')) return;
+      var c = e.target.closest('.clc[data-id]'); if (c && typeof openDetailModal === 'function') openDetailModal(Number(c.dataset.id));
+    });
+    var bn = $('cclBottomNav'); if (bn && bn.offsetHeight) document.documentElement.style.setProperty('--cl-nav', bn.offsetHeight + 'px');
+    C.ui = true; return true;
+  }
+
+  function money(j) {
+    var sum = function (s) { return String(s || '').split(',').reduce(function (a, v) { return a + (parseFloat(v) || 0); }, 0); };
+    var bud = sum(j.laborCost) + sum(j.supervisionCost) + sum(j.miscCost);
+    var ex = j.expenses || []; if (typeof ex === 'string') { try { ex = JSON.parse(ex); } catch (e) { ex = []; } }
+    var sp = (Array.isArray(ex) ? ex : []).reduce(function (a, e) { return a + (parseFloat(e.amount) || 0); }, 0);
+    return { bud: bud, sp: sp };
+  }
+  function sentAt(j) {
+    var tl = Array.isArray(j.jobTimeline) ? j.jobTimeline : [];
+    var e = tl.slice().reverse().find(function (h) { return h.status === 'ส่งปิดงาน' || /ส่งปิดงาน/.test(h.details || ''); });
+    return e ? new Date(e.timestamp) : null;
+  }
+
+  function card(j) {
+    var s = j.__s, closed = isClosed(s), L = s ? SAPL[s.k] : null, mo = money(j), sent = j.__sent;
+    var days = sent && !isNaN(sent) ? Math.max(0, Math.ceil((Date.now() - sent) / 86400000)) : null;
+    var on = !!C.sel[j.id], pct = mo.bud > 0 ? mo.sp / mo.bud * 100 : 0;
+    var idsH = s && s.ids && s.ids.length ? s.ids.map(function (f) {
+      return '<span class="' + (f.sys === 'CLSD' || f.sys === 'TECO' ? 'o' : !f.sys ? 'x' : '') + '" title="' + esc(f.sys || 'ไม่พบใน SAP') + '">' + esc(f.id) + (f.sys ? ' · ' + esc(f.sys) : ' · ไม่พบ') + '</span>';
+    }).join('') : esc(j.jobIds || '-');
+    var ent = String(j.responsibleEntity || '').trim(), self = !ent || ent === 'ไฟฟ้าดำเนินการเอง';
+    return '<div class="clc' + (on ? ' sel' : '') + '" data-id="' + j.id + '" style="--sc:' + (closed ? '#059669' : '#7c3aed') + ';--sb:' + (closed ? '#ecfdf5' : '#f5f3ff') + '">' +
+      '<div style="min-width:0"><div class="l1">' + (closed ? '<input type="checkbox" value="' + j.id + '"' + (on ? ' checked' : '') + ' aria-label="เลือกปิดงาน">' : '') +
+        '<span class="tg rn">' + esc(j.receiveNo || '-') + '</span>' +
+        (L ? '<span class="sap" style="color:' + L[1] + ';background:' + L[2] + '">SAP: ' + (s.k === 'NONE' || s.k === 'PART' ? '' : s.k + ' · ') + L[0] + (s.usr ? ' · ' + esc(s.usr) : '') + '</span>' : '') + '</div>' +
+        '<div class="nm">' + esc(j.jobName || '-') + '</div>' +
+        '<div class="meta"><div class="ids">' + idsH + '</div></div>' +
+        '<div class="meta"><span><i class="fa-solid fa-circle-check" style="color:#16a34a;margin-right:4px"></i>' + esc(j.inspectionStatus || 'รอตรวจสอบ') + '</span>' + (j.budgetType ? '<span>' + esc(j.budgetType) + '</span>' : '') + '</div></div>' +
+      '<div class="r"><small>รอปิดงาน</small><b style="color:' + (days > 14 ? '#dc2626' : '#334155') + '">' + (days == null ? '-' : days + ' วัน') + '</b><span class="d">' + (sent ? 'ส่งปิดงาน ' + esc(dth(sent)) : '') + '</span></div>' +
+      (mo.bud ? '<div class="bar"><div class="bt2"><i class="' + (pct > 100 ? 'ov' : '') + '" style="width:' + Math.min(pct, 100) + '%"></i></div><div class="bl"><span>ใช้ไป <b>' + m(mo.sp) + '</b> (' + pct.toFixed(1) + '%)</span><span>คงเหลือ <b>' + m(mo.bud - mo.sp) + '</b></span><span>งบ <b>' + m(mo.bud) + '</b></span></div></div>' : '') +
+      '<div class="ft"><div class="who">' + (self ? '<span><i class="fa-solid fa-bolt" style="color:#eab308"></i>ไฟฟ้าดำเนินการเอง</span>' : '<span><i class="fa-solid fa-helmet-safety" style="color:#f97316"></i><span>' + esc(ent) + '</span></span>') +
+        '<span><i class="fa-solid fa-user-tie"></i>' + esc(j.assignee || '-') + '</span></div>' +
+        '<button class="btn" onclick="returnJobToInspection(' + j.id + ')"><i class="fa-solid fa-rotate-left" style="color:#f97316"></i>ส่งกลับตรวจรับ</button>' +
+        '<button class="btn" onclick="openDetailModal(' + j.id + ')"><i class="fa-solid fa-eye" style="color:#3b82f6"></i>รายละเอียด</button>' +
+        '<button class="btn p" onclick="completeJob(' + j.id + ')"><i class="fa-solid fa-circle-check"></i>ปิดงาน</button></div></div>';
+  }
+
+  function render() {
+    if (!build()) return;
+    var all = g('allData', []) || [];
+    var data = all.filter(function (j) { return j.status === 'ส่งปิดงาน'; });
+    data.forEach(function (j) { j.__s = sapOf(j); j.__sent = sentAt(j); });
+    // เลือกให้อัตโนมัติหลังนำเข้า: เฉพาะ CLSD
+    if (C.autoSel) { C.autoSel = false; data.forEach(function (j) { if (j.__s && j.__s.k === 'CLSD') C.sel[j.id] = 1; }); }
+    Object.keys(C.sel).forEach(function (k) { if (!data.some(function (j) { return String(j.id) === k && isClosed(j.__s); })) delete C.sel[k]; });
+    // ตัวกรองผู้รับผิดชอบ
+    var es = {}; data.forEach(function (j) { var e = String(j.responsibleEntity || '').trim(); if (e) es[e] = (es[e] || 0) + 1; });
+    $('clEnt').innerHTML = '<option value="">ผู้รับผิดชอบ: ทั้งหมด</option>' + Object.keys(es).sort(function (a, b) { return es[b] - es[a]; }).map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + ' (' + es[k] + ')</option>'; }).join('');
+    $('clEnt').value = es[C.ent] ? C.ent : ''; C.ent = $('clEnt').value;
+    var q = ($('clQ').value || '').toLowerCase().trim();
+    var base = data.filter(function (j) {
+      if (C.ent && String(j.responsibleEntity || '').trim() !== C.ent) return false;
+      return !q || [j.jobName, j.receiveNo, j.jobIds, j.responsibleEntity, j.assignee].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
+    });
+    var grp = function (j) { return !C.sap ? '' : isClosed(j.__s) ? 'closed' : j.__s && j.__s.k === 'NONE' ? 'none' : 'open'; };
+    var cnt = { '': base.length, closed: 0, open: 0, none: 0 }; base.forEach(function (j) { var k = grp(j); if (k) cnt[k]++; });
+    var tabs = [['', 'รอปิดงาน', '#7c3aed', '#f5f3ff']];
+    if (C.sap) tabs = tabs.concat([['closed', 'SAP ปิดแล้ว · ปิดใน CCL ได้', '#059669', '#ecfdf5'], ['open', 'SAP ยังเปิดอยู่', '#64748b', '#f1f5f9'], ['none', 'ไม่พบใน SAP', '#d97706', '#fffbeb']]);
+    else C.st = '';
+    $('clSt').innerHTML = tabs.map(function (x) { return '<button class="s' + (C.st === x[0] ? ' on' : '') + '" data-s="' + x[0] + '" style="color:' + x[2] + ';background:' + x[3] + '"><small>' + x[1] + '</small><b>' + cnt[x[0]] + '</b></button>'; }).join('');
+    // ผลนำเข้า + งานขั้นอื่นที่ SAP ปิดแล้ว
+    var res = $('clRes'), warn = $('clWarn');
+    if (C.sap) {
+      $('clLast').textContent = 'นำเข้าล่าสุด: ' + (C.sap.file || '-') + ' · ' + new Date(C.sap.at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) + (C.sap.by ? ' โดย ' + C.sap.by : '');
+      var other = all.filter(function (j) { return j.status !== 'ส่งปิดงาน' && j.status !== 'ปิดงานแล้วเสร็จ' && j.status !== 'ยกเลิก' && isClosed(sapOf(j)); });
+      var closable = data.filter(function (j) { return isClosed(j.__s); });
+      res.style.display = 'flex';
+      res.innerHTML = '<span class="k"><i class="fa-solid fa-file-lines" style="color:#94a3b8"></i>อ่านได้ <b>' + (C.sap.rows || 0).toLocaleString() + '</b> แถว</span>' +
+        '<span class="k"><i class="fa-solid fa-link" style="color:#94a3b8"></i>ตรงกับหมายเลขงานใน CCL <b>' + (C.sap.matched || 0) + '</b></span>' +
+        '<span class="k" style="color:#059669"><i class="fa-solid fa-circle-check"></i>รอปิดงาน + SAP ปิดแล้ว <b>' + closable.length + '</b></span>' +
+        (other.length ? '<span class="k warn" id="clWarnBtn"><i class="fa-solid fa-triangle-exclamation"></i>งานขั้นอื่นที่ SAP ปิดแล้ว <b>' + other.length + '</b></span>' : '') +
+        '<span style="flex:1"></span><button class="tb g" id="clAll"' + (closable.length ? '' : ' disabled') + '><i class="fa-solid fa-circle-check"></i> เลือกงานที่ SAP ปิดแล้ว (' + closable.length + ')</button>';
+      $('clAll').onclick = function () { closable.forEach(function (j) { C.sel[j.id] = 1; }); C.st = 'closed'; render(); };
+      warn.innerHTML = '<b>งานที่ SAP ปิดแล้ว แต่ใน CCL ยังไม่ถึงขั้นส่งปิดงาน</b> — ตรวจสอบแล้วดำเนินการเองทีละงาน (ระบบไม่ปิดให้อัตโนมัติ)<br>' +
+        other.map(function (j) { return '• <a onclick="openDetailModal(' + j.id + ')">' + esc(j.receiveNo || '-') + ' ' + esc(j.jobName || '') + '</a> — CCL: ' + esc(j.status) + ' · SAP: ' + esc(sapOf(j).k); }).join('<br>');
+      var wb = $('clWarnBtn'); if (wb) wb.onclick = function () { warn.classList.toggle('on'); };
+      if (!other.length) warn.classList.remove('on');
+    } else { $('clLast').textContent = 'ยังไม่เคยนำเข้า — ใช้ไฟล์รายงานโครงสร้าง WBS ที่มีคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ"'; res.style.display = 'none'; }
+    var rows = C.st ? base.filter(function (j) { return grp(j) === C.st; }) : base;
+    if (C.sort) rows = rows.slice().sort(function (a, b) { return (a.__sent || 0) - (b.__sent || 0); });
+    $('clSort').querySelector('span').textContent = C.sort ? 'รอนานสุดก่อน' : 'เรียงตามเดิม';
+    var b = $('closeCountBadge'); if (b) b.innerText = data.length + ' รายการ';
+    var nb = $('badge-close'); if (nb) { nb.innerText = data.length; nb.style.display = data.length ? 'block' : 'none'; }
+    C.rows = rows; C.shown = 0;
+    var L = $('clList'); L.innerHTML = '';
+    if (!rows.length) L.innerHTML = '<div class="cl-empty"><i class="fa-solid fa-inbox"></i><div style="font-weight:700;color:#64748b">ไม่มีงานในกลุ่มนี้</div></div>';
+    else more();
+    syncSel();
+  }
+  function more() {
+    var L = $('clList'), n = Math.min(C.rows.length, C.shown + 40), h = '';
+    var mb = $('clMore'); if (mb) mb.remove();
+    for (var i = C.shown; i < n; i++) h += card(C.rows[i]);
+    L.insertAdjacentHTML('beforeend', h); C.shown = n;
+    if (C.shown < C.rows.length) { L.insertAdjacentHTML('beforeend', '<button id="clMore">แสดงเพิ่ม (' + (C.rows.length - C.shown) + ')</button>'); $('clMore').onclick = more; }
+  }
+  function syncSel() {
+    var n = Object.keys(C.sel).length;
+    $('clSel').classList.toggle('on', n > 0);
+    $('clSelT').textContent = 'เลือกปิดงาน ' + n + ' งาน';
+    $('clSelP').innerHTML = '<i class="fa-solid fa-circle-check"></i> ปิดงานที่เลือก (' + n + ')';
+  }
+
+  function bulkClose() {
+    var all = g('allData', []) || [], ids = Object.keys(C.sel).map(Number);
+    var list = all.filter(function (j) { return ids.indexOf(j.id) >= 0 && j.status === 'ส่งปิดงาน'; });
+    if (!list.length || !window.Swal) return;
+    Swal.fire({
+      icon: 'question', title: 'ปิดงาน ' + list.length + ' งาน?', width: 600,
+      html: '<div style="text-align:left;font-size:13.5px"><div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:8px 12px;margin-bottom:8px">งานจะย้ายไปเมนู <b>"งานแล้วเสร็จ"</b> (เหมือนกดปิดงานทีละงาน)</div>' +
+        '<div style="max-height:40vh;overflow:auto">' + list.map(function (j) { return '<div style="padding:5px 2px;border-bottom:1px solid #f1f5f9"><b style="color:#1d4ed8">' + esc(j.receiveNo || '-') + '</b> ' + esc(j.jobName || '') + ' <small style="color:#059669">SAP: ' + esc((sapOf(j) || {}).k || '-') + '</small></div>'; }).join('') + '</div></div>',
+      showCancelButton: true, confirmButtonText: 'ยืนยัน ปิดงาน ' + list.length + ' งาน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#059669'
+    }).then(function (r) {
+      if (!r.isConfirmed) return;
+      var done = 0, errs = [], user = g('currentUser', null);
+      Swal.fire({ title: 'กำลังปิดงาน… 0/' + list.length, allowOutsideClick: false, showConfirmButton: false, didOpen: function () { Swal.showLoading(); } });
+      list.reduce(function (p, j) {
+        return p.then(function () {
+          return new Promise(function (ok) {
+            google.script.run.withSuccessHandler(function () { done++; delete C.sel[j.id]; ok(); })
+              .withFailureHandler(function (e) { errs.push((j.receiveNo || j.id) + ': ' + ((e && e.message) || e)); ok(); })
+              .updateWorkStatus(j.id, 'ปิดงานแล้วเสร็จ', user);
+          }).then(function () { var t = Swal.getTitle(); if (t) t.textContent = 'กำลังปิดงาน… ' + (done + errs.length) + '/' + list.length; });
+        });
+      }, Promise.resolve()).then(function () {
+        Swal.fire({ icon: errs.length ? 'warning' : 'success', title: 'ปิดงานแล้ว ' + done + ' งาน',
+          html: errs.length ? '<div style="text-align:left;font-size:13px;color:#b91c1c">ไม่สำเร็จ ' + errs.length + ' งาน:<br>' + errs.map(esc).join('<br>') + '</div>' : 'งานย้ายไปเมนู "งานแล้วเสร็จ" แล้ว', confirmButtonText: 'ตกลง' })
+          .then(function () { try { loadData(); } catch (e) {} });
+      });
+    });
+  }
+
+  window.renderCloseTable = function () { try { render(); } catch (e) { console.error('[close-ui]', e); } };
+  function boot() { var d = g('allData', null); if (Array.isArray(d) && d.length) window.renderCloseTable(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
