@@ -178,10 +178,10 @@
         '<div class="nm">' + esc(r.jobName || '-') + '</div>' +
         '<div class="meta">' + (r.budgetType ? '<span class="pc-tg pc-bt">' + esc(r.budgetType) + '</span>' : '') + idsHtml(r.jobIds) +
           (r.location ? '<span><i class="fa-solid fa-location-dot" style="color:#ef4444;margin-right:4px"></i>' + esc(r.location) + '</span>' : '') +
-          (co ? '<a class="mp" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(co) + '"><i class="fa-solid fa-map-location-dot"></i> แผนที่</a>' : '') + '</div></div>' +
+          (co ? '<a class="mp" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(co) + '"><i class="fa-solid fa-map-location-dot"></i> แผนที่</a>' : '') +
+          (r.jobStatus ? '<span class="pc-tg pc-js" style="background:#fef9c3;color:#854d0e">📌 สถานะงาน ' + esc(r.jobStatus) + '</span>' : '') + '</div></div>' +
       '<div class="r"><small>อายุงาน</small><b style="color:' + (age > 30 && !cancel ? '#dc2626' : '#334155') + '">' + age + ' วัน</b><span class="d">' + (r.payDate ? 'ส่งมอบ ' + esc(dth(r.payDate)) : age > 30 ? 'เกิน 30 วัน' : 'นับจากวันรับเรื่อง') + '</span></div>' +
       (cancel ? '' : pipe(['รับเรื่อง', 'สำรวจ', 'ดำเนินงาน', 'ตรวจรับ', 'เสร็จสิ้น'], TORD.indexOf(k) === 4 ? 5 : TORD.indexOf(k), r.status === 'ตรวจรับงาน' && /ไม่ผ่าน/.test(r.inspectionStatus || ''))) +
-      (r.jobStatus ? '<div class="note"><b>สถานะงาน:</b> ' + esc(r.jobStatus) + '</div>' : '') +
       '<div class="ft">' + who(r) + '</div>' +
         '<button class="btn" onclick="openEditModal(' + r.id + ')"><i class="fa-solid fa-pen" style="color:#f97316"></i>แก้ไข</button>' +
         '<button class="btn" onclick="changeStatus(' + r.id + ',\'' + esc(r.status || '') + '\')"><i class="fa-solid fa-rotate" style="color:#16a34a"></i>เปลี่ยนสถานะ</button>' +
@@ -281,7 +281,7 @@
         '<div class="nm">' + esc(r.jobName || '-') + '</div>' +
         '<div class="meta">' + (r.budgetType ? '<span class="pc-tg pc-bt">' + esc(r.budgetType) + '</span>' : '') + idsHtml(r.jobIds) +
           (atts.length ? '<span class="att"><i class="fa-solid fa-paperclip"></i>เอกสาร ' + atts.length + ' ไฟล์</span>' : '') +
-          (r.jobStatus ? '<span class="pc-tg" style="background:#fef9c3;color:#854d0e">📌 สถานะงาน ' + esc(r.jobStatus) + '</span>' : '') + '</div></div>' +
+          (r.jobStatus ? '<span class="pc-tg pc-js" style="background:#fef9c3;color:#854d0e">📌 สถานะงาน ' + esc(r.jobStatus) + '</span>' : '') + '</div></div>' +
       '<div class="r"><small>' + cap + '</small><b style="color:' + dc + '">' + big + '</b><span class="d">' + (f.dlv ? 'ส่งมอบ ' + esc(dth(r.payDate)) : 'ยังไม่ระบุวันส่งมอบ') + '</span></div>' +
       (atts.length ? '<div class="atl">' + atts.map(function (a) {
         return '<a href="' + esc(a.fileUrl) + '" target="_blank" rel="noopener"><i class="fa-solid ' + (a.mimeType === 'application/pdf' ? 'fa-file-pdf" style="color:#ef4444' : 'fa-file-image" style="color:#3b82f6') + '"></i> ' + esc(a.fileName) + '</a>';
