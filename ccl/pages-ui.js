@@ -237,6 +237,7 @@
     if (I.ui) return true;
     var ui = setupShell('page-inspection', null, '.overflow-x-auto',
       '<div class="ttl"><div class="ic" style="background:#dcfce7;color:#16a34a"><i class="fa-solid fa-clipboard-check"></i></div>ระบบตรวจรับงาน<span class="sp"></span>' +
+      '<button class="tb" id="isBulk" style="background:#7c3aed;display:none"><i class="fa-solid fa-paper-plane"></i><span>ส่งปิดงานทั้งหมด</span> <b id="isBulkN"></b></button>' +
       '<button class="tb" onclick="openInspectionMap()"><i class="fa-solid fa-map-location-dot"></i><span>แผนที่ตรวจงาน</span></button></div>' +
       '<div class="st" id="isSt"></div>' +
       '<div class="f1"><div class="srch" id="isSrch"><i class="fa-solid fa-magnifying-glass"></i></div>' +
@@ -251,6 +252,7 @@
     $('isOver').addEventListener('click', function () { I.over = !I.over; inspRender(); });
     $('isEnt').addEventListener('change', function () { I.ent = this.value; inspRender(); });
     $('isSort').addEventListener('click', function () { I.sort = !I.sort; inspRender(); });
+    $('isBulk').addEventListener('click', bulkClose);
     return true;
   }
 
@@ -303,8 +305,52 @@
     if (I.over) rows = rows.filter(waitLong);
     if (I.sort) rows = rows.slice().sort(function (a, b) { return (b.__i.pass ? -1 : b.__i.d || 0) - (a.__i.pass ? -1 : a.__i.d || 0); });
     $('isSort').querySelector('span').textContent = I.sort ? 'รอนานสุดก่อน' : 'เรียงตามเดิม';
+    I.ready = base.filter(function (r) { return r.__i.stage === 'ready'; });
+    $('isBulk').style.display = I.ready.length ? '' : 'none'; $('isBulkN').textContent = '(' + I.ready.length + ')';
     var b = $('inspectionCountBadge'); if (b) b.innerText = data.length + ' รายการ';
     I.pager.set(rows, '<div class="pc-empty"><i class="fa-solid fa-clipboard-check"></i><div style="font-weight:700;color:#64748b">ไม่มีงานในกลุ่มนี้</div></div>');
+  }
+
+  // ส่งปิดงานทีละหลายงาน (เฉพาะงานที่ผ่านตรวจรับ + ผ่านตรวจมาตรฐานแล้ว)
+  function bulkClose() {
+    var list = (I.ready || []).slice();
+    if (!list.length || !window.Swal) return;
+    Swal.fire({
+      title: '<i class="fa-solid fa-paper-plane" style="color:#7c3aed"></i> ส่งปิดงานทั้งหมด',
+      width: 640,
+      html: '<div style="text-align:left;font-size:13.5px">' +
+        '<div style="background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:10px;padding:8px 12px;margin-bottom:10px">งานที่ <b>ผ่านตรวจรับ + ผ่านตรวจมาตรฐาน</b> แล้ว จะย้ายไปเมนู <b>"ปิดงาน"</b> · ติ๊กออกได้ถ้ายังไม่ต้องการส่ง</div>' +
+        '<label style="display:flex;gap:8px;align-items:center;font-weight:700;padding:4px 2px;border-bottom:1px solid #e2e8f0"><input type="checkbox" id="bkAll" checked> เลือกทั้งหมด (<span id="bkN">' + list.length + '</span>/' + list.length + ')</label>' +
+        '<div style="max-height:46vh;overflow:auto">' + list.map(function (r) {
+          return '<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 2px;border-bottom:1px solid #f1f5f9;cursor:pointer"><input type="checkbox" class="bkC" value="' + r.id + '" checked style="margin-top:4px">' +
+            '<span><b style="color:#1d4ed8">' + esc(r.receiveNo || '-') + '</b> ' + esc(r.jobName || '-') + '<br><small style="color:#64748b">' + esc(r.responsibleEntity || '-') + ' · ' + esc(r.assignee || '-') + '</small></span></label>';
+        }).join('') + '</div></div>',
+      showCancelButton: true, confirmButtonText: 'ส่งปิดงาน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#7c3aed',
+      didOpen: function () {
+        var all = $('bkAll'), cs = Swal.getPopup().querySelectorAll('.bkC');
+        var upd = function () { var n = Array.prototype.filter.call(cs, function (c) { return c.checked; }).length; $('bkN').textContent = n; all.checked = n === cs.length; Swal.getConfirmButton().textContent = 'ส่งปิดงาน ' + n + ' งาน'; Swal.getConfirmButton().disabled = !n; };
+        all.onchange = function () { Array.prototype.forEach.call(cs, function (c) { c.checked = all.checked; }); upd(); };
+        Array.prototype.forEach.call(cs, function (c) { c.onchange = upd; }); upd();
+      },
+      preConfirm: function () { return Array.prototype.filter.call(Swal.getPopup().querySelectorAll('.bkC'), function (c) { return c.checked; }).map(function (c) { return Number(c.value); }); }
+    }).then(function (res) {
+      if (!res.isConfirmed || !res.value.length) return;
+      var ids = res.value, done = 0, errs = [], user = g('currentUser', null);
+      Swal.fire({ title: 'กำลังส่งปิดงาน… 0/' + ids.length, allowOutsideClick: false, showConfirmButton: false, didOpen: function () { Swal.showLoading(); } });
+      ids.reduce(function (p, id) {
+        return p.then(function () {
+          return new Promise(function (ok) {
+            google.script.run.withSuccessHandler(function () { done++; ok(); })
+              .withFailureHandler(function (e) { var j = list.filter(function (x) { return x.id === id; })[0]; errs.push((j && j.receiveNo || id) + ': ' + ((e && e.message) || e)); ok(); })
+              .updateWorkStatus(id, 'ส่งปิดงาน', user);
+          }).then(function () { var t = Swal.getTitle(); if (t) t.textContent = 'กำลังส่งปิดงาน… ' + (done + errs.length) + '/' + ids.length; });
+        });
+      }, Promise.resolve()).then(function () {
+        Swal.fire({ icon: errs.length ? 'warning' : 'success', title: 'ส่งปิดงานแล้ว ' + done + ' งาน',
+          html: errs.length ? '<div style="text-align:left;font-size:13px;color:#b91c1c">ไม่สำเร็จ ' + errs.length + ' งาน:<br>' + errs.map(esc).join('<br>') + '</div>' : 'งานย้ายไปที่เมนู "ปิดงาน" แล้ว',
+          confirmButtonText: 'ตกลง' }).then(function () { try { loadData(); } catch (e) {} });
+      });
+    });
   }
 
   // แทนที่ฟังก์ชันวาดตารางเดิม (ข้อมูลที่ส่งเข้ามาถูกกรองใหม่จาก allData ตามตัวกรองบนหน้า)
