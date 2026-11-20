@@ -3,7 +3,22 @@
    - ย่อรูปก่อนอัปโหลด และแนบพิกัดอัตโนมัติเมื่อส่งอัปเดต */
 var CT_API = 'https://script.google.com/macros/s/AKfycby4f-2rofhzok_cg9-YLftco1XuC-MCrKn72TTakoPhQfz-qGqjX9WTzZkY5Ye_BxejNQ/exec';
 var CT_TOKEN_KEY = 'ct_token_v1', CT_USER_KEY = 'ct_user_v1', CT_BRANCH_KEY = 'ct_branch_v1';
-function ctLs(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+// โหมดเจ้าหน้าที่ กฟภ. (เปิดจาก CCL) — ดูอย่างเดียว เก็บสิทธิ์ไว้เฉพาะแท็บนี้ ไม่ทับการเข้าระบบของผู้รับจ้างในเครื่องเดียวกัน
+var CT_PREVIEW = /[?&]preview=1(&|$)/.test(location.search);
+var CT_PREVIEW_READ = ['getContractorJobs', 'getOldContractorJobs', 'getAppointments', 'getOptions', 'getMaterialData', 'ctWhoAmI', 'listBranches'];
+function ctLs(k, v) {
+  try {
+    var st = (CT_PREVIEW && (k === CT_TOKEN_KEY || k === CT_USER_KEY)) ? sessionStorage : localStorage;
+    if (v === undefined) return st.getItem(k); if (v === null) st.removeItem(k); else st.setItem(k, v);
+  } catch (e) { return null; }
+}
+if (CT_PREVIEW) {
+  try {
+    var _pv = JSON.parse(localStorage.getItem('ct_preview_v1') || 'null');
+    localStorage.removeItem('ct_preview_v1');
+    if (_pv && _pv.token && Date.now() - (_pv.at || 0) < 120000) { ctLs(CT_TOKEN_KEY, _pv.token); ctLs(CT_USER_KEY, JSON.stringify(_pv.user)); }
+  } catch (e) {}
+}
 function ctApiUrl() { return ctLs('ccl_api_url') || CT_API; }
 
 // ย่อรูปให้ด้านยาวไม่เกิน 1600px (JPEG) — รูปจากมือถือ 4–8 MB เหลือราว 300–600 KB
@@ -53,6 +68,7 @@ function ctPrepare(fn, args) {
 
 function ctApiCall(fn, args) {
   args = (args || []).slice();
+  if (CT_PREVIEW && CT_PREVIEW_READ.indexOf(fn) < 0) return Promise.reject(new Error('โหมดเจ้าหน้าที่ กฟภ. ดูได้อย่างเดียว — แก้ไข/ส่งข้อมูลแทนผู้รับจ้างไม่ได้'));
   return ctPrepare(fn, args).then(function (a) {
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, fn === 'uploadContractorAttachment' ? 180000 : 60000);
@@ -99,6 +115,10 @@ window.google = { script: { run: new Proxy({}, { get: function (_, p) { return c
 function ctClearSession() { ctLs(CT_TOKEN_KEY, null); ctLs(CT_USER_KEY, null); }
 function ctSessionExpired() {
   ctClearSession();
+  if (CT_PREVIEW) {
+    try { Swal.fire({ icon: 'info', title: 'สิทธิ์ดูหมดอายุ', text: 'กรุณาเปิดใหม่จากชื่อผู้รับจ้างในระบบ CCL', confirmButtonText: 'ปิดแท็บนี้', allowOutsideClick: false }).then(function () { window.close(); }); } catch (e) {}
+    return;
+  }
   try { if (typeof stopNotificationPolling === 'function') stopNotificationPolling(); } catch (e) {}
   try { Swal.close(); } catch (e) {}
   try {

@@ -191,7 +191,47 @@
   };
   void origLogout;
 
+  // ───── โหมดเจ้าหน้าที่ กฟภ. (เปิดจาก CCL) — ดูอย่างเดียว ─────
+  var PV = typeof CT_PREVIEW !== 'undefined' && CT_PREVIEW;
+  function previewSetup() {
+    var hide = ['openUpdateSheet', 'openMaterialForm', 'openOldJobUpdate', 'editMaterialEntry', 'deleteMaterialEntry', 'setGongMon', 'deleteGongMon', 'submitUpdate', 'submitMatForm', 'addAttachRow', 'addMatAttach', 'doLogout']
+      .map(function (f) { return 'body.ct-pv [onclick*="' + f + '("]'; }).join(',');
+    var s2 = document.createElement('style');
+    s2.textContent = hide + '{display:none !important}' +
+      '#ctPvBar{position:fixed;top:0;left:0;right:0;height:46px;box-sizing:border-box;z-index:280;background:#FEF3C7;color:#92400E;border-bottom:1px solid #FCD34D;padding:8px 12px;font-size:13px;font-weight:700;display:flex;gap:8px;align-items:center;line-height:1.35}' +
+      '#ctPvBar i{color:#D97706}#ctPvBar span{flex:1;min-width:0}#ctPvBar .l1,#ctPvBar .l2{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ctPvBar .l1{font-size:13px}#ctPvBar .l2{font-size:11px;font-weight:600;opacity:.85}#ctPvBar button{border:0;background:#fff;color:#92400E;border-radius:8px;padding:5px 10px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0}' +
+      'body.ct-pv #ctBottomNav [data-t="acct"]{display:none}body.ct-pv #appScreen{padding-top:46px}body.ct-pv #detailPanel{top:46px}';
+    document.head.appendChild(s2);
+    document.body.classList.add('ct-pv');
+    var u = me() || {};
+    var bar = document.createElement('div'); bar.id = 'ctPvBar';
+    bar.innerHTML = '<i class="fa-solid fa-eye"></i><span><b class="l1">ดูแทน ' + esc(u.company || 'ผู้รับจ้าง') + ' · ดูอย่างเดียว</b><small class="l2">โหมดเจ้าหน้าที่ กฟภ. แก้ไข/ส่งข้อมูลไม่ได้' + (u.name ? ' · ผู้เปิดดู ' + esc(u.name) : '') + '</small></span><button type="button">ปิดแท็บ</button>';
+      (u.name ? '<br><small style="font-weight:600">ผู้เปิดดู: ' + esc(u.name) + '</small>' : '') + '</span><button type="button">ปิดแท็บ</button>';
+    bar.querySelector('button').onclick = function () { window.close(); };
+    document.body.appendChild(bar);
+    document.title = 'ดูแทน ' + (u.company || 'ผู้รับจ้าง') + ' — Contractor Portal';
+  }
+  var pvJob = (/[?&]job=(\d+)/.exec(location.search) || [])[1];
+  function previewOpenJob() {
+    if (!pvJob) return;
+    var id = Number(pvJob); pvJob = null;
+    var j = (window._jobs || []).filter(function (x) { return Number(x.id) === id; })[0];
+    if (j) { switchMainTab('all'); setTimeout(function () { openDetail(id); }, 50); }
+    else showToast('งานนี้ปิดแล้ว หรือไม่ได้อยู่ในรายการของผู้รับจ้าง', 'info');
+  }
+
   function init() {
+    if (PV) {
+      var t0 = ctLs(CT_TOKEN_KEY), u0 = me();
+      if (!t0 || !u0) {
+        $('loginScreen').style.display = 'none';
+        document.body.insertAdjacentHTML('beforeend', '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:inherit;color:#334155"><div><div style="font-size:42px">🔒</div><p style="font-weight:700;font-size:17px;margin:8px 0">ลิงก์นี้ใช้ได้ครั้งเดียว</p><p style="font-size:14px;color:#64748b">กรุณาเปิดใหม่จากชื่อผู้รับจ้างในระบบ CCL</p></div></div>');
+        return;
+      }
+      previewSetup();
+      var rj = window.renderJobs;
+      window.renderJobs = function () { var r = rj.apply(this, arguments); if (pvJob) setTimeout(previewOpenJob, 0); return r; };
+    }
     addBranchField();
     // เคยเข้าระบบในเครื่องนี้แล้ว → เข้าได้เลย (token หมดอายุ/บัญชีถูกระงับ ระบบจะเด้งกลับหน้าเข้าสู่ระบบเอง)
     var u = me(), t = ctLs(CT_TOKEN_KEY);

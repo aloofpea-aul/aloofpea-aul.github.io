@@ -111,7 +111,7 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
       return cclJson_({ ok: false, error: 'เฉพาะ Admin ของหน่วยงานเท่านั้น' });
@@ -121,6 +121,7 @@ function doPost(e) {
     var out;
     if (fn === 'cclWhoAmI') { out = {}; for (var k in sess) if (k !== 'pv') out[k] = sess[k]; }
     else if (fn === 'cclSwitchBranch') out = cclSwitchBranch_(sess, b.token, args[0]);
+    else if (fn === 'cclCtPreview') out = cclCtPreview_(sess, args[0]);
     else if (CCL_API_SUPER.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) out = globalThis[fn + '_'].apply(null, [sess].concat(args));
     else {
       var f = globalThis[fn];
@@ -192,8 +193,8 @@ function cclSign_(s) { return Utilities.base64EncodeWebSafe(Utilities.computeHma
 // ลายนิ้วมือของรหัสผ่าน — Admin ตั้งรหัสใหม่/ผู้ใช้เปลี่ยนรหัส = token เก่าใช้ไม่ได้ทันที
 function cclPwv_(pw) { return cclSign_('pw:' + String(pw == null ? '' : pw).trim()).slice(0, 12); }
 
-function cclNewToken_(user, pv) {
-  var body = Utilities.base64EncodeWebSafe(JSON.stringify({ u: user, p: pv || '', x: Date.now() + CCL_TOKEN_DAYS * 86400000, n: Utilities.getUuid().slice(0, 8) }), Utilities.Charset.UTF_8).replace(/=+$/, '');
+function cclNewToken_(user, pv, days) {
+  var body = Utilities.base64EncodeWebSafe(JSON.stringify({ u: user, p: pv || '', x: Date.now() + (days || CCL_TOKEN_DAYS) * 86400000, n: Utilities.getUuid().slice(0, 8) }), Utilities.Charset.UTF_8).replace(/=+$/, '');
   var token = 'v2.' + body + '.' + cclSign_(body);
   var cached = {}; for (var k in user) cached[k] = user[k]; cached.pv = pv || '';
   CacheService.getScriptCache().put(cclTokKey_(token), JSON.stringify(cached), CCL_TOKEN_TTL);
@@ -461,6 +462,7 @@ function cclCtLogin_(u, p, branchId) {
 
 function cclCtDispatch_(sess, token, fn, args) {
   try {
+    if (sess.preview) return cclCtPreviewDispatch_(sess, token, fn, args);
     cclUseBranch_(sess.branchId || CCL_HOME_BRANCH);
     // ตรวจบัญชีล่าสุดทุกครั้ง: ถูกระงับ / ย้ายบริษัท → ต้องเข้าใหม่
     var sh = cclSS_().getSheetByName('ContractorUsers');
@@ -477,6 +479,51 @@ function cclCtDispatch_(sess, token, fn, args) {
   } catch (e) {
     return { ok: false, error: String((e && e.message) || e) };
   }
+}
+
+// ===== เจ้าหน้าที่ กฟภ. เปิดดูโปรแกรมผู้รับจ้าง (ดูอย่างเดียว) =====
+// ใครเปิดได้: Admin / ผู้ควบคุมงานของงานผู้รับจ้างรายนั้น / คณะกรรมการตรวจรับ
+var CCL_CT_PREVIEW_FNS = ['getContractorJobs','getOldContractorJobs','getAppointments','getOptions','getMaterialData','ctWhoAmI'];
+function cclNameKey_(n) {
+  return String(n || '').replace(/^\s*(นางสาว|นาย|นาง|น\.ส\.|ว่าที่\s*ร\.?ต\.?)\s*/, '').replace(/\s+/g, '').toLowerCase();
+}
+function cclCtCanPreview_(sess, company) {
+  if (sess.role === 'Admin' || sess.superAdmin) return true;
+  var me = cclNameKey_(sess.name);
+  if (!me) return false;
+  var sh = cclSS_().getSheetByName(SHEET_DATA_NAME), last = sh ? sh.getLastRow() : 0;
+  if (last >= 2) {
+    var d = sh.getRange(2, 1, last - 1, 18).getDisplayValues();
+    for (var i = 0; i < d.length; i++)
+      if (String(d[i][17]).trim() === company && cclNameKey_(d[i][14]) === me) return true;
+  }
+  var com = [];
+  try { com = getOptions('Committee') || []; } catch (e) { com = []; }
+  for (var j = 0; j < com.length; j++) {
+    var x = com[j], nm = x;
+    if (typeof x === 'string') { try { var o = JSON.parse(x); nm = (o && o.name) || x; } catch (e) { nm = x; } }
+    else if (x && x.name) nm = x.name;
+    if (cclNameKey_(nm) === me) return true;
+  }
+  return false;
+}
+function cclCtPreview_(sess, company) {
+  company = String(company || '').trim();
+  if (!company || company === '-') throw new Error('ไม่ระบุผู้รับจ้าง');
+  if (!cclCtCanPreview_(sess, company)) throw new Error('เปิดดูได้เฉพาะ Admin, ผู้ควบคุมงานของผู้รับจ้างรายนี้ และคณะกรรมการตรวจรับ');
+  var user = { type: 'contractor', preview: true, viewer: sess.username, viewerHome: sess.homeBranchId || sess.branchId || CCL_HOME_BRANCH,
+               viewerSuper: !!sess.superAdmin, username: sess.username, name: sess.name, company: company, phone: '',
+               branchId: sess.branchId || CCL_HOME_BRANCH, branchName: sess.branchName || '' };
+  return { success: true, user: user, token: cclNewToken_(user, sess.pv, 1) };
+}
+function cclCtPreviewDispatch_(sess, token, fn, args) {
+  // ตรวจว่าเจ้าหน้าที่คนนี้ยังใช้งานได้อยู่ (ถูกปิดบัญชี/เปลี่ยนรหัส → ใช้ไม่ได้ทันที)
+  var st = { username: sess.viewer, homeBranchId: sess.viewerHome, branchId: sess.viewerHome, pv: sess.pv };
+  if (!sess.viewer || !cclRefreshSess_(st, token)) return { ok: false, error: 'AUTH_REQUIRED' };
+  if (CCL_CT_PREVIEW_FNS.indexOf(fn) < 0) return { ok: false, error: 'โหมดเจ้าหน้าที่ กฟภ. ดูได้อย่างเดียว — แก้ไข/ส่งข้อมูลแทนผู้รับจ้างไม่ได้' };
+  cclUseBranch_(sess.branchId || CCL_HOME_BRANCH, !!sess.viewerSuper);
+  var out = CCL_CT_FNS[fn](sess, Array.isArray(args) ? args : []);
+  return { ok: true, data: out === undefined ? null : out };
 }
 
 // งานต้องเป็นของบริษัทผู้รับจ้างคนนี้เท่านั้น
