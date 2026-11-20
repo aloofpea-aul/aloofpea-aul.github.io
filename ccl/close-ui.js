@@ -1,6 +1,6 @@
 /* CCL — หน้า "ปิดงาน" แบบการ์ด + นำเข้าสถานะจาก SAP (ไฟล์ Excel: Proj.def. / องค์ประกอบ WBS / ระดับ / ชื่อ / สถานะ …)
    - อ่านไฟล์ในเครื่อง (ไม่อัปโหลดไฟล์ SAP ไปไหน) จับคู่ "องค์ประกอบ WBS" กับหมายเลขงานใน CCL
-   - CLSD = ปิดแล้ว · TECO = ปิดทางเทคนิค · REL/CRTD = ยังเปิด
+   - CLSD = ปิดแล้ว (ปิดใน CCL ได้) · TECO = ปิดทางเทคนิค ยังไม่ถือว่าปิด · REL/CRTD = ยังเปิด
    - ปิดงานหลายงานพร้อมกันด้วย updateWorkStatus(id,'ปิดงานแล้วเสร็จ') ตัวเดียวกับปุ่มปิดงานเดิม */
 (function () {
   'use strict';
@@ -14,7 +14,7 @@
   var C = { st: '', ent: '', sort: false, sel: {}, sap: null, ui: false, shown: 0, rows: [] };
   try { C.sap = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { C.sap = null; }
 
-  var SAPL = { CLSD: ['ปิดสมบูรณ์', '#059669', '#ecfdf5'], TECO: ['ปิดทางเทคนิค', '#0d9488', '#f0fdfa'], REL: ['ยังเปิดอยู่', '#64748b', '#f1f5f9'], CRTD: ['สร้างแล้ว ยังไม่ปล่อย', '#64748b', '#f1f5f9'], PART: ['ปิดบางหมายเลข', '#d97706', '#fffbeb'], NONE: ['ไม่พบในไฟล์ SAP', '#d97706', '#fffbeb'] };
+  var SAPL = { CLSD: ['ปิดสมบูรณ์', '#059669', '#ecfdf5'], TECO: ['ปิดทางเทคนิค (ยังไม่ปิดงาน)', '#0d9488', '#f0fdfa'], REL: ['ยังเปิดอยู่', '#64748b', '#f1f5f9'], CRTD: ['สร้างแล้ว ยังไม่ปล่อย', '#64748b', '#f1f5f9'], PART: ['ปิดบางหมายเลข', '#d97706', '#fffbeb'], NONE: ['ไม่พบในไฟล์ SAP', '#d97706', '#fffbeb'] };
 
   function normId(s) { return String(s || '').toUpperCase().replace(/\s+/g, '').replace(/[,;]+$/, ''); }
   function key(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); } // ไม่สนจุด/ขีด/ช่องว่าง (เช่น HB11.29._ = HB.1129)
@@ -32,7 +32,7 @@
     var usr = got.map(function (f) { return f.usr; }).filter(Boolean);
     return { k: k, ids: found, usr: usr[0] || '', miss: found.length - got.length };
   }
-  function isClosed(s) { return s && (s.k === 'CLSD' || s.k === 'TECO'); }
+  function isClosed(s) { return !!s && s.k === 'CLSD'; } // ปิดงานได้เฉพาะ CLSD
 
   // ───── อ่านไฟล์ SAP ─────
   function readSap(file) {
@@ -176,7 +176,7 @@
     var days = sent && !isNaN(sent) ? Math.max(0, Math.ceil((Date.now() - sent) / 86400000)) : null;
     var on = !!C.sel[j.id], pct = mo.bud > 0 ? mo.sp / mo.bud * 100 : 0;
     var idsH = s && s.ids && s.ids.length ? s.ids.map(function (f) {
-      return '<span class="' + (f.sys === 'CLSD' || f.sys === 'TECO' ? 'o' : !f.sys ? 'x' : '') + '" title="' + esc(f.sys || 'ไม่พบใน SAP') + '">' + esc(f.id) + (f.sys ? ' · ' + esc(f.sys) : ' · ไม่พบ') + '</span>';
+      return '<span class="' + (f.sys === 'CLSD' ? 'o' : !f.sys ? 'x' : '') + '" title="' + esc(f.sys || 'ไม่พบใน SAP') + '">' + esc(f.id) + (f.sys ? ' · ' + esc(f.sys) : ' · ไม่พบ') + '</span>';
     }).join('') : esc(j.jobIds || '-');
     var ent = String(j.responsibleEntity || '').trim(), self = !ent || ent === 'ไฟฟ้าดำเนินการเอง';
     return '<div class="clc' + (on ? ' sel' : '') + '" data-id="' + j.id + '" style="--sc:' + (closed ? '#059669' : '#7c3aed') + ';--sb:' + (closed ? '#ecfdf5' : '#f5f3ff') + '">' +
@@ -215,7 +215,7 @@
     var grp = function (j) { return !C.sap ? '' : isClosed(j.__s) ? 'closed' : j.__s && j.__s.k === 'NONE' ? 'none' : 'open'; };
     var cnt = { '': base.length, closed: 0, open: 0, none: 0 }; base.forEach(function (j) { var k = grp(j); if (k) cnt[k]++; });
     var tabs = [['', 'รอปิดงาน', '#7c3aed', '#f5f3ff']];
-    if (C.sap) tabs = tabs.concat([['closed', 'SAP ปิดแล้ว · ปิดใน CCL ได้', '#059669', '#ecfdf5'], ['open', 'SAP ยังเปิดอยู่', '#64748b', '#f1f5f9'], ['none', 'ไม่พบใน SAP', '#d97706', '#fffbeb']]);
+    if (C.sap) tabs = tabs.concat([['closed', 'SAP ปิดแล้ว · ปิดใน CCL ได้', '#059669', '#ecfdf5'], ['open', 'SAP ยังไม่ปิด (REL/TECO)', '#64748b', '#f1f5f9'], ['none', 'ไม่พบใน SAP', '#d97706', '#fffbeb']]);
     else C.st = '';
     $('clSt').innerHTML = tabs.map(function (x) { return '<button class="s' + (C.st === x[0] ? ' on' : '') + '" data-s="' + x[0] + '" style="color:' + x[2] + ';background:' + x[3] + '"><small>' + x[1] + '</small><b>' + cnt[x[0]] + '</b></button>'; }).join('');
     // ผลนำเข้า + งานขั้นอื่นที่ SAP ปิดแล้ว

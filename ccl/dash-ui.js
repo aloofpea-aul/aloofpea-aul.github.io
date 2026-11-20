@@ -76,7 +76,7 @@
     if (!sap || !sap.map) return false;
     var ids = String(j.jobIds || '').split(',').map(function (x) { return x.toUpperCase().replace(/\s+/g, ''); }).filter(function (x) { return x.length > 5; });
     var got = ids.map(function (i) { return sap.map[i] && sap.map[i][0]; }).filter(Boolean);
-    return got.length > 0 && got.every(function (x) { return x === 'CLSD' || x === 'TECO'; });
+    return got.length > 0 && got.every(function (x) { return x === 'CLSD'; });
   }
   function inspStage(j) {
     var ins = j.inspectionStatus || '', pass = ins === 'ผ่านการตรวจรับ';
