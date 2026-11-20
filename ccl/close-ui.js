@@ -17,6 +17,7 @@
   var SAPL = { CLSD: ['ปิดสมบูรณ์', '#059669', '#ecfdf5'], TECO: ['ปิดทางเทคนิค', '#0d9488', '#f0fdfa'], REL: ['ยังเปิดอยู่', '#64748b', '#f1f5f9'], CRTD: ['สร้างแล้ว ยังไม่ปล่อย', '#64748b', '#f1f5f9'], PART: ['ปิดบางหมายเลข', '#d97706', '#fffbeb'], NONE: ['ไม่พบในไฟล์ SAP', '#d97706', '#fffbeb'] };
 
   function normId(s) { return String(s || '').toUpperCase().replace(/\s+/g, '').replace(/[,;]+$/, ''); }
+  function key(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); } // ไม่สนจุด/ขีด/ช่องว่าง (เช่น HB11.29._ = HB.1129)
   function jobIds(j) { return String(j.jobIds || '').split(',').map(normId).filter(function (x) { return x && x.length > 5; }); }
 
   // สถานะ SAP ของงาน (รวมทุกหมายเลขงาน)
@@ -48,13 +49,13 @@
           if (cW >= 0 && cS >= 0) hi = i;
         }
         if (hi < 0) throw new Error('ไม่พบคอลัมน์ "องค์ประกอบ WBS" และ "สถานะ" ในไฟล์');
-        var need = {}; (g('allData', []) || []).forEach(function (j) { jobIds(j).forEach(function (x) { need[x] = 1; }); });
+        var need = {}; (g('allData', []) || []).forEach(function (j) { jobIds(j).forEach(function (x) { (need[key(x)] = need[key(x)] || []).push(x); }); });
         var map = {}, n = 0;
         for (var r = hi + 1; r < rows.length; r++) {
           var w = normId(rows[r][cW]); if (!w) continue; n++;
-          if (!need[w]) continue;
+          var hit = need[key(w)]; if (!hit) continue;
           var st = String(rows[r][cS] || ''), sys = (st.trim().split(/\s+/)[0] || '').toUpperCase(), usr = (st.split('//')[1] || '').trim();
-          map[w] = [sys, usr];
+          hit.forEach(function (x) { if (!map[x] || x === w) map[x] = [sys, usr]; });
         }
         var u = g('currentUser', {}) || {};
         C.sap = { map: map, rows: n, matched: Object.keys(map).length, file: file.name, at: Date.now(), by: u.name || '' };
