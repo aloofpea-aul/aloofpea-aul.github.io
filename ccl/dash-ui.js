@@ -96,6 +96,8 @@
     return out;
   }
 
+  var FOC = {};
+  function idset(arr) { var o = {}; arr.forEach(function (j) { o[j.id] = 1; }); return o; }
   function build() {
     var page = $('page-dashboard'); if (!page) return false;
     if ($('dbx')) return true;
@@ -110,6 +112,8 @@
         else if (p[0] === 'insp' && window.cclPagesGo) cclPagesGo.insp(p[1] || '', p[2] === '1');
         else if (p[0] === 'close' && window.cclCloseGo) cclCloseGo(p[1] || '');
         else if (p[0] === 'job') openDetailModal(Number(p[1]));
+        else if (p[0] === 'f' && FOC[p[1]] && window.cclPagesGo) { var f = FOC[p[1]]; cclPagesGo[f.page]('', true, idset(f.list), f.label); }
+        else if (p[0] === 'bud' && window.cclBudgetGo) cclBudgetGo(true);
         else if (p[0] === 'prob') showProblems();
         else showPage(p[0]);
       } catch (er) { console.error(er); }
@@ -147,6 +151,8 @@
     var preBy = function (s) { return pre.filter(function (j) { return j.status === s; }).length; };
     var waitLong = insp.filter(function (j) { return inspStage(j) === 'wait' && j.payDate && days(j.payDate) > 14; }).sort(function (a, b) { return days(b.payDate) - days(a.payDate); });
     var probs = openProblems(all);
+    FOC = { pre: { page: 'track', list: pre, label: 'งานค้างเกิน 30 วัน' }, wait: { page: 'insp', list: waitLong, label: 'รอตรวจรับเกิน 14 วัน' },
+      prob: { page: 'track', list: probs.map(function (p) { return p.j; }), label: 'ผู้รับจ้างแจ้งปัญหา (ยังไม่ตอบ)' } };
     // งบ (งานที่ยังไม่ส่งปิด) — สูตรเดียวกับหน้างบประมาณ
     var pct = parseFloat(($('budgetFilterPercent') || {}).value) || 80;
     var bud = 0, sp = 0, cut = 0, urg = 0, byT = { labor: [0, 0], supervision: [0, 0], misc: [0, 0] };
@@ -216,13 +222,13 @@
           fsx('completed', 'เสร็จปีนี้', doneY, 'เดือนนี้ ' + doneM, '#334155', '#f1f5f9') +
         '</div></div>' +
       '<div class="g2"><div class="card"><h3>⚡ ต้องติดตาม <small>กดเพื่อไปที่รายการ</small></h3>' +
-        tdx('track::1', '⏰', '#dc2626', '#fef2f2', 'งานค้างเกิน 30 วัน', 'รับเรื่อง ' + preBy('รับเรื่อง') + ' · สำรวจ ' + preBy('สำรวจงาน') + ' · ดำเนินงาน ' + preBy('ดำเนินงาน'), pre.length) +
-        tdx('insp:wait:1', '📋', '#d97706', '#fffbeb', 'รอตรวจรับเกิน 14 วัน', waitLong.length ? 'นานสุด ' + days(waitLong[0].payDate) + ' วัน · ' + esc(waitLong[0].receiveNo || '') : 'นับจากวันส่งมอบ', waitLong.length) +
+        tdx('f:pre', '⏰', '#dc2626', '#fef2f2', 'งานค้างเกิน 30 วัน', 'รับเรื่อง ' + preBy('รับเรื่อง') + ' · สำรวจ ' + preBy('สำรวจงาน') + ' · ดำเนินงาน ' + preBy('ดำเนินงาน'), pre.length) +
+        tdx('f:wait', '📋', '#d97706', '#fffbeb', 'รอตรวจรับเกิน 14 วัน', waitLong.length ? 'นานสุด ' + days(waitLong[0].payDate) + ' วัน · ' + esc(waitLong[0].receiveNo || '') : 'นับจากวันส่งมอบ', waitLong.length) +
         tdx('insp:fail', '❌', '#dc2626', '#fef2f2', 'ตรวจรับไม่ผ่าน · รอแก้ไข', 'รอผู้รับจ้างแก้ไขแล้วตรวจซ้ำ', ist.fail) +
         tdx('insp:ready', '📤', '#7c3aed', '#f5f3ff', 'พร้อมส่งปิดงาน', 'ผ่านตรวจรับ + ตรวจมาตรฐานแล้ว', ist.ready, 'ส่งปิด') +
         tdx('close:closed', '✅', '#059669', '#ecfdf5', 'SAP ปิดแล้ว รอปิดใน CCL', sapInfo ? 'จากไฟล์ ' + esc(sapInfo.file || '') : 'นำเข้าไฟล์ SAP ที่หน้าปิดงาน', sapN, 'ปิดงาน') +
-        tdx('budget', '🪙', '#ea580c', '#fff7ed', 'งบใกล้ถึงเป้า (ด่วน)', 'ตัดได้อีกไม่ถึง 15% ของเป้า ' + pct + '%', urg) +
-        tdx('prob', '⚠️', '#dc2626', '#fef2f2', 'ผู้รับจ้างแจ้งปัญหา', 'ยังไม่ได้ตอบกลับ', probs.length) +
+        tdx('bud', '🪙', '#ea580c', '#fff7ed', 'งบใกล้ถึงเป้า (ด่วน)', 'ตัดได้อีกไม่ถึง 15% ของเป้า ' + pct + '%', urg) +
+        tdx('f:prob', '⚠️', '#dc2626', '#fef2f2', 'ผู้รับจ้างแจ้งปัญหา', 'ยังไม่ได้ตอบกลับ', probs.length) +
       '</div><div class="card"><h3>🪙 งบประมาณ <small>งานที่ยังไม่ส่งปิด</small></h3>' +
         '<div class="big"><b>' + n0(bud) + '</b><span style="color:#64748b">บาท งบรวม</span></div>' +
         '<div class="bar"><i style="width:' + Math.min(used, 100) + '%"></i><div class="mk" style="left:' + Math.min(pct, 100) + '%"></div></div>' +
@@ -256,6 +262,13 @@
     };
   }
 
+  // เปิด Dashboard ไม่ต้องรอหลังบ้าน — ใช้ข้อมูลที่โหลดไว้แล้วในหน้า (ข้อมูลอัปเดตเองเมื่อระบบโหลดข้อมูลใหม่)
+  var origLoad = window.loadDashboard;
+  window.loadDashboard = function () {
+    var d = g('allData', null);
+    if (Array.isArray(d) && d.length) { try { render(); } catch (e) { console.error('[dash-ui]', e); } return; }
+    if (origLoad) return origLoad.apply(this, arguments);
+  };
   var orig = window.renderDashboard;
   window.renderDashboard = function () {
     try { if (orig) orig.apply(this, arguments); } catch (e) {}

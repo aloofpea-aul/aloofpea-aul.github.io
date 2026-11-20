@@ -6,7 +6,7 @@
   var TL = { labor: 'ค่าแรง', supervision: 'ค่าคุมงาน', misc: 'ค่าเบ็ดเตล็ด' };
   var TI = { labor: 'fa-hammer', supervision: 'fa-helmet-safety', misc: 'fa-box-open' };
   var PAGE = 40;
-  var rowsAll = [], shown = 0, curPct = 80, io = null;
+  var rowsAll = [], shown = 0, curPct = 80, io = null, focusUrg = false;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function m(n) { return (Number(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -40,6 +40,7 @@
     '#bgx #budgetSortBtn{height:36px;border-radius:999px;font-size:13.5px;padding:0 13px;border-width:1.5px}' +
     '#bgAmtPop{position:absolute;z-index:40;top:42px;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 12px 30px rgba(15,23,42,.16);padding:12px;cursor:default;color:#334155}' +
     '#bgAmtPop label{font-size:12px !important}#bgAmtPop input{height:36px;font-size:14px !important;width:110px !important}#bgAmtPop button{height:36px;font-size:13px !important}' +
+    '#bgFocus{display:none;margin-top:10px;align-items:center;gap:10px;background:#1e293b;color:#fff;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:600}#bgFocus.on{display:flex}#bgFocus b{color:#fde68a}#bgFocus button{margin-left:auto;border:0;border-radius:9px;background:#fff;color:#1e293b;font-weight:700;padding:6px 12px;cursor:pointer;font-family:inherit}' +
     '#bgList{display:grid;gap:10px;padding:8px 18px 20px}' +
     '.bgc{background:#fff;border-radius:16px;padding:14px 16px;border:1px solid #eef2f7;box-shadow:0 1px 3px rgba(15,23,42,.06);border-left:5px solid #10b981;display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:4px 18px}' +
     '.bgc.u{border-left-color:#ef4444;background:#fffbfb}.bgc.w{border-left-color:#f59e0b}' +
@@ -98,7 +99,9 @@
       '<span class="pct" id="bgPct">เป้าเบิกจ่าย </span>' +
       '<span id="bgSort"></span>' +
       '<span class="ch" id="bgClr"><i class="fa-solid fa-xmark"></i>ล้าง</span></div>';
+    x.insertAdjacentHTML('beforeend', '<div id="bgFocus"><i class="fa-solid fa-filter"></i><span></span><button type="button">✕ แสดงทั้งหมด</button></div>');
     card.insertBefore(x, oldHead);
+    $('bgFocus').querySelector('button').onclick = function () { focusUrg = false; render(window.allData || g('allData', [])); };
 
     // ย้ายช่องเดิม (ไอดี/ฟังก์ชันเดิมทำงานต่อ)
     var js = $('budgetJobSearch'); js.placeholder = 'ค้นหาชื่องาน / เลขที่รับ / หมายเลขงาน / Net'; js.className = ''; $('bgSrch').appendChild(js);
@@ -229,6 +232,8 @@
     if (!build()) return;
     syncHead();
     var c = compute(data); rowsAll = c.rows; curPct = c.pct; shown = 0;
+    if (focusUrg) rowsAll = rowsAll.filter(function (r) { return r.cuttable / r.target < 0.15; });
+    $('bgFocus').classList.toggle('on', focusUrg); if (focusUrg) $('bgFocus').querySelector('span').innerHTML = 'แสดงเฉพาะ: <b>งบใกล้ถึงเป้า (ด่วน)</b> · ' + rowsAll.length + ' รายการ';
     var tot = 0, noSup = 0, bud = 0, urg = 0, warn = 0, jobs = {};
     rowsAll.forEach(function (r) {
       tot += r.cuttable; bud += r.budget; if (r.type !== 'supervision') noSup += r.cuttable; jobs[r.jobId] = 1;
@@ -250,6 +255,7 @@
     more();
   }
 
+  window.cclBudgetGo = function (urgent) { focusUrg = !!urgent; try { showPage('budget'); } catch (e) {} window.renderBudgetTable(g('allData', [])); window.scrollTo(0, 0); };
   window.renderBudgetTable = function (data) {
     try { render(data); } catch (e) { console.error('[budget-ui]', e); }
   };

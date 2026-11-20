@@ -46,6 +46,8 @@
     '.pcx .ch{height:38px;padding:0 13px;border-radius:999px;border:1.5px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:600;color:#475569;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;font-family:inherit}' +
     '.pcx .ch.r{color:#dc2626;border-color:#fecaca;background:#fef2f2}.pcx .ch.r.on{background:#dc2626;color:#fff;border-color:#dc2626}' +
     '.pcx select.ch{padding-right:30px;max-width:230px;appearance:auto}.pcx select.ch.act{border-color:#f97316;color:#c2410c;background:#fff7ed}' +
+    '.pc-focus{display:none;margin-top:10px;align-items:center;gap:10px;background:#1e293b;color:#fff;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:600}.pc-focus.on{display:flex}' +
+    '.pc-focus b{color:#fde68a}.pc-focus button{margin-left:auto;border:0;border-radius:9px;background:#fff;color:#1e293b;font-weight:700;padding:6px 12px;cursor:pointer;font-family:inherit;white-space:nowrap}' +
     '.pc-list{display:grid;gap:10px;padding:8px 18px 20px}' +
     '.pc{background:#fff;border-radius:16px;padding:14px 16px;border:1px solid #eef2f7;box-shadow:0 1px 3px rgba(15,23,42,.06);border-left:5px solid var(--sc);display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:4px 18px;cursor:pointer;transition:box-shadow .15s}' +
     '.pc:hover{box-shadow:0 4px 14px rgba(15,23,42,.1)}' +
@@ -153,13 +155,15 @@
       '<div class="f1"><div class="srch" id="tkSrch"><i class="fa-solid fa-magnifying-glass"></i></div>' +
       '<button class="ch r" id="tkOver"><i class="fa-solid fa-clock"></i>ค้างเกิน 30 วัน <span id="tkOverN"></span></button>' +
       '<select class="ch" id="tkEnt"></select>' +
-      '<button class="ch" id="tkSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>');
+      '<button class="ch" id="tkSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>' +
+      '<div class="pc-focus" id="tkFocus"><i class="fa-solid fa-filter"></i><span></span><button type="button">✕ แสดงทั้งหมด</button></div>');
     if (!ui) return false;
     addCss(); T.ui = ui;
     var si = $('searchInput'); si.placeholder = 'ค้นหาเลขที่ / ชื่องาน / หมายเลขงาน / ที่อยู่ / ผู้รับจ้าง'; $('tkSrch').appendChild(si);
     T.pager = Pager(ui.list, ui.cnt, trackCard);
-    $('tkSt').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (!b) return; T.st = b.dataset.s; var ss = $('searchStatus'); if (ss) ss.value = T.st; trackRender(); });
-    $('tkOver').addEventListener('click', function () { T.over = !T.over; trackRender(); });
+    $('tkSt').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (!b) return; T.focus = null; T.st = b.dataset.s; var ss = $('searchStatus'); if (ss) ss.value = T.st; trackRender(); });
+    $('tkFocus').querySelector('button').onclick = function () { T.focus = null; T.st = ''; T.over = false; trackRender(); };
+    $('tkOver').addEventListener('click', function () { T.focus = null; T.over = !T.over; trackRender(); });
     $('tkEnt').addEventListener('change', function () { T.ent = this.value; trackRender(); });
     $('tkSort').addEventListener('click', function () { T.sort = !T.sort; trackRender(); });
     return true;
@@ -201,6 +205,8 @@
     var overN = rows.filter(function (r) { return tKey(r.status) !== 'ยกเลิก' && tAge(r) > 30; }).length;
     $('tkOverN').textContent = '· ' + overN; $('tkOver').classList.toggle('on', T.over);
     if (T.over) rows = rows.filter(function (r) { return tKey(r.status) !== 'ยกเลิก' && tAge(r) > 30; });
+    if (T.focus) rows = base.filter(function (r) { return T.focus.ids[r.id]; });
+    $('tkFocus').classList.toggle('on', !!T.focus); if (T.focus) $('tkFocus').querySelector('span').innerHTML = 'แสดงเฉพาะ: <b>' + esc(T.focus.label) + '</b> · ' + rows.length + ' งาน';
     if (T.sort) rows = rows.slice().sort(function (a, b) { return tAge(b) - tAge(a); });
     $('tkSort').querySelector('span').textContent = T.sort ? 'ค้างนานสุดก่อน' : 'เรียงตามเดิม';
     var b = $('trackCountBadge'); if (b) b.innerText = data.length + ' รายการ';
@@ -243,13 +249,15 @@
       '<div class="f1"><div class="srch" id="isSrch"><i class="fa-solid fa-magnifying-glass"></i></div>' +
       '<button class="ch r" id="isOver"><i class="fa-solid fa-clock"></i>รอเกิน 14 วัน <span id="isOverN"></span></button>' +
       '<select class="ch" id="isEnt"></select>' +
-      '<button class="ch" id="isSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>');
+      '<button class="ch" id="isSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>' +
+      '<div class="pc-focus" id="isFocus"><i class="fa-solid fa-filter"></i><span></span><button type="button">✕ แสดงทั้งหมด</button></div>');
     if (!ui) return false;
     addCss(); I.ui = ui;
     var si = $('inspectionSearchInput'); si.placeholder = 'ค้นหาเลขที่ / ชื่องาน / หมายเลขงาน / ผู้รับจ้าง'; $('isSrch').appendChild(si);
     I.pager = Pager(ui.list, ui.cnt, inspCard);
-    $('isSt').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (!b) return; I.st = b.dataset.s; inspRender(); });
-    $('isOver').addEventListener('click', function () { I.over = !I.over; inspRender(); });
+    $('isSt').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (!b) return; I.focus = null; I.st = b.dataset.s; inspRender(); });
+    $('isFocus').querySelector('button').onclick = function () { I.focus = null; I.st = ''; I.over = false; inspRender(); };
+    $('isOver').addEventListener('click', function () { I.focus = null; I.over = !I.over; inspRender(); });
     $('isEnt').addEventListener('change', function () { I.ent = this.value; inspRender(); });
     $('isSort').addEventListener('click', function () { I.sort = !I.sort; inspRender(); });
     $('isBulk').addEventListener('click', bulkClose);
@@ -303,6 +311,8 @@
     var waitLong = function (r) { return !r.__i.pass && r.__i.d != null && r.__i.d > 14; };
     $('isOverN').textContent = '· ' + rows.filter(waitLong).length; $('isOver').classList.toggle('on', I.over);
     if (I.over) rows = rows.filter(waitLong);
+    if (I.focus) rows = base.filter(function (r) { return I.focus.ids[r.id]; });
+    $('isFocus').classList.toggle('on', !!I.focus); if (I.focus) $('isFocus').querySelector('span').innerHTML = 'แสดงเฉพาะ: <b>' + esc(I.focus.label) + '</b> · ' + rows.length + ' งาน';
     if (I.sort) rows = rows.slice().sort(function (a, b) { return (b.__i.pass ? -1 : b.__i.d || 0) - (a.__i.pass ? -1 : a.__i.d || 0); });
     $('isSort').querySelector('span').textContent = I.sort ? 'รอนานสุดก่อน' : 'เรียงตามเดิม';
     I.ready = base.filter(function (r) { return r.__i.stage === 'ready'; });
@@ -355,8 +365,8 @@
 
   // ให้หน้าอื่น (Dashboard) สั่งเปิดพร้อมตัวกรอง
   window.cclPagesGo = {
-    track: function (st, over) { T.st = st || ''; T.over = !!over; T.sort = !!over; try { showPage('list'); } catch (e) {} window.renderTable(); window.scrollTo(0, 0); },
-    insp: function (st, over) { I.st = st || ''; I.over = !!over; I.sort = !!over; try { showPage('inspection'); } catch (e) {} window.renderInspectionTable(); window.scrollTo(0, 0); }
+    track: function (st, over, ids, label) { T.focus = ids ? { ids: ids, label: label || '' } : null; if (ids) { $('searchInput') && ($('searchInput').value = ''); $('tkEnt') && ($('tkEnt').value = ''); T.ent = ''; } T.st = ids ? '' : (st || ''); T.over = ids ? false : !!over; T.sort = !!over; try { showPage('list'); } catch (e) {} window.renderTable(); window.scrollTo(0, 0); },
+    insp: function (st, over, ids, label) { I.focus = ids ? { ids: ids, label: label || '' } : null; if (ids) { $('inspectionSearchInput') && ($('inspectionSearchInput').value = ''); $('isEnt') && ($('isEnt').value = ''); I.ent = ''; } I.st = ids ? '' : (st || ''); I.over = ids ? false : !!over; I.sort = !!over; try { showPage('inspection'); } catch (e) {} window.renderInspectionTable(); window.scrollTo(0, 0); }
   };
 
   // แทนที่ฟังก์ชันวาดตารางเดิม (ข้อมูลที่ส่งเข้ามาถูกกรองใหม่จาก allData ตามตัวกรองบนหน้า)
