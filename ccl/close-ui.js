@@ -29,8 +29,10 @@
     if (!got.length) return { k: 'NONE', ids: found };
     var closed = function (f) { return f.sys === 'CLSD' || f.sys === 'TECO'; };
     var k = got.every(function (f) { return f.sys === 'CLSD'; }) ? 'CLSD' : got.every(closed) ? 'TECO' : got.some(closed) ? 'PART' : (got[0].sys === 'CRTD' ? 'CRTD' : 'REL');
-    var usr = got.map(function (f) { return f.usr; }).filter(Boolean);
-    return { k: k, ids: found, usr: usr[0] || '', miss: found.length - got.length };
+    var usr = got.map(function (f) { return String(f.usr || '').trim().toUpperCase(); }).filter(function (u) { return /^[A-Z]\d{1,2}$/.test(u); });
+    var rk = window.cclCode ? window.cclCode.rank : function () { return 0; };
+    var code = usr.length ? usr.reduce(function (a, b) { return rk(b) < rk(a) ? b : a; }) : '';
+    return { k: k, ids: found, usr: usr[0] || '', code: code, miss: found.length - got.length };
   }
   function isClosed(s) { return !!s && s.k === 'CLSD'; } // ปิดงานได้เฉพาะ CLSD
 
@@ -43,9 +45,9 @@
       try {
         var wb = XLSX.read(new Uint8Array(fr.result), { type: 'array' });
         var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
-        var hi = -1, cW = -1, cS = -1;
+        var hi = -1, cW = -1, cS = -1, cU = -1;
         for (var i = 0; i < Math.min(rows.length, 15) && hi < 0; i++) {
-          rows[i].forEach(function (h, c) { h = String(h).trim(); if (/WBS|^หมายเลขงาน$/i.test(h)) cW = c; if (/^สถานะ$|^สถานะระบบ$|^status$|^system.?status$/i.test(h)) cS = c; });
+          rows[i].forEach(function (h, c) { h = String(h).trim(); if (/WBS|^หมายเลขงาน$/i.test(h)) cW = c; if (/^สถานะ$|^สถานะระบบ$|^status$|^system.?status$/i.test(h)) cS = c; if (/^สถานะผู้ใช้$|^user.?status$/i.test(h)) cU = c; });
           if (cW >= 0 && cS >= 0) hi = i;
         }
         if (hi < 0) throw new Error('ไม่พบคอลัมน์หมายเลขงาน ("องค์ประกอบ WBS" หรือ "หมายเลขงาน") และ "สถานะ" ในไฟล์');
@@ -55,7 +57,7 @@
         for (var r = hi + 1; r < rows.length; r++) {
           var w = normId(rows[r][cW]); if (!w) continue; n++; pref[w.split('.')[0]] = 1;
           var hit = need[key(w)]; if (!hit) continue;
-          var st = String(rows[r][cS] || ''), sys = (st.trim().split(/\s+/)[0] || '').toUpperCase(), usr = (st.split('//')[1] || '').trim();
+          var st = String(rows[r][cS] || ''), sys = (st.trim().split(/\s+/)[0] || '').toUpperCase(), usr = (cU >= 0 ? String(rows[r][cU] || '') : (st.split('//')[1] || '')).trim().toUpperCase();
           hit.forEach(function (x) { if (!map[x] || x === w) map[x] = [sys, usr]; });
         }
         var u = g('currentUser', {}) || {};
@@ -165,6 +167,8 @@
     imp.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) readSap(f); });
     $('clCmp').addEventListener('click', function (e) {
       var a = e.target.closest('[data-close]'); if (a) { e.stopPropagation(); C.sel = {}; C.rows0.filter(function (j) { return grp(j) === 'clsd'; }).forEach(function (j) { C.sel[j.id] = 1; }); C.st = 'clsd'; render(); bulkClose(); return; }
+      var jc = e.target.closest('[data-jc]'); if (jc) { e.stopPropagation(); syncCodes(); return; }
+      var jt = e.target.closest('[data-jct]'); if (jt) { e.stopPropagation(); C.jcOpen = !C.jcOpen; render(); return; }
       var o = e.target.closest('[data-other]'); if (o) { e.stopPropagation(); bulkClose(C.other, true); return; }
       var j = e.target.closest('[data-job]'); if (j) { openDetailModal(Number(j.dataset.job)); return; }
       var b = e.target.closest('[data-s]'); if (b) { C.st = C.st === b.dataset.s ? '' : b.dataset.s; render(); var l = $('clFocus'); if (l && C.st) l.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -285,7 +289,7 @@
         '<div class="bx" style="border-color:#fecaca"><h4>⚠️ งานขั้นอื่นที่ SAP ปิดแล้ว<b style="color:' + (other.length ? '#dc2626' : '#16a34a') + '">' + other.length + '</b></h4><p>SAP เป็น CLSD แต่ใน CCL ยังไม่ถึงขั้นส่งปิดงาน</p>' +
           (other.length ? '<button type="button" data-other="1" style="width:100%;border:0;border-radius:10px;background:#dc2626;color:#fff;font-weight:700;padding:9px 14px;cursor:pointer;font-family:inherit;margin-top:4px"><i class="fa-solid fa-circle-check"></i> ปิดงานตาม SAP ทั้งหมด (' + other.length + ')</button>' +
             '<div class="ol">' + other.map(function (j) { return '<div data-job="' + j.id + '"><b>' + esc(j.receiveNo || '-') + '</b> ' + esc(j.jobName || '') + ' <small>· CCL: ' + esc(j.status || '-') + '</small></div>'; }).join('') + '</div>'
-            : '<div class="ok">✔ ไม่มีงานค้าง — สถานะ CCL ตรงกับ SAP แล้ว</div>') + '</div>';
+            : '<div class="ok">✔ ไม่มีงานค้าง — สถานะ CCL ตรงกับ SAP แล้ว</div>') + '</div>' + codeBox(all);
       cmp.classList.add('on');
     } else {
       C.st = ''; cmp.classList.remove('on'); $('clReset').style.display = 'none'; $('clPickT').textContent = 'เลือกไฟล์ SAP';
@@ -317,6 +321,57 @@
     $('clSel').classList.toggle('on', n > 0);
     $('clSelT').textContent = 'เลือกปิดงาน ' + n + ' งาน';
     $('clSelP').innerHTML = '<i class="fa-solid fa-circle-check"></i> ปิดงานที่เลือก (' + n + ')';
+  }
+
+  // ───── สถานะงาน (Job Code) ไม่ตรง SAP ─────
+  function codeDiff(all) {
+    return all.filter(function (j) { return j.status !== 'ยกเลิก'; }).map(function (j) {
+      var s = sapOf(j); if (!s || !s.code) return null;
+      var cur = String(j.jobStatus || '').trim();
+      return cur.toUpperCase() === s.code ? null : { j: j, cur: cur, code: s.code };
+    }).filter(Boolean);
+  }
+  function isAdm() { var u = g('currentUser', {}) || {}; return u.role === 'Admin' || !!u.superAdmin; }
+  function codeBox(all) {
+    var d = C.codeDiff = codeDiff(all), rk = window.cclCode ? window.cclCode.rank : function () { return 0; };
+    var down = d.filter(function (x) { return rk(x.code) < rk(x.cur); }).length;
+    if (!d.length) return '<div class="bx" style="grid-column:1/-1;border-color:#bbf7d0"><h4>📌 สถานะงาน (Job Code) เทียบ SAP<b style="color:#16a34a">0</b></h4><div class="ok" style="padding:12px">✔ สถานะงานใน CCL ตรงกับ SAP ทุกงานที่พบในไฟล์</div></div>';
+    return '<div class="bx" style="grid-column:1/-1;border-color:#fde68a"><h4>📌 สถานะงาน (Job Code) ไม่ตรง SAP<b style="color:#ca8a04">' + d.length + '</b></h4>' +
+      '<p>ใช้ "สถานะผู้ใช้" จาก SAP (เช่น C1, D2, F4) · งานที่มีหลายหมายเลขงานใช้รหัสที่ต่ำสุด' + (down ? ' · <b style="color:#dc2626">ลดลง ' + down + ' งาน</b>' : '') + '</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        (isAdm() ? '<button type="button" data-jc="1" style="flex:1;min-width:200px;border:0;border-radius:10px;background:#ca8a04;color:#fff;font-weight:700;padding:9px 14px;cursor:pointer;font-family:inherit">🔄 อัปเดตสถานะงานตาม SAP (' + d.length + ' งาน)</button>'
+          : '<div style="flex:1;font-size:12.5px;color:#92400e;background:#fffbeb;border-radius:10px;padding:8px 12px">🔒 เฉพาะ Admin กดอัปเดตได้ — แจ้ง Admin ให้นำเข้าไฟล์นี้แล้วกดอัปเดต</div>') +
+        '<button type="button" data-jct="1" style="border:1.5px solid #e2e8f0;background:#fff;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;font-family:inherit;color:#475569">' + (C.jcOpen ? 'ซ่อนรายการ' : 'ดูรายการ') + '</button></div>' +
+      (C.jcOpen ? '<div class="ol" style="max-height:260px">' + d.map(function (x) {
+        var dn = rk(x.code) < rk(x.cur);
+        return '<div data-job="' + x.j.id + '"><b>' + esc(x.j.receiveNo || '-') + '</b> ' + esc(x.j.jobName || '') + ' <small>· ' + esc(x.j.status || '-') + '</small> · <span style="font-weight:700">' + esc(x.cur || 'ว่าง') + ' → <span style="color:' + (dn ? '#dc2626' : '#16a34a') + '">' + esc(x.code) + '</span></span></div>';
+      }).join('') + '</div>' : '') + '</div>';
+  }
+  function syncCodes() {
+    var d = (C.codeDiff || []).slice(); if (!d.length || !window.Swal) return;
+    var rk = window.cclCode ? window.cclCode.rank : function () { return 0; };
+    var cnt = {}; d.forEach(function (x) { var k = (x.cur || 'ว่าง') + ' → ' + x.code; cnt[k] = (cnt[k] || 0) + 1; });
+    var down = d.filter(function (x) { return rk(x.code) < rk(x.cur); });
+    Swal.fire({
+      icon: 'question', title: 'อัปเดตสถานะงานตาม SAP ' + d.length + ' งาน?', width: 560,
+      html: '<div style="text-align:left;font-size:13.5px"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">' +
+        Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; }).map(function (k) { return '<span style="background:#fef9c3;color:#854d0e;border-radius:8px;padding:3px 9px;font-weight:600">' + esc(k) + ' · ' + cnt[k] + '</span>'; }).join('') + '</div>' +
+        (down.length ? '<div style="background:#fef2f2;color:#991b1b;border-radius:10px;padding:8px 12px">⚠️ ลดลง ' + down.length + ' งาน: ' + down.map(function (x) { return esc(x.j.receiveNo) + ' (' + esc(x.cur) + '→' + esc(x.code) + ')'; }).join(', ') + '</div>' : '') +
+        '<div style="color:#64748b;font-size:12.5px;margin-top:8px">ทุกงานจะบันทึกในไทม์ไลน์ "สถานะงาน … → … (แก้ตาม SAP)" · งานที่มีคนเพิ่งแก้ระหว่างนี้จะถูกข้าม</div></div>',
+      showCancelButton: true, confirmButtonText: 'อัปเดต ' + d.length + ' งาน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#ca8a04'
+    }).then(function (r) {
+      if (!r.isConfirmed) return;
+      busy('กำลังอัปเดตสถานะงาน…');
+      var items = d.map(function (x) { return { id: x.j.id, code: x.code, old: x.cur }; });
+      google.script.run.withSuccessHandler(function (res) {
+        if (!res || res.success === false) { alertMsg('error', 'อัปเดตไม่สำเร็จ', (res && res.error) || ''); return; }
+        var skipped = {}; (res.skipped || []).forEach(function (id) { skipped[id] = 1; });
+        d.forEach(function (x) { if (!skipped[x.j.id]) x.j.jobStatus = x.code; });
+        alertMsg(res.skip ? 'warning' : 'success', 'อัปเดตแล้ว ' + res.done + ' งาน', res.skip ? 'ข้าม ' + res.skip + ' งาน (มีคนแก้ระหว่างนี้) — กดรีเฟรชแล้วลองอีกครั้ง' : '');
+        render(); try { if (typeof renderTable === 'function') renderTable(); } catch (e) {}
+      }).withFailureHandler(function (e) { alertMsg('error', 'อัปเดตไม่สำเร็จ', (e && e.message) || String(e)); })
+        .cclSetJobCodes(items, 'แก้ตาม SAP');
+    });
   }
 
   function bulkClose(given, other) {
