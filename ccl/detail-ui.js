@@ -127,20 +127,16 @@
         '<button class="dmx-hb" onclick="closeDetailModal()" title="ปิด"><i class="fa-solid fa-xmark"></i></button></div></div>' +
       '<h2>' + esc(job.jobName || '-') + '</h2>' +
       '<div class="dmx-chips"><span class="dmx-cp" style="background:' + st[2] + ';color:' + st[1] + '">' + st[0] + ' ' + esc(job.status || '-') + '</span>' +
-        '<span class="dmx-code">📌 สถานะงาน <b>' + esc(code || 'ไม่ระบุ') + '</b></span>' +
+        (window.cclCode ? cclCode.pill(code) : '<span class="dmx-code">📌 สถานะงาน <b>' + esc(code || 'ไม่ระบุ') + '</b></span>') +
         (job.budgetType ? '<span class="dmx-cp" style="background:#e0e7ff;color:#3730a3">' + esc(job.budgetType) + '</span>' : '') +
         (job.payDate ? '<span class="dmx-cp" style="background:rgba(255,255,255,.12);color:' + (due != null && due < 0 && !closed ? '#fecaca' : '#e0e7ff') + '">ส่งมอบ ' + esc(dth(job.payDate)) +
           (due != null && !closed ? (due >= 0 ? ' · อีก ' + due + ' วัน' : ' · เลยมา ' + (-due) + ' วัน') : '') + '</span>' : '') + '</div>';
 
     // ===== แถบ Job Code =====
-    var next = closed ? null : ci < CODES.indexOf('C1') ? 'C1' : (/รับเรื่อง|สำรวจงาน|ดำเนินงาน/.test(job.status) && ci < 5) ? 'D1' : (job.status === 'ตรวจรับงาน' && ci < 6) ? 'D2' : null;
     var step = scroll.querySelector('.dmx-step');
     if (!step) { step = document.createElement('div'); step.className = 'dmx-step'; scroll.insertBefore(step, scroll.firstChild); }
-    step.innerHTML = '<div class="h"><span>ความคืบหน้าสถานะงาน (Job Code)' + (!exact && code ? ' · ปัจจุบัน <b style="color:#ca8a04">' + esc(code) + '</b>' : '') + '</span>' +
-      (next ? '<span>ขั้นต่อไป: <b>เปลี่ยนเป็น ' + next + ' → ' + GATE[next] + '</b></span>' : '') + '</div>' +
-      '<div class="dmx-sr">' + CODES.map(function (c, i) {
-        return '<div class="dmx-s' + (i < ci || (i === ci && !exact) ? ' ok' : i === ci ? ' now' : '') + '"><i></i>' + c + (GATE[c] ? '<small>' + GATE[c] + '</small>' : '') + '</div>';
-      }).join('') + '</div>';
+    step.innerHTML = window.cclCode ? cclCode.block(code, { long: true }) : '';
+    var jx = step.querySelector('.jcx'); if (jx) { jx.style.margin = '0'; jx.style.border = '0'; jx.style.padding = '0'; jx.style.background = 'transparent'; }
 
     // ===== ข้อมูลงาน =====
     var co = String(job.coordinates || '').trim();

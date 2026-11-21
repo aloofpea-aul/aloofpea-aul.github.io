@@ -575,9 +575,14 @@ function cclJson_(obj) {
 // ===== เงื่อนไขสถานะงาน (Job Code, คอลัมน์ 29 ของชีต Data) =====
 // ตรวจรับงาน ต้อง D1 ขึ้นไป / ส่งปิดงาน ต้อง D2 ขึ้นไป / ตัดงบหรือแก้ค่าใช้จ่าย ต้อง C1 ขึ้นไป
 var CCL_CODE_NEED = { 'ตรวจรับงาน': 'D1', 'ส่งปิดงาน': 'D2' };
+// ลำดับตามตารางสถานะผู้ใช้ของ SAP (E2 = ยกเลิกหมายเลขงาน → ต่ำสุด)
+var CCL_CODE_ORD = { A0: 10, A1: 11, A2: 12, A5: 13, B1: 20, B2: 21, C1: 30, C2: 30, C3: 31, C4: 31, C5: 31, C6: 31, C9: 32, D1: 40, F3: 41, D2: 50, D9: 50, D3: 51, E1: 52, F1: 53, F9: 53, F2: 60, F4: 70, E2: -1 };
 function cclCodeRank_(c) {
-  var m = /^([A-Z])\s*(\d+)/.exec(String(c || '').trim().toUpperCase());
-  return m ? (m[1].charCodeAt(0) - 64) * 100 + parseInt(m[2], 10) : -1;
+  c = String(c || '').trim().toUpperCase();
+  if (CCL_CODE_ORD[c] != null) return CCL_CODE_ORD[c];
+  var m = /^([A-Z])\s*(\d+)/.exec(c); if (!m) return -1;
+  var b = { A: 10, B: 20, C: 30, D: 40, E: 50, F: 60 }[m[1]];
+  return b == null ? -1 : b + Math.min(9, parseInt(m[2], 10));
 }
 function cclJobCodeGate_(fn, args) {
   var id = null, min = null, what = '';
@@ -836,7 +841,7 @@ function cclSapAutoRun_(who, dry) {
   if (!files.length) { if (!dry) cclSapAddLog_({ at: new Date().toISOString(), by: who, none: 1 }); return { success: true, none: true, files: 0 }; }
   var map = {}, names = [], rowsN = 0;
   files.forEach(function (f) { var p = cclSapParse_(cclXlsxRows_(f.getBlob())); Object.keys(p.map).forEach(function (k) { map[k] = p.map[k]; }); names.push(f.getName()); rowsN += p.rows; });
-  var R = function (x) { var m = /^([A-Z])(\d+)/.exec(x || ''); return m ? (m[1].charCodeAt(0) - 64) * 100 + parseInt(m[2], 10) : -1; };
+  var R = cclCodeRank_;
   var res = { codes: [], down: [], closed: [], other: [], nf: [] }, now = new Date();
   var lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
@@ -856,6 +861,7 @@ function cclSapAutoRun_(who, dry) {
         else { res.codes.push(no + ' ' + (cur || 'ว่าง') + '→' + code); if (!dry) { sh.getRange(r, 29).setValue(code); try { logHistory(r, 'แก้ไขข้อมูล', who, 'สถานะงาน ' + (cur || 'ว่าง') + ' → ' + code + ' (แก้ตาม SAP อัตโนมัติ)'); } catch (e) {} } }
       }
       var clsd = got.length === ids.length && got.every(function (g) { return g.sys === 'CLSD'; });
+      if (clsd && open && code === 'E2') { res.other.push(no + ' (SAP ยกเลิกหมายเลขงาน E2)'); return; }
       if (clsd && open && c.closeClsd) {
         if (st === 'ส่งปิดงาน' || !c.onlySent) { res.closed.push(no + (st !== 'ส่งปิดงาน' ? ' (จาก ' + st + ')' : '')); if (!dry) cclSapCloseRow_(sh, r, who, 'SAP = CLSD อัตโนมัติ', now); }
         else res.other.push(no + ' (' + st + ')');
