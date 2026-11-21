@@ -68,6 +68,9 @@ nav button.on{color:var(--pur);font-weight:600}
 .sheet .p button.sel{border-color:var(--pur);background:var(--purL);color:var(--pur);font-weight:600}
 .sheet .p .wide{width:100%;margin-top:4px}
 .sheet .p .danger{color:var(--red)}
+.sheet .p .claude{border:2px solid var(--pur);color:var(--pur);font-weight:600;margin-bottom:8px}
+.sheet .p .claude small{font-weight:400;font-size:13px}
+.sheet .p .claude2{color:var(--pur);margin-bottom:12px;font-size:14px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10;max-width:90%;text-align:center}
 .toast[hidden]{display:none}
 .keybox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:20px}
@@ -107,6 +110,8 @@ nav button.on{color:var(--pur);font-weight:600}
 </nav>
 <div class="sheet" id="sheet" hidden><div class="p">
   <div class="ttl" id="shTitle"></div>
+  <button class="wide claude" id="shClaude">📋 ส่งให้ Claude แก้ <small>(คัดลอก + เปิดแอป)</small></button>
+  <button class="wide claude2" id="shClaudeNew">✨ ลอง: เปิดแชตใหม่พร้อมข้อความ</button>
   <div class="row"><button data-p="ด่วน">🔴 ด่วน</button><button data-p="ปกติ">ปกติ</button><button data-p="ไว้ก่อน">ไว้ก่อน</button></div>
   <button class="wide" id="shDone" style="color:var(--grn)">✓ ทำเสร็จแล้ว</button>
   <button class="wide danger" id="shCancel">ยกเลิกงานนี้</button>
@@ -197,11 +202,40 @@ $('sheet').addEventListener('click', async (e) => {
     const t = tasks.find((x) => x.row === row); if (t) t.prio = b.dataset.p; save(); renderTasks();
     try { await api({ action: 'prio', row, prio: b.dataset.p }); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   } else if (b.id === 'shDone') done(row);
+  else if (b.id === 'shClaude' || b.id === 'shClaudeNew') {
+    const t = tasks.find((x) => x.row === row); if (!t) return;
+    const text = claudeText(t);
+    if (b.id === 'shClaude') {
+      let ok = false;
+      try { await navigator.clipboard.writeText(text); ok = true; } catch (err) {}
+      toast(ok ? 'คัดลอกแล้ว · กดค้างในช่องพิมพ์ของ Claude แล้ววาง' : 'คัดลอกไม่ได้ ลองปุ่ม ✨ แทน', 4000);
+      setTimeout(() => window.open('https://claude.ai/', '_blank'), 700);
+    } else {
+      window.open('https://claude.ai/new?q=' + encodeURIComponent(text), '_blank');
+    }
+    if (t.status !== 'กำลังทำ') { t.status = 'กำลังทำ'; save(); renderTasks(); api({ action: 'start', row }).catch(() => {}); }
+  }
   else if (b.id === 'shCancel') {
     tasks = tasks.filter((x) => x.row !== row); save(); renderTasks();
     try { await api({ action: 'cancel', row }); toast('ยกเลิกแล้ว'); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   }
 });
+// ข้อความส่งให้ Claude: งาน + ข้อมูลระบบจากทะเบียน
+function claudeText(t) {
+  const s = systems.find((x) => x.short === t.sys) || {};
+  const web = s.web || (s.hubFolder && /^[\w-]+$/.test(s.hubFolder) ? 'https://aloofpea-aul.github.io/' + s.hubFolder + '/' : '');
+  return [
+    `แก้งาน #${t.row} (${t.sys || 'ยังไม่ระบุระบบ'} · ${t.prio || 'ปกติ'})`,
+    t.what,
+    '',
+    'ระบบ: ' + (s.name || t.sys || '-'),
+    'หน้าเว็บ: ' + (web || '-'),
+    'repo: ' + (s.repo || (s.hubFolder ? 'https://github.com/aloofpea-aul/aloofpea-aul.github.io (โฟลเดอร์ ' + s.hubFolder + ')' : '-')),
+    'Apps Script: ' + (s.appsScript || '-'),
+    'ชีต: ' + (s.sheet || '-'),
+    s.note ? 'หมายเหตุ: ' + s.note : '',
+  ].filter((x, i, a) => x !== '' || a[i - 1] !== '').join('\n').trim();
+}
 $('clearFilter').onclick = (e) => { e.preventDefault(); filter = ''; renderTasks(); };
 
 // พูดเพื่อจด (ถ้าเบราว์เซอร์รองรับ)
