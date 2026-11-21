@@ -311,7 +311,17 @@ $('tabSys').onclick = () => show('sys');
 $('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return; KEY = k; ls('papa_tasks_key', k); show('tasks'); load(); };
 
 if (!KEY) show('key'); else { show('tasks'); load(); }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+// อัปเดตหน้าเองเมื่อมีเวอร์ชันใหม่ (แอปบนหน้าจอโฮมมักไม่โหลดหน้าใหม่)
+const BUILD = '20261121-2215';
+async function checkUpdate() {
+  try {
+    const h = await (await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })).text();
+    const m = h.match(/const BUILD = '([^']+)'/);
+    if (m && m[1] !== BUILD) location.reload();
+  } catch (e) {}
+}
+checkUpdate();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); checkUpdate(); } });
 </script>
 </body>
 </html>
