@@ -73,6 +73,7 @@ nav button.on{color:var(--pur);font-weight:600}
 .sheet .p .claude2{color:var(--pur);margin-bottom:12px;font-size:14px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10;max-width:90%;text-align:center}
 .toast[hidden]{display:none}
+.toast .undo{margin-left:12px;font:inherit;font-weight:600;color:#F5B347;background:none;border:none;padding:4px 2px}
 .keybox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:20px}
 .keybox p{margin:0 0 12px;font-size:14px;color:var(--sub);line-height:1.6}
 </style>
@@ -140,7 +141,16 @@ async function api(q) {
   if (!j.ok) throw new Error(j.error || 'error');
   return j;
 }
-function toast(t, ms = 2200) { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (e.hidden = true), ms); }
+function toast(t, ms = 2200, undo) {
+  const e = $('toast'); e.textContent = t; e.hidden = false;
+  if (undo) { const b = document.createElement('button'); b.className = 'undo'; b.textContent = '↩️ ย้อนกลับ'; b.onclick = () => { e.hidden = true; undo(); }; e.append(b); }
+  clearTimeout(toast.t); toast.t = setTimeout(() => (e.hidden = true), ms);
+}
+// เอางานที่เพิ่งกดเสร็จ/ยกเลิกกลับมา
+async function reopen(t) {
+  t.status = 'รอทำ'; tasks.push(t); save(); renderTasks();
+  try { await api({ action: 'reopen', row: t.row }); toast('↩️ เอากลับมาแล้ว'); } catch (err) { toast('ย้อนกลับไม่สำเร็จ ลองใหม่'); load(); }
+}
 
 // ---------- แท็บงาน ----------
 function renderTasks() {
@@ -172,7 +182,7 @@ async function done(row, card) {
   const t = tasks.find((x) => x.row === row);
   tasks = tasks.filter((x) => x.row !== row); save();
   setTimeout(renderTasks, 250);
-  try { await api({ action: 'done', row }); toast('✓ เสร็จแล้ว: ' + (t ? t.what.slice(0, 30) : '')); }
+  try { await api({ action: 'done', row }); toast('✓ เสร็จแล้ว', 6000, t && (() => reopen(t))); }
   catch (err) { toast('บันทึกไม่สำเร็จ ลองใหม่'); load(); }
 }
 $('jotForm').addEventListener('submit', async (e) => {
@@ -216,8 +226,9 @@ $('sheet').addEventListener('click', async (e) => {
     if (t.status !== 'กำลังทำ') { t.status = 'กำลังทำ'; save(); renderTasks(); api({ action: 'start', row }).catch(() => {}); }
   }
   else if (b.id === 'shCancel') {
+    const t = tasks.find((x) => x.row === row);
     tasks = tasks.filter((x) => x.row !== row); save(); renderTasks();
-    try { await api({ action: 'cancel', row }); toast('ยกเลิกแล้ว'); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
+    try { await api({ action: 'cancel', row }); toast('ยกเลิกแล้ว', 6000, t && (() => reopen(t))); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   }
 });
 // ข้อความส่งให้ Claude: งาน + ข้อมูลระบบจากทะเบียน
