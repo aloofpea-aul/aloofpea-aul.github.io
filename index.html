@@ -550,6 +550,13 @@
       <section class="grp">
         <div class="grp-h">ธุรการและการเงิน</div>
         <div class="grp-box">
+          <script>
+            /* การ์ด "งานของปะป๊า" — แสดงเฉพาะเครื่องที่ใส่รหัสงานของปะป๊าไว้แล้ว (คนอื่นไม่เห็น) */
+            try { if (localStorage.getItem('papa_tasks_key')) document.currentScript.insertAdjacentHTML('afterend',
+              '<a class="app-tile" href="tasks/index.html?from=hub" data-app="tasks" data-track="self" data-short="งานปะป๊า" data-kw="งานค้าง จดงาน ทะเบียนโครงการ ระบบ ไอเดีย todo">' +
+              '<span class="icon">📝</span><span class="app-txt"><span class="name">งานของปะป๊า</span>' +
+              '<span class="desc">จดงาน · งานค้าง · ลิงก์ทุกระบบ</span></span><i class="chev"></i></a>'); } catch (e) {}
+          </script>
 
           <a class="app-tile" href="booknum/index.html?from=hub" data-app="booknum" data-track="self"
              data-short="ออกเลข" data-kw="ออกเลขหนังสือ เลขที่หนังสือ สัญญาจ้าง คำสั่ง ใบสำคัญจ่าย ธุรการ">
