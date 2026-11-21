@@ -554,7 +554,7 @@
             /* การ์ด "งานของปะป๊า" — แสดงเฉพาะเครื่องที่ใส่รหัสงานของปะป๊าไว้แล้ว (คนอื่นไม่เห็น) */
             try { if (localStorage.getItem('papa_tasks_key')) document.currentScript.insertAdjacentHTML('afterend',
               '<a class="app-tile" href="tasks/index.html?from=hub" data-app="tasks" data-track="self" data-short="งานปะป๊า" data-kw="งานค้าง จดงาน ทะเบียนโครงการ ระบบ ไอเดีย todo">' +
-              '<span class="icon">📝</span><span class="app-txt"><span class="name">งานของปะป๊า</span>' +
+              '<span class="icon"><img src="tasks/icon-192.png" alt="" style="width:100%;height:100%;border-radius:inherit;display:block"></span><span class="app-txt"><span class="name">งานของปะป๊า</span>' +
               '<span class="desc">จดงาน · งานค้าง · ลิงก์ทุกระบบ</span></span><i class="chev"></i></a>'); } catch (e) {}
           </script>
 
