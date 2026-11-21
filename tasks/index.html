@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<script src="/pea-hub.js?v=2026102601" data-app="tasks" data-gate="off" data-name="งานของปะป๊า"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4B1FA8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="งานปะป๊า">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>งานของปะป๊า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--pur:#4B1FA8;--purL:#ECE6FA;--ink:#17142A;--sub:#6B677D;--line:#E6E2EE;--bg:#F5F3F8;--card:#fff;--red:#D63B3B;--redL:#FCEBEB;--amb:#B7700E;--grn:#188A4A;--grnL:#E6F4EC;--nav:64px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{display:flex;flex-direction:column}
+header{background:var(--pur);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 14px;flex:none}
+header .t{font-size:20px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+header .s{font-size:13px;opacity:.85;margin-top:2px}
+header a{color:#fff;opacity:.85;font-size:13px;text-decoration:none}
+main{flex:1;overflow-y:auto;padding:12px 12px calc(var(--nav) + env(safe-area-inset-bottom) + 16px);-webkit-overflow-scrolling:touch}
+.view[hidden]{display:none}
+.jot{display:flex;gap:8px;position:sticky;top:0;background:var(--bg);padding-bottom:10px;z-index:2}
+.jot input,.search{flex:1;font:inherit;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;outline:none;width:100%}
+.jot input:focus,.search:focus{border-color:var(--pur)}
+.btn{font:inherit;border:none;border-radius:14px;padding:0 16px;min-height:46px;background:var(--pur);color:#fff;font-weight:600;font-size:15px}
+.btn.ghost{background:#fff;color:var(--pur);border:1px solid var(--line)}
+.mic{width:46px;padding:0;font-size:20px}
+.mic.on{background:var(--red)}
+.grp{font-size:13px;font-weight:600;color:var(--sub);margin:14px 4px 6px}
+.grp.red{color:var(--red)}
+.task{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 10px 0;margin-bottom:8px;overflow:hidden}
+.task .bar{width:5px;align-self:stretch;border-radius:0 4px 4px 0;background:#EF9F27;flex:none}
+.task.urgent{border-color:#F2B8B8}.task.urgent .bar{background:var(--red)}
+.task.later .bar{background:#C9C6D3}
+.task .tx{flex:1;min-width:0}
+.task .w{font-size:15px;line-height:1.4;word-break:break-word}
+.task .m{font-size:12px;color:var(--sub);margin-top:2px}
+.task .ok{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:20px;color:var(--grn);flex:none}
+.task.done{opacity:.45}.task.done .w{text-decoration:line-through}
+.sys{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.sys .h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sys .n{font-size:15px;font-weight:600}
+.sys .f{font-size:12px;color:var(--sub);margin-top:2px}
+.pill{font-size:12px;border-radius:99px;padding:2px 9px;white-space:nowrap;background:#F1EFE8;color:#5F5E5A}
+.pill.red{background:var(--redL);color:var(--red)}.pill.grn{background:var(--grnL);color:var(--grn)}
+.sys .acts{display:none;gap:8px;margin-top:10px}.sys.open .acts{display:flex}
+.sys .acts a,.sys .acts button{flex:1;text-align:center;text-decoration:none;font:inherit;font-size:14px;padding:10px 6px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--pur)}
+.sys .acts .off{color:#B4B2A9;pointer-events:none}
+.sys .info{display:none;font-size:13px;color:var(--sub);margin-top:8px;line-height:1.6}.sys.open .info{display:block}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;height:var(--nav);border:none;background:none;font:inherit;font-size:13px;color:var(--sub);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+nav button b{font-size:21px;font-weight:400;line-height:1}
+nav button.on{color:var(--pur);font-weight:600}
+.empty{text-align:center;color:var(--sub);padding:40px 10px;font-size:15px}
+.sheet{position:fixed;inset:0;background:rgba(23,20,42,.4);display:flex;align-items:flex-end;z-index:9}
+.sheet[hidden]{display:none}
+.sheet .p{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet .p .ttl{font-size:15px;margin-bottom:12px;line-height:1.4}
+.sheet .p .row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.sheet .p button{font:inherit;font-size:15px;padding:13px;border-radius:12px;border:1px solid var(--line);background:#fff}
+.sheet .p button.sel{border-color:var(--pur);background:var(--purL);color:var(--pur);font-weight:600}
+.sheet .p .wide{width:100%;margin-top:4px}
+.sheet .p .danger{color:var(--red)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10;max-width:90%;text-align:center}
+.toast[hidden]{display:none}
+.keybox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:20px}
+.keybox p{margin:0 0 12px;font-size:14px;color:var(--sub);line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div class="t"><span id="ttl">งานของปะป๊า</span><a href="/index.html">ศูนย์รวมงาน</a></div>
+  <div class="s" id="sub">กำลังโหลด…</div>
+</header>
+<main>
+  <section class="view" id="vTasks">
+    <form class="jot" id="jotForm" autocomplete="off">
+      <input id="jot" placeholder="จดอะไรดี… เช่น ตัดงบ เพิ่มปุ่มพิมพ์" enterkeyhint="send">
+      <button type="button" class="btn mic" id="mic" aria-label="พูดเพื่อจด" hidden>🎤</button>
+      <button class="btn" type="submit">จด</button>
+    </form>
+    <div id="filterBar" hidden style="margin:0 4px 6px;font-size:13px;color:var(--sub)">เฉพาะ <b id="filterName"></b> · <a href="#" id="clearFilter" style="color:var(--pur)">ดูทั้งหมด</a></div>
+    <div id="list"></div>
+  </section>
+  <section class="view" id="vSys" hidden>
+    <input class="search" id="q" placeholder="ค้นหาระบบ เช่น ตัดต้นไม้" type="search">
+    <div id="sysList" style="margin-top:10px"></div>
+  </section>
+  <section class="view" id="vKey" hidden>
+    <div class="keybox">
+      <p>ใส่รหัสงานของปะป๊า (ครั้งเดียวต่อเครื่อง) เพื่อเชื่อมกับทะเบียนโครงการ</p>
+      <input class="search" id="keyIn" type="password" placeholder="รหัส">
+      <button class="btn" id="keySave" style="width:100%;margin-top:10px">บันทึก</button>
+    </div>
+  </section>
+</main>
+<nav>
+  <button id="tabTasks" class="on"><b>☑</b>งาน</button>
+  <button id="tabSys"><b>▦</b>ระบบ</button>
+</nav>
+<div class="sheet" id="sheet" hidden><div class="p">
+  <div class="ttl" id="shTitle"></div>
+  <div class="row"><button data-p="ด่วน">🔴 ด่วน</button><button data-p="ปกติ">ปกติ</button><button data-p="ไว้ก่อน">ไว้ก่อน</button></div>
+  <button class="wide" id="shDone" style="color:var(--grn)">✓ ทำเสร็จแล้ว</button>
+  <button class="wide danger" id="shCancel">ยกเลิกงานนี้</button>
+  <button class="wide" id="shClose">ปิด</button>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+<script>
+'use strict';
+const API = 'https://script.google.com/macros/s/AKfycbyRO5GnQE5XEhn6tudB3PTuZ2dyvxZ96HcRf2qARbzaTFZPrjraMYrRviRkRsppqie8/exec';
+const $ = (id) => document.getElementById(id);
+const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// รหัสจากลิงก์ครั้งเดียว #tk=...
+const hp = new URLSearchParams(location.hash.slice(1));
+if (hp.get('tk')) { ls('papa_tasks_key', hp.get('tk')); history.replaceState(null, '', location.pathname); }
+let KEY = ls('papa_tasks_key') || '';
+
+let tasks = JSON.parse(ls('papa_tasks_cache') || '[]');
+let systems = JSON.parse(ls('papa_sys_cache') || '[]');
+let filter = '';
+
+async function api(q) {
+  const r = await fetch(API + '?' + new URLSearchParams({ key: KEY, ...q }));
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'error');
+  return j;
+}
+function toast(t, ms = 2200) { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (e.hidden = true), ms); }
+
+// ---------- แท็บงาน ----------
+function renderTasks() {
+  const list = tasks.filter((t) => !filter || t.sys === filter);
+  $('filterBar').hidden = !filter; $('filterName').textContent = filter;
+  const urgent = tasks.filter((t) => t.prio === 'ด่วน').length;
+  if ($('vTasks').hidden === false) $('sub').textContent = `ค้าง ${tasks.length} · ด่วน ${urgent}`;
+  if (!list.length) { $('list').innerHTML = `<div class="empty">${filter ? 'ไม่มีงานค้างของ ' + esc(filter) : 'ไม่มีงานค้าง 🎉'}</div>`; return; }
+  const groups = [['ด่วน', 'red'], ['ปกติ', ''], ['ไว้ก่อน', '']];
+  $('list').innerHTML = groups.map(([g, c]) => {
+    const it = list.filter((t) => (t.prio || 'ปกติ') === g);
+    if (!it.length) return '';
+    return `<div class="grp ${c}">${g} · ${it.length}</div>` + it.map((t) => `
+      <div class="task ${g === 'ด่วน' ? 'urgent' : g === 'ไว้ก่อน' ? 'later' : ''}" data-row="${t.row}">
+        <div class="bar"></div>
+        <div class="tx"><div class="w">${esc(t.what)}</div><div class="m">${esc(t.sys || 'ยังไม่ระบุระบบ')}${t.status === 'กำลังทำ' ? ' · กำลังทำ' : ''}</div></div>
+        <button class="ok" aria-label="ทำเสร็จแล้ว">✓</button>
+      </div>`).join('');
+  }).join('');
+}
+$('list').addEventListener('click', (e) => {
+  const card = e.target.closest('.task'); if (!card) return;
+  const row = +card.dataset.row;
+  if (e.target.closest('.ok')) return done(row, card);
+  openSheet(row);
+});
+async function done(row, card) {
+  if (card) card.classList.add('done');
+  const t = tasks.find((x) => x.row === row);
+  tasks = tasks.filter((x) => x.row !== row); save();
+  setTimeout(renderTasks, 250);
+  try { await api({ action: 'done', row }); toast('✓ เสร็จแล้ว: ' + (t ? t.what.slice(0, 30) : '')); }
+  catch (err) { toast('บันทึกไม่สำเร็จ ลองใหม่'); load(); }
+}
+$('jotForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = $('jot').value.trim(); if (!text) return;
+  $('jot').value = '';
+  const temp = { row: -Date.now(), what: text, sys: '…', prio: 'ปกติ' };
+  tasks.push(temp); renderTasks();
+  try { await api({ action: 'add', text }); toast('จดแล้ว'); await load(); }
+  catch (err) { tasks = tasks.filter((x) => x !== temp); renderTasks(); $('jot').value = text; toast('จดไม่สำเร็จ ลองใหม่'); }
+  $('jot').focus();
+});
+
+// เมนูของงาน (แตะที่การ์ด)
+let sheetRow = 0;
+function openSheet(row) {
+  const t = tasks.find((x) => x.row === row); if (!t || row < 0) return;
+  sheetRow = row; $('shTitle').textContent = t.what;
+  document.querySelectorAll('#sheet [data-p]').forEach((b) => b.classList.toggle('sel', b.dataset.p === (t.prio || 'ปกติ')));
+  $('sheet').hidden = false;
+}
+$('sheet').addEventListener('click', async (e) => {
+  if (e.target === $('sheet') || e.target === $('shClose')) { $('sheet').hidden = true; return; }
+  const b = e.target.closest('button'); if (!b) return;
+  const row = sheetRow; $('sheet').hidden = true;
+  if (b.dataset.p) {
+    const t = tasks.find((x) => x.row === row); if (t) t.prio = b.dataset.p; save(); renderTasks();
+    try { await api({ action: 'prio', row, prio: b.dataset.p }); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
+  } else if (b.id === 'shDone') done(row);
+  else if (b.id === 'shCancel') {
+    tasks = tasks.filter((x) => x.row !== row); save(); renderTasks();
+    try { await api({ action: 'cancel', row }); toast('ยกเลิกแล้ว'); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
+  }
+});
+$('clearFilter').onclick = (e) => { e.preventDefault(); filter = ''; renderTasks(); };
+
+// พูดเพื่อจด (ถ้าเบราว์เซอร์รองรับ)
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  $('mic').hidden = false;
+  let rec = null;
+  $('mic').onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = 'th-TH'; rec.interimResults = true;
+    $('mic').classList.add('on');
+    rec.onresult = (ev) => { $('jot').value = [...ev.results].map((r) => r[0].transcript).join(''); };
+    rec.onend = () => { $('mic').classList.remove('on'); rec = null; if ($('jot').value.trim()) $('jot').focus(); };
+    rec.onerror = () => toast('ฟังไม่ได้ ลองพิมพ์แทนนะครับ');
+    rec.start();
+  };
+}
+
+// ---------- แท็บระบบ ----------
+function renderSys() {
+  const q = $('q').value.trim().toLowerCase();
+  const list = systems.filter((s) => !q || (s.short + ' ' + s.name + ' ' + (s.note || '')).toLowerCase().includes(q))
+    .sort((a, b) => b.pending - a.pending || a.short.localeCompare(b.short, 'th'));
+  $('sub').textContent = `${systems.length} ระบบ`;
+  if (!list.length) { $('sysList').innerHTML = '<div class="empty">ไม่พบระบบ</div>'; return; }
+  const st = (s) => s.pending ? `<span class="pill red">ค้าง ${s.pending}</span>` : s.status === 'ใช้งานอยู่' ? '<span class="pill grn">ใช้งานอยู่</span>' : `<span class="pill">${esc(s.status || '-')}</span>`;
+  const web = (s) => s.web || (s.hubFolder && /^[\w-]+$/.test(s.hubFolder) ? '/' + s.hubFolder + '/index.html' : '');
+  $('sysList').innerHTML = list.map((s) => `
+    <div class="sys" data-s="${esc(s.short)}">
+      <div class="h"><div><div class="n">${esc(s.name || s.short)}</div><div class="f">${esc(s.short)}</div></div>${st(s)}</div>
+      <div class="info">${[s.appsScript && 'Apps Script: ' + esc(s.appsScript), s.sheet && 'ชีต: ' + esc(s.sheet), s.lastEdit && 'แก้ล่าสุด: ' + s.lastEdit, s.note && esc(s.note)].filter(Boolean).join('<br>') || 'ยังไม่มีรายละเอียด'}</div>
+      <div class="acts">
+        <a href="${esc(web(s)) || '#'}" target="_blank" rel="noopener" class="${web(s) ? '' : 'off'}">เปิดเว็บ</a>
+        <a href="${esc(s.repo) || '#'}" target="_blank" rel="noopener" class="${s.repo ? '' : 'off'}">โค้ด</a>
+        <button data-tasks="${esc(s.short)}">งานค้าง</button>
+      </div>
+    </div>`).join('');
+}
+$('sysList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tasks]');
+  if (b) { filter = b.dataset.tasks; show('tasks'); return; }
+  if (e.target.closest('.acts')) return;
+  const c = e.target.closest('.sys'); if (c) c.classList.toggle('open');
+});
+$('q').addEventListener('input', renderSys);
+
+// ---------- โหลด / แท็บ ----------
+function save() { ls('papa_tasks_cache', JSON.stringify(tasks)); ls('papa_sys_cache', JSON.stringify(systems)); }
+async function load() {
+  if (!KEY) return;
+  try {
+    const [a, b] = await Promise.all([api({ action: 'summary' }), api({ action: 'systems' })]);
+    tasks = a.tasks || []; systems = b.systems || []; save();
+    $('vSys').hidden ? renderTasks() : renderSys();
+  } catch (err) {
+    if (/unauthorized/.test(err.message)) { KEY = ''; ls('papa_tasks_key', null); show('key'); }
+    else toast('โหลดไม่สำเร็จ · แสดงข้อมูลล่าสุดที่จำไว้');
+  }
+}
+function show(v) {
+  $('vTasks').hidden = v !== 'tasks'; $('vSys').hidden = v !== 'sys'; $('vKey').hidden = v !== 'key';
+  $('tabTasks').classList.toggle('on', v === 'tasks'); $('tabSys').classList.toggle('on', v === 'sys');
+  document.querySelector('nav').hidden = v === 'key';
+  $('ttl').textContent = v === 'sys' ? 'ระบบของปะป๊า' : 'งานของปะป๊า';
+  if (v === 'tasks') renderTasks(); else if (v === 'sys') renderSys(); else $('sub').textContent = 'ตั้งค่าครั้งแรก';
+}
+$('tabTasks').onclick = () => show('tasks');
+$('tabSys').onclick = () => show('sys');
+$('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return; KEY = k; ls('papa_tasks_key', k); show('tasks'); load(); };
+
+if (!KEY) show('key'); else { show('tasks'); load(); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+</script>
+</body>
+</html>
