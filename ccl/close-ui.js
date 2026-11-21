@@ -143,7 +143,7 @@
     x.innerHTML = '<div class="ttl"><div class="ic"><i class="fa-solid fa-paper-plane"></i></div>ระบบส่งปิดงาน<span class="sp"></span>' +
       '<button class="tb" onclick="showPage(\'completed\')"><i class="fa-solid fa-circle-check" style="color:#16a34a"></i><span>งานแล้วเสร็จ</span></button></div>' +
       '<div id="clImp"><div class="ic"><i class="fa-solid fa-file-import"></i></div><div class="tx"><b id="clImpT">นำเข้าสถานะจาก SAP</b><span id="clLast"></span></div>' +
-      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb" id="clReset" style="display:none" title="ล้างผลนำเข้าทั้งหมด แล้วเริ่มนำเข้าใหม่"><i class="fa-solid fa-rotate-left"></i> ล้างผล</button><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> <span id="clPickT">เลือกไฟล์ SAP</span></button></div>' +
+      '<input type="file" id="clFile" accept=".xlsx,.xls,.csv" style="display:none"><button class="tb" id="clReset" style="display:none" title="ล้างผลนำเข้าทั้งหมด แล้วเริ่มนำเข้าใหม่"><i class="fa-solid fa-rotate-left"></i> ล้างผล</button><button class="tb" id="clAuto" title="นำเข้าสถานะ SAP อัตโนมัติจากโฟลเดอร์ Google Drive"><i class="fa-solid fa-gear"></i> อัตโนมัติ</button><button class="tb g" id="clPick"><i class="fa-solid fa-folder-open"></i> <span id="clPickT">เลือกไฟล์ SAP</span></button></div>' +
       '<div id="clCmp"></div>' +
       '<div class="f1"><div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input id="clQ" placeholder="ค้นหาเลขที่ / ชื่องาน / หมายเลขงาน / ผู้รับจ้าง"></div>' +
       '<select class="ch" id="clEnt"></select><button class="ch" id="clSort"><i class="fa-solid fa-arrow-down-wide-short"></i><span>เรียงตามเดิม</span></button></div>';
@@ -160,6 +160,7 @@
       if (window.Swal) Swal.fire({ icon: 'question', title: 'ล้างผลนำเข้า SAP?', text: 'ข้อมูลงานใน CCL ไม่เปลี่ยน — แค่ลบผลเทียบกับ SAP ในเครื่องนี้ แล้วนำเข้าไฟล์ใหม่', showCancelButton: true, confirmButtonText: 'ล้างผล', cancelButtonText: 'ยกเลิก' }).then(function (r) { if (r.isConfirmed) go(); });
       else go();
     };
+    $('clAuto').onclick = autoPanel;
     $('clFile').onchange = function () { if (this.files[0]) readSap(this.files[0]); this.value = ''; };
     var imp = $('clImp');
     ['dragenter', 'dragover'].forEach(function (t) { imp.addEventListener(t, function (e) { e.preventDefault(); imp.classList.add('over'); }); });
@@ -374,6 +375,92 @@
     });
   }
 
+  // ───── ตั้งค่านำเข้า SAP อัตโนมัติ (โฟลเดอร์ Google Drive) ─────
+  var AUTO = null;
+  function autoCss() {
+    if ($('clAutoCss')) return;
+    var st = document.createElement('style'); st.id = 'clAutoCss';
+    st.textContent = '.sa{text-align:left;font-size:13.5px}.sa .fl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}' +
+      '.sa .fl div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:7px 8px;font-size:12px;color:#475569;line-height:1.45}.sa .fl b{display:block;color:#1e293b;font-size:12.5px}' +
+      '.sa .rw{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed #e2e8f0}.sa .rw .l{flex:1}.sa .rw .l small{display:block;color:#94a3b8;font-size:12px}' +
+      '.sa .sw{position:relative;width:42px;height:24px;flex-shrink:0}.sa .sw input{opacity:0;width:0;height:0}.sa .sw span{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.2s;cursor:pointer}' +
+      '.sa .sw span:after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}.sa .sw input:checked+span{background:#16a34a}.sa .sw input:checked+span:after{left:21px}' +
+      '.sa .sw input:disabled+span{opacity:.55;cursor:not-allowed}' +
+      '.sa .fd{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin:4px 0 2px}.sa .fd b{flex:1}' +
+      '.sa .bt{border:1.5px solid #e2e8f0;background:#fff;border-radius:9px;padding:7px 12px;font-weight:600;font-size:13px;color:#334155;cursor:pointer;font-family:inherit;text-decoration:none;white-space:nowrap}' +
+      '.sa .bt.g{background:#059669;border-color:#059669;color:#fff}.sa .bt.v{background:#4f46e5;border-color:#4f46e5;color:#fff}.sa .bt:disabled{opacity:.5;cursor:not-allowed}' +
+      '.sa .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px dashed #e2e8f0}' +
+      '.sa .sabd{display:inline-block !important;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}.sa h4{margin:14px 0 4px;font-size:14px}' +
+      '.sa .lg{max-height:190px;overflow:auto}.sa .lg div{display:grid;grid-template-columns:86px 1fr;gap:8px;padding:7px 0;border-top:1px solid #f1f5f9;font-size:12.5px}.sa .lg div:first-child{border:0}' +
+      '.sa .ch{display:inline-block;border-radius:7px;padding:1px 7px;font-size:11.5px;font-weight:700;margin:2px 3px 0 0}' +
+      '.sa .res{margin-top:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:12.5px;max-height:230px;overflow:auto;display:none}.sa .res.on{display:block}' +
+      '.sa .res b{display:block;margin-top:6px}.sa .note{font-size:12px;color:#92400e;background:#fffbeb;border-radius:10px;padding:7px 10px;margin-top:10px}' +
+      '@media(max-width:640px){.sa .fl{grid-template-columns:1fr 1fr}}';
+    document.head.appendChild(st);
+  }
+  function fmtAt(t) { try { return new Date(t).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function chips(l) {
+    if (l.none) return '<span style="color:#94a3b8">ไม่มีไฟล์ใหม่</span>';
+    var C2 = function (n, t, bg, fg) { return n ? '<span class="ch" style="background:' + bg + ';color:' + fg + '">' + t + ' ' + n + '</span>' : ''; };
+    return '<b>' + esc((l.files || []).join(', ')) + '</b>' + (l.dry ? ' <small>(ทดลอง)</small>' : '') + '<br>' +
+      C2(l.codes, 'สถานะงาน', '#fef9c3', '#854d0e') + C2(l.closed, 'ปิดงาน', '#dcfce7', '#166534') + C2(l.down, 'รอ Admin', '#f1f5f9', '#475569') +
+      C2(l.other, 'SAP ปิด/CCL ยังไม่ถึง', '#ede9fe', '#5b21b6') + C2(l.nf, 'ไม่พบ', '#fee2e2', '#991b1b') +
+      (!l.codes && !l.closed && !l.down && !l.other && !l.nf ? '<span class="ch" style="background:#f0fdf4;color:#166534">ตรงกันทุกงาน</span>' : '');
+  }
+  function autoHtml(d) {
+    var c = d.cfg, ad = d.admin, dis = ad ? '' : ' disabled';
+    var sw = function (k, t, sub) { return '<div class="rw"><div class="l">' + t + '<small>' + sub + '</small></div><label class="sw"><input type="checkbox" data-k="' + k + '"' + (c[k] ? ' checked' : '') + dis + '><span></span></label></div>'; };
+    var hrs = ''; for (var h = 5; h <= 20; h++) hrs += '<option value="' + h + '"' + (c.hour === h ? ' selected' : '') + '>ทุกวัน ' + (h < 10 ? '0' : '') + h + ':00 น.</option>';
+    return '<div class="sa">' +
+      '<div class="fl"><div><b>① วางไฟล์</b>export จาก SAP วางในโฟลเดอร์ Drive</div><div><b>② ตรวจทุกวัน</b>อ่านเฉพาะไฟล์ใหม่ เทียบทุกงาน</div><div><b>③ อัปเดตให้เอง</b>สถานะงาน · ปิดงาน CLSD + เติมขั้นที่ข้าม</div><div><b>④ สรุปเข้า LINE</b>ไฟล์ที่อ่านแล้วย้ายไป "อ่านแล้ว"</div></div>' +
+      '<div class="rw" style="border:0"><div class="l"><b>สถานะ</b></div><span class="sabd" style="background:' + (c.on && d.trigger ? '#dcfce7;color:#166534">● เปิดใช้งาน' : '#f1f5f9;color:#64748b">○ ปิดอยู่') + '</span></div>' +
+      '<div class="rw"><div class="l">เปิดใช้งานอัตโนมัติ<small>ตรวจโฟลเดอร์ทุกวันตามเวลาที่ตั้ง</small></div><label class="sw"><input type="checkbox" data-k="on"' + (c.on ? ' checked' : '') + dis + '><span></span></label></div>' +
+      '<div class="rw"><div class="l">โฟลเดอร์ที่ตรวจ<small>วางไฟล์ .xlsx ที่มีคอลัมน์ "องค์ประกอบ WBS"/"หมายเลขงาน" + "สถานะ" · ชื่อไฟล์อะไรก็ได้</small></div></div>' +
+      '<div class="fd">📁 <b>' + (d.folderUrl ? 'CCL-SAP (Google Drive)' + (d.waiting ? ' · <span style="color:#b45309">รออ่าน ' + d.waiting + ' ไฟล์</span>' : '') : '<span style="color:#94a3b8">ยังไม่ได้สร้าง — กดบันทึกเพื่อสร้างโฟลเดอร์</span>') + '</b>' +
+        (d.folderUrl ? '<a class="bt" href="' + esc(d.folderUrl) + '" target="_blank" rel="noopener">เปิดโฟลเดอร์</a>' : '') + '</div>' +
+      '<div class="rw"><div class="l">เวลาตรวจ</div><select data-k="hour" class="bt"' + dis + '>' + hrs + '</select></div>' +
+      sw('updCodes', 'อัปเดตสถานะงาน (Job Code) ตาม SAP', 'ถ้าเป็นการลดลง (เช่น D1 → C1) จะไม่ทำเอง แต่แจ้งให้ Admin ยืนยัน') +
+      sw('closeClsd', 'ปิดงานที่ SAP เป็น CLSD', 'เฉพาะ CLSD (TECO ไม่ปิด) · เติมขั้นที่ข้าม + ผลตรวจรับลงไทม์ไลน์') +
+      sw('onlySent', 'ปิดเฉพาะงานที่อยู่ "ส่งปิดงาน" แล้ว', 'ถ้าเปิด: งานขั้นอื่นที่ SAP ปิดแล้วจะแค่แจ้งเตือน ไม่ปิดเอง') +
+      sw('line', 'ส่งสรุปเข้า LINE', 'ส่งทุกครั้งที่อ่านไฟล์ใหม่ (ใช้กลุ่ม LINE เดียวกับแจ้งเตือนของ CCL)') +
+      '<div class="acts">' + (ad ? '<button class="bt" data-a="dry">ทดลองอ่านไฟล์ (ไม่บันทึก)</button><button class="bt v" data-a="run">▶ ตรวจเดี๋ยวนี้</button><button class="bt g" data-a="save">บันทึกการตั้งค่า</button>'
+        : '<span style="font-size:12.5px;color:#92400e">🔒 เฉพาะ Admin แก้การตั้งค่าและสั่งตรวจได้</span>') + '</div>' +
+      '<div class="res" id="saRes"></div>' +
+      '<h4>🕘 ประวัติการนำเข้า</h4><div class="lg">' + (d.log && d.log.length ? d.log.map(function (l) { return '<div><span style="color:#64748b">' + fmtAt(l.at) + '</span><span>' + chips(l) + (l.by ? ' <small style="color:#94a3b8">· ' + esc(l.by) + '</small>' : '') + '</span></div>'; }).join('') : '<div><span></span><span style="color:#94a3b8">ยังไม่มีประวัติ</span></div>') + '</div>' +
+      '<div class="note">💡 ต้องมีคน export ไฟล์จาก SAP มาวางในโฟลเดอร์ (ระบบเข้า SAP ตรงไม่ได้) · การนำเข้าด้วยมือด้านบนยังใช้ได้เหมือนเดิม</div></div>';
+  }
+  function resHtml(r) {
+    if (r.none) return '📂 ไม่มีไฟล์ใหม่ในโฟลเดอร์';
+    var L = r.list || {}, sec = function (a, t, col) { return a && a.length ? '<b style="color:' + col + '">' + t + ' ' + a.length + ' งาน</b>' + a.slice(0, 40).map(esc).join(' · ') + (a.length > 40 ? ' …' : '') : ''; };
+    return (r.dry ? '🧪 <b style="display:inline">ทดลองอ่าน — ยังไม่บันทึกอะไร</b>' : '✅ <b style="display:inline">บันทึกแล้ว</b>') + '<br>ไฟล์: ' + esc((r.files || []).join(', ')) + ' (' + (r.rows || 0) + ' แถว)' +
+      sec(L.codes, '🔄 อัปเดตสถานะงาน', '#854d0e') + sec(L.closed, '✅ ปิดงาน', '#166534') + sec(L.down, '⚠️ สถานะลดลง (ไม่ทำเอง)', '#475569') +
+      sec(L.other, '📌 SAP ปิดแล้ว แต่ CCL ยังไม่ถึงส่งปิดงาน', '#5b21b6') + sec(L.nf, '❓ ไม่พบหมายเลขงานใน SAP', '#991b1b') +
+      (!r.codes && !r.closed && !r.down && !r.other && !r.nf ? '<b style="color:#166534">✔ ข้อมูล CCL ตรงกับ SAP ทุกงาน</b>' : '');
+  }
+  function autoPanel() {
+    if (!window.Swal) return;
+    busy('กำลังโหลดการตั้งค่า…');
+    google.script.run.withSuccessHandler(function (d) { AUTO = d; autoCss(); showAuto(d); })
+      .withFailureHandler(function (e) { alertMsg('error', 'โหลดการตั้งค่าไม่ได้', (e && e.message) || String(e)); }).cclSapAutoGet();
+  }
+  function showAuto(d) {
+    Swal.fire({ title: '⚙️ นำเข้าสถานะ SAP อัตโนมัติ', html: autoHtml(d), width: 720, showConfirmButton: false, showCloseButton: true,
+      didOpen: function (el) {
+        var box = Swal.getHtmlContainer(), res = box.querySelector('#saRes');
+        var read = function () { var o = {}; box.querySelectorAll('[data-k]').forEach(function (i) { o[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; }); return o; };
+        box.querySelectorAll('[data-a]').forEach(function (b) {
+          b.onclick = function () {
+            var a = b.dataset.a; box.querySelectorAll('[data-a]').forEach(function (x) { x.disabled = true; });
+            var done = function () { box.querySelectorAll('[data-a]').forEach(function (x) { x.disabled = false; }); };
+            var fail = function (e) { res.className = 'res on'; res.innerHTML = '<span style="color:#b91c1c">❌ ' + esc((e && e.message) || String(e)) + '</span>'; done(); };
+            res.className = 'res on'; res.innerHTML = a === 'save' ? '⏳ กำลังบันทึก…' : '⏳ กำลังอ่านไฟล์และเทียบกับทุกงาน… (อาจใช้เวลา 10–30 วินาที)';
+            if (a === 'save') google.script.run.withSuccessHandler(function (d2) { AUTO = d2; showAuto(d2); setTimeout(function () { var r2 = Swal.getHtmlContainer().querySelector('#saRes'); if (r2) { r2.className = 'res on'; r2.innerHTML = '✅ บันทึกแล้ว' + (d2.cfg.on ? ' · จะตรวจทุกวัน ' + d2.cfg.hour + ':00 น.' : ' · ปิดการตรวจอัตโนมัติ'); } }, 50); }).withFailureHandler(fail).cclSapAutoSet(read());
+            else google.script.run.withSuccessHandler(function (r) { res.innerHTML = resHtml(r); done(); if (!r.dry && !r.none) { try { loadData(); } catch (e) {} } }).withFailureHandler(fail).cclSapAutoRun(a === 'dry');
+          };
+        });
+      } });
+  }
+
   function bulkClose(given, other) {
     var all = g('allData', []) || [], ids = Object.keys(C.sel).map(Number);
     var list = Array.isArray(given) ? given.slice() : all.filter(function (j) { return ids.indexOf(j.id) >= 0 && j.status === 'ส่งปิดงาน'; });
@@ -386,6 +473,17 @@
     }).then(function (r) {
       if (!r.isConfirmed) return;
       var done = 0, errs = [], user = g('currentUser', null);
+      if (isAdm()) {
+        busy('กำลังปิดงาน ' + list.length + ' งาน…');
+        google.script.run.withSuccessHandler(function (res) {
+          list.forEach(function (j) { delete C.sel[j.id]; });
+          Swal.fire({ icon: res && res.skip ? 'warning' : 'success', title: 'ปิดงานแล้ว ' + ((res && res.done) || 0) + ' งาน',
+            html: 'เติมขั้นตอนที่ข้ามและผลตรวจรับลงไทม์ไลน์ให้แล้ว' + (res && res.skip ? '<br><small style="color:#b45309">ข้าม ' + res.skip + ' งาน (ปิดไปแล้วหรือถูกยกเลิก)</small>' : '') })
+            .then(function () { try { loadData(); } catch (e) {} });
+        }).withFailureHandler(function (e) { alertMsg('error', 'ปิดงานไม่สำเร็จ', (e && e.message) || String(e)); })
+          .cclSapClose(list.map(function (j) { return j.id; }));
+        return;
+      }
       Swal.fire({ title: 'กำลังปิดงาน… 0/' + list.length, allowOutsideClick: false, showConfirmButton: false, didOpen: function () { Swal.showLoading(); } });
       list.reduce(function (p, j) {
         return p.then(function () {
