@@ -1736,18 +1736,30 @@ function repMark_(b) {
   const keys = (Array.isArray(b.keys) ? b.keys : [b.k]).map(String).filter(function (k) { return /^\d{4}-\d{2}-\d{2}\|p[13]$/.test(k); }).slice(0, 70);
   if (b.what === 'printed') {   // บันทึกว่าใครพิมพ์ เมื่อไร ครั้งที่เท่าไร (เก็บ 20 ครั้งล่าสุดต่อชุด)
     const by = printerOf_(b), cnt = {}, RM = {};
+    let pat = at;   // ส่งซ้ำจากคิวในเครื่อง (เน็ตหลุดตอนพิมพ์) → ใช้เวลาที่พิมพ์จริง ถ้าไม่เกิน 7 วันและไม่ล้ำอนาคต
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(b.qAt || ''))) { const t = Date.parse(String(b.qAt).replace(' ', 'T') + ':00+07:00'); if (t <= Date.now() + 6e4 && t > Date.now() - 7 * 864e5) pat = String(b.qAt); }
     keys.forEach(function (k) {
       const m = k.slice(0, 7); if (!RM[m]) RM[m] = reportsOf_(m);
       const r = RM[m][k]; if (!r) return;
-      const L = repPrints_(r).concat([{ at: at, by: by }]).slice(-20);
-      if (repSetMeta_(k, { printed: at, printedBy: by, prints: L })) cnt[k] = L.length;
+      const e = { at: pat, by: by }; if (b.src === 'manual' || b.src === 'browser') e.src = b.src;
+      const L = repPrints_(r).concat([e]).slice(-20);
+      if (repSetMeta_(k, { printed: pat, printedBy: by, prints: L })) cnt[k] = L.length;
     });
     const ks = Object.keys(cnt); if (ks.length) log_(by, 'พิมพ์บัญชีลงนาม', ks[0].slice(0, 7), ks.join(','));
-    return { n: ks.length, at: at, by: by, cnt: cnt };
+    return { n: ks.length, at: pat, by: by, cnt: cnt };
   }
   const who = approverOf_(b); if (!who) throw new Error('เฉพาะผู้อนุมัติ (ใส่ PIN หรือเข้าด้วยบัญชีศูนย์รวมงานของผู้อนุมัติ)');
   if (b.what === 'received' || b.what === 'unreceive') {
-    let n = 0; keys.forEach(function (k) { if (repSetMeta_(k, { received: b.what === 'received' ? at + ' ' + (who.short || who.name) : null })) n++; });
+    const wn = who.short || who.name, RM = {};
+    let n = 0; keys.forEach(function (k) {
+      const patch = { received: b.what === 'received' ? at + ' ' + wn : null };
+      if (b.what === 'received') {   // รับเอกสารแล้ว = กระดาษถูกพิมพ์แน่นอน → ถ้ายังไม่มีประวัติพิมพ์ ให้ลงว่าพิมพ์แล้วด้วย
+        const m = k.slice(0, 7); if (!RM[m]) RM[m] = reportsOf_(m);
+        const r = RM[m][k];
+        if (r && !repPrints_(r).length && !r.printed) { patch.printed = at; patch.printedBy = wn + ' (รับเอกสาร)'; patch.prints = [{ at: at, by: wn, src: 'recv' }]; }
+      }
+      if (repSetMeta_(k, patch)) n++;
+    });
     log_(who.short || who.name, b.what === 'received' ? 'รับเอกสารรายงานเวร' : 'ยกเลิกรับเอกสาร', keys[0] ? keys[0].slice(0, 7) : '', keys.join(','));
     return { n: n };
   }
