@@ -233,12 +233,12 @@ function claudeText(t) {
     t.what,
     '',
     'ระบบ: ' + (s.name || t.sys || '-'),
-    'หน้าเว็บ: ' + (web || '-'),
-    'repo: ' + (s.repo || (s.hubFolder ? 'https://github.com/aloofpea-aul/aloofpea-aul.github.io (โฟลเดอร์ ' + s.hubFolder + ')' : '-')),
-    'Apps Script: ' + (s.appsScript || '-'),
-    'ชีต: ' + (s.sheet || '-'),
-    s.note ? 'หมายเหตุ: ' + s.note : '',
-  ].filter((x, i, a) => x !== '' || a[i - 1] !== '').join('\n').trim();
+    web && 'หน้าเว็บ: ' + web,
+    (s.repo || s.hubFolder) && 'repo: ' + (s.repo || 'https://github.com/aloofpea-aul/aloofpea-aul.github.io (โฟลเดอร์ ' + s.hubFolder + ')'),
+    s.appsScript && 'Apps Script: ' + s.appsScript,
+    s.sheet && 'ชีต: ' + s.sheet,
+    s.note && 'หมายเหตุ: ' + s.note,
+  ].filter((x) => x || x === '').join('\n').trim();
 }
 $('clearFilter').onclick = (e) => { e.preventDefault(); filter = ''; renderTasks(); };
 
