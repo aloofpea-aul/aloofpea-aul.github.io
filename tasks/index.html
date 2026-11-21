@@ -312,12 +312,15 @@ $('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return
 
 if (!KEY) show('key'); else { show('tasks'); load(); }
 // อัปเดตหน้าเองเมื่อมีเวอร์ชันใหม่ (แอปบนหน้าจอโฮมมักไม่โหลดหน้าใหม่)
-const BUILD = '20261121-2215';
+const BUILD = '20261121-2218';
 async function checkUpdate() {
   try {
-    const h = await (await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })).text();
+    // cache:'reload' ดึงใหม่และเขียนทับแคชของหน้านี้ รีโหลดแล้วจึงได้หน้าใหม่
+    const h = await (await fetch(location.pathname, { cache: 'reload' })).text();
     const m = h.match(/const BUILD = '([^']+)'/);
-    if (m && m[1] !== BUILD) location.reload();
+    if (m && m[1] !== BUILD && sessionStorage.getItem('papa_reloaded') !== m[1]) {
+      sessionStorage.setItem('papa_reloaded', m[1]); location.reload();
+    }
   } catch (e) {}
 }
 checkUpdate();
