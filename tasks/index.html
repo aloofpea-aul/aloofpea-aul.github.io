@@ -111,8 +111,7 @@ nav button.on{color:var(--pur);font-weight:600}
 </nav>
 <div class="sheet" id="sheet" hidden><div class="p">
   <div class="ttl" id="shTitle"></div>
-  <button class="wide claude" id="shClaude">📋 ส่งให้ Claude แก้ <small>(คัดลอก + เปิดแอป)</small></button>
-  <button class="wide claude2" id="shClaudeNew">✨ ลอง: เปิดแชตใหม่พร้อมข้อความ</button>
+  <button class="wide claude" id="shClaude">📋 คัดลอกไปให้ Claude แก้</button>
   <div class="row"><button data-p="ด่วน">🔴 ด่วน</button><button data-p="ปกติ">ปกติ</button><button data-p="ไว้ก่อน">ไว้ก่อน</button></div>
   <button class="wide" id="shDone" style="color:var(--grn)">✓ ทำเสร็จแล้ว</button>
   <button class="wide danger" id="shCancel">ยกเลิกงานนี้</button>
@@ -212,17 +211,11 @@ $('sheet').addEventListener('click', async (e) => {
     const t = tasks.find((x) => x.row === row); if (t) t.prio = b.dataset.p; save(); renderTasks();
     try { await api({ action: 'prio', row, prio: b.dataset.p }); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   } else if (b.id === 'shDone') done(row);
-  else if (b.id === 'shClaude' || b.id === 'shClaudeNew') {
+  else if (b.id === 'shClaude') {
     const t = tasks.find((x) => x.row === row); if (!t) return;
-    const text = claudeText(t);
-    if (b.id === 'shClaude') {
-      let ok = false;
-      try { await navigator.clipboard.writeText(text); ok = true; } catch (err) {}
-      toast(ok ? 'คัดลอกแล้ว · กดค้างในช่องพิมพ์ของ Claude แล้ววาง' : 'คัดลอกไม่ได้ ลองปุ่ม ✨ แทน', 4000);
-      setTimeout(() => window.open('https://claude.ai/', '_blank'), 700);
-    } else {
-      window.open('https://claude.ai/new?q=' + encodeURIComponent(text), '_blank');
-    }
+    let ok = false;
+    try { await navigator.clipboard.writeText(claudeText(t)); ok = true; } catch (err) {}
+    toast(ok ? '📋 คัดลอกแล้ว · สลับไปแอป Claude แล้วกดค้างในช่องพิมพ์ → วาง' : 'คัดลอกไม่ได้ ลองใหม่อีกครั้ง', 5000);
     if (t.status !== 'กำลังทำ') { t.status = 'กำลังทำ'; save(); renderTasks(); api({ action: 'start', row }).catch(() => {}); }
   }
   else if (b.id === 'shCancel') {
