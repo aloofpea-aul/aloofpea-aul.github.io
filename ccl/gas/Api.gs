@@ -111,7 +111,7 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
       return cclJson_({ ok: false, error: 'เฉพาะ Admin ของหน่วยงานเท่านั้น' });
@@ -123,6 +123,7 @@ function doPost(e) {
     else if (fn === 'cclSwitchBranch') out = cclSwitchBranch_(sess, b.token, args[0]);
     else if (fn === 'cclCtPreview') out = cclCtPreview_(sess, args[0]);
     else if (fn === 'cclExpStage') out = cclExpStage_(sess, args[0], args[1], args[2]);
+    else if (fn === 'cclFixJobs') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclFixJobs_(sess, args[0], args[1]); }
     else if (fn === 'cclSetJobCodes') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSetJobCodes_(sess, args[0], args[1]); }
     else if (CCL_API_SUPER.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) out = globalThis[fn + '_'].apply(null, [sess].concat(args));
     else {
@@ -130,6 +131,7 @@ function doPost(e) {
       if (typeof f !== 'function') return cclJson_({ ok: false, error: 'ไม่พบฟังก์ชัน ' + fn + ' ในระบบหลังบ้าน' });
       cclJobCodeGate_(fn, args);
       out = f.apply(null, args);
+      if (fn === 'getConstructionData' && Array.isArray(out)) out = out.filter(function (j) { return j && (String(j.receiveNo || '').trim() || String(j.jobName || '').trim()); }); // ซ่อนแถวว่าง
     }
     return cclJson_({ ok: true, data: out === undefined ? null : out });
   } catch (err) {
@@ -649,6 +651,40 @@ function cclSetJobCodes_(sess, items, reason) {
       if (cur.toUpperCase() === code) return;
       sh.getRange(r, 29).setValue(code); done++;
       logs.push([r, 'สถานะงาน ' + (cur || 'ว่าง') + ' → ' + code + (reason ? ' (' + reason + ')' : '')]);
+    });
+  } finally { lock.releaseLock(); }
+  logs.forEach(function (l) { try { logHistory(l[0], 'แก้ไขข้อมูล', who, l[1]); } catch (e) {} });
+  return { success: true, done: done, skip: skip.length, skipped: skip.slice(0, 50) };
+}
+
+
+// ===== แก้ข้อมูลงานทีละหลายงาน (ชื่องาน / หมายเลขงาน / ผู้ควบคุมงาน) หรือล้างแถวทดลอง =====
+// items: [{id, field, value, old}] — field: jobName(คอลัมน์ 5) | jobIds(8) | assignee(15) | clear(ล้างทั้งแถว)
+// แก้เฉพาะเมื่อค่าปัจจุบันยังเท่ากับ old · clear ต้องส่ง old = เลขที่รับ และแถวต้องไม่มีชื่องาน
+var CCL_FIX_COL = { jobName: 5, jobIds: 8, assignee: 15 };
+var CCL_FIX_TH = { jobName: 'ชื่องาน', jobIds: 'หมายเลขงาน', assignee: 'ผู้ควบคุมงาน' };
+function cclFixJobs_(sess, items, reason) {
+  if (!Array.isArray(items) || !items.length) return { success: true, done: 0, skip: 0 };
+  if (items.length > 400) throw new Error('แก้ได้ครั้งละไม่เกิน 400 รายการ');
+  reason = String(reason || '').slice(0, 100);
+  var who = String(sess.name || sess.username || '-'), done = 0, skip = [], logs = [];
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME), last = sh.getLastRow(), lastCol = sh.getLastColumn();
+    items.forEach(function (it) {
+      var r = parseInt(it && it.id, 10), f = String(it && it.field || '');
+      if (!(r >= 2 && r <= last)) { skip.push(it && it.id); return; }
+      if (f === 'clear') {
+        var no = String(sh.getRange(r, 2).getValue() || '').trim(), nm = String(sh.getRange(r, 5).getValue() || '').trim();
+        if (!no || no !== String(it.old || '').trim() || nm) { skip.push(r); return; }
+        sh.getRange(r, 1, 1, lastCol).clearContent(); done++; return;
+      }
+      var c = CCL_FIX_COL[f]; if (!c) { skip.push(r); return; }
+      var cur = String(sh.getRange(r, c).getValue() == null ? '' : sh.getRange(r, c).getValue()).trim(), val = String(it.value == null ? '' : it.value).trim().slice(0, 500);
+      if (cur !== String(it.old == null ? '' : it.old).trim() || !val) { skip.push(r); return; }
+      if (cur === val) return;
+      sh.getRange(r, c).setValue(val); done++;
+      logs.push([r, CCL_FIX_TH[f] + ': ' + (cur || 'ว่าง') + ' → ' + val + (reason ? ' (' + reason + ')' : '')]);
     });
   } finally { lock.releaseLock(); }
   logs.forEach(function (l) { try { logHistory(l[0], 'แก้ไขข้อมูล', who, l[1]); } catch (e) {} });
