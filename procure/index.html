@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<script src="/pea-hub.js" data-app="procure" data-perm="login" data-name="ระบบงานจัดซื้อจัดจ้าง"></script>
+<script src="/pea-hub.js" data-app="procure" data-perm="login" data-name="จัดซื้อจัดจ้าง"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ระบบงานจัดซื้อจัดจ้าง · กฟส.อ่าวลึก</title>
+<title>จัดซื้อจัดจ้าง · กฟส.อ่าวลึก</title>
 <meta name="theme-color" content="#6b1f7c">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="/icon-192.png">
@@ -153,7 +153,7 @@ table.t th{font-weight:700;text-align:center}
 <div class="app" id="app">
   <div class="top">
     <button class="ibtn" id="backBtn" style="display:none">‹</button>
-    <div><h1 id="ttl">ระบบงานจัดซื้อ</h1><small id="sub">กฟส.อ่าวลึก · วิธีเฉพาะเจาะจง</small></div>
+    <div><h1 id="ttl">จัดซื้อจัดจ้าง</h1><small id="sub">กฟส.อ่าวลึก · วิธีเฉพาะเจาะจง</small></div>
     <div class="sp"></div>
     <button class="ibtn" id="delBtn" title="ลบงานนี้" style="display:none">🗑</button>
     <button class="ibtn" id="setBtn" title="ตั้งค่า">⚙</button>
@@ -683,7 +683,7 @@ function doPrint(){const keys=pvSel==='all'?DOCS.map(d=>d.k):[pvSel];const pa=$(
 let fDept = store.get('procure_fdept', ''), loadErr = '';
 function stepN(s) { return parseInt(String(s || '0'), 10) || 0; }
 function listView() {
-  cur = null; setTop('ระบบงานจัดซื้อจัดจ้าง', 'กฟส.อ่าวลึก · วิธีเฉพาะเจาะจง', false);
+  cur = null; setTop('จัดซื้อจัดจ้าง', 'กฟส.อ่าวลึก · วิธีเฉพาะเจาะจง', false);
   const q = (store.get('procure_q', '') || '').trim();
   const rows = LIST.filter(x => (!fDept || x.dept === fDept) && (!q || [x.title, x.vendor, x.nums, x.dept, x.kind].join(' ').includes(q)));
   $('#view').innerHTML = `${LOCAL() ? `<div class="card warnbox"><b>โหมดทดลอง</b> — ยังไม่ได้เชื่อมหลังบ้าน ข้อมูลเก็บเฉพาะเครื่องนี้ และยังออกเลขหนังสือจริงไม่ได้${ME.admin ? ' · ผู้ดูแลใส่ลิงก์หลังบ้านได้ที่ ⚙ ตั้งค่า' : ''}</div>` : ''}

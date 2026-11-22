@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="/pea-hub.js?v=2026101703" data-app="vehicle" data-gate="off" data-name="ระบบยานพาหนะ" data-user-key="vh_u"></script>
+<script src="/pea-hub.js?v=2026101703" data-app="vehicle" data-gate="off" data-name="ยานพาหนะ" data-user-key="vh_u"></script>
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
-<title>ระบบยานพาหนะ กฟส.อ่าวลึก</title>
+<title>ยานพาหนะ · กฟส.อ่าวลึก</title>
 <meta name="theme-color" content="#5B1A63" id="metaTheme">
 <script>try{if(localStorage.getItem("vh_theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
@@ -281,7 +281,7 @@ nav.bot .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:18px;heigh
 <header class="top">
   <div class="hrow">
     <a class="hback" href="/index.html" aria-label="กลับศูนย์รวมงาน">‹</a>
-    <div class="htitle"><div class="t1">กฟส.อ่าวลึก</div><div class="t2" id="hTitle">ระบบยานพาหนะ</div></div>
+    <div class="htitle"><div class="t1">กฟส.อ่าวลึก</div><div class="t2" id="hTitle">ยานพาหนะ</div></div>
     <div class="hme" id="hMe" role="button" tabindex="0" onclick="if(S.d)openAccount()" style="cursor:pointer"></div>
     <button class="theme" id="btnTheme" aria-label="สลับธีมเข้ม/สว่าง"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
     <button class="refresh" id="btnRefresh" aria-label="รีเฟรช"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
@@ -1021,7 +1021,7 @@ function renderStats(){
 }
 
 /* ====== เมนู / เหตุการณ์ ====== */
-const TITLES = {home:'ระบบยานพาหนะ',check:'ตรวจรถประจำวัน',book:'จองรถ',repair:'บันทึกซ่อม',plan:'แผนบำรุงรักษา',stats:'สถิติการใช้รถ'};
+const TITLES = {home:'ยานพาหนะ',check:'ตรวจรถประจำวัน',book:'จองรถ',repair:'บันทึกซ่อม',plan:'แผนบำรุงรักษา',stats:'สถิติการใช้รถ'};
 function go(v){
   S.view = v; LS.set('view', v);
   ['home','check','book','repair','plan','stats'].forEach(x=>$('v-'+x).classList.toggle('hide', x!==v));
