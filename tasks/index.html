@@ -75,6 +75,8 @@ nav button.on{color:var(--pur);font-weight:600}
 .toast[hidden]{display:none}
 .toast .undo{margin-left:12px;font:inherit;font-weight:600;color:#F5B347;background:none;border:none;padding:4px 2px}
 .task .when{font-size:13px;color:var(--sub)}
+.sys .info.chats a{color:var(--pur);font-weight:500;line-height:2}
+.sheet .p .claude2 small{font-weight:400;font-size:13px;color:var(--sub)}
 .grp.chk{color:#A35A00}
 .task.chk{border-color:#F2CE8E}.task.chk .bar{background:#EF9F27}
 .syschip{display:inline-block;font-size:13px;font-weight:500;border-radius:7px;padding:1px 8px;background:#F1EFE8;color:#4A4855}
@@ -130,6 +132,7 @@ nav button.on{color:var(--pur);font-weight:600}
 <div class="sheet" id="sheet" hidden><div class="p">
   <div class="ttl" id="shTitle"></div>
   <button class="wide claude" id="shClaude">📋 คัดลอกไปให้ Claude แก้</button>
+  <button class="wide claude2" id="shChat" hidden>💬 คัดลอก + เปิดแชตเดิมของระบบนี้</button>
   <button class="wide" id="shSys" style="margin-bottom:8px"></button>
   <div class="row"><button data-p="ด่วน">🔴 ด่วน</button><button data-p="ปกติ">ปกติ</button><button data-p="ไว้ก่อน">ไว้ก่อน</button></div>
   <button class="wide" id="shDone" style="color:var(--grn)">✓ ทำเสร็จแล้ว</button>
@@ -234,6 +237,8 @@ let sheetRow = 0;
 function openSheet(row) {
   const t = tasks.find((x) => x.row === row); if (!t || row < 0) return;
   sheetRow = row; $('shTitle').textContent = t.what;
+  const ch = chatsOf(t.sys); $('shChat').hidden = !ch.length;
+  if (ch.length) $('shChat').innerHTML = '💬 คัดลอก + เปิดแชตเดิม<br><small>' + esc(ch[0].t || 'แชต Claude') + '</small>';
   $('shSys').textContent = '🔁 เปลี่ยนระบบ · ตอนนี้: ' + (sysName(t.sys) || 'ยังไม่ระบุ');
   document.querySelectorAll('#sheet [data-p]').forEach((b) => b.classList.toggle('sel', b.dataset.p === (t.prio || 'ปกติ')));
   $('sheet').hidden = false;
@@ -247,6 +252,13 @@ $('sheet').addEventListener('click', async (e) => {
     try { await api({ action: 'prio', row, prio: b.dataset.p }); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   } else if (b.id === 'shDone') done(row);
   else if (b.id === 'shSys') openPick(row);
+  else if (b.id === 'shChat') {
+    const t = tasks.find((x) => x.row === row); if (!t) return;
+    const ch = chatsOf(t.sys)[0]; if (!ch) return;
+    try { await navigator.clipboard.writeText(claudeText(t)); } catch (err) {}
+    toast('📋 คัดลอกแล้ว · กำลังเปิดแชต แล้วกดค้างในช่องพิมพ์ → วาง', 5000);
+    openChat(ch.u);
+  }
   else if (b.id === 'shClaude') {
     const t = tasks.find((x) => x.row === row); if (!t) return;
     let ok = false;
@@ -270,6 +282,14 @@ function whenTxt(d) {
   if (diff === 1) return 'เมื่อวาน' + hm;
   if (diff < 7) return diff + ' วันก่อน';
   return day.getDate() + ' ' + ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][day.getMonth()] + (day.getFullYear() !== now.getFullYear() ? ' ' + (day.getFullYear() + 543) : '');
+}
+
+// แชต Claude ของระบบ (จากทะเบียน คอลัมน์ O)
+function chatsOf(short) { const s = systems.find((x) => x.short === short); return (s && s.chats) || []; }
+// ไอโฟน (แอปบนหน้าจอโฮม): เปิดด้วย Safari ที่ล็อกอิน claude.ai ไว้ ไม่ใช่หน้าต่างเล็กในแอป
+function openChat(u) {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  if (ios) location.href = 'x-safari-' + u; else window.open(u, '_blank');
 }
 
 // ---------- ระบบของงาน: ป้าย + ยืนยัน + เปลี่ยน ----------
@@ -352,6 +372,7 @@ function renderSys() {
     <div class="sys" data-s="${esc(s.short)}">
       <div class="h"><div><div class="n">${esc(s.name || s.short)}</div><div class="f">${esc(s.short)}</div></div>${st(s)}</div>
       <div class="info">${[s.appsScript && 'Apps Script: ' + esc(s.appsScript), s.sheet && 'ชีต: ' + esc(s.sheet), s.lastEdit && 'แก้ล่าสุด: ' + s.lastEdit, s.note && esc(s.note)].filter(Boolean).join('<br>') || 'ยังไม่มีรายละเอียด'}</div>
+      ${(s.chats || []).length ? `<div class="info chats">💬 แชต Claude:<br>${s.chats.map((c, i) => `<a href="#" data-chat="${esc(c.u)}">${esc(c.t || 'แชต ' + (i + 1))}</a>${i ? '' : ' <small>(ล่าสุด)</small>'}`).join('<br>')}</div>` : ''}
       <div class="acts">
         <a href="${esc(web(s)) || '#'}" target="_blank" rel="noopener" class="${web(s) ? '' : 'off'}">เปิดเว็บ</a>
         <a href="${esc(s.repo) || '#'}" target="_blank" rel="noopener" class="${s.repo ? '' : 'off'}">โค้ด</a>
@@ -360,6 +381,8 @@ function renderSys() {
     </div>`).join('');
 }
 $('sysList').addEventListener('click', (e) => {
+  const ca = e.target.closest('[data-chat]');
+  if (ca) { e.preventDefault(); openChat(ca.dataset.chat); return; }
   const b = e.target.closest('[data-tasks]');
   if (b) { filter = b.dataset.tasks; show('tasks'); return; }
   if (e.target.closest('.acts')) return;
@@ -393,7 +416,7 @@ $('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return
 
 if (!KEY) show('key'); else { show('tasks'); load(); }
 // อัปเดตหน้าเองเมื่อมีเวอร์ชันใหม่ (แอปบนหน้าจอโฮมมักไม่โหลดหน้าใหม่)
-const BUILD = '20261122-1015';
+const BUILD = '20261122-1330';
 async function checkUpdate() {
   try {
     // cache:'reload' ดึงใหม่และเขียนทับแคชของหน้านี้ รีโหลดแล้วจึงได้หน้าใหม่
