@@ -2,6 +2,19 @@
 <html lang="th">
 <head>
 <script src="/pea-hub.js?v=2026110402" data-app="load01" data-perm="login" data-name="วิเคราะห์โหลด Load01"></script>
+<script>
+/* ===== ค่าตั้งต้น "หน่วยงานเริ่มต้น" — เก็บในเครื่อง (localStorage) แยกตามผู้ใช้ที่ล็อกอิน ===== */
+window.LOAD01_PREF = (function(){
+  function who(){ try { return (window.PEAHub && PEAHub.user && PEAHub.user()) || ''; } catch (e) { return ''; } }
+  function key(){ return 'load01Default:' + who(); }
+  return {
+    key: key,
+    get: function(){ try { return JSON.parse(localStorage.getItem(key()) || localStorage.getItem('load01Default:') || '{}') || {}; } catch (e) { return {}; } },
+    set: function(o){ try { localStorage.setItem(key(), JSON.stringify(o)); return true; } catch (e) { return false; } },
+    clear: function(){ try { localStorage.removeItem(key()); } catch (e) {} }
+  };
+})();
+</script>
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com">
 <script>
 /* หน้าเว็บนี้อยู่บน GitHub (ศูนย์รวมงาน) — เรียกหลังบ้าน GAS ผ่าน fetch แทน google.script.run */
@@ -561,7 +574,7 @@ boot();
 <script>
 (function(){
 /* ===== ค่าตั้งต้นโมดูล Unbalance / โหลดสูง ===== */
-var X = { UB: 10, UB_MIN_IAVG: 50, CHRONIC: 9, KV_PH: 19.05, RATING: 400, LIMIT: 320, WATCH: 0.6, HOME_SUB: 'ALA', TRANSFER: 1.5, PF_TARGET: 0.95 };
+var X = { UB: 10, UB_MIN_IAVG: 50, CHRONIC: 9, KV_PH: 19.05, RATING: 400, LIMIT: 320, WATCH: 0.6, HOME_SUB: (window.LOAD01_PREF && LOAD01_PREF.get().home) || 'ALA', TRANSFER: 1.5, PF_TARGET: 0.95 };
 var STATUS = {};           // key -> {s, t}
 var STATUS_TH = { todo: 'ยังไม่เริ่ม', doing: 'กำลังดำเนินการ', done: 'แก้แล้ว' };
 var FM = null;             // FM[m][f] = row
@@ -588,7 +601,7 @@ addView('ub',
   '<div class="card" style="margin-top:12px"><h2>ลำดับงานแก้ Unbalance</h2><p class="cap" id="ubCap"></p>'+
   '<div class="legend"><span><i style="background:var(--s1)"></i>เฟส A</span><span><i style="background:var(--s2)"></i>เฟส B</span><span><i style="background:var(--s3)"></i>เฟส C</span><span><i style="background:var(--text-primary);width:2px;height:12px"></i>ค่าเฉลี่ย</span></div>'+
   '<div class="tbl-wrap"><table class="ptable" id="ubTbl"></table></div></div>'+
-  '<div class="card" style="margin-top:12px"><h2 id="homeTitle"></h2><p class="cap">กดการ์ดเพื่อดูแผนแก้ · เปลี่ยนสถานีได้ที่ค่า HOME_SUB ในสคริปต์</p><div class="home" id="homeCards"></div></div>'+
+  '<div class="card" style="margin-top:12px"><h2 id="homeTitle"></h2><p class="cap">กดการ์ดเพื่อดูแผนแก้ · เปลี่ยนสถานีได้ที่ปุ่ม ⚙ หน่วยงานเริ่มต้น ด้านบน</p><div class="home" id="homeCards"></div></div>'+
   '<p class="cap" style="margin-top:12px;line-height:1.7">กระแสที่ต้องย้าย = ส่วนที่แต่ละเฟสเกินหรือขาดจากค่าเฉลี่ย 3 เฟส · kVA ≈ กระแส × 19.05 kV (แรงดันเฟส 33/√3) · กระแสนิวทรัลประมาณจากกระแส 3 เฟส (สมมติ PF ใกล้กัน) · สูญเสียที่ลดได้คิดจาก I²R ของสายเฟส</p>');
 addView('load',
   '<div class="grid kpis" id="ldKpis"></div>'+
@@ -1603,5 +1616,116 @@ function chart(r){
 })();
 </script>
 
+<style>
+.pref-btn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--text-primary)}
+.pref-btn b{font-weight:600;color:var(--brand)}
+.pref-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:8px 0 14px}
+.pref-form label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--text-secondary)}
+.pref-form select{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;color:var(--text-primary)}
+.pref-act{display:flex;gap:8px;flex-wrap:wrap}
+.pref-act button{border-radius:10px;padding:8px 16px;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--text-primary)}
+.pref-act .pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.pref-note{font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6}
+</style>
+<div class="drawer" id="prefDrawer"><div class="panel" style="max-width:640px">
+<div class="hd"><h2>⚙ หน่วยงานเริ่มต้น</h2><button class="close" id="prefClose">ปิด</button></div>
+<p class="cap">เลือกหน่วยงานที่ต้องการให้แสดงทันทีเมื่อเปิดหน้านี้ จะบันทึกไว้ในเครื่องนี้ แยกตามผู้ใช้ที่ล็อกอิน</p>
+<div class="pref-form">
+<label>จังหวัด<select id="prefProv"></select></label>
+<label>สถานี<select id="prefSub"></select></label>
+<label>ประเภทจุดวัด<select id="prefType"></select></label>
+<label>สถานีหลัก (แท็บ Unbalance)<select id="prefHome"></select></label>
+</div>
+<div class="pref-act"><button class="pri" id="prefSave">บันทึกเป็นค่าเริ่มต้น</button><button id="prefUseNow">ใช้ตัวกรองที่เปิดอยู่ตอนนี้</button><button id="prefReset">ล้างค่า (กลับเป็นค่าระบบ)</button></div>
+<div class="pref-note" id="prefNote"></div>
+</div></div>
+<script>
+(function(){
+/* ===== หน้าตั้งค่า + ใช้ค่าเริ่มต้นตอนเปิดหน้า ===== */
+var P = window.LOAD01_PREF;
+function el(id){ return document.getElementById(id); }
+var SYS = { prov:'', sub:'', type:'Feeder', home:'ALA' };   // ค่าระบบเดิม
+function cur(){ var p = P.get(); return { prov: p.prov||'', sub: p.sub||'', type: (p.type!=null ? p.type : 'Feeder'), home: p.home||'ALA' }; }
+function label(p){
+  var t = p.sub ? 'สถานี '+p.sub : p.prov ? 'จ.'+(PROV_TH[p.prov]||p.prov) : 'กฟต.2 ทั้งหมด';
+  return t;
+}
+/* ปุ่มบนหัวเว็บ */
+var btn = document.createElement('button'); btn.className = 'pref-btn'; btn.type = 'button';
+btn.title = 'ตั้งหน่วยงานที่จะแสดงเป็นค่าเริ่มต้นในเครื่องนี้';
+var hdr = document.querySelector('header.top h1');
+var row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+hdr.parentNode.insertBefore(row, hdr); row.appendChild(hdr); row.appendChild(btn);
+function paintBtn(){ btn.innerHTML = '⚙ หน่วยงานเริ่มต้น: <b>'+esc(label(cur()))+'</b>'; }
+paintBtn();
+
+/* ใช้ค่ากับตัวกรองบนหน้า */
+function applyToFilters(p, rerender){
+  S.prov = p.prov; S.sub = ''; S.subQ = p.sub; S.type = p.type; S.fq = '';
+  if (typeof D === 'undefined' || !D) return;
+  if (el('fProv')) el('fProv').value = p.prov;
+  fillSubs();
+  if (el('fType')) el('fType').value = p.type;
+  if (el('fSubQ')) el('fSubQ').value = p.sub;
+  if (el('fFdQ')) el('fFdQ').value = '';
+  if (rerender) render();
+}
+/* ตอนเปิดหน้า: ตั้งค่าก่อนวาดครั้งแรก */
+var start = cur();
+S.prov = start.prov; S.subQ = start.sub; S.type = start.type;
+var _initP = init;
+init = function(d){
+  var p = cur(); S.prov = p.prov; S.subQ = p.sub; S.type = p.type;
+  _initP(d);
+  if (el('fSubQ')) el('fSubQ').value = p.sub;
+  if (el('fType')) el('fType').value = p.type;
+  if (el('fProv')) el('fProv').value = p.prov;
+};
+if (typeof D !== 'undefined' && D) applyToFilters(start, true);
+
+/* หน้าตั้งค่า */
+function provList(){ return Array.from(new Set(F.map(function(f){return f.prov;}))).sort(function(a,b){return (PROV_TH[a]||a).localeCompare(PROV_TH[b]||b,'th');}); }
+function subList(prov){ return Array.from(new Set(F.filter(function(f){return !prov||f.prov===prov;}).map(function(f){return f.sub;}))).sort(); }
+function fillPrefSubs(sel){
+  var subs = subList(el('prefProv').value);
+  if (sel && subs.indexOf(sel) < 0) sel = '';
+  el('prefSub').innerHTML = opt('','ทุกสถานี',!sel)+subs.map(function(s){return opt(s,s,s===sel);}).join('');
+}
+function fillForm(p){
+  el('prefProv').innerHTML = opt('','ทุกจังหวัด (กฟต.2)',!p.prov)+provList().map(function(v){return opt(v,PROV_TH[v]||v,v===p.prov);}).join('');
+  fillPrefSubs(p.sub);
+  el('prefType').innerHTML = ['Feeder','Incoming','Transformer','Line'].map(function(t){return opt(t,TYPE_TH[t],p.type===t);}).join('')+opt('','ทุกประเภท',!p.type);
+  var all = subList('');
+  el('prefHome').innerHTML = all.map(function(s){return opt(s,s,s===p.home);}).join('');
+  var saved = !!localStorage.getItem(P.key());
+  var u = (window.PEAHub && PEAHub.user && PEAHub.user()) || '';
+  el('prefNote').innerHTML = (saved ? '✓ ตั้งค่าไว้แล้ว: <b>'+esc(label(p))+'</b>' : 'ยังไม่ได้ตั้งค่า — ใช้ค่าระบบ (กฟต.2 ทั้งหมด · ฟีดเดอร์ 33 kV)')+
+    '<br>เก็บในเบราว์เซอร์ของเครื่องนี้'+(u?' สำหรับผู้ใช้ <b>'+esc(u)+'</b>':'')+' — เครื่องอื่นหรือผู้ใช้อื่นตั้งค่าแยกกันได้';
+}
+function readForm(){ return { prov: el('prefProv').value, sub: el('prefSub').value, type: el('prefType').value, home: el('prefHome').value || 'ALA' }; }
+function open(){ if (typeof D === 'undefined' || !D) { alertLike('รอโหลดข้อมูลให้เสร็จก่อน แล้วกดอีกครั้ง'); return; } fillForm(cur()); el('prefDrawer').classList.add('on'); }
+function close(){ el('prefDrawer').classList.remove('on'); }
+function alertLike(msg){ var n = el('prefNote'); if (n) n.textContent = msg; btn.title = msg; }
+btn.onclick = open;
+el('prefClose').onclick = close;
+el('prefDrawer').addEventListener('click', function(e){ if (e.target === this) close(); });
+el('prefProv').onchange = function(){ fillPrefSubs(''); };
+el('prefUseNow').onclick = function(){
+  fillForm({ prov: S.prov||'', sub: S.subQ||S.sub||'', type: S.type, home: readForm().home });
+};
+el('prefSave').onclick = function(){
+  var before = cur(), p = readForm();
+  if (!P.set(p)) { el('prefNote').textContent = 'บันทึกไม่ได้ — เบราว์เซอร์นี้ปิดการเก็บข้อมูลในเครื่อง'; return; }
+  paintBtn(); close();
+  if (p.home !== before.home) { location.reload(); return; }   // สถานีหลักแท็บ Unbalance ต้องโหลดหน้าใหม่
+  applyToFilters(p, true);
+};
+el('prefReset').onclick = function(){
+  var before = cur(); P.clear(); paintBtn(); close();
+  if (before.home !== SYS.home) { location.reload(); return; }
+  applyToFilters(SYS, true);
+};
+})();
+</script>
 </body>
 </html>
