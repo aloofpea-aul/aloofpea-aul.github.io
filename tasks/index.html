@@ -74,6 +74,7 @@ nav button.on{color:var(--pur);font-weight:600}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10;max-width:90%;text-align:center}
 .toast[hidden]{display:none}
 .toast .undo{margin-left:12px;font:inherit;font-weight:600;color:#F5B347;background:none;border:none;padding:4px 2px}
+.task .when{font-size:13px;color:var(--sub)}
 .grp.chk{color:#A35A00}
 .task.chk{border-color:#F2CE8E}.task.chk .bar{background:#EF9F27}
 .syschip{display:inline-block;font-size:13px;font-weight:500;border-radius:7px;padding:1px 8px;background:#F1EFE8;color:#4A4855}
@@ -176,12 +177,14 @@ function renderTasks() {
   const urgent = tasks.filter((t) => t.prio === 'ด่วน').length;
   if ($('vTasks').hidden === false) $('sub').textContent = `ค้าง ${tasks.length} · ด่วน ${urgent}`;
   if (!list.length) { $('list').innerHTML = `<div class="empty">${filter ? 'ไม่มีงานค้างของ ' + esc(filter) : 'ไม่มีงานค้าง 🎉'}</div>`; return; }
+  // ใหม่สุดอยู่บน (เรียงตามวันเวลาที่จด แล้วตามลำดับแถว)
+  list.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || b.row - a.row);
   const chk = list.filter((t) => t.check || !t.sys);
   const card = (t, g, isChk) => `
       <div class="task ${isChk ? 'chk' : g === 'ด่วน' ? 'urgent' : g === 'ไว้ก่อน' ? 'later' : ''}" data-row="${t.row}">
         <div class="bar"></div>
         <div class="tx"><div class="w">${esc(t.what)}</div>
-          <div class="m">${sysChip(t)}${t.status === 'กำลังทำ' ? ' · กำลังทำ' : ''}${isChk && t.prio === 'ด่วน' ? ' · ด่วน' : ''}</div>
+          <div class="m">${sysChip(t)} <span class="when">${whenTxt(t.date)}</span>${t.status === 'กำลังทำ' ? ' · กำลังทำ' : ''}${isChk && t.prio === 'ด่วน' ? ' · ด่วน' : ''}</div>
           ${isChk ? `<div class="fix">${t.sys ? `<button class="yes" data-act="oksys">✓ ใช่ ${esc(t.sys)}</button>` : ''}<button data-act="pick">🔁 ${t.sys ? 'เปลี่ยน' : 'เลือกระบบ'}</button></div>` : ''}
         </div>
         <button class="ok" aria-label="ทำเสร็จแล้ว">✓</button>
@@ -257,6 +260,18 @@ $('sheet').addEventListener('click', async (e) => {
     try { await api({ action: 'cancel', row }); toast('ยกเลิกแล้ว', 6000, t && (() => reopen(t))); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   }
 });
+// วันเวลาที่จด: วันนี้ 10:04 / เมื่อวาน 18:30 / 3 วันก่อน / 12 พ.ย.
+function whenTxt(d) {
+  const m = String(d || '').match(/^(\d{4})-(\d\d)-(\d\d)(?: (\d\d:\d\d))?/); if (!m) return '';
+  const day = new Date(+m[1], +m[2] - 1, +m[3]), now = new Date(); now.setHours(0, 0, 0, 0);
+  const diff = Math.round((now - day) / 864e5);
+  const hm = m[4] && m[4] !== '00:00' ? ' ' + m[4] : '';
+  if (diff <= 0) return 'วันนี้' + hm;
+  if (diff === 1) return 'เมื่อวาน' + hm;
+  if (diff < 7) return diff + ' วันก่อน';
+  return day.getDate() + ' ' + ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][day.getMonth()] + (day.getFullYear() !== now.getFullYear() ? ' ' + (day.getFullYear() + 543) : '');
+}
+
 // ---------- ระบบของงาน: ป้าย + ยืนยัน + เปลี่ยน ----------
 function sysName(short) { const s = systems.find((x) => x.short === short); return s ? s.name : short; }
 function sysChip(t) {
@@ -378,7 +393,7 @@ $('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return
 
 if (!KEY) show('key'); else { show('tasks'); load(); }
 // อัปเดตหน้าเองเมื่อมีเวอร์ชันใหม่ (แอปบนหน้าจอโฮมมักไม่โหลดหน้าใหม่)
-const BUILD = '20261122-1010';
+const BUILD = '20261122-1015';
 async function checkUpdate() {
   try {
     // cache:'reload' ดึงใหม่และเขียนทับแคชของหน้านี้ รีโหลดแล้วจึงได้หน้าใหม่
