@@ -10,7 +10,7 @@
   var COLORS = ['#06c755', '#0ea5e9', '#8b5cf6', '#f59e0b', '#ef4444', '#14b8a6', '#64748b', '#ec4899'];
 
   var css = '.lnx{text-align:left;font-family:inherit}.lnx .lab{font-size:13px;font-weight:700;color:#475569;margin:0 0 6px;display:flex;gap:6px}.lnx .lab span{margin-left:auto;font-weight:500;color:#94a3b8;font-size:12px}' +
-    '.lnx textarea{width:100%;border:1.5px solid #e2e8f0;border-radius:12px;padding:9px 11px;font:13px/1.55 inherit;font-family:inherit;background:#f8fafc;resize:vertical;min-height:110px;max-height:240px;box-sizing:border-box;color:#1e293b}' +
+    '.lnx textarea{width:100%;border:1.5px solid #e2e8f0;border-radius:12px;padding:9px 11px;font-size:13px!important;line-height:1.55;font-family:inherit;background:#f8fafc;resize:vertical;min-height:110px;max-height:240px;box-sizing:border-box;color:#1e293b}' +
     '.lnx .tabs{display:grid;grid-template-columns:1fr 1fr;background:#f1f5f9;border-radius:12px;padding:4px;margin:12px 0}' +
     '.lnx .tabs button{border:0;background:none;text-align:center;padding:8px 6px;border-radius:9px;font:700 13.5px inherit;font-family:inherit;color:#64748b;cursor:pointer}.lnx .tabs .on{background:#fff;color:#0f172a;box-shadow:0 1px 4px rgba(0,0,0,.08)}' +
     '.lnx .tabs small{display:block;font-weight:500;font-size:11px;color:#94a3b8}' +
@@ -41,7 +41,7 @@
   }
   function avatar(t, i) {
     var c = COLORS[i % COLORS.length];
-    return '<div class="av" style="background:' + c + '">' + (t.type === 'user' ? esc((t.name.replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '') || '?').charAt(0)) : '👥') + '</div>';
+    return '<div class="av" style="background:' + c + '">' + (t.type === 'user' ? esc((t.name.replace(/^[^A-Za-z0-9\u0E01-\u0E2E]+/, '').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '') || '?').charAt(0).toUpperCase()) : '👥') + '</div>';
   }
   function subOf(t) { return (t.type === 'user' ? 'รายคน' : t.type === 'room' ? 'ห้องแชท' : 'กลุ่ม') + (t.count ? ' · ' + t.count + ' คน' : '') + (t.def ? ' · แจ้งเตือนอัตโนมัติ' : ''); }
 
@@ -159,7 +159,8 @@
     share({ sub: 'รายงานติดตามงาน ' + ids.length + ' รายการ', text: followText(ids) });
   }
   function hook() { if (window.sendDetailToLine !== sendDetailToLine) window.sendDetailToLine = sendDetailToLine; }
-  hook(); setTimeout(hook, 1500); document.addEventListener('DOMContentLoaded', hook);
+  hook(); setTimeout(hook, 1500);
+  setTimeout(function () { try { if (g('currentUser', {}) && g('currentUser', {}).role && window.google && google.script) targets(function () {}); } catch (e) {} }, 4000); // โหลดรายชื่อไว้ก่อน document.addEventListener('DOMContentLoaded', hook);
 
   // ───── หน้า Admin: รายการปลายทางของบอท ─────
   var ADM = [];
