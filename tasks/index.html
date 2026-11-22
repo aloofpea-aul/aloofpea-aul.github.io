@@ -217,7 +217,11 @@ $('jotForm').addEventListener('submit', async (e) => {
   $('jot').value = '';
   const temp = { row: -Date.now(), what: text, sys: '…', prio: 'ปกติ' };
   tasks.push(temp); renderTasks();
-  try { await api({ action: 'add', text }); toast('จดแล้ว'); await load(); }
+  try {
+    const r = await api({ action: 'add', text, src: 'web' });
+    toast(r.how === 'none' ? 'จดแล้ว · ❓ ยังไม่รู้ระบบ เลือกในกล่องรอตรวจ' : r.how === 'guess' ? `จดแล้ว · 🟠 เดาว่า ${r.sys} ตรวจในกล่องรอตรวจ` : `จดแล้ว · 🟢 ${r.sys}${r.how === 'auto' ? (r.src === 'ai' ? ' (AI เลือกให้)' : ' (เลือกให้)') : ''}`, 4000);
+    await load();
+  }
   catch (err) { tasks = tasks.filter((x) => x !== temp); renderTasks(); $('jot').value = text; toast('จดไม่สำเร็จ ลองใหม่'); }
   $('jot').focus();
 });
@@ -374,7 +378,7 @@ $('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return
 
 if (!KEY) show('key'); else { show('tasks'); load(); }
 // อัปเดตหน้าเองเมื่อมีเวอร์ชันใหม่ (แอปบนหน้าจอโฮมมักไม่โหลดหน้าใหม่)
-const BUILD = '20261122-0945';
+const BUILD = '20261122-1010';
 async function checkUpdate() {
   try {
     // cache:'reload' ดึงใหม่และเขียนทับแคชของหน้านี้ รีโหลดแล้วจึงได้หน้าใหม่
