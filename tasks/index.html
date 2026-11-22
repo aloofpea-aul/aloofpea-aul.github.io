@@ -74,6 +74,17 @@ nav button.on{color:var(--pur);font-weight:600}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10;max-width:90%;text-align:center}
 .toast[hidden]{display:none}
 .toast .undo{margin-left:12px;font:inherit;font-weight:600;color:#F5B347;background:none;border:none;padding:4px 2px}
+.grp.chk{color:#A35A00}
+.task.chk{border-color:#F2CE8E}.task.chk .bar{background:#EF9F27}
+.syschip{display:inline-block;font-size:13px;font-weight:500;border-radius:7px;padding:1px 8px;background:#F1EFE8;color:#4A4855}
+.syschip.guess{background:#FAEEDA;color:#7A3E00}.syschip.none{background:var(--redL);color:var(--red)}
+.task .fix{display:flex;gap:6px;margin-top:8px}
+.task .fix button{font:inherit;font-size:14px;padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--pur)}
+.task .fix .yes{color:var(--grn)}
+.pick .list{max-height:52vh;overflow-y:auto;margin:8px 0}
+.pick .it{display:flex;justify-content:space-between;gap:8px;padding:12px 4px;border-bottom:1px solid var(--line);font-size:15px}
+.pick .it small{color:var(--sub);font-size:13px}
+.pick .it.cur{color:var(--pur);font-weight:600}
 .keybox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:20px}
 .keybox p{margin:0 0 12px;font-size:14px;color:var(--sub);line-height:1.6}
 </style>
@@ -109,9 +120,16 @@ nav button.on{color:var(--pur);font-weight:600}
   <button id="tabTasks" class="on"><b>☑</b>งาน</button>
   <button id="tabSys"><b>▦</b>ระบบ</button>
 </nav>
+<div class="sheet pick" id="pick" hidden><div class="p">
+  <div class="ttl">เปลี่ยนระบบของงานนี้</div>
+  <input class="search" id="pickQ" placeholder="ค้นหาระบบ เช่น รถ" autocomplete="off">
+  <div class="list" id="pickList"></div>
+  <button class="wide" id="pickClose">ปิด</button>
+</div></div>
 <div class="sheet" id="sheet" hidden><div class="p">
   <div class="ttl" id="shTitle"></div>
   <button class="wide claude" id="shClaude">📋 คัดลอกไปให้ Claude แก้</button>
+  <button class="wide" id="shSys" style="margin-bottom:8px"></button>
   <div class="row"><button data-p="ด่วน">🔴 ด่วน</button><button data-p="ปกติ">ปกติ</button><button data-p="ไว้ก่อน">ไว้ก่อน</button></div>
   <button class="wide" id="shDone" style="color:var(--grn)">✓ ทำเสร็จแล้ว</button>
   <button class="wide danger" id="shCancel">ยกเลิกงานนี้</button>
@@ -158,22 +176,31 @@ function renderTasks() {
   const urgent = tasks.filter((t) => t.prio === 'ด่วน').length;
   if ($('vTasks').hidden === false) $('sub').textContent = `ค้าง ${tasks.length} · ด่วน ${urgent}`;
   if (!list.length) { $('list').innerHTML = `<div class="empty">${filter ? 'ไม่มีงานค้างของ ' + esc(filter) : 'ไม่มีงานค้าง 🎉'}</div>`; return; }
-  const groups = [['ด่วน', 'red'], ['ปกติ', ''], ['ไว้ก่อน', '']];
-  $('list').innerHTML = groups.map(([g, c]) => {
-    const it = list.filter((t) => (t.prio || 'ปกติ') === g);
-    if (!it.length) return '';
-    return `<div class="grp ${c}">${g} · ${it.length}</div>` + it.map((t) => `
-      <div class="task ${g === 'ด่วน' ? 'urgent' : g === 'ไว้ก่อน' ? 'later' : ''}" data-row="${t.row}">
+  const chk = list.filter((t) => t.check || !t.sys);
+  const card = (t, g, isChk) => `
+      <div class="task ${isChk ? 'chk' : g === 'ด่วน' ? 'urgent' : g === 'ไว้ก่อน' ? 'later' : ''}" data-row="${t.row}">
         <div class="bar"></div>
-        <div class="tx"><div class="w">${esc(t.what)}</div><div class="m">${esc(t.sys || 'ยังไม่ระบุระบบ')}${t.status === 'กำลังทำ' ? ' · กำลังทำ' : ''}</div></div>
+        <div class="tx"><div class="w">${esc(t.what)}</div>
+          <div class="m">${sysChip(t)}${t.status === 'กำลังทำ' ? ' · กำลังทำ' : ''}${isChk && t.prio === 'ด่วน' ? ' · ด่วน' : ''}</div>
+          ${isChk ? `<div class="fix">${t.sys ? `<button class="yes" data-act="oksys">✓ ใช่ ${esc(t.sys)}</button>` : ''}<button data-act="pick">🔁 ${t.sys ? 'เปลี่ยน' : 'เลือกระบบ'}</button></div>` : ''}
+        </div>
         <button class="ok" aria-label="ทำเสร็จแล้ว">✓</button>
-      </div>`).join('');
-  }).join('');
+      </div>`;
+  const groups = [['ด่วน', 'red'], ['ปกติ', ''], ['ไว้ก่อน', '']];
+  $('list').innerHTML = (chk.length ? `<div class="grp chk">⚠️ รอตรวจระบบ · ${chk.length}</div>` + chk.map((t) => card(t, t.prio, true)).join('') : '') +
+    groups.map(([g, c]) => {
+      const it = list.filter((t) => !(t.check || !t.sys) && (t.prio || 'ปกติ') === g);
+      if (!it.length) return '';
+      return `<div class="grp ${c}">${g} · ${it.length}</div>` + it.map((t) => card(t, g, false)).join('');
+    }).join('');
 }
 $('list').addEventListener('click', (e) => {
   const card = e.target.closest('.task'); if (!card) return;
   const row = +card.dataset.row;
   if (e.target.closest('.ok')) return done(row, card);
+  const act = e.target.closest('[data-act]');
+  if (act && act.dataset.act === 'oksys') return okSys(row);
+  if (act && act.dataset.act === 'pick') return openPick(row);
   openSheet(row);
 });
 async function done(row, card) {
@@ -200,6 +227,7 @@ let sheetRow = 0;
 function openSheet(row) {
   const t = tasks.find((x) => x.row === row); if (!t || row < 0) return;
   sheetRow = row; $('shTitle').textContent = t.what;
+  $('shSys').textContent = '🔁 เปลี่ยนระบบ · ตอนนี้: ' + (sysName(t.sys) || 'ยังไม่ระบุ');
   document.querySelectorAll('#sheet [data-p]').forEach((b) => b.classList.toggle('sel', b.dataset.p === (t.prio || 'ปกติ')));
   $('sheet').hidden = false;
 }
@@ -211,6 +239,7 @@ $('sheet').addEventListener('click', async (e) => {
     const t = tasks.find((x) => x.row === row); if (t) t.prio = b.dataset.p; save(); renderTasks();
     try { await api({ action: 'prio', row, prio: b.dataset.p }); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   } else if (b.id === 'shDone') done(row);
+  else if (b.id === 'shSys') openPick(row);
   else if (b.id === 'shClaude') {
     const t = tasks.find((x) => x.row === row); if (!t) return;
     let ok = false;
@@ -224,6 +253,39 @@ $('sheet').addEventListener('click', async (e) => {
     try { await api({ action: 'cancel', row }); toast('ยกเลิกแล้ว', 6000, t && (() => reopen(t))); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
   }
 });
+// ---------- ระบบของงาน: ป้าย + ยืนยัน + เปลี่ยน ----------
+function sysName(short) { const s = systems.find((x) => x.short === short); return s ? s.name : short; }
+function sysChip(t) {
+  if (!t.sys) return '<span class="syschip none">❓ ยังไม่รู้ระบบ</span>';
+  return `<span class="syschip ${t.check ? 'guess' : ''}">${esc(t.sys)}${t.check ? ' ?' : ''}</span>`;
+}
+async function okSys(row) {
+  const t = tasks.find((x) => x.row === row); if (!t) return;
+  t.check = false; save(); renderTasks();
+  try { await api({ action: 'oksys', row }); toast('✓ ยืนยันระบบแล้ว'); } catch (err) { toast('บันทึกไม่สำเร็จ'); load(); }
+}
+let pickRow = 0;
+function openPick(row) {
+  pickRow = row; $('pickQ').value = ''; renderPick(); $('pick').hidden = false;
+}
+function renderPick() {
+  const t = tasks.find((x) => x.row === pickRow) || {};
+  const q = $('pickQ').value.trim().toLowerCase();
+  const list = systems.filter((s) => !q || (s.short + ' ' + s.name).toLowerCase().includes(q));
+  $('pickList').innerHTML = list.map((s) => `<div class="it ${s.short === t.sys ? 'cur' : ''}" data-s="${esc(s.short)}"><span>${esc(s.short)}<br><small>${esc(s.name)}</small></span>${s.short === t.sys ? '✓' : ''}</div>`).join('') || '<div class="empty">ไม่พบระบบ</div>';
+}
+$('pickQ').addEventListener('input', renderPick);
+$('pick').addEventListener('click', async (e) => {
+  if (e.target === $('pick') || e.target === $('pickClose')) { $('pick').hidden = true; return; }
+  const it = e.target.closest('.it'); if (!it) return;
+  $('pick').hidden = true;
+  const t = tasks.find((x) => x.row === pickRow); if (!t) return;
+  const old = { sys: t.sys, check: t.check };
+  t.sys = it.dataset.s; t.check = false; save(); renderTasks();
+  try { await api({ action: 'setsys', row: pickRow, sys: t.sys }); toast('🔁 เปลี่ยนเป็น ' + t.sys + ' แล้ว'); }
+  catch (err) { Object.assign(t, old); save(); renderTasks(); toast('เปลี่ยนไม่สำเร็จ ลองใหม่'); }
+});
+
 // ข้อความส่งให้ Claude: งาน + ข้อมูลระบบจากทะเบียน
 function claudeText(t) {
   const s = systems.find((x) => x.short === t.sys) || {};
@@ -312,7 +374,7 @@ $('keySave').onclick = () => { const k = $('keyIn').value.trim(); if (!k) return
 
 if (!KEY) show('key'); else { show('tasks'); load(); }
 // อัปเดตหน้าเองเมื่อมีเวอร์ชันใหม่ (แอปบนหน้าจอโฮมมักไม่โหลดหน้าใหม่)
-const BUILD = '20261121-2218';
+const BUILD = '20261122-0945';
 async function checkUpdate() {
   try {
     // cache:'reload' ดึงใหม่และเขียนทับแคชของหน้านี้ รีโหลดแล้วจึงได้หน้าใหม่
