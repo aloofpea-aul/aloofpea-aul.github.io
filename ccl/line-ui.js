@@ -163,12 +163,37 @@
   setTimeout(function () { try { if (g('currentUser', {}) && g('currentUser', {}).role && window.google && google.script) targets(function () {}); } catch (e) {} }, 4000); // โหลดรายชื่อไว้ก่อน document.addEventListener('DOMContentLoaded', hook);
 
   // ───── หน้า Admin: รายการปลายทางของบอท ─────
-  var ADM = [];
+  var ADM = [], SEEN = [];
+  function ago(v) { var m = Math.round((Date.now() - new Date(v)) / 60000); return isNaN(m) ? '' : m < 60 ? m + ' นาทีที่แล้ว' : m < 1440 ? Math.round(m / 60) + ' ชม.ที่แล้ว' : Math.round(m / 1440) + ' วันที่แล้ว'; }
+  function seenRows() {
+    var S = document.getElementById('lnSeen'); if (!S) return;
+    S.innerHTML = SEEN.length ? '<p class="lab" style="margin-top:10px">🆕 บอทพบใหม่ — กด ＋ เพื่อเพิ่มเป็นปลายทาง</p>' + SEEN.map(function (t, i) {
+      return '<div class="r" style="border-style:dashed">' + avatar({ type: t.type, name: t.name || '?' }, i + 3) + '<div style="flex:1;min-width:0"><b>' + esc(t.name || (t.type === 'user' ? 'ผู้ใช้' : 'กลุ่ม') + ' ' + t.mask) + '</b><small>' +
+        esc((t.type === 'user' ? 'รายคน' : t.type === 'room' ? 'ห้องแชท' : 'กลุ่ม') + (t.count ? ' · ' + t.count + ' คน' : '') + ' · ' + t.mask + ' · ' + ({ join: 'บอทถูกเชิญเข้ากลุ่ม', follow: 'เพิ่มบอทเป็นเพื่อน', message: 'มีข้อความถึงบอท', memberJoined: 'มีสมาชิกเข้ากลุ่ม' }[t.ev] || t.ev || '') + ' ' + ago(t.at)) + '</small></div>' +
+        '<div class="ac"><button type="button" data-add="' + i + '" style="background:#dcfce7;color:#166534">＋ เพิ่ม</button></div></div>';
+    }).join('') : '';
+  }
+  function hookGet(r) {
+    var H = document.getElementById('lnHook'); if (!H) return;
+    var show = function (h) {
+      if (!h) return;
+      H.innerHTML = h.mine ? '✅ รับ ID อัตโนมัติ: เปิดอยู่' + (h.active ? '' : ' <b style="color:#b45309">(แต่ปิด "Use webhook" ใน LINE Developers — ต้องเปิดก่อน)</b>') + ' · เชิญบอท' + (h.bot ? ' "' + esc(h.bot) + '"' + (h.basicId ? ' (' + esc(h.basicId) + ')' : '') : '') + ' เข้ากลุ่ม แล้วกด ↻ ดึงชื่อจาก LINE'
+        : '⚪ รับ ID อัตโนมัติ: ยังไม่เปิด' + (h.other ? ' <span style="color:#b45309">(ตอนนี้ webhook ของบอทชี้ไปที่ ' + esc(h.otherHost) + ')</span>' : '') + ' <button type="button" data-hook="1" style="border:0;background:#4338ca;color:#fff;border-radius:8px;padding:3px 10px;font-weight:700;cursor:pointer;margin-left:4px">เปิดรับ ID อัตโนมัติ</button>';
+      H.dataset.other = h.other ? h.otherHost : '';
+    };
+    if (r) return show(r);
+    google.script.run.withSuccessHandler(show).withFailureHandler(function (e) { H.textContent = 'ตรวจ webhook ไม่ได้: ' + ((e && e.message) || e); }).cclLineHook('get');
+  }
+  function hookOn() {
+    var H = document.getElementById('lnHook'), other = H && H.dataset.other;
+    Swal.fire({ icon: other ? 'warning' : 'question', title: 'เปิดรับ ID อัตโนมัติ?', html: 'ตั้ง Webhook ของบอทให้ส่งเหตุการณ์มาที่ CCL — เมื่อบอทถูกเชิญเข้ากลุ่มหรือมีข้อความถึงบอท จะเห็นในรายการ "บอทพบใหม่"' + (other ? '<br><br><b style="color:#b91c1c">ตอนนี้ webhook ชี้ไปที่ ' + esc(other) + ' — ถ้ามีระบบอื่นใช้บอทนี้รับข้อความอยู่ ระบบนั้นจะหยุดรับ</b>' : ''), showCancelButton: true, confirmButtonText: 'เปิด', cancelButtonText: 'ยกเลิก' })
+      .then(function (x) { if (!x.isConfirmed) return; H.textContent = 'กำลังตั้งค่า…'; google.script.run.withSuccessHandler(function (r) { hookGet(r); }).withFailureHandler(function (e) { H.textContent = 'ตั้งค่าไม่สำเร็จ: ' + ((e && e.message) || e); }).cclLineHook('set'); });
+  }
   function adminBox() {
     var inp = document.getElementById('lineTargetsInput'); if (!inp || document.getElementById('lnAdm')) return;
     var row = inp.closest('.flex.gap-2'); if (row) row.style.display = 'none';
     var box = document.createElement('div'); box.id = 'lnAdm'; box.className = 'lnx'; box.style.margin = '4px 0 10px';
-    box.innerHTML = '<p class="lab">🎯 ปลายทาง LINE ของบอท CCL <span>✓ = ได้รับแจ้งเตือนอัตโนมัติด้วย</span></p><div id="lnAL"><div class="emp">กำลังโหลด…</div></div>' +
+    box.innerHTML = '<p class="lab">🎯 ปลายทาง LINE ของบอท CCL <span>✓ = ได้รับแจ้งเตือนอัตโนมัติด้วย</span></p><div id="lnHook" style="font-size:12.5px;margin:-2px 0 8px;color:#475569">กำลังตรวจการรับ ID อัตโนมัติ…</div><div id="lnAL"><div class="emp">กำลังโหลด…</div></div><div id="lnSeen"></div>' +
       '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><input class="srch" id="lnNewId" style="flex:2;min-width:200px;margin:0" placeholder="วาง Group ID (C…) หรือ User ID (U…)"><input class="srch" id="lnNewNm" style="flex:1;min-width:120px;margin:0" placeholder="ชื่อเรียก (ไม่ใส่ก็ได้)">' +
       '<button type="button" id="lnAdd" class="bg-blue-600 text-white px-3 py-2 rounded-lg font-bold">＋ เพิ่ม</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end"><button type="button" id="lnRef" class="px-3 py-2 rounded-lg font-bold" style="border:1.5px solid #c7d2fe;background:#fff;color:#4338ca">↻ ดึงชื่อจาก LINE</button><button type="button" id="lnSave" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold">บันทึกปลายทาง</button></div>';
@@ -181,6 +206,12 @@
     };
     box.querySelector('#lnRef').onclick = function () { adminLoad(true); };
     box.querySelector('#lnSave').onclick = adminSave;
+    box.querySelector('#lnSeen').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-add]'); if (!b) return; var t = SEEN[+b.dataset.add]; if (!t) return;
+      SEEN.splice(+b.dataset.add, 1); ADM.push({ id: t.id, name: t.name, lineName: t.lineName, def: false, type: t.type, count: t.count, mask: t.mask, isNew: 1 }); adminRows(); seenRows();
+    });
+    box.querySelector('#lnHook').addEventListener('click', function (e) { if (e.target.closest('[data-hook]')) hookOn(); });
+    hookGet();
     box.querySelector('#lnAL').addEventListener('input', function (e) { var i = e.target.closest('[data-i]'); if (!i) return; var o = ADM[+i.dataset.i]; if (e.target.classList.contains('nm')) o.name = e.target.value; });
     box.querySelector('#lnAL').addEventListener('change', function (e) { var i = e.target.closest('[data-i]'); if (i && e.target.type === 'checkbox') ADM[+i.dataset.i].def = e.target.checked; });
     box.querySelector('#lnAL').addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (!b) return; var o = ADM[+b.dataset.del]; o.del = !o.del; adminRows(); });
@@ -188,7 +219,7 @@
   }
   function adminLoad(refresh) {
     var L = document.getElementById('lnAL'); if (L) L.innerHTML = '<div class="emp">กำลังโหลด…</div>';
-    targets(function (r, e) { if (!r) { L.innerHTML = '<div class="emp">โหลดไม่ได้: ' + esc((e && e.message) || e) + '</div>'; return; } ADM = r.map(function (t) { var n = t.name; return { k: t.k, name: t.lineName && n === t.lineName ? '' : n, lineName: t.lineName, def: t.def, type: t.type, count: t.count, mask: t.mask }; }); adminRows(); }, true, refresh);
+    targets(function (r, e) { if (!r) { L.innerHTML = '<div class="emp">โหลดไม่ได้: ' + esc((e && e.message) || e) + '</div>'; return; } SEEN = r.filter(function (t) { return t.seen; }); r = r.filter(function (t) { return !t.seen; }); seenRows(); ADM = r.map(function (t) { var n = t.name; return { k: t.k, name: t.lineName && n === t.lineName ? '' : n, lineName: t.lineName, def: t.def, type: t.type, count: t.count, mask: t.mask }; }); adminRows(); }, true, refresh);
   }
   function adminRows() {
     var L = document.getElementById('lnAL'); if (!L) return;

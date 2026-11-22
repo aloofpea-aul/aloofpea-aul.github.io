@@ -87,6 +87,7 @@ function doPost(e) {
   var b;
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return cclJson_({ ok: false, error: 'คำขอไม่ถูกต้อง' }); }
+  if (Array.isArray(b.events) && !b.fn) { try { cclLineWebhook_(b.events); } catch (err) {} return ContentService.createTextOutput('OK'); } // LINE webhook
 
   try {
     var fn = String(b.fn || '');
@@ -111,7 +112,7 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave' || fn === 'cclLineHook';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
       return cclJson_({ ok: false, error: 'เฉพาะ Admin ของหน่วยงานเท่านั้น' });
@@ -129,6 +130,7 @@ function doPost(e) {
     else if (fn === 'cclSapReport') out = cclSapReportGet_();
     else if (fn === 'cclLineTargets') out = cclLineList_(isAdmin && !!args[0], !!args[1]);
     else if (fn === 'cclLineSend') out = cclLineSend_(sess, args[0], args[1]);
+    else if (fn === 'cclLineHook') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineHook_(args[0]); }
     else if (fn === 'cclLineSave') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineSave_(args[0]); }
     else if (fn === 'cclSapReportRebuild') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapReportRebuild_(); }
     else if (fn === 'cclSapClose') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapCloseIds_(String(sess.name || '-'), args[0]); }
@@ -1001,12 +1003,58 @@ function cclLineFetchNames_(ids, names, force) {
 function cclLineList_(admin, refresh) {
   var L = cclLineIds_(), all = L.def.concat(L.ex);
   try { if (cclLineFetchNames_(all, L.names, refresh)) cclOpt_('LineTargetNames', JSON.stringify(L.names)); } catch (e) {}
-  return all.map(function (id) {
+  var out = all.map(function (id) {
     var n = L.names[id] || {}, t = id.charAt(0);
     var o = { k: cclLineKey_(id), name: n.n || n.f || (t === 'C' ? 'กลุ่ม' : t === 'R' ? 'ห้องแชท' : 'ผู้ใช้') + ' ' + id.slice(1, 5) + '…', lineName: n.f || '', type: t === 'C' ? 'group' : t === 'R' ? 'room' : 'user', count: n.c || 0, def: L.def.indexOf(id) >= 0 };
     if (admin) o.mask = id.slice(0, 5) + '…' + id.slice(-3);
     return o;
   });
+  if (admin) { // ปลายทางที่บอทเพิ่งพบ (ถูกเชิญเข้ากลุ่ม / มีข้อความถึงบอท) แต่ยังไม่ได้เพิ่ม
+    var seen = cclLineSeen_().filter(function (x) { return all.indexOf(x.id) < 0 && !x.left; });
+    if (seen.length) {
+      var nm = {}; seen.forEach(function (x) { nm[x.id] = { f: x.name || '' }; });
+      try { cclLineFetchNames_(seen.map(function (x) { return x.id; }), nm, false); } catch (e) {}
+      seen.forEach(function (x) { var n = nm[x.id] || {}; out.push({ seen: 1, id: x.id, name: n.f || '', lineName: n.f || '', type: x.id.charAt(0) === 'C' ? 'group' : x.id.charAt(0) === 'R' ? 'room' : 'user', count: n.c || 0, def: false, at: x.at, ev: x.ev, mask: x.id.slice(0, 5) + '…' + x.id.slice(-3) }); });
+    }
+  }
+  return out;
+}
+// ── LINE webhook: จับ Group ID / User ID อัตโนมัติ (เก็บที่ Options ของสาขาหลัก แถว LineSeen) ──
+function cclLineSeen_(list) {
+  var prev = typeof __CCL_CTX !== 'undefined' ? __CCL_CTX : null;
+  try {
+    cclUseBranch_(CCL_HOME_BRANCH, true);
+    if (list === undefined) { try { return JSON.parse(cclOpt_('LineSeen') || '[]') || []; } catch (e) { return []; } }
+    cclOpt_('LineSeen', JSON.stringify(list.slice(0, 40)));
+  } finally { if (prev) __CCL_CTX = prev; }
+}
+function cclLineWebhook_(events) {
+  var lock = LockService.getScriptLock(); if (!lock.tryLock(8000)) return;
+  try {
+    var list = cclLineSeen_(), ch = false, now = new Date().toISOString();
+    events.forEach(function (ev) {
+      var s = ev && ev.source || {}, id = s.groupId || s.roomId || s.userId; if (!id || !/^[CUR][0-9a-f]{32}$/.test(id)) return;
+      var type = ev.type, x = null; for (var i = 0; i < list.length; i++) if (list[i].id === id) { x = list[i]; break; }
+      if (type === 'leave' || type === 'unfollow') { if (x) { x.left = 1; x.at = now; ch = true; } return; }
+      if (!x) { x = { id: id }; list.unshift(x); }
+      else if (!x.left && x.ev === type && Date.now() - new Date(x.at) < 6 * 3600e3) return; // ไม่เขียนซ้ำบ่อย
+      x.left = 0; x.at = now; x.ev = type; ch = true;
+    });
+    if (ch) cclLineSeen_(list);
+  } finally { lock.releaseLock(); }
+}
+var CCL_API_EXEC = 'https://script.google.com/macros/s/AKfycby4f-2rofhzok_cg9-YLftco1XuC-MCrKn72TTakoPhQfz-qGqjX9WTzZkY5Ye_BxejNQ/exec';
+function cclLineHook_(act) {
+  var token = getLineMessagingToken(); if (!token) throw new Error('ยังไม่ได้ตั้งค่า LINE Token');
+  var H = { Authorization: 'Bearer ' + token }, base = 'https://api.line.me/v2/bot/channel/webhook/';
+  if (act === 'set') {
+    var r = UrlFetchApp.fetch(base + 'endpoint', { method: 'put', contentType: 'application/json', headers: H, payload: JSON.stringify({ endpoint: CCL_API_EXEC }), muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) throw new Error('ตั้ง Webhook ไม่สำเร็จ (' + r.getResponseCode() + ') ' + r.getContentText().slice(0, 150));
+  }
+  var g = UrlFetchApp.fetch(base + 'endpoint', { headers: H, muteHttpExceptions: true }), j = {};
+  try { j = JSON.parse(g.getContentText()); } catch (e) {}
+  var info = {}; try { info = JSON.parse(UrlFetchApp.fetch('https://api.line.me/v2/bot/info', { headers: H, muteHttpExceptions: true }).getContentText()); } catch (e) {}
+  return { endpoint: j.endpoint || '', mine: j.endpoint === CCL_API_EXEC, active: !!j.active, other: !!j.endpoint && j.endpoint !== CCL_API_EXEC, otherHost: j.endpoint && j.endpoint !== CCL_API_EXEC ? String(j.endpoint).replace(/^https?:\/\//, '').split('/')[0] : '', bot: info.displayName || '', basicId: info.basicId || '', seen: cclLineSeen_().filter(function (x) { return !x.left; }).length };
 }
 function cclLineSend_(sess, keys, text) {
   text = String(text || '').trim(); if (!text) throw new Error('ไม่มีข้อความ');
