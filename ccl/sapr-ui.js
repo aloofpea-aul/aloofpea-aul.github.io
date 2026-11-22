@@ -133,7 +133,7 @@
     var nProj = Object.keys(A.reduce(function (o, j) { o[j.p] = 1; return o; }, {})).length;
     var h = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP · กฟส.อ่าวลึก</h2><span class="src">ไฟล์: ' + esc(R.file || '-') + ' · สร้างรายงาน ' + esc(dth(R.at)) + '</span><span class="sp"></span>' +
       '<select class="bt" id="saprYr"><option value="">ทุกปีงบ</option>' + Object.keys(yrs).sort().reverse().map(function (y) { return '<option value="' + y + '"' + (F.yr === y ? ' selected' : '') + '>ปี ' + y + '</option>'; }).join('') + '</select>' +
-      '<button class="bt" data-a="csv">⬇ Excel</button>' + (isAdm() ? '<button class="bt" data-a="rebuild" title="อ่านไฟล์ SAP ล่าสุดในโฟลเดอร์อีกครั้ง">↻ สร้างใหม่</button>' : '') + '</div>';
+      '<button class="bt" data-a="line" style="color:#06c755"><i class="fa-brands fa-line"></i> ส่ง/แชร์</button><button class="bt" data-a="csv">⬇ Excel</button>' + (isAdm() ? '<button class="bt" data-a="rebuild" title="อ่านไฟล์ SAP ล่าสุดในโฟลเดอร์อีกครั้ง">↻ สร้างใหม่</button>' : '') + '</div>';
     var tot = A.length, cl = tot - op.length, noc = cnt(A, FILT.noccl[1]);
     h += '<div class="kp">' +
       '<button class="k" data-f="all"><small>งานทั้งหมดใน SAP</small><b>' + tot + '</b><span>' + Object.keys(BUD).filter(function (b) { return cnt(A, function (j) { return j.b === b; }); }).length + ' งบ · ' + nProj + ' โครงการ</span></button>' +
@@ -215,6 +215,7 @@
     if (d.lf) { LF = d.lf; LIM = 40; list(); return; }
     if (d.a === 'more') { LIM += 100; list(); return; }
     if (d.a === 'csv') return csv();
+    if (d.a === 'line') return lineShare();
     if (d.a === 'rebuild') return rebuild();
     if (d.f) F.sel = { t: 'f', v: d.f }; else if (d.b) F.sel = { t: 'b', v: d.b }; else if (d.p) F.sel = { t: 'p', v: d.p };
     else if (d.gx) F.sel = { t: 'g', v: d.gx, l: (t.querySelector('b') || {}).textContent || '' }; else if (d.w) F.sel = { t: 'w', v: d.w };
@@ -229,6 +230,20 @@
       if (window.Swal) Swal.fire({ icon: 'success', title: 'สร้างรายงานแล้ว', text: (r.file || '') + ' · ' + (r.jobs || 0) + ' งาน', timer: 1600, showConfirmButton: false });
       R = null; try { localStorage.removeItem(KEY); } catch (e) {} load(true);
     }).withFailureHandler(function (e) { if (window.Swal) Swal.fire({ icon: 'error', title: 'สร้างรายงานไม่ได้', text: (e && e.message) || String(e) }); }).cclSapReportRebuild();
+  }
+  function lineShare() {
+    if (!window.cclLineShare) return;
+    var A = view(), op = A.filter(function (j) { return j.open; }), c = function (a, f) { return cnt(a, f); };
+    var m = '📊 รายงานสถานะงาน SAP · กฟส.อ่าวลึก' + (F.yr ? ' (ปี ' + F.yr + ')' : '') + '\n📁 ' + (R.file || '-') + ' · ' + dth(R.at) + '\n\n';
+    m += 'งานทั้งหมด ' + A.length + ' · เปิดอยู่ ' + op.length + ' · ปิดแล้ว ' + (A.length - op.length) + ' (' + (A.length ? Math.round((A.length - op.length) / A.length * 100) : 0) + '%)\n';
+    Object.keys(BUD).forEach(function (b) { var a = A.filter(function (j) { return j.b === b; }); if (a.length) m += '• ' + BUD[b][0] + ' ' + a.length + ' งาน · เปิดอยู่ ' + c(a, function (j) { return j.open; }) + '\n'; });
+    m += '\n⚠️ ต้องติดตาม\n• งานปีเก่ายังค้าง ' + c(A, FILT.old[1]) + '\n• หยุดงาน (C3–C6) ' + c(A, FILT.stop[1]) + '\n• TECO รอปิดบัญชี ' + c(A, FILT.teco[1]) + '\n• อยู่ใน SAP ยังไม่มีใน CCL ' + c(A, FILT.noccl[1]) + '\n';
+    if (F.sel) {
+      var r = selJobs(), a = r[1].filter(function (j) { return LF === 'all' || (LF === 'open' ? j.open : LF === 'clsd' ? !j.open : FILT.noccl[1](j)); });
+      m += '\n📋 ' + r[0] + ' (' + a.length + ' งาน)\n' + a.slice(0, 40).map(function (j, i) { return (i + 1) + ') ' + j.w + ' ' + j.n + ' — ' + j.u + (j.who ? ' · ' + j.who : ''); }).join('\n') + (a.length > 40 ? '\n… และอีก ' + (a.length - 40) + ' งาน' : '') + '\n';
+    }
+    m += '\n🔗 https://aloofpea-aul.github.io/ccl/';
+    cclLineShare({ sub: 'รายงาน SAP' + (F.sel ? ' · ' + selJobs()[0] : ''), text: m });
   }
   function csv() {
     var r = selJobs(), a = r[1];

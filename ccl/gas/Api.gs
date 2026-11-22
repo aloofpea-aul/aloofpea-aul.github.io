@@ -111,7 +111,7 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
       return cclJson_({ ok: false, error: 'เฉพาะ Admin ของหน่วยงานเท่านั้น' });
@@ -127,6 +127,9 @@ function doPost(e) {
     else if (fn === 'cclSapAutoSet') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapAutoSet_(sess, args[0]); }
     else if (fn === 'cclSapAutoRun') { if (!isAdmin && !args[0]) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapAutoRun_(String(sess.name || '-'), !!args[0]); }
     else if (fn === 'cclSapReport') out = cclSapReportGet_();
+    else if (fn === 'cclLineTargets') out = cclLineList_(isAdmin && !!args[0], !!args[1]);
+    else if (fn === 'cclLineSend') out = cclLineSend_(sess, args[0], args[1]);
+    else if (fn === 'cclLineSave') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineSave_(args[0]); }
     else if (fn === 'cclSapReportRebuild') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapReportRebuild_(); }
     else if (fn === 'cclSapClose') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapCloseIds_(String(sess.name || '-'), args[0]); }
     else if (fn === 'cclFixJobs') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclFixJobs_(sess, args[0], args[1]); }
@@ -953,4 +956,87 @@ function cclSapReportRebuild_() {
     if (rep) { cclSapSaveReport_(rep); return { success: true, file: rep.file, jobs: rep.jobs.length }; }
   }
   throw new Error('ไม่พบไฟล์ SAP รูปแบบ WBS (มีคอลัมน์ Proj.def / องค์ประกอบ WBS / ระดับ / สถานะ)');
+}
+
+
+// ═════ LINE: เลือกกลุ่ม/รายชื่อปลายทาง ═════
+// ปลายทาง "ค่าเริ่มต้น" = แถว LineTargets เดิม (การแจ้งเตือนอัตโนมัติยังส่งไปที่นี่เหมือนเดิม)
+// ปลายทาง "เพิ่มเติม" = แถว LineTargetsExtra (ส่งเฉพาะเมื่อมีคนเลือก) · ชื่อเก็บในแถว LineTargetNames (JSON)
+function cclOpt_(key, val) {
+  var sh = getSheetSafe(cclSS_(), SHEET_OPTIONS_NAME), d = sh.getDataRange().getValues();
+  for (var i = 0; i < d.length; i++) if (d[i][0] === key) { if (val === undefined) return String(d[i][1] || ''); sh.getRange(i + 1, 2).setValue(val); return val; }
+  if (val === undefined) return '';
+  sh.appendRow([key, val]); return val;
+}
+function cclLineKey_(id) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, 'ccl-line:' + id).slice(0, 6).map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
+}
+function cclLineIds_() {
+  var sp = function (s) { return String(s || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); };
+  var def = getLineTargets().map(function (x) { return String(x).trim(); }).filter(Boolean), ex = sp(cclOpt_('LineTargetsExtra')).filter(function (x) { return def.indexOf(x) < 0; });
+  var names = {}; try { names = JSON.parse(cclOpt_('LineTargetNames') || '{}') || {}; } catch (e) {}
+  return { def: def, ex: ex, names: names };
+}
+// ดึงชื่อกลุ่ม/ชื่อคน + จำนวนสมาชิกจาก LINE (เก็บไว้ 7 วัน)
+function cclLineFetchNames_(ids, names, force) {
+  var token = getLineMessagingToken(); if (!token) return false;
+  var now = Date.now(), need = ids.filter(function (id) { var n = names[id]; return force || !n || !n.f || now - (n.at || 0) > 7 * 864e5; }).slice(0, 30);
+  if (!need.length) return false;
+  var H = { Authorization: 'Bearer ' + token }, reqs = [], map = [];
+  need.forEach(function (id) {
+    var t = id.charAt(0), base = 'https://api.line.me/v2/bot/';
+    if (t === 'C') { reqs.push({ url: base + 'group/' + id + '/summary', headers: H, muteHttpExceptions: true }); map.push([id, 'n']); reqs.push({ url: base + 'group/' + id + '/members/count', headers: H, muteHttpExceptions: true }); map.push([id, 'c']); }
+    else if (t === 'R') { reqs.push({ url: base + 'room/' + id + '/members/count', headers: H, muteHttpExceptions: true }); map.push([id, 'c']); }
+    else { reqs.push({ url: base + 'profile/' + id, headers: H, muteHttpExceptions: true }); map.push([id, 'n']); }
+  });
+  var res = UrlFetchApp.fetchAll(reqs);
+  res.forEach(function (r, i) {
+    var id = map[i][0], o = names[id] = names[id] || {}; o.at = now;
+    if (r.getResponseCode() !== 200) { if (map[i][1] === 'n') o.f = o.f || ''; return; }
+    var j = {}; try { j = JSON.parse(r.getContentText()); } catch (e) {}
+    if (map[i][1] === 'n') o.f = j.groupName || j.displayName || o.f || ''; else o.c = j.count || 0;
+  });
+  return true;
+}
+function cclLineList_(admin, refresh) {
+  var L = cclLineIds_(), all = L.def.concat(L.ex);
+  try { if (cclLineFetchNames_(all, L.names, refresh)) cclOpt_('LineTargetNames', JSON.stringify(L.names)); } catch (e) {}
+  return all.map(function (id) {
+    var n = L.names[id] || {}, t = id.charAt(0);
+    var o = { k: cclLineKey_(id), name: n.n || n.f || (t === 'C' ? 'กลุ่ม' : t === 'R' ? 'ห้องแชท' : 'ผู้ใช้') + ' ' + id.slice(1, 5) + '…', lineName: n.f || '', type: t === 'C' ? 'group' : t === 'R' ? 'room' : 'user', count: n.c || 0, def: L.def.indexOf(id) >= 0 };
+    if (admin) o.mask = id.slice(0, 5) + '…' + id.slice(-3);
+    return o;
+  });
+}
+function cclLineSend_(sess, keys, text) {
+  text = String(text || '').trim(); if (!text) throw new Error('ไม่มีข้อความ');
+  if (text.length > 4900) text = text.slice(0, 4890) + '\n…';
+  var L = cclLineIds_(), all = L.def.concat(L.ex), byK = {};
+  all.forEach(function (id) { byK[cclLineKey_(id)] = id; });
+  var ids = (keys || []).map(function (k) { return byK[k]; }).filter(Boolean);
+  if (!ids.length) throw new Error('ยังไม่ได้เลือกปลายทาง');
+  var token = getLineMessagingToken(); if (!token) throw new Error('ยังไม่ได้ตั้งค่า LINE Token');
+  var reqs = ids.map(function (id) { return { url: 'https://api.line.me/v2/bot/message/push', method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + token }, payload: JSON.stringify({ to: id, messages: [{ type: 'text', text: text }] }), muteHttpExceptions: true }; });
+  var ok = 0, fail = [];
+  UrlFetchApp.fetchAll(reqs).forEach(function (r, i) { if (r.getResponseCode() === 200) ok++; else { var n = L.names[ids[i]] || {}; fail.push((n.n || n.f || ids[i].slice(0, 5)) + ' (' + r.getResponseCode() + ')'); } });
+  return { success: ok > 0, sent: ok, fail: fail };
+}
+// items: [{k (เดิม) | id (ใหม่), name, def, del}]
+function cclLineSave_(items) {
+  var L = cclLineIds_(), all = L.def.concat(L.ex), byK = {}, def = [], ex = [], seen = {};
+  all.forEach(function (id) { byK[cclLineKey_(id)] = id; });
+  (items || []).forEach(function (it) {
+    var id = it.k ? byK[it.k] : String(it.id || '').trim();
+    if (!id || seen[id]) return;
+    if (!it.k && !/^[CUR][0-9a-f]{32}$/.test(id)) throw new Error('ID ไม่ถูกต้อง: ต้องขึ้นต้นด้วย C (กลุ่ม) หรือ U (ผู้ใช้) ตามด้วยตัวอักษร 32 ตัว');
+    seen[id] = 1;
+    if (it.del) { delete L.names[id]; return; }
+    (it.def ? def : ex).push(id);
+    var n = L.names[id] = L.names[id] || {}; n.n = String(it.name || '').trim().slice(0, 60);
+  });
+  updateLineTargets(def.join(','));
+  cclOpt_('LineTargetsExtra', ex.join(','));
+  try { cclLineFetchNames_(def.concat(ex), L.names, false); } catch (e) {}
+  cclOpt_('LineTargetNames', JSON.stringify(L.names));
+  return { success: true, def: def.length, ex: ex.length };
 }
