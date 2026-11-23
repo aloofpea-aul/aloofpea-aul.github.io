@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <head>
-<script src="/pea-hub.js?v=2026112301" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
+<script src="/pea-hub.js?v=2026112302" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ประเมินค่าเสียหายระบบจำหน่าย · กฟส.อ่าวลึก</title>
@@ -16,14 +16,15 @@
 <script src="pricepdf.js?v=1"></script>
 <style>
 /* ฟอนต์เอกสาร: ใช้ TH SarabunIT๙ ที่ติดตั้งในเครื่องก่อน ถ้าไม่มี (มือถือ) ใช้ TH Sarabun New ที่ฝังมากับแอป — ขนาดตัวอักษรเท่ากัน */
-@font-face{font-family:'THSN';src:url('fonts/THSarabunNew.woff') format('woff');font-display:block}
-@font-face{font-family:'THSN';font-weight:700;src:url('fonts/THSarabunNew-Bold.woff') format('woff');font-display:block}
+/* TH Sarabun New ที่ฝังมา วาดใหญ่กว่า TH SarabunIT๙ จริง 1.53 เท่า → ย่อ 65.5% ให้ขนาด/ความกว้างตรงกับ Word (วัดเทียบจากต้นฉบับ PDF) */
+@font-face{font-family:'THSN';src:url('fonts/THSarabunNew.woff') format('woff');font-display:block;size-adjust:65.5%;ascent-override:75%;descent-override:25%}
+@font-face{font-family:'THSN';font-weight:700;src:url('fonts/THSarabunNew-Bold.woff') format('woff');font-display:block;size-adjust:65.5%;ascent-override:75%;descent-override:25%}
 :root{
   --head:#9a3412; --head2:#7c2d12; --accent:#c2410c; --accent-soft:#fdeee5;
   --bg:#f6f3f1; --panel:#fff; --fg:#26201c; --muted:#75685f; --line:#e6ddd6;
   --ok:#1f7a4d; --bad:#b42318;
   --ui:system-ui,-apple-system,"Segoe UI","Noto Sans Thai","Leelawadee UI",sans-serif;
-  --doc:'TH SarabunIT๙','THSN','TH Sarabun New','TH SarabunPSK',serif;
+  --doc:'THSN',serif;
   --navh:62px;
 }
 *{box-sizing:border-box}
@@ -189,6 +190,27 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .photo img{display:block;object-fit:contain;max-height:115mm}
 
 #measure{position:fixed;left:-400mm;top:0;visibility:hidden;pointer-events:none}
+/* ---------- หน้าแบบตำแหน่งตายตัวตามต้นฉบับ ---------- */
+.page.abs{padding:0;position:relative}
+.page.abs .in{height:100%;position:relative;overflow:hidden}
+.page .a{position:absolute;white-space:pre;line-height:1}
+.page .dl{position:absolute;height:0.18mm;background:repeating-linear-gradient(90deg,#000 0 0.7mm,transparent 0.7mm 1.23mm)}
+.page .ln{position:absolute;background:#000}
+.page .cbx{position:absolute;width:3.2mm;height:3.2mm;border:0.26mm solid #000;box-sizing:border-box}
+.page .tick{position:absolute;overflow:visible}
+.page .ud{position:absolute;height:0;border-top:0.22mm dotted #000}
+.page .a .st{text-decoration:line-through;text-decoration-thickness:0.2mm}
+.page .cf{position:absolute;left:25.4mm;width:159.2mm;font-size:14pt;line-height:5.58mm}
+.page .cf p{margin:0}
+.page .cf .bl{height:5.58mm}
+.page .cf .sp{height:4.0mm}
+.page .cf .j{text-align:justify}
+.page .u{display:inline-block;position:relative;text-indent:0;padding:0 1mm;vertical-align:top;white-space:nowrap}
+.page .u.c{text-align:center}
+.page .u::after{content:"";position:absolute;left:0;right:0;bottom:0.55mm;border-bottom:0.2mm dotted #000}
+.page .phpage{position:absolute;inset:20mm 15mm;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly}
+.page .phpage img{display:block;width:auto;height:auto}
+
 
 /* ---------- พิมพ์ ---------- */
 @page{size:A4;margin:0}
@@ -811,229 +833,325 @@ async function save() {
 /* =================================================================
    วาดหน้ากระดาษ — ข้อความตามแบบฟอร์มต้นฉบับทุกตัวอักษร
    ================================================================= */
-const F = (v, w, cls) => `<span class="fl ${cls || ''}"${w ? ` style="min-width:${w}mm"` : ''}>${v ? esc(v) : '&nbsp;'}</span>`;
-const FL = (v, cls) => `<span class="fl ml ${cls || ''}">&nbsp;${v ? esc(v) : '&nbsp;'.repeat(20)}&nbsp;</span>`;
-const CB = on => `<span class="cb${on ? ' on' : ''}"></span>`;
-const BL = (n = 1) => '<div class="bl"></div>'.repeat(n);
-
-const SEP = '<!--B-->';
-function pageMemo(t) {
-  const cnt = String(D.itemCount || '').trim() || String(t.c1 + t.c2);
-  const vt = D.vehType;
-  const veh = `<span class="${vt === 'ยานยนต์' ? 'u' : ''}">ยานยนต์</span> / <span class="${vt === 'เรือยนต์' ? 'u' : ''}">เรือยนต์</span>`;
-  const deb = D.debtOpt || [], pol = D.policeOpt || [];
-  const r1 = itemRows(D.rows1, 1), r2 = itemRows(D.rows2, 2);
-  return [
-  `<img class="memo-logo" src="pea-logo.png" alt=""><div style="height:6mm"></div>
-   <div class="org1">การไฟฟ้าส่วนภูมิภาค</div><div class="org2">PROVINCIAL ELECTRICITY AUTHORITY</div>`,
-  BL(),
-  `<table class="hd">
-    <colgroup><col style="width:8.4%"><col style="width:40.6%"><col style="width:5%"><col style="width:8.6%"><col style="width:37.4%"></colgroup>
-    <tr><td><b>จาก</b></td><td>${esc(D.from)}</td><td></td><td><b>ถึง</b></td><td>${esc(D.to)}</td></tr>
-    <tr><td><b>เลขที่</b></td><td>${esc(D.docNo)}</td><td></td><td><b>วันที่</b></td><td>${esc(thDate(D.docDate))}</td></tr>
-    <tr><td><b>เรื่อง</b></td><td colspan="4">${esc(D.subject)}</td></tr>
-  </table>`,
-  `<p><b style="display:inline-block;width:12.7mm">เรียน</b>${esc(D.rian)}</p>`,
-  `<p class="ind fi">ตามที่ได้ดำเนินการตรวจสอบและประเมินราคาค่าเสียหายเพื่อเรียกร้องจากผู้กระทำละเมิด</p>`,
-  `<p>โดยมีรายละเอียดดังนี้</p>`,
-  `<p class="fi">1. เหตุเกิดเมื่อวันที่ ${F(thDate(D.incDate), 40, 'c')} เวลาประมาณ ${F(D.incTime, 20, 'c')} น.</p>`,
-  `<p class="ind">2. สถานที่เกิดเหตุบริเวณ ${FL(D.place)}</p>`,
-  `<p class="ind">3. หมายเลขทะเบียน ${veh} เลขที่ ${FL(D.plate)}</p>`,
-  `<p class="ind">4. ชื่อผู้ขับขี่ ${F(D.driver, 70)}</p>
-   <p class="ind" style="padding-left:20mm">หมายเลขบัตรประชาชน / ใบขับขี่ ${F(D.driverId, 50, 'c')}</p>`,
-  `<p class="ind">5. ที่อยู่ตามบัตร ใบขับขี่ ${FL(D.driverAddr)}</p>
-   <p class="ind" style="padding-left:20mm">โทรศัพท์ : ${F(D.driverTel, 45)}</p>`,
-  `<p class="ind">6. ชื่อ/บริษัท/เจ้าของ ${F(D.owner, 40)} เบอร์โทรศัพท์ ${F(D.ownerTel, 26)}</p>`,
-  `<p class="ind">7. ชื่อ/บริษัท/ประกันภัย ${F(D.insurer, 38)} เบอร์โทรศัพท์ ${F(D.insurerTel, 26)}</p>`,
-  `<p class="ind">8.ผู้ลงนามในหนังสือรับสภาพหนี้ ${F(D.debtSigner || '-', 70, 'c')}</p>
-   <p class="ind" style="padding-left:16mm"><span class="opt">${CB(deb.includes('ผู้ขับขี่'))}ผู้ขับขี่</span><span class="opt">${CB(deb.includes('เจ้าของยานพาหนะ'))}เจ้าของยานพาหนะ</span><span class="opt">${CB(deb.includes('ไม่ยินยอม'))}ไม่ยินยอม</span><span class="opt" style="margin-right:0">${CB(deb.includes('บริษัทประกันภัย'))}บริษัทประกันภัย</span></p>`,
-  `<p class="ind">9.การแจ้งความร้องทุกข์กับเจ้าหน้าที่ตำรวจ สถานีตำรวจ ${F(D.policeStation, 30)}</p>
-   <p class="ind" style="padding-left:16mm"><span class="opt">${CB(pol.includes('รายงานประจำวันเกี่ยวกับคดี'))}รายงานประจำวันเกี่ยวกับคดี</span><span class="opt">${CB(pol.includes('แจ้งเป็นหลักฐาน'))}แจ้งเป็นหลักฐาน</span><span style="white-space:nowrap">${CB(pol.includes('แจ้งความเป็นคดี'))}แจ้งความเป็นคดี</span> เนื่องจาก ${F(D.policeReason, 30)}</p>`,
-  `<p class="ind">10.กรณีรถยนต์เกี่ยวสายสื่อสารทำให้เกิดความเสียหายกับระบบจำหน่าย</p>
-   <p class="ind" style="padding-left:20mm">ชื่อ/บริษัท เจ้าของสื่อสาร ${F(D.commOwner || '-', 34, 'c')} ความสูง ${F(D.commHeight || '-', 16, 'c')}</p>`,
-  `<p class="ind">11.รายการอุปกรณ์ที่ได้รับความเสียหาย ${F(cnt, 18, 'c')} รายการ คิดเป็นค่าเสียหาย</p>
-   <p style="padding-left:18.3mm">จำนวนเงินทั้งสิ้น ${F(money(t.total), 30, 'c')} บาท (${esc(bahtText(t.total))})</p>
-   <p style="padding-left:18.3mm">โดยมีรายละเอียดดังนี้</p>`,
-  `<p style="padding-left:16.5mm">11.1 รื้อถอน-ติดตั้งใหม่ ${F(t.c1 ? String(t.c1) : '', 14, 'c')} รายการ เป็นจำนวนเงินทั้งสิ้น ${F(t.c1 ? money(t.s1) : '', 28, 'c')} บาท</p>`,
-  `<table class="grid" data-split="1">
-    <colgroup><col style="width:9.6%"><col style="width:48.4%"><col style="width:8.8%"><col style="width:8.8%"><col style="width:16.2%"><col style="width:8.2%"></colgroup>
-    <tr><th>รายการ</th><th>รายละเอียด</th><th>จำนวน</th><th>หน่วย</th><th colspan="2">ราคา/บาท</th></tr>
-    ${r1.map(r => r ? `<tr><td class="c">${r.no}</td><td>${esc(r.d)}</td><td class="c">${esc(r.q)}</td><td class="c">${esc(r.u)}</td><td class="c" style="white-space:nowrap">${r.a}</td><td class="c">บาท</td></tr>`
-      : '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}
-  </table>`,
-  BL(),
-  `<p>หมายเหตุ : ราคามาตรฐานพัสดุ (กรณีละเมิดทรัพย์สินระบบไฟฟ้า ของ กฟภ.) พัสดุหลัก และพัสดุรอง</p>
-   <p>ครั้งที่ ${esc(D.priceRound)}</p>`,
-  BL(),
-  `<p>11.2 แผนกซ่อมแซม ${F(t.c2 ? String(t.c2) : '', 20, 'c')} รายการ เป็นเงินทั้งสิ้น ${F(t.c2 ? money(t.s2) : '', 32, 'c')} บาท</p>
-  <table class="grid">
-    <colgroup><col style="width:12.3%"><col style="width:34.4%"><col style="width:14.9%"><col style="width:14.9%"><col style="width:23.5%"></colgroup>
-    <tr><th>รายการ</th><th>ชื่อพัสดุ</th><th>จำนวน</th><th>หน่วย</th><th>ราคา</th></tr>
-    ${r2.map(r => r ? `<tr><td class="c">${r.no}</td><td>${esc(r.d)}</td><td class="r">${esc(r.q)}</td><td class="r">${esc(r.u)}</td><td class="r">${r.a}</td></tr>`
-      : '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('')}
-  </table>`,
-  BL(2),
-  `<div class="sig" style="padding-left:72mm">ลงชื่อ<span class="dots" style="width:45mm"></span>ผู้ประเมิน.</div>
-   <div class="c" style="padding-left:72mm">( ${esc(D.evalName)} )</div>
-   <div class="c" style="padding-left:72mm">${esc(D.evalPos)}</div>`,
-  BL(),
-  apvTable(t)
-  ];
+/* =================================================================
+   วาดหน้ากระดาษ — ตำแหน่งทุกบรรทัดวัดจากต้นฉบับ (Word → PDF) หน่วย มม.
+   y = ขอบบนของตัวอักษรตามต้นฉบับ · ตัวเลขทั้งหมดแสดงเป็นเลขไทยแบบ TH SarabunIT๙
+   ================================================================= */
+const TH_DIGIT = s => String(s).replace(/[0-9]/g, d => '๐๑๒๓๔๕๖๗๘๙'[d]);
+const thaiDigitsHTML = h => h.replace(/>([^<]+)</g, (m, t) => '>' + TH_DIGIT(t) + '<');
+const PT = 25.4 / 72;                                   // 1 pt เป็น มม.
+const YOFF = sz => 0.0331 * sz;                         // ชดเชยตำแหน่งเส้นฐานให้ตรง Word
+const _wCache = new Map();
+function W(txt, sz = 16, b = false) {                   // ความกว้างข้อความ (มม.)
+  const k = sz + (b ? 'b' : '') + '|' + txt; if (_wCache.has(k)) return _wCache.get(k);
+  let m = $('#measureW'); if (!m) { m = document.createElement('span'); m.id = 'measureW'; m.className = 'a'; $('#measure').appendChild(m); m.style.cssText = 'position:absolute;white-space:nowrap;font-family:var(--doc)'; }
+  m.style.fontSize = sz + 'pt'; m.style.fontWeight = b ? 700 : 400; m.textContent = TH_DIGIT(txt);
+  const w = m.getBoundingClientRect().width * 25.4 / 96; _wCache.set(k, w); return w;
 }
-function itemRows(rows, minRows) {
-  const list = rows.filter(r => (r.d || '').trim() || num(r.p));
-  const out = list.map((r, i) => ({ no: i + 1, d: r.d, q: qtyFmt(r.q || '1'), u: r.u, a: money(num(r.q || 1) * num(r.p)) }));
-  while (out.length < minRows) out.push(null);
+function T(x, y, txt, o = {}) {
+  const sz = o.sz || 16;
+  let st = `left:${x}mm;top:${(y + YOFF(sz)).toFixed(2)}mm;font-size:${sz}pt;`;
+  if (o.b) st += 'font-weight:700;';
+  if (o.c) st += 'transform:translateX(-50%);'; else if (o.r) st += 'transform:translateX(-100%);';
+  return `<div class="a${o.st ? ' st' : ''}" style="${st}">${o.html ? txt : esc(txt)}</div>`;
+}
+const DL = (x0, x1, y) => `<div class="dl" style="left:${x0}mm;top:${y - 0.1}mm;width:${(x1 - x0).toFixed(2)}mm"></div>`;
+const LN = (x, y, w, h) => `<div class="ln" style="left:${x}mm;top:${y}mm;width:${w}mm;height:${h}mm"></div>`;
+function CBX(x, y, on) {
+  return `<div class="cbx" style="left:${x}mm;top:${y}mm"></div>` + (on ? `<svg class="tick" style="left:${x - 0.3}mm;top:${y - 1.3}mm" viewBox="0 0 50 50" width="5mm" height="5mm"><line x1="2" y1="47" x2="48" y2="3" stroke="#000" stroke-width="2.6"/></svg>` : '');
+}
+/** ค่าที่กรอก 1 บรรทัด: ย่อขนาดอักษรเองถ้ายาวเกินช่อง · c = จัดกลางช่อง */
+function FV(x, y, x1, txt, o = {}) {
+  txt = String(txt == null ? '' : txt).trim(); if (!txt) return '';
+  let sz = o.sz || 16; const room = x1 - x;
+  while (sz > 10 && W(txt, sz) > room) sz -= 0.5;
+  if (o.c) return T(x + room / 2, y + ((o.sz || 16) - sz) * PT * 0.75, txt, { sz, c: 1 });
+  return T(x, y + ((o.sz || 16) - sz) * PT * 0.75, txt, { sz });
+}
+const seg = (() => { try { const s = new Intl.Segmenter('th', { granularity: 'word' }); return t => [...s.segment(t)].map(x => x.segment); } catch (e) { return t => t.split(/(\s+)/); } })();
+/** แบ่งข้อความลงหลายบรรทัด [[x, y, x1], …] ตามความกว้างจริง */
+function wrapInto(txt, widths, sz) {
+  const parts = seg(String(txt || '').trim()), out = []; let line = '', i = 0;
+  for (const p of parts) {
+    if (W(line + p, sz) <= widths[Math.min(i, widths.length - 1)] || !line) line += p;
+    else { out.push(line); line = p.replace(/^\s+/, ''); i++; }
+  }
+  if (line) out.push(line);
   return out;
 }
-function apvTable(t) {
-  return `
-  <table class="apv">
-    <colgroup><col style="width:52.9%"><col style="width:47.1%"></colgroup>
-    <tr style="height:66.9mm">
-      <td>
-        <div class="c">รายงานแผนก/หมวดช่าง</div>
-        <div style="padding-left:3mm">${CB(D.apConsider)}เพื่อโปรดพิจารณาอนุมัติให้เบิกอุปกรณ์ไปซ่อมแซม</div>
-        <div style="padding-left:3mm">ตามรายการดังกล่าวข้างต้น</div>
-        <div style="padding-left:3mm">${CB(D.apCollect)}ขออนุมัติเรียกเก็บเงินค่าเสียหายจากผู้กระทำละเมิด</div>
-        <div class="c">จำนวน ${F(money(t.total), 30, 'c')} บาท</div>
-        <div class="c">(${esc(bahtText(t.total))})</div>
-        ${BL()}
-        <div style="padding-left:10mm">ลงชื่อ<span class="dots" style="width:42mm"></span></div>
-        <div class="c" style="padding-left:8mm">(${esc(D.headName)})</div>
-        <div class="c" style="padding-left:8mm">${esc(D.headPos)}</div>
-      </td>
-      <td>
-        <div class="c"><b>คำสั่ง</b></div>
-        <div style="padding-left:4mm">${CB(D.cmdApprove)}<b>อนุมัติ</b></div>
-        <div style="padding-left:4mm">${CB(D.cmdCollect)}<span class="dots" style="width:7mm"></span> เรียกเก็บค่าเสียหาย</div>
-        <div style="padding-left:4mm">${CB(D.cmdFollow)}<span class="dots" style="width:7mm"></span> ติดตามผลการสืบสวนจากพนักงานสอบสวน</div>
-        ${BL()}
-        <div style="padding-left:6mm">ลงชื่อ<span class="dots" style="width:42mm"></span></div>
-        <div class="c">(${esc(D.mgrName)})</div>
-        <div class="c">${esc(D.mgrPos)}</div>
-      </td>
-    </tr>
-    <tr style="height:79mm">
-      <td>
-        <div class="c">รายงาน ผงน. / ผบง. / มธก</div>
-        <div>เรียน ผจก</div>
-        <div style="padding-left:3mm">${CB(false)}ได้รับเงินค่าเสียหาย / ตั้งบัญชีลูกหนี้ผู้กระทำละเมิด</div>
-        <div style="padding-left:8.5mm">จำนวน<span class="dots" style="width:36mm"></span>บาท</div>
-        <div style="padding-left:8.5mm">ไว้แล้วตามใบเสร็จเลขที่<span class="dots" style="width:10mm"></span>ลว.<span class="dots" style="width:7mm"></span></div>
-        <div style="padding-left:3mm">${CB(false)}ติดตามผลครบ 3 เดือนแล้ว ไม่สามารถเรียกเก็บเงินโปรดแจ้ง นตก.เขต ดำเนินการต่อไป</div>
-        <div style="padding-left:3mm">${CB(false)}เจ้าพนักงานสอบสวนแจ้งงดการสอบสวนแล้วตามหนังสือแนบ</div>
-        <div style="padding-left:8mm">ลงชื่อ<span class="dots" style="width:42mm"></span></div>
-        <div class="c">หัวหน้าแผนก</div>
-      </td>
-      <td>
-        <div class="r" style="padding-right:4mm">คำสั่ง</div>
-        <div><b>หมายเหตุ</b></div>
-        <div>1.ข้อความใดไม่ใช้ให้ขีดออก หรือไม่ต้องใส่เครื่องหมาย</div>
-        <div>2. ห้ามนำบันทึกแผ่นนี้ออกเผยแพร่ต่อบุคบลภายนอกโยเด็ดขาด</div>
-        ${BL()}
-        <div>หมายเหตุ:</div>
-        <div>-ข้อความใดไม่ใช่ให้ขีดออกหรือไม่ต้องใส่ เครื่องหมาย</div>
-      </td>
-    </tr>
-  </table>`;
+function FML(lines, txt, o = {}) {
+  txt = String(txt == null ? '' : txt).trim(); if (!txt) return '';
+  let sz = o.sz || 16, parts;
+  for (; ; sz -= 0.5) { parts = wrapInto(txt, lines.map(l => l[2] - l[0]), sz); if (parts.length <= lines.length || sz <= 11) break; }
+  if (parts.length > lines.length) parts = [...parts.slice(0, lines.length - 1), parts.slice(lines.length - 1).join('')];
+  return parts.map((p, i) => T(lines[i][0], lines[i][1] + ((o.sz || 16) - sz) * PT * 0.75, p, { sz })).join('');
+}
+const UL = (x, y, w) => LN(x, y, w, 0.22);
+
+/* ---------- หน้า 1 : บันทึกข้อความ ---------- */
+function pgMemo1(t) {
+  const cnt = String(D.itemCount || '').trim() || String(t.c1 + t.c2);
+  const deb = D.debtOpt || [], pol = D.policeOpt || [];
+  const inc = thDate(D.incDate);
+  return [
+    `<img src="pea-logo.png" alt="" style="position:absolute;left:25.4mm;top:23mm;width:23.6mm;height:20.6mm;object-fit:contain">`,
+    T(25.4, 44.6, 'การไฟฟ้าส่วนภูมิภาค', { sz: 18, b: 1 }),
+    T(25.4, 51.3, 'PROVINCIAL ELECTRICITY AUTHORITY', { sz: 9, b: 1 }),
+    T(25.7, 58.4, 'จาก', { b: 1 }), FV(37.8, 58.4, 113, D.from), T(115.3, 58.4, 'ถึง', { b: 1 }), FV(127.8, 58.4, 186, D.to),
+    T(25.7, 65.8, 'เลขที่', { b: 1 }), FV(37.8, 65.8, 113, D.docNo), T(115.3, 65.8, 'วันที่', { b: 1 }), FV(127.8, 65.8, 186, thDate(D.docDate)),
+    T(25.7, 72.2, 'เรื่อง', { b: 1 }), FV(37.8, 72.2, 186, D.subject),
+    T(25.4, 79.3, 'เรียน', { b: 1 }), FV(38.1, 79.3, 186, D.rian),
+    T(50.8, 85.7, 'ตามที่ได้ดำเนินการตรวจสอบและประเมินราคาค่าเสียหายเพื่อเรียกร้องจากผู้กระทำละเมิด'),
+    T(25.4, 92.1, 'โดยมีรายละเอียดดังนี้'),
+    // 1
+    T(38.1, 98.5, '1.'), T(42.8, 98.5, 'เหตุเกิดเมื่อวันที่'), DL(67.8, 108.4, 103.6), FV(71.2, 98.5, 108.6, inc ? 'วันที่ ' + inc : ''),
+    T(109.6, 98.5, 'เวลาประมาณ'), DL(127.2, 167.7, 103.6), FV(131, 98.5, 165, D.incTime, { c: 1 }), T(165.4, 98.5, 'น.'),
+    // 2
+    T(38.1, 104.9, '2.'), T(42.8, 104.9, 'สถานที่เกิดเหตุบริเวณ'), DL(75.3, 191.7, 110.1), DL(43.1, 191.7, 116.2),
+    FML([[79.0, 104.9, 191.5], [43.1, 111.3, 191.5]], D.place),
+    // 3
+    T(38.1, 117.6, '3.'), T(42.8, 117.6, 'หมายเลขทะเบียน'), T(70.5, 117.6, 'ยานยนต์'), T(84.7, 117.6, '/'), T(87.5, 117.6, 'เรือยนต์'), T(100.5, 117.6, 'เลขที่'),
+    D.vehType === 'ยานยนต์' ? UL(70.5, 122.1, 13) : '', D.vehType === 'เรือยนต์' ? UL(87.5, 122.1, 11.8) : '',
+    DL(120.2, 191.1, 122.8), DL(39.8, 191.1, 129.5),
+    FML([[109.6, 117.6, 191], [38.1, 124.0, 191]], D.plate),
+    // 4
+    T(37.6, 136.8, '4.'), T(42.3, 136.8, 'ชื่อผู้ขับขี่'), DL(54.8, 192.5, 142.1), FV(60.3, 136.8, 192, D.driver),
+    T(42.5, 143.1, 'หมายเลขบัตรประชาชน / ใบขับขี่'), DL(92.1, 193.6, 148.6), FV(100.6, 143.1, 193, D.driverId),
+    // 5
+    T(38.1, 149.5, '5.'), T(42.8, 149.5, 'ที่อยู่ตามบัตร ใบขับขี่'), DL(73.2, 191.4, 154.1), FV(76.4, 149.5, 191, D.driverAddr),
+    T(43.0, 155.9, 'โทรศัพท์ :'), DL(57.7, 99.3, 160.5), FV(65.2, 155.9, 99, D.driverTel),
+    // 6, 7
+    T(38.1, 162.3, '6.'), T(42.8, 162.3, 'ชื่อ/บริษัท/เจ้าของ'), DL(70.7, 138.9, 166.5), FV(73.9, 162.3, 138.4, D.owner),
+    T(138.9, 162.3, 'เบอร์โทรศัพท์'), DL(159.0, 192.2, 166.6), FV(161.7, 162.3, 192, D.ownerTel),
+    T(38.1, 168.6, '7.'), T(42.8, 168.6, 'ชื่อ/บริษัท/ประกันภัย'), DL(74.7, 138.9, 173.1), FV(77.1, 168.6, 138.4, D.insurer),
+    T(138.8, 168.6, 'เบอร์โทรศัพท์'), DL(159.5, 190.2, 172.8), FV(161.7, 168.6, 190, D.insurerTel),
+    // 8
+    T(38.1, 175.0, '8.ผู้ลงนามในหนังสือรับสภาพหนี้'), DL(86.3, 193.6, 179.8), FV(88, 175.0, 178.6, D.debtSigner || '-', { c: 1 }),
+    CBX(42.6, 182.7, deb.includes('ผู้ขับขี่')), T(49.1, 181.4, 'ผู้ขับขี่'),
+    CBX(62.8, 182.7, deb.includes('เจ้าของยานพาหนะ')), T(69.6, 181.4, 'เจ้าของยานพาหนะ'),
+    CBX(100.9, 182.7, deb.includes('ไม่ยินยอม')), T(107.8, 181.4, 'ไม่ยินยอม'),
+    CBX(127.2, 182.7, deb.includes('บริษัทประกันภัย')), T(135.8, 181.4, 'บริษัทประกันภัย'),
+    // 9
+    T(38.1, 187.8, '9.การแจ้งความร้องทุกข์กับเจ้าหน้าที่ตำรวจ สถานีตำรวจ'), FV(122.7, 187.8, 191, D.policeStation),
+    CBX(42.5, 195.1, pol.includes('รายงานประจำวันเกี่ยวกับคดี')), T(49.8, 194.2, 'รายงานประจำวันเกี่ยวกับคดี'),
+    CBX(96.2, 195.4, pol.includes('แจ้งเป็นหลักฐาน')), T(101.8, 194.2, 'แจ้งเป็นหลักฐาน'),
+    CBX(129.1, 195.7, pol.includes('แจ้งความเป็นคดี')), T(133.7, 194.2, 'แจ้งความเป็นคดี'),
+    T(159.3, 194.2, 'เนื่องจาก'), DL(172.0, 190.6, 198.3), FV(172.5, 194.2, 191, D.policeReason),
+    // 10
+    T(38.1, 200.5, '10.กรณีรถยนต์เกี่ยวสายสื่อสารทำให้เกิดความเสียหายกับระบบจำหน่าย'),
+    T(44.2, 206.9, 'ชื่อ/บริษัท เจ้าของสื่อสาร'), DL(83.7, 141.4, 211.5), FV(84, 206.9, 141.4, D.commOwner || '-', { c: 1 }),
+    T(142.2, 206.9, 'ความสูง'), DL(153.8, 190.2, 210.9), FV(154, 206.9, 190, D.commHeight || '-', { c: 1 }),
+    // 11
+    T(38.1, 213.3, '11.รายการอุปกรณ์ที่ได้รับความเสียหาย'), DL(95.7, 138.9, 218.0), FV(96, 213.3, 140, cnt, { c: 1 }), T(140.5, 213.3, 'รายการ คิดเป็นค่าเสียหาย'),
+    T(43.7, 219.7, 'จำนวนเงินทั้งสิ้น'), DL(67.8, 94.2, 224.5), FV(70.0, 219.7, 94.8, money(t.total)), T(95.0, 219.7, 'บาท'),
+    FV(102.7, 219.7, 190, '(' + bahtText(t.total) + ')'),
+    T(43.7, 226.1, 'โดยมีรายละเอียดดังนี้'),
+    T(42.0, 232.4, '11.1 รื้อถอน-ติดตั้งใหม่'), DL(76.7, 104.8, 236.9), FV(77, 232.4, 104.6, t.c1 ? String(t.c1) : '', { c: 1 }),
+    T(104.8, 232.4, 'รายการ เป็นจำนวนเงินทั้งสิ้น'), DL(147.9, 178.7, 237.3), FV(148, 232.4, 176.5, t.c1 ? money(t.s1) : '', { c: 1 }), T(176.9, 232.4, 'บาท'),
+  ].join('');
+}
+/* ---------- หน้า 2 : ตาราง 11.1 / 11.2 / ผู้ประเมิน ---------- */
+function gridRows(rows, colsX, top, heads, cells, o) {
+  // rows: [{lines:[..], cells:[..]}] · colsX: เส้นแนวตั้ง · heads: [[text,cx]]
+  let h = [], y = top;
+  const x0 = colsX[0], x1 = colsX[colsX.length - 1], bw = 0.2;
+  h.push(LN(x0, y, x1 - x0 + bw, bw));
+  heads.forEach(([tx, cx]) => h.push(T(cx, y + o.headTxt, tx, { sz: o.headSz, c: 1 })));
+  y += o.headH; h.push(LN(x0, y, x1 - x0 + bw, bw));
+  const hdrTop = top;
+  o.headCols.forEach(x => h.push(LN(x, hdrTop, bw, o.headH)));
+  const rowTops = [];
+  rows.forEach(r => {
+    const rh = o.rowH + (r.n - 1) * o.pitch; rowTops.push(y);
+    cells(r, y).forEach(s => h.push(s));
+    colsX.forEach(x => h.push(LN(x, y, bw, rh)));
+    y += rh; h.push(LN(x0, y, x1 - x0 + bw, bw));
+  });
+  return { html: h.join(''), bottom: y, rowTops };
+}
+function pgMemo2(t) {
+  const out = [];
+  // ตาราง 11.1
+  const C1 = [20.2, 34.8, 125.6, 139.6, 153.9, 177.7, 189.6], descW = 125.6 - 36.8 - 1.2;
+  const list1 = D.rows1.filter(r => (r.d || '').trim() || num(r.p));
+  const rows1 = (list1.length ? list1 : [null]).map((r, i) => r ? { r, i, parts: wrapInto(r.d, [descW], 16) } : { r: null, i, parts: [''] });
+  rows1.forEach(x => x.n = x.parts.length);
+  const g1 = gridRows(rows1, C1, 35.8, [['รายการ', 27.5], ['รายละเอียด', 80.2], ['จำนวน', 132.6], ['หน่วย', 146.8], ['ราคา/บาท', 171.8]], (x, y) => {
+    if (!x.r) return [];
+    const r = x.r, a = [T(28.8, y + 1.2, String(x.i + 1), { c: 1 })];
+    x.parts.forEach((p, k) => a.push(T(36.8, y + 1.2 + k * 6.37, p)));
+    a.push(T(132.7, y + 1.2, qtyFmt(r.q || '1'), { c: 1 }), T(146.85, y + 1.2, r.u || '', { c: 1 }),
+      T(165.9, y + 1.2, money(num(r.q || 1) * num(r.p)), { c: 1 }), T(179.7, y + 1.2, 'บาท'));
+    return a;
+  }, { headH: 5.7, headTxt: 0.8, headSz: 14, rowH: 7.0, pitch: 6.37, headCols: [20.2, 34.8, 125.6, 139.6, 153.9, 189.6] });
+  out.push(g1.html);
+  let y = g1.bottom + 7.3;
+  out.push(T(25.4, y, 'หมายเหตุ : ราคามาตรฐานพัสดุ (กรณีละเมิดทรัพย์สินระบบไฟฟ้า ของ กฟภ.) พัสดุหลัก และพัสดุรอง'));
+  out.push(T(25.4, y + 6.4, 'ครั้งที่ ' + (D.priceRound || '')));
+  // 11.2
+  const y2 = y + 19.1;
+  out.push(T(25.4, y2, '11.2 แผนกซ่อมแซม'), DL(55.6, 89.2, y2 + 4.4), FV(56, y2, 88.8, t.c2 ? String(t.c2) : '', { c: 1 }),
+    T(88.9, y2, 'รายการ เป็นเงินทั้งสิ้น'), DL(124.2, 182.8, y2 + 5.3), FV(124.5, y2, 158, t.c2 ? money(t.s2) : '', { c: 1 }), T(158.6, y2, 'บาท'));
+  const C2 = [23.4, 40.2, 99.6, 123.9, 148.2, 186.4];
+  const list2 = D.rows2.filter(r => (r.d || '').trim() || num(r.p));
+  const rows2 = list2.map((r, i) => ({ r, i, parts: wrapInto(r.d, [99.6 - 42.2 - 1.2], 16) }));
+  while (rows2.length < 2) rows2.push({ r: null, i: rows2.length, parts: [''] });
+  rows2.forEach(x => x.n = x.parts.length);
+  const g2 = gridRows(rows2, C2, y2 + 5.7, [['รายการ', 31.8], ['ชื่อพัสดุ', 69.9], ['จำนวน', 111.75], ['หน่วย', 136.05], ['ราคา', 167.3]], (x, yy) => {
+    if (!x.r) return [];
+    const r = x.r, a = [T(31.8, yy + 0.9, String(x.i + 1), { c: 1 })];
+    x.parts.forEach((p, k) => a.push(T(42.2, yy + 0.9 + k * 6.37, p)));
+    a.push(T(121.9, yy + 0.9, qtyFmt(r.q || '1'), { r: 1 }), T(146.2, yy + 0.9, r.u || '', { r: 1 }), T(184.4, yy + 0.9, money(num(r.q || 1) * num(r.p)), { r: 1 }));
+    return a;
+  }, { headH: 6.6, headTxt: 0.9, headSz: 16, rowH: 6.5, pitch: 6.37, headCols: C2 });
+  out.push(g2.html);
+  if (!list2.length) {   // ไม่มีรายการ: ขีดเส้นทแยงตามต้นฉบับ
+    const yt = g2.rowTops[0], yb = g2.bottom;
+    out.push(`<svg class="tick" style="left:23mm;top:${yt}mm" width="${186.4 - 23}mm" height="${yb - yt}mm" viewBox="0 0 1000 100" preserveAspectRatio="none"><line x1="0" y1="98" x2="1000" y2="0" stroke="#000" stroke-width="0.75" vector-effect="non-scaling-stroke"/></svg>`);
+  }
+  const ys = g2.bottom + 13.6;
+  out.push(T(114.3, ys, 'ลงชื่อ'), DL(124.2, 165.0, ys + 5.7), T(165.1, ys, 'ผู้ประเมิน.'),
+    T(145.2, ys + 6.4, '( ' + (D.evalName || '') + ')', { c: 1 }), T(144.6, ys + 12.8, D.evalPos || '', { c: 1 }));
+  return out.join('');
+}
+/* ---------- หน้า 3 : รายงานแผนก / คำสั่ง ---------- */
+function pgMemo3(t) {
+  const b = 0.2;
+  return [
+    LN(22.8, 23.0, 192.9 - 22.8 + b, b), LN(22.8, 90.1, 192.9 - 22.8 + b, b), LN(22.8, 169.4, 192.9 - 22.8 + b, b),
+    LN(22.8, 23.0, b, 146.4 + b), LN(112.8, 23.0, b, 146.4 + b), LN(192.9, 23.0, b, 146.4 + b),
+    T(50.3, 23.9, 'รายงานแผนก/หมวดช่าง'), T(148.8, 23.9, 'คำสั่ง', { b: 1 }),
+    CBX(26.6, 31.5, D.apConsider), T(32.1, 30.3, 'เพื่อโปรดพิจารณาอนุมัติให้เบิกอุปกรณ์ไปซ่อมแซม'),
+    T(27.3, 36.7, 'ตามรายการดังกล่าวข้างต้น'),
+    CBX(26.4, 44.0, D.apCollect), T(33.4, 43.0, 'ขออนุมัติเรียกเก็บเงินค่าเสียหายจากผู้กระทำละเมิด'),
+    T(38.6, 49.4, 'จำนวน'), DL(49.2, 90.3, 54.5), FV(52, 49.4, 90.2, money(t.total), { c: 1 }), T(90.6, 49.4, 'บาท'),
+    FV(24, 55.8, 111.8, '(' + bahtText(t.total) + ')', { c: 1 }),
+    T(38.3, 65.4, 'ลงชื่อ'), DL(45.2, 92.6, 69.7),
+    FV(24, 71.8, 111.8, '(' + (D.headName || '') + ')', { c: 1 }), FV(24, 78.1, 111.8, D.headPos, { c: 1 }),
+    CBX(117.8, 32.0, D.cmdApprove), T(127.6, 30.3, 'อนุมัติ', { b: 1 }),
+    CBX(117.7, 37.5, D.cmdCollect), DL(122.2, 134.1, 40.6), T(136.5, 36.7, 'เรียกเก็บค่าเสียหาย'),
+    CBX(117.7, 44.5, D.cmdFollow), DL(122.2, 134.1, 47.4), T(136.8, 43.0, 'ติดตามผลการสืบสวนจากพนักงาน'), T(114.8, 49.4, 'สอบสวน'),
+    T(124.6, 62.2, 'ลงชื่อ'), DL(135.2, 182.6, 67.0),
+    FV(126.4, 68.6, 192, '(' + (D.mgrName || '') + ')', { c: 1 }), FV(127.2, 74.9, 192, D.mgrPos, { c: 1 }),
+    T(47.3, 91.0, 'รายงาน ผงน. / ผบง. / มธก'), T(155.1, 91.0, 'คำสั่ง'),
+    T(24.8, 97.4, 'เรียน ผจก'),
+    CBX(26.2, 105.5, false), T(33.4, 103.8, 'ได้รับเงินค่าเสียหาย / ตั้งบัญชีลูกหนี้ผู้กระทำละเมิด'),
+    T(33.4, 110.1, 'จำนวน'), DL(46.4, 89.0, 115.6), T(92.6, 110.1, 'บาท'),
+    T(33.4, 116.5, 'ไว้แล้วตามใบเสร็จเลขที่ ลว.'), DL(74.7, 104.6, 121.6),
+    CBX(26.2, 123.7, false), T(33.3, 122.9, 'ติดตามผลครบ 3 เดือนแล้ว ไม่สามารถเรียกเก็บเงิน'),
+    T(24.8, 129.3, 'โปรดแจ้ง นตก.เขต ดำเนินการต่อไป'),
+    CBX(26.2, 137.1, false), T(32.1, 135.7, 'เจ้าพนักงานสอบสวนแจ้งงดการสอบสวนแล้วตาม'),
+    T(24.8, 142.0, 'หนังสือแนบ'),
+    T(29.7, 148.4, 'ลงชื่อ'), DL(41.8, 89.2, 154.6), T(58.1, 154.8, 'หัวหน้าแผนก'),
+    T(114.8, 97.4, 'หมายเหตุ', { b: 1 }),
+    T(114.8, 103.8, '1.ข้อความใดไม่ใช้ให้ขีดออก หรือไม่ต้องใส่'), T(114.8, 110.1, 'เครื่องหมาย'),
+    T(114.8, 116.5, '2. ห้ามนำบันทึกแผ่นนี้ออกเผยแพร่ต่อบุคบล'), T(114.8, 122.9, 'ภายนอกโยเด็ดขาด'),
+    T(114.8, 132.5, 'หมายเหตุ:'), T(114.8, 138.9, '-ข้อความใดไม่ใช่ให้ขีดออกหรือไม่ต้องใส่'), T(114.8, 145.3, 'เครื่องหมาย'),
+  ].join('');
+}
+/* ---------- หน้า 4-5 : หนังสือยินยอมชดใช้ค่าเสียหาย (14 pt, บรรทัดละ 5.58 มม.) ---------- */
+const S14 = { sz: 14 };
+const UD = (x0, x1, y) => `<div class="ud" style="left:${x0}mm;top:${(y + 4.45).toFixed(2)}mm;width:${Math.max(0, x1 - x0).toFixed(2)}mm"></div>`;
+/** ค่าในช่องขีดเส้นใต้ (หนังสือยินยอม): ขีดใต้ตั้งแต่ u0 ถึง u1 · ข้อความเริ่มที่ x หรือจัดกลาง */
+function UF(u0, u1, y, txt, o = {}) {
+  txt = String(txt == null ? '' : txt).trim();
+  const out = [UD(u0, u1, y)];
+  if (txt) out.push(o.c ? FV(u0, y, u1, txt, { sz: 14, c: 1 }) : FV(o.x || u0 + 1, y, u1, txt, { sz: 14 }));
+  return out.join('');
+}
+/** บรรทัดเต็มแบบกระจาย (Thai distributed ใน Word): เพิ่มช่องไฟระหว่างคำให้ชนขอบขวา */
+function JT(x0, x1, y, txt, sz = 14) {
+  const n = (txt.match(/ /g) || []).length, room = x1 - x0, w = W(txt, sz);
+  const ws = n && w < room ? (room - w) / n : 0;
+  return `<div class="a" style="left:${x0}mm;top:${(y + YOFF(sz)).toFixed(2)}mm;font-size:${sz}pt;word-spacing:${ws.toFixed(3)}mm">${esc(txt)}</div>`;
+}
+/** ข้อความยาวหลายบรรทัด: บรรทัดที่ไม่ใช่บรรทัดสุดท้ายจัดกระจายเต็มบรรทัด */
+function JML(lines, txt, sz = 14) {
+  const parts = wrapInto(txt, lines.map(l => l[2] - l[0]), sz);
+  return parts.map((p, i) => i < Math.min(parts.length, lines.length) - 1 ? JT(lines[i][0], lines[i][2], lines[i][1], p, sz)
+    : T(lines[Math.min(i, lines.length - 1)][0], lines[Math.min(i, lines.length - 1)][1] + (i >= lines.length ? 5.58 * (i - lines.length + 1) : 0), p, { sz })).join('');
 }
 function roleLine() {
   const r = D.cRole;
   const s = (txt, key) => `<span class="${r && r !== key ? 'st' : ''}">${txt}</span>`;
   return `ในฐานะ (${s('ผู้ขับขี่', 'ผู้ขับขี่')} / ${s('นายจ้าง', 'นายจ้าง')} / ${s('หรือเจ้าของ หรือผู้ครอบครอง', 'เจ้าของหรือผู้ครอบครอง')} / ${s('ผู้รับมอบอำนาจจากผู้ขับขี่หรือเจ้าของ ผู้ครอบครอง', 'ผู้รับมอบอำนาจ')})`;
 }
-function pageConsent() {
+function pgConsent1() {
   const cd = dParts(D.cDate) || { d: '', m: '', y: '' };
   const amt = num(V('cAmount'));
-  const comp = String(D.cComp || '').trim();
-  const compN = comp && comp !== '-' ? num(comp) : 0;
-  const sl = (name, role, label) => `
-    <p style="padding-left:42mm">ลงชื่อ<span class="dots" style="width:46mm"></span> ${label}</p>
-    <p style="padding-left:50mm">(${F(name, 44, 'c')})${role !== null ? ` ในฐานะ ${F(role, 22, 'c')}` : ''}</p>`;
+  const comp = String(D.cComp || '').trim(), compN = comp && comp !== '-' ? num(comp) : 0;
+  const act = String(D.cAct || '').trim(), what = String(D.cWhat || '').trim();
+  const amtTxt = amt ? money(amt) + '.' : '';
+  const amtEnd = 51.0 + (amtTxt ? W(amtTxt, 14) : 18);
   return [
-  `<div class="c"><img src="pea-logo-text.png" alt="" style="width:43.1mm;height:34.9mm;object-fit:contain"></div>
-   <p class="c">หนังสือยินยอมชดใช้ค่าเสียหาย</p>`,
-  `<p style="padding-left:74mm">เขียนที่ ${F(D.cWrittenAt)}</p>`,
-  `<p style="padding-left:56mm">วันที่ ${F(String(cd.d), 12, 'c')} เดือน ${F(cd.m, 26, 'c')} พ.ศ. ${F(String(cd.y), 16, 'c')}</p>`,
-  BL(),
-  `<p style="text-indent:18mm">ข้าพเจ้า ${F(V('cName'), 46)} บ้านเลขที่ ${F(D.cHouse, 14, 'c')} หมู่ที่ ${F(D.cMoo, 9, 'c')} ตำบล ${F(D.cTambon, 24)} อำเภอ ${F(D.cAmphoe, 34)} จังหวัด ${F(D.cProvince, 34)}</p>`,
-  `<p>${roleLine()}</p>`,
-  `<p style="text-indent:20mm">ขอทำหนังสือยินยอมชดใช้ค่าเสียหายให้ไว้แก่การไฟฟ้าส่วนภูมิภาคดังนี้</p>`,
-  `<p>ตามที่ข้าพเจ้า ${FL(D.cAct)}</p>`,
-  `<p>เหตุเกิดที่ ${FL(V('cPlace'))}</p>`,
-  `<p>เมื่อวันที่ ${F(thDate(D.cIncDate || D.incDate), 32, 'c')} ทำให้ (ทรัพย์สินเสียหาย และหรือบุคคลได้รับบาดเจ็บหรือถึงแก่ความตาย) นั้นข้าพเจ้าขอชดใช้ค่าเสียหายให้แก่การไฟฟ้าส่วนภูมิภาคและบุคคลที่เกี่ยวข้องดังนี้</p>`,
-  BL(),
-  `<p style="padding-left:12.7mm">ข้อ 1. ค่าเสียหายเกี่ยวกับทรัพย์สิน</p>
-   <p style="text-indent:19mm">ข้าพเจ้าตกลงยินยอมชดใช้ค่าเสียหายเป็นค่า ${FL(D.cWhat)}</p>
-   <p>รวมเป็นเงินทั้งสิ้น ${F(amt ? money(amt) + '.-' : '', 28, 'c')}บาท (${esc(amt ? bahtText(amt) : '')}) หรือตามที่การไฟฟ้าจะเรียกร้องให้ชดใช้ค่าเสียหายในภายหลัง</p>`,
-  BL(),
-  `<p style="padding-left:12.7mm">ข้อ 2. ค่ารักษาพยาบาล</p>
-   <p style="text-indent:19mm">กรณีมีบุคคลได้รับบาดเจ็บ หรือบาดเจ็บและจนถึงแก่กรรมในเวลาต่อมา ข้าพเจ้ายินยอมชดใช้ค่าเสียหายรักษาพยาบาลจนกว่าผู้ได้รับบาดเจ็บจะหายเป็นปกติ หรือจนกว่าถึงแก่กรรม</p>`,
-  BL(),
-  `<p style="padding-left:12.7mm">ข้อ 3. ค่าสินไหมทดแทน</p>
-   <p style="text-indent:19mm">กรณีบุคคลได้รับบาดเจ็บ หรือถึงแก่กรรม ข้าพเจ้ายินดีชดใช้ค่าสินไหมทดแทนตามกฎหมาย ให้แก่ผู้ได้รับบาดเจ็บ, ผู้จัดการศพ, หรือทายาทของผู้ถึงแก่กรรมแล้วแต่กรณี เป็นเงิน ${F(compN ? money(compN) : '-', 28, 'c')} บาท (${F(compN ? bahtText(compN) : '-', 60, 'c')}) หรือตามที่ จะตกลงกันต่อไป</p>`,
-  BL(),
-  `<p style="text-indent:20mm">ข้าพเจ้าได้อ่านและเข้าใจข้อความดังกล่าวข้างต้นทุกประการแล้ว ขอรับรองว่าเป็นความจริงและถูกต้องตามความประสงค์ทุกประการ เพื่อเป็นหลักฐานจึงลงลายมือชื่อเอาไว้ต่อหน้าพยานเป็นสำคัญ</p>`,
-  BL(),
-  sl(V('cName'), D.cSignRole || '', 'ผู้ยินยอมชดใช้ค่าเสียหาย'), BL(),
-  sl(D.cName2 || '-', D.cRole2 || '-', 'ผู้ยินยอมชดใช้ค่าเสียหาย'), BL(),
-  sl(D.cW1, null, 'พยาน'), BL(),
-  sl(D.cW2, null, 'พยาน')
-  ];
+    `<img src="pea-logo-text.png" alt="" style="position:absolute;left:83.4mm;top:23mm;width:43.1mm;height:34.9mm;object-fit:contain">`,
+    T(105.0, 61.7, 'หนังสือยินยอมชดใช้ค่าเสียหาย', { sz: 14, c: 1 }),
+    T(114.0, 72.9, 'เขียนที่', S14), UF(124.2, 168.6, 72.9, D.cWrittenAt, { x: 125.0 }),
+    T(90.5, 84.1, 'วันที่', S14), UF(97.6, 106.2, 84.1, String(cd.d), { c: 1 }), T(107.2, 84.1, 'เดือน', S14), UF(115.0, 130.6, 84.1, cd.m, { c: 1 }),
+    T(131.4, 84.1, 'พ.ศ.', S14), UF(137.6, 152.2, 84.1, String(cd.y), { c: 1 }), T(151.4, 84.1, '.', S14),
+    T(37.2, 95.2, 'ข้าพเจ้า', S14), UF(48.6, 74.6, 95.2, V('cName'), { x: 50.4 }), T(75.5, 95.2, 'บ้านเลขที่', S14), UF(89.2, 98.6, 95.2, D.cHouse, { c: 1 }),
+    T(99.0, 95.2, 'หมู่ที่', S14), UF(105.4, 112.4, 95.2, D.cMoo, { c: 1 }), T(112.8, 95.2, 'ตำบล', S14), UF(121.4, 159.3, 95.2, D.cTambon, { x: 122.4 }), T(158.5, 95.2, '.', S14),
+    T(25.4, 100.8, 'อำเภอ', S14), UF(34.9, 57.4, 100.8, D.cAmphoe, { x: 36.0 }), T(57.8, 100.8, 'จังหวัด', S14), UF(68.9, 162.4, 100.8, D.cProvince, { x: 69.9 }), T(161.6, 100.8, '.', S14),
+    T(25.4, 106.4, roleLine(), { sz: 14, html: 1 }),
+    T(38.2, 116.0, 'ขอทำหนังสือยินยอมชดใช้ค่าเสียหายให้ไว้แก่การไฟฟ้าส่วนภูมิภาคดังนี้', S14),
+    T(25.4, 121.5, 'ตามที่ข้าพเจ้า', S14), UF(43.4, act ? Math.min(184.4, 44.1 + W(act, 14) + 0.6) : 120, 121.5, act, { x: 44.1 }),
+    T(25.4, 127.1, 'เหตุเกิดที่', S14), UF(37.8, 161.8, 127.1, V('cPlace'), { x: 38.5 }), T(161.0, 127.1, '.', S14),
+    T(25.4, 132.7, 'เมื่อวันที่', S14), UF(38.4, 72.6, 132.7, thDate(D.cIncDate || D.incDate), { x: 40.5 }),
+    JT(73.6, 184.4, 132.7, 'ทำให้ (ทรัพย์สินเสียหาย และหรือบุคคลได้รับบาดเจ็บหรือถึงแก่ความตาย) นั้นข้าพเจ้า'),
+    T(25.4, 138.3, 'ขอชดใช้ค่าเสียหายให้แก่การไฟฟ้าส่วนภูมิภาคและบุคคลที่เกี่ยวข้องดังนี้', S14),
+    T(32.9, 147.9, 'ข้อ', S14), T(40.9, 147.9, '1.', S14), T(45.0, 147.9, 'ค่าเสียหายเกี่ยวกับทรัพย์สิน', S14),
+    T(36.1, 153.4, 'ข้าพเจ้าตกลงยินยอมชดใช้ค่าเสียหายเป็นค่า', S14), UF(92.6, what ? Math.min(184.4, 93.3 + W(what, 14) + 0.6) : 160, 153.4, what, { x: 93.3 }),
+    T(25.4, 159.0, 'รวมเป็นเงินทั้งสิ้น', S14), UD(48.6, amtEnd + 0.4, 159.0), amtTxt ? T(51.0, 159.0, amtTxt, S14) : '', T(amtEnd + 0.4, 159.0, '-บาท', S14),
+    JML([[amtEnd + 0.4 + W('-บาท', 14) + 1.1, 159.0, 184.4], [25.4, 164.6, 184.4]], '(' + (amt ? bahtText(amt) : '') + ') หรือตามที่การไฟฟ้าจะเรียกร้องให้ชดใช้ค่าเสียหายในภายหลัง'),
+    T(32.9, 174.2, 'ข้อ', S14), T(37.7, 174.2, '2.', S14), T(41.8, 174.2, 'ค่ารักษาพยาบาล', S14),
+    JT(36.0, 184.2, 179.8, 'กรณีมีบุคคลได้รับบาดเจ็บ หรือบาดเจ็บและจนถึงแก่กรรมในเวลาต่อมา ข้าพเจ้ายินยอมชดใช้ค่าเสียหาย'),
+    T(25.4, 185.3, 'รักษาพยาบาลจนกว่าผู้ได้รับบาดเจ็บจะหายเป็นปกติ หรือจนกว่าถึงแก่กรรม', S14),
+    T(32.9, 194.9, 'ข้อ', S14), T(37.7, 194.9, '3.', S14), T(41.8, 194.9, 'ค่าสินไหมทดแทน', S14),
+    JT(36.0, 184.2, 200.5, 'กรณีบุคคลได้รับบาดเจ็บ หรือถึงแก่กรรม ข้าพเจ้ายินดีชดใช้ค่าสินไหมทดแทนตามกฎหมาย ให้แก่ผู้ได้รับบาดเจ็บ,'),
+    T(25.4, 206.1, 'ผู้จัดการศพ, หรือทายาทของผู้ถึงแก่กรรมแล้วแต่กรณี เป็นเงิน', S14), UF(105.4, 136.0, 206.1, compN ? money(compN) : '-', { c: 1 }), T(136.4, 206.1, 'บาท', S14),
+    T(25.4, 211.7, '(', S14), UF(26.4, 80.6, 211.7, compN ? bahtText(compN) : '-', { c: 1 }), T(80.8, 211.7, ') หรือตามที่ จะตกลงกันต่อไป', S14),
+    T(138.5, 222.8, 'ต่อหน้าที่ 2', S14),
+    T(105.0, 256.3, '-2-', { sz: 14, c: 1 }),
+  ].join('');
 }
-function photoBlocks() {
-  return D.photos.filter(p => p.src).map(p => `<div class="c" style="padding:3mm 0 5mm"><img src="${p.src}" style="width:${p.size === 'card' ? 101.6 : 140}mm;max-height:118mm;object-fit:contain"></div>`);
+function pgConsent2() {
+  const sig = (y, lx, label, labX, name, role, px) => [
+    T(lx, y, 'ลงชื่อ', S14), UD(lx + 7.1, labX - 0.1, y), T(labX, y, label, S14),
+    T(px, y + 5.6, '(', S14), UF(px + 1.0, 120.2, y + 5.6, name, name && name !== '-' ? { x: px + 3.1 } : { c: 1 }), T(120.4, y + 5.6, ')', S14),
+    role != null ? T(122.6, y + 5.6, 'ในฐานะ', S14) + UF(133.6, 149.8, y + 5.6, role, role && role !== '-' ? { x: 135.3 } : { c: 1 }) + T(150.2, y + 5.6, '.', S14) : ''
+  ].join('');
+  return [
+    JT(37.0, 184.2, 23.6, 'ข้าพเจ้าได้อ่านและเข้าใจข้อความดังกล่าวข้างต้นทุกประการแล้ว ขอรับรองว่าเป็นความจริงและถูกต้องตามความ'),
+    T(25.4, 29.2, 'ประสงค์ทุกประการ  เพื่อเป็นหลักฐานจึงลงลายมือชื่อเอาไว้ต่อหน้าพยานเป็นสำคัญ', S14),
+    sig(40.4, 83.0, 'ผู้ยินยอมชดใช้ค่าเสียหาย', 122.1, V('cName'), D.cSignRole || '', 89.4),
+    sig(57.1, 83.0, 'ผู้ยินยอมชดใช้ค่าเสียหาย', 123.2, D.cName2 || '-', D.cRole2 || '-', 90.5),
+    sig(73.9, 83.0, 'พยาน', 122.1, D.cW1, null, 91.6),
+    sig(90.6, 84.1, 'พยาน', 123.2, D.cW2, null, 92.6),
+  ].join('');
 }
-
-/* ---------- แบ่งหน้าอัตโนมัติ: ไหลเนื้อหาลงหน้า A4 · ตารางรายการแยกแถวได้ (หัวตารางซ้ำ) ---------- */
-function paginate(blocks, cont) {
-  const m = $('#measure');
-  m.innerHTML = '<div class="page"><div class="in"></div></div>';
-  const inn = m.querySelector('.in');
-  const lineH = parseFloat(getComputedStyle(inn).lineHeight) || 28;
-  const reserve = cont ? lineH * 1.2 : 0;
-  const pages = []; let cur = [];
-  const head = n => cont ? [`<p class="c">-${n}-</p>`, BL()] : [];
-  const fits = arr => { inn.innerHTML = '<div style="display:flow-root">' + arr.join('') + '</div>'; return inn.firstChild.getBoundingClientRect().height <= inn.clientHeight - reserve + 0.5; };
-  const isBlank = b => /^<div class="bl/.test(b);
-  const newPage = () => { pages.push(cur); cur = head(pages.length + 1); };
-  for (const b of blocks) {
-    if (isBlank(b) && cur.length === head(pages.length + 1).length && pages.length) continue;
-    if (fits(cur.concat(b))) { cur.push(b); continue; }
-    if (/^\s*<table[^>]*data-split/.test(b)) {
-      const tp = document.createElement('template'); tp.innerHTML = b.trim();
-      const tb = tp.content.firstElementChild, trs = [...tb.querySelectorAll('tr')];
-      const open = b.trim().slice(0, b.trim().indexOf('>') + 1), cg = tb.querySelector('colgroup').outerHTML, hdr = trs[0].outerHTML;
-      const mk = rows => open + cg + hdr + rows.join('') + '</table>';
-      let part = [];
-      for (const tr of trs.slice(1)) {
-        if (fits(cur.concat(mk(part.concat(tr.outerHTML))))) { part.push(tr.outerHTML); continue; }
-        if (part.length) cur.push(mk(part));
-        newPage(); part = [tr.outerHTML];
-      }
-      cur.push(mk(part)); continue;
-    }
-    if (cur.length > head(pages.length + 1).length) newPage();
-    if (!isBlank(b)) cur.push(b);
-  }
-  pages.push(cur);
-  m.innerHTML = '';
-  return pages.map((c, i) => c.join('') + (cont && i < pages.length - 1 ? `<p class="r" style="position:absolute;right:0;bottom:0">ต่อหน้าที่ ${i + 2}</p>` : ''));
+/* ---------- รูปประกอบ: บัตรคู่กันหน้าละ 2 · ภาพเหตุการณ์หน้าละ 2 จัดกลางหน้า ---------- */
+function photoPages() {
+  const ph = (D.photos || []).filter(p => p.src);
+  const cards = ph.filter(p => p.size === 'card'), shots = ph.filter(p => p.size !== 'card');
+  const pages = [];
+  const page = (arr, w, maxH) => `<div class="phpage">${arr.map(p => `<img src="${p.src}" style="max-width:${w}mm;max-height:${maxH}mm;min-width:${Math.round(w * 0.6)}mm;object-fit:contain">`).join('')}</div>`;
+  for (let i = 0; i < cards.length; i += 2) pages.push(page(cards.slice(i, i + 2), 110, 110));
+  for (let i = 0; i < shots.length; i += 2) pages.push(page(shots.slice(i, i + 2), 150, 118));
+  return pages;
 }
 let lastPages = [];
 function render() {
   if (!D) return;
   const t = totals(), pages = [];
-  if (D.pMemo) paginate(pageMemo(t)).forEach((h, i, a) => pages.push([`บันทึกข้อความ ${i + 1}/${a.length}`, h]));
-  if (D.pConsent) paginate(pageConsent(), true).forEach((h, i, a) => pages.push([`หนังสือยินยอม ${i + 1}/${a.length}`, h]));
-  if (D.pPhotos && D.photos.length) paginate(photoBlocks()).forEach((h, i, a) => pages.push([`ภาพประกอบ ${i + 1}/${a.length}`, h]));
+  if (D.pMemo) pages.push(['บันทึกข้อความ 1/3', pgMemo1(t)], ['บันทึกข้อความ 2/3', pgMemo2(t)], ['บันทึกข้อความ 3/3', pgMemo3(t)]);
+  if (D.pConsent) pages.push(['หนังสือยินยอม 1/2', pgConsent1()], ['หนังสือยินยอม 2/2', pgConsent2()]);
+  if (D.pPhotos) photoPages().forEach((h, i, a) => pages.push([`ภาพประกอบ ${i + 1}/${a.length}`, h]));
   const pv = $('#pv');
-  const W = pv.clientWidth || Math.min(window.innerWidth - 24, 800);
+  const Wd = pv.clientWidth || Math.min(window.innerWidth - 24, 800);
   const pxW = 793.7, pxH = 1122.5;
-  const s = Math.min(1.25, (Math.min(W, 900) / pxW)) * zoomAdj;
+  const s = Math.min(1.25, (Math.min(Wd, 900) / pxW)) * zoomAdj;
   pv.innerHTML = pages.map(([lbl, h], i) => `<div class="sheet" style="width:${pxW * s}px;height:${pxH * s}px"><span class="pno">${i + 1} · ${lbl}</span>
-      <div class="page" style="transform:scale(${s})"><div class="in">${h}</div></div></div>`).join('') || '<div class="empty">ยังไม่ได้เลือกส่วนที่จะพิมพ์</div>';
+      <div class="page abs" style="transform:scale(${s})">${thaiDigitsHTML('<div class="in">' + h + '</div>')}</div></div>`).join('') || '<div class="empty">ยังไม่ได้เลือกส่วนที่จะพิมพ์</div>';
   $('#pvInfo').textContent = `ตัวอย่างก่อนพิมพ์ · ${pages.length} หน้า`;
   lastPages = pages;
 }
