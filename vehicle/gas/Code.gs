@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '17.4';
+const VERSION = '17.5';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -70,6 +70,17 @@ function doPost(e) {
       return json_({ ok: false, error: 'hub', message: 'ตรวจสอบกับศูนย์รวมงานไม่ได้ — ลองเข้าด้วยรหัสพนักงานแทน หรือให้ผู้ดูแลกด Run setup (' + String(err.message || err).slice(0, 100) + ')' });
     }
     if (!me) return json_({ ok: false, error: 'unauthorized', message: 'รหัสพนักงาน/ชื่อ หรือรหัสผ่านไม่ถูกต้อง' });
+    // น้องมีไฟ (หุ่นยนต์บริการ): ผู้ดูแลที่ล็อกอินในเครื่องหุ่น ทำรายการเบิก/คืนรถ "แทน" คนที่สแกนหน้า/เลือกชื่อ
+    if (b.onBehalf) {
+      if (!me.admin) return json_({ ok: false, error: 'forbidden', message: 'บัญชีในน้องมีไฟต้องเป็นผู้ดูแลระบบยานพาหนะ' });
+      if (['bootstrap', 'checkout', 'returnCar'].indexOf(b.action) < 0) return json_({ ok: false, error: 'forbidden', message: 'น้องมีไฟทำได้เฉพาะเบิก/คืนรถ' });
+      const who = clean_(b.onBehalf);
+      if (who.length < 2) return json_({ ok: false, error: 'bad', message: 'ไม่ทราบชื่อผู้ใช้รถ' });
+      const loc = memberByName_(who);
+      me = { name: loc ? loc.name : who, empId: loc ? loc.empId : String(b.onBehalfId || ''), role: 'user', dept: loc ? loc.dept : '', admin: false,
+        via: 'nongfai', how: String(b.how || '') };
+      if (b.action === 'checkout' && b.mission) b.mission = clean_(b.mission) + ' (น้องมีไฟ' + (me.how === 'manual' ? ' · เลือกชื่อเอง' : '') + ')';
+    }
     if (b.action === 'bootstrap') return json_(bootstrap_(me));
     if (b.action === 'photo') return json_({ ok: true, data: photo_(String(b.fileId || '')) });
     if (b.action === 'stats') return json_({ ok: true, stats: stats_(me) });
