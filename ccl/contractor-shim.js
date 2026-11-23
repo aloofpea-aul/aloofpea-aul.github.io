@@ -3,7 +3,7 @@
    - ย่อรูปก่อนอัปโหลด และแนบพิกัดอัตโนมัติเมื่อส่งอัปเดต */
 var CT_API = 'https://script.google.com/macros/s/AKfycby4f-2rofhzok_cg9-YLftco1XuC-MCrKn72TTakoPhQfz-qGqjX9WTzZkY5Ye_BxejNQ/exec';
 var CT_TOKEN_KEY = 'ct_token_v1', CT_USER_KEY = 'ct_user_v1', CT_BRANCH_KEY = 'ct_branch_v1';
-// โหมดเจ้าหน้าที่ กฟภ. (เปิดจาก CCL) — ดูอย่างเดียว เก็บสิทธิ์ไว้เฉพาะแท็บนี้ ไม่ทับการเข้าระบบของผู้รับจ้างในเครื่องเดียวกัน
+// โหมดเจ้าหน้าที่ กฟภ. (เปิดจาก CCL) — ดูและทำแทนผู้รับจ้างได้ (หลังบ้านบันทึก "ทำแทนโดย …") เก็บสิทธิ์ไว้เฉพาะแท็บนี้ ไม่ทับการเข้าระบบของผู้รับจ้างในเครื่องเดียวกัน
 var CT_PREVIEW = /[?&]preview=1(&|$)/.test(location.search);
 var CT_PREVIEW_READ = ['getContractorJobs', 'getOldContractorJobs', 'getAppointments', 'getOptions', 'getMaterialData', 'ctWhoAmI', 'listBranches'];
 function ctLs(k, v) {
@@ -68,7 +68,7 @@ function ctPrepare(fn, args) {
 
 function ctApiCall(fn, args) {
   args = (args || []).slice();
-  if (CT_PREVIEW && CT_PREVIEW_READ.indexOf(fn) < 0) return Promise.reject(new Error('โหมดเจ้าหน้าที่ กฟภ. ดูได้อย่างเดียว — แก้ไข/ส่งข้อมูลแทนผู้รับจ้างไม่ได้'));
+  if (CT_PREVIEW && fn === 'ctChangePassword') return Promise.reject(new Error('โหมดเจ้าหน้าที่ กฟภ. เปลี่ยนรหัสผ่านแทนผู้รับจ้างไม่ได้'));
   return ctPrepare(fn, args).then(function (a) {
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, fn === 'uploadContractorAttachment' ? 180000 : 60000);

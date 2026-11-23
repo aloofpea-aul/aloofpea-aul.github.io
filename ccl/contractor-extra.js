@@ -191,10 +191,10 @@
   };
   void origLogout;
 
-  // ───── โหมดเจ้าหน้าที่ กฟภ. (เปิดจาก CCL) — ดูอย่างเดียว ─────
+  // ───── โหมดเจ้าหน้าที่ กฟภ. (เปิดจาก CCL) — ทำแทนผู้รับจ้างได้ ─────
   var PV = typeof CT_PREVIEW !== 'undefined' && CT_PREVIEW;
   function previewSetup() {
-    var hide = ['openUpdateSheet', 'openMaterialForm', 'openOldJobUpdate', 'editMaterialEntry', 'deleteMaterialEntry', 'setGongMon', 'deleteGongMon', 'submitUpdate', 'submitMatForm', 'addAttachRow', 'addMatAttach', 'doLogout']
+    var hide = ['doLogout']
       .map(function (f) { return 'body.ct-pv [onclick*="' + f + '("]'; }).join(',');
     var s2 = document.createElement('style');
     s2.textContent = hide + '{display:none !important}' +
@@ -205,11 +205,11 @@
     document.body.classList.add('ct-pv');
     var u = me() || {};
     var bar = document.createElement('div'); bar.id = 'ctPvBar';
-    bar.innerHTML = '<i class="fa-solid fa-eye"></i><span><b class="l1">ดูแทน ' + esc(u.company || 'ผู้รับจ้าง') + ' · ดูอย่างเดียว</b><small class="l2">โหมดเจ้าหน้าที่ กฟภ. แก้ไข/ส่งข้อมูลไม่ได้' + (u.name ? ' · ผู้เปิดดู ' + esc(u.name) : '') + '</small></span><button type="button">ปิดแท็บ</button>';
+    bar.innerHTML = '<i class="fa-solid fa-user-pen"></i><span><b class="l1">ทำแทน ' + esc(u.company || 'ผู้รับจ้าง') + '</b><small class="l2">โหมดเจ้าหน้าที่ กฟภ. · ทุกรายการจะบันทึกว่า "ทำแทนโดย ' + esc(u.name || 'เจ้าหน้าที่') + '"</small></span><button type="button">ปิดแท็บ</button>';
       (u.name ? '<br><small style="font-weight:600">ผู้เปิดดู: ' + esc(u.name) + '</small>' : '') + '</span><button type="button">ปิดแท็บ</button>';
     bar.querySelector('button').onclick = function () { window.close(); };
     document.body.appendChild(bar);
-    document.title = 'ดูแทน ' + (u.company || 'ผู้รับจ้าง') + ' — Contractor Portal';
+    document.title = 'ทำแทน ' + (u.company || 'ผู้รับจ้าง') + ' — Contractor Portal';
   }
   var pvJob = (/[?&]job=(\d+)/.exec(location.search) || [])[1];
   function previewOpenJob() {

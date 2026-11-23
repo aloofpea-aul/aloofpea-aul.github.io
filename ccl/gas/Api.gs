@@ -497,7 +497,7 @@ function cclCtDispatch_(sess, token, fn, args) {
   }
 }
 
-// ===== เจ้าหน้าที่ กฟภ. เปิดดูโปรแกรมผู้รับจ้าง (ดูอย่างเดียว) =====
+// ===== เจ้าหน้าที่ กฟภ. เปิดโปรแกรมผู้รับจ้าง — ดูและทำแทนได้ (บันทึกชื่อ "ทำแทนโดย …") =====
 // ใครเปิดได้: Admin / ผู้ควบคุมงานของงานผู้รับจ้างรายนั้น / คณะกรรมการตรวจรับ
 var CCL_CT_PREVIEW_FNS = ['getContractorJobs','getOldContractorJobs','getAppointments','getOptions','getMaterialData','ctWhoAmI'];
 function cclNameKey_(n) {
@@ -534,11 +534,19 @@ function cclCtPreview_(sess, company) {
 }
 function cclCtPreviewDispatch_(sess, token, fn, args) {
   // ตรวจว่าเจ้าหน้าที่คนนี้ยังใช้งานได้อยู่ (ถูกปิดบัญชี/เปลี่ยนรหัส → ใช้ไม่ได้ทันที)
-  var st = { username: sess.viewer, homeBranchId: sess.viewerHome, branchId: sess.viewerHome, pv: sess.pv };
+  var st = { username: sess.viewer, homeBranchId: sess.viewerHome, branchId: sess.viewerHome, pv: sess.pv, superAdmin: !!sess.viewerSuper };
   if (!sess.viewer || !cclRefreshSess_(st, token)) return { ok: false, error: 'AUTH_REQUIRED' };
-  if (CCL_CT_PREVIEW_FNS.indexOf(fn) < 0) return { ok: false, error: 'โหมดเจ้าหน้าที่ กฟภ. ดูได้อย่างเดียว — แก้ไข/ส่งข้อมูลแทนผู้รับจ้างไม่ได้' };
+  if (!CCL_CT_FNS[fn] || fn === 'ctChangePassword') return { ok: false, error: 'โหมดเจ้าหน้าที่ กฟภ. ทำรายการนี้แทนผู้รับจ้างไม่ได้' };
   cclUseBranch_(sess.branchId || CCL_HOME_BRANCH, !!sess.viewerSuper);
-  var out = CCL_CT_FNS[fn](sess, Array.isArray(args) ? args : []);
+  var s2 = sess;
+  if (CCL_CT_PREVIEW_FNS.indexOf(fn) < 0) {
+    // ทำแทนผู้รับจ้าง (ช่วงทดลองใช้): Admin / ผู้ควบคุมงานของผู้รับจ้างรายนี้ / คณะกรรมการตรวจรับ — ตรวจสิทธิ์ซ้ำทุกครั้ง และบันทึกชื่อผู้ทำแทน
+    st.name = sess.name;
+    if (!cclCtCanPreview_(st, sess.company)) return { ok: false, error: 'ทำแทนได้เฉพาะ Admin, ผู้ควบคุมงานของผู้รับจ้างรายนี้ และคณะกรรมการตรวจรับ' };
+    s2 = {}; for (var k in sess) s2[k] = sess[k];
+    s2.name = 'ทำแทนโดย ' + String(sess.name || sess.viewer || 'เจ้าหน้าที่ กฟภ.');
+  }
+  var out = CCL_CT_FNS[fn](s2, Array.isArray(args) ? args : []);
   return { ok: true, data: out === undefined ? null : out };
 }
 

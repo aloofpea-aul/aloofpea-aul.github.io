@@ -1,6 +1,6 @@
 /* CCL — ชื่อผู้รับจ้าง (หน่วยงานผู้รับผิดชอบ) กดได้ทุกที่ในระบบ
    กดแล้วขึ้นการ์ดสรุป: งานกำลังทำ / รอตรวจรับ / เสร็จแล้ว + อัปเดตล่าสุด
-   - "เปิดโปรแกรมผู้รับจ้าง" → เปิด Contractor Portal แท็บใหม่ ในโหมดเจ้าหน้าที่ (ดูอย่างเดียว)
+   - "เปิดโปรแกรมผู้รับจ้าง" → เปิด Contractor Portal แท็บใหม่ ในโหมดเจ้าหน้าที่ (ดูและทำแทนได้ บันทึกชื่อผู้ทำแทน)
      เปิดได้เฉพาะ Admin / ผู้ควบคุมงานของผู้รับจ้างรายนั้น / คณะกรรมการตรวจรับ (หลังบ้านตรวจซ้ำ)
    - "ดูงานทั้งหมดของผู้รับจ้างนี้ใน CCL" → กรองรายการงานในหน้ารายการงาน */
 (function () {
@@ -117,7 +117,7 @@
       (last ? '<div class="lu"><small>อัปเดตล่าสุดจากผู้รับจ้าง · ' + esc(fmtTs(last.u.timestamp)) + '</small>' + esc(TYPE[last.u.updateType] || TYPE.note) +
         (last.u.progress ? ' ' + esc(last.u.progress) + '%' : '') + ' — ' + esc(String(last.job.jobName || '').slice(0, 60)) + '</div>' : '') +
       '<div class="bt">' +
-      (ok ? '<button class="b1"><i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดโปรแกรมผู้รับจ้าง (มุมมองของ ' + esc(company) + ')</button>'
+      (ok ? '<button class="b1"><i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดโปรแกรมผู้รับจ้าง (ทำแทน ' + esc(company) + ')</button>'
           : '<div class="no">เปิดโปรแกรมผู้รับจ้างได้เฉพาะ Admin, ผู้ควบคุมงาน และคณะกรรมการตรวจรับ</div>') +
       '<button class="b2"><i class="fa-solid fa-filter"></i> ดูงานทั้งหมดของผู้รับจ้างนี้ใน CCL</button></div>';
     document.body.appendChild(p); openedAt = Date.now();
