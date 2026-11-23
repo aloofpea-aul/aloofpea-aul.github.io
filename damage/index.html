@@ -476,7 +476,7 @@ const DEFAULT_CAT = [
   { d: 'รถขุดเจาะพร้อมชุดทีมงาน', u: 'ทีม', p: 13000 }
 ];
 const catalog = () => { try { return JSON.parse(ls('dmg_cat') || 'null') || DEFAULT_CAT.slice(); } catch (e) { return DEFAULT_CAT.slice(); } };
-const saveCat = c => ls('dmg_cat', JSON.stringify(c));
+const saveCat = c => { ls('dmg_cat', JSON.stringify(c)); if (cloudOn()) api('catSave', { cat: c }).then(j => { if (j.cat) { ls('dmg_cat', JSON.stringify(j.cat)); catDL(); } }).catch(e => toast('บันทึกราคามาตรฐานขึ้น Drive ไม่สำเร็จ: ' + e.message)); };
 function signDefaults() { try { return JSON.parse(ls('dmg_sign') || '{}') || {}; } catch (e) { return {}; } }
 function blank() {
   const d = JSON.parse(JSON.stringify(BASE));
@@ -496,22 +496,130 @@ function db() {
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
   return dbp;
 }
-const tx = (mode, fn) => db().then(d => new Promise((res, rej) => { const t = d.transaction('rec', mode); const s = t.objectStore('rec'); const out = fn(s); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }));
+const tx = (mode, fn) => db().then(d => new Promise((res, rej) => { const t = d.transaction('rec', mode); const s = t.objectStore('rec'); const out = fn(s); t.oncomplete = () => res(out instanceof IDBRequest ? out.result : out); t.onerror = () => rej(t.error); }));
 const dbPut = r => tx('readwrite', s => s.put(r));
 const dbDel = id => tx('readwrite', s => s.delete(id));
 const dbAll = () => tx('readonly', s => s.getAll());
 const dbGet = id => tx('readonly', s => s.get(id));
 
+/* =================================================================
+   คลาวด์: Google Sheet + โฟลเดอร์ Drive ของ กฟส. ผ่าน Apps Script (gas/Code.gs)
+   ทุกเครื่องเห็นงานเดียวกัน · เครื่องเก็บสำเนาไว้ด้วย (เน็ตหลุดก็ทำงานต่อได้ แล้วส่งให้เองเมื่อออนไลน์)
+   ================================================================= */
+const DMG_API = '';   // ← ลิงก์ Web app (…/exec) หลัง Deploy
+const cred = () => ({ user: ls('pea_aoluek_username') || '', pass: ls('pea_aoluek_password') || '' });
+const cloudOn = () => !!DMG_API && !!cred().user;
+let serverList = null, online = true, pushT = null, pushing = null, pushAgain = false, lastRefresh = 0;
+async function api(action, p = {}, ms = 45000) {
+  const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(DMG_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action }, cred(), p)), redirect: 'follow', signal: ctrl.signal });
+    const j = await r.json(); online = true;
+    if (!j.ok) { const e = new Error(j.message || j.error || 'error'); e.code = j.error || 'error'; e.latest = j.latest; throw e; }
+    return j;
+  } catch (e) { if (!e.code) { online = false; e.offline = true; } throw e; }
+  finally { clearTimeout(tm); }
+}
+const hhmm = () => new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+const isEmptyJob = r => !((r.plate || r.driver || r.place || '').trim() || (r.rows1 || []).concat(r.rows2 || []).some(x => (x.d || '').trim()) || (r.photos || []).length);
+function forServer(r) { const c = JSON.parse(JSON.stringify(r)); delete c._sync; (c.photos || []).forEach(p => delete p.src); return c; }
+function pushSoon(ms = 1500) { clearTimeout(pushT); pushT = setTimeout(pushAll, ms); }
+async function pushAll() {
+  if (!cloudOn()) return;
+  if (pushing) { pushAgain = true; return; }
+  pushing = (async () => {
+    const all = (await dbAll()).filter(r => r._sync !== 'ok');
+    for (const r of all) {
+      if (r._sync !== 'deleted' && isEmptyJob(r)) continue;
+      try { await pushOne(r); }
+      catch (e) {
+        if (e.code === 'conflict') await onConflict(r, e);
+        else if (e.offline) { if (D && D.id === r.id) setSaved('📴 ออฟไลน์ — บันทึกในเครื่องไว้ก่อน จะส่งขึ้น Drive ให้เอง'); break; }
+        else if (D && D.id === r.id) setSaved('⚠️ ส่งขึ้น Drive ไม่สำเร็จ: ' + e.message);
+      }
+    }
+  })();
+  try { await pushing; } finally { pushing = null; if (pushAgain) { pushAgain = false; pushSoon(300); } }
+}
+async function pushOne(r) {
+  if (r._sync === 'deleted') { await api('remove', { id: r.id }); await dbDel(r.id); return; }
+  const isCur = () => D && D.id === r.id;
+  if (isCur()) setSaved('⏳ กำลังส่งขึ้น Drive…');
+  for (const p of r.photos || []) if (!p.fileId && p.src) {
+    const j = await api('photoUp', { src: p.src, jobId: r.id }, 120000); p.fileId = j.fileId;
+    if (isCur()) (D.photos || []).forEach(x => { if (x.src === p.src) x.fileId = j.fileId; });
+  }
+  const j = await api('save', { job: forServer(r), baseRev: r.rev == null ? null : r.rev });
+  const fid = new Map((r.photos || []).filter(p => p.fileId && p.src).map(p => [p.src, p.fileId]));
+  if (isCur()) { D.rev = j.rev; D.updatedBy = j.updatedBy; D.updatedAt = j.updatedAt; }
+  const cur = await dbGet(r.id);
+  if (cur) {
+    cur.rev = j.rev; cur.updatedBy = j.updatedBy; cur.updatedAt = j.updatedAt;
+    (cur.photos || []).forEach(p => { if (!p.fileId && fid.has(p.src)) p.fileId = fid.get(p.src); });
+    if ((cur.updated || 0) === (r.updated || 0)) cur._sync = 'ok';
+    await dbPut(cur);
+    if (isCur() && cur._sync === 'ok') setSaved('☁️ บันทึกขึ้น Drive แล้ว ' + hhmm());
+  }
+  if (serverList) { const s = serverList.find(x => x.id === r.id); const sum = { id: r.id, plate: r.plate, driver: r.driver, place: r.place, incDate: r.incDate, total: totalsOf(r).total, updatedBy: j.updatedBy, updatedAt: j.updatedAt, rev: j.rev };
+    if (s) Object.assign(s, sum); else serverList.push(sum); }
+}
+async function onConflict(r, e) {
+  const nm = r.plate || r.driver || 'งานนี้';
+  const loadTheirs = confirm(`${nm}: ${e.message}\n\nตกลง = โหลดฉบับล่าสุดจาก Drive (สิ่งที่เครื่องนี้แก้จะไม่ถูกบันทึก)\nยกเลิก = บันทึกฉบับของเครื่องนี้ทับ`);
+  if (loadTheirs && e.latest) { await adopt(e.latest); toast('โหลดฉบับล่าสุดแล้ว'); return; }
+  r.rev = e.latest ? e.latest.rev : r.rev; await dbPut(r); if (D && D.id === r.id) D.rev = r.rev;
+  await pushOne(r);
+}
+/** รับงานจาก Drive มาเป็นสำเนาในเครื่อง (รูปที่เคยโหลดแล้วใช้ของเดิม) */
+async function adopt(job) {
+  const loc = await dbGet(job.id);
+  const src = new Map(((loc && loc.photos) || []).filter(p => p.fileId && p.src).map(p => [p.fileId, p.src]));
+  (job.photos || []).forEach(p => { if (p.fileId && src.has(p.fileId)) p.src = src.get(p.fileId); });
+  job._sync = 'ok'; job.updated = Date.now();
+  await dbPut(job);
+  if (D && D.id === job.id) { D = Object.assign(JSON.parse(JSON.stringify(BASE)), job); dirty = false; fillForm(); render(); }
+  loadPhotos(job.id);
+  return job;
+}
+async function loadPhotos(id) {
+  if (!cloudOn()) return;
+  const rec = await dbGet(id); if (!rec) return;
+  const need = (rec.photos || []).filter(p => p.fileId && !p.src && !photoBusy.has(p.fileId)); if (!need.length) return;
+  for (const p of need) {
+    photoBusy.add(p.fileId);
+    try { const j = await api('photo', { fileId: p.fileId }, 90000);
+      const cur = await dbGet(id); if (cur) { (cur.photos || []).forEach(x => { if (x.fileId === p.fileId) x.src = j.src; }); await dbPut(cur); }
+      if (D && D.id === id) { (D.photos || []).forEach(x => { if (x.fileId === p.fileId) x.src = j.src; }); drawPhotos(); clearTimeout(renderT); renderT = setTimeout(render, 200); }
+    } catch (e) { if (e.offline) { photoBusy.delete(p.fileId); break; } }
+    photoBusy.delete(p.fileId);
+  }
+}
+const photoBusy = new Set();
+async function refreshList(force) {
+  if (!cloudOn() || (!force && Date.now() - lastRefresh < 15000)) return;
+  lastRefresh = Date.now();
+  try {
+    const j = await api('list'); serverList = j.list || [];
+    if (D) {
+      const s = serverList.find(x => x.id === D.id), loc = await dbGet(D.id);
+      if (s && loc && loc._sync === 'ok' && !dirty && Number(s.rev) > Number(D.rev || 0)) { const g = await api('get', { id: D.id }); if (g.job) { await adopt(g.job); toast('งานนี้ถูกแก้จากเครื่องอื่น — โหลดฉบับล่าสุดแล้ว'); } }
+    }
+    if (!$('#listModal').hidden) drawList($('#listPaneD'));
+    if (document.body.dataset.tab === 'list') drawList($('#listPaneM'));
+  } catch (e) {}
+}
+
 /* ---------------- สถานะ ---------------- */
 let D = null, dirty = false, saveT = null, renderT = null;
 let zoomAdj = parseFloat(ls('dmg_zoom') || '1') || 1;
 
-function totals() {
-  const s = rows => rows.filter(r => (r.d || '').trim() || num(r.p)).reduce((a, r) => a + num(r.q || 1) * num(r.p), 0);
-  const c = rows => rows.filter(r => (r.d || '').trim()).length;
-  const s1 = s(D.rows1), s2 = s(D.rows2);
-  return { s1, s2, c1: c(D.rows1), c2: c(D.rows2), total: s1 + s2 };
+function totalsOf(R) {
+  const s = rows => (rows || []).filter(r => (r.d || '').trim() || num(r.p)).reduce((a, r) => a + num(r.q || 1) * num(r.p), 0);
+  const c = rows => (rows || []).filter(r => (r.d || '').trim()).length;
+  const s1 = s(R.rows1), s2 = s(R.rows2);
+  return { s1, s2, c1: c(R.rows1), c2: c(R.rows2), total: s1 + s2 };
 }
+const totals = () => totalsOf(D);
 const fb = k => { if (k === '__total') return money(totals().total); return D[k] || ''; };
 const V = k => { const v = (D[k] == null ? '' : String(D[k])).trim(); const el = $(`[data-k="${k}"]`); const f = el && el.dataset.fb; return v || (f ? fb(f) : ''); };
 
@@ -619,7 +727,7 @@ $('#photoIn').addEventListener('change', async e => {
   drawPhotos(); changed();
 });
 function drawPhotos() {
-  $('#photos').innerHTML = D.photos.map((p, i) => `<figure data-pi="${i}"><img src="${p.src}"><button class="x" data-prm>✕</button>
+  $('#photos').innerHTML = D.photos.map((p, i) => `<figure data-pi="${i}">${p.src ? `<img src="${p.src}">` : '<div style="height:96px;display:grid;place-items:center;color:var(--muted);font-size:12px;background:#f3eeea">กำลังโหลดรูป…</div>'}<button class="x" data-prm>✕</button>
     <figcaption><select data-psz><option value="card" ${p.size === 'card' ? 'selected' : ''}>บัตร 10 ซม.</option><option value="photo" ${p.size !== 'card' ? 'selected' : ''}>ภาพ 14 ซม.</option></select>
     <button class="mvb" data-pmv="-1">◀</button><button class="mvb" data-pmv="1">▶</button></figcaption></figure>`).join('');
 }
@@ -649,8 +757,8 @@ function changed() {
 function setSaved(t) { $('#savedTxt').textContent = t; $('#savedTxtM').textContent = t; }
 async function save() {
   if (!D) return; D.updated = Date.now();
-  try { await dbPut(JSON.parse(JSON.stringify(D))); ls('dmg_cur', D.id); dirty = false;
-    setSaved('บันทึกในเครื่องแล้ว ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })); }
+  try { const c = JSON.parse(JSON.stringify(D)); c._sync = 'pending'; await dbPut(c); ls('dmg_cur', D.id); dirty = false;
+    if (cloudOn()) { setSaved('⏳ รอส่งขึ้น Drive…'); pushSoon(); } else setSaved('บันทึกในเครื่องแล้ว ' + hhmm()); }
   catch (e) { setSaved('⚠️ บันทึกไม่สำเร็จ'); }
 }
 
@@ -829,7 +937,7 @@ function pageConsent() {
   ];
 }
 function photoBlocks() {
-  return D.photos.map(p => `<div class="c" style="padding:3mm 0 5mm"><img src="${p.src}" style="width:${p.size === 'card' ? 101.6 : 140}mm;max-height:118mm;object-fit:contain"></div>`);
+  return D.photos.filter(p => p.src).map(p => `<div class="c" style="padding:3mm 0 5mm"><img src="${p.src}" style="width:${p.size === 'card' ? 101.6 : 140}mm;max-height:118mm;object-fit:contain"></div>`);
 }
 
 /* ---------- แบ่งหน้าอัตโนมัติ: ไหลเนื้อหาลงหน้า A4 · ตารางรายการแยกแถวได้ (หัวตารางซ้ำ) ---------- */
@@ -899,40 +1007,80 @@ async function doPrint() {
 }
 $('#bPrint').onclick = doPrint; $('#bPrint2').onclick = doPrint;
 
-/* ---------------- รายการงาน ---------------- */
+/* ---------------- รายการงาน (รวมจาก Drive + ในเครื่อง) ---------------- */
 async function drawList(target) {
-  const all = (await dbAll()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  const loc = await dbAll(), map = new Map();
+  (serverList || []).forEach(x => map.set(x.id, { id: x.id, plate: x.plate, driver: x.driver, place: x.place, incDate: x.incDate, total: +x.total || 0, by: x.updatedBy, at: Date.parse(x.updatedAt) || 0 }));
+  for (const r of loc) {
+    if (r._sync === 'deleted') { map.delete(r.id); continue; }
+    if (serverList && r._sync === 'ok' && !map.has(r.id)) { await dbDel(r.id); continue; }   // ถูกลบจากเครื่องอื่นแล้ว
+    if (r._sync !== 'ok' && isEmptyJob(r) && !(D && D.id === r.id)) continue;
+    if (r._sync !== 'ok' || !map.has(r.id)) map.set(r.id, { id: r.id, plate: r.plate, driver: r.driver, place: r.place, incDate: r.incDate, total: totalsOf(r).total, by: r.updatedBy || '', at: r.updated || 0, pending: r._sync !== 'ok' && cloudOn() });
+  }
+  const all = [...map.values()].sort((x, y) => y.at - x.at);
   const q = target.querySelector('input.lq') ? target.querySelector('input.lq').value.trim() : '';
-  const html = `<input class="lq" placeholder="ค้นหา ทะเบียน / ชื่อ / สถานที่" value="${esc(q)}" style="margin-bottom:10px">
-    <div class="list">${all.filter(r => !q || [r.plate, r.driver, r.place, r.owner].join(' ').includes(q)).map(r => {
-      const tot = (r.rows1 || []).concat(r.rows2 || []).reduce((a, x) => a + num(x.q || 1) * num(x.p), 0);
-      return `<div class="rec ${D && r.id === D.id ? 'cur' : ''}" data-open="${r.id}"><div class="m"><b>${esc(r.plate || r.driver || '(ยังไม่ระบุทะเบียน)')}</b>
-        <span>${esc(thDate(r.incDate) || '-')} · ${esc(r.place || '')}</span><span>${esc(r.driver || '')}</span></div><span class="a">${money(tot)}</span></div>`; }).join('') || '<div class="empty">ยังไม่มีงานที่บันทึก</div>'}</div>
+  const when = t => t ? new Date(t).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  target.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:10px"><input class="lq" placeholder="ค้นหา ทะเบียน / ชื่อ / สถานที่" value="${esc(q)}"><button class="btn sm" data-refresh>⟳</button></div>
+    <div class="list">${all.filter(r => !q || [r.plate, r.driver, r.place].join(' ').includes(q)).map(r => `
+      <div class="rec ${D && r.id === D.id ? 'cur' : ''}" data-open="${r.id}"><div class="m"><b>${esc(r.plate || r.driver || '(ยังไม่ระบุทะเบียน)')}</b>
+        <span>${esc(thDate(r.incDate) || '-')} · ${esc(r.place || '')}</span>
+        <span>${r.pending ? '⏳ ยังไม่ได้ส่งขึ้น Drive' : (r.by ? 'แก้ล่าสุด: ' + esc(r.by) + ' · ' + when(r.at) : esc(r.driver || ''))}</span></div>
+        <span class="a">${money(r.total)}</span></div>`).join('') || '<div class="empty">ยังไม่มีงานที่บันทึก</div>'}</div>
     <div class="row-acts"><button class="btn sm" data-export>⬇️ สำรองข้อมูล (ไฟล์)</button><label class="btn sm">⬆️ นำเข้าไฟล์สำรอง<input type="file" accept=".json,application/json" data-import hidden></label></div>
-    <div class="note">ข้อมูลเก็บในเครื่องนี้เท่านั้น (ไม่ส่งออกนอกเครื่อง) — ย้ายเครื่องให้ใช้ปุ่มสำรอง/นำเข้า</div>`;
-  target.innerHTML = html;
+    <div class="note">${cloudOn() ? (serverList ? '☁️ งานทั้งหมดเก็บใน Google Drive ของ กฟส. — ทุกเครื่องที่ล็อกอินศูนย์รวมงานเห็นเหมือนกัน' : '📴 ยังติดต่อ Drive ไม่ได้ — แสดงเฉพาะงานในเครื่องนี้') : 'ข้อมูลเก็บในเครื่องนี้เท่านั้น'}</div>`;
   const qi = target.querySelector('input.lq'); qi.oninput = () => drawList(target).then(() => { const n = target.querySelector('input.lq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
+}
+async function openJob(id, silent) {
+  if (dirty) await save();
+  const loc = await dbGet(id);
+  let rec = null;
+  if (loc && loc._sync !== 'ok') rec = loc;                // งานที่เครื่องนี้แก้ค้างไว้ ใช้ของเครื่องนี้ก่อน
+  else if (cloudOn()) {
+    if (!silent) toast('กำลังโหลดจาก Drive…');
+    try { const j = await api('get', { id }); if (j.job) { D = { id }; rec = await adopt(j.job); } else if (!silent) toast('ไม่พบงานนี้ (อาจถูกลบแล้ว)'); }
+    catch (e) { rec = loc; if (!silent) toast(e.offline ? '📴 ออฟไลน์ — เปิดสำเนาในเครื่อง' : e.message); }
+  } else rec = loc;
+  if (!rec) return false;
+  D = Object.assign(JSON.parse(JSON.stringify(BASE)), rec); dirty = false;
+  fillForm(); render(); ls('dmg_cur', D.id); loadPhotos(D.id);
+  setSaved(rec._sync === 'ok' ? '☁️ ตรงกับ Drive' + (D.updatedBy ? ' · แก้ล่าสุด ' + D.updatedBy : '') : (cloudOn() ? '⏳ รอส่งขึ้น Drive' : 'บันทึกในเครื่องแล้ว'));
+  if (rec._sync !== 'ok') pushSoon(500);
+  return true;
 }
 document.addEventListener('click', async e => {
   const o = e.target.closest('[data-open]');
-  if (o) { await save(); const r = await dbGet(o.dataset.open); if (r) { D = Object.assign(JSON.parse(JSON.stringify(BASE)), r); fillForm(); render(); ls('dmg_cur', D.id); $$('.modal').forEach(m => m.hidden = true); setTab('form'); toast('เปิดงาน ' + (D.plate || D.driver || '')); window.scrollTo(0, 0); } return; }
+  if (o) { $$('.modal').forEach(m => m.hidden = true); if (await openJob(o.dataset.open)) { setTab('form'); toast('เปิดงาน ' + (D.plate || D.driver || '')); } return; }
+  if (e.target.closest('[data-refresh]')) { await refreshList(true); drawList(e.target.closest('#listPaneD,#listPaneM')); return; }
   if (e.target.closest('[data-export]')) { const all = await dbAll(); const b = new Blob([JSON.stringify({ app: 'pea-damage', v: 1, at: new Date().toISOString(), cat: catalog(), records: all })], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'ประเมินค่าเสียหาย-สำรอง-' + todayIso() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
 });
 document.addEventListener('change', async e => {
   const f = e.target.closest('[data-import]'); if (!f || !f.files[0]) return;
-  try { const j = JSON.parse(await f.files[0].text()); const recs = j.records || []; for (const r of recs) if (r && r.id) await dbPut(r);
-    if (Array.isArray(j.cat) && j.cat.length) saveCat(j.cat); catDL(); toast('นำเข้า ' + recs.length + ' งาน'); drawList(f.closest('#listPaneD,#listPaneM')); }
+  try { const j = JSON.parse(await f.files[0].text()); const recs = j.records || [];
+    for (const r of recs) if (r && r.id) { const loc = await dbGet(r.id); if (!loc) { r._sync = 'pending'; delete r.rev; await dbPut(r); } }
+    if (Array.isArray(j.cat) && j.cat.length) saveCat(j.cat); catDL(); toast('นำเข้า ' + recs.length + ' งาน'); pushSoon(300); drawList(f.closest('#listPaneD,#listPaneM')); }
   catch (err) { toast('ไฟล์ไม่ถูกต้อง'); }
 });
-$('#bList').onclick = () => { drawList($('#listPaneD')); $('#listModal').hidden = false; };
-async function newJob() { await save(); D = blank(); fillForm(); render(); await save(); setTab('form'); window.scrollTo(0, 0); toast('เริ่มงานใหม่'); }
+$('#bList').onclick = () => { drawList($('#listPaneD')); $('#listModal').hidden = false; refreshList(true); };
+async function newJob() { if (dirty) await save(); D = blank(); dirty = false; fillForm(); render(); ls('dmg_cur', D.id); setSaved('งานใหม่ — เริ่มกรอกได้เลย'); setTab('form'); toast('เริ่มงานใหม่'); }
 $('#bNew').onclick = newJob; $('#bNewM').onclick = newJob;
-$('#bDup').onclick = async () => { await save(); const c = JSON.parse(JSON.stringify(D)); c.id = blank().id; c.created = Date.now(); c.docNo = ''; D = c; fillForm(); render(); await save(); toast('ทำสำเนาแล้ว — กำลังแก้ไขงานใหม่'); };
-$('#bDel').onclick = async () => { if (!confirm('ลบงานนี้ออกจากเครื่อง? (ย้อนกลับไม่ได้)')) return; await dbDel(D.id); const all = (await dbAll()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
-  D = all[0] ? Object.assign(JSON.parse(JSON.stringify(BASE)), all[0]) : blank(); fillForm(); render(); save(); toast('ลบแล้ว'); };
+$('#bDup').onclick = async () => {
+  if (dirty) await save();
+  const c = JSON.parse(JSON.stringify(D)); c.id = blank().id; c.created = Date.now(); c.docNo = '';
+  ['rev', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'].forEach(k => delete c[k]);
+  c.photos = (c.photos || []).filter(p => p.src).map(p => ({ src: p.src, size: p.size, ar: p.ar }));
+  D = c; fillForm(); render(); await save(); toast('ทำสำเนาแล้ว — กำลังแก้ไขงานใหม่'); };
+$('#bDel').onclick = async () => {
+  if (!confirm(cloudOn() ? 'ลบงานนี้? (ทุกเครื่องจะไม่เห็นงานนี้อีก — ผู้ดูแลกู้คืนได้จากชีต)' : 'ลบงานนี้ออกจากเครื่อง? (ย้อนกลับไม่ได้)')) return;
+  const loc = await dbGet(D.id);
+  if (cloudOn() && loc && loc.rev != null) { await dbPut(Object.assign(loc, { _sync: 'deleted' })); pushSoon(100); }
+  else await dbDel(D.id);
+  if (serverList) serverList = serverList.filter(x => x.id !== D.id);
+  D = blank(); dirty = false; fillForm(); render(); ls('dmg_cur', D.id); toast('ลบแล้ว'); };
 $('#bOwnerSame').onclick = () => { D.owner = D.driver; D.ownerTel = D.driverTel; fillForm(); changed(); };
-$('#bSaveSign').onclick = () => { const o = {}; SIGN_KEYS.forEach(k => o[k] = D[k]); ls('dmg_sign', JSON.stringify(o)); toast('จำชื่อผู้ลงนามไว้แล้ว — งานใหม่จะใช้ชื่อนี้'); };
+$('#bSaveSign').onclick = () => { const o = {}; SIGN_KEYS.forEach(k => o[k] = D[k]); ls('dmg_sign', JSON.stringify(o));
+  if (cloudOn()) api('signSave', { sign: o }).then(() => toast('จำชื่อผู้ลงนามแล้ว — ทุกเครื่องจะใช้ชื่อนี้กับงานใหม่')).catch(e => toast('จำไว้ในเครื่องแล้ว แต่ส่งขึ้น Drive ไม่ได้: ' + e.message));
+  else toast('จำชื่อผู้ลงนามไว้แล้ว — งานใหม่จะใช้ชื่อนี้'); };
 
 /* ---------------- แท็บมือถือ ---------------- */
 function setTab(t) {
@@ -946,7 +1094,9 @@ $$('nav.bot button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
 let toastT; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
 window.addEventListener('beforeunload', () => { if (dirty) save(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && dirty) save(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (dirty) save(); } else { pushAll(); refreshList(); } });
+window.addEventListener('online', () => { pushAll(); refreshList(true); });
+setInterval(() => { if (!document.hidden) refreshList(); }, 60000);
 
 /* ---------------- เริ่มต้น ---------------- */
 (async function init() {
@@ -956,7 +1106,22 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && dir
   try { if (cur) r = await dbGet(cur); } catch (e) {}
   D = r ? Object.assign(JSON.parse(JSON.stringify(BASE)), r) : blank();
   fillForm(); render();
-  if (!r) save(); else setSaved('บันทึกในเครื่องแล้ว');
+  if (!DMG_API) { setSaved(r ? 'บันทึกในเครื่องแล้ว' : ''); return; }
+  if (!cloudOn()) { setSaved('⚠️ ยังไม่ได้ล็อกอินศูนย์รวมงาน — บันทึกในเครื่องเท่านั้น'); return; }
+  setSaved('⏳ กำลังเชื่อมต่อ Drive…');
+  try {
+    const j = await api('bootstrap');
+    serverList = j.list || []; lastRefresh = Date.now();
+    if (j.cat && j.cat.length) { ls('dmg_cat', JSON.stringify(j.cat)); catDL(); }
+    if (j.sign) ls('dmg_sign', JSON.stringify(j.sign));
+    const s = r && serverList.find(x => x.id === r.id);
+    if (r && r._sync === 'ok') {
+      if (!s) { await dbDel(r.id); D = blank(); fillForm(); render(); ls('dmg_cur', D.id); }
+      else if (Number(s.rev) > Number(r.rev || 0)) await openJob(r.id, true);
+    }
+    if (!r || r._sync === 'ok') setSaved('☁️ เชื่อมต่อ Drive แล้ว · ' + serverList.length + ' งาน');
+    loadPhotos(D.id); pushAll();
+  } catch (e) { setSaved(e.offline ? '📴 ออฟไลน์ — ใช้ข้อมูลในเครื่อง จะส่งให้เมื่อออนไลน์' : '⚠️ ' + e.message); }
 })();
 </script>
 </body>
