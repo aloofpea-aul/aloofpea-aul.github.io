@@ -144,29 +144,109 @@ function getSldData() {
 }
 
 /* ===== สถานะงาน + กระแสที่วัดได้ ต่อไลน์แยก (ชีต LateralActions) ===== */
+var LA_HEAD = ['lateral_id', 'status', 'measured_amp', 'to_phase', 'updated', 'note', 'files', 'done_date'];
+var LA_ID_RE = /^[A-Z]{3}\d{2}-[ABC]\d{9,13}(_\d+)?$/;
+function laSheet_() {
+  var sh = ensureSheet_(getSS_(), 'LateralActions', LA_HEAD);
+  if (sh.getLastColumn() < LA_HEAD.length) sh.getRange(1, 1, 1, LA_HEAD.length).setValues([LA_HEAD]);
+  return sh;
+}
+function laRow_(sh, id) {
+  var last = sh.getLastRow(); if (last < 2) return 0;
+  var ids = sh.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) if (ids[i][0] === id) return i + 2;
+  return 0;
+}
+function laFiles_(v) { try { var a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function laDate_(d) { return d ? Utilities.formatDate(new Date(d), 'Asia/Bangkok', 'yyyy-MM-dd') : ''; }
 function getLateralActions() {
   var sh = getSS_().getSheetByName('LateralActions');
   if (!sh || sh.getLastRow() < 2) return {};
   var o = {};
-  sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues().forEach(function (r) {
-    if (r[0]) o[r[0]] = { s: r[1], amp: r[2] === '' ? null : +r[2], to: r[3], t: r[4] ? Utilities.formatDate(new Date(r[4]), 'Asia/Bangkok', 'yyyy-MM-dd') : '' };
+  sh.getRange(2, 1, sh.getLastRow() - 1, LA_HEAD.length).getValues().forEach(function (r) {
+    if (!r[0]) return;
+    o[r[0]] = { s: r[1], amp: r[2] === '' ? null : +r[2], to: r[3], t: laDate_(r[7] || r[4]), note: String(r[5] || ''),
+      files: laFiles_(r[6]).map(function (f) { return { id: f.id, n: f.n, m: f.m }; }) };
   });
   return o;
 }
 function setLateralAction(id, status, amp, to) {
-  if (!/^[A-Z]{3}\d{2}-[ABC]\d{9,13}(_\d+)?$/.test(String(id))) throw new Error('รหัสไลน์ไม่ถูกต้อง');
+  if (!LA_ID_RE.test(String(id))) throw new Error('รหัสไลน์ไม่ถูกต้อง');
   if (['todo', 'doing', 'done'].indexOf(status) < 0) throw new Error('สถานะไม่ถูกต้อง');
   if (amp !== null && amp !== '' && !(+amp >= 0 && +amp < 400)) throw new Error('ค่ากระแสไม่ถูกต้อง');
   if (to && !/^[ABC]$/.test(to)) throw new Error('เฟสไม่ถูกต้อง');
   var lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
-    var sh = ensureSheet_(getSS_(), 'LateralActions', ['lateral_id', 'status', 'measured_amp', 'to_phase', 'updated']);
-    var row = [status, amp === null || amp === '' ? '' : +amp, to || '', new Date()], last = sh.getLastRow();
-    if (last > 1) {
-      var ids = sh.getRange(2, 1, last - 1, 1).getValues();
-      for (var i = 0; i < ids.length; i++) if (ids[i][0] === id) { sh.getRange(i + 2, 2, 1, 4).setValues([row]); return getLateralActions(); }
-    }
-    sh.appendRow([id].concat(row));
+    var sh = laSheet_(), r = laRow_(sh, id), now = new Date();
+    var row = [status, amp === null || amp === '' ? '' : +amp, to || '', now];
+    if (r) {
+      sh.getRange(r, 2, 1, 4).setValues([row]);
+      var dd = sh.getRange(r, 8);
+      if (status === 'done') { if (!dd.getValue()) dd.setValue(now); } else dd.setValue('');
+    } else sh.appendRow([id].concat(row, ['', '', status === 'done' ? now : '']));
+    return getLateralActions();
+  } finally { lock.releaseLock(); }
+}
+/* แก้รายละเอียด: เฟสที่ย้ายไป / วันที่ย้าย (yyyy-MM-dd) / หมายเหตุ */
+function editLateralAction(id, to, date, note) {
+  if (!LA_ID_RE.test(String(id))) throw new Error('รหัสไลน์ไม่ถูกต้อง');
+  if (to && !/^[ABC]$/.test(to)) throw new Error('เฟสไม่ถูกต้อง');
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('วันที่ไม่ถูกต้อง');
+  note = String(note || '').slice(0, 300);
+  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    var sh = laSheet_(), r = laRow_(sh, id);
+    if (!r) { sh.appendRow([id, 'todo', '', to || '', new Date(), note, '', '']); return getLateralActions(); }
+    if (to) sh.getRange(r, 4).setValue(to);
+    sh.getRange(r, 6).setValue(note);
+    if (date && sh.getRange(r, 2).getValue() === 'done') { var p = date.split('-'); sh.getRange(r, 8).setValue(new Date(+p[0], +p[1] - 1, +p[2], 12)); }
+    return getLateralActions();
+  } finally { lock.releaseLock(); }
+}
+/* หลักฐาน: เก็บไฟล์ในโฟลเดอร์ Drive ของเจ้าของสคริปต์ (ไม่แชร์สาธารณะ) ดูผ่านฟังก์ชันนี้เท่านั้น */
+function laFolder_() {
+  var pr = PropertiesService.getScriptProperties(), id = pr.getProperty('LA_FOLDER_ID');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+  var f = DriveApp.createFolder('Load01 หลักฐานย้ายเฟส');
+  pr.setProperty('LA_FOLDER_ID', f.getId());
+  return f;
+}
+function uploadLateralFile(id, name, mime, b64) {
+  if (!LA_ID_RE.test(String(id))) throw new Error('รหัสไลน์ไม่ถูกต้อง');
+  if (!/^image\/(jpeg|png|webp|heic|heif)$|^application\/pdf$/.test(String(mime))) throw new Error('รองรับเฉพาะรูปภาพหรือ PDF');
+  var bytes = Utilities.base64Decode(String(b64 || ''));
+  if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new Error('ไฟล์ต้องไม่เกิน 8 MB');
+  name = String(name || 'file').replace(/[\\\/:*?"<>|]/g, '_').slice(0, 80);
+  var file = laFolder_().createFile(Utilities.newBlob(bytes, mime, id + '_' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmmss') + '_' + name));
+  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    var sh = laSheet_(), r = laRow_(sh, id);
+    if (!r) { sh.appendRow([id, 'todo', '', '', new Date(), '', '', '']); r = sh.getLastRow(); }
+    var c = sh.getRange(r, 7), a = laFiles_(c.getValue());
+    if (a.length >= 10) { file.setTrashed(true); throw new Error('แนบได้สูงสุด 10 ไฟล์ต่อไลน์'); }
+    a.push({ id: file.getId(), n: name, m: mime, t: new Date().toISOString() });
+    c.setValue(JSON.stringify(a));
+    return getLateralActions();
+  } finally { lock.releaseLock(); }
+}
+function laOwns_(id, fileId) {
+  var sh = getSS_().getSheetByName('LateralActions'); if (!sh) return false;
+  var r = laRow_(sh, id); if (!r) return false;
+  return laFiles_(sh.getRange(r, 7).getValue()).some(function (f) { return f.id === fileId; });
+}
+function getLateralFile(id, fileId) {
+  if (!laOwns_(id, fileId)) throw new Error('ไม่พบไฟล์');
+  var b = DriveApp.getFileById(fileId).getBlob();
+  return { m: b.getContentType(), d: Utilities.base64Encode(b.getBytes()) };
+}
+function deleteLateralFile(id, fileId) {
+  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    var sh = laSheet_(), r = laRow_(sh, id); if (!r) throw new Error('ไม่พบไลน์');
+    var c = sh.getRange(r, 7), a = laFiles_(c.getValue()), b = a.filter(function (f) { return f.id !== fileId; });
+    if (b.length === a.length) throw new Error('ไม่พบไฟล์');
+    c.setValue(JSON.stringify(b));
+    try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) {}
     return getLateralActions();
   } finally { lock.releaseLock(); }
 }
