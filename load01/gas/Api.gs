@@ -10,7 +10,7 @@ function doPost(e) {
     getLateralActions: function () { return getLateralActions(); },
     setLateralAction: function (id, s, a, t) { return setLateralAction(id, s, a, t); },
     editLateralAction: function (id, t, d, n) { return editLateralAction(id, t, d, n); },
-    uploadLateralFile: function (id, n, m, b) { return uploadLateralFile(id, n, m, b); },
+    uploadLateralFile: function (id, n, m, b, k) { return uploadLateralFile(id, n, m, b, k); },
     getLateralFile: function (id, f) { return getLateralFile(id, f); },
     deleteLateralFile: function (id, f) { return deleteLateralFile(id, f); },
     getSubCaps: function () { return getSubCaps(); }

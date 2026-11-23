@@ -166,7 +166,7 @@ function getLateralActions() {
   sh.getRange(2, 1, sh.getLastRow() - 1, LA_HEAD.length).getValues().forEach(function (r) {
     if (!r[0]) return;
     o[r[0]] = { s: r[1], amp: r[2] === '' ? null : +r[2], to: r[3], t: laDate_(r[7] || r[4]), note: String(r[5] || ''),
-      files: laFiles_(r[6]).map(function (f) { return { id: f.id, n: f.n, m: f.m }; }) };
+      files: laFiles_(r[6]).map(function (f) { return { id: f.id, n: f.n, m: f.m, k: f.k || '' }; }) };
   });
   return o;
 }
@@ -211,20 +211,21 @@ function laFolder_() {
   pr.setProperty('LA_FOLDER_ID', f.getId());
   return f;
 }
-function uploadLateralFile(id, name, mime, b64) {
+function uploadLateralFile(id, name, mime, b64, kind) {
+  kind = kind === 'b' || kind === 'a' ? kind : '';
   if (!LA_ID_RE.test(String(id))) throw new Error('รหัสไลน์ไม่ถูกต้อง');
   if (!/^image\/(jpeg|png|webp|heic|heif)$|^application\/pdf$/.test(String(mime))) throw new Error('รองรับเฉพาะรูปภาพหรือ PDF');
   var bytes = Utilities.base64Decode(String(b64 || ''));
   if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new Error('ไฟล์ต้องไม่เกิน 8 MB');
   name = String(name || 'file').replace(/[\\\/:*?"<>|]/g, '_').slice(0, 80);
-  var file = laFolder_().createFile(Utilities.newBlob(bytes, mime, id + '_' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmmss') + '_' + name));
+  var file = laFolder_().createFile(Utilities.newBlob(bytes, mime, id + '_' + (kind === 'b' ? 'ก่อน_' : kind === 'a' ? 'หลัง_' : '') + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmmss') + '_' + name));
   var lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
     var sh = laSheet_(), r = laRow_(sh, id);
     if (!r) { sh.appendRow([id, 'todo', '', '', new Date(), '', '', '']); r = sh.getLastRow(); }
     var c = sh.getRange(r, 7), a = laFiles_(c.getValue());
-    if (a.length >= 10) { file.setTrashed(true); throw new Error('แนบได้สูงสุด 10 ไฟล์ต่อไลน์'); }
-    a.push({ id: file.getId(), n: name, m: mime, t: new Date().toISOString() });
+    if (a.filter(function (f) { return (f.k || '') === kind; }).length >= 10) { file.setTrashed(true); throw new Error('แนบได้สูงสุด 10 ไฟล์ต่อกลุ่ม'); }
+    a.push({ id: file.getId(), n: name, m: mime, k: kind, t: new Date().toISOString() });
     c.setValue(JSON.stringify(a));
     return getLateralActions();
   } finally { lock.releaseLock(); }

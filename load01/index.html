@@ -955,6 +955,7 @@ if (typeof D !== 'undefined' && D) { fillSubs(); render(); }
 .ala-th .x{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:20px;cursor:pointer;padding:0}
 .ala-add{border:1.5px dashed var(--brand-2);color:var(--brand-2);background:transparent}.ala-edb{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ala-btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}.ala-btn.dan{border-color:#c0392b;color:#c0392b}.ala-clip{color:#0F6E56;font-size:11.5px;white-space:nowrap}
+.ala-grps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 16px;margin-top:6px}.ala-gt{font-size:12.5px;font-weight:600;margin-top:4px}
 .ala-help{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--brand-2);background:var(--surface-1);color:var(--brand-2);font:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;vertical-align:1px;padding:0}
 .ala-howto{display:none;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2);font-size:13px;line-height:1.7}
 .ala-howto.on{display:block}.ala-howto h3{margin:0 0 6px;font-size:14px}.ala-howto ol{margin:4px 0 8px 18px;padding:0}
@@ -1101,7 +1102,7 @@ function draw(){
   var doneRows = done.map(function(x){
     var a = ACT[x.id], dm = a.t.slice(0,7), mi = dm > M[M.length-1] ? M.length : monthIdx(dm); if (M[mi] === dm) mi++; var b4 = scada(cur, mi-1, 3), af = mi < M.length ? scada(cur, M.length-1, 3, mi) : null;
     var res = b4 && af ? pill(ubOf(b4.I))+' → '+pill(ubOf(af.I)) : '<span class="ala-muted">รอข้อมูล SCADA เดือนถัดไป</span>';
-    return '<tr><td>'+esc(x.devdesc || '(ไม่มีชื่อใน SLD)')+'<br><span class="ala-muted">'+esc(x.dev || '')+'</span>'+(a.files && a.files.length ? ' <span class="ala-clip">📎 '+a.files.length+' ไฟล์</span>' : '')+(a.note ? '<br><span class="ala-muted">'+esc(a.note)+'</span>' : '')+'</td><td>'+chip(x.ph)+' → '+chip(a.to || '?')+'</td><td>'+x.kva+' kVA</td><td>'+esc(thd(a.t))+'</td><td>'+res+'</td><td><button class="ala-btn ala-ev" data-id="'+x.id+'">'+(ED === x.id ? 'ปิด' : '✏️ แก้ไข')+'</button></td></tr>'+(ED === x.id ? edRow(x, 6) : '');
+    return '<tr><td>'+esc(x.devdesc || '(ไม่มีชื่อใน SLD)')+'<br><span class="ala-muted">'+esc(x.dev || '')+'</span>'+(a.files && a.files.length ? ' <span class="ala-clip">'+clip(a.files)+'</span>' : '')+(a.note ? '<br><span class="ala-muted">'+esc(a.note)+'</span>' : '')+'</td><td>'+chip(x.ph)+' → '+chip(a.to || '?')+'</td><td>'+x.kva+' kVA</td><td>'+esc(thd(a.t))+'</td><td>'+res+'</td><td><button class="ala-btn ala-ev" data-id="'+x.id+'">'+(ED === x.id ? 'ปิด' : '✏️ แก้ไข')+'</button></td></tr>'+(ED === x.id ? edRow(x, 6) : '');
   }).join('');
   box.innerHTML = modeBar() +
     '<div class="ala-wrap"><div class="card"><h2>ฟีดเดอร์ '+AX.SUB+'</h2>'+side+'<p class="ala-muted" style="line-height:1.5">%UB เฉลี่ยขณะ Peak '+AX.MONTHS+' เดือน ถึงเดือนที่เลือก → หลังย้ายตามแผน</p></div><div>'+
@@ -1315,18 +1316,22 @@ function row(x, n, m){
     '<td>'+ampBox(x)+(x.measured ? '<br><span class="ala-muted">วัดจริง</span>' : '<br><span class="ala-muted">ประมาณ</span>')+'</td><td>'+pill(m.ub)+'</td><td>'+st+(x.st !== 'todo' ? '<button class="ala-btn ala-ev" style="margin-top:4px" data-id="'+x.id+'">📎 หลักฐาน'+nf(x)+'</button>' : '')+'</td>'+
     '<td><a class="ala-btn" target="_blank" href="https://www.google.com/maps?q='+x.tap[0]+','+x.tap[1]+'">แผนที่</a> <a class="ala-btn" target="_blank" href="'+AX.SLD_URL+'">SLD</a></td></tr>'+(ED === x.id ? edRow(x, 9) : '');
 }
+function clip(fs){ var c = function(k){ return fs.filter(function(f){ return (f.k || '') === k; }).length; }, b = c('b'), af = c('a'), o = c(''), t = [];
+  if (b) t.push('ก่อน '+b); if (af) t.push('หลัง '+af); if (o) t.push('อื่น '+o); return '📎 '+t.join(' · '); }
 function nf(x){ var a = ACT[x.id]; return a && a.files && a.files.length ? ' ('+a.files.length+')' : ''; }
 function thd(t){ if (!t) return ''; var p = t.split('-'); return +p[2]+' '+['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][+p[1]-1]+' '+String(+p[0]+543).slice(2); }
 function edRow(x, cols){
   var a = ACT[x.id] || { s: x.st, files: [] }, done = a.s === 'done', fs = a.files || [];
-  var th = fs.map(function(f){ var u = FC[f.id], pdf = /pdf/.test(f.m);
-    return '<div class="ala-th" data-f="'+f.id+'" title="'+esc(f.n)+'"'+(u && !pdf ? ' style="background-image:url('+u+')"' : '')+'>'+(pdf ? '<span>📄 PDF<br>'+esc(f.n.slice(0,12))+'</span>' : (u ? '' : '<span>กำลังโหลด…</span>'))+'<button class="x" data-del="'+f.id+'" aria-label="ลบไฟล์">✕</button></div>'; }).join('');
+  var tf = function(f){ var u = FC[f.id], pdf = /pdf/.test(f.m);
+    return '<div class="ala-th" data-f="'+f.id+'" title="'+esc(f.n)+'"'+(u && !pdf ? ' style="background-image:url('+u+')"' : '')+'>'+(pdf ? '<span>📄 PDF<br>'+esc(f.n.slice(0,12))+'</span>' : (u ? '' : '<span>กำลังโหลด…</span>'))+'<button class="x" data-del="'+f.id+'" aria-label="ลบไฟล์">✕</button></div>'; };
+  var grp = function(k, t){ var g = fs.filter(function(f){ return (f.k || '') === k; }); if (!k && !g.length) return '';
+    return '<div class="ala-grp"><div class="ala-gt">'+t+' <span class="ala-muted">('+g.length+')</span></div><div class="ala-fl">'+g.map(tf).join('')+(k ? '<label class="ala-th ala-add">📷 เพิ่ม<input type="file" accept="image/*,application/pdf" multiple hidden class="alaEdFile" data-k="'+k+'"></label>' : '')+'</div></div>'; };
+  var th = '<div class="ala-grps">'+grp('b', '📷 ก่อนทำ')+grp('a', '✅ หลังทำ')+grp('', 'อื่น ๆ (แนบก่อนแยกกลุ่ม)')+'</div>';
   var ph = ['A','B','C'].filter(function(p){ return p !== x.ph; }).map(function(p){ return '<option'+(a.to === p ? ' selected' : '')+'>'+p+'</option>'; }).join('');
   return '<tr class="ala-ed"><td colspan="'+cols+'"><div class="ala-edp"><b>'+(done ? 'แก้ไขรายการ ' : 'หลักฐาน ')+esc(x.dev || x.id)+'</b>'+
     '<div class="ala-edg">'+(done ? '<label>ย้ายไปเฟส<select id="alaEdTo">'+ph+'</select></label><label>วันที่ย้าย<input id="alaEdDt" type="date" value="'+esc(a.t || '')+'" max="'+new Date().toISOString().slice(0,10)+'"></label>' : '')+
     '<label>หมายเหตุ<input id="alaEdNt" maxlength="300" placeholder="เช่น ทีมแก้ไฟชุด 2" value="'+esc(a.note || '')+'"></label></div>'+
-    '<div class="ala-muted">หลักฐาน (รูป / PDF · สูงสุด 10 ไฟล์) · แตะรูปเพื่อดูเต็ม</div><div class="ala-fl">'+th+
-    '<label class="ala-th ala-add">📷 เพิ่ม<input type="file" accept="image/*,application/pdf" multiple hidden id="alaEdFile"></label></div><div class="ala-muted" id="alaEdMsg" style="margin-bottom:8px"></div>'+
+    '<div class="ala-muted">หลักฐาน (รูป / PDF · กลุ่มละไม่เกิน 10 ไฟล์) · แตะรูปเพื่อดูเต็ม</div>'+th+'<div class="ala-muted" id="alaEdMsg" style="margin-bottom:8px"></div>'+
     '<div class="ala-edb"><span>'+(done ? '<button class="ala-btn dan" id="alaEdRev">↩ ยกเลิก "ย้ายแล้ว" (กลับเป็นยังไม่ทำ)</button>' : '')+'</span><span><button class="ala-btn" id="alaEdCl">ปิด</button> <button class="ala-btn pri" id="alaEdSv">บันทึก</button></span></div></div></td></tr>';
 }
 function gsr(){ return google.script.run.withFailureHandler(function(e){ var m = el('alaEdMsg'); if (m) m.textContent = ''; alert('ไม่สำเร็จ: '+(e && e.message || e)); }); }
@@ -1356,12 +1361,12 @@ function bindEd(box, L){
     else google.script.run.withSuccessHandler(show).withFailureHandler(function(e){ w.close(); alert('เปิดไฟล์ไม่ได้: '+(e && e.message || e)); }).getLateralFile(x.id, f); }; });
   box.querySelectorAll('[data-del]').forEach(function(b){ b.onclick = function(ev){ ev.stopPropagation(); if (!confirm('ลบไฟล์นี้?')) return; msg.textContent = 'กำลังลบ…';
     gsr().withSuccessHandler(function(r){ ACT = r || ACT; delete FC[b.dataset.del]; draw(); }).deleteLateralFile(x.id, b.dataset.del); }; });
-  el('alaEdFile').onchange = function(){ var fs = Array.prototype.slice.call(this.files), n = 0; if (!fs.length) return;
-    if ((a.files || []).length + fs.length > 10) { alert('แนบได้สูงสุด 10 ไฟล์ต่อไลน์'); return; }
+  box.querySelectorAll('.alaEdFile').forEach(function(inp){ inp.onchange = function(){ var fs = Array.prototype.slice.call(this.files), n = 0, k = inp.dataset.k; if (!fs.length) return;
+    if ((a.files || []).filter(function(f){ return (f.k || '') === k; }).length + fs.length > 10) { alert('แนบได้กลุ่มละไม่เกิน 10 ไฟล์'); return; }
     var next = function(){ if (n >= fs.length) { draw(); return; } var f = fs[n++]; msg.textContent = 'กำลังอัปโหลด '+n+'/'+fs.length+' …';
       shrink(f, function(m, b64){ if (b64.length > 11e6) { alert(f.name+' ใหญ่เกิน 8 MB'); next(); return; }
-        gsr().withSuccessHandler(function(r){ ACT = r || ACT; a = ACT[x.id] || a; next(); }).uploadLateralFile(x.id, f.name, m, b64); }); };
-    next(); };
+        gsr().withSuccessHandler(function(r){ ACT = r || ACT; a = ACT[x.id] || a; next(); }).uploadLateralFile(x.id, f.name, m, b64, k); }); };
+    next(); }; });
   el('alaEdCl').onclick = function(){ ED = ''; draw(); };
   el('alaEdSv').onclick = function(){ var to = el('alaEdTo'), dt = el('alaEdDt'); msg.textContent = 'กำลังบันทึก…';
     gsr().withSuccessHandler(function(r){ ACT = r || ACT; ED = ''; draw(); }).editLateralAction(x.id, to ? to.value : '', dt ? dt.value : '', el('alaEdNt').value); };
