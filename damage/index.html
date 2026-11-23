@@ -1119,7 +1119,7 @@ setInterval(() => { if (!document.hidden) refreshList(); }, 60000);
       if (!s) { await dbDel(r.id); D = blank(); fillForm(); render(); ls('dmg_cur', D.id); }
       else if (Number(s.rev) > Number(r.rev || 0)) await openJob(r.id, true);
     }
-    if (!r || r._sync === 'ok') setSaved('☁️ เชื่อมต่อ Drive แล้ว · ' + serverList.length + ' งาน');
+    if (!r || r._sync === 'ok' || isEmptyJob(r)) setSaved('☁️ เชื่อมต่อ Drive แล้ว · ' + serverList.length + ' งาน');
     loadPhotos(D.id); pushAll();
   } catch (e) { setSaved(e.offline ? '📴 ออฟไลน์ — ใช้ข้อมูลในเครื่อง จะส่งให้เมื่อออนไลน์' : '⚠️ ' + e.message); }
 })();
