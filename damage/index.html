@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="pricepdf.js?v=1"></script>
 <style>
 /* ฟอนต์เอกสาร: ใช้ TH SarabunIT๙ ที่ติดตั้งในเครื่องก่อน ถ้าไม่มี (มือถือ) ใช้ TH Sarabun New ที่ฝังมากับแอป — ขนาดตัวอักษรเท่ากัน */
 @font-face{font-family:'THSN';src:url('fonts/THSarabunNew.woff') format('woff');font-display:block}
@@ -413,9 +414,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 
 <div class="modal" id="listModal" hidden><div class="box"><h3>งานที่บันทึกไว้ <button class="btn sm" data-close>ปิด</button></h3><div id="listPaneD"></div></div></div>
 <div class="modal" id="catModal" hidden><div class="box"><h3>ราคามาตรฐานพัสดุ <button class="btn sm" data-close>ปิด</button></h3>
-  <input id="catQ" placeholder="ค้นหา..." style="margin-bottom:10px">
+  <div class="note" id="catInfo" style="margin:-6px 0 8px"></div>
+  <input id="catQ" placeholder="ค้นหา ชื่อพัสดุ / รหัสพัสดุ / ขนาด เช่น 12 M, 65x65" style="margin-bottom:8px">
+  <div class="chips" id="catGroups" style="margin-bottom:10px"></div>
   <div class="list" id="catList"></div>
-  <div class="note">รายการนี้เก็บในเครื่อง · กด "＋ จำ" ที่แถวรายการพัสดุ เพื่อเพิ่มเข้ารายการราคามาตรฐาน</div>
+  <div class="row-acts" style="border-top:1px dashed var(--line);padding-top:10px;margin-top:12px">
+    <label class="btn sm pri">⬆️ อัปเดตราคาฉบับใหม่ (ไฟล์ PDF)<input type="file" accept="application/pdf,.pdf" multiple id="catPdf" hidden></label>
+  </div>
+  <div class="note">ราคาเปลี่ยนทุกไตรมาส: อัปโหลดไฟล์ PDF "ราคามาตรฐานพัสดุ (กรณีละเมิดทรัพย์สินระบบไฟฟ้า ของ กฟภ.)" ฉบับใหม่ (เลือกได้หลายไฟล์ เช่น พัสดุหลัก/รอง + ผลิตภัณฑ์คอนกรีต) — ระบบอ่านตารางให้เอง ฉบับเดิมเก็บเป็นประวัติในชีต · งานที่ทำไปแล้วใช้ราคาเดิม ไม่เปลี่ยนตาม</div>
 </div></div>
 <div class="toast" id="toast"></div>
 <div id="measure"></div>
@@ -476,13 +482,20 @@ const DEFAULT_CAT = [
   { d: 'รถขุดเจาะพร้อมชุดทีมงาน', u: 'ทีม', p: 13000 }
 ];
 const catalog = () => { try { return JSON.parse(ls('dmg_cat') || 'null') || DEFAULT_CAT.slice(); } catch (e) { return DEFAULT_CAT.slice(); } };
-const saveCat = c => { ls('dmg_cat', JSON.stringify(c)); if (cloudOn()) api('catSave', { cat: c }).then(j => { if (j.cat) { ls('dmg_cat', JSON.stringify(j.cat)); catDL(); } }).catch(e => toast('บันทึกราคามาตรฐานขึ้น Drive ไม่สำเร็จ: ' + e.message)); };
+const catRound = () => ls('dmg_cat_round') || '';
+function saveCat(c, round) {
+  ls('dmg_cat', JSON.stringify(c)); if (round) ls('dmg_cat_round', round); catDL();
+  if (!cloudOn()) return Promise.resolve({});
+  return api('catSave', { cat: c, round: round || catRound() }, 90000).then(j => {
+    if (j.cat) ls('dmg_cat', JSON.stringify(j.cat)); if (j.catVer) ls('dmg_cat_ver', j.catVer); if (j.catRound) ls('dmg_cat_round', j.catRound); catDL(); return j;
+  }).catch(e => { toast('บันทึกราคามาตรฐานขึ้น Drive ไม่สำเร็จ: ' + e.message); throw e; });
+}
 function signDefaults() { try { return JSON.parse(ls('dmg_sign') || '{}') || {}; } catch (e) { return {}; } }
 function blank() {
   const d = JSON.parse(JSON.stringify(BASE));
   Object.assign(d, signDefaults());
   d.id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  d.created = Date.now(); d.docDate = todayIso(); d.cDate = todayIso();
+  d.created = Date.now(); d.docDate = todayIso(); d.cDate = todayIso(); if (catRound()) d.priceRound = catRound();
   d.rows1 = [{ d: '', q: '1', u: '', p: '' }];
   return d;
 }
@@ -672,7 +685,7 @@ function drawRows(key) {
 }
 function catDL() {
   let dl = $('#catDL'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'catDL'; document.body.appendChild(dl); }
-  dl.innerHTML = catalog().map(c => `<option value="${esc(c.d)}">`).join('');
+  dl.innerHTML = catalog().map(c => `<option value="${esc(c.d)}">${c.code ? esc(c.code) + ' · ' : ''}${money(c.p)} บาท/${esc(c.u)}</option>`).join('');
 }
 document.addEventListener('input', e => {
   const inp = e.target.closest('.it [data-f]'); if (!inp) return;
@@ -691,26 +704,59 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-rm]')) { D[key].splice(i, 1); drawRows(key); changed(); }
   else if (e.target.closest('[data-mv]')) { const j = i + +e.target.closest('[data-mv]').dataset.mv; if (j < 0 || j >= D[key].length) return; const t = D[key][i]; D[key][i] = D[key][j]; D[key][j] = t; drawRows(key); changed(); }
   else if (e.target.closest('[data-remember]')) { const r = D[key][i]; if (!(r.d || '').trim()) return toast('ใส่รายละเอียดก่อน');
-    const c = catalog().filter(x => x.d !== r.d.trim()); c.push({ d: r.d.trim(), u: r.u || '', p: num(r.p) }); saveCat(c); catDL(); toast('จำไว้ในราคามาตรฐานแล้ว'); }
+    const c = catalog().filter(x => x.code || x.d !== r.d.trim()); c.push({ code: '', d: r.d.trim(), u: r.u || '', p: num(r.p), g: 'เพิ่มเอง' }); saveCat(c).catch(() => {}); toast('จำไว้ในราคามาตรฐานแล้ว (กลุ่ม "เพิ่มเอง")'); }
 });
 
 /* เลือกจากราคามาตรฐาน */
-let catTarget = 'rows1';
+let catTarget = 'rows1', catGroup = '';
 function drawCat() {
-  const q = ($('#catQ').value || '').trim().toLowerCase();
-  const c = catalog();
-  $('#catList').innerHTML = c.map((x, i) => ({ x, i })).filter(o => !q || o.x.d.toLowerCase().includes(q)).map(({ x, i }) => `
-    <div class="rec"><div class="m"><b>${esc(x.d)}</b><span>${money(x.p)} บาท / ${esc(x.u)}</span></div>
-    <button class="btn sm pri" data-pick="${i}">เพิ่ม</button><button class="btn sm del" data-uncat="${i}">ลบ</button></div>`).join('') || '<div class="empty">ไม่พบ</div>';
+  const c = catalog(), qs = ($('#catQ').value || '').trim().toLowerCase().split(/\s+/).filter(String);
+  const groups = [...new Set(c.map(x => x.g || 'อื่นๆ'))];
+  $('#catInfo').textContent = (catRound() ? 'ครั้งที่ ' + catRound() + ' · ' : '') + c.length.toLocaleString() + ' รายการ';
+  $('#catGroups').innerHTML = groups.length > 1 ? ['', ...groups].map(g => `<button class="chip ${catGroup === g ? 'on' : ''}" data-cg="${esc(g)}">${g ? esc(g) : 'ทั้งหมด'}</button>`).join('') : '';
+  const hit = c.map((x, i) => ({ x, i })).filter(o => (!catGroup || (o.x.g || 'อื่นๆ') === catGroup) &&
+    qs.every(q => (o.x.d + ' ' + (o.x.code || '')).toLowerCase().includes(q)));
+  $('#catList').innerHTML = hit.slice(0, 60).map(({ x, i }) => `
+    <div class="rec"><div class="m"><b style="white-space:normal">${esc(x.d)}</b><span>${x.code ? esc(x.code) + ' · ' : ''}${money(x.p)} บาท / ${esc(x.u)}</span></div>
+    <button class="btn sm pri" data-pick="${i}">เพิ่ม</button>${x.code ? '' : `<button class="btn sm del" data-uncat="${i}">ลบ</button>`}</div>`).join('')
+    + (hit.length > 60 ? `<div class="note">แสดง 60 จาก ${hit.length} รายการ — พิมพ์คำค้นเพิ่มให้แคบลง</div>` : '') || '<div class="empty">ไม่พบ</div>';
 }
 document.addEventListener('click', e => {
-  const c = e.target.closest('[data-cat]'); if (c) { catTarget = c.dataset.cat; $('#catQ').value = ''; drawCat(); $('#catModal').hidden = false; return; }
+  const c = e.target.closest('[data-cat]'); if (c) { catTarget = c.dataset.cat; $('#catQ').value = ''; drawCat(); $('#catModal').hidden = false; setTimeout(() => $('#catQ').focus(), 50); return; }
+  const g = e.target.closest('[data-cg]'); if (g) { catGroup = g.dataset.cg; drawCat(); return; }
   const p = e.target.closest('[data-pick]'); if (p) { const x = catalog()[+p.dataset.pick];
     const rows = D[catTarget]; const emptyIdx = rows.findIndex(r => !(r.d || '').trim() && !num(r.p));
-    const nr = { d: x.d, q: '1', u: x.u, p: String(x.p) }; if (emptyIdx >= 0) rows[emptyIdx] = nr; else rows.push(nr);
-    drawRows(catTarget); changed(); toast('เพิ่ม ' + x.d.slice(0, 30)); return; }
-  const u = e.target.closest('[data-uncat]'); if (u) { if (!confirm('ลบออกจากรายการราคามาตรฐาน?')) return; const cc = catalog(); cc.splice(+u.dataset.uncat, 1); saveCat(cc); catDL(); drawCat(); return; }
+    const nr = { d: x.d, q: '1', u: x.u, p: String(x.p), code: x.code || '' }; if (emptyIdx >= 0) rows[emptyIdx] = nr; else rows.push(nr);
+    drawRows(catTarget); changed(); toast('เพิ่ม ' + x.d.slice(0, 40)); return; }
+  const u = e.target.closest('[data-uncat]'); if (u) { if (!confirm('ลบออกจากรายการราคามาตรฐาน?')) return; const cc = catalog(); cc.splice(+u.dataset.uncat, 1); saveCat(cc).then(drawCat, () => {}); drawCat(); return; }
   if (e.target.closest('[data-close]') || e.target.classList.contains('modal')) { $$('.modal').forEach(m => m.hidden = true); }
+});
+/* อัปเดตราคาฉบับใหม่จากไฟล์ PDF (อ่านในเครื่องด้วย pdf.js) */
+let pdfjsP = null;
+const loadPdfjs = () => pdfjsP || (pdfjsP = import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs').then(m => {
+  m.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs'; return m; }));
+$('#catPdf').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+  toast('กำลังอ่านไฟล์ราคา…');
+  try {
+    const lib = await loadPdfjs(); let items = [], round = '';
+    for (const f of files) { const r = await PricePdf.readPdf(lib, new Uint8Array(await f.arrayBuffer())); items = items.concat(r.items); round = r.round || round; }
+    if (!items.length) return alert('อ่านรายการราคาจากไฟล์นี้ไม่ได้ — ต้องเป็นไฟล์ "ราคามาตรฐานพัสดุ (กรณีละเมิดทรัพย์สินระบบไฟฟ้า ของ กฟภ.)"');
+    const old = catalog(), newGroups = new Set(items.map(x => x.g));
+    const keep = old.filter(x => x.g !== 'ตัวอย่าง' && (x.code ? !newGroups.has(x.g) : true));        // กลุ่มที่ไม่ได้อัปโหลด + รายการที่เพิ่มเอง คงไว้
+    const byCode = new Map(old.filter(x => x.code).map(x => [x.code, x]));
+    const nItems = items.map(x => ({ code: x.code, d: x.d, u: x.u, p: x.p, g: x.g }));
+    let up = 0, down = 0, added = 0; const ex = [];
+    nItems.forEach(x => { const o = byCode.get(x.code); if (!o) added++; else if (o.p !== x.p) { (x.p > o.p ? up++ : down++); if (ex.length < 3) ex.push(`${x.d.slice(0, 36)}: ${money(o.p)} → ${money(x.p)}`); } });
+    const removed = old.filter(x => x.code && newGroups.has(x.g) && !nItems.some(y => y.code === x.code)).length;
+    const msg = `ราคามาตรฐาน ครั้งที่ ${round || '(ไม่พบในไฟล์)'}\n${[...newGroups].map(g => '• ' + g + ' ' + nItems.filter(x => x.g === g).length + ' รายการ').join('\n')}\n\n`
+      + (old.some(x => x.code) ? `เทียบกับฉบับเดิม${catRound() ? ' (ครั้งที่ ' + catRound() + ')' : ''}: ราคาขึ้น ${up} · ลง ${down} · ใหม่ ${added} · ไม่มีแล้ว ${removed}\n${ex.join('\n')}\n\n` : '')
+      + 'บันทึกเป็นราคามาตรฐานที่ใช้กับงานใหม่ใช่ไหม?';
+    if (!confirm(msg)) return;
+    const j = await saveCat(keep.concat(nItems), round);
+    drawCat(); toast('อัปเดตราคาแล้ว' + (j && j.archived ? ' · ฉบับเดิมเก็บที่แผ่นงาน "' + j.archived + '"' : ''));
+    if (round && D && isEmptyJob(D)) { D.priceRound = round; fillForm(); }
+  } catch (err) { alert('อ่านไฟล์ไม่สำเร็จ: ' + err.message); }
 });
 $('#catQ').addEventListener('input', drawCat);
 
@@ -1110,9 +1156,10 @@ setInterval(() => { if (!document.hidden) refreshList(); }, 60000);
   if (!cloudOn()) { setSaved('⚠️ ยังไม่ได้ล็อกอินศูนย์รวมงาน — บันทึกในเครื่องเท่านั้น'); return; }
   setSaved('⏳ กำลังเชื่อมต่อ Drive…');
   try {
-    const j = await api('bootstrap');
+    const j = await api('bootstrap', { catVer: ls('dmg_cat') ? (ls('dmg_cat_ver') || '') : '' });
     serverList = j.list || []; lastRefresh = Date.now();
-    if (j.cat && j.cat.length) { ls('dmg_cat', JSON.stringify(j.cat)); catDL(); }
+    if (j.cat) { ls('dmg_cat', JSON.stringify(j.cat)); catDL(); }
+    if (j.catVer) ls('dmg_cat_ver', j.catVer); if (j.catRound) ls('dmg_cat_round', j.catRound);
     if (j.sign) ls('dmg_sign', JSON.stringify(j.sign));
     const s = r && serverList.find(x => x.id === r.id);
     if (r && r._sync === 'ok') {

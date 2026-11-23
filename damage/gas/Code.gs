@@ -24,21 +24,18 @@ function setup() { setupAll_(); }
 // โปรเจกต์ Apps Script: https://script.google.com/home/projects/1NlUhEL4lDe_DG4IAPO0ejKjzPfseGIWa5Pg1fbUI_yjnoinm920Q70bk/edit
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '1.0';
+const VERSION = '1.1';
 
 const JOBS = { name: 'งาน',
   cols:   ['id', 'incDate', 'plate', 'driver', 'place', 'total', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt', 'rev', 'deleted', 'data'],
   labels: ['รหัสงาน', 'วันเกิดเหตุ', 'ทะเบียนรถ', 'ผู้ขับขี่', 'สถานที่เกิดเหตุ', 'ค่าเสียหายรวม (บาท)', 'สร้างโดย', 'สร้างเมื่อ', 'แก้ไขล่าสุดโดย', 'แก้ไขล่าสุดเมื่อ', 'ครั้งที่แก้', 'ลบแล้ว', 'ข้อมูลเต็ม (JSON — ห้ามแก้มือ)'] };
-const CAT  = { name: 'ราคามาตรฐาน', cols: ['d', 'u', 'p'], labels: ['รายละเอียด / ชื่อพัสดุ', 'หน่วย', 'ราคา/หน่วย (บาท)'] };
+const CAT  = { name: 'ราคามาตรฐาน', cols: ['code', 'd', 'u', 'p', 'g'], labels: ['รหัสพัสดุ', 'รายละเอียด / ชื่อพัสดุ', 'หน่วย', 'ราคากรณีละเมิด (บาท)', 'กลุ่ม'] };
 const SETS = { name: 'ตั้งค่า', cols: ['k', 'v'], labels: ['รายการ', 'ค่า (JSON)'] };
 const LOG  = { name: 'ประวัติ', cols: ['t', 'u', 'a', 'id', 'd'], labels: ['วันเวลา', 'ผู้ใช้', 'การกระทำ', 'รหัสงาน', 'รายละเอียด'] };
 
 const DEFAULT_CAT = [
-  ['POLE,CONCRETE, 12 M.LONG เสาคอนกรีต 12 เมตร', 'ต้น', 14893],
-  ['คอน คอร.120x120x3.000 มม.', 'ท่อน', 1833],
-  ['เหล็กฉาก 65x65x6', 'อัน', 1420],
-  ['เหล็กประกับ 40x6x1,000', 'อัน', 282],
-  ['รถขุดเจาะพร้อมชุดทีมงาน', 'ทีม', 13000]
+  ['', 'POLE,CONCRETE, 12 M.LONG เสาคอนกรีต 12 เมตร', 'ต้น', 14893, 'ตัวอย่าง'],
+  ['', 'รถขุดเจาะพร้อมชุดทีมงาน', 'ทีม', 13000, 'ตัวอย่าง']
 ];
 
 /* ====================================================================== */
@@ -81,7 +78,10 @@ function doPost(e) {
 const READ = {
   /** เริ่มต้น: รายการงาน (สรุป) + ราคามาตรฐาน + ชื่อผู้ลงนามเริ่มต้น */
   bootstrap: function (b, me) {
-    return { me: me, list: list_(), cat: catList_(), sign: getSetting_('sign') || null, version: VERSION };
+    const ver = getSetting_('catVer') || '';
+    const out = { me: me, list: list_(), sign: getSetting_('sign') || null, version: VERSION, catVer: ver, catRound: getSetting_('catRound') || '' };
+    if (!ver || b.catVer !== ver) out.cat = catList_();   // ส่งราคามาตรฐานเฉพาะเมื่อเครื่องยังไม่มีฉบับล่าสุด
+    return out;
   },
   list: function () { return { list: list_() }; },
   get: function (b) {
@@ -144,13 +144,25 @@ const ACTIONS = {
     f.setDescription('ประเมินค่าเสียหาย · งาน ' + (b.jobId || '') + ' · อัปโหลดโดย ' + me.name);
     return { fileId: f.getId() };
   },
+  /** บันทึกราคามาตรฐานทั้งชุด · ถ้าเปลี่ยน "ครั้งที่" ฉบับเดิมจะถูกคัดลอกเก็บเป็นแผ่นงานประวัติก่อน */
   catSave: function (b, me) {
     const list = (b.cat || []).filter(function (x) { return x && String(x.d || '').trim(); });
-    const sh = sheet_(CAT), n = sh.getLastRow() - 1;
-    if (n > 0) sh.getRange(2, 1, n, 3).clearContent();
-    if (list.length) sh.getRange(2, 1, list.length, 3).setValues(list.map(function (x) { return [String(x.d).trim(), String(x.u || ''), Number(x.p) || 0]; }));
-    log_(me, 'แก้ราคามาตรฐาน', '', list.length + ' รายการ');
-    return { cat: catList_() };
+    const sh = sheet_(CAT), oldRound = getSetting_('catRound') || '', round = String(b.round || oldRound || '').trim();
+    let archived = '';
+    if (round && oldRound && round !== oldRound && sh.getLastRow() > 1) {
+      archived = 'ราคามาตรฐาน ครั้งที่ ' + oldRound.replace(/\//g, '-');
+      const ex = ss_().getSheetByName(archived); if (ex) ss_().deleteSheet(ex);
+      sh.copyTo(ss_()).setName(archived);
+    }
+    sh.clearContents();
+    sh.getRange(1, 1, 1, CAT.labels.length).setValues([CAT.labels]).setFontWeight('bold').setBackground('#fbe3d6');
+    if (list.length) sh.getRange(2, 1, list.length, CAT.cols.length).setValues(list.map(function (x) {
+      return [String(x.code || ''), String(x.d).trim(), String(x.u || ''), Number(x.p) || 0, String(x.g || '')]; }));
+    sh.getRange('A:A').setNumberFormat('@');
+    if (round) setSetting_('catRound', round);
+    const ver = nowIso_(); setSetting_('catVer', ver);
+    log_(me, 'แก้ราคามาตรฐาน', '', (round ? 'ครั้งที่ ' + round + ' · ' : '') + list.length + ' รายการ' + (archived ? ' · เก็บฉบับเดิมไว้ที่ "' + archived + '"' : ''));
+    return { cat: catList_(), catVer: ver, catRound: round, archived: archived };
   },
   signSave: function (b, me) { setSetting_('sign', b.sign || {}); log_(me, 'แก้ชื่อผู้ลงนามเริ่มต้น', '', ''); return {}; }
 };
@@ -177,7 +189,8 @@ function list_() {
 }
 function catList_() {
   const t = table_(CAT);
-  return t.rows.filter(function (r) { return String(r[0]).trim(); }).map(function (r) { return { d: String(r[0]).trim(), u: String(r[1]), p: Number(r[2]) || 0 }; });
+  return t.rows.filter(function (r) { return String(r[1]).trim(); }).map(function (r) {
+    return { code: String(r[0] || ''), d: String(r[1]).trim(), u: String(r[2]), p: Number(r[3]) || 0, g: String(r[4] || '') }; });
 }
 function title_(j) { return [j.plate, j.driver, j.place].filter(String).join(' · ').slice(0, 200); }
 
@@ -262,8 +275,8 @@ function setupAll_() {
   jobs.hideColumns(JOBS.cols.indexOf('data') + 1);
   jobs.setColumnWidth(JOBS.cols.indexOf('place') + 1, 320);
   const cat = sheet_(CAT);
-  if (cat.getLastRow() < 2) cat.getRange(2, 1, DEFAULT_CAT.length, 3).setValues(DEFAULT_CAT);
-  cat.setColumnWidth(1, 380); cat.getRange('C:C').setNumberFormat('#,##0.00');
+  if (cat.getLastRow() < 2) cat.getRange(2, 1, DEFAULT_CAT.length, 5).setValues(DEFAULT_CAT);
+  cat.setColumnWidth(2, 420); cat.getRange('D:D').setNumberFormat('#,##0.00');
   const def = ss_().getSheetByName('Sheet1') || ss_().getSheetByName('ชีต1');
   if (def && def.getLastRow() === 0 && ss_().getSheets().length > 1) ss_().deleteSheet(def);
   const f = folder_();
