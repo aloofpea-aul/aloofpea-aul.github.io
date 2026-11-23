@@ -31,7 +31,8 @@
     '.dx-ph img{width:100%;height:100%;object-fit:cover;display:block}.dx-ph a span{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;color:#475569;text-align:center;padding:6px;word-break:break-all}' +
     '.dx-ph a small{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:10.5px;padding:10px 5px 3px}' +
     '.dx-rep{display:inline-block;margin-top:7px;border:0;background:#fff;color:#2563EB;border:1.5px solid #BFDBFE;border-radius:9px;padding:4px 10px;font:700 12.5px inherit;font-family:inherit;cursor:pointer}' +
-    '.dx-pg{display:flex;align-items:center;gap:10px;margin-top:10px}.dx-pg .tr{flex:1;height:8px;background:#E2E8F0;border-radius:5px;overflow:hidden}.dx-pg .tr i{display:block;height:100%;background:#0D9488}.dx-pg b{color:#0F766E;font-size:15px}';
+    '.dx-pg{display:flex;align-items:center;gap:10px;margin-top:10px}.dx-pg .tr{flex:1;height:8px;background:#E2E8F0;border-radius:5px;overflow:hidden}.dx-pg .tr i{display:block;height:100%;background:#0D9488}.dx-pg b{color:#0F766E;font-size:15px}' +
+    '.dx-nx{margin-top:10px;border-radius:11px;padding:8px 11px;font-size:13px;font-weight:700;line-height:1.45}.dx-nx small{display:block;font-weight:600;font-size:12px;opacity:.85}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   function driveId(u) { var m = /\/d\/([\w-]{20,})|[?&]id=([\w-]{20,})/.exec(u || ''); return m ? (m[1] || m[2]) : ''; }
@@ -64,6 +65,23 @@
     var STG = ['รับงาน', 'ก่อสร้าง', 'ส่งมอบ', 'ตรวจรับ', 'เสร็จ'];
     var ph = photos(job), nMat = (Array.isArray(job.contractorMaterials) ? job.contractorMaterials : []).length;
 
+    function nextLine() { // บอกว่าขั้นนี้รอใคร
+      var me = ['#ECFDF5', '#065F46'], pea = ['#F5F3FF', '#5B21B6'], t, sub = '', c = me;
+      var dlv = (Array.isArray(job.updates) ? job.updates : []).some(function (u) { return u && u.updateType === 'delivery'; });
+      var sd = H.stale ? H.stale(job) : null;
+      if (cancel) { t = '⛔ งานนี้ถูกยกเลิก'; c = ['#F1F5F9', '#475569']; }
+      else if (done) { t = '✅ งานเสร็จสมบูรณ์ — PEA ปิดงานแล้ว'; c = ['#F0FDF4', '#166534']; }
+      else if (job.status === 'ตรวจรับงาน') {
+        if (planLeft) { t = '👉 ถึงคิวผู้รับจ้าง: ใส่หมายเลขเสาให้ครบ'; sub = planTxt + ' — PEA ใช้ประกอบการตรวจรับ'; }
+        else { t = '⏳ รอ PEA ตรวจรับงาน'; sub = 'ผู้รับจ้างไม่ต้องทำอะไรเพิ่ม · เมื่อ PEA ตรวจรับและปิดงานแล้ว ขั้นที่ 5 จะขึ้นเครื่องหมายถูกเอง'; c = pea; }
+      }
+      else if (H.reply && H.reply(job)) { t = '👉 ถึงคิวผู้รับจ้าง: PEA ตอบกลับมา'; sub = 'อ่านในไทม์ไลน์ แล้วกด "ตอบกลับ / ส่งรูปเพิ่ม"'; }
+      else if (rdy) { t = '👉 ถึงคิวผู้รับจ้าง: แจ้งส่งมอบงาน'; sub = 'งานถึง 100% แล้ว กด "แจ้งส่งมอบ" เพื่อให้ PEA ตรวจรับ'; }
+      else if (dlv) { t = '⏳ แจ้งส่งมอบแล้ว — รอ PEA รับเรื่องตรวจรับ'; c = pea; }
+      else if (sg === 0) { t = '👉 ถึงคิวผู้รับจ้าง: เริ่มงาน'; sub = 'เริ่มงานแล้วกด "อัปเดตงาน" พร้อมรูปหน้างาน'; }
+      else { t = '👉 ถึงคิวผู้รับจ้าง: อัปเดตความคืบหน้า' + (sd != null ? ' (ไม่ได้อัปเดต ' + sd + ' วัน)' : ''); sub = 'อัปเดตเมื่องานคืบหน้า จนถึง 100% แล้วแจ้งส่งมอบ'; if (sd != null) c = ['#FFFBEB', '#92400E']; }
+      return '<div class="dx-nx" style="background:' + c[0] + ';color:' + c[1] + '">' + t + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>';
+    }
     var top = document.createElement('div');
     top.innerHTML =
       '<div class="dx-h"><div class="n">' + esc(job.jobName || '-') + '</div>' +
@@ -71,6 +89,7 @@
       (job.jobIds ? '<br><i class="fa-solid fa-hashtag" style="color:#94A3B8"></i> ' + esc(job.jobIds) : '') +
       (job.location ? '<br><i class="fa-solid fa-location-dot" style="color:#EF4444"></i> ' + esc(job.location) : '') + '</div>' +
       (cancel ? '' : '<div class="dx-st">' + STG.map(function (x, i) { var c = i < sg || done ? 'd' : i === sg ? 'c' : ''; return '<div class="' + c + '"><b>' + (c === 'd' ? '✓' : i + 1) + '</b>' + x + (i === 1 && c === 'c' && p ? ' ' + p + '%' : '') + '</div>'; }).join('') + '</div>') +
+      nextLine() +
       (p && !done ? '<div class="dx-pg"><div class="tr"><i style="width:' + Math.min(100, p) + '%"></i></div><b>' + p + '%</b></div>' : '') + '</div>' +
       (act ? '<div class="dx-big">' +
         '<button type="button" data-a="progress" class="' + (rdy ? '' : 'hl') + '"><i class="ic" style="background:#CCFBF1">📊</i><span>อัปเดตงาน<small>% + รูป + หมายเหตุ</small></span></button>' +
