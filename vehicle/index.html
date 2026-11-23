@@ -842,14 +842,23 @@ function openCheckoutForm(v){
   };
   setTimeout(()=>$('fMission').focus(),150);
 }
+const MAX_TRIP = 1000;   // กม./ทริป เกินนี้ต้องยืนยัน
 function openReturn(id){
   const v = carById(id); if(!v) return;
   sheet(`<h3>✓ คืนรถ ${esc(v.plate)}</h3>
     <p class="muted" style="margin-top:-6px">ผู้เบิก: ${esc(v.user||'-')}${v.since?' · ออก '+fd(v.since)+' (ใช้มา '+dur(v.since)+')':''}<br>ไมล์ขณะออก ${km(v.mile)} กม.</p>
     <label class="fld"><span>เลขไมล์ตอนคืน (กม.)</span><input id="fMile" type="number" inputmode="numeric" min="${v.mile}" placeholder="${v.mile}"></label>
     <div class="muted" id="fUsed" style="margin:-6px 0 12px">&nbsp;</div>
-    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn green" onclick="act('returnCar',{carId:'${esc(v.id)}',endMile:$('fMile').value})">บันทึกคืนรถ</button></div>`);
-  $('fMile').oninput = e => { const d = Number(e.target.value) - v.mile; $('fUsed').textContent = e.target.value ? (d>=0 ? 'ระยะทางที่ใช้ '+km(d)+' กม.' : '⚠️ น้อยกว่าเลขไมล์เดิม') : ' '; };
+    <div class="sbtns"><button class="btn ghost" onclick="closeSheet()">ยกเลิก</button><button class="btn green" id="btnRet">บันทึกคืนรถ</button></div>`);
+  let okBig = false;
+  $('fMile').oninput = e => { okBig = false; $('btnRet').textContent = 'บันทึกคืนรถ'; const d = Number(e.target.value) - v.mile;
+    $('fUsed').innerHTML = !e.target.value ? '&nbsp;' : d < 0 ? '<b style="color:var(--bad)">⚠️ น้อยกว่าเลขไมล์ตอนออก — ตรวจอีกครั้ง</b>'
+      : d > MAX_TRIP ? `<b style="color:var(--bad)">⚠️ ระยะ ${km(d)} กม. มากผิดปกติ — ตรวจว่าดูเลขไมล์ถูกคันหรือไม่</b>` : 'ระยะทางที่ใช้ '+km(d)+' กม.'; };
+  $('btnRet').onclick = () => { const val = Number($('fMile').value), d = val - v.mile;
+    if (!$('fMile').value) return toast('กรุณากรอกเลขไมล์ตอนคืน');
+    if (d < 0) return toast('เลขไมล์ต้องไม่น้อยกว่า '+km(v.mile)+' กม.');
+    if (d > MAX_TRIP && !okBig) { okBig = true; $('btnRet').textContent = 'ยืนยัน '+km(d)+' กม. ถูกต้อง'; return toast('ระยะทางมากผิดปกติ — ตรวจแล้วถูกต้อง กดปุ่มอีกครั้งเพื่อยืนยัน'); }
+    act('returnCar',{carId:v.id,endMile:val,confirmBig:okBig}); };
   setTimeout(()=>$('fMile').focus(),150);
 }
 function openBooking(){

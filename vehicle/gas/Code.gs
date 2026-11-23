@@ -17,7 +17,7 @@ const IMAGE_FOLDER_ID = '1jEK9tp1WO7dzeSRJT8NY6zUDxSSl537N';
 const WEB_URL = 'https://aloofpea-aul.github.io/vehicle/';
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '17.3';
+const VERSION = '17.4';
 
 // ตำแหน่งคอลัมน์ตามข้อมูลจริงในชีต (A, B, C, …) + ป้ายหัวคอลัมน์ภาษาไทย
 const SH = {
@@ -145,6 +145,7 @@ const ACTIONS = {
     if (!me.admin && holder && nm_(holder) !== nm_(me.name)) throw new Error('คืนได้เฉพาะผู้เบิก (' + holder + ') หรือผู้ดูแลระบบ');
     const start = Number(get_(t, r, 'Mile')) || 0;
     if (endMile < start) throw new Error('เลขไมล์ต้องไม่น้อยกว่าเลขไมล์ตอนออก (' + start.toLocaleString() + ' กม.)');
+    if (endMile - start > 1000 && !b.confirmBig) throw new Error('ระยะ ' + (endMile - start).toLocaleString() + ' กม. มากผิดปกติ — ตรวจว่าดูเลขไมล์ถูกคันหรือไม่ (ไมล์ตอนออก ' + start.toLocaleString() + ')');
     const plate = String(get_(t, r, 'Plate')), carId = String(get_(t, r, 'ID'));
     set_(t, r, { Status: 'available', Mile: endMile, User: '', UserId: '' });
     const L = table_(SH.LOGS);
