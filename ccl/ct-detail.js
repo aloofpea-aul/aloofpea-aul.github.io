@@ -58,7 +58,8 @@
     var head = hist.querySelector('h3'); if (head) head.parentNode.removeChild(head);
     var nHist = (Array.isArray(job.updates) ? job.updates : []).length;
     var H = window.ctHome || {}, p = H.prog ? H.prog(job) : 0, sg = H.stage ? H.stage(job) : 1, act = H.isActive ? H.isActive(job) : true, rdy = H.ready ? H.ready(job) : false;
-    var done = sg >= 4, cancel = job.status === 'ยกเลิก';
+    var done = sg >= 4, cancel = job.status === 'ยกเลิก', canMat = !done && !cancel;
+    var plan = window.ctMat ? ctMat.planned(job) : [], planTxt = plan.map(function (q) { var r = ctMat.recorded(job, q.size); return 'เสา ' + q.size + ' ม. ใส่หมายเลขแล้ว ' + Math.min(r, q.n) + '/' + q.n; }).join(' · '), planLeft = plan.some(function (q) { return ctMat.recorded(job, q.size) < q.n; });
     var stc = done ? ['#DCFCE7', '#166534'] : job.status === 'ตรวจรับงาน' ? ['#F3E8FF', '#6B21A8'] : cancel ? ['#F1F5F9', '#64748B'] : ['#E0F2FE', '#075985'];
     var STG = ['รับงาน', 'ก่อสร้าง', 'ส่งมอบ', 'ตรวจรับ', 'เสร็จ'];
     var ph = photos(job), nMat = (Array.isArray(job.contractorMaterials) ? job.contractorMaterials : []).length;
@@ -74,9 +75,10 @@
       (act ? '<div class="dx-big">' +
         '<button type="button" data-a="progress" class="' + (rdy ? '' : 'hl') + '"><i class="ic" style="background:#CCFBF1">📊</i><span>อัปเดตงาน<small>% + รูป + หมายเหตุ</small></span></button>' +
         '<button type="button" data-a="delivery" class="' + (rdy ? 'hl' : '') + '"><i class="ic" style="background:#FEF3C7">🚚</i><span>แจ้งส่งมอบ<small>ขอให้ PEA ตรวจรับ</small></span></button>' +
-        '<button type="button" data-a="mat"><i class="ic" style="background:#DBEAFE">🔩</i><span>วัสดุ / เสา<small>บันทึกที่ใช้จริง</small></span></button>' +
+        '<button type="button" data-a="mat"><i class="ic" style="background:#DBEAFE">🔩</i><span>วัสดุ / เสา<small>' + esc(planTxt || 'บันทึกที่ใช้จริง') + '</small></span></button>' +
         '<button type="button" data-a="problem"><i class="ic" style="background:#FEE2E2">⚠️</i><span>แจ้งปัญหา<small>ขอขยายเวลา</small></span></button></div>' : '') +
-      '<div class="dx-sm">' + (act ? '<button type="button" data-a="note">📝 บันทึกทั่วไป</button><button type="button" data-a="photo">📷 ส่งรูป</button>' : '<button type="button" data-a="note">📝 บันทึกข้อความถึง PEA</button>') + '<button type="button" data-a="print">🖨️ พิมพ์</button></div>' +
+      (!act && canMat ? '<div class="dx-big" style="grid-template-columns:1fr"><button type="button" data-a="mat" class="' + (planLeft ? 'hl' : '') + '"><i class="ic" style="background:#DBEAFE">🔩</i><span>ใส่หมายเลขเสา / หม้อแปลง<small>' + esc(planTxt || 'บันทึกวัสดุที่ใช้จริง') + '</small></span></button></div>' : '') +
+      '<div class="dx-sm">' + (act ? '<button type="button" data-a="note">📝 บันทึกทั่วไป</button><button type="button" data-a="photo">📷 ส่งรูป</button>' : '<button type="button" data-a="note">📝 ข้อความถึง PEA</button>') + '<button type="button" data-a="print">🖨️ พิมพ์</button></div>' +
       '<div class="dx-tabs"><button type="button" data-t="tl">ไทม์ไลน์<em>' + nHist + '</em></button><button type="button" data-t="mat">วัสดุ' + (nMat ? '<em>' + nMat + '</em>' : '') + '</button><button type="button" data-t="info">ข้อมูลงาน</button><button type="button" data-t="ph">รูป<em>' + ph.length + '</em></button></div>';
 
     var pTl = document.createElement('div'); pTl.className = 'dx-pane'; pTl.dataset.p = 'tl';
@@ -87,7 +89,7 @@
     });
     var pMat = document.createElement('div'); pMat.className = 'dx-pane'; pMat.dataset.p = 'mat';
     if (mat) pMat.appendChild(mat); else pMat.innerHTML = '<div class="dx-emp">ยังไม่มีข้อมูลวัสดุ</div>';
-    if (act) pMat.insertAdjacentHTML('beforeend', '<div style="text-align:center"><button type="button" class="dx-rep" data-a="mat" style="margin-top:10px">＋ บันทึก/แก้ไขวัสดุ (เสา/หม้อแปลง)</button></div>');
+    if (canMat) pMat.insertAdjacentHTML('beforeend', '<div style="text-align:center">' + (planTxt ? '<div style="font-size:12.5px;color:#92400E;font-weight:700;margin-top:10px">📋 ' + esc(planTxt) + '</div>' : '') + '<button type="button" class="dx-rep" data-a="mat" style="margin-top:8px;font-size:14px;padding:7px 14px">🔩 ใส่หมายเลขเสา / แก้ไขวัสดุ</button></div>');
     var pInfo = document.createElement('div'); pInfo.className = 'dx-pane'; pInfo.dataset.p = 'info';
     var t1 = info.querySelector(':scope > .flex.justify-between'); if (t1) t1.parentNode.removeChild(t1); // ชื่องาน/สถานะ อยู่ในหัวงานแล้ว
     while (info.firstChild) pInfo.appendChild(info.firstChild);
