@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="th">
+<head>
+<script src="/pea-hub.js" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ประเมินค่าเสียหายระบบจำหน่าย · กฟส.อ่าวลึก</title>
+<meta name="theme-color" content="#9a3412">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ประเมินค่าเสียหาย">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* ฟอนต์เอกสาร: ใช้ TH SarabunIT๙ ที่ติดตั้งในเครื่องก่อน ถ้าไม่มี (มือถือ) ใช้ TH Sarabun New ที่ฝังมากับแอป — ขนาดตัวอักษรเท่ากัน */
+@font-face{font-family:'THSN';src:url('fonts/THSarabunNew.woff') format('woff');font-display:block}
+@font-face{font-family:'THSN';font-weight:700;src:url('fonts/THSarabunNew-Bold.woff') format('woff');font-display:block}
+:root{
+  --head:#9a3412; --head2:#7c2d12; --accent:#c2410c; --accent-soft:#fdeee5;
+  --bg:#f6f3f1; --panel:#fff; --fg:#26201c; --muted:#75685f; --line:#e6ddd6;
+  --ok:#1f7a4d; --bad:#b42318;
+  --ui:system-ui,-apple-system,"Segoe UI","Noto Sans Thai","Leelawadee UI",sans-serif;
+  --doc:'TH SarabunIT๙','THSN','TH Sarabun New','TH SarabunPSK',serif;
+  --navh:62px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;-webkit-text-size-adjust:100%}
+button{font:inherit;cursor:pointer}
+
+/* ---------- แถบหัวแอป (สีเดียวกับแถบสถานะ iPhone) ---------- */
+header.app{position:sticky;top:0;z-index:40;background:var(--head);color:#fff;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));
+  display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(124,45,18,.25)}
+header.app a.back{color:#fff;text-decoration:none;font-size:26px;line-height:1;padding:0 4px 2px 0}
+header.app .tt{min-width:0;flex:1}
+header.app h1{font-size:17px;margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.app small{display:block;font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbtn{border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;border-radius:9px;padding:7px 12px;font-size:13px;white-space:nowrap}
+.hbtn.solid{background:#fff;color:var(--head);border-color:#fff;font-weight:600}
+.saved{font-size:12px;opacity:.85;white-space:nowrap}
+
+/* ---------- โครงหน้า ---------- */
+main{display:grid;grid-template-columns:minmax(0,470px) minmax(0,1fr);gap:18px;align-items:start;
+  padding:14px max(14px,env(safe-area-inset-right)) 40px max(14px,env(safe-area-inset-left))}
+.pane-form{display:flex;flex-direction:column;gap:12px;min-width:0}
+.pane-pv{position:sticky;top:76px;min-width:0}
+.pane-list{display:none}
+nav.bot{display:none}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card>h2{font-size:14.5px;margin:0 0 10px;display:flex;align-items:center;gap:8px;font-weight:600}
+.card>h2 .n{min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px;padding:0 6px;flex:none}
+.card>h2 .hint{margin-left:auto;font-weight:400;font-size:12px;color:var(--muted)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:16px;color:var(--fg);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:58px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+@media (min-width:900px){input,select,textarea{font-size:14px}}
+.sub{font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 6px;padding-top:10px;border-top:1px dashed var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:18px;padding:6px 12px;font-size:13px;color:var(--fg)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chk{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:3px 0}
+.chk input{width:19px;height:19px;accent-color:var(--accent);flex:none}
+.note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 12px;font-size:13.5px;color:var(--fg)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn.del{color:var(--bad)}
+.row-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* รายการพัสดุ */
+.items{display:flex;flex-direction:column;gap:8px}
+.it{border:1px solid var(--line);border-radius:10px;padding:8px;display:grid;grid-template-columns:26px minmax(0,1fr);gap:6px 8px;background:#fffdfb}
+.it .no{font-weight:600;color:var(--accent);text-align:center;padding-top:8px}
+.it .r2{display:grid;grid-template-columns:70px 80px minmax(0,1fr) auto;gap:6px;align-items:center}
+.it .amt{font-size:13px;font-weight:600;white-space:nowrap;text-align:right;min-width:78px}
+.it .x{border:0;background:none;color:var(--bad);font-size:18px;padding:2px 6px}
+.it .mv{display:flex;gap:2px}
+.it .mv button{border:0;background:none;color:var(--muted);font-size:13px;padding:2px 5px}
+.sum{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:14px;padding:8px 10px;background:var(--accent-soft);border-radius:8px}
+.sum b{font-size:16px}
+.bigsum{background:var(--head);color:#fff;border-radius:12px;padding:12px 14px}
+.bigsum .l{font-size:12px;opacity:.85}
+.bigsum .v{font-size:22px;font-weight:700}
+.bigsum .t{font-size:13px;opacity:.9}
+
+/* รูปแนบ */
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.ph figure{margin:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;position:relative}
+.ph img{width:100%;height:96px;object-fit:cover;display:block}
+.ph figcaption{display:flex;gap:4px;padding:5px;align-items:center}
+.ph select{font-size:12px;padding:4px;border-radius:6px}
+.ph .x{position:absolute;top:4px;right:4px;border:0;border-radius:50%;width:26px;height:26px;background:rgba(0,0,0,.6);color:#fff}
+.ph .mvb{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 6px;font-size:12px}
+
+/* ---------- พรีวิว ---------- */
+.pvbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.pvbar .lbl{font-size:13px;color:var(--muted)}
+.pvbar .sp{flex:1}
+#pv{display:flex;flex-direction:column;align-items:center;gap:14px}
+.sheet{position:relative;box-shadow:0 2px 14px rgba(0,0,0,.14);background:#fff;flex:none}
+.sheet>.page{position:absolute;top:0;left:0;transform-origin:0 0}
+.sheet .pno{position:absolute;right:-2px;top:-20px;font-size:11px;color:var(--muted)}
+.fitwarn{font-size:12px;color:var(--bad);margin-top:6px}
+
+/* ---------- รายการที่บันทึก ---------- */
+.list{display:flex;flex-direction:column;gap:8px}
+.rec{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;gap:10px;align-items:center}
+.rec.cur{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.rec .m{flex:1;min-width:0}
+.rec .m b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .m span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .a{font-weight:700;color:var(--head);white-space:nowrap}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+.modal{position:fixed;inset:0;z-index:80;background:rgba(30,20,15,.45);display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top) + 40px) 14px 20px}
+.modal .box{background:var(--bg);border-radius:14px;width:min(620px,100%);max-height:calc(100vh - 80px);overflow:auto;padding:14px}
+.modal .box h3{margin:0 0 10px;font-size:16px;display:flex;align-items:center}
+.modal .box h3 button{margin-left:auto}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 80px);transform:translateX(-50%);background:#2b211c;color:#fff;padding:9px 16px;border-radius:20px;font-size:13.5px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* ---------- มือถือ: เต็มจอ บน-ล่าง ---------- */
+@media (max-width:899px){
+  main{display:block;padding:12px 12px calc(var(--navh) + env(safe-area-inset-bottom,0px) + 20px)}
+  .pane-pv,.pane-list{display:none;position:static}
+  body[data-tab="pv"] .pane-form,body[data-tab="list"] .pane-form{display:none}
+  body[data-tab="pv"] .pane-pv{display:block}
+  body[data-tab="list"] .pane-list{display:block}
+  .hide-m{display:none!important}
+  nav.bot{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-top:1px solid var(--line);
+    padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+  nav.bot button{flex:1;border:0;background:none;height:var(--navh);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);font-size:11.5px}
+  nav.bot button i{font-style:normal;font-size:21px;line-height:1}
+  nav.bot button.on{color:var(--head);font-weight:600}
+  .it .r2{grid-template-columns:62px 70px minmax(0,1fr) auto}
+}
+@media (min-width:900px){ .show-m{display:none!important} }
+
+/* =====================================================================
+   หน้ากระดาษ A4 — ขนาด/ระยะขอบตามต้นฉบับ (บน 2.3 ซม. ซ้าย-ขวา-ล่าง 2.54 ซม.)
+   TH SarabunIT๙ 16 pt
+   ===================================================================== */
+.page{width:210mm;height:297mm;background:#fff;color:#000;font-family:var(--doc);font-size:16pt;line-height:1.3;
+  padding:23mm 25.4mm 25.4mm 25.4mm;overflow:hidden;font-weight:400;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page .in{height:100%;overflow:hidden;position:relative}
+.page p{margin:0}
+.page b{font-weight:700}
+.page .ind{padding-left:12.7mm}
+.page .fi{text-indent:12.7mm}
+.page .c{text-align:center}
+.page .r{text-align:right}
+.page .bl{height:calc(1em * 1.3)}
+.page .bl.h{height:calc(.5em * 1.3)}
+.page table{border-collapse:collapse;width:100%;table-layout:fixed}
+.page td,.page th{font-weight:400;padding:0 1.2mm;vertical-align:top}
+.page th{white-space:nowrap}
+.page .grid td,.page .grid th{padding:0 .8mm}
+.page .grid td,.page .grid th{border:1px solid #000;vertical-align:middle}
+.fl{display:inline-block;border-bottom:1px dotted #000;padding:0 1.6mm;min-height:1em;vertical-align:baseline;max-width:100%;text-indent:0;line-height:inherit}
+.fl.ml{display:inline;border-bottom:0;padding:0;text-decoration:underline dotted 1px;-webkit-text-decoration:underline dotted;text-underline-offset:.28em;text-decoration-skip-ink:none}
+.fl.c{text-align:center}
+.flx{display:flex;align-items:baseline;min-width:0}
+.flx>.fl{flex:1;min-width:0}
+.flx>.k{flex:none;white-space:pre}
+.cb{display:inline-block;width:3.2mm;height:3.2mm;border:1px solid #000;position:relative;vertical-align:-0.2mm;margin-right:2.4mm;text-indent:0}
+.cb.on::after{content:"";position:absolute;left:0.9mm;top:-1.4mm;width:1.3mm;height:3.2mm;border:solid #000;border-width:0 0.55mm 0.55mm 0;transform:rotate(40deg)}
+.opt{white-space:nowrap;margin-right:4.5mm}
+.u{text-decoration:underline}
+.st{text-decoration:line-through;text-decoration-thickness:1px}
+.memo-logo{width:23.6mm;height:20.7mm;object-fit:contain;display:block}
+.org1{font-size:18pt;font-weight:700;line-height:1.2}
+.org2{font-size:9pt;font-weight:700;line-height:1.3;letter-spacing:.1px}
+.hd td{padding:0 1.5mm 0 0}
+.hd td:first-child,.hd td:nth-child(4){white-space:nowrap}
+.apv td{border:1px solid #000;vertical-align:top;padding:1mm 1.9mm}
+.apv{break-inside:avoid}
+.sig{line-height:inherit}
+.dots{display:inline-block;border-bottom:1px dotted #000;vertical-align:baseline}
+.photo{display:flex;flex-direction:column;align-items:center;gap:8mm;height:100%;justify-content:flex-start;padding-top:4mm}
+.photo img{display:block;object-fit:contain;max-height:115mm}
+
+#measure{position:fixed;left:-400mm;top:0;visibility:hidden;pointer-events:none}
+
+/* ---------- พิมพ์ ---------- */
+@page{size:A4;margin:0}
+@media print{
+  html,body{background:#fff!important}
+  body>*:not(main){display:none!important}
+  main{display:block!important;padding:0!important}
+  .pane-form,.pane-list,.pvbar,.fitwarn,.pno{display:none!important}
+  .pane-pv{display:block!important;position:static!important}
+  #pv{display:block!important;gap:0}
+  .sheet{width:auto!important;height:auto!important;box-shadow:none!important;margin:0!important}
+  .sheet>.page{position:static!important;transform:none!important;break-after:page;page-break-after:always}
+  .sheet:last-child>.page{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body data-tab="form">
+
+<header class="app">
+  <a class="back" href="/index.html" title="กลับศูนย์รวมงาน">‹</a>
+  <div class="tt">
+    <h1>ประเมินค่าเสียหายระบบจำหน่าย</h1>
+    <small id="hdSub">กรณีรถยนต์ชนทรัพย์สิน กฟภ. · กฟส.อ่าวลึก</small>
+  </div>
+  <span class="saved hide-m" id="savedTxt"></span>
+  <button class="hbtn hide-m" id="bList">📂 รายการ</button>
+  <button class="hbtn hide-m" id="bNew">＋ งานใหม่</button>
+  <button class="hbtn solid" id="bPrint">🖨️ พิมพ์</button>
+</header>
+
+<main>
+  <!-- ================= ฟอร์มกรอก ================= -->
+  <section class="pane-form" id="formPane">
+
+    <div class="card show-m" style="display:flex;gap:8px;align-items:center;padding:10px 12px">
+      <span class="saved" id="savedTxtM" style="color:var(--muted);flex:1"></span>
+      <button class="btn sm" id="bNewM">＋ งานใหม่</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">หัว</span>บันทึกข้อความ</h2>
+      <div class="g">
+        <label class="f full">จาก<input data-k="from"></label>
+        <label class="f">ถึง<input data-k="to"></label>
+        <label class="f">เลขที่<input data-k="docNo" placeholder="เว้นว่างได้"></label>
+        <label class="f">วันที่ (หนังสือ)<input type="date" data-k="docDate"></label>
+        <label class="f">เรียน<input data-k="rian"></label>
+        <label class="f full">เรื่อง<input data-k="subject"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">1-3</span>เหตุการณ์และยานพาหนะ</h2>
+      <div class="g">
+        <label class="f">1. วันที่เกิดเหตุ<input type="date" data-k="incDate"></label>
+        <label class="f">เวลาประมาณ (น.)<input data-k="incTime" placeholder="12.35" inputmode="decimal"></label>
+        <label class="f full">2. สถานที่เกิดเหตุบริเวณ<textarea data-k="place" rows="2" placeholder="ถนน... ม.4 ต.นาเหนือ อ.อ่าวลึก จ.กระบี่"></textarea></label>
+        <div class="full">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:5px">3. ประเภท (ขีดเส้นใต้ในเอกสาร)</div>
+          <div class="chips" data-chips="vehType" data-opts="ยานยนต์|เรือยนต์"></div>
+        </div>
+        <label class="f full">หมายเลขทะเบียน / เลขที่<input data-k="plate" placeholder="รถยนต์ ส่วนหัว 81-2250 กระบี่ ส่วนหาง 81-2251 กระบี่"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4-7</span>ผู้ขับขี่ เจ้าของ ประกันภัย</h2>
+      <div class="g">
+        <label class="f">4. ชื่อผู้ขับขี่<input data-k="driver"></label>
+        <label class="f">เลขบัตรประชาชน / ใบขับขี่<input data-k="driverId" inputmode="numeric"></label>
+        <label class="f full">5. ที่อยู่ตามบัตร ใบขับขี่<input data-k="driverAddr"></label>
+        <label class="f">โทรศัพท์ (ผู้ขับขี่)<input data-k="driverTel" inputmode="tel"></label>
+        <span></span>
+        <label class="f">6. ชื่อ/บริษัท/เจ้าของ<input data-k="owner"></label>
+        <label class="f">เบอร์โทรศัพท์ (เจ้าของ)<input data-k="ownerTel" inputmode="tel"></label>
+        <label class="f">7. ชื่อ/บริษัท/ประกันภัย<input data-k="insurer"></label>
+        <label class="f">เบอร์โทรศัพท์ (ประกัน)<input data-k="insurerTel" inputmode="tel"></label>
+      </div>
+      <div class="row-acts"><button class="btn sm" id="bOwnerSame">เจ้าของ = ผู้ขับขี่</button></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">8-10</span>รับสภาพหนี้ · แจ้งความ · สายสื่อสาร</h2>
+      <label class="f">8. ผู้ลงนามในหนังสือรับสภาพหนี้<input data-k="debtSigner" placeholder="-"></label>
+      <div class="chips" style="margin-top:8px" data-chips="debtOpt" data-multi="1" data-opts="ผู้ขับขี่|เจ้าของยานพาหนะ|ไม่ยินยอม|บริษัทประกันภัย"></div>
+      <div class="sub">9. การแจ้งความร้องทุกข์</div>
+      <label class="f">สถานีตำรวจ<input data-k="policeStation"></label>
+      <div class="chips" style="margin-top:8px" data-chips="policeOpt" data-multi="1" data-opts="รายงานประจำวันเกี่ยวกับคดี|แจ้งเป็นหลักฐาน|แจ้งความเป็นคดี"></div>
+      <label class="f" style="margin-top:8px">เนื่องจาก<input data-k="policeReason"></label>
+      <div class="sub">10. กรณีรถยนต์เกี่ยวสายสื่อสาร</div>
+      <div class="g">
+        <label class="f">ชื่อ/บริษัท เจ้าของสื่อสาร<input data-k="commOwner" placeholder="-"></label>
+        <label class="f">ความสูง<input data-k="commHeight" placeholder="-"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">11.1</span>รื้อถอน-ติดตั้งใหม่<span class="hint">ราคา = จำนวน × ราคา/หน่วย</span></h2>
+      <div class="items" id="rows1"></div>
+      <div class="row-acts">
+        <button class="btn sm pri" data-add="rows1">＋ เพิ่มรายการ</button>
+        <button class="btn sm" data-cat="rows1">📋 เลือกจากราคามาตรฐาน</button>
+      </div>
+      <div class="sum"><span>รวม 11.1 (<span id="c1">0</span> รายการ)</span><b id="s1">0.00</b></div>
+      <label class="f" style="margin-top:10px">หมายเหตุใต้ตาราง — ราคามาตรฐานพัสดุ ครั้งที่<input data-k="priceRound" placeholder="3/2569"></label>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">11.2</span>แผนกซ่อมแซม<span class="hint">เว้นว่างได้</span></h2>
+      <div class="items" id="rows2"></div>
+      <div class="row-acts">
+        <button class="btn sm pri" data-add="rows2">＋ เพิ่มรายการ</button>
+        <button class="btn sm" data-cat="rows2">📋 เลือกจากราคามาตรฐาน</button>
+      </div>
+      <div class="sum"><span>รวม 11.2 (<span id="c2">0</span> รายการ)</span><b id="s2">0.00</b></div>
+    </div>
+
+    <div class="card bigsum">
+      <div class="l">11. รวมค่าเสียหายทั้งสิ้น</div>
+      <div class="v"><span id="sT">0.00</span> บาท</div>
+      <div class="t" id="sTT">(ศูนย์บาทถ้วน)</div>
+      <label class="f" style="margin-top:10px;color:#fff">จำนวนรายการอุปกรณ์ที่เสียหาย (ข้อ 11) — เว้นว่าง = นับอัตโนมัติ
+        <input data-k="itemCount" inputmode="numeric" id="itemCountIn"></label>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">ลงนาม</span>ผู้ประเมิน · ผู้เสนอ · ผู้สั่งการ</h2>
+      <div class="g">
+        <label class="f">ผู้ประเมิน (ชื่อ)<input data-k="evalName"></label>
+        <label class="f">ตำแหน่งผู้ประเมิน<input data-k="evalPos"></label>
+        <label class="f">หผ.ปร. (ชื่อ)<input data-k="headName"></label>
+        <label class="f">ตำแหน่ง<input data-k="headPos"></label>
+        <label class="f">ผจก. (ชื่อ)<input data-k="mgrName"></label>
+        <label class="f">ตำแหน่ง<input data-k="mgrPos"></label>
+      </div>
+      <div class="sub">ช่องรายงานแผนก/หมวดช่าง (ติ๊กในเอกสาร)</div>
+      <label class="chk"><input type="checkbox" data-k="apConsider">เพื่อโปรดพิจารณาอนุมัติให้เบิกอุปกรณ์ไปซ่อมแซม</label>
+      <label class="chk"><input type="checkbox" data-k="apCollect">ขออนุมัติเรียกเก็บเงินค่าเสียหายจากผู้กระทำละเมิด</label>
+      <div class="sub">ช่องคำสั่ง (ปกติให้ ผจก. ติ๊กด้วยปากกา)</div>
+      <label class="chk"><input type="checkbox" data-k="cmdApprove">อนุมัติ</label>
+      <label class="chk"><input type="checkbox" data-k="cmdCollect">เรียกเก็บค่าเสียหาย</label>
+      <label class="chk"><input type="checkbox" data-k="cmdFollow">ติดตามผลการสืบสวนจากพนักงานสอบสวน</label>
+      <div class="row-acts"><button class="btn sm" id="bSaveSign">💾 จำชื่อผู้ลงนามไว้เป็นค่าเริ่มต้น</button></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">ยินยอม</span>หนังสือยินยอมชดใช้ค่าเสียหาย</h2>
+      <div class="note" style="margin:-4px 0 10px">ช่องที่เว้นว่าง จะใช้ข้อมูลจากบันทึกข้อความให้อัตโนมัติ (ตามที่แสดงจางๆ ในช่อง)</div>
+      <div class="g">
+        <label class="f full">เขียนที่<input data-k="cWrittenAt"></label>
+        <label class="f">วันที่ทำหนังสือ<input type="date" data-k="cDate"></label>
+        <span></span>
+        <label class="f full">ข้าพเจ้า (ชื่อ)<input data-k="cName" data-fb="driver"></label>
+        <label class="f">บ้านเลขที่<input data-k="cHouse"></label>
+        <label class="f">หมู่ที่<input data-k="cMoo"></label>
+        <label class="f">ตำบล<input data-k="cTambon"></label>
+        <label class="f">อำเภอ<input data-k="cAmphoe"></label>
+        <label class="f">จังหวัด<input data-k="cProvince"></label>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin:10px 0 5px">ในฐานะ (ข้อความที่ไม่ใช้จะถูกขีดออก)</div>
+      <div class="chips" data-chips="cRole" data-opts="ผู้ขับขี่|นายจ้าง|เจ้าของหรือผู้ครอบครอง|ผู้รับมอบอำนาจ"></div>
+      <div class="g" style="margin-top:10px">
+        <label class="f full">ตามที่ข้าพเจ้า<textarea data-k="cAct" rows="2"></textarea></label>
+        <label class="f full">เหตุเกิดที่<textarea data-k="cPlace" rows="2" data-fb="place"></textarea></label>
+        <label class="f">เมื่อวันที่<input type="date" data-k="cIncDate" data-fb="incDate"></label>
+        <span></span>
+        <label class="f full">ข้อ 1. ชดใช้ค่าเสียหายเป็นค่า<input data-k="cWhat"></label>
+        <label class="f">ข้อ 1. รวมเป็นเงิน (บาท)<input data-k="cAmount" inputmode="decimal" data-fb="__total"></label>
+        <label class="f">ข้อ 3. ค่าสินไหมทดแทน (บาท)<input data-k="cComp" placeholder="-" inputmode="decimal"></label>
+        <label class="f">ลงชื่อผู้ยินยอม 1 — ในฐานะ<input data-k="cSignRole"></label>
+        <span></span>
+        <label class="f">ผู้ยินยอม 2 (ชื่อ)<input data-k="cName2" placeholder="-"></label>
+        <label class="f">ผู้ยินยอม 2 — ในฐานะ<input data-k="cRole2" placeholder="-"></label>
+        <label class="f">พยาน 1<input data-k="cW1" placeholder="เว้นว่าง = เขียนมือ"></label>
+        <label class="f">พยาน 2<input data-k="cW2" placeholder="เว้นว่าง = เขียนมือ"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">แนบ</span>ภาพประกอบ / สำเนาบัตร<span class="hint">พิมพ์ต่อท้าย หน้าละ 2 รูป</span></h2>
+      <div class="ph" id="photos"></div>
+      <div class="row-acts">
+        <label class="btn sm pri" style="display:inline-flex;align-items:center">＋ เพิ่มรูป
+          <input type="file" accept="image/*" multiple id="photoIn" hidden></label>
+      </div>
+      <div class="note">ขนาด: <b>บัตร</b> = กว้าง 10 ซม. (สำเนาบัตร/ใบขับขี่) · <b>ภาพ</b> = กว้าง 14 ซม. (ภาพเหตุการณ์) — รูปถูกย่อให้เล็กลงก่อนเก็บ</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">พิมพ์</span>เลือกส่วนที่จะพิมพ์</h2>
+      <label class="chk"><input type="checkbox" data-k="pMemo">บันทึกข้อความ</label>
+      <label class="chk"><input type="checkbox" data-k="pConsent">หนังสือยินยอมชดใช้ค่าเสียหาย</label>
+      <label class="chk"><input type="checkbox" data-k="pPhotos">ภาพประกอบ / สำเนาบัตร</label>
+      <div class="row-acts">
+        <button class="btn pri" id="bPrint2">🖨️ พิมพ์ / บันทึกเป็น PDF</button>
+        <button class="btn" id="bDup">⧉ ทำสำเนาเป็นงานใหม่</button>
+        <button class="btn del" id="bDel">🗑 ลบงานนี้</button>
+      </div>
+      <div class="note">ตอนพิมพ์ให้เลือกกระดาษ A4 · ระยะขอบ "ไม่มี/None" · มาตราส่วน 100% (ระยะขอบตามต้นฉบับใส่ไว้ในหน้าแล้ว)</div>
+    </div>
+  </section>
+
+  <!-- ================= ตัวอย่างก่อนพิมพ์ ================= -->
+  <section class="pane-pv" id="pvPane">
+    <div class="pvbar">
+      <span class="lbl" id="pvInfo">ตัวอย่างก่อนพิมพ์</span>
+      <span class="sp"></span>
+      <button class="btn sm" id="bZoomOut">－</button>
+      <button class="btn sm" id="bZoomIn">＋</button>
+    </div>
+    <div id="pv"></div>
+  </section>
+
+  <!-- ================= รายการที่บันทึก (มือถือ) ================= -->
+  <section class="pane-list" id="listPaneM"></section>
+</main>
+
+<nav class="bot">
+  <button data-tab="form" class="on"><i>✏️</i>กรอกข้อมูล</button>
+  <button data-tab="pv"><i>📄</i>ตัวอย่าง</button>
+  <button data-tab="list"><i>📂</i>รายการ</button>
+</nav>
+
+<div class="modal" id="listModal" hidden><div class="box"><h3>งานที่บันทึกไว้ <button class="btn sm" data-close>ปิด</button></h3><div id="listPaneD"></div></div></div>
+<div class="modal" id="catModal" hidden><div class="box"><h3>ราคามาตรฐานพัสดุ <button class="btn sm" data-close>ปิด</button></h3>
+  <input id="catQ" placeholder="ค้นหา..." style="margin-bottom:10px">
+  <div class="list" id="catList"></div>
+  <div class="note">รายการนี้เก็บในเครื่อง · กด "＋ จำ" ที่แถวรายการพัสดุ เพื่อเพิ่มเข้ารายการราคามาตรฐาน</div>
+</div></div>
+<div class="toast" id="toast"></div>
+<div id="measure"></div>
+
+<script>
+'use strict';
+/* =================================================================
+   ประเมินค่าเสียหายระบบจำหน่าย — กฟส.อ่าวลึก
+   เก็บข้อมูลในเครื่อง (IndexedDB) ไม่มีค่าใช้จ่าย · พิมพ์ตามแบบฟอร์มต้นฉบับ
+   ================================================================= */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+const money = n => (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const qtyFmt = v => { const n = num(v); return v === '' || v == null ? '' : (Number.isInteger(n) ? String(n) : String(n)); };
+const TH_M = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const dParts = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? { d: +m[3], m: TH_M[+m[2] - 1], y: +m[1] + 543 } : null; };
+const thDate = iso => { const p = dParts(iso); return p ? `${p.d} ${p.m} ${p.y}` : ''; };
+const todayIso = () => { const t = new Date(); return new Date(t - t.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+
+/* จำนวนเงินเป็นตัวอักษร */
+function bahtText(n) {
+  n = Math.round(num(n) * 100) / 100;
+  if (!n) return 'ศูนย์บาทถ้วน';
+  const D = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'], P = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน'];
+  const six = s => { let o = ''; const L = s.length; for (let i = 0; i < L; i++) { const d = +s[i], p = L - i - 1; if (!d) continue;
+      if (p === 1 && d === 1) o += 'สิบ'; else if (p === 1 && d === 2) o += 'ยี่สิบ'; else if (p === 0 && d === 1 && L > 1) o += 'เอ็ด'; else o += D[d] + P[p]; } return o; };
+  const words = s => { s = s.replace(/^0+/, ''); if (!s) return ''; let o = ''; while (s.length > 6) { const h = s.slice(0, s.length - 6); o += six(h.slice(-6)) ; s = s.slice(-6); o += 'ล้าน'; } return o + six(s); };
+  const [i, f] = n.toFixed(2).split('.');
+  const st = +f;
+  if (+i === 0) return six(String(st)) + 'สตางค์';
+  return words(i) + 'บาท' + (st ? six(String(st)) + 'สตางค์' : 'ถ้วน');
+}
+
+/* ---------------- ค่าเริ่มต้น ---------------- */
+const SIGN_KEYS = ['from', 'to', 'rian', 'evalName', 'evalPos', 'headName', 'headPos', 'mgrName', 'mgrPos', 'cWrittenAt', 'priceRound'];
+const BASE = {
+  from: 'พชง.6.รักษาการ ชผ.ปร.กฟส.อล', to: 'ผจก.กฟส.อ่าวลึก', docNo: '', docDate: '', subject: 'การประเมินค่าเสียหายที่เกิดขึ้นกับระบบจำหน่าย',
+  rian: 'ผจก.กฟส.อ่าวลึก ผ่าน หผ.ปร.กฟส.อ่าวลึก',
+  incDate: '', incTime: '', place: '', vehType: 'ยานยนต์', plate: '', driver: '', driverId: '', driverAddr: '', driverTel: '',
+  owner: '', ownerTel: '', insurer: '', insurerTel: '', debtSigner: '', debtOpt: [], policeStation: '', policeOpt: [], policeReason: '',
+  commOwner: '', commHeight: '', itemCount: '', rows1: [], rows2: [], priceRound: '3/2569',
+  evalName: 'นายธวัชชัย ไหมสุข', evalPos: 'พชง.6.รักษาการ ชผ.ปร.กฟส.อล',
+  headName: 'นายมานศักดิ์ พิลาฤทธิ์', headPos: 'หผ.ปร.กฟส.อ่าวลึก', mgrName: 'นายชญานิน งานสัมพันธฤทธิ์', mgrPos: 'ผจก.กฟส.อ่าวลึก',
+  apConsider: true, apCollect: true, cmdApprove: false, cmdCollect: false, cmdFollow: false,
+  cWrittenAt: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', cDate: '', cName: '', cHouse: '', cMoo: '', cTambon: '', cAmphoe: '', cProvince: '',
+  cRole: 'ผู้ขับขี่', cAct: 'ได้ขับรถชนเสาไฟฟ้าทำให้เสาไฟฟ้าหักพร้อมอุปกรณ์อื่นๆชำรุด', cPlace: '', cIncDate: '',
+  cWhat: 'เสาไฟฟ้าอุปกรณ์ประกอบหัวเสาและอุปกรณ์อื่นๆ', cAmount: '', cComp: '', cSignRole: 'ผู้กระทำ', cName2: '', cRole2: '', cW1: '', cW2: '',
+  photos: [], pMemo: true, pConsent: true, pPhotos: true
+};
+const DEFAULT_CAT = [
+  { d: 'POLE,CONCRETE, 12 M.LONG เสาคอนกรีต 12 เมตร', u: 'ต้น', p: 14893 },
+  { d: 'คอน คอร.120x120x3.000 มม.', u: 'ท่อน', p: 1833 },
+  { d: 'เหล็กฉาก 65x65x6', u: 'อัน', p: 1420 },
+  { d: 'เหล็กประกับ 40x6x1,000', u: 'อัน', p: 282 },
+  { d: 'รถขุดเจาะพร้อมชุดทีมงาน', u: 'ทีม', p: 13000 }
+];
+const catalog = () => { try { return JSON.parse(ls('dmg_cat') || 'null') || DEFAULT_CAT.slice(); } catch (e) { return DEFAULT_CAT.slice(); } };
+const saveCat = c => ls('dmg_cat', JSON.stringify(c));
+function signDefaults() { try { return JSON.parse(ls('dmg_sign') || '{}') || {}; } catch (e) { return {}; } }
+function blank() {
+  const d = JSON.parse(JSON.stringify(BASE));
+  Object.assign(d, signDefaults());
+  d.id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  d.created = Date.now(); d.docDate = todayIso(); d.cDate = todayIso();
+  d.rows1 = [{ d: '', q: '1', u: '', p: '' }];
+  return d;
+}
+
+/* ---------------- ฐานข้อมูลในเครื่อง (IndexedDB) ---------------- */
+let dbp = null;
+function db() {
+  if (dbp) return dbp;
+  dbp = new Promise((res, rej) => { const r = indexedDB.open('pea-damage', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('rec', { keyPath: 'id' });
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  return dbp;
+}
+const tx = (mode, fn) => db().then(d => new Promise((res, rej) => { const t = d.transaction('rec', mode); const s = t.objectStore('rec'); const out = fn(s); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }));
+const dbPut = r => tx('readwrite', s => s.put(r));
+const dbDel = id => tx('readwrite', s => s.delete(id));
+const dbAll = () => tx('readonly', s => s.getAll());
+const dbGet = id => tx('readonly', s => s.get(id));
+
+/* ---------------- สถานะ ---------------- */
+let D = null, dirty = false, saveT = null, renderT = null;
+let zoomAdj = parseFloat(ls('dmg_zoom') || '1') || 1;
+
+function totals() {
+  const s = rows => rows.filter(r => (r.d || '').trim() || num(r.p)).reduce((a, r) => a + num(r.q || 1) * num(r.p), 0);
+  const c = rows => rows.filter(r => (r.d || '').trim()).length;
+  const s1 = s(D.rows1), s2 = s(D.rows2);
+  return { s1, s2, c1: c(D.rows1), c2: c(D.rows2), total: s1 + s2 };
+}
+const fb = k => { if (k === '__total') return money(totals().total); return D[k] || ''; };
+const V = k => { const v = (D[k] == null ? '' : String(D[k])).trim(); const el = $(`[data-k="${k}"]`); const f = el && el.dataset.fb; return v || (f ? fb(f) : ''); };
+
+/* ---------------- ฟอร์ม ⇄ ข้อมูล ---------------- */
+function fillForm() {
+  $$('[data-k]').forEach(el => { const k = el.dataset.k; if (el.type === 'checkbox') el.checked = !!D[k]; else el.value = D[k] == null ? '' : D[k]; });
+  $$('[data-chips]').forEach(drawChips);
+  drawRows('rows1'); drawRows('rows2'); drawPhotos(); updFallbacks(); updSums();
+}
+function updFallbacks() { $$('[data-fb]').forEach(el => { const f = el.dataset.fb; let v = fb(f); if (f === 'incDate' || f === '__total') { /* date input ใช้ placeholder ไม่ได้ */ } el.placeholder = v ? (f === 'incDate' ? '' : v) : ''; if (el.type === 'date' && !el.value && D[f]) el.title = 'ว่าง = ใช้ ' + thDate(D[f]); }); }
+function drawChips(box) {
+  const k = box.dataset.chips, multi = !!box.dataset.multi, opts = box.dataset.opts.split('|');
+  const cur = D[k];
+  box.innerHTML = opts.map(o => `<button type="button" class="chip ${(multi ? (cur || []).includes(o) : cur === o) ? 'on' : ''}" data-o="${esc(o)}">${multi ? ((cur || []).includes(o) ? '☑ ' : '☐ ') : ''}${esc(o)}</button>`).join('');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-chips] .chip'); if (!b) return;
+  const box = b.parentNode, k = box.dataset.chips, o = b.dataset.o;
+  if (box.dataset.multi) { const a = new Set(D[k] || []); a.has(o) ? a.delete(o) : a.add(o); D[k] = [...a]; }
+  else D[k] = D[k] === o ? '' : o;
+  drawChips(box); changed();
+});
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-k]'); if (!el) return;
+  D[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; changed();
+});
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-k]'); if (!el) return;
+  D[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; changed();
+});
+
+/* ---------------- แถวรายการพัสดุ ---------------- */
+function drawRows(key) {
+  const box = $('#' + key), rows = D[key];
+  box.innerHTML = rows.map((r, i) => `
+    <div class="it" data-key="${key}" data-i="${i}">
+      <div class="no">${i + 1}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div style="display:flex;gap:6px"><input data-f="d" value="${esc(r.d)}" placeholder="รายละเอียด / ชื่อพัสดุ" list="catDL">
+          <div class="mv"><button data-mv="-1" title="เลื่อนขึ้น">▲</button><button data-mv="1" title="เลื่อนลง">▼</button></div></div>
+        <div class="r2">
+          <input data-f="q" value="${esc(r.q)}" placeholder="จำนวน" inputmode="decimal">
+          <input data-f="u" value="${esc(r.u)}" placeholder="หน่วย">
+          <input data-f="p" value="${esc(r.p)}" placeholder="ราคา/หน่วย" inputmode="decimal">
+          <button class="x" data-rm title="ลบแถว">✕</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px"><button class="btn sm" data-remember>＋ จำ</button><span style="flex:1"></span><span class="amt" data-amt>${(r.d || r.p) ? money(num(r.q || 1) * num(r.p)) + ' บาท' : ''}</span></div>
+      </div>
+    </div>`).join('') || '<div class="note">ยังไม่มีรายการ</div>';
+}
+function catDL() {
+  let dl = $('#catDL'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'catDL'; document.body.appendChild(dl); }
+  dl.innerHTML = catalog().map(c => `<option value="${esc(c.d)}">`).join('');
+}
+document.addEventListener('input', e => {
+  const inp = e.target.closest('.it [data-f]'); if (!inp) return;
+  const it = inp.closest('.it'), key = it.dataset.key, i = +it.dataset.i, r = D[key][i];
+  r[inp.dataset.f] = inp.value;
+  if (inp.dataset.f === 'd') { const c = catalog().find(x => x.d === inp.value.trim());
+    if (c) { if (!r.u) { r.u = c.u; $('[data-f="u"]', it).value = c.u; } if (!r.p) { r.p = String(c.p); $('[data-f="p"]', it).value = c.p; } } }
+  $('[data-amt]', it).textContent = (r.d || r.p) ? money(num(r.q || 1) * num(r.p)) + ' บาท' : '';
+  changed();
+});
+document.addEventListener('click', e => {
+  const add = e.target.closest('[data-add]');
+  if (add) { const k = add.dataset.add; D[k].push({ d: '', q: '1', u: '', p: '' }); drawRows(k); changed(); const l = $$('#' + k + ' .it').pop(); l && $('[data-f="d"]', l).focus(); return; }
+  const it = e.target.closest('.it'); if (!it) return;
+  const key = it.dataset.key, i = +it.dataset.i;
+  if (e.target.closest('[data-rm]')) { D[key].splice(i, 1); drawRows(key); changed(); }
+  else if (e.target.closest('[data-mv]')) { const j = i + +e.target.closest('[data-mv]').dataset.mv; if (j < 0 || j >= D[key].length) return; const t = D[key][i]; D[key][i] = D[key][j]; D[key][j] = t; drawRows(key); changed(); }
+  else if (e.target.closest('[data-remember]')) { const r = D[key][i]; if (!(r.d || '').trim()) return toast('ใส่รายละเอียดก่อน');
+    const c = catalog().filter(x => x.d !== r.d.trim()); c.push({ d: r.d.trim(), u: r.u || '', p: num(r.p) }); saveCat(c); catDL(); toast('จำไว้ในราคามาตรฐานแล้ว'); }
+});
+
+/* เลือกจากราคามาตรฐาน */
+let catTarget = 'rows1';
+function drawCat() {
+  const q = ($('#catQ').value || '').trim().toLowerCase();
+  const c = catalog();
+  $('#catList').innerHTML = c.map((x, i) => ({ x, i })).filter(o => !q || o.x.d.toLowerCase().includes(q)).map(({ x, i }) => `
+    <div class="rec"><div class="m"><b>${esc(x.d)}</b><span>${money(x.p)} บาท / ${esc(x.u)}</span></div>
+    <button class="btn sm pri" data-pick="${i}">เพิ่ม</button><button class="btn sm del" data-uncat="${i}">ลบ</button></div>`).join('') || '<div class="empty">ไม่พบ</div>';
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-cat]'); if (c) { catTarget = c.dataset.cat; $('#catQ').value = ''; drawCat(); $('#catModal').hidden = false; return; }
+  const p = e.target.closest('[data-pick]'); if (p) { const x = catalog()[+p.dataset.pick];
+    const rows = D[catTarget]; const emptyIdx = rows.findIndex(r => !(r.d || '').trim() && !num(r.p));
+    const nr = { d: x.d, q: '1', u: x.u, p: String(x.p) }; if (emptyIdx >= 0) rows[emptyIdx] = nr; else rows.push(nr);
+    drawRows(catTarget); changed(); toast('เพิ่ม ' + x.d.slice(0, 30)); return; }
+  const u = e.target.closest('[data-uncat]'); if (u) { if (!confirm('ลบออกจากรายการราคามาตรฐาน?')) return; const cc = catalog(); cc.splice(+u.dataset.uncat, 1); saveCat(cc); catDL(); drawCat(); return; }
+  if (e.target.closest('[data-close]') || e.target.classList.contains('modal')) { $$('.modal').forEach(m => m.hidden = true); }
+});
+$('#catQ').addEventListener('input', drawCat);
+
+/* ---------------- รูปแนบ ---------------- */
+function shrink(file, max = 1600) {
+  return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => {
+      const s = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res({ src: c.toDataURL('image/jpeg', 0.85), ar: c.width / c.height }); };
+    im.onerror = rej; im.src = fr.result; }; fr.onerror = rej; fr.readAsDataURL(file); });
+}
+$('#photoIn').addEventListener('change', async e => {
+  const fs = [...e.target.files]; e.target.value = '';
+  for (const f of fs) { try { const r = await shrink(f); r.size = r.ar > 1.45 ? 'card' : 'photo'; D.photos.push(r); } catch (err) { toast('เปิดรูปไม่ได้: ' + f.name); } }
+  drawPhotos(); changed();
+});
+function drawPhotos() {
+  $('#photos').innerHTML = D.photos.map((p, i) => `<figure data-pi="${i}"><img src="${p.src}"><button class="x" data-prm>✕</button>
+    <figcaption><select data-psz><option value="card" ${p.size === 'card' ? 'selected' : ''}>บัตร 10 ซม.</option><option value="photo" ${p.size !== 'card' ? 'selected' : ''}>ภาพ 14 ซม.</option></select>
+    <button class="mvb" data-pmv="-1">◀</button><button class="mvb" data-pmv="1">▶</button></figcaption></figure>`).join('');
+}
+$('#photos').addEventListener('click', e => {
+  const f = e.target.closest('figure'); if (!f) return; const i = +f.dataset.pi;
+  if (e.target.closest('[data-prm]')) { D.photos.splice(i, 1); drawPhotos(); changed(); }
+  const m = e.target.closest('[data-pmv]'); if (m) { const j = i + +m.dataset.pmv; if (j < 0 || j >= D.photos.length) return; [D.photos[i], D.photos[j]] = [D.photos[j], D.photos[i]]; drawPhotos(); changed(); }
+});
+$('#photos').addEventListener('change', e => { const s = e.target.closest('[data-psz]'); if (!s) return; D.photos[+s.closest('figure').dataset.pi].size = s.value; changed(); });
+
+/* ---------------- เปลี่ยนแปลง → บันทึก + วาดใหม่ ---------------- */
+function updSums() {
+  const t = totals();
+  $('#s1').textContent = money(t.s1); $('#c1').textContent = t.c1;
+  $('#s2').textContent = money(t.s2); $('#c2').textContent = t.c2;
+  $('#sT').textContent = money(t.total); $('#sTT').textContent = '(' + bahtText(t.total) + ')';
+  $('#itemCountIn').placeholder = 'อัตโนมัติ: ' + (t.c1 + t.c2);
+  const who = (D.plate || D.driver || '').trim();
+  $('#hdSub').textContent = who ? who + (t.total ? ' · ' + money(t.total) + ' บาท' : '') : 'กรณีรถยนต์ชนทรัพย์สิน กฟภ. · กฟส.อ่าวลึก';
+}
+function changed() {
+  dirty = true; updSums(); updFallbacks();
+  setSaved('กำลังบันทึก…');
+  clearTimeout(saveT); saveT = setTimeout(save, 600);
+  clearTimeout(renderT); renderT = setTimeout(render, 250);
+}
+function setSaved(t) { $('#savedTxt').textContent = t; $('#savedTxtM').textContent = t; }
+async function save() {
+  if (!D) return; D.updated = Date.now();
+  try { await dbPut(JSON.parse(JSON.stringify(D))); ls('dmg_cur', D.id); dirty = false;
+    setSaved('บันทึกในเครื่องแล้ว ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })); }
+  catch (e) { setSaved('⚠️ บันทึกไม่สำเร็จ'); }
+}
+
+/* =================================================================
+   วาดหน้ากระดาษ — ข้อความตามแบบฟอร์มต้นฉบับทุกตัวอักษร
+   ================================================================= */
+const F = (v, w, cls) => `<span class="fl ${cls || ''}"${w ? ` style="min-width:${w}mm"` : ''}>${v ? esc(v) : '&nbsp;'}</span>`;
+const FL = (v, cls) => `<span class="fl ml ${cls || ''}">&nbsp;${v ? esc(v) : '&nbsp;'.repeat(20)}&nbsp;</span>`;
+const CB = on => `<span class="cb${on ? ' on' : ''}"></span>`;
+const BL = (n = 1) => '<div class="bl"></div>'.repeat(n);
+
+const SEP = '<!--B-->';
+function pageMemo(t) {
+  const cnt = String(D.itemCount || '').trim() || String(t.c1 + t.c2);
+  const vt = D.vehType;
+  const veh = `<span class="${vt === 'ยานยนต์' ? 'u' : ''}">ยานยนต์</span> / <span class="${vt === 'เรือยนต์' ? 'u' : ''}">เรือยนต์</span>`;
+  const deb = D.debtOpt || [], pol = D.policeOpt || [];
+  const r1 = itemRows(D.rows1, 1), r2 = itemRows(D.rows2, 2);
+  return [
+  `<img class="memo-logo" src="pea-logo.png" alt=""><div style="height:6mm"></div>
+   <div class="org1">การไฟฟ้าส่วนภูมิภาค</div><div class="org2">PROVINCIAL ELECTRICITY AUTHORITY</div>`,
+  BL(),
+  `<table class="hd">
+    <colgroup><col style="width:8.4%"><col style="width:40.6%"><col style="width:5%"><col style="width:8.6%"><col style="width:37.4%"></colgroup>
+    <tr><td><b>จาก</b></td><td>${esc(D.from)}</td><td></td><td><b>ถึง</b></td><td>${esc(D.to)}</td></tr>
+    <tr><td><b>เลขที่</b></td><td>${esc(D.docNo)}</td><td></td><td><b>วันที่</b></td><td>${esc(thDate(D.docDate))}</td></tr>
+    <tr><td><b>เรื่อง</b></td><td colspan="4">${esc(D.subject)}</td></tr>
+  </table>`,
+  `<p><b style="display:inline-block;width:12.7mm">เรียน</b>${esc(D.rian)}</p>`,
+  `<p class="ind fi">ตามที่ได้ดำเนินการตรวจสอบและประเมินราคาค่าเสียหายเพื่อเรียกร้องจากผู้กระทำละเมิด</p>`,
+  `<p>โดยมีรายละเอียดดังนี้</p>`,
+  `<p class="fi">1. เหตุเกิดเมื่อวันที่ ${F(thDate(D.incDate), 40, 'c')} เวลาประมาณ ${F(D.incTime, 20, 'c')} น.</p>`,
+  `<p class="ind">2. สถานที่เกิดเหตุบริเวณ ${FL(D.place)}</p>`,
+  `<p class="ind">3. หมายเลขทะเบียน ${veh} เลขที่ ${FL(D.plate)}</p>`,
+  `<p class="ind">4. ชื่อผู้ขับขี่ ${F(D.driver, 70)}</p>
+   <p class="ind" style="padding-left:20mm">หมายเลขบัตรประชาชน / ใบขับขี่ ${F(D.driverId, 50, 'c')}</p>`,
+  `<p class="ind">5. ที่อยู่ตามบัตร ใบขับขี่ ${FL(D.driverAddr)}</p>
+   <p class="ind" style="padding-left:20mm">โทรศัพท์ : ${F(D.driverTel, 45)}</p>`,
+  `<p class="ind">6. ชื่อ/บริษัท/เจ้าของ ${F(D.owner, 40)} เบอร์โทรศัพท์ ${F(D.ownerTel, 26)}</p>`,
+  `<p class="ind">7. ชื่อ/บริษัท/ประกันภัย ${F(D.insurer, 38)} เบอร์โทรศัพท์ ${F(D.insurerTel, 26)}</p>`,
+  `<p class="ind">8.ผู้ลงนามในหนังสือรับสภาพหนี้ ${F(D.debtSigner || '-', 70, 'c')}</p>
+   <p class="ind" style="padding-left:16mm"><span class="opt">${CB(deb.includes('ผู้ขับขี่'))}ผู้ขับขี่</span><span class="opt">${CB(deb.includes('เจ้าของยานพาหนะ'))}เจ้าของยานพาหนะ</span><span class="opt">${CB(deb.includes('ไม่ยินยอม'))}ไม่ยินยอม</span><span class="opt" style="margin-right:0">${CB(deb.includes('บริษัทประกันภัย'))}บริษัทประกันภัย</span></p>`,
+  `<p class="ind">9.การแจ้งความร้องทุกข์กับเจ้าหน้าที่ตำรวจ สถานีตำรวจ ${F(D.policeStation, 30)}</p>
+   <p class="ind" style="padding-left:16mm"><span class="opt">${CB(pol.includes('รายงานประจำวันเกี่ยวกับคดี'))}รายงานประจำวันเกี่ยวกับคดี</span><span class="opt">${CB(pol.includes('แจ้งเป็นหลักฐาน'))}แจ้งเป็นหลักฐาน</span><span style="white-space:nowrap">${CB(pol.includes('แจ้งความเป็นคดี'))}แจ้งความเป็นคดี</span> เนื่องจาก ${F(D.policeReason, 30)}</p>`,
+  `<p class="ind">10.กรณีรถยนต์เกี่ยวสายสื่อสารทำให้เกิดความเสียหายกับระบบจำหน่าย</p>
+   <p class="ind" style="padding-left:20mm">ชื่อ/บริษัท เจ้าของสื่อสาร ${F(D.commOwner || '-', 34, 'c')} ความสูง ${F(D.commHeight || '-', 16, 'c')}</p>`,
+  `<p class="ind">11.รายการอุปกรณ์ที่ได้รับความเสียหาย ${F(cnt, 18, 'c')} รายการ คิดเป็นค่าเสียหาย</p>
+   <p style="padding-left:18.3mm">จำนวนเงินทั้งสิ้น ${F(money(t.total), 30, 'c')} บาท (${esc(bahtText(t.total))})</p>
+   <p style="padding-left:18.3mm">โดยมีรายละเอียดดังนี้</p>`,
+  `<p style="padding-left:16.5mm">11.1 รื้อถอน-ติดตั้งใหม่ ${F(t.c1 ? String(t.c1) : '', 14, 'c')} รายการ เป็นจำนวนเงินทั้งสิ้น ${F(t.c1 ? money(t.s1) : '', 28, 'c')} บาท</p>`,
+  `<table class="grid" data-split="1">
+    <colgroup><col style="width:9.6%"><col style="width:48.4%"><col style="width:8.8%"><col style="width:8.8%"><col style="width:16.2%"><col style="width:8.2%"></colgroup>
+    <tr><th>รายการ</th><th>รายละเอียด</th><th>จำนวน</th><th>หน่วย</th><th colspan="2">ราคา/บาท</th></tr>
+    ${r1.map(r => r ? `<tr><td class="c">${r.no}</td><td>${esc(r.d)}</td><td class="c">${esc(r.q)}</td><td class="c">${esc(r.u)}</td><td class="c" style="white-space:nowrap">${r.a}</td><td class="c">บาท</td></tr>`
+      : '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}
+  </table>`,
+  BL(),
+  `<p>หมายเหตุ : ราคามาตรฐานพัสดุ (กรณีละเมิดทรัพย์สินระบบไฟฟ้า ของ กฟภ.) พัสดุหลัก และพัสดุรอง</p>
+   <p>ครั้งที่ ${esc(D.priceRound)}</p>`,
+  BL(),
+  `<p>11.2 แผนกซ่อมแซม ${F(t.c2 ? String(t.c2) : '', 20, 'c')} รายการ เป็นเงินทั้งสิ้น ${F(t.c2 ? money(t.s2) : '', 32, 'c')} บาท</p>
+  <table class="grid">
+    <colgroup><col style="width:12.3%"><col style="width:34.4%"><col style="width:14.9%"><col style="width:14.9%"><col style="width:23.5%"></colgroup>
+    <tr><th>รายการ</th><th>ชื่อพัสดุ</th><th>จำนวน</th><th>หน่วย</th><th>ราคา</th></tr>
+    ${r2.map(r => r ? `<tr><td class="c">${r.no}</td><td>${esc(r.d)}</td><td class="r">${esc(r.q)}</td><td class="r">${esc(r.u)}</td><td class="r">${r.a}</td></tr>`
+      : '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('')}
+  </table>`,
+  BL(2),
+  `<div class="sig" style="padding-left:72mm">ลงชื่อ<span class="dots" style="width:45mm"></span>ผู้ประเมิน.</div>
+   <div class="c" style="padding-left:72mm">( ${esc(D.evalName)} )</div>
+   <div class="c" style="padding-left:72mm">${esc(D.evalPos)}</div>`,
+  BL(),
+  apvTable(t)
+  ];
+}
+function itemRows(rows, minRows) {
+  const list = rows.filter(r => (r.d || '').trim() || num(r.p));
+  const out = list.map((r, i) => ({ no: i + 1, d: r.d, q: qtyFmt(r.q || '1'), u: r.u, a: money(num(r.q || 1) * num(r.p)) }));
+  while (out.length < minRows) out.push(null);
+  return out;
+}
+function apvTable(t) {
+  return `
+  <table class="apv">
+    <colgroup><col style="width:52.9%"><col style="width:47.1%"></colgroup>
+    <tr style="height:66.9mm">
+      <td>
+        <div class="c">รายงานแผนก/หมวดช่าง</div>
+        <div style="padding-left:3mm">${CB(D.apConsider)}เพื่อโปรดพิจารณาอนุมัติให้เบิกอุปกรณ์ไปซ่อมแซม</div>
+        <div style="padding-left:3mm">ตามรายการดังกล่าวข้างต้น</div>
+        <div style="padding-left:3mm">${CB(D.apCollect)}ขออนุมัติเรียกเก็บเงินค่าเสียหายจากผู้กระทำละเมิด</div>
+        <div class="c">จำนวน ${F(money(t.total), 30, 'c')} บาท</div>
+        <div class="c">(${esc(bahtText(t.total))})</div>
+        ${BL()}
+        <div style="padding-left:10mm">ลงชื่อ<span class="dots" style="width:42mm"></span></div>
+        <div class="c" style="padding-left:8mm">(${esc(D.headName)})</div>
+        <div class="c" style="padding-left:8mm">${esc(D.headPos)}</div>
+      </td>
+      <td>
+        <div class="c"><b>คำสั่ง</b></div>
+        <div style="padding-left:4mm">${CB(D.cmdApprove)}<b>อนุมัติ</b></div>
+        <div style="padding-left:4mm">${CB(D.cmdCollect)}<span class="dots" style="width:7mm"></span> เรียกเก็บค่าเสียหาย</div>
+        <div style="padding-left:4mm">${CB(D.cmdFollow)}<span class="dots" style="width:7mm"></span> ติดตามผลการสืบสวนจากพนักงานสอบสวน</div>
+        ${BL()}
+        <div style="padding-left:6mm">ลงชื่อ<span class="dots" style="width:42mm"></span></div>
+        <div class="c">(${esc(D.mgrName)})</div>
+        <div class="c">${esc(D.mgrPos)}</div>
+      </td>
+    </tr>
+    <tr style="height:79mm">
+      <td>
+        <div class="c">รายงาน ผงน. / ผบง. / มธก</div>
+        <div>เรียน ผจก</div>
+        <div style="padding-left:3mm">${CB(false)}ได้รับเงินค่าเสียหาย / ตั้งบัญชีลูกหนี้ผู้กระทำละเมิด</div>
+        <div style="padding-left:8.5mm">จำนวน<span class="dots" style="width:36mm"></span>บาท</div>
+        <div style="padding-left:8.5mm">ไว้แล้วตามใบเสร็จเลขที่<span class="dots" style="width:10mm"></span>ลว.<span class="dots" style="width:7mm"></span></div>
+        <div style="padding-left:3mm">${CB(false)}ติดตามผลครบ 3 เดือนแล้ว ไม่สามารถเรียกเก็บเงินโปรดแจ้ง นตก.เขต ดำเนินการต่อไป</div>
+        <div style="padding-left:3mm">${CB(false)}เจ้าพนักงานสอบสวนแจ้งงดการสอบสวนแล้วตามหนังสือแนบ</div>
+        <div style="padding-left:8mm">ลงชื่อ<span class="dots" style="width:42mm"></span></div>
+        <div class="c">หัวหน้าแผนก</div>
+      </td>
+      <td>
+        <div class="r" style="padding-right:4mm">คำสั่ง</div>
+        <div><b>หมายเหตุ</b></div>
+        <div>1.ข้อความใดไม่ใช้ให้ขีดออก หรือไม่ต้องใส่เครื่องหมาย</div>
+        <div>2. ห้ามนำบันทึกแผ่นนี้ออกเผยแพร่ต่อบุคบลภายนอกโยเด็ดขาด</div>
+        ${BL()}
+        <div>หมายเหตุ:</div>
+        <div>-ข้อความใดไม่ใช่ให้ขีดออกหรือไม่ต้องใส่ เครื่องหมาย</div>
+      </td>
+    </tr>
+  </table>`;
+}
+function roleLine() {
+  const r = D.cRole;
+  const s = (txt, key) => `<span class="${r && r !== key ? 'st' : ''}">${txt}</span>`;
+  return `ในฐานะ (${s('ผู้ขับขี่', 'ผู้ขับขี่')} / ${s('นายจ้าง', 'นายจ้าง')} / ${s('หรือเจ้าของ หรือผู้ครอบครอง', 'เจ้าของหรือผู้ครอบครอง')} / ${s('ผู้รับมอบอำนาจจากผู้ขับขี่หรือเจ้าของ ผู้ครอบครอง', 'ผู้รับมอบอำนาจ')})`;
+}
+function pageConsent() {
+  const cd = dParts(D.cDate) || { d: '', m: '', y: '' };
+  const amt = num(V('cAmount'));
+  const comp = String(D.cComp || '').trim();
+  const compN = comp && comp !== '-' ? num(comp) : 0;
+  const sl = (name, role, label) => `
+    <p style="padding-left:42mm">ลงชื่อ<span class="dots" style="width:46mm"></span> ${label}</p>
+    <p style="padding-left:50mm">(${F(name, 44, 'c')})${role !== null ? ` ในฐานะ ${F(role, 22, 'c')}` : ''}</p>`;
+  return [
+  `<div class="c"><img src="pea-logo-text.png" alt="" style="width:43.1mm;height:34.9mm;object-fit:contain"></div>
+   <p class="c">หนังสือยินยอมชดใช้ค่าเสียหาย</p>`,
+  `<p style="padding-left:74mm">เขียนที่ ${F(D.cWrittenAt)}</p>`,
+  `<p style="padding-left:56mm">วันที่ ${F(String(cd.d), 12, 'c')} เดือน ${F(cd.m, 26, 'c')} พ.ศ. ${F(String(cd.y), 16, 'c')}</p>`,
+  BL(),
+  `<p style="text-indent:18mm">ข้าพเจ้า ${F(V('cName'), 46)} บ้านเลขที่ ${F(D.cHouse, 14, 'c')} หมู่ที่ ${F(D.cMoo, 9, 'c')} ตำบล ${F(D.cTambon, 24)} อำเภอ ${F(D.cAmphoe, 34)} จังหวัด ${F(D.cProvince, 34)}</p>`,
+  `<p>${roleLine()}</p>`,
+  `<p style="text-indent:20mm">ขอทำหนังสือยินยอมชดใช้ค่าเสียหายให้ไว้แก่การไฟฟ้าส่วนภูมิภาคดังนี้</p>`,
+  `<p>ตามที่ข้าพเจ้า ${FL(D.cAct)}</p>`,
+  `<p>เหตุเกิดที่ ${FL(V('cPlace'))}</p>`,
+  `<p>เมื่อวันที่ ${F(thDate(D.cIncDate || D.incDate), 32, 'c')} ทำให้ (ทรัพย์สินเสียหาย และหรือบุคคลได้รับบาดเจ็บหรือถึงแก่ความตาย) นั้นข้าพเจ้าขอชดใช้ค่าเสียหายให้แก่การไฟฟ้าส่วนภูมิภาคและบุคคลที่เกี่ยวข้องดังนี้</p>`,
+  BL(),
+  `<p style="padding-left:12.7mm">ข้อ 1. ค่าเสียหายเกี่ยวกับทรัพย์สิน</p>
+   <p style="text-indent:19mm">ข้าพเจ้าตกลงยินยอมชดใช้ค่าเสียหายเป็นค่า ${FL(D.cWhat)}</p>
+   <p>รวมเป็นเงินทั้งสิ้น ${F(amt ? money(amt) + '.-' : '', 28, 'c')}บาท (${esc(amt ? bahtText(amt) : '')}) หรือตามที่การไฟฟ้าจะเรียกร้องให้ชดใช้ค่าเสียหายในภายหลัง</p>`,
+  BL(),
+  `<p style="padding-left:12.7mm">ข้อ 2. ค่ารักษาพยาบาล</p>
+   <p style="text-indent:19mm">กรณีมีบุคคลได้รับบาดเจ็บ หรือบาดเจ็บและจนถึงแก่กรรมในเวลาต่อมา ข้าพเจ้ายินยอมชดใช้ค่าเสียหายรักษาพยาบาลจนกว่าผู้ได้รับบาดเจ็บจะหายเป็นปกติ หรือจนกว่าถึงแก่กรรม</p>`,
+  BL(),
+  `<p style="padding-left:12.7mm">ข้อ 3. ค่าสินไหมทดแทน</p>
+   <p style="text-indent:19mm">กรณีบุคคลได้รับบาดเจ็บ หรือถึงแก่กรรม ข้าพเจ้ายินดีชดใช้ค่าสินไหมทดแทนตามกฎหมาย ให้แก่ผู้ได้รับบาดเจ็บ, ผู้จัดการศพ, หรือทายาทของผู้ถึงแก่กรรมแล้วแต่กรณี เป็นเงิน ${F(compN ? money(compN) : '-', 28, 'c')} บาท (${F(compN ? bahtText(compN) : '-', 60, 'c')}) หรือตามที่ จะตกลงกันต่อไป</p>`,
+  BL(),
+  `<p style="text-indent:20mm">ข้าพเจ้าได้อ่านและเข้าใจข้อความดังกล่าวข้างต้นทุกประการแล้ว ขอรับรองว่าเป็นความจริงและถูกต้องตามความประสงค์ทุกประการ เพื่อเป็นหลักฐานจึงลงลายมือชื่อเอาไว้ต่อหน้าพยานเป็นสำคัญ</p>`,
+  BL(),
+  sl(V('cName'), D.cSignRole || '', 'ผู้ยินยอมชดใช้ค่าเสียหาย'), BL(),
+  sl(D.cName2 || '-', D.cRole2 || '-', 'ผู้ยินยอมชดใช้ค่าเสียหาย'), BL(),
+  sl(D.cW1, null, 'พยาน'), BL(),
+  sl(D.cW2, null, 'พยาน')
+  ];
+}
+function photoBlocks() {
+  return D.photos.map(p => `<div class="c" style="padding:3mm 0 5mm"><img src="${p.src}" style="width:${p.size === 'card' ? 101.6 : 140}mm;max-height:118mm;object-fit:contain"></div>`);
+}
+
+/* ---------- แบ่งหน้าอัตโนมัติ: ไหลเนื้อหาลงหน้า A4 · ตารางรายการแยกแถวได้ (หัวตารางซ้ำ) ---------- */
+function paginate(blocks, cont) {
+  const m = $('#measure');
+  m.innerHTML = '<div class="page"><div class="in"></div></div>';
+  const inn = m.querySelector('.in');
+  const lineH = parseFloat(getComputedStyle(inn).lineHeight) || 28;
+  const reserve = cont ? lineH * 1.2 : 0;
+  const pages = []; let cur = [];
+  const head = n => cont ? [`<p class="c">-${n}-</p>`, BL()] : [];
+  const fits = arr => { inn.innerHTML = '<div style="display:flow-root">' + arr.join('') + '</div>'; return inn.firstChild.getBoundingClientRect().height <= inn.clientHeight - reserve + 0.5; };
+  const isBlank = b => /^<div class="bl/.test(b);
+  const newPage = () => { pages.push(cur); cur = head(pages.length + 1); };
+  for (const b of blocks) {
+    if (isBlank(b) && cur.length === head(pages.length + 1).length && pages.length) continue;
+    if (fits(cur.concat(b))) { cur.push(b); continue; }
+    if (/^\s*<table[^>]*data-split/.test(b)) {
+      const tp = document.createElement('template'); tp.innerHTML = b.trim();
+      const tb = tp.content.firstElementChild, trs = [...tb.querySelectorAll('tr')];
+      const open = b.trim().slice(0, b.trim().indexOf('>') + 1), cg = tb.querySelector('colgroup').outerHTML, hdr = trs[0].outerHTML;
+      const mk = rows => open + cg + hdr + rows.join('') + '</table>';
+      let part = [];
+      for (const tr of trs.slice(1)) {
+        if (fits(cur.concat(mk(part.concat(tr.outerHTML))))) { part.push(tr.outerHTML); continue; }
+        if (part.length) cur.push(mk(part));
+        newPage(); part = [tr.outerHTML];
+      }
+      cur.push(mk(part)); continue;
+    }
+    if (cur.length > head(pages.length + 1).length) newPage();
+    if (!isBlank(b)) cur.push(b);
+  }
+  pages.push(cur);
+  m.innerHTML = '';
+  return pages.map((c, i) => c.join('') + (cont && i < pages.length - 1 ? `<p class="r" style="position:absolute;right:0;bottom:0">ต่อหน้าที่ ${i + 2}</p>` : ''));
+}
+let lastPages = [];
+function render() {
+  if (!D) return;
+  const t = totals(), pages = [];
+  if (D.pMemo) paginate(pageMemo(t)).forEach((h, i, a) => pages.push([`บันทึกข้อความ ${i + 1}/${a.length}`, h]));
+  if (D.pConsent) paginate(pageConsent(), true).forEach((h, i, a) => pages.push([`หนังสือยินยอม ${i + 1}/${a.length}`, h]));
+  if (D.pPhotos && D.photos.length) paginate(photoBlocks()).forEach((h, i, a) => pages.push([`ภาพประกอบ ${i + 1}/${a.length}`, h]));
+  const pv = $('#pv');
+  const W = pv.clientWidth || Math.min(window.innerWidth - 24, 800);
+  const pxW = 793.7, pxH = 1122.5;
+  const s = Math.min(1.25, (Math.min(W, 900) / pxW)) * zoomAdj;
+  pv.innerHTML = pages.map(([lbl, h], i) => `<div class="sheet" style="width:${pxW * s}px;height:${pxH * s}px"><span class="pno">${i + 1} · ${lbl}</span>
+      <div class="page" style="transform:scale(${s})"><div class="in">${h}</div></div></div>`).join('') || '<div class="empty">ยังไม่ได้เลือกส่วนที่จะพิมพ์</div>';
+  $('#pvInfo').textContent = `ตัวอย่างก่อนพิมพ์ · ${pages.length} หน้า`;
+  lastPages = pages;
+}
+let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(render, 200); });
+$('#bZoomIn').onclick = () => { zoomAdj = Math.min(2, zoomAdj + 0.15); ls('dmg_zoom', zoomAdj); render(); };
+$('#bZoomOut').onclick = () => { zoomAdj = Math.max(0.4, zoomAdj - 0.15); ls('dmg_zoom', zoomAdj); render(); };
+
+/* ---------------- พิมพ์ ---------------- */
+async function doPrint() {
+  await save();
+  const tab = document.body.dataset.tab;
+  render();
+  const imgs = $$('#pv img').filter(i => !i.complete);
+  await Promise.all(imgs.map(i => new Promise(r => { i.onload = i.onerror = r; })));
+  try { await document.fonts.ready; } catch (e) {}
+  setTimeout(() => { window.print(); document.body.dataset.tab = tab; }, 60);
+}
+$('#bPrint').onclick = doPrint; $('#bPrint2').onclick = doPrint;
+
+/* ---------------- รายการงาน ---------------- */
+async function drawList(target) {
+  const all = (await dbAll()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  const q = target.querySelector('input.lq') ? target.querySelector('input.lq').value.trim() : '';
+  const html = `<input class="lq" placeholder="ค้นหา ทะเบียน / ชื่อ / สถานที่" value="${esc(q)}" style="margin-bottom:10px">
+    <div class="list">${all.filter(r => !q || [r.plate, r.driver, r.place, r.owner].join(' ').includes(q)).map(r => {
+      const tot = (r.rows1 || []).concat(r.rows2 || []).reduce((a, x) => a + num(x.q || 1) * num(x.p), 0);
+      return `<div class="rec ${D && r.id === D.id ? 'cur' : ''}" data-open="${r.id}"><div class="m"><b>${esc(r.plate || r.driver || '(ยังไม่ระบุทะเบียน)')}</b>
+        <span>${esc(thDate(r.incDate) || '-')} · ${esc(r.place || '')}</span><span>${esc(r.driver || '')}</span></div><span class="a">${money(tot)}</span></div>`; }).join('') || '<div class="empty">ยังไม่มีงานที่บันทึก</div>'}</div>
+    <div class="row-acts"><button class="btn sm" data-export>⬇️ สำรองข้อมูล (ไฟล์)</button><label class="btn sm">⬆️ นำเข้าไฟล์สำรอง<input type="file" accept=".json,application/json" data-import hidden></label></div>
+    <div class="note">ข้อมูลเก็บในเครื่องนี้เท่านั้น (ไม่ส่งออกนอกเครื่อง) — ย้ายเครื่องให้ใช้ปุ่มสำรอง/นำเข้า</div>`;
+  target.innerHTML = html;
+  const qi = target.querySelector('input.lq'); qi.oninput = () => drawList(target).then(() => { const n = target.querySelector('input.lq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
+}
+document.addEventListener('click', async e => {
+  const o = e.target.closest('[data-open]');
+  if (o) { await save(); const r = await dbGet(o.dataset.open); if (r) { D = Object.assign(JSON.parse(JSON.stringify(BASE)), r); fillForm(); render(); ls('dmg_cur', D.id); $$('.modal').forEach(m => m.hidden = true); setTab('form'); toast('เปิดงาน ' + (D.plate || D.driver || '')); window.scrollTo(0, 0); } return; }
+  if (e.target.closest('[data-export]')) { const all = await dbAll(); const b = new Blob([JSON.stringify({ app: 'pea-damage', v: 1, at: new Date().toISOString(), cat: catalog(), records: all })], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'ประเมินค่าเสียหาย-สำรอง-' + todayIso() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+});
+document.addEventListener('change', async e => {
+  const f = e.target.closest('[data-import]'); if (!f || !f.files[0]) return;
+  try { const j = JSON.parse(await f.files[0].text()); const recs = j.records || []; for (const r of recs) if (r && r.id) await dbPut(r);
+    if (Array.isArray(j.cat) && j.cat.length) saveCat(j.cat); catDL(); toast('นำเข้า ' + recs.length + ' งาน'); drawList(f.closest('#listPaneD,#listPaneM')); }
+  catch (err) { toast('ไฟล์ไม่ถูกต้อง'); }
+});
+$('#bList').onclick = () => { drawList($('#listPaneD')); $('#listModal').hidden = false; };
+async function newJob() { await save(); D = blank(); fillForm(); render(); await save(); setTab('form'); window.scrollTo(0, 0); toast('เริ่มงานใหม่'); }
+$('#bNew').onclick = newJob; $('#bNewM').onclick = newJob;
+$('#bDup').onclick = async () => { await save(); const c = JSON.parse(JSON.stringify(D)); c.id = blank().id; c.created = Date.now(); c.docNo = ''; D = c; fillForm(); render(); await save(); toast('ทำสำเนาแล้ว — กำลังแก้ไขงานใหม่'); };
+$('#bDel').onclick = async () => { if (!confirm('ลบงานนี้ออกจากเครื่อง? (ย้อนกลับไม่ได้)')) return; await dbDel(D.id); const all = (await dbAll()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  D = all[0] ? Object.assign(JSON.parse(JSON.stringify(BASE)), all[0]) : blank(); fillForm(); render(); save(); toast('ลบแล้ว'); };
+$('#bOwnerSame').onclick = () => { D.owner = D.driver; D.ownerTel = D.driverTel; fillForm(); changed(); };
+$('#bSaveSign').onclick = () => { const o = {}; SIGN_KEYS.forEach(k => o[k] = D[k]); ls('dmg_sign', JSON.stringify(o)); toast('จำชื่อผู้ลงนามไว้แล้ว — งานใหม่จะใช้ชื่อนี้'); };
+
+/* ---------------- แท็บมือถือ ---------------- */
+function setTab(t) {
+  document.body.dataset.tab = t;
+  $$('nav.bot button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  if (t === 'pv') render();
+  if (t === 'list') drawList($('#listPaneM'));
+  window.scrollTo(0, 0);
+}
+$$('nav.bot button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+let toastT; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200); }
+window.addEventListener('beforeunload', () => { if (dirty) save(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && dirty) save(); });
+
+/* ---------------- เริ่มต้น ---------------- */
+(async function init() {
+  catDL();
+  try { await Promise.race([Promise.all([document.fonts.load('16pt THSN'), document.fonts.load('bold 16pt THSN')]), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
+  let r = null; const cur = ls('dmg_cur');
+  try { if (cur) r = await dbGet(cur); } catch (e) {}
+  D = r ? Object.assign(JSON.parse(JSON.stringify(BASE)), r) : blank();
+  fillForm(); render();
+  if (!r) save(); else setSaved('บันทึกในเครื่องแล้ว');
+})();
+</script>
+</body>
+</html>
