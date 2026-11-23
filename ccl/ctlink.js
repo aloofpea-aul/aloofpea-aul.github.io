@@ -83,6 +83,8 @@
       var oc = n.getAttribute && n.getAttribute('onclick');
       var m = oc && /\(\s*['"]?(\d+)/.exec(oc);
       if (m) return m[1];
+      var di = n.dataset && (n.dataset.jobId || n.dataset.id);
+      if (di && /^\d+$/.test(di) && Number(di) >= 2) return di;
       n = n.parentNode;
     }
     var dm = document.getElementById('detailModal');

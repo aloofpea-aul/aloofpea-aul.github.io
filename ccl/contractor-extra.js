@@ -230,7 +230,13 @@
       }
       previewSetup();
       var rj = window.renderJobs;
-      window.renderJobs = function () { var r = rj.apply(this, arguments); if (pvJob) setTimeout(previewOpenJob, 0); return r; };
+      var pvFirst = true;
+      window.renderJobs = function () {
+        var r = rj.apply(this, arguments);
+        if (pvJob) setTimeout(previewOpenJob, 0);
+        else if (pvFirst) setTimeout(function () { try { if (_curTab === 'dashboard') switchMainTab('all'); } catch (e) {} }, 0); // เปิดจาก CCL → เริ่มที่หน้ารายการงาน ไม่ใช่ภาพรวม
+        pvFirst = false; return r;
+      };
     }
     addBranchField();
     // เคยเข้าระบบในเครื่องนี้แล้ว → เข้าได้เลย (token หมดอายุ/บัญชีถูกระงับ ระบบจะเด้งกลับหน้าเข้าสู่ระบบเอง)
