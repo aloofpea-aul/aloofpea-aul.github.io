@@ -135,4 +135,5 @@
   var os = window.switchMainTab;
   if (typeof os === 'function') window.switchMainTab = function (t) { if (t !== window._curTab) TODO = null; var r = os.apply(this, arguments); chips(); return r; };
   window.renderJobs = renderJobs;
+  window.ctHome = { prog: prog, stage: stage, ready: ready, reply: reply, stale: stale, isActive: isActive, ago: ago, lastOwn: lastOwn };
 })();
