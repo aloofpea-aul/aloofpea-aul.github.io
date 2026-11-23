@@ -18,6 +18,10 @@ function setup() { setupAll_(); }
  * ไม่มีค่าใช้จ่าย: Google Sheets + Drive + Apps Script ฟรีทั้งหมด
  */
 
+// Web app: https://script.google.com/macros/s/AKfycbzji6NxwM2qAuw69HxJSgbFtH4aRne_MeCI6oP1pGXo_YBEWiNUq5ZlsATYhNrNZNas/exec
+// ชีตข้อมูล: https://docs.google.com/spreadsheets/d/1UlmfnkG-5W3JmWNUuZn4mFESvGpmcc05bbI-_0gSqGA/edit
+// โฟลเดอร์รูปแนบ: https://drive.google.com/drive/folders/1pZp9Bb32Cw4KLlDWU-Byz4CxHhDehQLo
+// โปรเจกต์ Apps Script: https://script.google.com/home/projects/1NlUhEL4lDe_DG4IAPO0ejKjzPfseGIWa5Pg1fbUI_yjnoinm920Q70bk/edit
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
 const VERSION = '1.0';

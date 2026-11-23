@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <head>
-<script src="/pea-hub.js" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
+<script src="/pea-hub.js?v=2026112301" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ประเมินค่าเสียหายระบบจำหน่าย · กฟส.อ่าวลึก</title>
@@ -506,7 +506,7 @@ const dbGet = id => tx('readonly', s => s.get(id));
    คลาวด์: Google Sheet + โฟลเดอร์ Drive ของ กฟส. ผ่าน Apps Script (gas/Code.gs)
    ทุกเครื่องเห็นงานเดียวกัน · เครื่องเก็บสำเนาไว้ด้วย (เน็ตหลุดก็ทำงานต่อได้ แล้วส่งให้เองเมื่อออนไลน์)
    ================================================================= */
-const DMG_API = '';   // ← ลิงก์ Web app (…/exec) หลัง Deploy
+const DMG_API = 'https://script.google.com/macros/s/AKfycbzji6NxwM2qAuw69HxJSgbFtH4aRne_MeCI6oP1pGXo_YBEWiNUq5ZlsATYhNrNZNas/exec';   // หลังบ้าน: damage/gas/Code.gs (Apps Script ในบัญชี aloofpea@gmail.com)
 const cred = () => ({ user: ls('pea_aoluek_username') || '', pass: ls('pea_aoluek_password') || '' });
 const cloudOn = () => !!DMG_API && !!cred().user;
 let serverList = null, online = true, pushT = null, pushing = null, pushAgain = false, lastRefresh = 0;
