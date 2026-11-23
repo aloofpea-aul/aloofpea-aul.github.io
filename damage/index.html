@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <head>
-<script src="/pea-hub.js?v=2026112303" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
+<script src="/pea-hub.js?v=2026112304" data-app="damage" data-perm="login" data-name="ประเมินค่าเสียหายระบบจำหน่าย"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ประเมินค่าเสียหายระบบจำหน่าย · กฟส.อ่าวลึก</title>
@@ -370,6 +370,27 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
     </div>
 
     <div class="card">
+      <h2><span class="n">ปะหน้า</span>ใบปะหน้า<span class="hint">ใช้หลังเซ็นอนุมัติแล้ว</span></h2>
+      <label class="chk" style="font-weight:600"><input type="checkbox" data-k="pCover">เซ็นอนุมัติแล้ว — พิมพ์ใบปะหน้าเป็นหน้าสุดท้าย</label>
+      <div class="g" style="margin-top:8px">
+        <label class="f">จาก<input data-k="cvFrom"></label>
+        <label class="f">ถึง<input data-k="cvTo"></label>
+        <label class="f">เลขที่<input data-k="cvNo"></label>
+        <span></span>
+        <div class="f full">วันที่<div class="thd" data-date="cvDate"></div></div>
+        <label class="f full">เรื่อง<input data-k="cvSubject" data-fb="subject"></label>
+        <label class="f full">เรียน<input data-k="cvRian"></label>
+        <label class="f">ขอนำส่งรายละเอียด<input data-k="cvWhat"></label>
+        <label class="f">จำนวน (ชุด)<input data-k="cvSets" inputmode="numeric"></label>
+        <label class="f full">ของ (ชื่อ)<input data-k="cvName" data-fb="__cname"></label>
+        <label class="f full">ที่อยู่ตามบัตรประจำตัวประชาชน<textarea data-k="cvAddr" rows="2" data-fb="__caddr"></textarea></label>
+        <label class="f full">ผจก. สั่งการ — เรียน<input data-k="cvRian2"></label>
+        <label class="f full">ข้อความสั่งการ<input data-k="cvOrder"></label>
+      </div>
+      <div class="note">ชื่อ ที่อยู่ เรื่อง และผู้ลงนาม ดึงจากที่กรอกไว้แล้วให้อัตโนมัติ (ตัวจางในช่อง) แก้เฉพาะที่ต่างได้</div>
+    </div>
+
+    <div class="card">
       <h2><span class="n">ยินยอม</span>หนังสือยินยอมชดใช้ค่าเสียหาย</h2>
       <div class="note" style="margin:-4px 0 10px">ช่องที่เว้นว่าง จะใช้ข้อมูลจากบันทึกข้อความให้อัตโนมัติ (ตามที่แสดงจางๆ ในช่อง)</div>
       <div class="g">
@@ -415,6 +436,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
       <label class="chk"><input type="checkbox" data-k="pMemo">บันทึกข้อความ</label>
       <label class="chk"><input type="checkbox" data-k="pConsent">หนังสือยินยอมชดใช้ค่าเสียหาย</label>
       <label class="chk"><input type="checkbox" data-k="pPhotos">ภาพประกอบ / สำเนาบัตร</label>
+      <label class="chk"><input type="checkbox" data-k="pCover">ใบปะหน้า (หน้าสุดท้าย — หลังเซ็นอนุมัติแล้ว)</label>
       <div class="row-acts">
         <button class="btn pri" id="bPrint2">🖨️ พิมพ์ / บันทึกเป็น PDF</button>
         <button class="btn" id="bDup">⧉ ทำสำเนาเป็นงานใหม่</button>
@@ -505,7 +527,9 @@ const BASE = {
   cWrittenAt: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', cDate: '', cName: '', cHouse: '', cMoo: '', cTambon: '', cAmphoe: '', cProvince: '',
   cRole: 'ผู้ขับขี่', cAct: 'ได้ขับรถชนเสาไฟฟ้าทำให้เสาไฟฟ้าหักพร้อมอุปกรณ์อื่นๆชำรุด', cPlace: '', cIncDate: '',
   cWhat: 'เสาไฟฟ้าอุปกรณ์ประกอบหัวเสาและอุปกรณ์อื่นๆ', cAmount: '', cComp: '', cSignRole: 'ผู้กระทำ', cName2: '', cRole2: '', cW1: '', cW2: '',
-  photos: [], pMemo: true, pConsent: true, pPhotos: true
+  cvFrom: 'ผปร.กฟส.อ่าวลึก', cvTo: 'กฟส.อ่าวลึก', cvNo: 'ต.2 กฟส.อล.(ปร.)', cvDate: '', cvSubject: '', cvRian: 'ผจก.กฟส.อ่าวลึก',
+  cvWhat: 'รถยนต์ชนเสาไฟฟ้า', cvSets: '1', cvName: '', cvAddr: '', cvRian2: 'หผ.บง.กฟส.อ่าวลึก', cvOrder: 'ตรวจสอบและแจ้งส่วนเกี่ยวข้องดำเนินการต่อไป',
+  photos: [], pMemo: true, pConsent: true, pPhotos: true, pCover: false
 };
 const DEFAULT_CAT = [
   { d: 'POLE,CONCRETE, 12 M.LONG เสาคอนกรีต 12 เมตร', u: 'ต้น', p: 14893 },
@@ -666,7 +690,10 @@ function totalsOf(R) {
   return { s1, s2, c1: c(R.rows1), c2: c(R.rows2), total: s1 + s2 };
 }
 const totals = () => totalsOf(D);
-const fb = k => { if (k === '__total') return money(totals().total); return D[k] || ''; };
+const consentAddr = () => { const p = [];
+  if (D.cHouse) p.push(D.cHouse); if (D.cMoo) p.push('หมู่ ' + D.cMoo); if (D.cTambon) p.push('ตำบล ' + D.cTambon); if (D.cAmphoe) p.push('อำเภอ ' + D.cAmphoe); if (D.cProvince) p.push('จังหวัด ' + D.cProvince);
+  return p.length ? p.join(' ') : (D.driverAddr || ''); };
+const fb = k => { if (k === '__total') return money(totals().total); if (k === '__cname') return (D.cName || '').trim() || D.driver || ''; if (k === '__caddr') return consentAddr(); return D[k] || ''; };
 const V = k => { const v = (D[k] == null ? '' : String(D[k])).trim(); const el = $(`[data-k="${k}"]`); const f = el && el.dataset.fb; return v || (f ? fb(f) : ''); };
 
 /* ---------------- ฟอร์ม ⇄ ข้อมูล ---------------- */
@@ -910,7 +937,7 @@ const UL = (x, y, w) => LN(x, y, w, 0.22);
 /* ---------- ตัดคำขึ้นบรรทัดใหม่ (ไม่ย่อตัวอักษร) ----------
    ตัดที่ช่องว่างก่อน · คำย่อ ต. อ. จ. ม. ถ. ซ. ติดกับชื่อเสมอ · ตัดกลางคำไทยเฉพาะเมื่อคำยาวเกินบรรทัด */
 const _thSeg = (() => { try { const s = new Intl.Segmenter('th', { granularity: 'word' }); return t => [...s.segment(t)].map(x => x.segment); } catch (e) { return t => [...t]; } })();
-const ABBR = /^(ต|อ|จ|ม|ถ|ซ|ตำบล|อำเภอ|จังหวัด|หมู่ที่|บ้านเลขที่|เลขที่)\.?$/;
+const ABBR = /^(ต|อ|จ|ม|ถ|ซ|ตำบล|อำเภอ|จังหวัด|หมู่|หมู่ที่|บ้านเลขที่|เลขที่)\.?$/;
 function tokensOf(txt) {
   const raw = String(txt || '').replace(/\s+/g, ' ').trim().split(' ').filter(String);
   const out = [];
@@ -929,13 +956,15 @@ function splitLong(tok, room, sz) {          // คำเดียวยาว�
   if (cur) out.push(cur);
   return out;
 }
-/** แบ่งข้อความเป็นบรรทัด: rooms[i] = ความกว้างบรรทัดที่ i (บรรทัดเกินใช้ค่าสุดท้าย) */
-function wrapInto(txt, rooms, sz = 16) {
+/** แบ่งข้อความเป็นบรรทัด: rooms[i] = ความกว้างบรรทัดที่ i (บรรทัดเกินใช้ค่าสุดท้าย)
+    o.words = ตัดระหว่างคำไทยได้ด้วย (เหมือน Word) — ยกเว้นกลุ่มที่มีคำย่อ "x." หรือตัวเลข ไม่ตัด */
+function wrapInto(txt, rooms, sz = 16, o = {}) {
   const room = i => rooms[Math.min(i, rooms.length - 1)];
+  let toks = tokensOf(txt).map(t => ({ t, sp: true }));
+  if (o.words) toks = toks.flatMap(x => /[.\d ]/.test(x.t) ? [x] : _thSeg(x.t).map((t, i) => ({ t, sp: i === 0 })));
   const lines = []; let cur = '';
-  const toks = tokensOf(txt);
-  for (let k = 0; k < toks.length; k++) {
-    const t = toks[k], cand = cur ? cur + ' ' + t : t;
+  for (const { t, sp } of toks) {
+    const cand = cur ? cur + (sp ? ' ' : '') + t : t;
     if (W(cand, sz) <= room(lines.length)) { cur = cand; continue; }
     if (cur) { lines.push(cur); cur = ''; }
     if (W(t, sz) <= room(lines.length)) cur = t;
@@ -1212,6 +1241,34 @@ function pgMemo3(t) {
     T(114.8, 132.5, 'หมายเหตุ:'), T(114.8, 138.9, '-ข้อความใดไม่ใช่ให้ขีดออกหรือไม่ต้องใส่'), T(114.8, 145.3, 'เครื่องหมาย'),
   ].join('');
 }
+/* ---------- ใบปะหน้า (หน้าสุดท้าย · ใช้หลังเซ็นอนุมัติ) ---------- */
+function JT(x0, x1, y, txt, sz = 16) {
+  const n = (txt.match(/ /g) || []).length, room = x1 - x0, w = W(txt, sz);
+  const ws = n && w < room ? (room - w) / n : 0;
+  return `<div class="a" style="left:${x0}mm;top:${(y + YOFF(sz)).toFixed(2)}mm;font-size:${sz}pt;word-spacing:${ws.toFixed(3)}mm;white-space:nowrap">${esc(txt)}</div>`;
+}
+function pgCover() {
+  const out = []; let dy = 0;
+  const Y = y => y + dy;
+  const row = (y, parts) => { let ex = 0; parts.forEach(p => { if (typeof p === 'string') out.push(p); else { out.push(p.h); ex = Math.max(ex, p.n - 1); } }); dy += ex * P16; };
+  out.push(`<img src="pea-logo-text.png" alt="" style="position:absolute;left:25mm;top:7.5mm;width:40.5mm;height:32.5mm;object-fit:contain">`);
+  row(45.4, [T(25.0, Y(45.4), 'จาก'), fld(33.5, Y(45.4), 93, D.cvFrom), T(94.1, Y(45.4), 'ถึง'), fld(99.1, Y(45.4), 186, D.cvTo)]);
+  row(51.8, [T(25.0, Y(51.8), 'เลขที่'), fld(34.1, Y(51.8), 92, D.cvNo), T(93.0, Y(51.8), 'วันที่'), fld(100.9, Y(51.8), 186, thDate(D.cvDate))]);
+  row(58.2, [T(25.0, Y(58.2), 'เรื่อง'), fld(34.3, Y(58.2), 186, V('cvSubject'))]);
+  row(65.5, [T(25.0, Y(65.5), 'เรียน'), fld(34.9, Y(65.5), 186, D.cvRian)]);
+  const body = `${D.cvFrom || ''} ขอนำส่งรายละเอียด${D.cvWhat || ''} ${D.cvSets || 1} ชุด ของ ${V('cvName')} ที่อยู่ตามบัตรประจำตัวประชาชน ${V('cvAddr')}`;
+  const lines = wrapInto(body, [191 - 50.4, 191 - 25.0], 16, { words: true });
+  lines.forEach((l, i) => out.push(i < lines.length - 1 ? JT(i ? 25.0 : 50.4, 191, Y(76.0) + i * P16, l) : T(i ? 25.0 : 50.4, Y(76.0) + i * P16, l)));
+  dy += Math.max(0, lines.length - 2) * P16;
+  out.push(T(50.4, Y(92.0), 'จึงเรียนมาเพื่อโปรดทราบและแจ้งส่วนเกี่ยวข้องดำเนินการต่อไป'));
+  row(111.1, [fld(95, Y(111.1), 163.5, '(' + (D.headName || '') + ')', { c: 1 })]);
+  row(117.5, [fld(95, Y(117.5), 163.7, D.headPos || '', { c: 1 })]);
+  row(136.6, [T(25.0, Y(136.6), 'เรียน'), fld(33.7, Y(136.6), 186, D.cvRian2)]);
+  row(143.0, [fld(33.6, Y(143.0), 186, D.cvOrder)]);
+  row(162.1, [fld(25.4, Y(162.1), 105.9, '(' + (D.mgrName || '') + ')', { c: 1 })]);
+  row(168.5, [fld(25.4, Y(168.5), 103.6, D.mgrPos || '', { c: 1 })]);
+  return out.join('');
+}
 /* ---------- รูปประกอบ: บัตรคู่กันหน้าละ 2 · ภาพเหตุการณ์หน้าละ 2 จัดกลางหน้า ---------- */
 function photoPages() {
   const ph = (D.photos || []).filter(p => p.src);
@@ -1229,6 +1286,7 @@ function render() {
   if (D.pMemo) pages.push(['บันทึกข้อความ 1/3', pgMemo1(t)], ['บันทึกข้อความ 2/3', pgMemo2(t)], ['บันทึกข้อความ 3/3', pgMemo3(t)]);
   if (D.pConsent) consentPages().forEach((h, i, a) => pages.push([`หนังสือยินยอม ${i + 1}/${a.length}`, h]));
   if (D.pPhotos) photoPages().forEach((h, i, a) => pages.push([`ภาพประกอบ ${i + 1}/${a.length}`, h]));
+  if (D.pCover) pages.push(['ใบปะหน้า', pgCover()]);
   const pv = $('#pv');
   const Wd = pv.clientWidth || Math.min(window.innerWidth - 24, 800);
   const pxW = 793.7, pxH = 1122.5;
