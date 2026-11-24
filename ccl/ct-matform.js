@@ -48,7 +48,28 @@
 
   function typeOf(size) { return 'เสาคอนกรีต ' + size + ' ม.'; }
   function sizeOfType(t) { var m = /(\d+(?:\.\d+)?)\s*ม/.exec(t || ''); return m ? m[1] : ''; }
-  function gongList() { return (window._gongmonOptions || []).map(function (g) { return typeof g === 'string' ? g : (g && g.name) || ''; }).filter(Boolean); }
+  var KGL = 'ct_gongmon_list';
+  // กองหมอน = รายการที่ PEA ตั้งไว้ + ที่เคยใช้ในงานทั้งหมด + ที่เพิ่มเองในเครื่องนี้ (เรียงตามที่ใช้บ่อย)
+  function gongList() {
+    var cnt = {}, base = (window._gongmonOptions || []).map(function (g) { return typeof g === 'string' ? g : (g && g.name) || ''; }).filter(Boolean);
+    function add(v, w) { v = String(v || '').trim(); if (!v || v.length > 60) return; cnt[v] = (cnt[v] || 0) + w; }
+    base.forEach(function (v) { add(v, 1000); });
+    (window._jobs || []).forEach(function (j) {
+      (Array.isArray(j.contractorMaterials) ? j.contractorMaterials : []).forEach(function (e) {
+        (e && e.poles || []).forEach(function (p) { if (p) add(p.location, 1); });
+        if (e && e.transformer) add(e.transformer.location, 1);
+      });
+    });
+    var mine = []; try { mine = JSON.parse(ls(KGL) || '[]') || []; } catch (e) {}
+    mine.forEach(function (v) { add(v, 500); });
+    return Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a] || a.localeCompare(b, 'th'); }).slice(0, 12);
+  }
+  function remember(v) {
+    v = String(v || '').trim(); if (!v) return;
+    var mine = []; try { mine = JSON.parse(ls(KGL) || '[]') || []; } catch (e) {}
+    if (mine.indexOf(v) < 0) { mine.unshift(v); ls(KGL, JSON.stringify(mine.slice(0, 10))); }
+    ls(KG, v);
+  }
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
 
   function build() {
@@ -197,6 +218,7 @@
     var kv = S.kva === '__o' ? String(S.kvaOther || '').trim() : S.kva;
     if (S.tr && !kv) { if (window.showToast) showToast('เลือกขนาดหม้อแปลง (kVA)', 'error'); return; }
     if (poles.length && !loc && !confirm('ยังไม่ได้เลือกกองหมอน — บันทึกต่อไหม?')) return;
+    if (loc) remember(loc);
     var data = { poles: poles, transformer: S.tr && kv ? { kva: kv, peaNo: S.peaNo.trim(), lat: S.trLat, lng: S.trLng, location: loc } : null, contractorName: _user.name, contractorCo: _user.company, attachments: [] };
     var files = S.files.slice(); close();
     if (!files.length) { submitMaterialData(data); return; }
