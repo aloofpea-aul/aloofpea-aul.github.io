@@ -212,7 +212,7 @@ async function ntPosterPng(n){
   const box=document.createElement('div'); box.style.cssText='position:fixed;left:-2000px;top:0;width:400px;z-index:-1'; box.innerHTML=ntPoster(n,im); document.body.appendChild(box);
   await Promise.all([...box.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;})));
   try{ await document.fonts.ready; }catch(e){}
-  const cv=await html2canvas(box.firstElementChild,{scale:2.7,backgroundColor:'#ffffff',useCORS:true,logging:false});
+  const cv=await html2canvas(box.firstElementChild,{scale:2.7,backgroundColor:'#ffffff',useCORS:true,logging:false,ignoreElements:e=>!(box.contains(e)||e.contains(box))});   // ไม่โคลนภาพอื่นในหน้า (ภาพย่อ Drive ทำ iPhone ค้าง)
   box.remove();
   return await new Promise(r=>cv.toBlob(r,'image/png'));
 }
@@ -230,11 +230,17 @@ async function ntFiles(n,all){ const files=[new File([await ntPosterPng(n)],ntFn
   if(bad) toast('ดึงภาพประกอบไม่สำเร็จ '+bad+' ภาพ');
   return files; }
 function ntDl(f){ const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000); }
-async function ntShare(n,b){ const t=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span>กำลังเตรียม…';
-  try{ const files=await ntFiles(n), text=ntText(n);
-    if(navigator.canShare&&navigator.canShare({files})){ try{ await navigator.share({files,text}); }catch(e){ if(e.name!=='AbortError') throw e; } }
-    else { files.forEach(ntDl); try{ await navigator.clipboard.writeText(text); toast('ดาวน์โหลด '+files.length+' ไฟล์ · คัดลอกข้อความแล้ว'); }catch(e){ toast('ดาวน์โหลด '+files.length+' ไฟล์แล้ว'); } }
-  }catch(e){ alert(e.message); } b.disabled=false; b.innerHTML=t; }
+const ntTimeout=(p,ms,m)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no(new Error(m)),ms))]);
+/* iPhone: ถ้าเตรียมไฟล์นานเกิน ระบบจะไม่ยอมเปิดหน้าแชร์ → เตรียมไว้ก่อน แล้วให้แตะอีกครั้ง (แชร์ทันที) */
+async function ntShare(n,b){ const sk=n.id+'|'+(n.tl||[]).length+'|'+ntPhSel(n).map(p=>p.fileId).join(','), P=S.ntPrep;
+  const send=async(files,text)=>{ if(navigator.canShare&&navigator.canShare({files})){ try{ await navigator.share({files,text}); }catch(e){ if(e.name==='NotAllowedError') return false; if(e.name!=='AbortError') throw e; } }
+    else { files.forEach(ntDl); try{ await navigator.clipboard.writeText(text); toast('ดาวน์โหลด '+files.length+' ไฟล์ · คัดลอกข้อความแล้ว'); }catch(e){ toast('ดาวน์โหลด '+files.length+' ไฟล์แล้ว'); } } return true; };
+  if(P&&P.k===sk&&Date.now()-P.t<5*60e3){ S.ntPrep=null; b.innerHTML=ntShareLbl(n); try{ await send(P.files,P.text); }catch(e){ alert(e.message); } return; }
+  b.disabled=true; b.innerHTML='<span class="spin"></span>กำลังเตรียม…';
+  try{ const files=await ntTimeout(ntFiles(n),45e3,'เตรียมภาพนานเกินไป — ลองกดใหม่อีกครั้ง (หรือเอาติ๊กภาพประกอบออกบางภาพ)'), text=ntText(n);
+    const act=navigator.userActivation?navigator.userActivation.isActive:true;
+    if(!act||!(await send(files,text))){ S.ntPrep={k:sk,files,text,t:Date.now()}; b.disabled=false; b.innerHTML='📤 พร้อมแล้ว — แตะอีกครั้งเพื่อแชร์'; return; }
+  }catch(e){ alert(e.message); } b.disabled=false; b.innerHTML=ntShareLbl(n); }
 async function ntPdf(n,b){ const t=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span>กำลังทำ PDF…';
   try{ const files=await ntFiles(n,true); await ntLoad(NT_PDF); const {jsPDF}=window.jspdf, pdf=new jsPDF({unit:'mm',format:'a4'});
     const add=async(f,first)=>{ const u=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f);}); const im=await new Promise(r=>{const i=new Image(); i.onload=()=>r(i); i.src=u;});
@@ -260,7 +266,7 @@ function ntPutNotice(nn){ if(!nn) return; S.nts=(S.nts||[]).map(x=>x.id===nn.id?
 function ntPhHtml(n,can){ const P=ntPh(n), U=(S.ntUp||{})[n.id], add=can&&n.type==='emg'; if(!P.length&&!add&&!U) return '';
   const ex=(S.ntPhEx||{})[n.id]||[], last=P[P.length-1];
   return `<div class="nt-ph"><div class="lb" style="margin-top:0">📷 ภาพประกอบ ${P.length?P.length+' ภาพ <i>แตะเพื่อดูเต็มจอ</i>':'<i>ยังไม่มี · แนบได้ไม่จำกัด</i>'}</div>
-    <div class="nt-phg">${P.map((p,i)=>`<button type="button" class="nt-th" data-phv="${i}"><img src="${ntThumb(p.fileId)}" data-fid="${esc(p.fileId)}" onerror="ntImgFix(this)" alt="ภาพ ${i+1}" loading="lazy"><span class="n">${i+1}</span></button>`).join('')}
+    <div class="nt-phg">${P.map((p,i)=>`<button type="button" class="nt-th" data-phv="${i}"><img src="${ntThumb(p.fileId)}" data-fid="${esc(p.fileId)}" onerror="ntImgFix(this)" alt="ภาพ ${i+1}"><span class="n">${i+1}</span></button>`).join('')}
     ${U&&U.left?Array.from({length:U.left},()=>'<div class="nt-th up"><span class="spin"></span></div>').join(''):''}
     ${add?'<label class="nt-add">＋<span>ถ่ายรูป /<br>เลือกหลายรูป</span><input type="file" accept="image/*" multiple hidden data-phadd="1"></label>':''}</div>
     ${U&&U.left?`<div class="nt-prog"><i style="width:${Math.round(100*U.i/U.n)}%"></i></div><div class="muted" style="font-size:12px">กำลังอัปโหลดภาพ ${U.i+1}/${U.n} … ใช้งานหน้าอื่นต่อได้ ภาพจะตามไปเอง</div>`:''}
