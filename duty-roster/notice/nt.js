@@ -212,7 +212,7 @@ async function ntPosterPng(n){
   const box=document.createElement('div'); box.style.cssText='position:fixed;left:-2000px;top:0;width:400px;z-index:-1'; box.innerHTML=ntPoster(n,im); document.body.appendChild(box);
   await Promise.all([...box.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;})));
   try{ await document.fonts.ready; }catch(e){}
-  const cv=await html2canvas(box.firstElementChild,{scale:2.7,backgroundColor:'#ffffff',useCORS:true,logging:false,ignoreElements:e=>!(box.contains(e)||e.contains(box))});   // ไม่โคลนภาพอื่นในหน้า (ภาพย่อ Drive ทำ iPhone ค้าง)
+  const cv=await html2canvas(box.firstElementChild,{scale:2.7,backgroundColor:'#ffffff',useCORS:true,logging:false,ignoreElements:e=>/^(IMG|IFRAME|VIDEO|CANVAS)$/.test(e.tagName)&&!box.contains(e)});   // ไม่โหลดภาพอื่นในหน้า (ภาพย่อ Drive ทำ iPhone ค้าง) แต่ต้องเก็บ <style> ไว้
   box.remove();
   return await new Promise(r=>cv.toBlob(r,'image/png'));
 }
