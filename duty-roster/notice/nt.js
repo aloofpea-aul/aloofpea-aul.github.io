@@ -38,8 +38,8 @@ function ntLoad(src){ if(!ntLibs[src]) ntLibs[src]=new Promise((ok,no)=>{ const 
 const NT_QR='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js', NT_H2C='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', NT_PDF='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
 async function ntQr(url){ S.ntQrC=S.ntQrC||{}; if(S.ntQrC[url]) return S.ntQrC[url]; await ntLoad(NT_QR); const q=qrcode(0,'M'); q.addData(url); q.make(); return S.ntQrC[url]=q.createDataURL(6,2); }
 /* ไฟล์ใน Drive → data URL (ใช้กับโปสเตอร์/แชร์ได้ ไม่ติด CORS) */
-async function ntFile(id){ S.ntFiles=S.ntFiles||{}; if(S.ntFiles[id]) return S.ntFiles[id]; const c=LS.get('ntf_'+id); if(c) return S.ntFiles[id]=c;
-  const j=await apiGet({action:'noticeFile',f:id}); const u='data:'+j.mime+';base64,'+j.base64; S.ntFiles[id]=u; if(u.length<450e3) LS.set('ntf_'+id,u); return u; }
+async function ntFile(id,noLs){ S.ntFiles=S.ntFiles||{}; if(S.ntFiles[id]) return S.ntFiles[id]; const c=noLs?null:LS.get('ntf_'+id); if(c) return S.ntFiles[id]=c;
+  const j=await apiGet({action:'noticeFile',f:id}); const u='data:'+j.mime+';base64,'+j.base64; S.ntFiles[id]=u; if(!noLs&&u.length<450e3) LS.set('ntf_'+id,u); return u; }
 /* SVG → PNG (html2canvas วาด SVG ใน <img> ไม่ได้ทุกเครื่อง) */
 async function ntRaster(src,px){ if(!/\.svg/.test(src)) return src; S.ntRas=S.ntRas||{}; if(S.ntRas[src]) return S.ntRas[src];
   const im=await new Promise((ok,no)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=src; });
@@ -223,8 +223,11 @@ function ntText(n){ const c=ntCfg(), st=ntState(n), emg=n.type==='emg';
     '📍 '+ntArea(n)+(n.sub?' '+n.sub:''), n.reason?'🔧 '+n.reason:'', n.cust?'🏠 ผู้ใช้ไฟประมาณ '+n.cust+' ราย':'', (()=>{ const g=ntGeo(n); return g?'🗺️ แผนที่: https://maps.google.com/?q='+g.ctr.join(','):''; })(), !emg&&n.doc?'📎 หนังสือประกาศ (ภาพที่ 2)':'',
     emg?'⚠️ อย่าเข้าใกล้สายไฟที่ขาด/ห้อย · เห็นจุดอันตรายแจ้ง '+c.phone:'ไฟมาเร็วกว่ากำหนดจะจ่ายไฟทันที · สอบถาม '+c.phone, c.unit+' ขออภัยในความไม่สะดวก 🙏'];
   return L.filter(Boolean).join('\n'); }
-async function ntFiles(n){ const files=[new File([await ntPosterPng(n)],ntFname(n,'.png'),{type:'image/png'})];
+async function ntFiles(n,all){ const files=[new File([await ntPosterPng(n)],ntFname(n,'.png'),{type:'image/png'})];
   if(n.type!=='emg'&&n.doc&&n.doc.fileId){ try{ const u=await ntFile(n.doc.fileId), bl=ntB64Blob(u); files.push(new File([bl],ntFname(n,' (หนังสือ)'+(bl.type==='application/pdf'?'.pdf':'.jpg')),{type:bl.type})); }catch(e){ toast('ดึงหนังสือประกาศไม่สำเร็จ — ส่งเฉพาะโปสเตอร์'); } }
+  const P=ntPhSel(n,all); let bad=0;
+  for(let i=0;i<P.length;i++){ try{ const bl=ntB64Blob(await ntFile(P[i].fileId,true)); files.push(new File([bl],ntFname(n,' ภาพ '+(i+1)+'.jpg'),{type:bl.type})); }catch(e){ bad++; } }
+  if(bad) toast('ดึงภาพประกอบไม่สำเร็จ '+bad+' ภาพ');
   return files; }
 function ntDl(f){ const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000); }
 async function ntShare(n,b){ const t=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span>กำลังเตรียม…';
@@ -233,7 +236,7 @@ async function ntShare(n,b){ const t=b.innerHTML; b.disabled=true; b.innerHTML='
     else { files.forEach(ntDl); try{ await navigator.clipboard.writeText(text); toast('ดาวน์โหลด '+files.length+' ไฟล์ · คัดลอกข้อความแล้ว'); }catch(e){ toast('ดาวน์โหลด '+files.length+' ไฟล์แล้ว'); } }
   }catch(e){ alert(e.message); } b.disabled=false; b.innerHTML=t; }
 async function ntPdf(n,b){ const t=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spin"></span>กำลังทำ PDF…';
-  try{ const files=await ntFiles(n); await ntLoad(NT_PDF); const {jsPDF}=window.jspdf, pdf=new jsPDF({unit:'mm',format:'a4'});
+  try{ const files=await ntFiles(n,true); await ntLoad(NT_PDF); const {jsPDF}=window.jspdf, pdf=new jsPDF({unit:'mm',format:'a4'});
     const add=async(f,first)=>{ const u=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f);}); const im=await new Promise(r=>{const i=new Image(); i.onload=()=>r(i); i.src=u;});
       if(!first) pdf.addPage(); const W=210,H=297,m=8, s=Math.min((W-2*m)/im.width,(H-2*m)/im.height); pdf.addImage(u,f.type==='image/png'?'PNG':'JPEG',(W-im.width*s)/2,(H-im.height*s)/2,im.width*s,im.height*s); };
     await add(files[0],true); const extra=[];
@@ -241,6 +244,49 @@ async function ntPdf(n,b){ const t=b.innerHTML; b.disabled=true; b.innerHTML='<s
     ntDl(new File([pdf.output('blob')],ntFname(n,'.pdf'),{type:'application/pdf'})); extra.forEach(ntDl);
     if(extra.length) toast('หนังสือเป็นไฟล์ PDF อยู่แล้ว — ดาวน์โหลดแยกให้อีกไฟล์');
   }catch(e){ alert(e.message); } b.disabled=false; b.innerHTML=t; }
+/* ---------- ภาพประกอบ (ไม่จำกัดจำนวน · ส่งขึ้นทีละภาพ · แสดงผ่านภาพย่อของ Drive) ---------- */
+const ntPh=n=>Array.isArray(n&&n.photos)?n.photos:[];
+const ntThumb=(id,w)=>'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w'+(w||400);
+function ntImgFix(img){ img.onerror=null; ntFile(img.dataset.fid,true).then(u=>{ img.src=u; }).catch(()=>{ img.alt='โหลดภาพไม่ได้'; }); }
+function ntPhSel(n,all){ const ex=(S.ntPhEx||{})[n.id]||[]; return ntPh(n).filter(p=>all||ex.indexOf(p.fileId)<0); }
+/* อัปโหลดเบื้องหลังทีละภาพ — ปิดหน้าไปก็ยังส่งต่อ (ตราบที่แอปยังเปิด) */
+async function ntPhotoQueue(id,files){ const a=ntAuth(); if(!a||!files.length) return; S.ntUp=S.ntUp||{}; const U=S.ntUp[id]=S.ntUp[id]&&S.ntUp[id].left?S.ntUp[id]:{i:0,n:0,fail:0,left:0};
+  U.n+=files.length; U.left+=files.length; ntPhPaint(id);
+  for(const f of files){ try{ const x=await ntReadFile(f,1600,.8); const j=await apiPost(Object.assign({action:'noticePhoto',id,a:'add',base64:x.base64,mime:x.mime},a));
+      const ph=ntPh(j.notice).slice(-1)[0]; if(ph) (S.ntFiles=S.ntFiles||{})[ph.fileId]=x.url; ntPutNotice(j.notice);
+    }catch(e){ U.fail++; U.err=e.message; } U.i++; U.left--; ntPhPaint(id); }
+  if(!U.left){ toast(U.fail?'แนบภาพไม่สำเร็จ '+U.fail+' ภาพ — '+(U.err||''):'แนบภาพประกอบครบ '+U.n+' ภาพแล้ว'); delete S.ntUp[id]; ntPhPaint(id); } }
+function ntPutNotice(nn){ if(!nn) return; S.nts=(S.nts||[]).map(x=>x.id===nn.id?nn:x); try{ LS.set('nts',S.nts); }catch(e){} }
+function ntPhHtml(n,can){ const P=ntPh(n), U=(S.ntUp||{})[n.id], add=can&&n.type==='emg'; if(!P.length&&!add&&!U) return '';
+  const ex=(S.ntPhEx||{})[n.id]||[], last=P[P.length-1];
+  return `<div class="nt-ph"><div class="lb" style="margin-top:0">📷 ภาพประกอบ ${P.length?P.length+' ภาพ <i>แตะเพื่อดูเต็มจอ</i>':'<i>ยังไม่มี · แนบได้ไม่จำกัด</i>'}</div>
+    <div class="nt-phg">${P.map((p,i)=>`<button type="button" class="nt-th" data-phv="${i}"><img src="${ntThumb(p.fileId)}" data-fid="${esc(p.fileId)}" onerror="ntImgFix(this)" alt="ภาพ ${i+1}" loading="lazy"><span class="n">${i+1}</span></button>`).join('')}
+    ${U&&U.left?Array.from({length:U.left},()=>'<div class="nt-th up"><span class="spin"></span></div>').join(''):''}
+    ${add?'<label class="nt-add">＋<span>ถ่ายรูป /<br>เลือกหลายรูป</span><input type="file" accept="image/*" multiple hidden data-phadd="1"></label>':''}</div>
+    ${U&&U.left?`<div class="nt-prog"><i style="width:${Math.round(100*U.i/U.n)}%"></i></div><div class="muted" style="font-size:12px">กำลังอัปโหลดภาพ ${U.i+1}/${U.n} … ใช้งานหน้าอื่นต่อได้ ภาพจะตามไปเอง</div>`:''}
+    ${last?`<div class="muted" style="font-size:12px;margin-top:4px">ล่าสุด: ภาพที่ ${P.length} โดย ${esc(last.by||'-')} · ${esc(String(last.at).slice(11))} น.${add?' — เพิ่มได้ระหว่างแก้ไฟ เช่น ภาพหลังซ่อมเสร็จ':''}</div>`:''}
+    ${P.length?`<div class="lb">เลือกภาพที่จะแชร์ลงกลุ่ม</div><div class="nt-chk"><span class="bx on">✓</span>โปสเตอร์ประกาศ <span class="ntp o">ภาพหลัก</span></div>
+      ${P.map((p,i)=>`<label class="nt-chk"><input type="checkbox" data-phs="${esc(p.fileId)}" ${ex.indexOf(p.fileId)<0?'checked':''}><img src="${ntThumb(p.fileId,120)}" data-fid="${esc(p.fileId)}" onerror="ntImgFix(this)" alt="">ภาพ ${i+1} <small>${esc(p.by||'')}</small></label>`).join('')}`:''}</div>`; }
+function ntShareLbl(n){ const k=ntPhSel(n).length, d=n.type!=='emg'&&n.doc; return '📤 แชร์ '+(d?'2 ภาพ (โปสเตอร์+หนังสือ)':'โปสเตอร์')+(k?' + ภาพประกอบ '+k+' ภาพ':''); }
+function ntPhPaint(id){ const box=$('ntPhBox'); if(!box||box.dataset.id!==id) return; const n=(S.nts||[]).find(x=>x.id===id); if(!n) return; box.innerHTML=ntPhHtml(n,!!ntAuth()); ntPhBind(n); const b=$('ntShare'); if(b&&!b.disabled) b.innerHTML=ntShareLbl(n); }
+function ntPhBind(n){ const box=$('ntPhBox'); if(!box) return;
+  box.querySelectorAll('[data-phv]').forEach(b=>b.onclick=()=>ntViewer(n.id,+b.dataset.phv));
+  box.querySelectorAll('[data-phadd]').forEach(i=>i.onchange=()=>{ const F=[...i.files]; i.value=''; ntPhotoQueue(n.id,F); });
+  box.querySelectorAll('[data-phs]').forEach(c=>c.onchange=()=>{ S.ntPhEx=S.ntPhEx||{}; const L=S.ntPhEx[n.id]=(S.ntPhEx[n.id]||[]).filter(x=>x!==c.dataset.phs); if(!c.checked) L.push(c.dataset.phs); const b=$('ntShare'); if(b) b.innerHTML=ntShareLbl(n); }); }
+/* ดูภาพเต็มจอ: ปัดซ้าย-ขวา · ลบได้ (คนที่แนบ/ผู้อนุมัติ) */
+function ntViewer(id,i){ const n=(S.nts||[]).find(x=>x.id===id); const P=ntPh(n); if(!P.length) return; i=Math.max(0,Math.min(P.length-1,i));
+  let v=$('ntVw'); if(!v){ v=document.createElement('div'); v.id='ntVw'; v.className='nt-vw'; document.body.appendChild(v); }
+  const p=P[i], can=!!ntAuth();
+  v.innerHTML=`<div class="hd"><button type="button" id="vwX">✕</button><b>ภาพ ${i+1} / ${P.length}</b><span>${can?'<button type="button" id="vwDel" title="ลบภาพ">🗑</button>':''}</span></div>
+    <div class="im"><img src="${ntThumb(p.fileId,1600)}" data-fid="${esc(p.fileId)}" onerror="ntImgFix(this)" alt="">${i>0?'<button type="button" class="ar l" id="vwP">‹</button>':''}${i<P.length-1?'<button type="button" class="ar r" id="vwN">›</button>':''}</div>
+    <div class="dots">${P.length<=20?P.map((x,j)=>`<i class="${j===i?'on':''}"></i>`).join(''):''}</div>
+    <div class="ft">📷 ${esc(p.by||'-')} · ${esc(ntDateTh?ntDateTh(String(p.at).slice(0,10),false):String(p.at).slice(0,10))} ${esc(String(p.at).slice(11))} น.${P.length>1?'<br>ปัดซ้าย-ขวาเพื่อดูภาพถัดไป':''}</div>`;
+  const go=j=>ntViewer(id,j); $('vwX').onclick=()=>v.remove(); if($('vwP')) $('vwP').onclick=()=>go(i-1); if($('vwN')) $('vwN').onclick=()=>go(i+1);
+  let x0=null; v.ontouchstart=e=>{ x0=e.touches[0].clientX; }; v.ontouchend=e=>{ if(x0==null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(dx>50&&i>0) go(i-1); else if(dx<-50&&i<P.length-1) go(i+1); };
+  v.onkeydown=null; document.onkeydown=e=>{ if(!$('ntVw')) { document.onkeydown=null; return; } if(e.key==='Escape') v.remove(); if(e.key==='ArrowLeft'&&i>0) go(i-1); if(e.key==='ArrowRight'&&i<P.length-1) go(i+1); };
+  if($('vwDel')) $('vwDel').onclick=async()=>{ if(!confirm('ลบภาพที่ '+(i+1)+' ออกจากประกาศ?\n(ไฟล์ยังเก็บไว้ในระบบ กู้คืนได้)')) return;
+    try{ const j=await apiPost(Object.assign({action:'noticePhoto',id,a:'del',fileId:p.fileId},ntAuth())); ntPutNotice(j.notice); toast('ลบภาพแล้ว'); const L=ntPh(j.notice); if(L.length) ntViewer(id,Math.min(i,L.length-1)); else v.remove(); ntPhPaint(id); const b=$('ntShare'); if(b) b.innerHTML=ntShareLbl(j.notice); }catch(e){ alert(e.message); } };
+}
 /* ---------- แถบในหน้าเวรรายวัน ---------- */
 function renderNtBanner(){
   const el=$('dNt'); if(!el) return; const L=(S.nts||LS.get('nts')||[]);
@@ -333,15 +379,17 @@ async function ntDetail(id){
   ntSheet(emg?'⚠️ ดับไฟฉุกเฉิน':'📢 ประกาศงดจ่ายไฟ',`<div id="ntDet">
     <div class="nt-prev" id="ntPrev"><div class="muted">กำลังสร้างโปสเตอร์…</div></div>
     ${!emg?`<div class="nt-doc">${n.doc?`<span>📎 <b>หนังสือประกาศ</b> แนบแล้ว · ส่งเป็นภาพที่ 2</span>${can?'<button type="button" class="lnk" id="ntDocX">เปลี่ยน</button>':''}`:`<span class="ntw">📎 ยังไม่ได้แนบหนังสือประกาศ (ลงนามแล้ว)</span>${can?'<label class="btn sm">แนบไฟล์<input type="file" id="ntDocF" accept="image/*,application/pdf" hidden></label>':''}`}<div id="ntDocM"></div></div>`:''}
+    <div id="ntPhBox" data-id="${esc(n.id)}">${ntPhHtml(n,can)}</div>
     ${s==='draft'?`<div class="nt-drb"><span>📝 <b>ร่าง</b> · ยังไม่ประกาศ แชร์ออกไม่ได้</span><button type="button" class="btn ghost" id="ntDrImg">⬇️ ภาพร่าง (มีลายน้ำ)</button></div>`:''}
-    <div class="nt-sh" ${s==='draft'?'style="display:none"':''}><button type="button" class="btn line" id="ntShare">📤 แชร์ ${!emg&&n.doc?'2 ภาพ (โปสเตอร์+หนังสือ)':'โปสเตอร์'}</button><button type="button" class="btn ghost" id="ntPdfB">📄 PDF</button><button type="button" class="btn ghost" id="ntCopy">💬 คัดลอกข้อความ</button></div>
+    <div class="nt-sh" ${s==='draft'?'style="display:none"':''}><button type="button" class="btn line" id="ntShare">${ntShareLbl(n)}</button><button type="button" class="btn ghost" id="ntPdfB">📄 PDF</button><button type="button" class="btn ghost" id="ntCopy">💬 คัดลอกข้อความ</button></div>
     ${ntPendHtml(n)}
     ${acts?`<div class="nt-acts">${acts}</div>`:''}<div id="ntMsg"></div>
     ${can&&s==='draft'?'<button type="button" class="lnk" id="ntEdit" style="margin-top:8px">✏️ แก้ไขร่าง</button>':''}${can&&s!=='draft'?`<div class="nt-lock">${s==='done'||s==='cancel'?(ntIsAppr()?'<button type="button" class="lnk" id="ntFixB">✏️ แก้บันทึก</button>':'🔒 งานจบแล้ว · แก้บันทึกได้เฉพาะหัวหน้า/ผู้ช่วย'):`<button type="button" class="lnk" id="ntEdit">✏️ ${n.pend?'แก้คำขอแก้ไข':'แก้ไขประกาศ'}</button> <span class="muted">· ต้องให้หัวหน้า/ผู้ช่วยอนุมัติใหม่</span>`} <button type="button" class="lnk" id="ntCopyNew">📋 คัดลอกเป็นร่างใหม่</button></div>`:''}
-    <div class="nt-tl"><b>ไทม์ไลน์</b>${(n.tl||[]).slice().reverse().map(e=>`<div>${esc(String(e.at).slice(8,10)+'/'+String(e.at).slice(5,7)+' '+String(e.at).slice(11))} · ${esc({new:'สร้างร่าง',edit:'แก้ไข',publish:'ยืนยันประกาศจริง',start:'เริ่มดับ',done:'ไฟมาแล้ว',extend:'ขยายเวลาถึง',move:'เลื่อนเป็น',cancel:'ยกเลิก',reopen:'เปิดใหม่',doc:'แนบหนังสือ',docDel:'ลบหนังสือ',link:'ลงรายการไฟดับ',revReq:'ขอแก้ไข',rev:'อนุมัติฉบับแก้ไข',unpend:'ทิ้งคำขอแก้ไข',fix:'แก้บันทึก',del:'ลบ',restore:'กู้คืนจากถังขยะ'}[e.act]||e.act)} ${esc(e.txt||'')} <span class="muted">(${esc(e.by||'')})</span></div>`).join('')}</div>
+    <div class="nt-tl"><b>ไทม์ไลน์</b>${(n.tl||[]).slice().reverse().map(e=>`<div>${esc(String(e.at).slice(8,10)+'/'+String(e.at).slice(5,7)+' '+String(e.at).slice(11))} · ${esc({new:'สร้างร่าง',edit:'แก้ไข',publish:'ยืนยันประกาศจริง',start:'เริ่มดับ',done:'ไฟมาแล้ว',extend:'ขยายเวลาถึง',move:'เลื่อนเป็น',cancel:'ยกเลิก',reopen:'เปิดใหม่',doc:'แนบหนังสือ',docDel:'ลบหนังสือ',photo:'แนบภาพประกอบ',photoDel:'ลบภาพประกอบ',link:'ลงรายการไฟดับ',revReq:'ขอแก้ไข',rev:'อนุมัติฉบับแก้ไข',unpend:'ทิ้งคำขอแก้ไข',fix:'แก้บันทึก',del:'ลบ',restore:'กู้คืนจากถังขยะ'}[e.act]||e.act)} ${esc(e.txt||'')} <span class="muted">(${esc(e.by||'')})</span></div>`).join('')}</div>
     ${can&&s!=='live'&&s!=='due'&&(s==='draft'||ntIsAppr())?`<button type="button" class="lnk" id="ntDel" style="color:#A23434;margin-top:10px">🗑 ลบประกาศนี้ <span class="muted">(ย้ายไปถังขยะ · กู้คืนได้ 30 วัน)</span></button>`:''}${can&&(s==='live'||s==='due')?'<div class="muted" style="margin-top:10px;font-size:12.5px">กำลังดับอยู่ — ลบไม่ได้จนกว่าจะกด "ไฟมาแล้ว" หรือยกเลิก</div>':''}</div>`,()=>ntPage());
   ntImgs(n).then(im=>{ const p=$('ntPrev'); if(p) p.innerHTML=`<div class="nt-scale">${ntPoster(n,im)}</div>`; });
-  $('ntShare').onclick=e=>ntShare(n,e.currentTarget); $('ntPdfB').onclick=e=>ntPdf(n,e.currentTarget);
+  ntPhBind(n);
+  $('ntShare').onclick=e=>ntShare((S.nts||[]).find(x=>x.id===n.id)||n,e.currentTarget); $('ntPdfB').onclick=e=>ntPdf((S.nts||[]).find(x=>x.id===n.id)||n,e.currentTarget); $('ntPdfB').onclick=e=>ntPdf(n,e.currentTarget);
   $('ntCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText(ntText(n)); toast('คัดลอกข้อความแล้ว'); }catch(e){ prompt('คัดลอกข้อความนี้',ntText(n)); } };
   if($('ntEdit')) $('ntEdit').onclick=()=>ntForm(n);
   if($('ntFixB')) $('ntFixB').onclick=()=>ntFix(n);
@@ -369,9 +417,9 @@ async function ntDetail(id){
     try{ await apiPost(Object.assign(body,ntAuth())); await loadNotices(true); toast({publish:'ประกาศจริงแล้ว — แชร์ได้',start:'บันทึกเริ่มดับแล้ว',done:'ไฟมาแล้ว ✓ — โปสเตอร์เปลี่ยนให้แล้ว',extend:'ขยายเวลาแล้ว',move:'เลื่อนวันแล้ว',cancel:'ยกเลิกแล้ว',reopen:'เปิดใหม่แล้ว'}[a]||'บันทึกแล้ว'); ntDetail(n.id); }
     catch(e){ b.disabled=false; msg('ntMsg',e.message,'err'); } });
 }
-function ntReadFile(f){ return new Promise((ok,no)=>{ if(f.type==='application/pdf'){ if(f.size>6e6) return no(new Error('PDF ใหญ่เกิน 6 MB')); const fr=new FileReader(); fr.onload=()=>ok({base64:fr.result.split(',')[1],mime:'application/pdf',url:fr.result}); fr.onerror=no; fr.readAsDataURL(f); return; }
-  const im=new Image(), u=URL.createObjectURL(f); im.onload=()=>{ const s=Math.min(1,2000/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
-    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); const url=c.toDataURL('image/jpeg',.82); ok({base64:url.split(',')[1],mime:'image/jpeg',url}); }; im.onerror=()=>no(new Error('เปิดไฟล์ไม่ได้')); im.src=u; }); }
+function ntReadFile(f,mx,q){ return new Promise((ok,no)=>{ if(f.type==='application/pdf'){ if(f.size>6e6) return no(new Error('PDF ใหญ่เกิน 6 MB')); const fr=new FileReader(); fr.onload=()=>ok({base64:fr.result.split(',')[1],mime:'application/pdf',url:fr.result}); fr.onerror=no; fr.readAsDataURL(f); return; }
+  const im=new Image(), u=URL.createObjectURL(f); im.onload=()=>{ const s=Math.min(1,(mx||2000)/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); const url=c.toDataURL('image/jpeg',q||.82); ok({base64:url.split(',')[1],mime:'image/jpeg',url}); }; im.onerror=()=>no(new Error('เปิดไฟล์ไม่ได้')); im.src=u; }); }
 /* ---------- ลงรายการไฟดับจากประกาศ (ไฟมาแล้ว) ---------- */
 async function ntToOutage(n){
   const off=n.actualOff||n.startAt, k=outKeyOfOff(off), m=k.slice(0,7);
@@ -438,7 +486,7 @@ async function ntForm(n0){
   const c=ntCfg(), td=ntNow().slice(0,10);
   const REV=!!(n0&&!n0._copy&&!n0.draft), LIVE=REV&&ntState(n0)==='live';
   const F=n0?Object.assign(JSON.parse(JSON.stringify(n0)),REV&&n0.pend?JSON.parse(JSON.stringify(n0.pend.f||{})):{},REV?{why:''}:{}):{type:'plan',date:new Date(Date.parse(td+'T00:00:00Z')+3*864e5).toISOString().slice(0,10),start:'08:30',end:'16:30',reasonKey:'improve',reason:NT_RS.plan[0][1],slogan:ntPickSlogan('plan'),area:'',sub:c.sub,villages:[],feeder:'',dev:null,cust:null,estMin:120,startIn:0};
-  let docFile=null;
+  let docFile=null, phFiles=[];
   sldData().then(()=>{ if($('ntF')) draw(); });
   const draw=()=>{ const emg=F.type==='emg', fd=(S.sld&&S.sld.fd&&S.sld.fd.length?S.sld.fd:FEEDERS0);
     ntSheet(REV?'✏️ แก้ไขประกาศจริง':n0&&!n0._copy?'✏️ แก้ไขร่างประกาศ':'📢 สร้างประกาศ',`<div id="ntF">
@@ -470,6 +518,7 @@ async function ntForm(n0){
      <div class="lb">คำพูดของตัวพูดบนโปสเตอร์ <i>ไม่บังคับ</i></div><textarea id="ntSay" rows="2" placeholder="${esc((emg?NT_SAY.emg:NT_SAY[F.reasonKey]||NT_SAY.other))}">${esc(F.speech||'')}</textarea>
      <div class="lb">คำขวัญท้ายโปสเตอร์ <i>เปลี่ยนได้ทุกประกาศ</i></div><div class="chips nt-slg">${ntSlogans().map((x,i)=>`<button type="button" class="ch ${F.slogan===x?'on':''}" data-sl="${i}">${esc(x)}</button>`).join('')}<button type="button" class="ch" data-sl="rnd">🎲 สุ่ม</button></div>
      ${!emg&&!n0?`<div class="lb">📎 หนังสือประกาศ ${esc(c.unit)} (ลงนามแล้ว) <i>แนบทีหลังได้</i></div><label class="nt-drop">📷 ถ่ายรูป / 📄 เลือกไฟล์ (รูป หรือ PDF)<input type="file" id="ntDocIn" accept="image/*,application/pdf" hidden></label><div id="ntDocN" class="muted">${docFile?'✓ '+esc(docFile.name):''}</div>`:''}
+     ${emg&&!n0?`<div class="lb">📷 ภาพประกอบ <i>ไม่บังคับ · ไม่จำกัดจำนวน</i></div><div class="nt-phg" id="ntPhG"></div><div class="note" style="margin-top:6px">เลือกจากอัลบั้มได้ทีละหลายรูป · ระบบย่อรูปให้เอง · กด ✕ เพื่อเอาออก · กดประกาศได้เลย ภาพจะอัปโหลดตามไปเอง</div>`:''}
      ${REV?`<label class="tf nt-why" style="margin-top:10px">เหตุผลที่แก้ไข *<input type="text" id="ntWhy" value="${esc(F.why||'')}" placeholder="เช่น ผู้รับเหมาขอเวลาเพิ่ม 1 ชม."></label>`:''}
      <div id="ntFMsg"></div>
      <button type="button" class="btn ${ntIsAppr()?'ghost':emg?'redf':''}" id="ntSave" style="width:100%;margin-top:10px">${REV?'📨 ส่งขออนุมัติการแก้ไข':'💾 '+(n0&&!n0._copy?'บันทึกร่าง':'บันทึกเป็นร่าง')}</button>
@@ -524,6 +573,11 @@ async function ntForm(n0){
         return `<div class="hit lv"><div><b>มิเตอร์ ${esc(m[7])}</b> <span class="muted">CA ${esc(ca(m))} · ${esc(fd||'')}${J.office[m[3]]==='PPY'?' · ปลายพระยา':''}</span>${nt?ntChainHtml(nt[0][0],1,nt[1]):''}</div></div>`; }).join('');
       box.querySelectorAll('[data-pk]').forEach(a=>a.onclick=e=>{ e.stopPropagation(); const d=S.sld.byId[a.dataset.pk]; if(!d) return; keep(); if(pick(d)){ draw(); toast('เลือก '+d[0]+' แล้ว — เติมข้อมูลจาก SLD'); } }); };
     if($('ntSldR')) $('ntSldR').onclick=async()=>{ keep(); LS.del('sld'); S.sld=null; $('ntSldR').textContent='กำลังโหลด…'; await sldData(); if(F.dev){ const d=(S.sld.dev||[]).find(x=>x[0]===F.dev.id); if(d){ const st=F.stops, mo=F.more; ntPickDev(F,d); F.stops=st; F.more=mo; ntApplySum(F); } } toast('โหลดข้อมูล SLD ใหม่แล้ว ('+((S.sld&&S.sld.dev.length)||0)+' อุปกรณ์)'); draw(); };
+    const phDraw=()=>{ const g=$('ntPhG'); if(!g) return; (g._u||[]).forEach(u=>URL.revokeObjectURL(u)); g._u=phFiles.map(f=>URL.createObjectURL(f));
+      g.innerHTML=g._u.map((u,i)=>`<div class="nt-th"><img src="${u}" alt=""><span class="n">${i+1}</span><button type="button" class="x" data-phx="${i}">✕</button></div>`).join('')+'<label class="nt-add">＋<span>ถ่ายรูป /<br>เลือกหลายรูป</span><input type="file" id="ntPhIn" accept="image/*" multiple hidden></label>';
+      $('ntPhIn').onchange=e=>{ phFiles=phFiles.concat([...e.target.files].filter(f=>/^image\//.test(f.type)||!f.type)); phDraw(); };
+      g.querySelectorAll('[data-phx]').forEach(b=>b.onclick=()=>{ phFiles.splice(+b.dataset.phx,1); phDraw(); }); };
+    phDraw();
     if($('ntDocIn')) $('ntDocIn').onchange=e=>{ docFile=e.target.files[0]||null; $('ntDocN').textContent=docFile?'✓ '+docFile.name:''; };
     if($('ntSavePub')) $('ntSavePub').onclick=()=>{ if(!confirm(REV?'บันทึกและอนุมัติการแก้ไขเลย?\nภาพประกาศจะเปลี่ยนเป็น "ฉบับแก้ไข"':'บันทึกและประกาศจริง?\nหลังประกาศ ถ้าจะแก้ต้องขออนุมัติใหม่')) return; F._pub=1; $('ntSave').onclick(); };
     $('ntSave').onclick=async()=>{ keep(); const a=ntAuth(); if(!a){ msg('ntFMsg','ล็อกอินศูนย์รวมงาน หรือใส่ PIN ผู้อนุมัติก่อน','err'); return; }
@@ -539,7 +593,7 @@ async function ntForm(n0){
       try{ const j=await apiPost(Object.assign({action:'saveNotice',n:o},a)); let nn=j.notice;
         if(docFile){ $('ntSave').innerHTML='<span class="spin"></span>กำลังแนบหนังสือ…'; try{ const x=await ntReadFile(docFile); const k=await apiPost(Object.assign({action:'noticeDoc',id:nn.id,base64:x.base64,mime:x.mime},a)); nn=k.notice; if(nn.doc) (S.ntFiles=S.ntFiles||{})[nn.doc.fileId]=x.url; }catch(e){ toast('สร้างประกาศแล้ว แต่แนบหนังสือไม่สำเร็จ: '+e.message); } }
         if(F._pub){ try{ await apiPost(Object.assign({action:'noticeAct',id:nn.id,a:'publish'},a)); }catch(e){ toast('บันทึกร่างแล้ว แต่ยืนยันประกาศไม่สำเร็จ: '+e.message); } }
-        await loadNotices(true); renderNtBanner(); toast(REV?(F._pub?'อนุมัติฉบับแก้ไขแล้ว — แชร์ภาพใหม่ได้เลย':'ส่งขออนุมัติการแก้ไขแล้ว'):F._pub?'ประกาศจริงแล้ว':'บันทึกร่างแล้ว'); ntDetail(nn.id);
+        await loadNotices(true); renderNtBanner(); if(phFiles.length){ const P=phFiles; phFiles=[]; ntPhotoQueue(nn.id,P); } toast(REV?(F._pub?'อนุมัติฉบับแก้ไขแล้ว — แชร์ภาพใหม่ได้เลย':'ส่งขออนุมัติการแก้ไขแล้ว'):F._pub?'ประกาศจริงแล้ว':'บันทึกร่างแล้ว'); ntDetail(nn.id);
       }catch(e){ $('ntSave').disabled=false; $('ntSave').textContent=n0?'บันทึก':'ลองอีกครั้ง'; msg('ntFMsg',e.message,'err'); } };
   };
   draw();

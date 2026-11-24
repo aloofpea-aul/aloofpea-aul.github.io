@@ -112,6 +112,22 @@ table.trk input[type=checkbox]{width:18px;height:18px;vertical-align:middle}
 .nt-dt{width:44px;text-align:center;border-radius:9px;background:#F3E9F5;color:#4A1B66;font-weight:800;line-height:1.1;padding:4px 0;font-size:16px;flex:none}.nt-dt small{display:block;font-size:10px}.nt-row.em .nt-dt{background:#FDECEC;color:#A12A2A}
 .nt-mid{flex:1;min-width:0;display:flex;flex-direction:column}.nt-mid b{font-size:13.5px}.nt-mid small{font-size:11.5px;color:#6B6478}.ntw{color:#9A5A00;font-style:normal;font-weight:700}
 .ntp{font-size:11px;font-weight:800;border-radius:7px;padding:1px 7px;white-space:nowrap;flex:none}.ntp.o{background:#FFF1D6;color:#7A4A00}.ntp.g{background:#E6F4E8;color:#1F5A2A}.ntp.r{background:#FDECEC;color:#A12A2A}.ntp.x{background:#EEE;color:#666}
+.nt-ph{background:#fff;border-radius:12px;padding:10px 12px;margin-top:10px}
+.nt-phg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}@media (max-width:380px){.nt-phg{grid-template-columns:repeat(3,1fr)}}
+.nt-th{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:0;padding:0;background:#E9E3EE;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.nt-th img{width:100%;height:100%;object-fit:cover;display:block}.nt-th .n{position:absolute;left:4px;bottom:4px;background:#000a;color:#fff;border-radius:6px;padding:0 6px;font-size:11px}
+.nt-th .x{position:absolute;top:4px;right:4px;background:#000a;color:#fff;border:0;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;padding:0}
+.nt-add{aspect-ratio:1;border:2px dashed #C9A6CF;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5C1A63;font-weight:800;font-size:22px;background:#FBF6FC;text-align:center;cursor:pointer;line-height:1.2}.nt-add span{font-size:11px}
+.nt-prog{height:6px;border-radius:4px;background:#EEE;overflow:hidden;margin-top:8px}.nt-prog i{display:block;height:100%;background:#5C1A63;transition:width .3s}
+.nt-chk{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F0EAF4;font-size:13px;cursor:pointer}.nt-chk input{width:20px;height:20px;flex:none}.nt-chk img{width:38px;height:38px;border-radius:7px;object-fit:cover;flex:none;background:#E9E3EE}.nt-chk small{color:#6B6478}
+.nt-chk .bx{width:20px;height:20px;border-radius:5px;background:#5C1A63;color:#fff;text-align:center;line-height:20px;font-size:12px;flex:none}
+.nt-vw{position:fixed;inset:0;z-index:80;background:#111;color:#fff;display:flex;flex-direction:column}
+.nt-vw .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;font-size:14px}.nt-vw .hd button{background:none;border:0;color:#fff;font-size:20px;cursor:pointer;min-width:36px}
+.nt-vw .im{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0}.nt-vw .im img{max-width:100%;max-height:100%;object-fit:contain}
+.nt-vw .ar{position:absolute;top:50%;transform:translateY(-50%);background:#0006;color:#fff;border:0;font-size:34px;width:44px;height:64px;border-radius:10px;cursor:pointer}.nt-vw .ar.l{left:6px}.nt-vw .ar.r{right:6px}
+.nt-vw .dots{display:flex;gap:6px;justify-content:center;padding:6px}.nt-vw .dots i{width:7px;height:7px;border-radius:50%;background:#fff5}.nt-vw .dots i.on{background:#fff}
+.nt-vw .ft{padding:8px 14px 18px;font-size:12.5px;opacity:.9;line-height:1.5}
+.nt-th.up{cursor:default}
 .nt-prev{background:#E9E3EE;border-radius:14px;padding:10px;display:flex;justify-content:center;overflow:hidden}
 .nt-scale{width:400px;transform-origin:top center;zoom:.85}
 @media (max-width:440px){.nt-scale{zoom:.78}}
@@ -687,7 +703,7 @@ fieldset:disabled{opacity:.55}
   <button data-v="viewSet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>ตั้งค่า</button>
 </nav>
 
-<script src="demo/demo.js?v=5abdd938"></script>
+<script src="demo/demo.js?v=ebe2a7a8"></script>
 <script>
 /* ===== ตั้งค่า: วาง URL ของ Web app (Apps Script) ตรงนี้ ===== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzIFoqXzNyJ56EOd2p-L6bdbO6ZNLQmYS5xoW4sTFJUuZKkxnnU2TEKJRMdusi1gwzr5g/exec';
@@ -2816,7 +2832,7 @@ $('sSave').onclick=async()=>{
 <script>
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);});
 </script>
-<script src="notice/nt.js?v=22"></script>
+<script src="notice/nt.js?v=23"></script>
 <script src="notice/oc.js?v=4"></script>
 </body>
 </html>

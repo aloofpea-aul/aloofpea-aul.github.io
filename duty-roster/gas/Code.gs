@@ -471,6 +471,7 @@ function doPost(e) {
     if (b.action === 'noticeAct') return json_({ ok: true, notice: noticeAct_(b) });
     if (b.action === 'noticeTrash') return json_({ ok: true, notices: noticeTrash_(b) });
     if (b.action === 'noticeDoc') return json_({ ok: true, notice: noticeDoc_(b) });
+    if (b.action === 'noticePhoto') return json_({ ok: true, notice: noticePhoto_(b) });
     // ---- ไม่ต้องใช้ PIN: ยื่นคำขอ ----
     if (b.action === 'resubmitRequest') return json_({ ok: true, request: resubmitRequest_(b), requests: listRequests_() });
     if (b.action === 'cancelReturned') { cancelReturned_(b.id, b.by); return json_({ ok: true, requests: listRequests_() }); }

@@ -135,7 +135,10 @@
     CacheService: { getScriptCache: () => ({ get: k => cache[k] ?? null, put: (k, v) => { cache[k] = String(v); }, remove: k => { delete cache[k]; } }) },
     ContentService: { MimeType: { JSON: 'json', TEXT: 'text' }, createTextOutput: t => ({ t, setMimeType() { return this; } }) },
     Utilities: { formatDate: fmtDate, DigestAlgorithm: { SHA_256: 1 }, computeDigest: (a, s) => toSigned(sha256(utf8(s))), computeHmacSha256Signature: (v, k) => toSigned(hmac(v, k)),
-      base64EncodeWebSafe: b64ws, base64Encode: x => b64ws(x).replace(/-/g, '+').replace(/_/g, '/'), getUuid: () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()), sleep() {} },
+      base64EncodeWebSafe: b64ws, base64Encode: x => x && x.__b64 ? x.__b64 : b64ws(x).replace(/-/g, '+').replace(/_/g, '/'), base64Decode: x => ({ __b64: String(x) }), newBlob: (d, m, n) => ({ d, m, n }), getUuid: () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()), sleep() {} },
+    DriveApp: (() => { const files = {}, folder = { getId: () => 'demo-folder', createFile: bl => { const id = 'demofile' + Date.now() + Math.random().toString(36).slice(2, 10); files[id] = { b64: bl.d.__b64, mime: bl.m, name: bl.n }; return file(id); } };
+      const file = id => ({ getId: () => id, getName: () => files[id].name, setSharing() {}, getParents: () => ({ next: () => folder }), getBlob: () => ({ getContentType: () => files[id].mime, getBytes: () => ({ __b64: files[id].b64 }) }) });
+      return { Access: { ANYONE_WITH_LINK: 1 }, Permission: { VIEW: 1 }, getFolderById: () => folder, createFolder: () => folder, getFileById: id => { if (!files[id]) throw new Error('ไม่พบไฟล์ (เดโม: ไฟล์อยู่ในหน่วยความจำ)'); return file(id); } }; })(),
     Logger: { log: x => console.log('[demo]', x) },
     UrlFetchApp: { fetch: fetchSync },
     ScriptApp: { getProjectTriggers: () => triggers.slice(), deleteTrigger: t => { const i = triggers.indexOf(t); if (i >= 0) triggers.splice(i, 1); },

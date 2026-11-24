@@ -1949,6 +1949,28 @@ function noticeDoc_(b) {
   ntSheet_().getRange(x.row, 2, 1, 3).setValues([[JSON.stringify(d), new Date(), by]]);
   return d;
 }
+/** ภาพประกอบประกาศ (ไม่จำกัดจำนวน) — ส่งทีละภาพ · a: 'add' (base64) | 'del' (fileId: ผู้อนุมัติหรือคนที่แนบ) */
+function noticePhoto_(b) {
+  const by = ntWho_(b), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const x = ntRows_().filter(function (r) { return r.id === String(b.id || '') && !r.deleted; })[0];
+    if (!x) throw new Error('ไม่พบประกาศ');
+    const d = x.d, at = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+    d.photos = Array.isArray(d.photos) ? d.photos : [];
+    if (b.a === 'del') {
+      const i = d.photos.map(function (p) { return p.fileId; }).indexOf(String(b.fileId || '')); if (i < 0) return d;
+      const ph = d.photos[i]; if (ph.by !== by && !approverOf_(b)) throw new Error('ลบได้เฉพาะคนที่แนบ หรือผู้อนุมัติ');
+      d.photos.splice(i, 1);
+      d.photosDel = (d.photosDel || []).concat([Object.assign({}, ph, { delAt: at, delBy: by })]).slice(-50);   // ไฟล์ยังอยู่ใน Drive (กู้ได้)
+    } else {
+      const f = ntSaveFile_(b.base64, /^image\//.test(String(b.mime)) ? b.mime : 'image/jpeg', 'ภาพประกอบ ' + d.date + ' ' + String(d.area || '').slice(0, 30));
+      d.photos.push({ fileId: f.fileId, at: at, by: by, w: Number(b.w) || 0, h: Number(b.h) || 0 });
+    }
+    d.tl = (d.tl || []).concat([{ at: at, by: by, act: b.a === 'del' ? 'photoDel' : 'photo' }]).slice(-60);
+    ntSheet_().getRange(x.row, 2, 1, 3).setValues([[JSON.stringify(d), new Date(), by]]);
+    return d;
+  } finally { lock.releaseLock(); }
+}
 /** อ่านไฟล์ (สำหรับรวมเป็นชุดส่ง/PDF ในเบราว์เซอร์ — ไฟล์ใน Drive ดึงข้ามโดเมนตรง ๆ ไม่ได้) */
 function noticeFile_(q) {
   const id = String(q.f || ''); if (!/^[\w-]{20,}$/.test(id)) throw new Error('bad id');
