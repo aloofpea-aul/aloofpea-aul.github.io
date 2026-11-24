@@ -223,8 +223,14 @@
   function codeOk(r, min) { return !window.cclCode || window.cclCode.ok(r.jobStatus, min); }
   function iInfo(r) {
     var tl = Array.isArray(r.jobTimeline) ? r.jobTimeline : [];
-    var ins = r.inspectionStatus || 'รอตรวจสอบ', pass = ins === 'ผ่านการตรวจรับ', fail = /ไม่ผ่าน/.test(ins);
-    var std = tl.slice().reverse().find(function (h) { return h.status === 'ตรวจมาตรฐาน'; });
+    var ins = r.inspectionStatus || 'รอตรวจสอบ';
+    // รอบตรวจรับปัจจุบัน = หลังการเปลี่ยนสถานะเข้า "ตรวจรับงาน" ครั้งล่าสุด (ผลตรวจก่อนหน้านั้นเป็นของรอบเก่า ไม่นับ)
+    var t0 = 0;
+    tl.forEach(function (h) { if (h && h.status === 'ตรวจรับงาน' && /เปลี่ยนสถานะจาก/.test(h.details || '') && !/ส่งปิดงาน|ปิดงานแล้วเสร็จ|อนุมัติ\/เสร็จสิ้น/.test(String(h.details).split('→')[0])) { var t = new Date(h.timestamp).getTime(); if (t > t0) t0 = t; } });
+    var after = function (h) { return !t0 || new Date(h.timestamp).getTime() >= t0; };
+    if (t0 && ins !== 'รอตรวจสอบ' && !tl.some(function (h) { return h && h.status === 'ตรวจรับงาน' && /สถานะการตรวจรับ/.test(h.details || '') && after(h); })) ins = 'รอตรวจสอบ';
+    var pass = ins === 'ผ่านการตรวจรับ', fail = /ไม่ผ่าน/.test(ins);
+    var std = tl.slice().reverse().find(function (h) { return h.status === 'ตรวจมาตรฐาน' && after(h); });
     var stdPass = !!(std && std.details && std.details.indexOf('ผ่านการตรวจมาตรฐาน') >= 0 && std.details.indexOf('ไม่ผ่านการตรวจมาตรฐาน') < 0);
     var stdFail = !!(std && std.details && std.details.indexOf('ไม่ผ่านการตรวจมาตรฐาน') >= 0);
     var stage = fail ? 'fail' : !pass ? 'wait' : !stdPass ? 'std' : 'ready';

@@ -141,7 +141,9 @@ function doPost(e) {
       var f = globalThis[fn];
       if (typeof f !== 'function') return cclJson_({ ok: false, error: 'ไม่พบฟังก์ชัน ' + fn + ' ในระบบหลังบ้าน' });
       cclJobCodeGate_(fn, args);
+      var insPrev = fn === 'updateWorkStatus' ? cclInspPrev_(args) : null;
       out = f.apply(null, args);
+      if (insPrev) cclInspReset_(insPrev, args, sess);
       if (fn === 'getConstructionData' && Array.isArray(out)) out = out.filter(function (j) { return j && (String(j.receiveNo || '').trim() || String(j.jobName || '').trim()); }); // ซ่อนแถวว่าง
     }
     return cclJson_({ ok: true, data: out === undefined ? null : out });
@@ -598,6 +600,25 @@ function cclCodeRank_(c) {
   var m = /^([A-Z])\s*(\d+)/.exec(c); if (!m) return -1;
   var b = { A: 10, B: 20, C: 30, D: 40, E: 50, F: 60 }[m[1]];
   return b == null ? -1 : b + Math.min(9, parseInt(m[2], 10));
+}
+// งานกลับเข้า "ตรวจรับงาน" รอบใหม่ (มาจากดำเนินงาน/สถานะก่อนหน้า) → ล้างผลตรวจรับรอบเก่า ให้เริ่มรอตรวจรับใหม่
+var CCL_INS_KEEP = ['ตรวจรับงาน', 'ส่งปิดงาน', 'ปิดงานแล้วเสร็จ', 'อนุมัติ/เสร็จสิ้น'];
+function cclInspPrev_(args) {
+  try {
+    var r = parseInt(args[0], 10); if (!(r >= 2) || String(args[1] || '') !== 'ตรวจรับงาน') return null;
+    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME); if (!sh || r > sh.getLastRow()) return null;
+    var old = String(sh.getRange(r, 16).getValue() || ''), ins = String(sh.getRange(r, 20).getValue() || '');
+    if (CCL_INS_KEEP.indexOf(old) >= 0 || !ins || ins === 'รอตรวจสอบ') return null;
+    return { r: r, old: old, ins: ins };
+  } catch (e) { return null; }
+}
+function cclInspReset_(p, args, sess) {
+  try {
+    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME);
+    if (String(sh.getRange(p.r, 16).getValue() || '') !== 'ตรวจรับงาน') return;
+    sh.getRange(p.r, 20).setValue('รอตรวจสอบ');
+    logHistory(p.r, 'แก้ไขข้อมูล', String((sess && (sess.name || sess.username)) || 'ระบบ'), 'เริ่มรอบตรวจรับใหม่ — ล้างผลตรวจรับเดิม "' + p.ins + '" (งานกลับมาจาก ' + p.old + ')');
+  } catch (e) {}
 }
 function cclJobCodeGate_(fn, args) {
   var id = null, min = null, what = '';
