@@ -68,6 +68,7 @@
     /* บันทึกงาน */
     'body.cx #constructionForm>.ax-sec{padding:12px 14px !important;margin-bottom:8px !important}body.cx .ax-sh{margin-bottom:8px !important}body.cx #page-add .input-field{min-height:40px !important}body.cx #page-add select.input-field{height:40px !important}' +
     /* ปุ่มสลับ */
+    '#cclNavRight #cxTgl{position:relative;right:auto;bottom:auto;z-index:auto;width:34px;height:34px;box-shadow:none;gap:0;justify-content:center}#cclNavRight #cxTgl.on{background:rgba(245,166,35,.18)!important;border-color:rgba(245,166,35,.45)!important;color:#F5A623!important}' +
     '#cxTgl{position:fixed;right:12px;bottom:calc(12px + var(--cx-nav,0px));z-index:9000;height:36px;padding:0 12px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-weight:700;font-size:12.5px;box-shadow:0 4px 14px rgba(15,23,42,.18);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}' +
     '#cxTgl.on{background:#0D2B5E;color:#fff;border-color:#0D2B5E}';
 
@@ -147,7 +148,7 @@
 
   function apply(on, rerender) {
     document.body.classList.toggle('cx', on);
-    var t = document.getElementById('cxTgl'); if (t) { t.classList.toggle('on', on); t.innerHTML = '<i class="fa-solid ' + (on ? 'fa-table-list' : 'fa-grip-lines') + '"></i>' + (on ? 'กระชับ: เปิด' : 'กระชับ: ปิด'); }
+    var t = document.getElementById('cxTgl'); if (t) { t.classList.toggle('on', on); var inNav = t.classList.contains('ccl-icon-btn'); t.title = on ? 'โหมดกระชับ: เปิด (กดเพื่อปิด)' : 'โหมดกระชับ: ปิด (กดเพื่อเปิด)'; t.innerHTML = '<i class="fa-solid ' + (on ? 'fa-table-list' : 'fa-grip-lines') + '"></i>' + (inNav ? '' : (on ? 'กระชับ: เปิด' : 'กระชับ: ปิด')); }
     if (rerender) { try { window.renderTable && window.renderTable(); window.renderInspectionTable && window.renderInspectionTable(); window.renderCloseTable && window.renderCloseTable(); window.renderBudgetTable && window.renderBudgetTable(allData); } catch (e) {} }
     soon();
   }
@@ -156,7 +157,9 @@
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     var b = document.createElement('button'); b.id = 'cxTgl'; b.type = 'button'; b.title = 'สลับโหมดแสดงผลแบบกระชับ';
     b.onclick = function () { var v = !document.body.classList.contains('cx'); set(v); apply(v, true); };
-    document.body.appendChild(b);
+    var nav = document.getElementById('cclNavRight');
+    if (nav) { b.className = 'ccl-icon-btn'; nav.insertBefore(b, nav.firstChild); } // อยู่บนแถบหัว ข้างปุ่มบ้าน — ไม่ลอยบังเนื้อหา
+    else document.body.appendChild(b);
     var bn = document.getElementById('cclBottomNav'); if (bn && bn.offsetHeight) document.documentElement.style.setProperty('--cx-nav', bn.offsetHeight + 'px');
     new MutationObserver(soon).observe(document.body, { childList: true, subtree: true });
     apply(get(), false);
