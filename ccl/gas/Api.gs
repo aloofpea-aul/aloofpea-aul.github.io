@@ -112,8 +112,9 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave' || fn === 'cclLineHook';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave' || fn === 'cclLineHook' || fn === 'cclUsersList' || fn === 'cclUserSave' || fn === 'cclUserResetPw';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
+    if (sess.role === 'Viewer' && !sess.superAdmin && !CCL_VIEWER_OK.test(fn)) return cclJson_({ ok: false, error: 'บัญชีนี้ดูได้อย่างเดียว — แก้ไข/บันทึกข้อมูลไม่ได้' });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
       return cclJson_({ ok: false, error: 'เฉพาะ Admin ของหน่วยงานเท่านั้น' });
     if (CCL_API_SUPER.indexOf(fn) >= 0 && !sess.superAdmin)
@@ -130,6 +131,9 @@ function doPost(e) {
     else if (fn === 'cclSapReport') out = cclSapReportGet_();
     else if (fn === 'cclLineTargets') out = cclLineList_(isAdmin && !!args[0], !!args[1]);
     else if (fn === 'cclLineSend') out = cclLineSend_(sess, args[0], args[1]);
+    else if (fn === 'cclUsersList') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclUsersList_(sess); }
+    else if (fn === 'cclUserSave') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclUserSave_(sess, args[0] || {}); }
+    else if (fn === 'cclUserResetPw') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclUserResetPw_(sess, args[0]); }
     else if (fn === 'cclLineHook') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineHook_(args[0]); }
     else if (fn === 'cclLineSave') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineSave_(args[0]); }
     else if (fn === 'cclSapReportRebuild') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapReportRebuild_(); }
@@ -175,6 +179,7 @@ function cclApiLogin_(u, p, branchId) {
       cache.remove(failKey);
       var status = data[i][6] || 'Active';
       if (status === 'Pending')  return { success: false, error: 'บัญชีของคุณรอการอนุมัติจาก Admin กรุณารอการยืนยัน' };
+      if (status === 'Disabled') return { success: false, error: 'บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อ Admin' };
       if (status === 'Rejected') return { success: false, error: 'บัญชีของคุณถูกปิดหรือถูกปฏิเสธ กรุณาติดต่อ Admin ของหน่วยงาน' };
       var role = String(data[i][3]);
       var user = {
@@ -1116,4 +1121,75 @@ function cclLineSave_(items) {
   try { cclLineFetchNames_(def.concat(ex), L.names, false); } catch (e) {}
   cclOpt_('LineTargetNames', JSON.stringify(L.names));
   return { success: true, def: def.length, ex: ex.length };
+}
+
+
+// ═════ จัดการผู้ใช้ (หน้า Admin → 👥 ผู้ใช้) ═════
+// ชีต Users: [0]username [1]password [2]ชื่อ [3]บทบาท Admin/User/Viewer [4]วันสมัคร [5]แผนก [6]สถานะ Active/Pending/Disabled/Rejected
+var CCL_VIEWER_OK = /^(get|list|load|search|print|export|find|cclWhoAmI$|cclSapReport$|cclSapAutoGet$|cclLineTargets$|cclCtPreview$|cclSwitchBranch$|listBranches$)/;
+var CCL_ROLES = ['Admin', 'User', 'Viewer'];
+function cclUserKey_(n) { return String(n || '').replace(/^\s*(นาย|นางสาว|นาง|น\.ส\.|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\.)\s*/, '').replace(/\s+/g, '').toLowerCase(); }
+function cclDutyList_(type) {
+  var out = []; try { (getOptions(type) || []).forEach(function (raw) { var o = raw, nm = raw; if (typeof raw === 'string') { try { o = JSON.parse(raw); } catch (e) { o = null; } } nm = o && o.name ? o.name : String(raw); out.push({ raw: typeof raw === 'string' ? raw : JSON.stringify(raw), name: nm, position: (o && o.position) || '', key: cclUserKey_(nm) }); }); } catch (e) {}
+  return out;
+}
+function cclUsersList_(sess) {
+  var sh = cclUsersSheet_();
+  var last = sh.getLastRow(), rows = last >= 2 ? sh.getRange(2, 1, last - 1, 7).getValues() : [];
+  var sup = cclDutyList_('Supervisor'), com = cclDutyList_('Committee');
+  var users = [];
+  rows.forEach(function (r, i) {
+    if (!String(r[0]).trim()) return;
+    var k = cclUserKey_(r[2]), ci = -1;
+    com.forEach(function (c, j) { if (ci < 0 && c.key === k) ci = j; });
+    var sp = sup.filter(function (x) { return x.key === k; })[0];
+    users.push({ row: i + 2, username: String(r[0]), name: String(r[2] || ''), role: String(r[3] || 'User'), registered: r[4] instanceof Date ? r[4].toISOString() : String(r[4] || ''), department: String(r[5] || ''), status: String(r[6] || 'Active'),
+      sup: !!sp, com: ci >= 0, chair: ci === 0, position: (sp && sp.position) || (ci >= 0 ? com[ci].position : ''), me: String(r[0]) === String(sess.username) && sess.branchId === (sess.homeBranchId || sess.branchId) });
+  });
+  return { users: users, branch: (typeof __CCL_CTX !== 'undefined' && __CCL_CTX && __CCL_CTX.branch && __CCL_CTX.branch.name) || '' };
+}
+function cclSetDuty_(type, name, on, position, dept) {
+  var k = cclUserKey_(name), list = cclDutyList_(type), have = list.filter(function (x) { return x.key === k; });
+  if (on && !have.length) addOption(type, JSON.stringify({ name: name, position: position || '', department: dept || '' }));
+  if (!on) have.forEach(function (x) { deleteOption(type, x.raw); });
+}
+function cclUserSave_(sess, u) {
+  var lock = LockService.getScriptLock(); lock.waitLock(15000);
+  try {
+    var sh = cclUsersSheet_();
+    var name = String(u.name || '').trim(), role = CCL_ROLES.indexOf(u.role) >= 0 ? u.role : 'User', dept = String(u.department || '').trim();
+    var status = ['Active', 'Disabled', 'Rejected', 'Pending'].indexOf(u.status) >= 0 ? u.status : 'Active';
+    if (!name) throw new Error('กรุณาใส่ชื่อ-นามสกุล');
+    var data = sh.getDataRange().getValues(), row = 0, temp = '';
+    if (u.isNew) {
+      var un = String(u.username || '').trim();
+      if (!/^[A-Za-z0-9._-]{3,30}$/.test(un)) throw new Error('ชื่อผู้ใช้ใช้ได้เฉพาะ a-z 0-9 . _ - (3–30 ตัว)');
+      for (var i = 1; i < data.length; i++) if (String(data[i][0]).toLowerCase() === un.toLowerCase()) throw new Error('ชื่อผู้ใช้ "' + un + '" มีอยู่แล้ว');
+      temp = cclTempPw_();
+      sh.appendRow([un, temp, name, role, new Date(), dept, 'Active']); row = sh.getLastRow();
+    } else {
+      row = parseInt(u.row, 10);
+      if (!(row >= 2) || String(sh.getRange(row, 1).getValue()) !== String(u.username)) throw new Error('ข้อมูลผู้ใช้เปลี่ยนไปแล้ว กรุณารีเฟรช');
+      var home = sess.branchId === (sess.homeBranchId || sess.branchId);
+      if (home && String(u.username) === String(sess.username) && (role !== 'Admin' || status !== 'Active')) throw new Error('ลดสิทธิ์หรือปิดบัญชีของตัวเองไม่ได้');
+      if (sh.getRange(row, 4).getValue() === 'Admin' && String(sh.getRange(row, 7).getValue() || 'Active') === 'Active' && (role !== 'Admin' || status !== 'Active') && cclActiveAdminCount_(sh) <= 1) throw new Error('ต้องมี Admin อย่างน้อย 1 คนในหน่วยงาน');
+      var oldName = String(sh.getRange(row, 3).getValue() || '');
+      sh.getRange(row, 3, 1, 1).setValue(name); sh.getRange(row, 4).setValue(role); sh.getRange(row, 6).setValue(dept); sh.getRange(row, 7).setValue(status);
+      if (oldName && cclUserKey_(oldName) !== cclUserKey_(name)) { // เปลี่ยนชื่อ → ย้ายหน้าที่ตามชื่อใหม่
+        ['Supervisor', 'Committee'].forEach(function (t) { var had = cclDutyList_(t).some(function (x) { return x.key === cclUserKey_(oldName); }); if (had) { cclSetDuty_(t, oldName, false); if (u[t === 'Supervisor' ? 'sup' : 'com'] !== false) cclSetDuty_(t, name, true, u.position, dept); } });
+      }
+    }
+    if (u.sup !== undefined) cclSetDuty_('Supervisor', name, !!u.sup && status === 'Active', u.position, dept);
+    if (u.com !== undefined) cclSetDuty_('Committee', name, !!u.com && status === 'Active', u.position, dept);
+    try { CacheService.getScriptCache().remove('ccl_opts_' + ((typeof __CCL_CTX !== 'undefined' && __CCL_CTX && __CCL_CTX.branch && __CCL_CTX.branch.id) || '')); } catch (e) {}
+    return { success: true, row: row, tempPw: temp };
+  } finally { lock.releaseLock(); }
+}
+function cclTempPw_() { var c = 'abcdefghjkmnpqrstuvwxyz23456789', s = ''; for (var i = 0; i < 8; i++) s += c.charAt(Math.floor(Math.random() * c.length)); return s; }
+function cclUserResetPw_(sess, x) {
+  var sh = cclUsersSheet_(), row = parseInt(x && x.row, 10);
+  if (!(row >= 2) || String(sh.getRange(row, 1).getValue()) !== String(x.username)) throw new Error('ข้อมูลผู้ใช้เปลี่ยนไปแล้ว กรุณารีเฟรช');
+  var pw = cclTempPw_(); sh.getRange(row, 2).setValue(pw);
+  try { CacheService.getScriptCache().remove('ccl_fail_' + (sess.branchId || CCL_HOME_BRANCH) + ':' + String(x.username).toLowerCase()); } catch (e) {} // เปลี่ยนรหัส → token เดิมทุกเครื่องใช้ไม่ได้ทันที (pv ไม่ตรง)
+  return { success: true, tempPw: pw };
 }
