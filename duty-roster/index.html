@@ -229,7 +229,7 @@ table.trk input[type=checkbox]{width:18px;height:18px;vertical-align:middle}
 .prl{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin:8px 0;font-size:13.5px;line-height:1.7}.prw{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
 .prh{margin-top:8px;font-size:13px}.prh summary{cursor:pointer;color:var(--pri);font-weight:700}.prh div{padding:2px 0 0 6px}
 .pst{position:absolute;top:3mm;right:5mm;z-index:2;font-family:sans-serif}.pfoot{position:absolute;bottom:4mm;right:12mm;font-size:8.5pt;color:#555;font-family:inherit}
-@media print{.pst{display:none!important}}
+@media print{.pst{display:none!important}#rHolBar{display:none!important}}
 .osus{border:1.5px solid #F2C2C2;background:#FFF8F8;border-radius:12px;padding:8px 10px;margin-bottom:10px}.osus summary{cursor:pointer;font-weight:700;color:#8A1F1F}.osi{border-top:1px solid #F2D6D6;padding:7px 0;font-size:13.5px;line-height:1.5}.osi .btn{float:right;height:30px;padding:0 12px;font-size:13px;margin-left:8px}.osi .otg{display:inline-block;background:#FDECEC;color:#8A1F1F;border-radius:8px;padding:0 7px;font-size:12px;font-weight:700;margin-right:4px}.oiss.ochk{font-size:13.5px;padding:8px 10px}.osg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.osg button{background:#fff;border:1.5px solid #C92A2A;color:#8A1F1F;border-radius:16px;padding:5px 11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}.osg.y button{border-color:#A06A00;color:#7A4A00}.ev.del{opacity:.8;border-style:dashed;background:#F7F5F8}.odel,.ohist{margin-top:8px;font-size:13px}.odel summary,.ohist summary{cursor:pointer;font-weight:700;color:var(--pri)}.ohist div{border-left:3px solid var(--line);padding:2px 0 6px 10px;margin:4px 0 0 4px;font-size:12.5px}
 .rqp{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}.rqp.o{background:#FFF1D6;color:#7A4A00}.rqp.r{background:#FDECEC;color:#9B1C1C}.rqp.b{background:#E3E6FA;color:#26307A}.rqp.g{background:#E6F4E8;color:#1F5A2A}.rqp.n{background:#EEE;color:#555}
 .rqov{position:fixed;inset:0;background:rgba(20,10,25,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:10px}
@@ -583,6 +583,7 @@ fieldset:disabled{opacity:.55}
       <div id="rMsg"></div>
     </div>
     <div id="fitBar" class="fitbar hide"><span id="fitTx"></span><button class="btn ghost" id="fitBtn" type="button"></button></div>
+    <div id="rHolBar" class="noprint"></div>
     <div id="printArea"></div>
   </main>
 
@@ -1954,6 +1955,28 @@ async function currentReportData(){
   if(v==='__preview') return {key:S.preview.month,data:S.preview.gen,status:'ตัวอย่าง'};
   const mo=await loadMonth(v); return {key:v,data:mo.data,status:mo.status};
 }
+/* วันหยุดเปลี่ยนหลังสร้างร่าง → เตือน + ปุ่มอัปเดตร่าง (คู่เวร/วงรอบเดิม) */
+function holDiff(key,g){ const want=S.boot.holidays.filter(h=>h.pea&&h.date.startsWith(key)).map(h=>+h.date.slice(8)), have=(g.days||[]).filter(d=>d.hol).map(d=>d.d);
+  return {add:want.filter(d=>!have.includes(d)), rem:have.filter(d=>!want.includes(d))}; }
+async function holBanner(r){ const el=$('rHolBar'); if(!el) return; el.innerHTML=''; const key=r.key;
+  if(!key||key==='__preview'||r.status==='อนุมัติแล้ว'||!['emp','wk','all','chg'].includes($('rKind').value)) return;
+  const D=holDiff(key,r.data); if(!D.add.length&&!D.rem.length) return;
+  const {m}=parseKey(key), dl=a=>a.map(d=>d+' '+TH_MONTH[m-1]).join(', '), seq=S.drawSeq;
+  const off=r.data.pairOffset!=null?r.data.pairOffset:+(String((S.months[key]||{}).note||'').match(/pair=(\d)/)||[0,0])[1];
+  el.innerHTML=`<div class="note warn" style="max-width:760px;margin:0 auto 10px">⚠️ วันหยุดเปลี่ยนหลังสร้างร่าง — ยังไม่อัปเดต: ${D.add.length?'เพิ่ม '+dl(D.add):''}${D.add.length&&D.rem.length?' · ':''}${D.rem.length?'ยกเลิก '+dl(D.rem):''}<br><span class="muted">กำลังคำนวณว่าจะเปลี่ยนตรงไหน…</span></div>`;
+  let pv; try{ pv=(await apiGet({action:'preview',m:key,pair:String(off)})).preview.gen; }catch(e){ el.querySelector('.muted').textContent='คำนวณไม่ได้: '+e.message; return; }
+  if(seq!==S.drawSeq) return;
+  const nm=n=>{ const p=S.boot.people.emp.concat(S.boot.people.wk||[]).find(x=>x.short===n); return p?p.short:n; }, lab=c=>c?(c==='S'?'เตรียมพร้อม':c==='0'?'ไม่มีเวร':'ช่วง '+String(c).replace(',','+')):'ไม่มีเวร';
+  const L=[]; [['emp',''],['wk',' (คนงาน)']].forEach(([g,t])=>Object.keys(r.data[g]||{}).forEach(n=>(r.data[g][n]||[]).forEach((c,i)=>{ const c2=((pv[g]||{})[n]||[])[i]; if((c||'')!==(c2||'')) L.push({d:i+1,t:`${i+1} ${TH_MONTH[m-1]} · ${esc(nm(n))}${t}: ${lab(c)} → <b>${lab(c2)}</b>`}); })));
+  L.sort((a,b)=>a.d-b.d); const nC=(r.data.changes||[]).length, same=JSON.stringify(r.data.stateAfter)===JSON.stringify(pv.stateAfter);
+  el.innerHTML=`<div class="note warn" style="max-width:760px;margin:0 auto 10px">⚠️ <b>วันหยุดเปลี่ยนหลังสร้างร่าง</b> — ตารางนี้ยังไม่อัปเดต (${D.add.length?'เพิ่ม '+dl(D.add):''}${D.add.length&&D.rem.length?' · ':''}${D.rem.length?'ยกเลิก '+dl(D.rem):''})
+    <div style="margin:6px 0 4px">${L.length?'ถ้าอัปเดต จะเปลี่ยน '+L.length+' จุด:<br>'+L.map(x=>'• '+x.t).join('<br>'):'ตารางเวรไม่เปลี่ยน (เปลี่ยนแค่สีวันหยุดในตาราง)'}</div>
+    <div class="muted" style="font-size:12px">คู่เวรเดิม · ${same?'วงรอบที่ต่อไปเดือนถัดไปไม่เปลี่ยน':'⚠ วงรอบที่ต่อไปเดือนถัดไปจะเปลี่ยนด้วย'}${nC?' · <b style="color:#8A2B2B">มีรายการแลก/ลาเวร '+nC+' รายการ จะถูกล้าง ต้องทำใหม่</b>':''}</div>
+    <button class="btn" id="rHolUp" style="margin-top:8px;height:38px">🔄 อัปเดตตารางร่างตามวันหยุด</button></div>`;
+  $('rHolUp').onclick=async()=>{ if(nC&&!confirm('มีรายการแลก/ลาเวร '+nC+' รายการในร่างนี้ จะถูกล้าง — ยืนยัน?')) return;
+    const pin=prompt('PIN ผู้มีสิทธิ์ (อัปเดตตาราง '+monthLabel(key)+')'); if(pin==null) return; $('rHolUp').disabled=true;
+    try{ await apiPost({action:'generate',m:key,pair:String(off),pin}); forgetMonth(key); $('dMonth').innerHTML=''; msg('rMsg','อัปเดตตารางร่างตามวันหยุดแล้ว ✓'); drawReport(); }
+    catch(e){ $('rHolUp').disabled=false; msg('rMsg',e.message,'err'); } }; }
 async function drawReport(){
   const k=$('rKind').value, isDoc=['leave','leavelog','sign','insporder','outsum'].includes(k);
   if(k==='track'){ document.querySelectorAll('.rRoster').forEach(e=>e.classList.add('hide')); document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide')); $('rHint').textContent='หน้าติดตาม (ไม่ใช่เอกสารพิมพ์)'; return drawTrack(); }
@@ -1971,7 +1994,7 @@ async function drawReport(){
   if(k==='emp'||k==='all') html+=empPage(r,cfg,dt,'memo')+empPage(r,cfg,dt,'order')+(CL.length?chgPage(r,cfg,CL):'');
   if(k==='chg') html+=CL.length?chgPage(r,cfg,CL):'<div class="note">เดือนนี้ยังไม่มีการเปลี่ยน/แลกเวรที่อนุมัติแล้ว</div>';
   if(k==='wk'||k==='all') html+=wkPage(r,cfg,dt);
-  $('printArea').innerHTML=html;
+  $('printArea').innerHTML=html; holBanner(r).catch(()=>{});
 }
 function empPage(r,cfg,docDate,sheet){
   const g=r.data,{y,m}=parseKey(r.key),N=g.days.length,mName=TH_MONTH[m-1],yTh=y+543;
