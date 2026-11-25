@@ -62,6 +62,7 @@ main{padding:12px;display:flex;flex-direction:column;gap:10px}
 .oiss.b{background:#E3E6FA;color:#26307A}.rpme{background:linear-gradient(135deg,#5C1A63,#8A2E8F);color:#fff;border-radius:14px;padding:12px;margin-bottom:10px}.rpme.over{background:linear-gradient(135deg,#A12A2A,#C94040)}
 .rpme .t{font-size:12px;opacity:.9}.rpme .b{font-size:16.5px;font-weight:800;margin:2px 0 8px;line-height:1.35}.rpme .dl{display:inline-block;background:#FFD54A;color:#5A3A00;border-radius:8px;padding:0 8px;font-size:12px;font-weight:800;margin-left:6px;vertical-align:2px}
 .rpme .go{width:100%;background:#fff;color:#5C1A63;border:0;border-radius:10px;padding:10px;font:inherit;font-weight:800;cursor:pointer}.rpme.over .go{color:#A12A2A}
+.shrBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom));width:calc(100% - 24px);max-width:520px;z-index:70;background:#2B2238;color:#fff;border-radius:14px;padding:12px;font-size:13.5px;box-shadow:0 8px 24px #0006}
 .rppr{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:1.5px solid #E8C27A;background:#FFF8E8;border-radius:12px;padding:9px 10px;margin-bottom:10px;font:inherit;cursor:pointer;color:#5A3A00}.rppr .mid{flex:1;min-width:0}.rppr small{display:block;font-size:12px;color:#8A6A2A}.rppr .ar2{font-weight:800;white-space:nowrap}
 .trkbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom));width:calc(100% - 24px);z-index:60;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#2B2238;color:#fff;border-radius:12px;padding:8px 10px;max-width:760px;box-shadow:0 6px 20px #0005}.trkbar .btn{height:34px;padding:0 12px;font-size:13px}.trkbar .btn.ghost{background:transparent;color:#fff;border-color:#fff8}
 table.trk input[type=checkbox]{width:18px;height:18px;vertical-align:middle}
@@ -686,6 +687,7 @@ fieldset:disabled{opacity:.55}
       <div class="muted" style="margin-bottom:6px"><b>พนักงาน</b> แจ้งรายคนก่อนเข้าเวร 5 นาที (00:25 · 16:25 · วันหยุดเพิ่ม 08:25) — เพิ่มเพื่อน LINE OA แล้วพิมพ์ <b>ลงทะเบียน ชื่อ รหัส</b><br><b>คนงาน</b> ส่งสรุปรายสัปดาห์เข้ากลุ่มคนงานทุกวันจันทร์ 07:55 — เชิญ LINE OA เข้ากลุ่ม แล้วพิมพ์ในกลุ่ม <b>ตั้งกลุ่มคนงาน รหัส</b> · ในกลุ่มพิมพ์ <b>เวรคนงาน</b> ดูเวรวันนี้ได้ฟรี<br>(รหัสอยู่ในชีต Config: lineRegCode)</div>
       <div id="sLine"></div>
       <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="sStandby" style="width:20px;height:20px"> แจ้งคนเตรียมพร้อมด้วย (ใช้โควต้าเพิ่ม ~30 ข้อความ/เดือน)</label>
+      <label class="row" style="margin-top:8px;font-size:13px;gap:6px"><input type="checkbox" id="sLineAppr" style="width:20px;height:20px"> ส่ง LINE อัตโนมัติถึงคนลา/คนแทน เมื่ออนุมัติ (ปิด = ประหยัด ~2 ข้อความ/ครั้ง · ใช้ปุ่ม 💬 แชร์ LINE แทน)</label>
     </div>
     <div class="card">
       <label class="f">PIN<input type="password" id="sPin" inputmode="numeric" autocomplete="off"></label>
@@ -2586,13 +2588,14 @@ function paintRequests(R){
   S.reqAll={}; [...R.pending,...R.done].forEach(r=>S.reqAll[r.id]=r);
   $('hsList').innerHTML=R.done.length?R.done.map(r=>`<div class="rq" id="rq_${esc(r.id)}"><div class="row" style="justify-content:space-between"><span class="st ${r.status==='อนุมัติ'?'ok':'no'}">${esc(r.status==='อนุมัติ'&&r.note==='แก้ไขโดยผู้อนุมัติ'?'อนุมัติทันที (ผู้อนุมัติแก้เอง)':r.status)}</span><span class="muted">${esc(r.decidedAt)}</span></div>
       <div style="font-size:13px">${esc(r.text)}</div><div class="muted">โดย ${esc(r.decidedBy)}${r.note&&r.note!=='แก้ไขโดยผู้อนุมัติ'?' · '+esc(r.note):''}${r.reason?' · เหตุผล: '+esc(r.reason):''}</div>
-      <div class="row" style="gap:6px">${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px;flex:1" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">🖨 พิมพ์บันทึก</button>`:''}
+      <div class="row" style="gap:6px">${r.status==='อนุมัติ'&&r.payload&&r.payload.g==='emp'?`<button class="btn ghost" style="height:38px;flex:1" data-pm="${esc(r.month)}" data-pid="${esc(r.id)}">🖨 พิมพ์บันทึก</button>`:''}${r.status==='อนุมัติ'?`<button class="btn" style="height:38px;flex:1;background:#06C755;border-color:#06C755" data-shr="${esc(r.id)}">💬 แชร์ LINE</button>`:''}
       ${r.status==='อนุมัติ'?`<button class="btn ghost" style="height:38px" data-edit="${esc(r.id)}">แก้ไข</button>`:''}
       <button class="btn ghost" style="height:38px;color:#8A2B2B;border-color:#E2C4C4" data-del="${esc(r.id)}" data-st="${esc(r.status)}">ลบ</button></div></div>`).join('')
     :'<div class="muted">ยังไม่มีประวัติ</div>';
   const D=R.deleted||[]; $('hsDel').querySelector('summary').textContent='ที่ลบแล้ว ('+D.length+')';
   $('hsDelList').innerHTML=D.map(r=>`<div class="rq" style="opacity:.8"><div class="row" style="justify-content:space-between"><span class="st" style="background:#EEE;color:#555">${esc(/คืนตารางแล้ว/.test(r.note||'')?'ลบแล้ว · ตารางคืนแล้ว':'ลบแล้ว')}</span><span class="muted">${esc(r.decidedAt)}</span></div>
       <div style="font-size:13px">${esc(r.text)}</div><div class="muted">${esc(r.note||'')}</div></div>`).join('')||'<div class="muted">ไม่มี</div>';
+  $('hsList').querySelectorAll('button[data-shr]').forEach(b=>b.onclick=()=>shareReqLine(S.reqAll[b.dataset.shr]));
   $('hsList').querySelectorAll('button[data-edit]').forEach(b=>b.onclick=()=>editReq(S.reqAll[b.dataset.edit]));
   document.querySelectorAll('#pnList button[data-del], #hsList button[data-del]').forEach(b=>b.onclick=()=>delReq(b.dataset.del,b.dataset.st,b));
 }
@@ -2706,12 +2709,24 @@ async function retEdit(r){
   $('qRetBox').classList.remove('hide'); $('qRetX').onclick=()=>{ retClear(); qForm('month'); };
   $('qTitle').scrollIntoView({behavior:'smooth',block:'start'});
 }
+/* แชร์ผลอนุมัติลา/แลกเวรผ่าน LINE ของเราเอง — ไม่ใช้โควตาข้อความของระบบ */
+function reqShareText(r){ const P=r.payload||{}, lv=r.type==='leave', base=location.origin+location.pathname;
+  const u=P.g==='emp'&&r.month?base+'?view=viewReport&kind=leave&m='+encodeURIComponent(r.month)+'&id='+encodeURIComponent(r.id)+'&openExternalBrowser=1':base+'?openExternalBrowser=1';
+  return ['✅ อนุมัติ'+(lv?'ลาเวร':r.type==='swap'?'แลกเวร':'เปลี่ยนเวร')+'แล้ว', '📅 '+String(r.text||'').replace(/^(ลาเวร|แลกเวร)\s*:\s*/,''),
+    r.reason?'📝 เหตุผล: '+r.reason:'', '✍️ อนุมัติโดย '+String(r.decidedBy||'').replace(/\s*\(.*\)$/,'')+(r.decidedAt?' · '+r.decidedAt:''),
+    (P.g==='emp'?'📄 บันทึกลาเวร: ':'📅 ตารางเวร: ')+u].filter(Boolean).join('\n'); }
+function shareReqLine(r){ if(!r) return; const t=reqShareText(r);
+  try{ navigator.clipboard&&navigator.clipboard.writeText(t).catch(()=>{}); }catch(e){}
+  location.href='https://line.me/R/share?text='+encodeURIComponent(t); }
+function apprShareBar(r){ if(!r) return; document.querySelectorAll('.shrBar').forEach(e=>e.remove()); const d=document.createElement('div'); d.className='shrBar';
+  d.innerHTML=`<div>✅ อนุมัติแล้ว — ${esc(String(r.text||'').slice(0,60))}</div><div class="row" style="gap:6px;margin-top:8px"><button class="btn" style="flex:1;background:#06C755;border-color:#06C755">💬 ส่งต่อทาง LINE</button><button class="btn ghost" style="flex:none;color:#fff;border-color:#fff8">ปิด</button></div>`;
+  document.body.appendChild(d); const [a,b]=d.querySelectorAll('button'); a.onclick=()=>{ d.remove(); shareReqLine(r); }; b.onclick=()=>d.remove(); setTimeout(()=>d.remove(),60000); }
 async function decide(id,ok){
   const pin=$('pnPin').value; if(!pin){msg('pnMsg','ใส่ PIN ผู้อนุมัติก่อน','warn');return;}
   let note=''; if(!ok){note=prompt('เหตุผลที่ไม่อนุมัติ (ไม่บังคับ)')||'';}
   msg('pnMsg','กำลังบันทึก…');
   try{ const j=await apiPost({action:'decide',id,approve:ok,pin,note}); forgetMonth(); S.mr={}; Object.keys(localStorage).filter(k=>k.startsWith('drdemo_mr_')).forEach(k=>localStorage.removeItem(k));
-    msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); loadRequests(j.requests).catch(()=>{}); if(ok) qForm('month').catch(()=>{});
+    msg('pnMsg',(ok?'อนุมัติแล้ว — ตารางและรายงานอัปเดตแล้ว':'บันทึกไม่อนุมัติแล้ว')); loadRequests(j.requests).catch(()=>{}); if(ok&&j.request) apprShareBar(j.request); if(ok) qForm('month').catch(()=>{});
   }catch(e){
     if(e.badResp){ msg('pnMsg',e.message); try{ await loadRequests(); const r=(S.reqAll||{})[id];
         if(r&&r.status!=='รออนุมัติ'){ forgetMonth(); msg('pnMsg',(r.status==='อนุมัติ'?'อนุมัติแล้ว':'บันทึก'+r.status+'แล้ว')+' ✓ (ยืนยันจากประวัติ)'); if(ok) qForm('month').catch(()=>{}); }
@@ -2767,7 +2782,7 @@ function renderSet(){
   $('sQuota').innerHTML=S.boot.people.emp.map(p=>`<div class="hrow"><div style="flex:1;font-size:14px">${esc(p.full)}</div><input type="number" min="0" max="31" data-n="${esc(p.short)}" value="${p.quota==null?'':p.quota}" placeholder="อัตโนมัติ" style="width:110px"></div>`).join('');
   $('sAvoid').value=S.boot.config.avoidPairs||'';
   renderContacts(); S.inspEdit=null; renderInsp(); renderOutMats();
-  $('sStandby').checked=String(S.boot.config.notifyStandby)==='true';
+  $('sStandby').checked=String(S.boot.config.notifyStandby)==='true'; $('sLineAppr').checked=!/^(false|0)$/i.test(String(S.boot.config.lineOnApprove??''));
   $('sLine').innerHTML=[...S.boot.people.emp,...S.boot.people.wk].map(p=>`<div class="lk"><span>${esc(p.full)}</span><span style="font-weight:600;color:${p.line?'#1F5A2A':p.group==='WK'?'#5E5666':'#8A4B00'}">${p.line?'✓ ลงทะเบียนแล้ว':p.group==='WK'?'แจ้งผ่านกลุ่มคนงาน':'ยังไม่ลงทะเบียน'}</span></div>`).join('');
 }
 $('sAdd').onclick=()=>{
@@ -2784,7 +2799,7 @@ $('sSave').onclick=async()=>{
     const cs={}; document.querySelectorAll('#sContacts input').forEach(i=>{(cs[i.dataset.n]=cs[i.dataset.n]||{})[i.dataset.k]=i.value.trim();});
     if(Object.keys(cs).length){ await apiPost({action:'saveContacts',contacts:cs,pin}); S.contacts=Object.assign({},S.contacts,cs); LS.set('contacts',S.contacts); }
     if(S.inspEdit){ const ji=await apiPost({action:'saveInspectors',inspectors:S.inspEdit.filter(x=>x.full.trim()),pin}); S.boot.inspectors=ji.inspectors; S.inspEdit=null; renderInsp(); }
-    await apiPost({action:'saveConfig',config:{avoidPairs:$('sAvoid').value,notifyStandby:$('sStandby').checked},pin}); S.boot.config.avoidPairs=$('sAvoid').value; S.boot.config.notifyStandby=$('sStandby').checked;
+    await apiPost({action:'saveConfig',config:{avoidPairs:$('sAvoid').value,notifyStandby:$('sStandby').checked,lineOnApprove:$('sLineAppr').checked},pin}); S.boot.config.avoidPairs=$('sAvoid').value; S.boot.config.notifyStandby=$('sStandby').checked; S.boot.config.lineOnApprove=$('sLineAppr').checked;
     S.preview=null; msg('sMsg','บันทึกแล้ว — ตารางที่สร้างใหม่จะใช้ค่านี้');
   }catch(e){msg('sMsg',e.message,'err');}
 };

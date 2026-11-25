@@ -578,7 +578,7 @@ function doPost(e) {
     if (b.action === 'saveConfig') {
       const sh = sheet_(SH.CONFIG); const v = sh.getDataRange().getValues();
       Object.keys(b.config || {}).forEach(function (k) {
-        if (['avoidPairs', 'notifyStandby'].indexOf(k) < 0) return;   // แก้จากหน้าเว็บได้เฉพาะคีย์เหล่านี้
+        if (['avoidPairs', 'notifyStandby', 'lineOnApprove'].indexOf(k) < 0) return;   // แก้จากหน้าเว็บได้เฉพาะคีย์เหล่านี้
         const r = v.findIndex(function (row) { return row[0] === k; });
         if (r < 0) sh.appendRow([k, b.config[k]]); else sh.getRange(r + 1, 2).setValue(b.config[k]);
       });

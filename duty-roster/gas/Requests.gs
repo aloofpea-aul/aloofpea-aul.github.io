@@ -326,6 +326,7 @@ function decideRequest_(id, approve, who, note) {
     } else {
       title = 'ไม่อนุมัติ'; lines = [r.text, 'โดย ' + who.name + (note ? '\nหมายเหตุ: ' + note : '')];
     }
+    if (approve && /^(false|0)$/i.test(String(getConfig_().lineOnApprove))) return pubReq_(reqRows_().filter(function (x) { return x.id === id; })[0]);   // ปิดส่ง LINE อัตโนมัติ → ผู้อนุมัติใช้ปุ่มแชร์แทน
     notifyPeople_(Object.keys(names), approve ? (r.type === 'swap' ? 'อนุมัติแลกเวรแล้ว' : 'อนุมัติลาเวรแล้ว') : 'คำขอเปลี่ยนเวร',
       lines.join('\n'), approve ? '#5B1A63' : '#8A2B2B', title, btn);
   } catch (e) { log_('system', 'LINE error', r.month, String(e)); }
