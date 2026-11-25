@@ -115,7 +115,7 @@
     var a = U.filter(function (u) { return u.status !== 'Pending' || F.f === 'pend'; }).filter(FL[F.f][1]).filter(function (u) { return !q || [u.name, u.username, u.department].join(' ').toLowerCase().indexOf(q) >= 0; });
     a.sort(function (x, y) { var o = { Active: 0, Pending: 1, Disabled: 2, Rejected: 3 }; return (o[x.status] - o[y.status]) || ({ Admin: 0, User: 1, Viewer: 2 }[x.role] || 3) - ({ Admin: 0, User: 1, Viewer: 2 }[y.role] || 3) || x.name.localeCompare(y.name, 'th'); });
     T.innerHTML = '<div class="tr h"><span>ผู้ใช้</span><span>บทบาท</span><span>หน้าที่</span><span>ใช้งาน</span><span></span></div>' + (a.length ? a.map(function (u) {
-      var R = ROLE[u.role] || [u.role, '#F1F5F9', '#475569'], on = u.status === 'Active';
+      var R = ROLE[u.role] || ['ผู้ใช้ · ' + u.role, '#DBEAFE', '#1E40AF'], on = u.status === 'Active';
       return '<div class="tr' + (on ? '' : ' off') + '" data-row="' + u.row + '"><div class="u"><div class="av" style="background:' + (on ? col(u.username) : '#94A3B8') + '">' + esc(ini(u.name)) + '</div><div><b>' + esc(u.name) + (u.me ? ' <span style="color:#0D9488;font-size:11.5px">(คุณ)</span>' : '') + '</b><small>' + esc(u.username) + (u.department ? ' · ' + esc(u.department) : '') + (u.status === 'Rejected' ? ' · ปฏิเสธแล้ว' : '') + '</small></div></div>' +
         '<span><span class="rl" style="background:' + R[1] + ';color:' + R[2] + '">' + R[0] + '</span></span>' +
         '<span>' + (u.sup ? '<span class="tg" style="background:#FEF3C7;color:#92400E">👷 ผู้ควบคุมงาน</span>' : '') + (u.com ? '<span class="tg" style="background:#CCFBF1;color:#0F766E">🔍 กรรมการ' + (u.chair ? ' (ประธาน)' : '') + '</span>' : '') + (!u.sup && !u.com ? '<span style="color:#CBD5E1">—</span>' : '') + '</span>' +

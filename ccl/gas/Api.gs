@@ -1173,7 +1173,8 @@ function cclUserSave_(sess, u) {
       var home = sess.branchId === (sess.homeBranchId || sess.branchId);
       if (home && String(u.username) === String(sess.username) && (role !== 'Admin' || status !== 'Active')) throw new Error('ลดสิทธิ์หรือปิดบัญชีของตัวเองไม่ได้');
       if (sh.getRange(row, 4).getValue() === 'Admin' && String(sh.getRange(row, 7).getValue() || 'Active') === 'Active' && (role !== 'Admin' || status !== 'Active') && cclActiveAdminCount_(sh) <= 1) throw new Error('ต้องมี Admin อย่างน้อย 1 คนในหน่วยงาน');
-      var oldName = String(sh.getRange(row, 3).getValue() || '');
+      var oldName = String(sh.getRange(row, 3).getValue() || ''), oldRole = String(sh.getRange(row, 4).getValue() || '');
+      if (CCL_ROLES.indexOf(u.role) < 0 && u.role === oldRole) role = oldRole; // บทบาทเดิมแบบเก่า (เช่น Manager) — ไม่เปลี่ยนถ้าไม่ได้เลือกใหม่
       sh.getRange(row, 3, 1, 1).setValue(name); sh.getRange(row, 4).setValue(role); sh.getRange(row, 6).setValue(dept); sh.getRange(row, 7).setValue(status);
       if (oldName && cclUserKey_(oldName) !== cclUserKey_(name)) { // เปลี่ยนชื่อ → ย้ายหน้าที่ตามชื่อใหม่
         ['Supervisor', 'Committee'].forEach(function (t) { var had = cclDutyList_(t).some(function (x) { return x.key === cclUserKey_(oldName); }); if (had) { cclSetDuty_(t, oldName, false); if (u[t === 'Supervisor' ? 'sup' : 'com'] !== false) cclSetDuty_(t, name, true, u.position, dept); } });
