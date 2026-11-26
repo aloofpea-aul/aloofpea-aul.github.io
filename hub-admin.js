@@ -111,6 +111,7 @@
     '.hu-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
     '.hu-roles{display:grid;grid-template-columns:1fr 1fr;gap:6px}.hu-roles button{border:2px solid #e5e0d6;background:#fff;border-radius:12px;padding:8px 10px;font:inherit;font-size:.74rem;color:#777;text-align:left;cursor:pointer}.hu-roles b{display:block;font-size:.86rem;color:#222}.hu-roles .on{border-color:var(--pea-purple,#4b2e83);background:#f3effa}.hu-roles button:disabled{opacity:.55;cursor:not-allowed}' +
     '.hu-grp{font-size:.74rem;color:#999;font-weight:700;margin:8px 0 4px}.hu-apps{display:flex;flex-wrap:wrap;gap:5px}.hu-apps button{border:1.5px solid #e5e0d6;background:#fff;border-radius:99px;padding:5px 11px;font:inherit;font-size:.78rem;font-weight:700;color:#999;cursor:pointer}.hu-apps .on{background:var(--pea-purple,#4b2e83);border-color:var(--pea-purple,#4b2e83);color:#fff}' +
+    '.hu-apps .soft:not(.on){border-style:dashed}.hu-apps .soft.on{background:#8b76c2;border-color:#8b76c2}.hu-legend{font-size:.72rem;color:#777;background:#faf8f3;border-radius:9px;padding:7px 9px;margin-top:10px;line-height:1.5}' +
     '.hu-adm-note{font-size:.8rem;color:#92400e;background:#fffbeb;border-radius:10px;padding:8px 10px;margin-top:10px}' +
     '.hu-st{display:flex;align-items:center;gap:8px;border:1.5px solid #eee;border-radius:12px;padding:9px 10px;margin-top:12px;font-size:.86rem;font-weight:700}.hu-st>div{flex:1}.hu-st small{display:block;font-weight:600;color:#888;font-size:.74rem}' +
     '.hu-warn{font-size:.76rem;color:#b45309;background:#fffbeb;border-radius:9px;padding:6px 9px;margin-top:8px}' +
@@ -397,6 +398,8 @@
   /* ---------- 👥 ผู้ใช้ (แบบใหม่ ก.พ. — รออนุมัติบนสุด · แถบสิทธิ์ · สวิตช์ระงับ · หน้าต่างแก้ไข) ---------- */
   var GROUPS = [['⚡ ระบบไฟฟ้า', ['sld', 'tx-survey', 'patrol', 'tree', 'analytics']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['booknum', 'budget', 'dutyroster', 'vehicle']]];
   var UF = { f: 'all', q: '' };
+  // โปรแกรมที่ตรวจสิทธิ์รายโปรแกรมจริง (pea-hub.js ไม่มี data-perm="login"/data-gate="off" หรือหลังบ้านบล็อกการบันทึก) — เพิ่มเมื่อเปิดล็อกโปรแกรมใหม่
+  var ENFORCED = ['dutyroster', 'drawings', 'patrol'];
   var COLS = ['#4b2e83', '#2a9d8f', '#e8962e', '#2563eb', '#c2410c', '#7c5cc4', '#0f766e', '#be185d'];
   function avc(s) { var h = 0; String(s).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) | 0; }); return COLS[Math.abs(h) % COLS.length]; }
   function ini(n) { return String(n || '?').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').trim().charAt(0) || '?'; }
@@ -484,7 +487,8 @@
       '<div class="hu-two"><div><p class="hu-lb">ตำแหน่ง</p><input data-k="position" value="' + esc(E.position) + '" placeholder="เช่น พชง.6"></div><div><p class="hu-lb">หน่วยงาน / แผนก</p><input data-k="org" value="' + esc(E.org) + '" placeholder="เช่น ผปร."></div></div>' +
       '<p class="hu-lb">บทบาท</p><div class="hu-roles"><button type="button" data-role="admin"' + (me ? ' disabled' : '') + '><b>👑 ผู้ดูแลระบบ</b>ใช้ได้ทุกโปรแกรม + จัดการผู้ใช้</button><button type="button" data-role="member"' + (me ? ' disabled' : '') + '><b>สมาชิก</b>ใช้ได้เฉพาะโปรแกรมที่เลือก</button></div>' +
       '<div class="hu-appsw"><p class="hu-lb"><span>โปรแกรมที่ใช้ได้ (<span class="hu-n"></span>)</span><span style="margin-left:auto"><a data-all="1">เลือกทั้งหมด</a> · <a data-all="0">ล้าง</a></span></p>' +
-      groups.map(function (g) { return '<div class="hu-grp">' + g[0] + '</div><div class="hu-apps">' + g[1].map(function (c) { return '<button type="button" data-app="' + esc(c) + '">' + esc(appName(c)) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>' +
+      groups.map(function (g) { return '<div class="hu-grp">' + g[0] + '</div><div class="hu-apps">' + g[1].map(function (c) { return '<button type="button" data-app="' + esc(c) + '"' + (ENFORCED.indexOf(c) >= 0 ? ' title="โปรแกรมนี้ตรวจสิทธิ์จริง"' : ' class="soft" title="ยังไม่ตรวจสิทธิ์รายโปรแกรม — ล็อกอินแล้วเปิดได้"') + '>' + (ENFORCED.indexOf(c) >= 0 ? '🔒 ' : '') + esc(appName(c)) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>' +
+      '<div class="hu-legend">🔒 = ตรวจสิทธิ์จริง (ไม่ติ๊ก = เข้าไม่ได้) · ไม่มี 🔒 = ยังไม่ตรวจรายโปรแกรม ล็อกอินแล้วเปิดได้ · ปิด "เปิดใช้งาน" = เข้าไม่ได้ทุกโปรแกรมที่ใช้ล็อกอินศูนย์รวมงาน</div>' +
       '<div class="hu-adm-note">ผู้ดูแลระบบใช้ได้ทุกโปรแกรมเสมอ</div>' +
       (isNew ? '' : '<div class="hu-st"><div>✅ เปิดใช้งาน<small>ปิด = ระงับ เข้าระบบไม่ได้ทุกโปรแกรม (บัญชีไม่หาย)</small></div><button type="button" class="hu-sw" data-sw="1"' + (me ? ' disabled' : '') + '></button></div>') +
       (me ? '<div class="hu-warn">นี่คือบัญชีของคุณ — ลดสิทธิ์หรือระงับตัวเองไม่ได้</div>' : '') +
@@ -495,6 +499,7 @@
       d.querySelectorAll('[data-role]').forEach(function (b) { var on = b.dataset.role === E.role; b.classList.toggle('on', on); b.querySelector('b').textContent = (on ? '✓ ' : '') + (b.dataset.role === 'admin' ? '👑 ผู้ดูแลระบบ' : 'สมาชิก'); });
       d.querySelector('.hu-appsw').style.display = E.role === 'admin' ? 'none' : '';
       d.querySelector('.hu-adm-note').style.display = E.role === 'admin' ? '' : 'none';
+      d.querySelector('.hu-legend').style.display = E.role === 'admin' ? 'none' : '';
       d.querySelectorAll('[data-app]').forEach(function (b) { b.classList.toggle('on', E.apps.indexOf(b.dataset.app) >= 0); });
       d.querySelector('.hu-n').textContent = E.apps.length + ' จาก ' + APP_LIST.length;
       var sw = d.querySelector('[data-sw]'); if (sw) sw.classList.toggle('on', !E.disabled);
