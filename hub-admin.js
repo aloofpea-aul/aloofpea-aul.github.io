@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   // โปรแกรมที่ตรวจสิทธิ์จริงที่หน้าโปรแกรม (ผ่าน pea-hub.js) — ตัวอื่นยังเปิดได้ตามเดิม
-  var GATED = ['drawings', 'dutyroster', 'procure', 'tfbuy', 'damage'];
+  var GATED = ['drawings', 'dutyroster', 'procure', 'tfbuy', 'damage', 'asset', 'stock', 'construction'];
   var APP_LIST = [];
   var MY_APPS = null;
   var STATS = {};
@@ -396,10 +396,10 @@
   }
 
   /* ---------- 👥 ผู้ใช้ (แบบใหม่ ก.พ. — รออนุมัติบนสุด · แถบสิทธิ์ · สวิตช์ระงับ · หน้าต่างแก้ไข) ---------- */
-  var GROUPS = [['⚡ ระบบไฟฟ้า', ['sld', 'tx-survey', 'patrol', 'tree', 'analytics', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'booknum', 'budget', 'dutyroster', 'vehicle']]];
+  var GROUPS = [['⚡ ระบบไฟฟ้า', ['sld', 'tx-survey', 'patrol', 'tree', 'analytics', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'booknum', 'budget', 'dutyroster', 'vehicle']]];
   var UF = { f: 'all', q: '' };
   // โปรแกรมที่ตรวจสิทธิ์รายโปรแกรมจริง (pea-hub.js ไม่มี data-perm="login"/data-gate="off" หรือหลังบ้านบล็อกการบันทึก) — เพิ่มเมื่อเปิดล็อกโปรแกรมใหม่
-  var ENFORCED = ['dutyroster', 'drawings', 'patrol', 'procure', 'tfbuy', 'damage'];
+  var ENFORCED = ['dutyroster', 'drawings', 'patrol', 'procure', 'tfbuy', 'damage', 'asset', 'stock', 'construction'];
   var COLS = ['#4b2e83', '#2a9d8f', '#e8962e', '#2563eb', '#c2410c', '#7c5cc4', '#0f766e', '#be185d'];
   function avc(s) { var h = 0; String(s).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) | 0; }); return COLS[Math.abs(h) % COLS.length]; }
   function ini(n) { return String(n || '?').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').trim().charAt(0) || '?'; }
