@@ -969,7 +969,9 @@ function cclSapReportBuild_(rows, fileName, checkOnly) {
     jobs.push([e.p, e.w, e.n, sys, usr, e.u]);
   });
   var hn = {}; Object.keys(heads).forEach(function (p) { hn[p] = heads[p].slice(0, 3); });
-  return { at: new Date().toISOString(), file: fileName, code: code, rows: rows.length - hi - 1, heads: hn, jobs: jobs };
+  // ทุกแถวของ กฟส. (ทุกระดับ) ไว้ให้หน้าปิดงานเทียบหมายเลขงานแบบตรงตัว — ละเอียดเท่าการนำเข้าไฟล์เอง
+  var leaf = all.map(function (e) { return [e.w, (e.s.trim().split(/\s+/)[0] || '').toUpperCase(), (e.s.split('//')[1] || '').trim().toUpperCase()]; });
+  return { at: new Date().toISOString(), file: fileName, code: code, rows: rows.length - hi - 1, heads: hn, jobs: jobs, all: leaf };
 }
 function cclSapSaveReport_(rep) {
   if (!rep) return;

@@ -13,6 +13,8 @@
   var LS = 'ccl_sap_status_v1';
   var C = { st: '', ent: '', sort: false, sel: {}, sap: null, ui: false, shown: 0, rows: [] };
   try { C.sap = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { C.sap = null; }
+  // ผลที่ดึงจากรายงานรุ่นแรก (เทียบแบบหยาบระดับงาน) — ทิ้ง แล้วดึงใหม่แบบละเอียด
+  if (C.sap && C.sap.by === 'ระบบ' && !C.sap.leaf) { C.sap = null; try { localStorage.removeItem(LS); } catch (e) {} }
 
   var SAPL = { CLSD: ['ปิดสมบูรณ์', '#059669', '#ecfdf5'], TECO: ['ปิดทางเทคนิค (ยังไม่ปิดงาน)', '#0d9488', '#f0fdfa'], REL: ['ยังเปิดอยู่', '#64748b', '#f1f5f9'], CRTD: ['สร้างแล้ว ยังไม่ปล่อย', '#64748b', '#f1f5f9'], PART: ['ปิดบางหมายเลข', '#d97706', '#fffbeb'], NONE: ['ไม่พบในไฟล์ SAP', '#d97706', '#fffbeb'] };
 
@@ -89,18 +91,18 @@
     C.pulling = true;
     google.script.run.withSuccessHandler(function (rep) {
       C.pulling = false; C.pulledAt = Date.now();
-      if (!rep || rep.none || !Array.isArray(rep.jobs) || !rep.jobs.length) return;
+      if (!rep || rep.none || !Array.isArray(rep.all) || !rep.all.length) return;     // รายงานรุ่นเก่า (ไม่มีข้อมูลทุกหมายเลขงาน) — ไม่ใช้
       var at = Date.parse(rep.at) || 0; if (C.sap && (C.sap.at || 0) >= at) return;
-      if (C.sap && (C.sap.files || []).some(function (f) { return f.file === rep.file; })) return;   // ไฟล์เดียวกับที่นำเข้าในเครื่องนี้แล้ว (ละเอียดกว่า) — ไม่ทับ
+      var nf = function (f) { return String(f || '').replace(/\s+/g, ' ').trim(); };
+      if (C.sap && (C.sap.files || []).some(function (f) { return nf(f.file) === nf(rep.file); })) return;   // ไฟล์เดียวกับที่นำเข้าในเครื่องนี้แล้ว — ไม่ทับ
       var all = g('allData', []) || []; if (!all.length) { C.pulledAt = 0; return; }
       var old = C.sap || {}, map = Object.assign({}, old.map || {}), pref = Object.assign({}, old.pref || {});
-      // รายงานเก็บระดับงาน (เช่น C-69-K-AULCS.0077) — จับคู่กับหมายเลขงานใน CCL ที่ขึ้นต้นด้วยเลขนั้น (แบบเดียวกับหน้ารายงาน SAP)
-      var reps = rep.jobs.map(function (r) { var w = normId(r[1]); if (w) pref[w.split('.')[0]] = 1; return { k: key(w), v: [String(r[3] || '').toUpperCase(), String(r[4] || '').toUpperCase()] }; })
-        .filter(function (r) { return r.k.length > 6; }).sort(function (a, b) { return b.k.length - a.k.length; });
-      all.forEach(function (j) { jobIds(j).forEach(function (x) { var kx = key(x); for (var i = 0; i < reps.length; i++) { if (kx === reps[i].k || kx.indexOf(reps[i].k) === 0) { map[x] = reps[i].v; break; } } }); });
+      // จับคู่หมายเลขงานแบบตรงตัว (เหมือนนำเข้าไฟล์เอง)
+      var need = {}; all.forEach(function (j) { jobIds(j).forEach(function (x) { (need[key(x)] = need[key(x)] || []).push(x); }); });
+      rep.all.forEach(function (r) { var w = normId(r[0]); if (!w) return; pref[w.split('.')[0]] = 1; var hit = need[key(w)]; if (hit) hit.forEach(function (x) { if (!map[x] || x === w) map[x] = [String(r[1] || ''), String(r[2] || '')]; }); });
       var fname = (rep.file || 'ไฟล์ SAP') + ' (จากรายงาน SAP)';
       var files = (old.files || (old.file ? [{ file: old.file, at: old.at }] : [])).concat([{ file: fname, at: at }]).slice(-5);
-      C.sap = { map: map, pref: pref, rows: rep.rows || rep.jobs.length, matched: Object.keys(map).length, file: fname, files: files, at: at, by: 'ระบบ' };
+      C.sap = { map: map, pref: pref, rows: rep.rows || rep.all.length, matched: Object.keys(map).length, file: fname, files: files, at: at, by: 'ระบบ', leaf: 1 };
       try { localStorage.setItem(LS, JSON.stringify(C.sap)); } catch (e) {}
       C.autoSel = true; render();
     }).withFailureHandler(function () { C.pulling = false; }).cclSapReport();
