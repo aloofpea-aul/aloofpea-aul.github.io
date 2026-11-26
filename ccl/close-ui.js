@@ -168,7 +168,7 @@
     imp.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) readSap(f); });
     $('clCmp').addEventListener('click', function (e) {
       var a = e.target.closest('[data-close]'); if (a) { e.stopPropagation(); C.sel = {}; C.rows0.filter(function (j) { return grp(j) === 'clsd'; }).forEach(function (j) { C.sel[j.id] = 1; }); C.st = 'clsd'; render(); bulkClose(); return; }
-      var jc = e.target.closest('[data-jc]'); if (jc) { e.stopPropagation(); syncCodes(); return; }
+      var jc = e.target.closest('[data-jc]'); if (jc) { e.stopPropagation(); syncCodes(jc.dataset.jc === 'all'); return; }
       var jt = e.target.closest('[data-jct]'); if (jt) { e.stopPropagation(); C.jcOpen = !C.jcOpen; render(); return; }
       var o = e.target.closest('[data-other]'); if (o) { e.stopPropagation(); bulkClose(C.other, true); return; }
       var j = e.target.closest('[data-job]'); if (j) { openDetailModal(Number(j.dataset.job)); return; }
@@ -340,7 +340,8 @@
     return '<div class="bx" style="grid-column:1/-1;border-color:#fde68a"><h4>📌 สถานะงาน (Job Code) ไม่ตรง SAP<b style="color:#ca8a04">' + d.length + '</b></h4>' +
       '<p>ใช้ "สถานะผู้ใช้" จาก SAP (เช่น C1, D2, F4) · งานที่มีหลายหมายเลขงานใช้รหัสที่ต่ำสุด' + (down ? ' · <b style="color:#dc2626">ลดลง ' + down + ' งาน</b>' : '') + '</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-        (isAdm() ? '<button type="button" data-jc="1" style="flex:1;min-width:200px;border:0;border-radius:10px;background:#ca8a04;color:#fff;font-weight:700;padding:9px 14px;cursor:pointer;font-family:inherit">🔄 อัปเดตสถานะงานตาม SAP (' + d.length + ' งาน)</button>'
+        (isAdm() ? ((d.length - down) ? '<button type="button" data-jc="up" style="flex:1;min-width:200px;border:0;border-radius:10px;background:#ca8a04;color:#fff;font-weight:700;padding:9px 14px;cursor:pointer;font-family:inherit">⬆️ อัปเดตเฉพาะที่ SAP สูงกว่า (' + (d.length - down) + ' งาน)</button>' : '<div style="flex:1;font-size:12.5px;color:#475569;background:#f8fafc;border-radius:10px;padding:8px 12px">ไม่มีงานที่ SAP สูงกว่า CCL</div>') +
+            (down ? '<button type="button" data-jc="all" style="border:1.5px solid #fecaca;background:#fff;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;font-family:inherit;color:#b91c1c" title="รวมงานที่ SAP ต่ำกว่า CCL (สถานะจะลดลง)">รวมที่ลดลงด้วย (' + d.length + ')</button>' : '')
           : '<div style="flex:1;font-size:12.5px;color:#92400e;background:#fffbeb;border-radius:10px;padding:8px 12px">🔒 เฉพาะ Admin กดอัปเดตได้ — แจ้ง Admin ให้นำเข้าไฟล์นี้แล้วกดอัปเดต</div>') +
         '<button type="button" data-jct="1" style="border:1.5px solid #e2e8f0;background:#fff;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;font-family:inherit;color:#475569">' + (C.jcOpen ? 'ซ่อนรายการ' : 'ดูรายการ') + '</button></div>' +
       (C.jcOpen ? '<div class="ol" style="max-height:260px">' + d.map(function (x) {
@@ -348,9 +349,9 @@
         return '<div data-job="' + x.j.id + '"><b>' + esc(x.j.receiveNo || '-') + '</b> ' + esc(x.j.jobName || '') + ' <small>· ' + esc(x.j.status || '-') + '</small> · <span style="font-weight:700">' + esc(x.cur || 'ว่าง') + ' → <span style="color:' + (dn ? '#dc2626' : '#16a34a') + '">' + esc(x.code) + '</span></span></div>';
       }).join('') + '</div>' : '') + '</div>';
   }
-  function syncCodes() {
-    var d = (C.codeDiff || []).slice(); if (!d.length || !window.Swal) return;
+  function syncCodes(withDown) {
     var rk = window.cclCode ? window.cclCode.rank : function () { return 0; };
+    var d = (C.codeDiff || []).filter(function (x) { return withDown || rk(x.code) >= rk(x.cur); }); if (!d.length || !window.Swal) return;
     var cnt = {}; d.forEach(function (x) { var k = (x.cur || 'ว่าง') + ' → ' + x.code; cnt[k] = (cnt[k] || 0) + 1; });
     var down = d.filter(function (x) { return rk(x.code) < rk(x.cur); });
     Swal.fire({
