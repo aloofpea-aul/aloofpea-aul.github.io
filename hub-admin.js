@@ -80,6 +80,46 @@
     '#userPickExtra button{background:none;border:0;color:var(--pea-purple,#4b2e83);font:inherit;text-decoration:underline;cursor:pointer;padding:6px 0}';
   document.head.appendChild(st);
 
+  var st2 = document.createElement('style');
+  st2.textContent = '' +
+    '#hubAdmCard{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;background:#fff;border:2px solid var(--pea-purple,#4b2e83);border-radius:16px;padding:11px 14px;font:inherit;text-align:left;cursor:pointer;color:inherit;grid-column:1/-1}' +
+    '#hubAdmCard .ic{width:42px;height:42px;border-radius:12px;background:#ede7f6;display:grid;place-items:center;font-size:21px;flex-shrink:0}#hubAdmCard .tx{flex:1;min-width:0}#hubAdmCard b{display:block;font-size:.98rem}#hubAdmCard small{color:#666;font-size:.78rem}' +
+    '#hubAdmCard em{font-style:normal;background:#ef4444;color:#fff;border-radius:99px;padding:3px 10px;font-weight:800;font-size:.8rem;white-space:nowrap}' +
+    '#hubAdminBtn,#hubAdminBtn.show{display:none!important}' +
+    '.hm-box{max-width:940px}' +
+    '.hu-top{display:flex;gap:8px;align-items:center;margin-bottom:10px}.hu-top .hm-search{flex:1;margin:0}.hu-top .hm-btn{white-space:nowrap}' +
+    '.hu-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}.hu-chips button,.hu-pc{background:#fff;border:2px solid #e5e0d6;border-radius:12px;padding:4px 12px;font:inherit;font-size:.76rem;font-weight:700;color:#777;cursor:pointer;text-align:left}.hu-chips b,.hu-pc b{display:block;font-size:1.15rem;color:#222;line-height:1.25}.hu-chips .on{border-color:var(--pea-purple,#4b2e83);background:#f3effa}.hu-pc{cursor:default;border-color:#fed7aa;background:#fff7ed}.hu-pc b{color:#dc2626}' +
+    '.hu-pend{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:14px;padding:10px 12px;margin-bottom:12px}.hu-pend h4{margin:0 0 8px;font-size:.85rem;color:#9a3412}' +
+    '.hu-pr{background:#fff;border-radius:11px;padding:8px 10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.hu-pr+.hu-pr{margin-top:6px}.hu-pr .hm-msg{flex-basis:100%;margin:0}.hu-pr .hm-msg:empty{display:none}' +
+    '.hu-av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;flex-shrink:0}' +
+    '.hu-nm{min-width:0;flex:1}.hu-nm b{display:block;font-size:.88rem}.hu-nm b em{font-style:normal;color:var(--pea-purple,#4b2e83);font-size:.75rem}.hu-nm small{font-size:.74rem;color:#777}' +
+    '.hu-seg{display:inline-flex;background:#f3effa;border-radius:9px;padding:3px}.hu-seg button{border:0;background:none;font:inherit;font-size:.76rem;font-weight:700;padding:5px 10px;border-radius:7px;color:#777;cursor:pointer}.hu-seg .on{background:#fff;color:var(--pea-purple,#4b2e83);box-shadow:0 1px 3px rgba(0,0,0,.1)}' +
+    '.hu-tbl{background:#fff;border-radius:14px;overflow:hidden}' +
+    '.hu-tr{display:grid;grid-template-columns:minmax(0,2fr) 120px minmax(0,1.7fr) 56px 64px;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid #f1ede5;font-size:.8rem;cursor:pointer}.hu-tr:hover{background:#faf8f3}.hu-tr.off{opacity:.55}' +
+    '.hu-h{background:#faf8f3;color:#888;font-weight:700;font-size:.74rem;cursor:default}' +
+    '.hu-u{display:flex;gap:9px;align-items:center;min-width:0}' +
+    '.hu-rl{border-radius:7px;padding:2px 9px;font-weight:800;font-size:.74rem;white-space:nowrap}.hu-rl.a{background:#fef3c7;color:#92400e}.hu-rl.m{background:#ede7f6;color:#4b2e83}' +
+    '.hu-bar{display:flex;align-items:center;gap:7px}.hu-bar i{flex:1;height:7px;background:#eee;border-radius:9px;overflow:hidden;max-width:110px}.hu-bar i u{display:block;height:100%;background:#7c5cc4}.hu-bar span{font-size:.74rem;color:#666;white-space:nowrap}' +
+    '.hu-sw{width:40px;height:23px;border-radius:99px;background:#cbd5e1;position:relative;border:0;padding:0;cursor:pointer;flex-shrink:0}.hu-sw:after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s}.hu-sw.on{background:#16a34a}.hu-sw.on:after{left:20px}.hu-sw:disabled{opacity:.5;cursor:not-allowed}' +
+    '.hu-ed{color:var(--pea-purple,#4b2e83);font-weight:700;text-align:right;font-size:.78rem}' +
+    '@media(max-width:640px){.hu-h{display:none}.hu-tr{grid-template-columns:1fr auto;grid-template-areas:"u s" "r e" "b b";row-gap:6px;border-bottom:6px solid #f4f1ea}.hu-tr>:nth-child(1){grid-area:u}.hu-tr>:nth-child(2){grid-area:r}.hu-tr>:nth-child(3){grid-area:b}.hu-tr>:nth-child(4){grid-area:s}.hu-tr>:nth-child(5){grid-area:e}.hu-bar i{max-width:none}}' +
+    '.hu-dw{position:fixed;inset:0;z-index:9500}.hu-dm{position:absolute;inset:0;background:rgba(0,0,0,.35)}' +
+    '.hu-dr{position:absolute;right:0;top:0;bottom:0;width:min(420px,100%);background:#fff;box-shadow:-10px 0 30px rgba(0,0,0,.2);padding:16px 16px calc(16px + env(safe-area-inset-bottom));padding-top:max(16px,env(safe-area-inset-top));overflow-y:auto;color:#222}' +
+    '.hu-dr h3{margin:0;font-size:1.05rem;display:flex;align-items:center;gap:8px}.hu-x{margin-left:auto;width:34px;height:34px;border-radius:50%;border:0;background:#f1f1f1;color:#777;cursor:pointer;font-size:.9rem}' +
+    '.hu-s{font-size:.76rem;color:#777;margin:3px 0 8px}.hu-lb{font-size:.8rem;font-weight:800;color:#555;margin:12px 0 5px;display:flex;gap:4px}.hu-lb a{color:var(--pea-purple,#4b2e83);font-weight:700;cursor:pointer}' +
+    '.hu-dr input{width:100%;box-sizing:border-box;border:1.5px solid #e5e0d6;border-radius:10px;padding:9px 10px;font:inherit;font-size:.9rem}.hu-dr input:focus{outline:0;border-color:var(--pea-purple,#4b2e83)}' +
+    '.hu-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
+    '.hu-roles{display:grid;grid-template-columns:1fr 1fr;gap:6px}.hu-roles button{border:2px solid #e5e0d6;background:#fff;border-radius:12px;padding:8px 10px;font:inherit;font-size:.74rem;color:#777;text-align:left;cursor:pointer}.hu-roles b{display:block;font-size:.86rem;color:#222}.hu-roles .on{border-color:var(--pea-purple,#4b2e83);background:#f3effa}.hu-roles button:disabled{opacity:.55;cursor:not-allowed}' +
+    '.hu-grp{font-size:.74rem;color:#999;font-weight:700;margin:8px 0 4px}.hu-apps{display:flex;flex-wrap:wrap;gap:5px}.hu-apps button{border:1.5px solid #e5e0d6;background:#fff;border-radius:99px;padding:5px 11px;font:inherit;font-size:.78rem;font-weight:700;color:#999;cursor:pointer}.hu-apps .on{background:var(--pea-purple,#4b2e83);border-color:var(--pea-purple,#4b2e83);color:#fff}' +
+    '.hu-adm-note{font-size:.8rem;color:#92400e;background:#fffbeb;border-radius:10px;padding:8px 10px;margin-top:10px}' +
+    '.hu-st{display:flex;align-items:center;gap:8px;border:1.5px solid #eee;border-radius:12px;padding:9px 10px;margin-top:12px;font-size:.86rem;font-weight:700}.hu-st>div{flex:1}.hu-st small{display:block;font-weight:600;color:#888;font-size:.74rem}' +
+    '.hu-warn{font-size:.76rem;color:#b45309;background:#fffbeb;border-radius:9px;padding:6px 9px;margin-top:8px}' +
+    '.hu-act{display:flex;gap:6px;margin-top:14px}.hu-act button{flex:1;border-radius:11px;padding:11px;font:inherit;font-weight:800;font-size:.86rem;cursor:pointer}.hu-k{border:1.5px solid #fed7aa;background:#fff7ed;color:#c2410c}.hu-sv{border:0;background:var(--pea-purple,#4b2e83);color:#fff}.hu-line{border:0;background:#06c755;color:#fff}' +
+    '.hu-pw{border-top:1px dashed #ddd;margin-top:14px;padding-top:4px}' +
+    '.hu-pop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,92vw);background:#fff;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}.hu-pop>b{font-size:1.05rem}' +
+    '.hu-code{font:800 1.6rem monospace;letter-spacing:2px;color:#0f766e;margin:8px 0;user-select:all}.hu-close{margin-top:10px;border:0;background:none;color:#777;font:inherit;cursor:pointer;padding:8px}';
+  document.head.appendChild(st2);
+
   /* ---------------- ปุ่มในหัว + กล่องเข้าสู่ระบบ ---------------- */
   var adminBtn = document.createElement('button');
   adminBtn.id = 'hubAdminBtn'; adminBtn.type = 'button'; adminBtn.textContent = 'จัดการผู้ใช้';
@@ -217,8 +257,8 @@
   /* ---------------- ผู้ดูแลระบบ ---------------- */
   var ADM = { pending: [], requests: [], users: [], books: [] };
   function refreshAdminCount() {
-    if (!isAdmin()) { adminBtn.classList.remove('show'); return Promise.resolve(); }
-    adminBtn.classList.add('show');
+    if (!isAdmin()) { adminBtn.classList.remove('show'); admCard(-1); return Promise.resolve(); }
+    adminBtn.classList.add('show'); admCard(null);
     return Promise.all([
       api({ action: 'getPendingList' }).catch(function () { return null; }),
       api({ action: 'appRequests' }).catch(function () { return null; }),
@@ -231,15 +271,31 @@
       if (rs[1] && rs[1].appList) APP_LIST = rs[1].appList;
       var n = ADM.pending.length + ADM.requests.length + ADM.books.length;
       adminBtn.textContent = n ? 'คำขอใหม่ ' + n : 'จัดการผู้ใช้';
+      admCard(n);
       return n;
     });
   }
 
+  /* การ์ดม่วงบนสุดของหน้าศูนย์รวมงาน (เฉพาะผู้ดูแลระบบ) — หาง่ายกว่าปุ่มเล็กข้างชื่อ */
+  function admCard(n) {
+    var c = $('hubAdmCard');
+    if (n === -1) { if (c) c.style.display = 'none'; return; }
+    if (!c) {
+      var wn = $('welcomeNote'); if (!wn || !wn.parentNode) return;
+      c = document.createElement('button'); c.type = 'button'; c.id = 'hubAdmCard';
+      c.innerHTML = '<span class="ic">👥</span><span class="tx"><b>จัดการผู้ใช้ศูนย์รวมงาน</b><small>อนุมัติ · สิทธิ์รายโปรแกรม · รหัสผ่าน · สถิติ</small></span><em></em>';
+      c.onclick = openAdmin; wn.parentNode.insertBefore(c, wn.nextSibling);
+    }
+    c.style.display = '';
+    if (n != null) { var em = c.querySelector('em'); em.textContent = n ? n + ' ใหม่' : ''; em.style.display = n ? '' : 'none'; }
+  }
   function openAdmin() {
-    var body = modal('จัดการผู้ใช้', [
-      { id: 'req', label: 'คำขอใหม่' }, { id: 'books', label: 'ขอดาวน์โหลดหนังสือ' }, { id: 'users', label: 'ผู้ใช้ทั้งหมด' }, { id: 'stats', label: 'สถิติการเข้าใช้' }
+    var body = modal('👥 จัดการผู้ใช้ศูนย์รวมงาน', [
+      { id: 'users', label: '👥 ผู้ใช้' }, { id: 'req', label: 'ขอสิทธิ์โปรแกรม' }, { id: 'books', label: 'ขอดาวน์โหลดหนังสือ' }, { id: 'stats', label: 'สถิติการเข้าใช้' }
     ], function (t) { ({ req: tabReq, books: tabBooks, users: tabUsers, stats: tabStats })[t](body); });
-    tabReq(body);
+    if (ADM.requests.length) setTabLabel('req', 'ขอสิทธิ์โปรแกรม (' + ADM.requests.length + ')');
+    if (ADM.books.length) setTabLabel('books', 'ขอดาวน์โหลดหนังสือ (' + ADM.books.length + ')');
+    tabUsers(body);
   }
 
   function loadUsers() {
@@ -254,18 +310,17 @@
     loading(body);
     Promise.all([refreshAdminCount(), loadUsers()]).then(function () {
       if (ADM.err) { failed(body, function () { tabReq(body); }); return; }
-      setTabLabel('req', 'คำขอใหม่ (' + (ADM.pending.length + ADM.requests.length) + ')');
+      setTabLabel('req', 'ขอสิทธิ์โปรแกรม' + (ADM.requests.length ? ' (' + ADM.requests.length + ')' : ''));
       var h = '';
-      if (!ADM.pending.length && !ADM.requests.length) { body.innerHTML = '<div class="hm-empty">ไม่มีคำขอค้าง</div>'; return; }
-      if (ADM.pending.length) h += '<div class="hm-sec">สมัครเป็นผู้ใช้ใหม่</div>';
-      ADM.pending.forEach(function (p, i) {
+      if (!ADM.requests.length) { body.innerHTML = '<div class="hm-empty">ไม่มีคำขอสิทธิ์ค้าง' + (ADM.pending.length ? '<br>(คนสมัครใหม่ ' + ADM.pending.length + ' คน อยู่ที่แท็บ 👥 ผู้ใช้)' : '') + '</div>'; return; }
+      if (false) ADM.pending.forEach(function (p, i) {
         h += '<div class="hm-card" data-i="' + i + '"><div class="hm-row"><div class="hm-name">' + esc(p.name) + '</div><div class="hm-muted">สมัคร ' + esc(p.timestamp) + '</div></div>' +
           '<div class="hm-muted">ให้ใช้โปรแกรม (ติ๊กไว้ทั้งหมด เอาออกได้)</div><div class="hm-apps">' +
           APP_LIST.map(function (a) { return '<label><input type="checkbox" value="' + esc(a.code) + '" checked>' + esc(a.name) + '</label>'; }).join('') +
           '</div><div class="hm-row"><label class="hm-row" style="flex:1;font-size:.85rem"><input type="checkbox" class="isAdm" style="width:18px;height:18px">เป็นผู้ดูแลระบบ</label>' +
           '<button class="hm-btn no" type="button" data-act="rej">ปฏิเสธ</button><button class="hm-btn ok" type="button" data-act="ok">อนุมัติ</button></div><div class="hm-msg"></div></div>';
       });
-      if (ADM.requests.length) h += '<div class="hm-sec">ขอสิทธิ์ใช้โปรแกรมเพิ่ม</div>';
+
       ADM.requests.forEach(function (q, i) {
         h += '<div class="hm-card" data-q="' + i + '"><div class="hm-row"><div class="hm-name">' + esc(q.user) + '</div><div class="hm-muted">' + esc(q.at) + '</div></div>' +
           '<div>ขอใช้ <b>' + esc(appName(q.app)) + '</b></div><div class="hm-row" style="justify-content:flex-end">' +
@@ -339,42 +394,158 @@
     }).catch(function () { failed(body, function () { tabBooks(body); }); });
   }
 
+  /* ---------- 👥 ผู้ใช้ (แบบใหม่ ก.พ. — รออนุมัติบนสุด · แถบสิทธิ์ · สวิตช์ระงับ · หน้าต่างแก้ไข) ---------- */
+  var GROUPS = [['⚡ ระบบไฟฟ้า', ['sld', 'tx-survey', 'patrol', 'tree', 'analytics']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['booknum', 'budget', 'dutyroster', 'vehicle']]];
+  var UF = { f: 'all', q: '' };
+  var COLS = ['#4b2e83', '#2a9d8f', '#e8962e', '#2563eb', '#c2410c', '#7c5cc4', '#0f766e', '#be185d'];
+  function avc(s) { var h = 0; String(s).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) | 0; }); return COLS[Math.abs(h) % COLS.length]; }
+  function ini(n) { return String(n || '?').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').trim().charAt(0) || '?'; }
+  function isMe(u) { return CURRENT_USER && String(u.name).toLowerCase() === String(CURRENT_USER.name).toLowerCase(); }
+  function nApps(u) { return u.role === 'admin' ? APP_LIST.length : u.apps.length; }
+  var UFL = {
+    all: ['ทั้งหมด', function (u) { return true; }], act: ['ใช้งานอยู่', function (u) { return !u.disabled; }],
+    off: ['ระงับ', function (u) { return u.disabled; }], adm: ['ผู้ดูแลระบบ', function (u) { return u.role === 'admin'; }]
+  };
   function tabUsers(body) {
     loading(body);
-    loadUsers().then(function (users) {
-      body.innerHTML = '<input class="hm-search" placeholder="ค้นหาชื่อ" id="hmQ">' +
-        '<div class="hm-muted">แตะชื่อโปรแกรมเพื่อเปิด/ปิดสิทธิ์ทันที (สีม่วง = ใช้ได้) · ผู้ดูแลระบบใช้ได้ทุกโปรแกรมเสมอ</div><div id="hmUsers"></div>';
-      var list = $('hmUsers');
-      function draw() {
-        var q = $('hmQ').value.trim().toLowerCase();
-        list.innerHTML = users.filter(function (u) { return !q || u.name.toLowerCase().indexOf(q) >= 0; }).map(function (u) {
-          var adm = u.role === 'admin';
-          var meta = adm ? 'ผู้ดูแลระบบ' : (u.appsRaw === '-' ? 'ระงับ (ไม่มีโปรแกรมที่ใช้ได้)' : (u.appsRaw ? 'สมาชิก' : 'สมาชิก · ยังไม่เคยกำหนด = ใช้ได้ทุกโปรแกรม'));
-          return '<div class="hm-card" style="margin-bottom:8px" data-u="' + esc(u.name) + '"><div class="hm-row"><div class="hm-name">' + esc(u.name) + '</div><div class="hm-muted">' + esc(meta) + '</div></div>' +
-            '<div class="hm-chips">' + APP_LIST.map(function (a) {
-              var on = u.apps.indexOf(a.code) >= 0;
-              return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-app="' + esc(a.code) + '"' + (adm ? ' disabled' : '') + ' aria-pressed="' + on + '">' + esc(a.name) + '</button>';
-            }).join('') + '</div>' + (u.appsUpdated ? '<div class="hm-muted">แก้สิทธิ์ล่าสุด ' + esc(u.appsUpdated) + '</div>' : '') + '<div class="hm-msg"></div></div>';
-        }).join('') || '<div class="hm-empty">ไม่พบชื่อ</div>';
-        list.querySelectorAll('.chip:not([disabled])').forEach(function (c) {
-          c.onclick = function () {
-            var card = c.closest('.hm-card'), name = card.dataset.u, msg = card.querySelector('.hm-msg');
-            var u = users.find(function (x) { return x.name === name; });
-            var on = !c.classList.contains('on');
-            var next = u.apps.filter(function (x) { return x !== c.dataset.app; });
-            if (on) next.push(c.dataset.app);
-            c.disabled = true; msg.className = 'hm-msg'; msg.textContent = 'กำลังบันทึก…';
-            callApi({ action: 'patrolSetApps', targetName: name, apps: next, reason: 'แก้จากศูนย์รวมงาน' }).then(function (r) {
-              c.disabled = false;
-              if (r && r.ok) { u.apps = r.apps || next; u.appsRaw = u.apps.length ? u.apps.join(',') : '-'; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); msg.className = 'hm-msg ok'; msg.textContent = (on ? 'เปิด ' : 'ปิด ') + appName(c.dataset.app) + ' แล้ว'; }
-              else { msg.className = 'hm-msg err'; msg.textContent = (r && (r.error || r.message)) || 'ไม่สำเร็จ'; }
-            }).catch(function () { c.disabled = false; msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
-          };
-        });
+    Promise.all([loadUsers(), refreshAdminCount()]).then(function () { drawUsers(body); }).catch(function () { failed(body, function () { tabUsers(body); }); });
+  }
+  function drawUsers(body) {
+    var users = ADM.users, pend = ADM.pending;
+    body.innerHTML = '<div class="hu-top"><input class="hm-search" id="hmQ" placeholder="🔍 ค้นหาชื่อ / ตำแหน่ง" value="' + esc(UF.q) + '"><button class="hm-btn pri" type="button" data-a="new">＋ เพิ่มผู้ใช้</button></div>' +
+      '<div class="hu-chips">' + Object.keys(UFL).map(function (k) { var c = users.filter(UFL[k][1]).length; return '<button type="button" data-f="' + k + '" class="' + (UF.f === k ? 'on' : '') + '"><b>' + c + '</b>' + UFL[k][0] + '</button>'; }).join('') +
+      (pend.length ? '<span class="hu-pc"><b>' + pend.length + '</b>รออนุมัติ</span>' : '') + '</div>' +
+      (pend.length ? '<div class="hu-pend"><h4>⏳ สมัครใหม่ ' + pend.length + ' คน — อนุมัติแล้วใช้ได้ทุกโปรแกรม (แก้ทีหลังได้)</h4>' + pend.map(function (p, i) {
+        return '<div class="hu-pr" data-i="' + i + '"><div class="hu-av" style="background:' + avc(p.name) + '">' + esc(ini(p.name)) + '</div><div class="hu-nm"><b>' + esc(p.name) + '</b><small>สมัคร ' + esc(p.timestamp) + '</small></div>' +
+          '<span class="hu-seg"><button type="button" data-r="member" class="on">สมาชิก</button><button type="button" data-r="admin">ผู้ดูแลระบบ</button></span>' +
+          '<button class="hm-btn ok" type="button" data-a="ok">✓ อนุมัติ</button><button class="hm-btn no" type="button" data-a="rej" title="ปฏิเสธ">✕</button><div class="hm-msg"></div></div>';
+      }).join('') + '</div>' : '') +
+      '<div class="hu-tbl" id="huT"></div>';
+    var T = $('huT');
+    function rows() {
+      var q = UF.q.trim().toLowerCase();
+      var a = users.filter(UFL[UF.f][1]).filter(function (u) { return !q || (u.name + ' ' + (u.position || '') + ' ' + (u.org || '')).toLowerCase().indexOf(q) >= 0; })
+        .sort(function (x, y) { return (x.disabled - y.disabled) || ((x.role === 'admin' ? 0 : 1) - (y.role === 'admin' ? 0 : 1)) || x.name.localeCompare(y.name, 'th'); });
+      T.innerHTML = '<div class="hu-tr hu-h"><span>ผู้ใช้</span><span>บทบาท</span><span>สิทธิ์โปรแกรม</span><span>ใช้งาน</span><span></span></div>' + (a.length ? a.map(function (u) {
+        var n = nApps(u), tot = APP_LIST.length, me = isMe(u);
+        return '<div class="hu-tr' + (u.disabled ? ' off' : '') + '" data-u="' + esc(u.name) + '"><div class="hu-u"><div class="hu-av" style="background:' + (u.disabled ? '#aaa' : avc(u.name)) + '">' + esc(ini(u.name)) + '</div><div class="hu-nm"><b>' + esc(u.name) + (me ? ' <em>(คุณ)</em>' : '') + '</b><small>' + esc([u.position, u.org].filter(Boolean).join(' · ') || (u.disabled ? 'ระงับไว้' : '')) + '</small></div></div>' +
+          '<span><span class="hu-rl ' + (u.role === 'admin' ? 'a">👑 ผู้ดูแลระบบ' : 'm">สมาชิก') + '</span></span>' +
+          '<div class="hu-bar"><i><u style="width:' + (u.disabled ? 0 : Math.round(n * 100 / Math.max(1, tot))) + '%"></u></i><span>' + (u.disabled ? 'ระงับ' : u.role === 'admin' || n >= tot ? 'ทุกโปรแกรม' : n ? n + ' จาก ' + tot : 'ยังไม่มี') + '</span></div>' +
+          '<span><button type="button" class="hu-sw' + (u.disabled ? '' : ' on') + '" data-a="tg"' + (me ? ' disabled' : '') + ' title="' + (u.disabled ? 'ระงับอยู่ — กดเพื่อเปิด' : 'ใช้งานอยู่ — กดเพื่อระงับ') + '"></button></span><span class="hu-ed">✏️ แก้ไข</span></div>';
+      }).join('') : '<div class="hm-empty">ไม่พบผู้ใช้</div>');
+    }
+    rows();
+    $('hmQ').oninput = function () { UF.q = this.value; rows(); };
+    body.onclick = function (e) {
+      var b = e.target.closest('button,[data-u]'); if (!b || !body.contains(b)) return;
+      if (b.dataset.f) { UF.f = b.dataset.f; drawUsers(body); return; }
+      if (b.dataset.r) { Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.toggle('on', x === b); }); return; }
+      var a = b.dataset.a;
+      if (a === 'new') return editUser(null, body);
+      var pr = b.closest('.hu-pr');
+      if (pr && (a === 'ok' || a === 'rej')) {
+        var p = pend[+pr.dataset.i], msg = pr.querySelector('.hm-msg');
+        if (a === 'rej' && !confirm('ปฏิเสธคำขอของ ' + p.name + '?')) return;
+        var role = pr.querySelector('.hu-seg .on').dataset.r;
+        pr.querySelectorAll('button').forEach(function (x) { x.disabled = true; }); msg.className = 'hm-msg'; msg.textContent = 'กำลังบันทึก…';
+        callApi(a === 'ok' ? { action: 'approvePending', targetName: p.name, approvedRole: role, approvedApps: appCodes() } : { action: 'rejectPending', targetName: p.name }).then(function (r) {
+          if (r && r.ok) tabUsers(body); else { pr.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = (r && (r.error || r.message)) || 'ไม่สำเร็จ'; }
+        }).catch(function () { pr.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
+        return;
       }
-      $('hmQ').oninput = draw;
-      draw();
-    }).catch(function () { failed(body, function () { tabUsers(body); }); });
+      var row = b.closest('[data-u]'); if (!row || row.classList.contains('hu-h')) return;
+      var u = users.find(function (x) { return x.name === row.dataset.u; }); if (!u) return;
+      if (a === 'tg') {
+        e.stopPropagation(); if (b.disabled) return;
+        var off = !u.disabled;
+        if (off && !confirm('ระงับ ' + u.name + '?\nเข้าระบบไม่ได้ทุกโปรแกรมจนกว่าจะเปิดอีกครั้ง (บัญชีและสิทธิ์เดิมยังอยู่)')) return;
+        b.disabled = true; b.classList.toggle('on', !off);
+        saveUser({ targetName: u.name, role: u.role, disabled: off }).then(function () { u.disabled = off; rows(); }, function (err) { alert(err); b.disabled = false; b.classList.toggle('on', off); });
+        return;
+      }
+      editUser(u, body);
+    };
+  }
+  function saveUser(p) {
+    return callApi(Object.assign({ action: 'hubUserSave' }, p)).then(function (r) { if (!r || !r.ok) throw ((r && (r.error || r.message)) || 'บันทึกไม่สำเร็จ'); return r; }, function () { throw 'เชื่อมต่อไม่ได้'; });
+  }
+  /* หน้าต่างแก้ไข/เพิ่มผู้ใช้ */
+  function editUser(u, body) {
+    var isNew = !u, E = u ? { name: u.name, role: u.role, position: u.position || '', org: u.org || '', disabled: !!u.disabled, apps: u.role === 'admin' ? appCodes() : u.apps.slice() } : { name: '', role: 'member', position: '', org: '', disabled: false, apps: appCodes() };
+    var me = u && isMe(u);
+    var d = document.createElement('div'); d.className = 'hu-dw';
+    var grouped = {}; GROUPS.forEach(function (g) { g[1].forEach(function (c) { grouped[c] = 1; }); });
+    var groups = GROUPS.map(function (g) { return [g[0], g[1].filter(function (c) { return APP_LIST.some(function (a) { return a.code === c; }); })]; });
+    var rest = APP_LIST.filter(function (a) { return !grouped[a.code]; }).map(function (a) { return a.code; });
+    if (rest.length) groups.push(['📦 อื่นๆ', rest]);
+    d.innerHTML = '<div class="hu-dm"></div><div class="hu-dr"><h3>' + (isNew ? '＋ เพิ่มผู้ใช้' : '✏️ ' + esc(u.name)) + '<button type="button" class="hu-x">✕</button></h3>' +
+      '<div class="hu-s">' + (isNew ? 'ระบบสร้างรหัสผ่านให้ — ส่งให้เจ้าตัวใช้เข้าระบบ' : (u.appsUpdated ? 'แก้สิทธิ์ล่าสุด ' + esc(u.appsUpdated) : '')) + '</div>' +
+      (isNew ? '<p class="hu-lb">ชื่อ-นามสกุล (ใช้ล็อกอิน)</p><input data-k="name" placeholder="เช่น สมชาย ใจดี" autocomplete="off">' : '') +
+      '<div class="hu-two"><div><p class="hu-lb">ตำแหน่ง</p><input data-k="position" value="' + esc(E.position) + '" placeholder="เช่น พชง.6"></div><div><p class="hu-lb">หน่วยงาน / แผนก</p><input data-k="org" value="' + esc(E.org) + '" placeholder="เช่น ผปร."></div></div>' +
+      '<p class="hu-lb">บทบาท</p><div class="hu-roles"><button type="button" data-role="admin"' + (me ? ' disabled' : '') + '><b>👑 ผู้ดูแลระบบ</b>ใช้ได้ทุกโปรแกรม + จัดการผู้ใช้</button><button type="button" data-role="member"' + (me ? ' disabled' : '') + '><b>สมาชิก</b>ใช้ได้เฉพาะโปรแกรมที่เลือก</button></div>' +
+      '<div class="hu-appsw"><p class="hu-lb"><span>โปรแกรมที่ใช้ได้ (<span class="hu-n"></span>)</span><span style="margin-left:auto"><a data-all="1">เลือกทั้งหมด</a> · <a data-all="0">ล้าง</a></span></p>' +
+      groups.map(function (g) { return '<div class="hu-grp">' + g[0] + '</div><div class="hu-apps">' + g[1].map(function (c) { return '<button type="button" data-app="' + esc(c) + '">' + esc(appName(c)) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>' +
+      '<div class="hu-adm-note">ผู้ดูแลระบบใช้ได้ทุกโปรแกรมเสมอ</div>' +
+      (isNew ? '' : '<div class="hu-st"><div>✅ เปิดใช้งาน<small>ปิด = ระงับ เข้าระบบไม่ได้ทุกโปรแกรม (บัญชีไม่หาย)</small></div><button type="button" class="hu-sw" data-sw="1"' + (me ? ' disabled' : '') + '></button></div>') +
+      (me ? '<div class="hu-warn">นี่คือบัญชีของคุณ — ลดสิทธิ์หรือระงับตัวเองไม่ได้</div>' : '') +
+      '<div class="hu-act">' + (isNew ? '' : '<button type="button" class="hu-k" data-a="pw">🔑 ตั้งรหัสผ่านใหม่</button>') + '<button type="button" class="hu-sv" data-a="save">💾 ' + (isNew ? 'เพิ่มผู้ใช้' : 'บันทึก') + '</button></div><div class="hm-msg"></div>' +
+      '<div class="hu-pw" hidden><p class="hu-lb">รหัสผ่านใหม่ของ ' + (u ? esc(u.name) : '') + '</p><input data-k="pw" autocomplete="off" autocapitalize="off"><div class="hu-act"><button type="button" class="hu-k" data-a="pwno">ยกเลิก</button><button type="button" class="hu-sv" data-a="pwok">ตั้งรหัสนี้</button></div><div class="hu-s">พิมพ์เองได้ (อย่างน้อย 4 ตัว) หรือใช้รหัสที่ระบบสุ่มให้ · เครื่องที่จำรหัสเดิมไว้ต้องล็อกอินใหม่</div></div></div>';
+    document.body.appendChild(d);
+    function paint() {
+      d.querySelectorAll('[data-role]').forEach(function (b) { var on = b.dataset.role === E.role; b.classList.toggle('on', on); b.querySelector('b').textContent = (on ? '✓ ' : '') + (b.dataset.role === 'admin' ? '👑 ผู้ดูแลระบบ' : 'สมาชิก'); });
+      d.querySelector('.hu-appsw').style.display = E.role === 'admin' ? 'none' : '';
+      d.querySelector('.hu-adm-note').style.display = E.role === 'admin' ? '' : 'none';
+      d.querySelectorAll('[data-app]').forEach(function (b) { b.classList.toggle('on', E.apps.indexOf(b.dataset.app) >= 0); });
+      d.querySelector('.hu-n').textContent = E.apps.length + ' จาก ' + APP_LIST.length;
+      var sw = d.querySelector('[data-sw]'); if (sw) sw.classList.toggle('on', !E.disabled);
+    }
+    paint();
+    var msg = d.querySelector('.hm-msg');
+    function close() { d.remove(); }
+    function gen() { var c = 'abcdefghjkmnpqrstuvwxyz23456789', s = ''; for (var i = 0; i < 8; i++) s += c.charAt(Math.floor(Math.random() * c.length)); return s; }
+    d.addEventListener('input', function (e) { var k = e.target.dataset.k; if (k && k !== 'pw') E[k] = e.target.value; });
+    d.addEventListener('click', function (e) {
+      var t = e.target.closest('button,a,.hu-dm'); if (!t) return;
+      if (t.classList.contains('hu-dm') || t.classList.contains('hu-x')) return close();
+      if (t.dataset.role) { E.role = t.dataset.role; return paint(); }
+      if (t.dataset.app) { var c = t.dataset.app, i = E.apps.indexOf(c); if (i >= 0) E.apps.splice(i, 1); else E.apps.push(c); return paint(); }
+      if (t.dataset.all) { E.apps = t.dataset.all === '1' ? appCodes() : []; return paint(); }
+      if (t.dataset.sw) { if (t.disabled) return; E.disabled = !E.disabled; return paint(); }
+      var a = t.dataset.a;
+      if (a === 'pw') { var box = d.querySelector('.hu-pw'); box.hidden = false; box.querySelector('input').value = gen(); box.querySelector('input').select(); box.scrollIntoView({ block: 'nearest' }); return; }
+      if (a === 'pwno') { d.querySelector('.hu-pw').hidden = true; return; }
+      if (a === 'pwok') {
+        var pw = d.querySelector('[data-k=pw]').value.trim(); if (pw.length < 4) { alert('รหัสผ่านอย่างน้อย 4 ตัว'); return; }
+        t.disabled = true;
+        callApi({ action: 'hubUserResetPw', targetName: u.name, newPassword: pw }).then(function (r) {
+          t.disabled = false;
+          if (r && r.ok) { close(); showPw(u.name, r.tempPw, false); } else alert((r && (r.error || r.message)) || 'ไม่สำเร็จ');
+        }).catch(function () { t.disabled = false; alert('เชื่อมต่อไม่ได้'); });
+        return;
+      }
+      if (a === 'save') {
+        if (isNew && !String(E.name).trim()) { msg.className = 'hm-msg err'; msg.textContent = 'กรุณาใส่ชื่อ-นามสกุล'; return; }
+        if (E.role === 'member' && !E.apps.length && !confirm('ยังไม่ได้เลือกโปรแกรมเลย — บันทึกแบบยังใช้โปรแกรมใดไม่ได้?')) return;
+        t.disabled = true; msg.className = 'hm-msg'; msg.textContent = 'กำลังบันทึก…';
+        var call = isNew ? callApi({ action: 'hubUserAdd', newName: String(E.name).trim(), role: E.role, apps: E.apps, position: E.position, org: E.org }).then(function (r) { if (!r || !r.ok) throw ((r && (r.error || r.message)) || 'ไม่สำเร็จ'); return r; }, function () { throw 'เชื่อมต่อไม่ได้'; })
+          : saveUser({ targetName: u.name, role: E.role, apps: E.apps, position: E.position, org: E.org, disabled: E.disabled });
+        call.then(function (r) { close(); if (isNew) showPw(String(E.name).trim(), r.tempPw, true); tabUsers(body); }, function (err) { t.disabled = false; msg.className = 'hm-msg err'; msg.textContent = err; });
+      }
+    });
+    setTimeout(function () { var f = d.querySelector(isNew ? '[data-k=name]' : '[data-k=position]'); if (f && isNew) f.focus(); }, 60);
+  }
+  function showPw(name, pw, isNew) {
+    var text = 'ศูนย์รวมงาน กฟส.อ่าวลึก\nชื่อเข้าระบบ: ' + name + '\nรหัสผ่าน: ' + pw + '\nเข้าที่ ' + location.origin + '/';
+    var d = document.createElement('div'); d.className = 'hu-dw';
+    d.innerHTML = '<div class="hu-dm"></div><div class="hu-pop"><div style="font-size:30px">✅</div><b>' + (isNew ? 'เพิ่มผู้ใช้แล้ว' : 'ตั้งรหัสผ่านใหม่แล้ว') + '</b><div class="hu-s">ชื่อเข้าระบบ <b>' + esc(name) + '</b></div><div class="hu-code">' + esc(pw) + '</div><div class="hu-s" style="color:#b45309">แสดงครั้งเดียว — คัดลอกหรือส่งให้เจ้าตัวตอนนี้</div>' +
+      '<div class="hu-act"><button type="button" class="hu-k" data-c="1">📋 คัดลอก</button><button type="button" class="hu-line" data-l="1">💬 ส่ง LINE</button></div><button type="button" class="hu-close">ปิด</button></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.dataset.c) { try { navigator.clipboard.writeText(text); t.textContent = '✓ คัดลอกแล้ว'; } catch (er) {} return; }
+      if (t.dataset.l) { window.open('https://line.me/R/share?text=' + encodeURIComponent(text), '_blank'); return; }
+      if (t.classList.contains('hu-close') || t.classList.contains('hu-dm')) d.remove();
+    });
   }
 
   function tabStats(body) {
@@ -431,7 +602,7 @@
   window.hubOnLogin = function () {
     syncOutBtn();
     MY_APPS = null;
-    if (!loggedIn()) { decorateTiles(); adminBtn.classList.remove('show'); return; }
+    if (!loggedIn()) { decorateTiles(); adminBtn.classList.remove('show'); admCard(-1); return; }
     try { var ca = JSON.parse(localStorage.getItem('pea_hub_auth') || 'null'); if (ca && ca.name === CURRENT_USER.name && Array.isArray(ca.apps)) { MY_APPS = ca.apps; decorateTiles(); } } catch (e) {}
     var wp = window.HUB_WHO_P ? window.HUB_WHO_P.then(function () { return window.HUB_WHO; }) : callApi({ action: 'whoAmI' });
     wp.then(function (r) {
