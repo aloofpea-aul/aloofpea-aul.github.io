@@ -8,7 +8,9 @@
 (function () {
   'use strict';
   // โปรแกรมที่ตรวจสิทธิ์จริงที่หน้าโปรแกรม (ผ่าน pea-hub.js) — ตัวอื่นยังเปิดได้ตามเดิม
-  var GATED = ['drawings', 'dutyroster', 'procure', 'tfbuy', 'damage', 'asset', 'stock', 'construction'];
+  var GATED = ['drawings', 'dutyroster', 'procure', 'tfbuy', 'damage', 'asset', 'stock', 'construction', 'english'];
+  // โปรแกรมที่ไม่เปิดให้สมาชิกอัตโนมัติ (ตรงกับ APP_DEFAULT_OFF ในหลังบ้าน) — ผู้ดูแลต้องเปิดให้ทีละคน
+  var DEFAULT_OFF = ['english'];
   var APP_LIST = [];
   var MY_APPS = null;
   var STATS = {};
@@ -306,6 +308,7 @@
     });
   }
   function appCodes() { return APP_LIST.map(function (a) { return a.code; }); }
+  function defaultCodes() { return appCodes().filter(function (c) { return DEFAULT_OFF.indexOf(c) < 0; }); }
 
   function tabReq(body) {
     loading(body);
@@ -316,8 +319,8 @@
       if (!ADM.requests.length) { body.innerHTML = '<div class="hm-empty">ไม่มีคำขอสิทธิ์ค้าง' + (ADM.pending.length ? '<br>(คนสมัครใหม่ ' + ADM.pending.length + ' คน อยู่ที่แท็บ 👥 ผู้ใช้)' : '') + '</div>'; return; }
       if (false) ADM.pending.forEach(function (p, i) {
         h += '<div class="hm-card" data-i="' + i + '"><div class="hm-row"><div class="hm-name">' + esc(p.name) + '</div><div class="hm-muted">สมัคร ' + esc(p.timestamp) + '</div></div>' +
-          '<div class="hm-muted">ให้ใช้โปรแกรม (ติ๊กไว้ทั้งหมด เอาออกได้)</div><div class="hm-apps">' +
-          APP_LIST.map(function (a) { return '<label><input type="checkbox" value="' + esc(a.code) + '" checked>' + esc(a.name) + '</label>'; }).join('') +
+          '<div class="hm-muted">ให้ใช้โปรแกรม (ติ๊กไว้ให้แล้ว เพิ่ม/เอาออกได้ · English Step ต้องติ๊กเอง)</div><div class="hm-apps">' +
+          APP_LIST.map(function (a) { return '<label><input type="checkbox" value="' + esc(a.code) + '"' + (DEFAULT_OFF.indexOf(a.code) < 0 ? ' checked' : '') + '>' + esc(a.name) + '</label>'; }).join('') +
           '</div><div class="hm-row"><label class="hm-row" style="flex:1;font-size:.85rem"><input type="checkbox" class="isAdm" style="width:18px;height:18px">เป็นผู้ดูแลระบบ</label>' +
           '<button class="hm-btn no" type="button" data-act="rej">ปฏิเสธ</button><button class="hm-btn ok" type="button" data-act="ok">อนุมัติ</button></div><div class="hm-msg"></div></div>';
       });
@@ -396,10 +399,10 @@
   }
 
   /* ---------- 👥 ผู้ใช้ (แบบใหม่ ก.พ. — รออนุมัติบนสุด · แถบสิทธิ์ · สวิตช์ระงับ · หน้าต่างแก้ไข) ---------- */
-  var GROUPS = [['⚡ ระบบไฟฟ้า', ['patrol', 'tx-survey', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'dutyroster']]];
+  var GROUPS = [['⚡ ระบบไฟฟ้า', ['patrol', 'tx-survey', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'dutyroster']], ['📚 พัฒนาตนเอง', ['english']]];
   var UF = { f: 'all', q: '' };
   // โปรแกรมที่ตรวจสิทธิ์รายโปรแกรมจริง (pea-hub.js ไม่มี data-perm="login"/data-gate="off" หรือหลังบ้านบล็อกการบันทึก) — เพิ่มเมื่อเปิดล็อกโปรแกรมใหม่
-  var ENFORCED = ['patrol', 'tx-survey', 'damage', 'construction', 'drawings', 'procure', 'tfbuy', 'stock', 'asset', 'dutyroster'];
+  var ENFORCED = ['patrol', 'tx-survey', 'damage', 'construction', 'drawings', 'procure', 'tfbuy', 'stock', 'asset', 'dutyroster', 'english'];
   var VIEW_OK = ['patrol', 'tx-survey'];   // ทุกคนเปิดดูได้ — สิทธิ์ = บันทึกได้
   // หน้าจัดการผู้ใช้แสดงเฉพาะโปรแกรมที่ตรวจสิทธิ์จริง — โปรแกรมอื่นไม่ต้องตั้ง (ใช้ได้ทุกคน หรือมีล็อกอินของตัวเอง)
   function enf() { return ENFORCED.filter(function (c) { return APP_LIST.some(function (a) { return a.code === c; }); }); }
@@ -454,7 +457,7 @@
         if (a === 'rej' && !confirm('ปฏิเสธคำขอของ ' + p.name + '?')) return;
         var role = pr.querySelector('.hu-seg .on').dataset.r;
         pr.querySelectorAll('button').forEach(function (x) { x.disabled = true; }); msg.className = 'hm-msg'; msg.textContent = 'กำลังบันทึก…';
-        callApi(a === 'ok' ? { action: 'approvePending', targetName: p.name, approvedRole: role, approvedApps: appCodes() } : { action: 'rejectPending', targetName: p.name }).then(function (r) {
+        callApi(a === 'ok' ? { action: 'approvePending', targetName: p.name, approvedRole: role, approvedApps: role === 'admin' ? appCodes() : defaultCodes() } : { action: 'rejectPending', targetName: p.name }).then(function (r) {
           if (r && r.ok) tabUsers(body); else { pr.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = (r && (r.error || r.message)) || 'ไม่สำเร็จ'; }
         }).catch(function () { pr.querySelectorAll('button').forEach(function (x) { x.disabled = false; }); msg.className = 'hm-msg err'; msg.textContent = 'เชื่อมต่อไม่ได้'; });
         return;
@@ -477,7 +480,7 @@
   }
   /* หน้าต่างแก้ไข/เพิ่มผู้ใช้ */
   function editUser(u, body) {
-    var isNew = !u, E = u ? { name: u.name, role: u.role, position: u.position || '', org: u.org || '', disabled: !!u.disabled, apps: u.role === 'admin' ? appCodes() : u.apps.slice() } : { name: '', role: 'member', position: '', org: '', disabled: false, apps: appCodes() };
+    var isNew = !u, E = u ? { name: u.name, role: u.role, position: u.position || '', org: u.org || '', disabled: !!u.disabled, apps: u.role === 'admin' ? appCodes() : u.apps.slice() } : { name: '', role: 'member', position: '', org: '', disabled: false, apps: defaultCodes() };
     var me = u && isMe(u);
     var d = document.createElement('div'); d.className = 'hu-dw';
     var E_ = enf(), inG = {};
