@@ -84,9 +84,13 @@
 
   var st2 = document.createElement('style');
   st2.textContent = '' +
-    '#hubAdmCard{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;background:#fff;border:2px solid var(--pea-purple,#4b2e83);border-radius:16px;padding:11px 14px;font:inherit;text-align:left;cursor:pointer;color:inherit;box-sizing:border-box}' +
-    '#hubAdmCard .ic{width:42px;height:42px;border-radius:12px;background:#ede7f6;display:grid;place-items:center;font-size:21px;flex-shrink:0}#hubAdmCard .tx{flex:1;min-width:0}#hubAdmCard b{display:block;font-size:.98rem}#hubAdmCard small{color:#666;font-size:.78rem}' +
-    '#hubAdmCard em{font-style:normal;background:#ef4444;color:#fff;border-radius:99px;padding:3px 10px;font-weight:800;font-size:.8rem;white-space:nowrap}' +
+    /* ปุ่ม "จัดการผู้ใช้" อยู่แถวเดียวกับช่องค้นหา (แบบ A) + หัวจอเตี้ยลง */
+    '#hubSrow{display:flex;gap:10px;align-items:center;position:relative;z-index:1;margin-top:14px}#hubSrow .search-wrap{flex:1;min-width:0;margin:0!important}' +
+    '#hubAdmCard{display:flex;align-items:center;gap:8px;flex:0 0 auto;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.38);color:#fff;border-radius:14px;padding:0 16px;height:52px;font:inherit;font-weight:700;font-size:.92rem;cursor:pointer;white-space:nowrap}' +
+    '#hubAdmCard:hover{background:rgba(255,255,255,.24)}#hubAdmCard em{font-style:normal;background:#ef4444;color:#fff;border-radius:99px;padding:1px 8px;font-size:.75rem;font-weight:800}' +
+    '@media(min-width:1100px){#hubSrow{max-width:980px;margin-top:16px}#hubSrow .search-wrap{max-width:none}#hubAdmCard{height:60px;padding:0 20px;border-radius:16px}' +
+      'header{padding-bottom:66px!important}#hubHello{margin-top:14px!important}#hubHello b{display:inline!important;font-size:1.75rem!important}#hubHello span{display:inline!important;margin-left:12px!important}}' +
+    '@media(max-width:699px){#hubAdmCard{padding:0 13px}#hubAdmCard .tx{display:none}#hubHello{margin-top:10px!important}}' +
     '#hubAdminBtn,#hubAdminBtn.show{display:none!important}' +
     '.hm-box{max-width:940px}' +
     '.hu-top{display:flex;gap:8px;align-items:center;margin-bottom:10px}.hu-top .hm-search{flex:1;margin:0}.hu-top .hm-btn{white-space:nowrap}' +
@@ -284,13 +288,15 @@
     var c = $('hubAdmCard');
     if (n === -1) { if (c) c.style.display = 'none'; return; }
     if (!c) {
-      var wn = $('welcomeNote'); if (!wn || !wn.parentNode) return;
-      c = document.createElement('button'); c.type = 'button'; c.id = 'hubAdmCard';
-      c.innerHTML = '<span class="ic">👥</span><span class="tx"><b>จัดการผู้ใช้ศูนย์รวมงาน</b><small>อนุมัติ · สิทธิ์รายโปรแกรม · รหัสผ่าน · สถิติ</small></span><em></em>';
-      c.onclick = openAdmin; wn.parentNode.insertBefore(c, wn.nextSibling);
+      var sw = document.querySelector('header .search-wrap'); if (!sw) return;
+      var row = $('hubSrow');
+      if (!row) { row = document.createElement('div'); row.id = 'hubSrow'; sw.parentNode.insertBefore(row, sw); row.appendChild(sw); }
+      c = document.createElement('button'); c.type = 'button'; c.id = 'hubAdmCard'; c.title = 'จัดการผู้ใช้ศูนย์รวมงาน — อนุมัติ · สิทธิ์รายโปรแกรม · รหัสผ่าน · สถิติ';
+      c.innerHTML = '<span>👥</span><span class="tx">จัดการผู้ใช้</span><em style="display:none"></em>';
+      c.onclick = openAdmin; row.appendChild(c);
     }
     c.style.display = '';
-    if (n != null) { var em = c.querySelector('em'); em.textContent = n ? n + ' ใหม่' : ''; em.style.display = n ? '' : 'none'; }
+    if (n != null) { var em = c.querySelector('em'); em.textContent = n || ''; em.style.display = n ? '' : 'none'; }
   }
   function openAdmin() {
     var body = modal('👥 จัดการผู้ใช้ศูนย์รวมงาน', [
