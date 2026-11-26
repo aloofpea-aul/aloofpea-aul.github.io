@@ -82,7 +82,7 @@
 
   var st2 = document.createElement('style');
   st2.textContent = '' +
-    '#hubAdmCard{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;background:#fff;border:2px solid var(--pea-purple,#4b2e83);border-radius:16px;padding:11px 14px;font:inherit;text-align:left;cursor:pointer;color:inherit;grid-column:1/-1}' +
+    '#hubAdmCard{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;background:#fff;border:2px solid var(--pea-purple,#4b2e83);border-radius:16px;padding:11px 14px;font:inherit;text-align:left;cursor:pointer;color:inherit;box-sizing:border-box}' +
     '#hubAdmCard .ic{width:42px;height:42px;border-radius:12px;background:#ede7f6;display:grid;place-items:center;font-size:21px;flex-shrink:0}#hubAdmCard .tx{flex:1;min-width:0}#hubAdmCard b{display:block;font-size:.98rem}#hubAdmCard small{color:#666;font-size:.78rem}' +
     '#hubAdmCard em{font-style:normal;background:#ef4444;color:#fff;border-radius:99px;padding:3px 10px;font-weight:800;font-size:.8rem;white-space:nowrap}' +
     '#hubAdminBtn,#hubAdminBtn.show{display:none!important}' +
