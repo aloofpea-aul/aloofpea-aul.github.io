@@ -481,7 +481,7 @@ fieldset:disabled{opacity:.55}
   .app{padding:0;max-width:none}
   main#viewReport{padding:0}
   #printArea{gap:0;display:block}
-  .fitbar{display:none!important}
+  .fitbar,#peaDock{display:none!important}
   #printArea .page{zoom:1!important}
   .page{box-shadow:none;break-after:page;page-break-after:always}
   .page:last-child{break-after:auto;page-break-after:auto}
@@ -578,7 +578,7 @@ fieldset:disabled{opacity:.55}
       </div>
       <div class="grid2" style="margin-top:10px">
         <button class="btn ghost rRoster" id="rSetStatus">บันทึกสถานะ</button>
-        <button class="btn" id="rPrint">พิมพ์ / บันทึก PDF</button>
+        <button class="btn" id="rPrint">พิมพ์ / บันทึก PDF</button><button class="btn" id="rPdfSh" style="background:#06C755;border-color:#06C755">📤 แชร์ PDF (มือถือ)</button>
       </div>
       <div class="muted" style="margin-top:6px" id="rHint">ตั้งค่าเครื่องพิมพ์: Letter แนวนอน · ขอบ 0 (None) · เปิด "Background graphics"</div>
       <div id="rMsg"></div>
@@ -1981,6 +1981,7 @@ async function holBanner(r){ const el=$('rHolBar'); if(!el) return; el.innerHTML
     try{ await apiPost({action:'generate',m:key,pair:String(off),pin}); forgetMonth(key); $('dMonth').innerHTML=''; msg('rMsg','อัปเดตตารางร่างตามวันหยุดแล้ว ✓'); drawReport(); }
     catch(e){ $('rHolUp').disabled=false; msg('rMsg',e.message,'err'); } }; }
 async function drawReport(){
+  S.repPdfPrep=null; if($('rPdfSh')) $('rPdfSh').innerHTML='📤 แชร์ PDF (มือถือ)';
   const k=$('rKind').value, isDoc=['leave','leavelog','sign','insporder','outsum'].includes(k);
   if(k==='track'){ document.querySelectorAll('.rRoster').forEach(e=>e.classList.add('hide')); document.querySelectorAll('.rDoc').forEach(e=>e.classList.add('hide')); $('rHint').textContent='หน้าติดตาม (ไม่ใช่เอกสารพิมพ์)'; return drawTrack(); }
   document.querySelectorAll('.rRoster').forEach(e=>e.classList.toggle('hide',isDoc));
@@ -2460,6 +2461,22 @@ function setPageSize(){ const ps=[...document.querySelectorAll('#printArea .page
 window.addEventListener('beforeprint',setPageSize);
 try{ new MutationObserver(setPageSize).observe($('printArea'),{childList:true}); }catch(e){}
 $('rPrint').onclick=()=>{ setPageSize(); if($('rKind').value==='sign'&&(S.signKeys||[]).length) return printSignDialog(S.signKeys); S.prOurs=true; window.print(); };
+/* มือถือ (โดยเฉพาะ iPhone) พิมพ์เป็น A4 แนวตั้งเสมอ → ตารางแนวนอนถูกตัด · ทำ PDF เองทีละหน้า ขนาดหน้าตรงตามเอกสาร */
+async function repPdfFile(){ const P=[...document.querySelectorAll('#printArea .page')]; if(!P.length) throw new Error('ยังไม่มีเอกสารให้ทำ PDF');
+  await ntLoad(NT_H2C); await ntLoad(NT_PDF); const {jsPDF}=window.jspdf; let pdf=null;
+  for(const pg of P){ const sz=pg.classList.contains('a4p')?[210,297]:pg.classList.contains('a4l')?[297,210]:[279.4,215.9];
+    const cv=await ntTimeout(html2canvas(pg,{scale:2.2,backgroundColor:'#ffffff',useCORS:true,logging:false,ignoreElements:e=>/^(IMG|IFRAME|VIDEO|CANVAS)$/.test(e.tagName)&&!pg.contains(e),onclone:d=>{ d.querySelectorAll('#printArea .page').forEach(x=>x.style.zoom='1'); }}),60e3,'ทำ PDF นานเกินไป — ลองใหม่อีกครั้ง');
+    const o=sz[0]>sz[1]?'l':'p'; if(!pdf) pdf=new jsPDF({unit:'mm',format:sz,orientation:o}); else pdf.addPage(sz,o);
+    pdf.addImage(cv.toDataURL('image/jpeg',.9),'JPEG',0,0,sz[0],sz[1]); }
+  const nm=($('rKind').selectedOptions[0]||{}).text||'เอกสาร', m=$('rMonth').value;
+  return new File([pdf.output('blob')],(nm+' '+(m&&m!=='__preview'?monthLabel(m):'')).replace(/[\\/:*?"<>|]/g,'').trim()+'.pdf',{type:'application/pdf'}); }
+$('rPdfSh').onclick=async e=>{ const b=e.currentTarget, P=S.repPdfPrep;
+  const send=async f=>{ if(navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f]}); }catch(x){ if(x.name==='NotAllowedError') return false; if(x.name!=='AbortError') throw x; } } else ntDl(f); return true; };
+  if(P&&Date.now()-P.t<5*60e3){ S.repPdfPrep=null; b.innerHTML='📤 แชร์ PDF (มือถือ)'; try{ await send(P.f); }catch(x){ alert(x.message); } return; }
+  b.disabled=true; b.innerHTML='<span class="spin"></span>กำลังทำ PDF…';
+  try{ const f=await repPdfFile(); const act=navigator.userActivation?navigator.userActivation.isActive:true;
+    if(!act||!(await send(f))){ S.repPdfPrep={f,t:Date.now()}; b.disabled=false; b.innerHTML='📤 PDF พร้อมแล้ว — แตะอีกครั้งเพื่อแชร์'; return; } }
+  catch(x){ alert(x.message); } b.disabled=false; b.innerHTML='📤 แชร์ PDF (มือถือ)'; };
 $('rSetStatus').onclick=async()=>{
   const v=$('rMonth').value; if(v==='__preview'){msg('rMsg','ต้องบันทึกที่หน้า "สร้างเวร" ก่อน','warn');return;}
   const pin=prompt('PIN ผู้มีสิทธิ์'); if(pin==null)return;
