@@ -5,7 +5,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function g(n, d) { try { return eval(n); } catch (e) { return d; } }
   var APP = 'https://aloofpea-aul.github.io/ccl/';
-  var KSEL = 'ccl_line_sel_v1', KTAB = 'ccl_line_tab_v1', T = null, TT = 0;
+  var KSEL = 'ccl_line_sel_v1', KTAB = 'ccl_line_tab_v1', T = null, TT = 0, LAST = '';
   function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
   var COLORS = ['#06c755', '#0ea5e9', '#8b5cf6', '#f59e0b', '#ef4444', '#14b8a6', '#64748b', '#ec4899'];
 
@@ -115,6 +115,7 @@
         if (!t) { Swal.showValidationMessage('ไม่มีข้อความ'); return false; }
         if (mem && mem.checked) ls(KSEL, sel);
         Swal.showLoading();
+        LAST = t;
         return new Promise(function (ok) {
           google.script.run.withSuccessHandler(function (r) { ok(r); }).withFailureHandler(function (e) { Swal.hideLoading(); Swal.showValidationMessage((e && e.message) || String(e)); ok(false); }).cclLineSend(sel, t);
         });
@@ -122,7 +123,17 @@
     }).then(function (r) {
       if (!r.isConfirmed || !r.value) return;
       var v = r.value;
-      if (v.fail && v.fail.length) Swal.fire({ icon: v.sent ? 'warning' : 'error', title: v.sent ? 'ส่งแล้ว ' + v.sent + ' ปลายทาง' : 'ส่งไม่สำเร็จ', html: 'ส่งไม่ได้: ' + esc(v.fail.join(', ')) + '<br><small style="color:#64748b">บอทต้องอยู่ในกลุ่ม หรือผู้รับต้องเพิ่มบอทเป็นเพื่อน และโควตาข้อความเดือนนี้ต้องยังไม่หมด</small>' });
+      var quota = v.fail && v.fail.length && v.fail.every(function (f) { return /\(429\)$/.test(f); });
+      if (quota) {
+        // โควตาข้อความฟรีของบอทเดือนนี้หมด — ส่งต่อด้วย "แชร์เอง" (ฟรี ไม่ใช้โควตา) และจำไว้ให้เปิดแท็บแชร์เองครั้งถัดไป
+        ls(KTAB, 'me');
+        Swal.fire({ icon: 'info', title: v.sent ? 'ส่งแล้ว ' + v.sent + ' ปลายทาง · ที่เหลือโควตาหมด' : 'โควตาบอทเดือนนี้หมดแล้ว',
+          html: 'บอท CCL ส่งข้อความฟรีได้จำกัดต่อเดือน ตอนนี้ใช้ครบแล้ว (เริ่มใหม่วันที่ 1 ของเดือนหน้า)<br><b>แชร์เองทาง LINE ได้เลย — ฟรี ไม่ใช้โควตา</b>',
+          showCancelButton: true, confirmButtonText: '📲 แชร์เองทาง LINE', cancelButtonText: 'ปิด', confirmButtonColor: '#06c755' })
+          .then(function (x) { if (x.isConfirmed && LAST) window.open('https://line.me/R/share?text=' + encodeURIComponent(LAST), '_blank'); });
+        return;
+      }
+      if (v.fail && v.fail.length) Swal.fire({ icon: v.sent ? 'warning' : 'error', title: v.sent ? 'ส่งแล้ว ' + v.sent + ' ปลายทาง' : 'ส่งไม่สำเร็จ', html: 'ส่งไม่ได้: ' + esc(v.fail.join(', ')) + '<br><small style="color:#64748b">บอทต้องอยู่ในกลุ่ม หรือผู้รับต้องเพิ่มบอทเป็นเพื่อน</small>' });
       else Swal.fire({ icon: 'success', title: 'ส่ง LINE แล้ว ' + v.sent + ' ปลายทาง', timer: 1800, showConfirmButton: false });
     });
   }
