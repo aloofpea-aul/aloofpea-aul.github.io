@@ -201,7 +201,7 @@
             } else { msg.className = 'msg err'; msg.textContent = (r && r.error) || 'สมัครไม่สำเร็จ'; }
             return;
           }
-          if (!r || !r.role) { msg.className = 'msg err'; msg.textContent = 'ชื่อหรือรหัสผ่านไม่ถูกต้อง หรือยังรอการอนุมัติ'; return; }
+          if (!r || !r.role) { msg.className = 'msg err'; msg.textContent = whyText(r, 'ชื่อหรือรหัสผ่านไม่ถูกต้อง หรือยังรอการอนุมัติ'); return; }
           ls(K_USER, name); ls(K_PASS, pass);
           decide(r);
         }).catch(function () {
@@ -231,6 +231,14 @@
     });
   }
 
+  /* ข้อความเมื่อเข้าระบบไม่ได้ — ตามเหตุที่หลังบ้านบอก (disabled / pending / wrong) */
+  function whyText(r, dflt) {
+    var w = r && r.reason;
+    if (w === 'disabled') return 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ';
+    if (w === 'pending') return 'ยังรอผู้ดูแลระบบอนุมัติ — อนุมัติแล้วเข้าได้ทันทีด้วยชื่อ/รหัสนี้';
+    if (w === 'wrong') return 'ชื่อหรือรหัสผ่านไม่ถูกต้อง (ถ้าลืมรหัส ให้ผู้ดูแลระบบตั้งรหัสใหม่ให้)';
+    return dflt;
+  }
   /* r = ผลจาก whoAmI */
   function decide(r) {
     var auth = { name: creds().name, role: r.role, apps: Array.isArray(r.apps) ? r.apps : null, ts: Date.now() };
@@ -261,7 +269,7 @@
       countVisit();                              // เคยผ่านแล้ว เปิดได้ทันที แล้วตรวจซ้ำเบื้องหลัง
       api({ action: 'whoAmI' }).then(function (r) {
         if (!r || !r.ok) return;
-        if (!r.role) { ls(K_AUTH, null); lock(); showLogin('login', 'รหัสผ่านถูกเปลี่ยนหรือบัญชีถูกระงับ กรุณาเข้าสู่ระบบใหม่'); return; }
+        if (!r.role) { ls(K_AUTH, null); lock(); showLogin('login', whyText(r, 'รหัสผ่านถูกเปลี่ยนหรือบัญชีถูกระงับ กรุณาเข้าสู่ระบบใหม่')); return; }
         decide(r);
       }).catch(function () {});
       return;
@@ -269,7 +277,7 @@
     lock(); showChecking();
     api({ action: 'whoAmI' }).then(function (r) {
       if (r && r.role) decide(r);
-      else showLogin('login', 'ชื่อหรือรหัสผ่านที่จำไว้ใช้ไม่ได้แล้ว หรือยังรอการอนุมัติ');
+      else showLogin('login', whyText(r, 'ชื่อหรือรหัสผ่านที่จำไว้ใช้ไม่ได้แล้ว หรือยังรอการอนุมัติ'));
     }).catch(function () {
       // ออฟไลน์/เครือข่ายมีปัญหา — ถ้าเคยผ่านแล้วให้ใช้ต่อได้ (ไม่ให้งานหน้างานสะดุด)
       if (cache && cache.name === c.name && cache.role && canUse(cache)) unlock();

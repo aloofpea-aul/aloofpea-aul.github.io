@@ -111,7 +111,7 @@
     '.hu-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
     '.hu-roles{display:grid;grid-template-columns:1fr 1fr;gap:6px}.hu-roles button{border:2px solid #e5e0d6;background:#fff;border-radius:12px;padding:8px 10px;font:inherit;font-size:.74rem;color:#777;text-align:left;cursor:pointer}.hu-roles b{display:block;font-size:.86rem;color:#222}.hu-roles .on{border-color:var(--pea-purple,#4b2e83);background:#f3effa}.hu-roles button:disabled{opacity:.55;cursor:not-allowed}' +
     '.hu-grp{font-size:.74rem;color:#999;font-weight:700;margin:8px 0 4px}.hu-apps{display:flex;flex-wrap:wrap;gap:5px}.hu-apps button{border:1.5px solid #e5e0d6;background:#fff;border-radius:99px;padding:5px 11px;font:inherit;font-size:.78rem;font-weight:700;color:#999;cursor:pointer}.hu-apps .on{background:var(--pea-purple,#4b2e83);border-color:var(--pea-purple,#4b2e83);color:#fff}' +
-    '.hu-apps .soft:not(.on){border-style:dashed}.hu-apps .soft.on{background:#8b76c2;border-color:#8b76c2}.hu-legend{font-size:.72rem;color:#777;background:#faf8f3;border-radius:9px;padding:7px 9px;margin-top:10px;line-height:1.5}' +
+    '.hu-apps small{font-weight:600;opacity:.8}.hu-legend{font-size:.72rem;color:#777;background:#faf8f3;border-radius:9px;padding:7px 9px;margin-top:10px;line-height:1.5}' +
     '.hu-adm-note{font-size:.8rem;color:#92400e;background:#fffbeb;border-radius:10px;padding:8px 10px;margin-top:10px}' +
     '.hu-st{display:flex;align-items:center;gap:8px;border:1.5px solid #eee;border-radius:12px;padding:9px 10px;margin-top:12px;font-size:.86rem;font-weight:700}.hu-st>div{flex:1}.hu-st small{display:block;font-weight:600;color:#888;font-size:.74rem}' +
     '.hu-warn{font-size:.76rem;color:#b45309;background:#fffbeb;border-radius:9px;padding:6px 9px;margin-top:8px}' +
@@ -396,15 +396,18 @@
   }
 
   /* ---------- 👥 ผู้ใช้ (แบบใหม่ ก.พ. — รออนุมัติบนสุด · แถบสิทธิ์ · สวิตช์ระงับ · หน้าต่างแก้ไข) ---------- */
-  var GROUPS = [['⚡ ระบบไฟฟ้า', ['sld', 'tx-survey', 'patrol', 'tree', 'analytics', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'booknum', 'budget', 'dutyroster', 'vehicle']]];
+  var GROUPS = [['⚡ ระบบไฟฟ้า', ['patrol', 'tx-survey', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'dutyroster']]];
   var UF = { f: 'all', q: '' };
   // โปรแกรมที่ตรวจสิทธิ์รายโปรแกรมจริง (pea-hub.js ไม่มี data-perm="login"/data-gate="off" หรือหลังบ้านบล็อกการบันทึก) — เพิ่มเมื่อเปิดล็อกโปรแกรมใหม่
-  var ENFORCED = ['dutyroster', 'drawings', 'patrol', 'procure', 'tfbuy', 'damage', 'asset', 'stock', 'construction'];
+  var ENFORCED = ['patrol', 'tx-survey', 'damage', 'construction', 'drawings', 'procure', 'tfbuy', 'stock', 'asset', 'dutyroster'];
+  var VIEW_OK = ['patrol', 'tx-survey'];   // ทุกคนเปิดดูได้ — สิทธิ์ = บันทึกได้
+  // หน้าจัดการผู้ใช้แสดงเฉพาะโปรแกรมที่ตรวจสิทธิ์จริง — โปรแกรมอื่นไม่ต้องตั้ง (ใช้ได้ทุกคน หรือมีล็อกอินของตัวเอง)
+  function enf() { return ENFORCED.filter(function (c) { return APP_LIST.some(function (a) { return a.code === c; }); }); }
   var COLS = ['#4b2e83', '#2a9d8f', '#e8962e', '#2563eb', '#c2410c', '#7c5cc4', '#0f766e', '#be185d'];
   function avc(s) { var h = 0; String(s).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) | 0; }); return COLS[Math.abs(h) % COLS.length]; }
   function ini(n) { return String(n || '?').replace(/^(นาย|นางสาว|นาง|น\.ส\.)\s*/, '').trim().charAt(0) || '?'; }
   function isMe(u) { return CURRENT_USER && String(u.name).toLowerCase() === String(CURRENT_USER.name).toLowerCase(); }
-  function nApps(u) { return u.role === 'admin' ? APP_LIST.length : u.apps.length; }
+  function nApps(u) { var e = enf(); return u.role === 'admin' ? e.length : e.filter(function (c) { return u.apps.indexOf(c) >= 0; }).length; }
   var UFL = {
     all: ['ทั้งหมด', function (u) { return true; }], act: ['ใช้งานอยู่', function (u) { return !u.disabled; }],
     off: ['ระงับ', function (u) { return u.disabled; }], adm: ['ผู้ดูแลระบบ', function (u) { return u.role === 'admin'; }]
@@ -430,10 +433,10 @@
       var a = users.filter(UFL[UF.f][1]).filter(function (u) { return !q || (u.name + ' ' + (u.position || '') + ' ' + (u.org || '')).toLowerCase().indexOf(q) >= 0; })
         .sort(function (x, y) { return (x.disabled - y.disabled) || ((x.role === 'admin' ? 0 : 1) - (y.role === 'admin' ? 0 : 1)) || x.name.localeCompare(y.name, 'th'); });
       T.innerHTML = '<div class="hu-tr hu-h"><span>ผู้ใช้</span><span>บทบาท</span><span>สิทธิ์โปรแกรม</span><span>ใช้งาน</span><span></span></div>' + (a.length ? a.map(function (u) {
-        var n = nApps(u), tot = APP_LIST.length, me = isMe(u);
+        var n = nApps(u), tot = enf().length, me = isMe(u);
         return '<div class="hu-tr' + (u.disabled ? ' off' : '') + '" data-u="' + esc(u.name) + '"><div class="hu-u"><div class="hu-av" style="background:' + (u.disabled ? '#aaa' : avc(u.name)) + '">' + esc(ini(u.name)) + '</div><div class="hu-nm"><b>' + esc(u.name) + (me ? ' <em>(คุณ)</em>' : '') + '</b><small>' + esc([u.position, u.org].filter(Boolean).join(' · ') || (u.disabled ? 'ระงับไว้' : '')) + '</small></div></div>' +
           '<span><span class="hu-rl ' + (u.role === 'admin' ? 'a">👑 ผู้ดูแลระบบ' : 'm">สมาชิก') + '</span></span>' +
-          '<div class="hu-bar"><i><u style="width:' + (u.disabled ? 0 : Math.round(n * 100 / Math.max(1, tot))) + '%"></u></i><span>' + (u.disabled ? 'ระงับ' : u.role === 'admin' || n >= tot ? 'ทุกโปรแกรม' : n ? n + ' จาก ' + tot : 'ยังไม่มี') + '</span></div>' +
+          '<div class="hu-bar"><i><u style="width:' + (u.disabled ? 0 : Math.round(n * 100 / Math.max(1, tot))) + '%"></u></i><span>' + (u.disabled ? 'ระงับ' : u.role === 'admin' || n >= tot ? 'ทุกโปรแกรม' : n ? n + ' จาก ' + tot : 'ไม่มีสิทธิ์พิเศษ') + '</span></div>' +
           '<span><button type="button" class="hu-sw' + (u.disabled ? '' : ' on') + '" data-a="tg"' + (me ? ' disabled' : '') + ' title="' + (u.disabled ? 'ระงับอยู่ — กดเพื่อเปิด' : 'ใช้งานอยู่ — กดเพื่อระงับ') + '"></button></span><span class="hu-ed">✏️ แก้ไข</span></div>';
       }).join('') : '<div class="hm-empty">ไม่พบผู้ใช้</div>');
     }
@@ -461,7 +464,7 @@
       if (a === 'tg') {
         e.stopPropagation(); if (b.disabled) return;
         var off = !u.disabled;
-        if (off && !confirm('ระงับ ' + u.name + '?\nเข้าระบบไม่ได้ทุกโปรแกรมจนกว่าจะเปิดอีกครั้ง (บัญชีและสิทธิ์เดิมยังอยู่)')) return;
+        if (off && !confirm('ระงับ ' + u.name + '?\nจะล็อกอินศูนย์รวมงานไม่ได้จนกว่าจะเปิดอีกครั้ง (บัญชีและสิทธิ์เดิมยังอยู่)')) return;
         b.disabled = true; b.classList.toggle('on', !off);
         saveUser({ targetName: u.name, role: u.role, disabled: off }).then(function () { u.disabled = off; rows(); }, function (err) { alert(err); b.disabled = false; b.classList.toggle('on', off); });
         return;
@@ -477,20 +480,19 @@
     var isNew = !u, E = u ? { name: u.name, role: u.role, position: u.position || '', org: u.org || '', disabled: !!u.disabled, apps: u.role === 'admin' ? appCodes() : u.apps.slice() } : { name: '', role: 'member', position: '', org: '', disabled: false, apps: appCodes() };
     var me = u && isMe(u);
     var d = document.createElement('div'); d.className = 'hu-dw';
-    var grouped = {}; GROUPS.forEach(function (g) { g[1].forEach(function (c) { grouped[c] = 1; }); });
-    var groups = GROUPS.map(function (g) { return [g[0], g[1].filter(function (c) { return APP_LIST.some(function (a) { return a.code === c; }); })]; });
-    var rest = APP_LIST.filter(function (a) { return !grouped[a.code]; }).map(function (a) { return a.code; });
-    if (rest.length) groups.push(['📦 อื่นๆ', rest]);
+    var E_ = enf(), inG = {};
+    var groups = GROUPS.map(function (g) { return [g[0], g[1].filter(function (c) { inG[c] = 1; return E_.indexOf(c) >= 0; })]; }).filter(function (g) { return g[1].length; });
+    var rest = E_.filter(function (c) { return !inG[c]; }); if (rest.length) groups.push(['📦 อื่นๆ', rest]);
     d.innerHTML = '<div class="hu-dm"></div><div class="hu-dr"><h3>' + (isNew ? '＋ เพิ่มผู้ใช้' : '✏️ ' + esc(u.name)) + '<button type="button" class="hu-x">✕</button></h3>' +
       '<div class="hu-s">' + (isNew ? 'ระบบสร้างรหัสผ่านให้ — ส่งให้เจ้าตัวใช้เข้าระบบ' : (u.appsUpdated ? 'แก้สิทธิ์ล่าสุด ' + esc(u.appsUpdated) : '')) + '</div>' +
       (isNew ? '<p class="hu-lb">ชื่อ-นามสกุล (ใช้ล็อกอิน)</p><input data-k="name" placeholder="เช่น สมชาย ใจดี" autocomplete="off">' : '') +
       '<div class="hu-two"><div><p class="hu-lb">ตำแหน่ง</p><input data-k="position" value="' + esc(E.position) + '" placeholder="เช่น พชง.6"></div><div><p class="hu-lb">หน่วยงาน / แผนก</p><input data-k="org" value="' + esc(E.org) + '" placeholder="เช่น ผปร."></div></div>' +
-      '<p class="hu-lb">บทบาท</p><div class="hu-roles"><button type="button" data-role="admin"' + (me ? ' disabled' : '') + '><b>👑 ผู้ดูแลระบบ</b>ใช้ได้ทุกโปรแกรม + จัดการผู้ใช้</button><button type="button" data-role="member"' + (me ? ' disabled' : '') + '><b>สมาชิก</b>ใช้ได้เฉพาะโปรแกรมที่เลือก</button></div>' +
-      '<div class="hu-appsw"><p class="hu-lb"><span>โปรแกรมที่ใช้ได้ (<span class="hu-n"></span>)</span><span style="margin-left:auto"><a data-all="1">เลือกทั้งหมด</a> · <a data-all="0">ล้าง</a></span></p>' +
-      groups.map(function (g) { return '<div class="hu-grp">' + g[0] + '</div><div class="hu-apps">' + g[1].map(function (c) { return '<button type="button" data-app="' + esc(c) + '"' + (ENFORCED.indexOf(c) >= 0 ? ' title="โปรแกรมนี้ตรวจสิทธิ์จริง"' : ' class="soft" title="ยังไม่ตรวจสิทธิ์รายโปรแกรม — ล็อกอินแล้วเปิดได้"') + '>' + (ENFORCED.indexOf(c) >= 0 ? '🔒 ' : '') + esc(appName(c)) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>' +
-      '<div class="hu-legend">🔒 = ตรวจสิทธิ์จริง (ไม่ติ๊ก = เข้าไม่ได้) · ไม่มี 🔒 = ยังไม่ตรวจรายโปรแกรม ล็อกอินแล้วเปิดได้ · ปิด "เปิดใช้งาน" = เข้าไม่ได้ทุกโปรแกรมที่ใช้ล็อกอินศูนย์รวมงาน</div>' +
+      '<p class="hu-lb">บทบาท</p><div class="hu-roles"><button type="button" data-role="admin"' + (me ? ' disabled' : '') + '><b>👑 ผู้ดูแลระบบ</b>ใช้ได้ทุกโปรแกรม + จัดการผู้ใช้</button><button type="button" data-role="member"' + (me ? ' disabled' : '') + '><b>สมาชิก</b>ใช้โปรแกรมทั่วไปได้ + โปรแกรมที่ติ๊กให้</button></div>' +
+      '<div class="hu-appsw"><p class="hu-lb"><span>สิทธิ์ใช้โปรแกรม (<span class="hu-n"></span>)</span><span style="margin-left:auto"><a data-all="1">เลือกทั้งหมด</a> · <a data-all="0">ล้าง</a></span></p>' +
+      groups.map(function (g) { return '<div class="hu-grp">' + g[0] + '</div><div class="hu-apps">' + g[1].map(function (c) { return '<button type="button" data-app="' + esc(c) + '">' + esc(appName(c)) + (VIEW_OK.indexOf(c) >= 0 ? ' <small>· บันทึก</small>' : '') + '</button>'; }).join('') + '</div>'; }).join('') + '</div>' +
+      '<div class="hu-legend">สีเข้ม = ใช้ได้ · สีจาง = เข้าโปรแกรมนั้นไม่ได้<br>Patrol / สำรวจหม้อแปลง: ทุกคนเปิดดูได้ ติ๊ก = บันทึกได้<br>โปรแกรมอื่นในศูนย์รวมงานไม่ต้องตั้งที่นี่ (ใช้ได้ทุกคน หรือมีล็อกอินของตัวเอง)</div>' +
       '<div class="hu-adm-note">ผู้ดูแลระบบใช้ได้ทุกโปรแกรมเสมอ</div>' +
-      (isNew ? '' : '<div class="hu-st"><div>✅ เปิดใช้งาน<small>ปิด = ระงับ เข้าระบบไม่ได้ทุกโปรแกรม (บัญชีไม่หาย)</small></div><button type="button" class="hu-sw" data-sw="1"' + (me ? ' disabled' : '') + '></button></div>') +
+      (isNew ? '' : '<div class="hu-st"><div>✅ เปิดใช้งาน<small>ปิด = ระงับ ล็อกอินศูนย์รวมงานไม่ได้ (บัญชีและสิทธิ์ไม่หาย)</small></div><button type="button" class="hu-sw" data-sw="1"' + (me ? ' disabled' : '') + '></button></div>') +
       (me ? '<div class="hu-warn">นี่คือบัญชีของคุณ — ลดสิทธิ์หรือระงับตัวเองไม่ได้</div>' : '') +
       '<div class="hu-act">' + (isNew ? '' : '<button type="button" class="hu-k" data-a="pw">🔑 ตั้งรหัสผ่านใหม่</button>') + '<button type="button" class="hu-sv" data-a="save">💾 ' + (isNew ? 'เพิ่มผู้ใช้' : 'บันทึก') + '</button></div><div class="hm-msg"></div>' +
       '<div class="hu-pw" hidden><p class="hu-lb">รหัสผ่านใหม่ของ ' + (u ? esc(u.name) : '') + '</p><input data-k="pw" autocomplete="off" autocapitalize="off"><div class="hu-act"><button type="button" class="hu-k" data-a="pwno">ยกเลิก</button><button type="button" class="hu-sv" data-a="pwok">ตั้งรหัสนี้</button></div><div class="hu-s">พิมพ์เองได้ (อย่างน้อย 4 ตัว) หรือใช้รหัสที่ระบบสุ่มให้ · เครื่องที่จำรหัสเดิมไว้ต้องล็อกอินใหม่</div></div></div>';
@@ -501,7 +503,7 @@
       d.querySelector('.hu-adm-note').style.display = E.role === 'admin' ? '' : 'none';
       d.querySelector('.hu-legend').style.display = E.role === 'admin' ? 'none' : '';
       d.querySelectorAll('[data-app]').forEach(function (b) { b.classList.toggle('on', E.apps.indexOf(b.dataset.app) >= 0); });
-      d.querySelector('.hu-n').textContent = E.apps.length + ' จาก ' + APP_LIST.length;
+      d.querySelector('.hu-n').textContent = E_.filter(function (c) { return E.apps.indexOf(c) >= 0; }).length + ' จาก ' + E_.length;
       var sw = d.querySelector('[data-sw]'); if (sw) sw.classList.toggle('on', !E.disabled);
     }
     paint();
@@ -514,7 +516,7 @@
       if (t.classList.contains('hu-dm') || t.classList.contains('hu-x')) return close();
       if (t.dataset.role) { E.role = t.dataset.role; return paint(); }
       if (t.dataset.app) { var c = t.dataset.app, i = E.apps.indexOf(c); if (i >= 0) E.apps.splice(i, 1); else E.apps.push(c); return paint(); }
-      if (t.dataset.all) { E.apps = t.dataset.all === '1' ? appCodes() : []; return paint(); }
+      if (t.dataset.all) { E.apps = E.apps.filter(function (c) { return E_.indexOf(c) < 0; }).concat(t.dataset.all === '1' ? E_ : []); return paint(); }
       if (t.dataset.sw) { if (t.disabled) return; E.disabled = !E.disabled; return paint(); }
       var a = t.dataset.a;
       if (a === 'pw') { var box = d.querySelector('.hu-pw'); box.hidden = false; box.querySelector('input').value = gen(); box.querySelector('input').select(); box.scrollIntoView({ block: 'nearest' }); return; }
@@ -530,7 +532,7 @@
       }
       if (a === 'save') {
         if (isNew && !String(E.name).trim()) { msg.className = 'hm-msg err'; msg.textContent = 'กรุณาใส่ชื่อ-นามสกุล'; return; }
-        if (E.role === 'member' && !E.apps.length && !confirm('ยังไม่ได้เลือกโปรแกรมเลย — บันทึกแบบยังใช้โปรแกรมใดไม่ได้?')) return;
+        if (E.role === 'member' && !E_.some(function (c) { return E.apps.indexOf(c) >= 0; }) && !confirm('ยังไม่ได้ให้สิทธิ์โปรแกรมใดเลย — คนนี้จะใช้ได้เฉพาะโปรแกรมที่ทุกคนใช้ได้ บันทึกเลยไหม?')) return;
         t.disabled = true; msg.className = 'hm-msg'; msg.textContent = 'กำลังบันทึก…';
         var call = isNew ? callApi({ action: 'hubUserAdd', newName: String(E.name).trim(), role: E.role, apps: E.apps, position: E.position, org: E.org }).then(function (r) { if (!r || !r.ok) throw ((r && (r.error || r.message)) || 'ไม่สำเร็จ'); return r; }, function () { throw 'เชื่อมต่อไม่ได้'; })
           : saveUser({ targetName: u.name, role: E.role, apps: E.apps, position: E.position, org: E.org, disabled: E.disabled });

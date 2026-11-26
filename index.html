@@ -829,6 +829,7 @@ async function verifyCredentials(name, password){
     const json = await res.json();
     if(json && json.role){ window.HUB_WHO = json; lsSet(K_AUTH, { name:name, role:json.role, apps:Array.isArray(json.apps)?json.apps:null, ts:Date.now() }); }
     else if(json && json.error === 'unauthorized'){ lsSet(K_AUTH, null); }
+    window.HUB_WHY = (json && !json.role && json.reason) || '';
     return json.role || null;
   }catch(e){ return 'offline'; }
 }
@@ -840,7 +841,7 @@ function updateUserBadge(){
     badge.title = CURRENT_USER.name + (CURRENT_USER.role==='admin'?' (ผู้ดูแลระบบ)':' (สมาชิก)');
     badge.classList.remove('unauth');
   } else if(CURRENT_USER.name){
-    badge.textContent = '⚠ ชื่อหรือรหัสผ่านไม่ถูกต้อง';
+    badge.textContent = window.HUB_WHY === 'disabled' ? '⚠ บัญชีถูกระงับ' : window.HUB_WHY === 'pending' ? '⏳ รอผู้ดูแลระบบอนุมัติ' : '⚠ ชื่อหรือรหัสผ่านไม่ถูกต้อง';
     badge.title = CURRENT_USER.name;
     badge.classList.add('unauth');
   } else {
@@ -902,7 +903,7 @@ function showUserPicker(){
       const role = await verifyCredentials(name, password);
       btn.disabled = false; btn.textContent = 'ยืนยัน';
       if(role === 'offline'){ err.textContent = 'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'; return; }
-      if(!role){ err.textContent = 'ชื่อหรือรหัสผ่านไม่ถูกต้อง'; return; }
+      if(!role){ err.textContent = window.HUB_WHY === 'disabled' ? 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ' : window.HUB_WHY === 'pending' ? 'ยังรอผู้ดูแลระบบอนุมัติ — อนุมัติแล้วเข้าได้ทันที' : 'ชื่อหรือรหัสผ่านไม่ถูกต้อง (ลืมรหัส ให้ผู้ดูแลระบบตั้งรหัสใหม่ให้)'; return; }
       CURRENT_USER = { name, password, role };
       localStorage.setItem('pea_aoluek_username', name);
       localStorage.setItem('pea_aoluek_password', password);
@@ -1234,7 +1235,7 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-<script src="hub-admin.js?v=20261126g"></script>
+<script src="hub-admin.js?v=20261126h"></script>
 <script>boot();</script>
 </body>
 </html>
