@@ -97,7 +97,7 @@
         }
         P.querySelector('#lnBody').addEventListener('click', function (e) {
           var b = e.target.closest('[data-s]'); if (!b) return; var t = ta.value;
-          if (b.dataset.s === 'line') window.open('https://line.me/R/share?text=' + encodeURIComponent(t), '_blank');
+          if (b.dataset.s === 'line') lineOpen(t, b);
           else if (b.dataset.s === 'os') navigator.share({ text: t }).catch(function () {});
           else copy(t, b);
         });
@@ -130,12 +130,22 @@
         Swal.fire({ icon: 'info', title: v.sent ? 'ส่งแล้ว ' + v.sent + ' ปลายทาง · ที่เหลือโควตาหมด' : 'โควตาบอทเดือนนี้หมดแล้ว',
           html: 'บอท CCL ส่งข้อความฟรีได้จำกัดต่อเดือน ตอนนี้ใช้ครบแล้ว (เริ่มใหม่วันที่ 1 ของเดือนหน้า)<br><b>แชร์เองทาง LINE ได้เลย — ฟรี ไม่ใช้โควตา</b>',
           showCancelButton: true, confirmButtonText: '📲 แชร์เองทาง LINE', cancelButtonText: 'ปิด', confirmButtonColor: '#06c755' })
-          .then(function (x) { if (x.isConfirmed && LAST) window.open('https://line.me/R/share?text=' + encodeURIComponent(LAST), '_blank'); });
+          .then(function (x) { if (x.isConfirmed && LAST) lineOpen(LAST, null); });
         return;
       }
       if (v.fail && v.fail.length) Swal.fire({ icon: v.sent ? 'warning' : 'error', title: v.sent ? 'ส่งแล้ว ' + v.sent + ' ปลายทาง' : 'ส่งไม่สำเร็จ', html: 'ส่งไม่ได้: ' + esc(v.fail.join(', ')) + '<br><small style="color:#64748b">บอทต้องอยู่ในกลุ่ม หรือผู้รับต้องเพิ่มบอทเป็นเพื่อน</small>' });
       else Swal.fire({ icon: 'success', title: 'ส่ง LINE แล้ว ' + v.sent + ' ปลายทาง', timer: 1800, showConfirmButton: false });
     });
+  }
+  // เปิดแชร์ LINE — ข้อความยาว (รายการงานหลายสิบงาน) ใส่ในลิงก์ไม่ได้ (414) → มือถือใช้เมนูแชร์ของเครื่อง / คอมคัดลอกให้ไปวาง
+  function lineOpen(t, b) {
+    var enc = encodeURIComponent(t);
+    if (enc.length <= 6000) { window.open('https://line.me/R/share?text=' + enc, '_blank'); return; }
+    if (navigator.share && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) { navigator.share({ text: t }).catch(function () {}); return; }
+    copy(t, b);
+    var msg = 'ข้อความยาวเกินกว่าจะเปิดผ่านลิงก์ LINE ได้ — คัดลอกให้แล้ว เปิด LINE แล้ว "วาง" (Ctrl+V) ในแชทได้เลย · ถ้ารายการยาวมาก ใช้ปุ่ม 📄 ส่งเป็นไฟล์ จะสะดวกกว่า';
+    if (b) { var s2 = b.querySelector('small'); if (s2) s2.textContent = '✓ คัดลอกแล้ว — ข้อความยาว เปิด LINE แล้ววาง (Ctrl+V)'; }
+    else if (window.Swal) Swal.fire({ icon: 'success', title: 'คัดลอกข้อความแล้ว', text: msg });
   }
   function copy(t, b) {
     var done = function () { if (b) { var s = b.querySelector('small'); if (s) s.textContent = '✓ คัดลอกแล้ว — ไปวางในแชทได้เลย'; } };

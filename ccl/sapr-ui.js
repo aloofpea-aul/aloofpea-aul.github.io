@@ -252,7 +252,7 @@
   // ส่งต่อเฉพาะการ์ดรายการงานที่เปิดอยู่ (ตามแท็บที่เลือก) ให้ผู้รับผิดชอบ
   function cardLine() {
     if (!CARD || !window.cclLineShare) return;
-    var a = CARD.rows, MAX = 60;
+    var a = CARD.rows, MAX = 30;
     var m = '📋 ' + CARD.t + ' · ' + CARD.lf + ' ' + a.length + ' งาน\n📁 SAP: ' + (R.file || '-') + ' · ' + dth(R.at) + '\n\n' +
       a.slice(0, MAX).map(function (j, i) { return (i + 1) + ') ' + j.w + ' ' + j.n + '\n    ' + j.u + (window.cclCode ? ' ' + cclCode.info(j.u).t : '') + (j.who ? ' · ' + j.who : '') + (j.ccl ? ' · CCL ' + (j.ccl.receiveNo || '') : ' · ยังไม่มีใน CCL'); }).join('\n') +
       (a.length > MAX ? '\n… และอีก ' + (a.length - MAX) + ' งาน (กด "ส่งเป็นไฟล์" เพื่อส่งครบทุกงาน)' : '') + '\n\n🔗 https://aloofpea-aul.github.io/ccl/';
