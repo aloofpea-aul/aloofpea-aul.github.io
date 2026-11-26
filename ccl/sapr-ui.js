@@ -123,7 +123,7 @@
     if (!build()) return;
     var X = $('sapx');
     if (!R || R.none) {
-      X.innerHTML = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP</h2></div><div class="emp">ยังไม่มีรายงาน — วางไฟล์ SAP (แบบ WBS) ในโฟลเดอร์ CCL-SAP แล้วกด ⚙️ อัตโนมัติ → ▶ ตรวจเดี๋ยวนี้ ที่หน้าปิดงาน' +
+      X.innerHTML = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP</h2></div><div class="emp">ยังไม่มีรายงาน — นำเข้าไฟล์ SAP (แบบ WBS) ที่หน้าปิดงาน หรือวางในโฟลเดอร์ CCL-SAP' +
         (isAdm() ? '<br><br><button class="bt g" data-a="rebuild">สร้างรายงานจากไฟล์ล่าสุด</button>' : '') + '</div>';
       return;
     }
@@ -176,7 +176,7 @@
         return '<tr class="ck' + (F.sel && F.sel.t === 'w' && F.sel.v === k ? ' on' : '') + '" data-w="' + esc(k) + '"><td' + (/ยังไม่ระบุ/.test(k) ? ' style="color:#dc2626"' : '') + '>' + esc(k) + '</td><td>' + cnt(a, function (j) { return /^[AB]$/.test(j.g); }) + '</td><td>' + cnt(a, function (j) { return j.g === 'C' || j.g === 'STOP'; }) + '</td><td>' + cnt(a, function (j) { return /^(D1|T|F)$/.test(j.g); }) + '</td><td><b>' + a.length + '</b></td></tr>';
       }).join('') + '</table></div></div></div>';
     h += '<div class="cd ls" id="saprList"></div>';
-    h += '<div class="note">นับ "งาน" = WBS ระดับงาน (ไม่นับหัวโครงการ Z0) · PREL นับเป็น REL · รายงานสร้างใหม่ทุกครั้งที่ระบบนำเข้าไฟล์ SAP (แบบ WBS) จากโฟลเดอร์ CCL-SAP · เทียบกับ CCL ตามหมายเลขงาน</div>';
+    h += '<div class="note">นับ "งาน" = WBS ระดับงาน (ไม่นับหัวโครงการ Z0) · PREL นับเป็น REL · รายงานสร้างใหม่ทุกครั้งที่นำเข้าไฟล์ SAP (แบบ WBS) — ทั้งนำเข้าที่หน้าปิดงาน (Admin) และจากโฟลเดอร์ CCL-SAP · เทียบกับ CCL ตามหมายเลขงาน</div>';
     X.innerHTML = h;
     var ys = $('saprYr'); if (ys) ys.onchange = function () { F.yr = this.value; render(); };
     list();

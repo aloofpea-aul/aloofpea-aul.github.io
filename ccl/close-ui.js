@@ -1,5 +1,5 @@
 /* CCL — หน้า "ปิดงาน" แบบการ์ด + นำเข้าสถานะจาก SAP (ไฟล์ Excel: Proj.def. / องค์ประกอบ WBS / ระดับ / ชื่อ / สถานะ …)
-   - อ่านไฟล์ในเครื่อง (ไม่อัปโหลดไฟล์ SAP ไปไหน) จับคู่ "องค์ประกอบ WBS" กับหมายเลขงานใน CCL
+   - อ่านไฟล์ในเครื่อง จับคู่ "องค์ประกอบ WBS" กับหมายเลขงานใน CCL · Admin นำเข้าไฟล์แบบ WBS = ส่งแถวของ กฟส. ไปสร้าง "รายงาน SAP" ด้วย · เปิดหน้านี้จะดึงรายงาน SAP ล่าสุดมาเทียบถ้าใหม่กว่า
    - CLSD = ปิดแล้ว (ปิดใน CCL ได้) · TECO = ปิดทางเทคนิค ยังไม่ถือว่าปิด · REL/CRTD = ยังเปิด
    - ปิดงานหลายงานพร้อมกันด้วย updateWorkStatus(id,'ปิดงานแล้วเสร็จ') ตัวเดียวกับปุ่มปิดงานเดิม */
 (function () {
@@ -66,12 +66,44 @@
         try { localStorage.setItem(LS, JSON.stringify(C.sap)); } catch (e) {}
         C.sel = {}; C.autoSel = true;
         if (window.Swal) Swal.close();
+        pushReport(rows, file.name);
         render();
         var ui = $('clCmp'); if (ui) ui.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (e) { alertMsg('error', 'อ่านไฟล์ SAP ไม่ได้', (e && e.message) || String(e)); }
     };
     fr.onerror = function () { alertMsg('error', 'อ่านไฟล์ไม่ได้', ''); };
     fr.readAsArrayBuffer(file);
+  }
+  // นำเข้าครั้งเดียว อัปเดตทั้ง 2 หน้า: Admin นำเข้าไฟล์แบบ WBS → สร้าง "รายงาน SAP" บนระบบด้วย (ส่งเฉพาะแถวของ กฟส. ไม่ส่งทั้งไฟล์)
+  function pushReport(rows, name) {
+    if (!isAdm() || typeof google === 'undefined' || !google.script) return;
+    var head = rows.slice(0, 10).map(function (r) { return r.map(function (x) { return String(x == null ? '' : x); }); });
+    var body = rows.slice(10).filter(function (r) { return r.join('|').indexOf('AUL') >= 0; }).map(function (r) { return r.map(function (x) { return String(x == null ? '' : x); }); });
+    google.script.run.withSuccessHandler(function (r) {
+      if (r && r.saved) { C.repAt = Date.now(); if (window.Swal && !Swal.isVisible()) Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'อัปเดตหน้า "รายงาน SAP" แล้ว (' + r.jobs + ' งาน)', showConfirmButton: false, timer: 2600 }); }
+    }).withFailureHandler(function () {}).cclSapReportFromRows({ file: name, rows: head.concat(body) });
+  }
+  // เปิดหน้าปิดงาน: ถ้า "รายงาน SAP" บนระบบใหม่กว่าข้อมูลในเครื่อง → ใช้เทียบเลย (ทุกเครื่องเห็นตรงกัน)
+  function pullReport() {
+    if (C.pulling || (C.pulledAt && Date.now() - C.pulledAt < 600000) || typeof google === 'undefined' || !google.script) return;
+    C.pulling = true;
+    google.script.run.withSuccessHandler(function (rep) {
+      C.pulling = false; C.pulledAt = Date.now();
+      if (!rep || rep.none || !Array.isArray(rep.jobs) || !rep.jobs.length) return;
+      var at = Date.parse(rep.at) || 0; if (C.sap && (C.sap.at || 0) >= at) return;
+      if (C.sap && (C.sap.files || []).some(function (f) { return f.file === rep.file; })) return;   // ไฟล์เดียวกับที่นำเข้าในเครื่องนี้แล้ว (ละเอียดกว่า) — ไม่ทับ
+      var all = g('allData', []) || []; if (!all.length) { C.pulledAt = 0; return; }
+      var old = C.sap || {}, map = Object.assign({}, old.map || {}), pref = Object.assign({}, old.pref || {});
+      // รายงานเก็บระดับงาน (เช่น C-69-K-AULCS.0077) — จับคู่กับหมายเลขงานใน CCL ที่ขึ้นต้นด้วยเลขนั้น (แบบเดียวกับหน้ารายงาน SAP)
+      var reps = rep.jobs.map(function (r) { var w = normId(r[1]); if (w) pref[w.split('.')[0]] = 1; return { k: key(w), v: [String(r[3] || '').toUpperCase(), String(r[4] || '').toUpperCase()] }; })
+        .filter(function (r) { return r.k.length > 6; }).sort(function (a, b) { return b.k.length - a.k.length; });
+      all.forEach(function (j) { jobIds(j).forEach(function (x) { var kx = key(x); for (var i = 0; i < reps.length; i++) { if (kx === reps[i].k || kx.indexOf(reps[i].k) === 0) { map[x] = reps[i].v; break; } } }); });
+      var fname = (rep.file || 'ไฟล์ SAP') + ' (จากรายงาน SAP)';
+      var files = (old.files || (old.file ? [{ file: old.file, at: old.at }] : [])).concat([{ file: fname, at: at }]).slice(-5);
+      C.sap = { map: map, pref: pref, rows: rep.rows || rep.jobs.length, matched: Object.keys(map).length, file: fname, files: files, at: at, by: 'ระบบ' };
+      try { localStorage.setItem(LS, JSON.stringify(C.sap)); } catch (e) {}
+      C.autoSel = true; render();
+    }).withFailureHandler(function () { C.pulling = false; }).cclSapReport();
   }
   function busy(t) { if (window.Swal) Swal.fire({ title: t, allowOutsideClick: false, showConfirmButton: false, didOpen: function () { Swal.showLoading(); } }); }
   function alertMsg(icon, t, x) { if (window.Swal) Swal.fire({ icon: icon, title: t, text: x }); else alert(t + '\n' + x); }
@@ -256,6 +288,7 @@
   }
 
   function render() {
+    try { pullReport(); } catch (e) {}
     if (!build()) return;
     var all = g('allData', []) || [];
     var data = all.filter(function (j) { return j.status === 'ส่งปิดงาน'; });

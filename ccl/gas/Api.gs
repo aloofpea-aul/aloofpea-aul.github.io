@@ -112,7 +112,7 @@ function doPost(e) {
 
     var isAdmin = sess.role === 'Admin' || !!sess.superAdmin;
     var known = CCL_API_FNS.indexOf(fn) >= 0 || CCL_API_ADMIN.indexOf(fn) >= 0 ||
-                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave' || fn === 'cclLineHook' || fn === 'cclUsersList' || fn === 'cclUserSave' || fn === 'cclUserResetPw';
+                CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0 || CCL_API_SUPER.indexOf(fn) >= 0 || fn === 'cclWhoAmI' || fn === 'cclCtPreview' || fn === 'cclExpStage' || fn === 'cclSetJobCodes' || fn === 'cclFixJobs' || fn === 'cclSapAutoGet' || fn === 'cclSapAutoSet' || fn === 'cclSapAutoRun' || fn === 'cclSapClose' || fn === 'cclSapReport' || fn === 'cclSapReportRebuild' || fn === 'cclSapReportFromRows' || fn === 'cclLineTargets' || fn === 'cclLineSend' || fn === 'cclLineSave' || fn === 'cclLineHook' || fn === 'cclUsersList' || fn === 'cclUserSave' || fn === 'cclUserResetPw';
     if (!known) return cclJson_({ ok: false, error: 'ไม่รองรับคำสั่ง ' + fn });
     if (sess.role === 'Viewer' && !sess.superAdmin && !CCL_VIEWER_OK.test(fn)) return cclJson_({ ok: false, error: 'บัญชีนี้ดูได้อย่างเดียว — แก้ไข/บันทึกข้อมูลไม่ได้' });
     if ((CCL_API_ADMIN.indexOf(fn) >= 0 || CCL_API_BRANCH_ADMIN.indexOf(fn) >= 0) && !isAdmin)
@@ -137,6 +137,7 @@ function doPost(e) {
     else if (fn === 'cclLineHook') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineHook_(args[0]); }
     else if (fn === 'cclLineSave') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclLineSave_(args[0]); }
     else if (fn === 'cclSapReportRebuild') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapReportRebuild_(); }
+    else if (fn === 'cclSapReportFromRows') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapReportFromRows_(args[0] || {}); }
     else if (fn === 'cclSapClose') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapCloseIds_(String(sess.name || '-'), args[0]); }
     else if (fn === 'cclFixJobs') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclFixJobs_(sess, args[0], args[1]); }
     else if (fn === 'cclSetJobCodes') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSetJobCodes_(sess, args[0], args[1]); }
@@ -982,6 +983,15 @@ function cclSapReportGet_() {
   return JSON.parse(it.next().getBlob().getDataAsString('UTF-8'));
 }
 // สร้างรายงานใหม่จากไฟล์ SAP ล่าสุด (ในโฟลเดอร์หรือ "อ่านแล้ว") โดยไม่แก้ข้อมูลงาน
+// นำเข้าไฟล์ SAP ด้วยมือที่หน้าปิดงาน → สร้างรายงาน SAP ด้วย (แถวที่ส่งมา = หัวตาราง + แถวของ กฟส. เท่านั้น)
+function cclSapReportFromRows_(x) {
+  var rows = Array.isArray(x.rows) ? x.rows : [];
+  if (!rows.length || rows.length > 20000) return { saved: false };
+  var rep = cclSapReportBuild_(rows, String(x.file || 'ไฟล์ SAP').slice(0, 120));
+  if (!rep || !rep.jobs.length) return { saved: false, reason: 'format' };   // ไฟล์รูปแบบอื่น (เช่นรายงาน CLSD) — ไม่ทับรายงานเดิม
+  cclSapSaveReport_(rep);
+  return { saved: true, jobs: rep.jobs.length };
+}
 function cclSapReportRebuild_() {
   var c = cclSapCfg_(), fs = cclSapFolders_(c, false); if (!fs) throw new Error('ยังไม่ได้ตั้งค่าโฟลเดอร์ SAP');
   var files = [];
