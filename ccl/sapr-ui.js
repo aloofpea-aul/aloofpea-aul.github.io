@@ -191,7 +191,7 @@
     if (s.t === 'w') return ['งานเปิดอยู่ของ ' + s.v, A.filter(function (j) { return j.open && (j.who || '(ยังไม่ระบุใน SAP)') === s.v; })];
     return ['', A];
   }
-  var LF = 'open', LIM = 40;
+  var LF = 'open', LIM = 40, CARD = null;
   function list() {
     var L = $('saprList'); if (!L) return;
     if (!F.sel) { L.innerHTML = '<h4>📋 รายการงาน</h4><div class="emp" style="padding:18px">กดการ์ด ตัวเลข แถวโครงการ ขั้นงาน หรือชื่อผู้ควบคุมงาน ด้านบน เพื่อดูรายการงาน</div>'; return; }
@@ -199,7 +199,9 @@
     var sub = { all: a, open: a.filter(function (j) { return j.open; }), noccl: a.filter(FILT.noccl[1]), clsd: a.filter(function (j) { return !j.open; }) };
     if (!sub[LF].length && LF !== 'all') LF = sub.open.length ? 'open' : 'all';
     var rows = sub[LF].slice().sort(function (x, y) { return (x.p.localeCompare(y.p)) || x.w.localeCompare(y.w); });
-    L.innerHTML = '<h4>📋 ' + esc(r[0]) + ' <small>' + rows.length + ' งาน</small></h4><div class="chips">' +
+    CARD = { t: r[0], lf: { open: 'เปิดอยู่', noccl: 'ยังไม่มีใน CCL', clsd: 'ปิดแล้ว', all: 'ทั้งหมด' }[LF], rows: rows };
+    L.innerHTML = '<h4 style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">📋 ' + esc(r[0]) + ' <small style="margin-left:0">' + rows.length + ' งาน</small><span style="flex:1"></span>' +
+      (rows.length ? '<button class="bt" data-a="cline" style="color:#06c755" title="ส่งรายการนี้ทาง LINE"><i class="fa-brands fa-line"></i> ส่ง LINE</button><button class="bt" data-a="cfile" title="ไฟล์ Excel (CSV) ของรายการนี้ — บนมือถือแชร์เข้า LINE ได้เลย">📄 ส่งเป็นไฟล์</button>' : '') + '</h4><div class="chips">' +
       [['open', 'เปิดอยู่'], ['noccl', 'ยังไม่มีใน CCL'], ['clsd', 'ปิดแล้ว'], ['all', 'ทั้งหมด']].map(function (c) { return '<button class="ch' + (LF === c[0] ? ' on' : '') + '" data-lf="' + c[0] + '">' + c[1] + ' ' + sub[c[0]].length + '</button>'; }).join('') + '</div>' +
       (rows.length ? '<div style="overflow-x:auto"><table><tr><th>หมายเลขงาน</th><th style="text-align:left">ชื่องาน</th><th style="text-align:left">สถานะงาน</th><th class="hm" style="text-align:left">ผู้ควบคุม (SAP)</th><th style="text-align:center">CCL</th></tr>' +
         rows.slice(0, LIM).map(function (j) {
@@ -216,6 +218,8 @@
     if (d.a === 'more') { LIM += 100; list(); return; }
     if (d.a === 'csv') return csv();
     if (d.a === 'line') return lineShare();
+    if (d.a === 'cline') return cardLine();
+    if (d.a === 'cfile') return cardFile();
     if (d.a === 'rebuild') return rebuild();
     if (d.f) F.sel = { t: 'f', v: d.f }; else if (d.b) F.sel = { t: 'b', v: d.b }; else if (d.p) F.sel = { t: 'p', v: d.p };
     else if (d.gx) F.sel = { t: 'g', v: d.gx, l: (t.querySelector('b') || {}).textContent || '' }; else if (d.w) F.sel = { t: 'w', v: d.w };
@@ -244,6 +248,34 @@
     }
     m += '\n🔗 https://aloofpea-aul.github.io/ccl/';
     cclLineShare({ sub: 'รายงาน SAP' + (F.sel ? ' · ' + selJobs()[0] : ''), text: m });
+  }
+  // ส่งต่อเฉพาะการ์ดรายการงานที่เปิดอยู่ (ตามแท็บที่เลือก) ให้ผู้รับผิดชอบ
+  function cardLine() {
+    if (!CARD || !window.cclLineShare) return;
+    var a = CARD.rows, MAX = 60;
+    var m = '📋 ' + CARD.t + ' · ' + CARD.lf + ' ' + a.length + ' งาน\n📁 SAP: ' + (R.file || '-') + ' · ' + dth(R.at) + '\n\n' +
+      a.slice(0, MAX).map(function (j, i) { return (i + 1) + ') ' + j.w + ' ' + j.n + '\n    ' + j.u + (window.cclCode ? ' ' + cclCode.info(j.u).t : '') + (j.who ? ' · ' + j.who : '') + (j.ccl ? ' · CCL ' + (j.ccl.receiveNo || '') : ' · ยังไม่มีใน CCL'); }).join('\n') +
+      (a.length > MAX ? '\n… และอีก ' + (a.length - MAX) + ' งาน (กด "ส่งเป็นไฟล์" เพื่อส่งครบทุกงาน)' : '') + '\n\n🔗 https://aloofpea-aul.github.io/ccl/';
+    cclLineShare({ sub: CARD.t + ' · ' + CARD.lf, text: m });
+  }
+  function cardFile() {
+    if (!CARD) return;
+    var head = ['ลำดับ', 'โครงการ', 'ชื่อโครงการ', 'หมายเลขงาน', 'ชื่องาน', 'สถานะระบบ', 'สถานะงาน', 'ความหมาย', 'ผู้ควบคุม (SAP)', 'เลขที่ CCL'];
+    var out = '"' + (CARD.t + ' · ' + CARD.lf + ' ' + CARD.rows.length + ' งาน · SAP ' + (R.file || '') + ' ' + dth(R.at)).replace(/"/g, '""') + '"\n' + head.join(',') + '\n' + CARD.rows.map(function (j, i) {
+      return [i + 1, j.p, pjName(j.p), j.w, j.n, j.s, j.u, window.cclCode ? cclCode.info(j.u).t : '', j.who, j.ccl ? j.ccl.receiveNo : 'ยังไม่มีใน CCL']
+        .map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    var name = (CARD.t + '_' + CARD.lf).replace(/[\\/:*?"<>|\s·]+/g, '_').replace(/_+/g, '_') + '.csv';
+    var blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), out], { type: 'text/csv;charset=utf-8' });
+    try {
+      var f = new File([blob], name, { type: 'text/csv' });
+      if (navigator.canShare && navigator.canShare({ files: [f] }) && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) {
+        navigator.share({ files: [f], title: CARD.t, text: CARD.t + ' · ' + CARD.lf + ' ' + CARD.rows.length + ' งาน' }).catch(function () {});
+        return;
+      }
+    } catch (e) {}
+    var el = document.createElement('a'); el.href = URL.createObjectURL(blob); el.download = name; el.click();
+    if (window.Swal) Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ดาวน์โหลดไฟล์แล้ว — แนบส่งใน LINE/อีเมลได้เลย', showConfirmButton: false, timer: 2800 });
   }
   function csv() {
     var r = selJobs(), a = r[1];
