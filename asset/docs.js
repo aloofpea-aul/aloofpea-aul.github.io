@@ -26,7 +26,7 @@
   /* ---------- ค่าตั้งต้นของสำนักงาน (แก้ได้ในหน้าตั้งค่า) ---------- */
   const OFFICE = {
     orgFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', org: 'กฟส.อ่าวลึก', orgS: 'กฟส.อล',
-    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', ext: 'มท 5307.60/กฟส.อล',
+    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', ext: 'มท 5307.60/กฟส.อล',
     addr1: '125 หมู่ที่ 1 ถนนเพชรเกษม ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', province: 'จังหวัดกระบี่',
     tel: '075-666920', contact: 'คุณมานศักดิ์ พิลาฤทธิ์',
     mgrName: 'นายชญานิน  งานสัมพันธฤทธิ์', mgrShort: 'ผจก.กฟส.อ่าวลึก', mgrFull: 'ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก',
@@ -40,7 +40,7 @@
   /* ---------- 10 ขั้น ตามลำดับเอกสาร ---------- */
   const STEPS = [
     { t: 'ขออนุมัติจำหน่าย + ตั้งกรรมการสอบข้อเท็จจริง', docs: [['d1', 'บันทึกขออนุมัติจำหน่ายทรัพย์สินออกจากบัญชี']] },
-    { t: 'รายงานผลสอบข้อเท็จจริง', docs: [['d2', 'รายงานผลการสอบสวนหาข้อเท็จจริง']] },
+    { t: 'รายงานผลสอบข้อเท็จจริง + ขออนุมัติต่อ กบฟ.', docs: [['d2', 'รายงานผลการสอบสวนหาข้อเท็จจริง'], ['d2b', 'บันทึกขออนุมัติจำหน่ายทรัพย์สินโดยวิธีการขาย (ถึง กบฟ.ต.2)']] },
     { t: 'สืบราคา (ราคาประเมิน)', docs: [['d3', 'หนังสือขอให้เสนอราคา (ราคาประเมิน) × 3 ราย'], ['d6', 'ใบเสนอราคาซื้อ (ราคาประเมิน)']] },
     { t: 'รายงานผลประเมินราคา', docs: [['d7', 'รายงานผลการประเมินราคา (กำหนดราคาขั้นต่ำ)']] },
     { t: 'ขออนุมัติดำเนินการขาย', docs: [['d8', 'บันทึกขออนุมัติดำเนินการขาย']] },
@@ -54,7 +54,7 @@
   const FIELDS = [
     [['no1', 'เลขที่บันทึก', 'text'], ['date1', 'วันที่', 'date'], ['from', 'หน่วยงานที่เสนอ', 'text'], ['kind', 'ประเภททรัพย์สิน (ใช้ในข้อความ)', 'text'],
       ['prop', 'ผู้เสนอ', 'person'], ['cmFact', 'คณะกรรมการสอบสวนหาข้อเท็จจริง', 'cmte'], ['ap1', 'ผู้สั่งการท้ายบันทึก (อนุมัติ)', 'person']],
-    [['date2', 'วันที่รายงาน', 'date'], ['cond', 'สภาพ/อาการชำรุด รายชิ้น', 'cond']],
+    [['date2', 'วันที่รายงาน', 'date'], ['cond', 'สภาพ/อาการชำรุด รายชิ้น', 'cond'], ['date2b', 'วันที่บันทึกขออนุมัติถึง กบฟ.', 'date'], ['why', 'เหตุที่จำหน่าย (ติ๊กได้หลายข้อ)', 'checks', ['ชำรุดจากการใช้งาน', 'เสื่อมสภาพจากการใช้งาน', 'หมดความจำเป็นในการใช้งาน', 'หากใช้ในหน่วยงานต่อไปจะสิ้นเปลือง คชจ.มาก']], ['seller', 'ผู้มีหน้าที่ขาย', 'text'], ['att', 'เอกสารแนบ', 'checks', ['รายงานยืนยันมูลค่าการได้มาและค่าเสื่อมราคาทรัพย์สิน', 'หนังสือแต่งตั้งคณะกรรมการสอบหาข้อเท็จจริง', 'หนังสือรายงานสรุปผลการสอบหาข้อเท็จจริง', 'ใบสั่งซ่อมและภาพถ่ายสี (กรณีมูลค่าคงเหลือเกิน 1 บาท)']], ['sg2b', 'ผู้ลงนาม', 'person']],
     [['date3', 'วันที่หนังสือ', 'date'], ['bidders', 'ผู้เสนอราคา 3 ราย', 'bidders'], ['view3', 'ช่วงวันให้มาดูสภาพ', 'text', 'เช่น 2-4 เมษายน 2568'], ['due3', 'ให้ส่งใบเสนอราคาภายในวันที่', 'date']],
     [['date4', 'วันที่รายงาน', 'date'], ['ref4', 'อ้างถึง (คำสั่งแต่งตั้ง + หนังสือขอราคา)', 'area'], ['prices', 'ราคาที่แต่ละรายเสนอ (ระบบเลือกราคาสูงสุดเป็นราคากลาง)', 'prices'], ['cmPrice', 'คณะกรรมการประเมินราคา', 'cmte'], ['fwd4', 'เสนอให้ความเห็นชอบ (เรียน)', 'text']],
     [['no5', 'เลขที่บันทึก', 'text'], ['date5', 'วันที่', 'date'], ['ref5', 'อ้างถึง (หนังสืออนุมัติจำหน่าย + คำสั่ง + เห็นชอบราคากลาง)', 'area'], ['order', 'คำสั่งแต่งตั้งคณะกรรมการดำเนินการขาย (เลขที่ + วันที่)', 'text', 'เช่น ต.2กฟส.อล(มต.)44/2568 สั่ง ณ วันที่ 15 มกราคม 2568'], ['cmSale', 'คณะกรรมการดำเนินการขาย', 'cmte'], ['ap5', 'ผู้สั่งการท้ายบันทึก', 'person']],
@@ -74,7 +74,7 @@
       prop: [s.head, s.headPos], ap1: ['', s.mgrShort], ap5: [s.mgrName, s.mgrShort], ap7: [s.mgrName, s.mgrShort], ap10: [s.mgrName, s.mgrShort],
       cmFact: [['', ''], ['', ''], ['', '']], cmPrice: [['', ''], ['', ''], ['', '']], cmSale: [['', ''], ['', ''], ['', '']], cmDeliv: [['', ''], ['', ''], ['', '']],
       bidders: [{ name: '', addr: '' }, { name: '', addr: '' }, { name: '', addr: '' }], fwd4: s.fwdPrice, no5: s.prefix,
-      time6: '09.00 - 12.00 น.', place6: s.salePlace, buyer: 0, sg8: [s.mgrName, s.mgrFull], pay8: '2', move8: '1', cond: {}, prices: {}, offer: {}
+      why: [1], att: [0, 1, 2], sg2b: [s.mgrName, s.mgrShort], time6: '09.00 - 12.00 น.', place6: s.salePlace, buyer: 0, sg8: [s.mgrName, s.mgrFull], pay8: '2', move8: '1', cond: {}, prices: {}, offer: {}
     };
     const r = Object.assign({}, out);
     Object.keys(d).forEach(k => { if (d[k] != null && d[k] !== '') r[k] = d[k]; });
@@ -113,6 +113,8 @@
 <p class="c" style="margin-top:42pt">(${nm(o.p)})</p><p class="c">${esc((o.p || [])[1] || '')}</p>${o.date ? `<p class="c">${o.date}</p>` : ''}${o.foot ? `<p style="margin-top:10pt">${o.foot}</p>` : ''}</div>`;
   }
   const foot = s => `<div class="keep" style="margin-top:48pt"><p>${esc(s.dept)}</p><p>${esc(s.intTel || '')}</p></div>`;
+  const cb = on => `<span class="cb${on ? ' on' : ''}"></span>`;
+  const dash = n => Math.abs(n - Math.round(n)) < .005 ? Math.round(n).toLocaleString('en-US') + '.-' : money(n);
   const codeTd = a => { const m = String(a.code).match(/^(\d+)-(\d+)$/); return `<td class="c">${m ? m[1] : esc(a.code)}</td><td class="c">${m ? +m[2] : ''}</td>`; };
   function table(head, rows, foot) {
     return `<table><thead>${head}</thead><tbody>${rows}${foot || ''}</tbody></table>`;
@@ -167,6 +169,21 @@
             : B(`ด้วย${esc(s.deptFull)} ${esc(s.orgFull)} ${esc(s.province)} มีความประสงค์จำหน่ายพัสดุที่ชำรุด ประเภท${kind} จำนวน ${n} รายการ ออกจากบัญชี จึงขอให้ท่านเสนอราคาซื้อพัสดุดังกล่าว`) +
             B(`ทั้งนี้ ขอให้ท่านมาดูสภาพพัสดุ พร้อมทั้งเสนอราคาซื้อพัสดุดังกล่าว (ตามแบบฟอร์มแนบ) ในวันที่ ${thLong(d.open6)} เวลา ${esc(d.time6)} ณ ${esc(d.place6)} ${esc(s.province)} เลขที่ ${esc(s.addr1)} ${esc(s.addr2)} โทรศัพท์ ${esc(s.tel)} ${esc(s.contact)} เพื่อจะได้ดำเนินการต่อไป`)) +
           B('จึงเรียนมาเพื่อโปรดทราบ', 'margin-top:6pt') + letterSign(s.mgrName, [s.mgrFull, s.province]));
+      }
+      case 'd2b': {
+        const w = (d.why || []).map(Number), at = (d.att || []).map(Number), dep = Math.max(0, cost - bv);
+        const W = ['ชำรุดจากการใช้งาน', 'เสื่อมสภาพจากการใช้งาน', 'หมดความจำเป็น ในการใช้งาน', 'หากใช้ในหน่วยงานต่อไปจะสิ้นเปลือง คชจ.มาก'];
+        return [memo({ from: esc(s.org), to: esc(s.bfTo), no: '', date: thLong(d.date2b), sub: 'ขออนุมัติจำหน่ายทรัพย์สิน โดย<b>วิธีการขาย</b>', dear: esc(s.bfHead) }) +
+          B(`ตามที่ ${esc(s.org)} ได้ตรวจสอบทรัพย์สิน ${kind} พบว่าทรัพย์สินดังกล่าว`) +
+          `<div class="ck">${W.map((t, i) => `<span>${cb(w.includes(i))}${t}</span>`).join('')}</div>` +
+          P(`จำนวน ${n} รายการ มีมูลค่าการได้มารวม ${dash(cost)} บาท ค่าเสื่อมราคาสะสม ณ วันที่ ${thLong(d.date2b)} จำนวนเงิน ${dash(dep)} บาท มูลค่าคงเหลือตามบัญชี ${dash(bv)} บาท ซึ่งคณะกรรมการสอบหาข้อเท็จจริงได้จัดทำรายงานสรุปผลการสอบหาข้อเท็จจริงเรียบร้อยแล้ว`, 'j') +
+          B(`เพื่อให้เป็นไปตาม${esc(s.rule)} ข้อ 6.1 การจำหน่ายทรัพย์สินที่ชำรุด หรือเสื่อมสภาพ หรือหมดความจำเป็นในการใช้งาน หรือหากใช้ในหน่วยงานต่อไปจะสิ้นเปลืองค่าใช้จ่ายมาก เห็นควรขออนุมัติจำหน่ายทรัพย์สินดังกล่าว โดยวิธีการขาย และให้ ${dots(d.seller, 30)} เป็นผู้มีหน้าที่ขาย`, 'margin-top:8pt') +
+          B('พร้อมนี้ได้แนบเอกสารประกอบการพิจารณาอนุมัติจำหน่ายทรัพย์สิน ดังนี้', 'margin-top:6pt') +
+          `<div class="at"><p>${cb(at.includes(0))}1. รายงานยืนยันมูลค่าการได้มาและค่าเสื่อมราคาทรัพย์สิน</p><p class="s">-ผบส.กบฟ.ต.2 (เฉพาะหน่วยงานในสังกัด กฟต.2)</p><p class="s">-ผบป.กฟฟ.ชั้น 1-3, ผบง.กฟส.</p>
+<p>${cb(at.includes(1))}2. หนังสือแต่งตั้งคณะกรรมการสอบหาข้อเท็จจริง</p><p>${cb(at.includes(2))}3. หนังสือรายงานสรุปผลการสอบหาข้อเท็จจริงของคณะกรรมการสอบหาข้อเท็จจริง</p>
+<p class="nw">${cb(at.includes(3))}4. กรณีที่ทรัพย์สินที่ขออนุมัติจำหน่ายมีมูลค่าคงเหลือเกิน 1 บาท ให้แนบใบสั่งซ่อมและภาพถ่ายสี</p><p style="padding-left:.75cm">ของทรัพย์สินที่ชำรุดประกอบ</p></div>` +
+          `<div class="keep">${B(`จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบโปรดนำเสนอ ${esc(s.bfShort)} ดำเนินการต่อไป`)}<div class="sg" style="margin-top:42pt">...................................................<br>(${nm(d.sg2b)})<br>${esc((d.sg2b || [])[1] || '')}</div></div>` +
+          `<p class="fn">แบบฟอร์มนี้ใช้สำหรับการขออนุมัติจำหน่ายทรัพย์สินประเภทเครื่องตกแต่งและเครื่องมือเครื่องใช้<br>และสินทรัพย์ไม่มีตัวตนของ กฟฟ. ในสังกัด กฟต.2 โดยวิธีการขาย เท่านั้น ออกโดย ผบส.กบฟ.ต.2</p>`];
       }
       case 'd6': return [formQuote(s, d, its, 'ใบเสนอราคาซื้อ (ราคาประเมิน)', false)];
       case 'd12': return [formQuote(s, d, its, 'ใบเสนอราคาซื้อ', true)];
@@ -264,7 +281,11 @@
 .dp thead{display:table-header-group}.dp tr{break-inside:avoid;page-break-inside:avoid}
 .dp .sg{margin-left:6.35cm;text-align:center}.dp .keep{break-inside:avoid;page-break-inside:avoid;padding-top:6pt}.dp p,.dp .h2,.dp .mh,.dp .cl{padding-top:.01pt}
 .dp .cm{margin-top:26pt}.dp .two{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:26pt}
-.dp .en{width:9cm;margin-top:18pt}
+.dp .en{width:9cm;margin-top:18pt}.dp .j{text-align:justify;text-justify:inter-character}
+.dp .cb{display:inline-block;width:10pt;height:10pt;border:1pt solid #000;margin-right:7pt;vertical-align:-1pt;position:relative}
+.dp .cb.on::after{content:'';position:absolute;left:2.5pt;top:-1pt;width:3.5pt;height:7.5pt;border:solid #000;border-width:0 1.6pt 1.6pt 0;transform:rotate(40deg)}
+.dp .ck{display:grid;grid-template-columns:6.6cm 1fr;padding-left:2.5cm;white-space:nowrap;row-gap:5pt;margin:4pt 0}.dp .at p{margin-bottom:3pt}.dp .at{padding-left:2.9cm}.dp .at .s{padding-left:1.2cm}.dp .at .nw{white-space:nowrap}
+.dp .fn{margin-top:56pt;text-align:right;font-size:12pt;line-height:16pt}
 .dp .dt{display:flex;white-space:nowrap}.dp .dt i{flex:1;border-bottom:1.3pt dotted #000;margin:0 2pt 5pt;font-style:normal}`;
 
   /* แปลงเลขอารบิกในข้อความ (ไม่แตะแท็ก) เป็นเลขไทย แบบ TH SarabunIT๙ */

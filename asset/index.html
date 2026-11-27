@@ -145,6 +145,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 @media (max-width:860px){.bw{grid-template-columns:1fr}}
 .pp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;margin-top:6px;align-items:center}.pp .pl{grid-column:1/-1;margin-bottom:-4px}
 .pp input,label.f select{width:100%;border:1px solid #cfc9d8;border-radius:10px;min-height:44px;padding:6px 12px;font-size:15px;background:#fff}
+.ckb{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14.5px}.ckb input{width:20px;height:20px;accent-color:var(--pea)}
 .docs{display:flex;flex-direction:column;gap:8px;margin-top:6px}.doc{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
 .pt{width:100%;border-collapse:collapse;font-size:14px}.pt th,.pt td{border-bottom:1px solid #f0edf4;padding:6px 4px;text-align:right}.pt th:first-child,.pt td:first-child{text-align:left}
 .pt input{width:84px;border:1px solid #cfc9d8;border-radius:8px;min-height:40px;padding:0 6px;text-align:right;font-size:15px}.pt .mx{font-weight:700;white-space:nowrap}
@@ -199,7 +200,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="docs.js?v=3"></script>
+<script src="docs.js?v=4"></script>
 <script>
 'use strict';
 const DONE = 11;   // ปิดชุดหลังครบ 10 ขั้นตามแบบฟอร์มจำหน่าย
@@ -591,6 +592,7 @@ function viewBatchOne(x) {
     if (type === 'person') return `<div class="flbl">${label}</div><div class="pp"><input data-k="${key}" data-i="0" list="ppl" value="${esc((v || [])[0] || '')}" placeholder="ชื่อ-สกุล"${dis}><input data-k="${key}" data-i="1" value="${esc((v || [])[1] || '')}" placeholder="ตำแหน่ง"${dis}></div>`;
     if (type === 'cmte') return `<div class="flbl">${label}</div>` + [0, 1, 2].map(i => `<div class="pp"><span class="muted pl">${i ? 'กรรมการ' : 'ประธาน'}</span><input data-k="${key}" data-r="${i}" data-i="0" list="ppl" value="${esc(((v || [])[i] || [])[0] || '')}" placeholder="ชื่อ-สกุล"${dis}><input data-k="${key}" data-r="${i}" data-i="1" value="${esc(((v || [])[i] || [])[1] || '')}" placeholder="ตำแหน่ง"${dis}></div>`).join('');
     if (type === 'bidders') return `<div class="flbl">${label}</div>` + [0, 1, 2].map(i => `<div class="pp"><span class="muted pl">รายที่ ${i + 1}</span><input data-k="${key}" data-r="${i}" data-o="name" value="${esc(((v || [])[i] || {}).name || '')}" placeholder="ชื่อ-สกุล / ร้าน"${dis}><input data-k="${key}" data-r="${i}" data-o="addr" value="${esc(((v || [])[i] || {}).addr || '')}" placeholder="ที่อยู่"${dis}></div>`).join('');
+    if (type === 'checks') return `<div class="flbl">${label}</div>` + hint.map((t, i) => `<label class="ckb"><input type="checkbox" data-k="${key}" data-c="${i}"${(v || []).map(Number).includes(i) ? ' checked' : ''}${dis}> ${esc(t)}</label>`).join('');
     if (type === 'buyer') return `<label class="f"><span>${label}</span><select data-k="${key}"${dis}>${(D.bidders || []).map((b, i) => `<option value="${i}"${+v === i ? ' selected' : ''}>${esc(b.name || 'รายที่ ' + (i + 1))}</option>`).join('')}</select></label>`;
     const sorted = ctx.items;
     if (type === 'cond') return `<div class="flbl">${label}</div><p class="muted" style="margin:2px 0 6px">ดึงจากผลตรวจสภาพให้ก่อน แก้ไขได้</p>` + sorted.map(a => `<label class="f" style="margin-top:6px"><span>${esc(a.name)} · ${a.code}</span>${inp(key + '.' + a.code, (v || {})[a.code] != null ? v[a.code] : a.cond, 'เช่น ชำรุด ล้าสมัย มีปลวก')}</label>`).join('');
@@ -603,7 +605,7 @@ function viewBatchOne(x) {
     <div class="row" style="justify-content:space-between;margin-top:10px"><div><h2 class="t">${esc(x.name)}</h2><p class="muted" style="margin:0">${its.length} รายการ · ราคาทุน ${baht(cost)} · มูลค่าบัญชี ${baht(bv)} บาท</p></div>
     <span class="tag ${closed ? 'ok' : 'p'}" style="font-size:14px;padding:5px 14px">${closed ? 'ปิดชุดแล้ว ' + thDate(x.log[DONE]) : 'ขั้นที่ ' + x.step + ' จาก 10'}</span></div>
     <div class="bw"><section><ol class="stp">${DOCS.STEPS.map((s, i) => { const n = i + 1, st = x.step > n ? 'd' : x.step === n ? 'c' : ''; return `<li class="${st}${k === n ? ' sel' : ''}"><button data-st="${n}"><span class="n">${st === 'd' ? '✓' : n}</span><span><b>${s.t}</b><small>${x.log[n + 1] ? 'เสร็จ ' + thDate(x.log[n + 1]) : st === 'c' ? 'ทำอยู่' : s.docs.length + ' ฉบับ'}</small></span></button></li>`; }).join('')}</ol>
-    <button class="btn" id="pAll" style="width:100%;margin-top:10px">พิมพ์ทั้งชุด (18 ฉบับ)</button></section>
+    <button class="btn" id="pAll" style="width:100%;margin-top:10px">พิมพ์ทั้งชุด (19 ฉบับ)</button></section>
     <section class="card"><h3>ขั้นที่ ${k}: ${stp.t}</h3>${k === 1 ? `<label class="f"><span>ชื่อชุด</span><input id="bn" value="${esc(x.name)}"${dis}></label>` : ''}
     <div id="frm">${DOCS.FIELDS[k - 1].map(field).join('')}</div><datalist id="ppl">${Object.keys(ppl).map(p => `<option value="${esc(p)}">`).join('')}</datalist>
     <div class="flbl">เอกสารของขั้นนี้</div><div class="docs">${stp.docs.map(d => `<div class="doc"><span>${d[1]}</span><button class="btn sm p" data-pr="${d[0]}">พิมพ์</button></div>`).join('')}</div>
@@ -630,6 +632,7 @@ function viewBatchOne(x) {
     const o = {};
     $$('#frm [data-k]').forEach(el => {
       const key = el.dataset.k, v = el.value;
+      if (el.type === 'checkbox') { o[key] = o[key] || []; if (el.checked) o[key].push(+el.dataset.c); return; }
       if (key.includes('.')) {
         const [kk, code] = key.split('.'); o[kk] = o[kk] || Object.assign({}, D[kk] || {});
         if (el.dataset.j != null) { const arr = (o[kk][code] || []).slice(); arr[+el.dataset.j] = v.trim(); o[kk][code] = arr; } else o[kk][code] = v.trim();
@@ -652,7 +655,7 @@ function viewBatchOne(x) {
   window.DOCS_LOGO = location.origin + '/asset/pea-logo.png';
   const pr = ids => { if (!DOCS.print(ids, batchCtx(x, merged()), x.name, location.origin + '/asset/fonts')) toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up ก่อน', 4000); };
   $$('[data-pr]').forEach(b => b.onclick = () => pr([b.dataset.pr]));
-  $('#pAll').onclick = () => pr(['d1', 'd2', 'd3', 'd6', 'd7', 'd8', 'd9', 'd12', 'd13', 'd14', 'd15', 'd16', 'd17', 'd18']);
+  $('#pAll').onclick = () => pr(['d1', 'd2', 'd2b', 'd3', 'd6', 'd7', 'd8', 'd9', 'd12', 'd13', 'd14', 'd15', 'd16', 'd17', 'd18']);
   $$('[data-st]').forEach(b => b.onclick = () => { ST.bstep = +b.dataset.st; viewBatchOne(x); });
   $('#back').onclick = () => { ST.batch = null; viewBatch(); };
   $$('[data-open]').forEach(b => b.onclick = () => showAsset(b.dataset.open));
