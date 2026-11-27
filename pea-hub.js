@@ -12,6 +12,7 @@
 (function () {
   'use strict';
   var me = document.currentScript;
+  try { if (!window.__pwEye) { var pe = document.createElement('script'); pe.src = '/pw-eye.js?v=20261127'; pe.async = true; (document.head || document.documentElement).appendChild(pe); } } catch (e) {}   // ปุ่มตาแสดง/ซ่อนรหัสผ่าน
   var APP = (me && me.dataset.app) || '';
   var GATE = !(me && me.dataset.gate === 'off');
   var LOGIN_ONLY = !!(me && me.dataset.perm === 'login');   // data-perm="login" = ล็อกอินศูนย์รวมงานก็ใช้ได้ ไม่ต้องขอสิทธิ์รายโปรแกรม
