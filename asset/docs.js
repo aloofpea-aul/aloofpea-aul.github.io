@@ -26,7 +26,7 @@
   /* ---------- ค่าตั้งต้นของสำนักงาน (แก้ได้ในหน้าตั้งค่า) ---------- */
   const OFFICE = {
     orgFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', org: 'กฟส.อ่าวลึก', orgS: 'กฟส.อล',
-    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2 กฟส.อล.(ปร.)', ext: 'มท 5307.60/กฟส.อล',
+    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', ext: 'มท 5307.60/กฟส.อล',
     addr1: '125 หมู่ที่ 1 ถนนเพชรเกษม ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', province: 'จังหวัดกระบี่',
     tel: '075-666920', contact: 'คุณมานศักดิ์ พิลาฤทธิ์',
     mgrName: 'นายชญานิน  งานสัมพันธฤทธิ์', mgrShort: 'ผจก.กฟส.อ่าวลึก', mgrFull: 'ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก',
@@ -112,6 +112,7 @@
     return `<div class="en keep">${o.no != null ? `<p>ที่  ${esc(o.no)}</p>` : ''}<p>เรียน  ${esc(o.to)}</p>${o.lines.map(l => `<p style="padding-left:1cm">${l}</p>`).join('')}
 <p class="c" style="margin-top:42pt">(${nm(o.p)})</p><p class="c">${esc((o.p || [])[1] || '')}</p>${o.date ? `<p class="c">${o.date}</p>` : ''}${o.foot ? `<p style="margin-top:10pt">${o.foot}</p>` : ''}</div>`;
   }
+  const foot = s => `<div class="keep" style="margin-top:48pt"><p>${esc(s.dept)}</p><p>${esc(s.intTel || '')}</p></div>`;
   const codeTd = a => { const m = String(a.code).match(/^(\d+)-(\d+)$/); return `<td class="c">${m ? m[1] : esc(a.code)}</td><td class="c">${m ? +m[2] : ''}</td>`; };
   function table(head, rows, foot) {
     return `<table><thead>${head}</thead><tbody>${rows}${foot || ''}</tbody></table>`;
@@ -144,21 +145,20 @@
     const vat = Math.round(off * 7) / 100, gross = Math.round((off + vat) * 100) / 100;
     const kind = esc(d.kind), from = esc(d.from), yr = x => { const p = pd(x); return p ? p[0] + 543 : '.......'; };
     const tbl1 = (extraH, extraTd) => table(`<tr>${H('ที่', '.95cm')}${H('รหัสทรัพย์สิน', '2.9cm', 2)}${H('รายการ')}${extraH}</tr>`, its.map((a, i) => `<tr><td class="c">${i + 1}</td>${codeTd(a)}<td>${esc(a.name)}</td>${extraTd(a, i)}</tr>`).join(''));
-    const minAge = Math.floor(Math.min(...its.map(a => a.age || 0)));
+    const minAge = Math.max(1, Math.floor(Math.min(...its.map(a => a.age || 0)) / 10) * 10 || Math.floor(Math.min(...its.map(a => a.age || 0))));
     switch (id) {
       case 'd1': return [memo({ from, to: esc(s.org), no: esc(d.no1), date: thLong(d.date1), sub: 'ขออนุมัติจำหน่ายทรัพย์สินออกจากบัญชี', dear: esc(s.mgrShort) }) +
-        B(`${from} ได้สำรวจทรัพย์สินที่ครอบครอง ประเภท${kind} อุปกรณ์ดังกล่าวเป็นรุ่นเก่าล้าสมัย มีอายุการใช้งานมากกว่า ${minAge} ปี และเกิดการชำรุดไม่สามารถใช้งานได้ เพื่อให้การบริหารทรัพย์สินประเภท${kind}เกิดประโยชน์สูงสุด จึงเห็นควรขออนุมัติจำหน่ายทรัพย์สินออกจากบัญชี จำนวน ${n} รายการ มูลค่าที่ได้มาเป็นเงินรวม ${amt(cost)} ตามรายการ ดังนี้.-`) +
+        B(`${from} ได้สำรวจทรัพย์สินที่ครอบครอง ประเภท${kind} อุปกรณ์ดังกล่าวเป็นรุ่นเก่าล้าสมัย มีอายุการใช้งานมากกว่า ${minAge} ปี และเกิดการชำรุดไม่สามารถใช้งานได้ เพื่อให้การบริหารทรัพย์สินประเภท${kind}นี้เกิดประโยชน์สูงสุด จึงเห็นควรขออนุมัติจำหน่ายทรัพย์สินออกจากบัญชี จำนวน ${n} รายการ มูลค่าที่ได้มาเป็นเงินรวม ${amt(cost)} ตามรายการ ดังนี้.-`) +
         tbl1(H('เลขที่ผลิตภัณฑ์', '2.6cm') + H('วันที่ได้มา', '2.6cm'), a => `<td class="c">${esc(a.serial) || '-'}</td><td class="c">${dmy(a.acq)}</td>`) +
         B(`ดังนั้น เพื่อให้การจำหน่ายทรัพย์สินเป็นไปด้วยความถูกต้องตาม${esc(s.rule)} ข้อ 2.1 จึงขออนุมัติแต่งตั้งคณะกรรมการสอบสวนหาข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชี ดังนี้.-`, 'margin-top:10pt') +
-        (d.cmFact || []).map((c, i) => `<div class="cl"><span>${i + 1}. ${nm(c)}</span><span>ตำแหน่ง  ${esc(c[1] || '')}</span><span>${i ? 'กรรมการ' : 'ประธานกรรมการ'}</span></div>`).join('') +
+        (d.cmFact || []).map((c, i) => `<div class="cl"><span>${i + 1}. ${nm(c)}</span><span>ตำแหน่ง  ${esc(c[1] || '')}</span><span>${i ? 'คณะกรรมการ' : 'ประธานกรรมการ'}</span></div>`).join('') +
         `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:10pt')}${sign(d.prop[0], d.prop[1], '36pt')}</div>` +
         endorse({ to: `${esc(String(d.prop[1] || '').replace(/กฟส\..*$/, ''))}, คณะกรรมการฯ`, lines: ['- อนุมัติ แจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: d.ap1 })];
       case 'd2': return [memo({ from: 'คณะกรรมการสอบสวนหาข้อเท็จจริง', to: esc(s.mgrShort), no: '', date: thLong(d.date2), sub: 'รายงานผลการสอบสวนหาข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชี', dear: esc(s.mgrShort) }) +
         B(`ตามอนุมัติ ${esc(s.mgrShort)} ลงวันที่ ${thLong(d.date1)} แต่งตั้งคณะกรรมการสอบข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชีนั้น คณะกรรมการฯ ได้ร่วมกันสอบสวนข้อเท็จจริงเกี่ยวกับการเสื่อมสภาพของ${kind} ของ ${from} จำนวน ${n} รายการ ดังนี้.-`) +
-        tbl1(H('เลขที่<br>ผลิตภัณฑ์', '2cm') + H('สภาพ/<br>อาการชำรุด', '4.2cm'), a => `<td class="c">${esc(a.serial) || '-'}</td><td>${esc((d.cond || {})[a.code] || a.cond || '')}</td>`) +
-        B(`ทรัพย์สินดังกล่าวเป็นรุ่นเก่าล้าสมัย ผ่านการใช้งานมานานหลายปี ไม่สามารถซ่อมได้ หากจัดซ่อมจะไม่คุ้มกับค่าใช้จ่าย จึงเห็นควรอนุมัติจำหน่ายทรัพย์สินดังกล่าว จำนวน ${n} รายการ มูลค่าที่ได้มาเป็นเงินรวม ${amt(cost)} มูลค่าทางบัญชีคงเหลือ ${money(bv)} บาท โดยวิธีการขาย ตาม${esc(s.rule)} ต่อไป`, 'margin-top:10pt') +
-        `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณา และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:6pt')}${cmteSign(d.cmFact)}</div>` +
-        endorse({ no: s.prefix + '          /' + yr(d.date2), to: s.region, lines: ['- เพื่อโปรดทราบ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: [s.mgrName, s.mgrShort], date: thLong(d.date2) })];
+        tbl1(H('เลขที่ผลิตภัณฑ์', '2.8cm') + H('สภาพ/<br>อาการชำรุด', '3.4cm'), a => `<td class="c">${esc(a.serial) || '-'}</td><td class="c">${esc((d.cond || {})[a.code] || a.cond || '')}</td>`) +
+        B(`ทรัพย์สินดังกล่าวเป็นรุ่นเก่าล้าสมัย ผ่านการใช้งานมานานหลายปี ไม่สามารถซ่อมได้ หากจัดซ่อมจะไม่คุ้มกับค่าใช้จ่าย จึงเห็นควรอนุมัติจำหน่ายทรัพย์สินดังกล่าว จำนวน ${n} รายการ มูลค่าที่ได้มาเป็นเงินรวม ${amt(cost)} มูลค่าทางบัญชีคงเหลือ ${Math.abs(bv - Math.round(bv)) < .005 ? Math.round(bv).toLocaleString('en-US') : money(bv)} บาท โดยวิธีการขาย ตาม${esc(s.rule)} ต่อไป`, 'margin-top:10pt') +
+        `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณา และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:6pt')}${cmteSign(d.cmFact)}</div>` + foot(s)];
       case 'd3': case 'd9': {
         const r1 = id === 'd3';
         return [0, 1, 2].map(i => letter(s, { date: thLong(r1 ? d.date3 : d.date6), sub: `ขอให้เสนอราคาซื้อพัสดุที่ชำรุด ประเภท${kind} จำนวน ${n} รายการ`, dear: nm([(by[i] || {}).name]) }) +
@@ -184,7 +184,7 @@
           B(`คณะกรรมการฯ พิจารณาจากราคาสูงสุดที่ร้านเสนอมาแต่ละรายการ เพื่อกำหนดเป็นราคากลาง (ราคาประเมิน/ราคาขั้นต่ำ) และขออนุมัติกำหนดราคากลางขั้นต่ำในการขายพัสดุประเภท${kind} ของ ${from} จำนวน ${n} รายการ ดังนี้.-`, 'margin-top:10pt') +
           tbl1(H('ราคากลาง (ราคาประเมิน/ขั้นต่ำ)<br>(ไม่รวมภาษีมูลค่าเพิ่ม)', '4.6cm'), a => `<td class="r">${money(mid(a, d))}</td>`).replace('</tbody>', `<tr><th colspan="4" class="r">รวมทั้งสิ้น (บาท) (${bahtText(midT)})</th><th class="r">${money(midT)}</th></tr></tbody>`) +
           `<div class="keep">${B(`จึงเรียนมาเพื่อโปรดให้ความเห็นชอบกำหนดราคาขายพัสดุประเภท${kind} ของ ${from} จำนวน ${n} รายการ เพื่อจำหน่ายออกจากบัญชีทรัพย์สินด้วยการขายโดยวิธีเฉพาะเจาะจง ตาม${esc(s.rule)} และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป`, 'margin-top:10pt')}${cmteSign(d.cmPrice)}</div>` +
-          endorse({ no: s.prefix + '          /' + yr(d.date4), to: d.fwd4 || s.fwdPrice, lines: ['เพื่อโปรดพิจารณาให้ความเห็นชอบ', 'ตามที่คณะกรรมการประเมินราคานำเสนอต่อไป'], p: [s.mgrName, s.mgrShort], date: thLong(d.date4) })];
+          endorse({ no: s.prefix + '          /' + yr(d.date4), to: d.fwd4 || s.fwdPrice, lines: ['เพื่อโปรดพิจารณาให้ความเห็นชอบ', 'ตามที่คณะกรรมการประเมินราคานำเสนอต่อไป'], p: [s.mgrName, s.mgrShort], date: thLong(d.date4) }) + foot(s)];
       }
       case 'd8': return [memo({ from: 'คณะกรรมการดำเนินการขาย', to: esc(s.mgrShort), no: esc(d.no5), date: thLong(d.date5), sub: `ขออนุมัติดำเนินการขายพัสดุของ ${from} จำนวน ${n} รายการ`, dear: esc(s.mgrShort) }) +
         B(esc(d.ref5)) +
