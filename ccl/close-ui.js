@@ -452,7 +452,7 @@
     var sw = function (k, t, sub) { return '<div class="rw"><div class="l">' + t + '<small>' + sub + '</small></div><label class="sw"><input type="checkbox" data-k="' + k + '"' + (c[k] ? ' checked' : '') + dis + '><span></span></label></div>'; };
     var hrs = ''; for (var h = 5; h <= 20; h++) hrs += '<option value="' + h + '"' + (c.hour === h ? ' selected' : '') + '>ทุกวัน ' + (h < 10 ? '0' : '') + h + ':00 น.</option>';
     return '<div class="sa">' +
-      '<div class="fl"><div><b>① วางไฟล์</b>export จาก SAP วางในโฟลเดอร์ Drive</div><div><b>② ตรวจทุกวัน</b>อ่านเฉพาะไฟล์ใหม่ เทียบทุกงาน</div><div><b>③ อัปเดตให้เอง</b>สถานะงาน · ปิดงาน CLSD + เติมขั้นที่ข้าม</div><div><b>④ สรุปเข้า LINE</b>ไฟล์ที่อ่านแล้วย้ายไป "อ่านแล้ว"</div></div>' +
+      '<div class="fl"><div><b>① วางไฟล์</b>export จาก SAP วางในโฟลเดอร์ Drive</div><div><b>② ตรวจทุกวัน</b>อ่านเฉพาะไฟล์ใหม่ เทียบทุกงาน</div><div><b>③ อัปเดตให้เอง</b>ทุกหน่วยงานพร้อมกัน · สถานะงาน · ปิดงาน CLSD</div><div><b>④ สรุปเข้า LINE</b>ไฟล์ที่อ่านแล้วย้ายไป "อ่านแล้ว"</div></div>' +
       '<div class="rw" style="border:0"><div class="l"><b>สถานะ</b></div><span class="sabd" style="background:' + (c.on && d.trigger ? '#dcfce7;color:#166534">● เปิดใช้งาน' : '#f1f5f9;color:#64748b">○ ปิดอยู่') + '</span></div>' +
       '<div class="rw"><div class="l">เปิดใช้งานอัตโนมัติ<small>ตรวจโฟลเดอร์ทุกวันตามเวลาที่ตั้ง</small></div><label class="sw"><input type="checkbox" data-k="on"' + (c.on ? ' checked' : '') + dis + '><span></span></label></div>' +
       '<div class="rw"><div class="l">โฟลเดอร์ที่ตรวจ<small>วางไฟล์ .xlsx ที่มีคอลัมน์ "องค์ประกอบ WBS"/"หมายเลขงาน" + "สถานะ" · ชื่อไฟล์อะไรก็ได้</small></div></div>' +
@@ -475,7 +475,10 @@
     return (r.dry ? '🧪 <b style="display:inline">ทดลองอ่าน — ยังไม่บันทึกอะไร</b>' : '✅ <b style="display:inline">บันทึกแล้ว</b>') + '<br>ไฟล์: ' + esc((r.files || []).join(', ')) + ' (' + (r.rows || 0) + ' แถว)' +
       sec(L.codes, '🔄 อัปเดตสถานะงาน', '#854d0e') + sec(L.closed, '✅ ปิดงาน', '#166534') + sec(L.down, '⚠️ สถานะลดลง (ไม่ทำเอง)', '#475569') +
       sec(L.other, '📌 SAP ปิดแล้ว แต่ CCL ยังไม่ถึงส่งปิดงาน', '#5b21b6') + sec(L.nf, '❓ ไม่พบหมายเลขงานใน SAP', '#991b1b') +
-      (!r.codes && !r.closed && !r.down && !r.other && !r.nf ? '<b style="color:#166534">✔ ข้อมูล CCL ตรงกับ SAP ทุกงาน</b>' : '');
+      (!r.codes && !r.closed && !r.down && !r.other && !r.nf ? '<b style="color:#166534">✔ ข้อมูล CCL ตรงกับ SAP ทุกงาน</b>' : '') +
+      (r.branches && r.branches.length > 1 ? '<b style="color:#0f766e;margin-top:6px">🏢 อัปเดตทุกหน่วยงานพร้อมกัน</b>' + r.branches.map(function (b) {
+        return esc(b.branch) + ': ' + (b.error ? '⚠️ ' + esc(b.error) : !b.hit ? 'ไฟล์นี้ไม่มีงานของหน่วยงานนี้' : 'สถานะงาน ' + (b.codes || 0) + ' · ปิดงาน ' + (b.closed || 0) + (b.down ? ' · ลดลงรอยืนยัน ' + b.down : ''));
+      }).join('<br>') : '');
   }
   function autoPanel() {
     if (!window.Swal) return;

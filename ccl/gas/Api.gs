@@ -127,7 +127,7 @@ function doPost(e) {
     else if (fn === 'cclExpStage') out = cclExpStage_(sess, args[0], args[1], args[2]);
     else if (fn === 'cclSapAutoGet') out = cclSapAutoGet_(sess, isAdmin);
     else if (fn === 'cclSapAutoSet') { if (!isAdmin) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapAutoSet_(sess, args[0]); }
-    else if (fn === 'cclSapAutoRun') { if (!isAdmin && !args[0]) throw new Error('เฉพาะ Admin เท่านั้น'); out = cclSapAutoRun_(String(sess.name || '-'), !!args[0]); }
+    else if (fn === 'cclSapAutoRun') { if (!isAdmin && !args[0]) throw new Error('เฉพาะ Admin เท่านั้น'); out = args[0] ? cclSapAutoRun_(String(sess.name || '-'), true) : cclSapAutoRunAll_(String(sess.name || '-')); }
     else if (fn === 'cclSapReport') out = cclSapReportGet_();
     else if (fn === 'cclLineTargets') out = cclLineList_(isAdmin && !!args[0], !!args[1]);
     else if (fn === 'cclLineSend') out = cclLineSend_(sess, args[0], args[1]);
@@ -789,7 +789,7 @@ function cclSapAutoSet_(sess, patch) {
 // ตัวตั้งเวลาเรียกฟังก์ชันนี้ทุกวัน
 function cclSapAutoDaily() {
   try { cclUseBranch_(CCL_HOME_BRANCH); } catch (e) {}
-  cclSapAutoRun_('ระบบอัตโนมัติ (SAP)', false);
+  cclSapAutoRunAll_('ระบบอัตโนมัติ (SAP)');   // ทุกหน่วยงาน วันเดียวกัน
 }
 
 // ----- อ่าน .xlsx (แตก zip อ่าน XML เอง ไม่ต้องแปลงไฟล์) -----
@@ -874,22 +874,44 @@ function cclSapCloseIds_(who, ids) {
 }
 
 // ----- ตัวหลัก: อ่านไฟล์ใหม่ในโฟลเดอร์ → เทียบ → อัปเดต -----
-function cclSapAutoRun_(who, dry) {
-  var c = cclSapCfg_(), fs = cclSapFolders_(c, false);
-  if (!fs) throw new Error('ยังไม่ได้ตั้งค่าโฟลเดอร์ — เปิดตั้งค่าแล้วกดบันทึกก่อน');
+// อ่านไฟล์ใหม่ในโฟลเดอร์ครั้งเดียว ใช้ร่วมกันทุกหน่วยงาน
+function cclSapLoadFiles_(fs) {
   var files = [], it = fs.f.getFiles();
   while (it.hasNext()) { var f = it.next(); if (/\.xlsx$/i.test(f.getName())) files.push(f); }
   files.sort(function (a, b) { return a.getDateCreated() - b.getDateCreated(); });
+  var P = { files: files, map: {}, names: [], rowsN: 0, lastRows: null, lastName: '' };
+  files.forEach(function (f) { var xr = cclXlsxRows_(f.getBlob()), p = cclSapParse_(xr); Object.keys(p.map).forEach(function (k) { P.map[k] = p.map[k]; }); P.names.push(f.getName()); P.rowsN += p.rows; if (cclSapReportBuild_(xr, f.getName(), true)) { P.lastRows = xr; P.lastName = f.getName(); } });
+  return P;
+}
+// อัปเดตทุกหน่วยงานพร้อมกันจากไฟล์ชุดเดียวกัน (วันเดียวกัน) แล้วค่อยย้ายไฟล์ไป "อ่านแล้ว"
+function cclSapAutoRunAll_(who) {
+  var c = cclSapCfg_(), fs = cclSapFolders_(c, false);
+  if (!fs) throw new Error('ยังไม่ได้ตั้งค่าโฟลเดอร์ — เปิดตั้งค่าแล้วกดบันทึกก่อน');
+  var P = cclSapLoadFiles_(fs);
+  if (!P.files.length) { cclSapAddLog_({ at: new Date().toISOString(), by: who, none: 1 }); return { success: true, none: true, files: 0 }; }
+  var cur = __CCL_CTX, curId = cur && cur.branch ? cur.branch.id : CCL_HOME_BRANCH, mine = null, all = [];
+  cclBranches_().filter(function (b) { return b.active !== false; }).forEach(function (b) {
+    try { cclUseBranch_(b.id); var r = cclSapAutoRun_(who, false, P); all.push({ branch: b.name, codes: r.codes, closed: r.closed, down: r.down, nf: r.nf, hit: r.hit }); if (b.id === curId) mine = r; }
+    catch (e) { all.push({ branch: b.name, error: String(e && e.message || e) }); }
+  });
+  __CCL_CTX = cur;
+  P.files.forEach(function (f) { try { f.moveTo(fs.d); } catch (e) {} });
+  mine = mine || { success: true, files: P.names, rows: P.rowsN, codes: 0, closed: 0, down: 0, other: 0, nf: 0, list: {} };
+  mine.branches = all;
+  return mine;
+}
+function cclSapAutoRun_(who, dry, pre) {
+  var c = cclSapCfg_(), fs = cclSapFolders_(c, false);
+  if (!fs) throw new Error('ยังไม่ได้ตั้งค่าโฟลเดอร์ — เปิดตั้งค่าแล้วกดบันทึกก่อน');
+  var P = pre || cclSapLoadFiles_(fs), files = P.files;
   if (!files.length) { if (!dry) cclSapAddLog_({ at: new Date().toISOString(), by: who, none: 1 }); return { success: true, none: true, files: 0 }; }
-  var map = {}, names = [], rowsN = 0;
-  var lastRows = null, lastName = '';
-  files.forEach(function (f) { var xr = cclXlsxRows_(f.getBlob()), p = cclSapParse_(xr); Object.keys(p.map).forEach(function (k) { map[k] = p.map[k]; }); names.push(f.getName()); rowsN += p.rows; if (cclSapReportBuild_(xr, f.getName(), true)) { lastRows = xr; lastName = f.getName(); } });
+  var map = P.map, names = P.names, rowsN = P.rowsN, lastRows = P.lastRows, lastName = P.lastName, hit = 0;
   var R = cclCodeRank_;
   var res = { codes: [], down: [], closed: [], other: [], nf: [] }, now = new Date();
   var lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
-    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME), last = sh.getLastRow();
-    var data = sh.getRange(2, 1, last - 1, 29).getValues();
+    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME), last = sh ? sh.getLastRow() : 0;
+    var data = last > 1 ? sh.getRange(2, 1, last - 1, 29).getValues() : [];
     data.forEach(function (row, i) {
       var r = i + 2, no = String(row[1] || '').trim(); if (!no) return;
       var st = String(row[15] || '').trim(); if (st === 'ยกเลิก') return;
@@ -897,6 +919,7 @@ function cclSapAutoRun_(who, dry) {
       var got = ids.map(function (k) { return map[k]; }).filter(Boolean);
       var open = !/ปิดงานแล้วเสร็จ|อนุมัติ\/เสร็จสิ้น/.test(st);
       if (!got.length) { if (open && ids.length) res.nf.push(no); return; }
+      hit++;
       var cs = got.map(function (g) { return g.usr; }).filter(Boolean);
       var code = cs.length ? cs.reduce(function (a, b) { return R(b) < R(a) ? b : a; }) : '', cur = String(row[28] || '').trim();
       if (code && c.updCodes && code !== cur.toUpperCase()) {
@@ -910,15 +933,16 @@ function cclSapAutoRun_(who, dry) {
         else res.other.push(no + ' (' + st + ')');
       }
     });
-    if (!dry) files.forEach(function (f) { f.moveTo(fs.d); });
+    if (!dry && !pre) files.forEach(function (f) { f.moveTo(fs.d); });
   } finally { lock.releaseLock(); }
-  var sum = { at: now.toISOString(), by: who, files: names, rows: rowsN, codes: res.codes.length, down: res.down.length, closed: res.closed.length, other: res.other.length, nf: res.nf.length, dry: dry };
+  var brName = cclSapCurBranch_().name;
+  var sum = { at: now.toISOString(), by: who, branch: brName, hit: hit, files: names, rows: rowsN, codes: res.codes.length, down: res.down.length, closed: res.closed.length, other: res.other.length, nf: res.nf.length, dry: dry };
   if (!dry) {
     if (lastRows) { try { cclSapSaveReport_(cclSapReportBuild_(lastRows, lastName)); } catch (e) {} }
     cclSapAddLog_(sum);
-    if (c.line) {
+    if (c.line && (hit || !pre)) {   // ไฟล์ไม่มีงานของหน่วยงานนี้เลย → ไม่ส่ง LINE
       var L = function (a, n) { return a.slice(0, n).map(function (x) { return ' • ' + x; }).join('\n') + (a.length > n ? '\n …อีก ' + (a.length - n) + ' งาน' : ''); };
-      var msg = '📥 นำเข้าสถานะ SAP ' + (who === 'ระบบอัตโนมัติ (SAP)' ? 'อัตโนมัติ' : 'โดย ' + who) + ' · ' + Utilities.formatDate(now, 'Asia/Bangkok', 'd/M/yyyy HH:mm') + '\nไฟล์: ' + names.join(', ');
+      var msg = '📥 นำเข้าสถานะ SAP · ' + brName + ' ' + (who === 'ระบบอัตโนมัติ (SAP)' ? 'อัตโนมัติ' : 'โดย ' + who) + ' · ' + Utilities.formatDate(now, 'Asia/Bangkok', 'd/M/yyyy HH:mm') + '\nไฟล์: ' + names.join(', ');
       if (res.codes.length) msg += '\n\n🔄 อัปเดตสถานะงาน ' + res.codes.length + ' งาน\n' + L(res.codes, 10);
       if (res.closed.length) msg += '\n\n✅ ปิดงาน (SAP = CLSD) ' + res.closed.length + ' งาน\n' + L(res.closed, 15);
       if (res.down.length) msg += '\n\n⚠️ สถานะงานลดลง รอ Admin ยืนยัน ' + res.down.length + ' งาน\n' + L(res.down, 10);
