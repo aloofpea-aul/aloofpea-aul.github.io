@@ -18,11 +18,12 @@
 const SPREADSHEET_ID = '';   // ว่าง = ใช้ชีตที่ setup สร้าง (Script Properties › ASSET_SHEET_ID)
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '1.0';
+const VERSION = '2.0';
+const DONE = 11;   // ขั้นที่ 11 = ปิดชุด (ครบ 10 ขั้นตามแบบฟอร์มจำหน่าย)
 
-const AST = { name: 'ทรัพย์สิน', labels: ['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลขผู้ผลิต', 'วันที่ได้มา', 'ราคาทุน', 'ผู้ดูแล', 'สถานะ SAP', 'อยู่ในไฟล์ล่าสุด', 'จำหน่ายแล้ว (ชุด)', 'นำเข้าเมื่อ'] };
+const AST = { name: 'ทรัพย์สิน', labels: ['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลขผู้ผลิต', 'วันที่ได้มา', 'ราคาทุน', 'ผู้ดูแล', 'สถานะ SAP', 'อยู่ในไฟล์ล่าสุด', 'จำหน่ายแล้ว (ชุด)', 'นำเข้าเมื่อ', 'มูลค่าตามบัญชี', 'ค่าเสื่อมสะสม', 'หมวด (SAP)', 'รหัสพนักงาน'] };
 const INS = { name: 'ผลตรวจสภาพ', labels: ['รหัสสินทรัพย์', 'สภาพ', 'หมายเหตุ', 'รหัสรูป', 'ผู้ตรวจ', 'ตรวจเมื่อ'] };
-const BAT = { name: 'ชุดจำหน่าย', labels: ['รหัสชุด', 'ชื่อชุด', 'ขั้น', 'รายการ (JSON)', 'กรรมการ (JSON)', 'เลขที่หนังสือ', 'ซื้อทดแทน (JSON)', 'บันทึกขั้น (JSON)', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ'] };
+const BAT = { name: 'ชุดจำหน่าย', labels: ['รหัสชุด', 'ชื่อชุด', 'ขั้น', 'รายการ (JSON)', 'กรรมการ (JSON)', 'เลขที่หนังสือ', 'ซื้อทดแทน (JSON)', 'บันทึกขั้น (JSON)', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ', 'ข้อมูลเอกสาร (JSON)'] };
 const IMP = { name: 'ประวัตินำเข้า', labels: ['วันเวลา', 'ผู้นำเข้า', 'ไฟล์', 'จำนวนรายการ', 'ใหม่', 'หายจากไฟล์'] };
 const SETS = { name: 'ตั้งค่า', labels: ['รายการ', 'ค่า (JSON)'] };
 
@@ -77,7 +78,7 @@ function doPost(e) {
 }
 
 const ACTIONS = {
-  /** นำเข้าทะเบียนจาก SAP — rows = [[รหัส, ประเภท, WBS, รายละเอียด, ทะเบียนรถ, ยี่ห้อ, หมายเลข, วันที่ได้มา yyyy-mm-dd, ราคาทุน, ผู้ดูแล, สถานะ SAP]]
+  /** นำเข้าทะเบียนจาก SAP — rows = [[รหัส, ประเภท, WBS, รายละเอียด, ทะเบียนรถ, ยี่ห้อ, หมายเลข, วันที่ได้มา yyyy-mm-dd, ราคาทุน, ผู้ดูแล, สถานะ SAP, มูลค่าตามบัญชี, ค่าเสื่อมสะสม, หมวด, รหัสพนักงาน]]
    *  รายการเดิมอัปเดตตามไฟล์ · รายการใหม่เพิ่ม · รายการที่ไม่อยู่ในไฟล์ไม่ลบ แต่ทำเครื่องหมาย "ไม่อยู่ในไฟล์ล่าสุด" · ผลตรวจเดิมอยู่ครบ */
   importRegister: function (b, me) {
     admin_(me);
@@ -85,19 +86,24 @@ const ACTIONS = {
     if (!rows.length) throw err_('bad', 'ไม่พบรายการทรัพย์สินในไฟล์');
     if (rows.length > 10000) throw err_('bad', 'ไฟล์ใหญ่เกินไป');
     const sh = sheet_(AST), n = sh.getLastRow(), W = AST.labels.length;
+    sh.getRange(1, 1, 1, W).setValues([AST.labels]).setFontWeight('bold').setBackground('#efe8f3');
     const all = n > 1 ? sh.getRange(2, 1, n - 1, W).getValues() : [];
     const idx = {};
     all.forEach(function (r, i) { idx[String(r[0])] = i; r[11] = 'ไม่อยู่'; });
     const now = new Date(); let added = 0;
     rows.forEach(function (r) {
       const code = String(r[0]).trim();
-      const rec = [code, clean_(r[1]), clean_(r[2]), clean_(r[3]), clean_(r[4]), clean_(r[5]), clean_(r[6]), date_(r[7]), Number(r[8]) || 0, clean_(r[9]), clean_(r[10]), 'อยู่', '', now];
+      const num = v => (v === '' || v == null || isNaN(Number(v))) ? '' : Number(v);
+      const rec = [code, clean_(r[1]), clean_(r[2]), clean_(r[3]), clean_(r[4]), clean_(r[5]), clean_(r[6]), date_(r[7]), Number(r[8]) || 0, clean_(r[9]), clean_(r[10]), 'อยู่', '', now,
+        num(r[11]), num(r[12]), clean_(r[13]), clean_(r[14])];
       if (code in idx) { rec[12] = all[idx[code]][12]; all[idx[code]] = rec; }
       else { idx[code] = all.length; all.push(rec); added++; }
     });
     const gone = all.filter(function (r) { return r[11] !== 'อยู่' && !r[12]; }).length;
     if (n > 1) sh.getRange(2, 1, n - 1, W).clearContent();
+    all.forEach(function (r) { while (r.length < W) r.push(''); r.length = W; });
     sh.getRange(2, 1, all.length, 8).setNumberFormat('@');
+    sh.getRange(2, 18, all.length, 1).setNumberFormat('@');
     sh.getRange(2, 1, all.length, W).setValues(all);
     sheet_(IMP).appendRow([now, me.name, clean_(b.file), rows.length, n > 1 ? added : 'ครั้งแรก', gone]);
     return { rows: rows.length, added: added, gone: gone };
@@ -131,7 +137,7 @@ const ACTIONS = {
     const now = new Date();
     const log = { '1': iso_(now) };
     sheet_(BAT).appendRow([id, clean_(b.name) || ('ชุดที่ ' + seq + '/' + year), 1, JSON.stringify(codes), JSON.stringify(['', '', '']), '',
-      JSON.stringify({}), JSON.stringify(log), '', me.name, now, me.name, now]);
+      JSON.stringify({}), JSON.stringify(log), '', me.name, now, me.name, now, JSON.stringify({})]);
     return { batch: batch_(id) };
   },
 
@@ -141,7 +147,8 @@ const ACTIONS = {
     const sh = sheet_(BAT), v = sh.getDataRange().getValues();
     for (let i = 1; i < v.length; i++) if (String(v[i][0]) === String(b.id)) {
       const r = v[i];
-      if (Number(r[2]) >= 6 && !b.reopen) throw err_('bad', 'ชุดนี้ปิดแล้ว');
+      if (Number(r[2]) >= DONE && !b.reopen) throw err_('bad', 'ชุดนี้ปิดแล้ว');
+      while (r.length < BAT.labels.length) r.push('');
       if (b.name != null) r[1] = clean_(b.name);
       if (b.codes) {
         const busy = inOpenBatch_(String(b.id));
@@ -153,14 +160,21 @@ const ACTIONS = {
       if (b.docNo != null) r[5] = clean_(b.docNo);
       if (b.replace) r[6] = JSON.stringify(b.replace);
       if (b.note != null) r[8] = clean_(b.note);
+      if (b.data && typeof b.data === 'object') {
+        const cur = parse_(r[13]) || {};
+        Object.keys(b.data).forEach(function (k) { if (/^[A-Za-z0-9]{1,20}$/.test(k)) cur[k] = b.data[k]; });
+        const js = JSON.stringify(cur);
+        if (js.length > 45000) throw err_('bad', 'ข้อมูลเอกสารยาวเกินไป');
+        r[13] = js;
+      }
       const log = parse_(r[7]) || {};
       if (b.step) {
-        const s = Math.max(1, Math.min(6, Number(b.step)));
+        const s = Math.max(1, Math.min(DONE, Number(b.step)));
         if (s > Number(r[2])) log[String(s)] = iso_(new Date());
         else Object.keys(log).forEach(function (k) { if (Number(k) > s) delete log[k]; });
         r[2] = s;
         r[7] = JSON.stringify(log);
-        markDisposed_(JSON.parse(r[3]), s >= 6 ? String(r[0]) : '', String(r[0]));
+        markDisposed_(JSON.parse(r[3]), s >= DONE ? String(r[0]) : '', String(r[0]));
       }
       r[11] = me.name; r[12] = new Date();
       sh.getRange(i + 1, 1, 1, BAT.labels.length).setValues([r]);
@@ -173,7 +187,7 @@ const ACTIONS = {
     admin_(me);
     const sh = sheet_(BAT), v = sh.getDataRange().getValues();
     for (let i = 1; i < v.length; i++) if (String(v[i][0]) === String(b.id)) {
-      if (Number(v[i][2]) >= 6) throw err_('bad', 'ชุดที่ปิดแล้วลบไม่ได้');
+      if (Number(v[i][2]) >= DONE) throw err_('bad', 'ชุดที่ปิดแล้วลบไม่ได้');
       sh.deleteRow(i + 1);
       return { deleted: true };
     }
@@ -186,6 +200,7 @@ const ACTIONS = {
     if (b.life) Object.keys(b.life).forEach(function (k) { const y = Number(b.life[k]); if (/^Z\d\d$/.test(k) && y > 0 && y < 100) s.life[k] = y; });
     if (b.aliases) { const a = {}; Object.keys(b.aliases).forEach(function (k) { const t = clean_(b.aliases[k]); if (clean_(k) && t && clean_(k) !== t) a[clean_(k)] = t; }); s.aliases = a; }
     if (b.memo) Object.keys(DEFAULT_SETTINGS.memo).forEach(function (k) { if (b.memo[k] != null) s.memo[k] = clean_(b.memo[k]); });
+    if (b.office && typeof b.office === 'object') { const o = {}; Object.keys(b.office).slice(0, 60).forEach(function (k) { if (/^[A-Za-z0-9]{1,20}$/.test(k)) o[k] = String(b.office[k] == null ? '' : b.office[k]).replace(/[\r\n\t]+/g, ' ').trim().slice(0, 600); }); s.office = o; }
     setSetting_('settings', s);
     return { settings: s };
   }
@@ -195,9 +210,10 @@ const ACTIONS = {
 function bootstrap_(me) {
   const sh = sheet_(AST);
   const v = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, AST.labels.length).getValues() : [];
-  // [code, cls, wbs, name, plate, brand, serial, acquired, cost, owner, sapStatus, inLatest, disposedBatch]
+  // [code, cls, wbs, name, plate, brand, serial, acquired, cost, owner, sapStatus, inLatest, disposedBatch, bookValue|null, sapCategory, empId]
   const assets = v.filter(function (r) { return r[0]; }).map(function (r) {
-    return [String(r[0]), String(r[1]), String(r[2]), String(r[3]), String(r[4]), String(r[5]), String(r[6]), date_(r[7]), Number(r[8]) || 0, String(r[9]), String(r[10]), r[11] !== 'ไม่อยู่', String(r[12] || '')];
+    return [String(r[0]), String(r[1]), String(r[2]), String(r[3]), String(r[4]), String(r[5]), String(r[6]), date_(r[7]), Number(r[8]) || 0, String(r[9]), String(r[10]), r[11] !== 'ไม่อยู่', String(r[12] || ''),
+      (r[14] === '' || r[14] == null) ? null : Number(r[14]), String(r[16] || ''), String(r[17] || '')];
   });
   const imp = sheet_(IMP), iv = imp.getLastRow() > 1 ? imp.getRange(imp.getLastRow(), 1, 1, IMP.labels.length).getValues()[0] : null;
   return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, assets: assets, inspections: latestIns_(),
@@ -218,13 +234,13 @@ function batches_() {
   const sh = sheet_(BAT); if (sh.getLastRow() < 2) return [];
   return sh.getRange(2, 1, sh.getLastRow() - 1, BAT.labels.length).getValues().filter(function (r) { return r[0]; }).map(function (r) {
     return { id: String(r[0]), name: String(r[1]), step: Number(r[2]) || 1, codes: parse_(r[3]) || [], committee: parse_(r[4]) || ['', '', ''], docNo: String(r[5] || ''),
-      replace: parse_(r[6]) || {}, log: parse_(r[7]) || {}, note: String(r[8] || ''), by: String(r[9]), at: iso_(r[10]), upBy: String(r[11] || ''), upAt: iso_(r[12]) };
+      replace: parse_(r[6]) || {}, log: parse_(r[7]) || {}, note: String(r[8] || ''), by: String(r[9]), at: iso_(r[10]), upBy: String(r[11] || ''), upAt: iso_(r[12]), data: parse_(r[13]) || {} };
   });
 }
 function batch_(id) { return batches_().filter(function (x) { return x.id === id; })[0] || null; }
 function inOpenBatch_(except) {
   const m = {};
-  batches_().forEach(function (x) { if (x.step < 6 && x.id !== except) x.codes.forEach(function (c) { m[c] = x.id; }); });
+  batches_().forEach(function (x) { if (x.step < DONE && x.id !== except) x.codes.forEach(function (c) { m[c] = x.id; }); });
   return m;
 }
 let CODES_ = null;
@@ -252,7 +268,8 @@ function settings_() {
   return {
     life: Object.assign({}, DEFAULT_SETTINGS.life, s.life || {}),
     aliases: s.aliases || DEFAULT_SETTINGS.aliases,
-    memo: Object.assign({}, DEFAULT_SETTINGS.memo, s.memo || {})
+    memo: Object.assign({}, DEFAULT_SETTINGS.memo, s.memo || {}),
+    office: s.office || {}
   };
 }
 
@@ -346,6 +363,7 @@ function setup() {
     SS_ = ss;
   }
   [AST, INS, BAT, IMP, SETS].forEach(sheet_);
+  [AST, BAT].forEach(function (d) { sheet_(d).getRange(1, 1, 1, d.labels.length).setValues([d.labels]).setFontWeight('bold').setBackground('#efe8f3'); });
   if (!getSetting_('settings')) setSetting_('settings', DEFAULT_SETTINGS);
   const def = ss_().getSheetByName('Sheet1') || ss_().getSheetByName('ชีต1');
   if (def && def.getLastRow() === 0 && ss_().getSheets().length > 1) ss_().deleteSheet(def);

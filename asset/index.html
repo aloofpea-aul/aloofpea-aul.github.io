@@ -93,6 +93,7 @@ select.s{min-height:48px;border:1.5px solid #cfc9d8;border-radius:12px;padding:0
 .ri .v{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;text-align:right}
 .ri .v .c{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
 .ri .th{width:46px;height:46px;border-radius:10px;object-fit:cover;flex:none;background:#eee}
+.age{flex:none;width:52px;text-align:center;border-radius:12px;padding:4px 0;background:var(--grayBg);line-height:1.1}.age b{display:block;font-size:18px}.age span{font-size:11px;color:var(--mute)}.age.o{background:var(--warnBg)}.age.o b{color:var(--warn)}
 @media (max-width:520px){.ri .v .c{display:none}.ri .th{width:40px;height:40px}}
 .tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600;white-space:nowrap}
 .tag.ok{background:var(--greenBg);color:var(--green)}.tag.r{background:var(--redBg);color:var(--red)}.tag.w{background:var(--warnBg);color:var(--warn)}
@@ -135,6 +136,18 @@ label.f{display:block;margin-top:12px}label.f>span{display:block;font-size:13.5p
 label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d8;border-radius:10px;min-height:44px;padding:8px 12px;font-size:15px;background:#fff}
 .flbl{font-size:14px;font-weight:600;margin-top:14px}
 /* batch */
+.stp{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.stp button{width:100%;display:flex;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:9px 12px}
+.stp .n{width:30px;height:30px;border-radius:50%;background:var(--grayBg);display:grid;place-items:center;font-weight:700;flex:none}
+.stp .d .n{background:#0f8a52;color:#fff}.stp .c .n{background:var(--pea);color:#fff}
+.stp .sel button{border:2px solid var(--pea);background:#fcf8fd}.stp b{display:block;font-size:14px;line-height:1.3}.stp small{color:var(--mute);font-size:12px}
+.bw{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:14px;margin-top:14px;align-items:start}
+@media (max-width:860px){.bw{grid-template-columns:1fr}}
+.pp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;margin-top:6px;align-items:center}.pp .pl{grid-column:1/-1;margin-bottom:-4px}
+.pp input,label.f select{width:100%;border:1px solid #cfc9d8;border-radius:10px;min-height:44px;padding:6px 12px;font-size:15px;background:#fff}
+.docs{display:flex;flex-direction:column;gap:8px;margin-top:6px}.doc{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.pt{width:100%;border-collapse:collapse;font-size:14px}.pt th,.pt td{border-bottom:1px solid #f0edf4;padding:6px 4px;text-align:right}.pt th:first-child,.pt td:first-child{text-align:left}
+.pt input{width:84px;border:1px solid #cfc9d8;border-radius:8px;min-height:40px;padding:0 6px;text-align:right;font-size:15px}.pt .mx{font-weight:700;white-space:nowrap}
 .bc{display:flex;flex-direction:column;gap:10px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:16px;padding:14px;width:100%}
 .bc:hover{border-color:#cdb7d4}
 .bc .h{display:flex;justify-content:space-between;gap:10px;align-items:center}.bc .h b{font-size:16.5px}
@@ -155,6 +168,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 @media (max-width:680px){.rp{grid-template-columns:minmax(0,1fr) 1fr 1fr}.rp .nm{grid-column:1/-1}}
 .drop{border:2px dashed #b9a5c2;background:#fff;border-radius:18px;padding:24px 16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
 .drop.over{background:#f6eef8;border-color:var(--pea)}
+.ofc{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 12px}
 .lf{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f0edf4}
 .lf input{width:70px;min-height:40px;border:1px solid #cfc9d8;border-radius:10px;text-align:center}
 .ag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px;border-radius:12px;background:#faf8fc;border:1px solid #eee8f2;margin-top:8px}
@@ -185,8 +199,10 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status"></div>
+<script src="docs.js?v=2"></script>
 <script>
 'use strict';
+const DONE = 11;   // ปิดชุดหลังครบ 10 ขั้นตามแบบฟอร์มจำหน่าย
 /* ---------------- ตั้งค่า ---------------- */
 const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้านระบบทรัพย์สิน (…/exec) · ว่าง = โหมดทดลอง เก็บในเครื่องนี้
 const lsr = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
@@ -202,13 +218,7 @@ const CATS = [['Z51', 'เฟอร์นิเจอร์/สำนักง�
 const CAT_NAMES = ['เครื่องมือ', 'เฟอร์นิเจอร์/สำนักงาน', 'วิทยุสื่อสาร', 'คอมพิวเตอร์', 'ยานพาหนะ', 'เครื่องใช้อื่น', 'อื่นๆ'];
 const CONDS = [['ใช้ได้', 'ok'], ['ชำรุด', 'r'], ['เสื่อมสภาพ', 'w'], ['เลิกใช้', 'p'], ['ไม่พบ', 'g']];
 const CCLS = Object.fromEntries(CONDS);
-const STEPS = [
-  ['ตรวจสภาพ + ภาพ', 'ทุกรายการต้องมีผลตรวจและรูป'],
-  ['เสนอตั้งกรรมการ', 'พิมพ์บันทึกขอแต่งตั้ง เสนอลงนาม'],
-  ['กรรมการตรวจสอบ', 'กรรมการยืนยันสภาพรายชิ้น'],
-  ['อนุมัติจำหน่าย', 'พิมพ์บันทึกขออนุมัติ + บัญชีรายการ'],
-  ['ตัด SAP + ซื้อทดแทน', 'แจ้งบัญชีลงจ่าย · ส่งแผนซื้อทดแทน']
-];
+const STEPS = DOCS.STEPS.map(x => [x.t, x.docs.map(d => d[1]).join(' · ')]);
 const DEF_SETTINGS = { life: { Z51: 5, Z53: 5, Z55: 5, Z57: 5, Z58: 5, Z60: 5, Z63: 5 }, aliases: { 'คอนคัตเตอร์คัฟเวอร์': 'Conductor Cover', 'คอนดักเตอร์คัฟเวอร์': 'Conductor Cover', 'คอนดัคเตอร์คัฟเวอร์': 'Conductor Cover', 'Conductor cover(Class 4)': 'Conductor Cover' },
   memo: { org: 'กฟส.อ่าวลึก แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', to: 'ผจก.กฟส.อ่าวลึก', proposer: '', proposerTitle: 'หผปร.กฟส.อ่าวลึก' } };
 
@@ -240,14 +250,14 @@ function localApi(action, b) {
   const ok = o => Promise.resolve(Object.assign({ ok: true }, o || {}));
   const bad = m => Promise.reject(new Error(m));
   const latest = () => { const m = {}; L.ins.forEach(r => m[r[0]] = r); return Object.values(m); };
-  const busy = ex => { const m = {}; L.batches.forEach(x => { if (x.step < 6 && x.id !== ex) x.codes.forEach(c => m[c] = x.id); }); return m; };
+  const busy = ex => { const m = {}; L.batches.forEach(x => { if (x.step < DONE && x.id !== ex) x.codes.forEach(c => m[c] = x.id); }); return m; };
   const has = c => L.assets.some(a => a[0] === c);
   if (action === 'bootstrap') return ok({ assets: L.assets, inspections: latest(), batches: L.batches, settings: L.settings, lastImport: L.lastImport, me: { name: me, admin: true }, local: true });
   if (action === 'history') return ok({ history: L.ins.filter(r => r[0] === b.code).reverse() });
   if (action === 'importRegister') {
     const idx = {}; L.assets.forEach((a, i) => { idx[a[0]] = i; a[11] = false; });
     let added = 0;
-    b.rows.forEach(r => { const rec = r.slice(0, 11).concat([true, '']); if (r[0] in idx) { rec[12] = L.assets[idx[r[0]]][12]; L.assets[idx[r[0]]] = rec; } else { L.assets.push(rec); added++; } });
+    b.rows.forEach(r => { const rec = r.slice(0, 11).concat([true, '', r[11] === '' || r[11] == null ? null : +r[11], r[13] || '', r[14] || '']); if (r[0] in idx) { rec[12] = L.assets[idx[r[0]]][12]; L.assets[idx[r[0]]] = rec; } else { L.assets.push(rec); added++; } });
     L.lastImport = { at: now, by: me, file: b.file, rows: b.rows.length }; save();
     return ok({ rows: b.rows.length, added, gone: L.assets.filter(a => !a[11] && !a[12]).length });
   }
@@ -261,24 +271,25 @@ function localApi(action, b) {
     const bz = busy(); const codes = [...new Set(b.codes)].filter(has);
     if (codes.some(c => bz[c])) return bad('มีรายการอยู่ในชุดจำหน่ายอื่นที่ยังไม่ปิด');
     const y = new Date().getFullYear() + 543, seq = L.batches.filter(x => x.name.includes('/' + y)).length + 1;
-    const x = { id: 'D' + Date.now(), name: b.name || ('ชุดที่ ' + seq + '/' + y), step: 1, codes, committee: ['', '', ''], docNo: '', replace: {}, log: { 1: now }, note: '', by: me, at: now, upBy: me, upAt: now };
+    const x = { id: 'D' + Date.now(), name: b.name || ('ชุดที่ ' + seq + '/' + y), step: 1, codes, committee: ['', '', ''], docNo: '', replace: {}, log: { 1: now }, note: '', by: me, at: now, upBy: me, upAt: now, data: {} };
     L.batches.push(x); save(); return ok({ batch: x });
   }
   if (action === 'updateBatch') {
     const x = L.batches.find(z => z.id === b.id); if (!x) return bad('ไม่พบชุดจำหน่าย');
-    if (x.step >= 6 && !b.reopen) return bad('ชุดนี้ปิดแล้ว');
+    if (x.step >= DONE && !b.reopen) return bad('ชุดนี้ปิดแล้ว');
     ['name', 'committee', 'docNo', 'replace', 'note'].forEach(k => { if (b[k] != null) x[k] = b[k]; });
+    if (b.data) x.data = Object.assign({}, x.data || {}, b.data);
     if (b.codes) { const bz = busy(x.id); x.codes = [...new Set(b.codes)].filter(c => has(c) && !bz[c]); }
     if (b.step) {
-      const s = Math.max(1, Math.min(6, b.step));
+      const s = Math.max(1, Math.min(DONE, b.step));
       if (s > x.step) x.log[s] = now; else Object.keys(x.log).forEach(k => { if (+k > s) delete x.log[k]; });
       x.step = s;
-      L.assets.forEach(a => { if (x.codes.includes(a[0])) a[12] = s >= 6 ? x.id : ''; });
+      L.assets.forEach(a => { if (x.codes.includes(a[0])) a[12] = s >= DONE ? x.id : ''; });
     }
     x.upBy = me; x.upAt = now; save(); return ok({ batch: x });
   }
-  if (action === 'deleteBatch') { L.batches = L.batches.filter(z => !(z.id === b.id && z.step < 6)); save(); return ok({ deleted: true }); }
-  if (action === 'saveSettings') { L.settings = Object.assign({}, L.settings, { life: Object.assign({}, L.settings.life, b.life || {}) }, b.aliases ? { aliases: b.aliases } : {}, b.memo ? { memo: Object.assign({}, L.settings.memo, b.memo) } : {}); save(); return ok({ settings: L.settings }); }
+  if (action === 'deleteBatch') { L.batches = L.batches.filter(z => !(z.id === b.id && z.step < DONE)); save(); return ok({ deleted: true }); }
+  if (action === 'saveSettings') { L.settings = Object.assign({}, L.settings, { life: Object.assign({}, L.settings.life, b.life || {}) }, b.aliases ? { aliases: b.aliases } : {}, b.memo ? { memo: Object.assign({}, L.settings.memo, b.memo) } : {}, b.office ? { office: b.office } : {}); save(); return ok({ settings: L.settings }); }
   return bad('โหมดทดลองไม่รองรับ');
 }
 
@@ -288,23 +299,24 @@ function lifeOf(cls) { const L = (DB.settings && DB.settings.life) || DEF_SETTIN
 function stdName(n) { const al = (DB.settings && DB.settings.aliases) || {}; return al[n] || n; }
 function build() {
   const now = Date.now(), open = {};
-  DB.batches.forEach(x => { if (x.step < 6) x.codes.forEach(c => open[c] = x); });
+  DB.batches.forEach(x => { if (x.step < DONE) x.codes.forEach(c => open[c] = x); });
   A = DB.assets.map(r => {
-    const [code, cls, wbs, name, plate, brand, serial, acq, cost, owner, sap, inLatest, disposed] = r;
+    const [code, cls, wbs, name, plate, brand, serial, acq, cost, owner, sap, inLatest, disposed, sapBv, sapCat, emp] = r;
     const t = acq ? new Date(acq + 'T00:00:00').getTime() : NaN;
     const age = isNaN(t) ? null : (now - t) / (365.25 * 86400000);
-    const life = lifeOf(cls), full = age != null && age >= life;
-    const bv = !cost ? 0 : age == null ? null : Math.max(1, cost * (1 - age / life));
+    const life = lifeOf(cls), real = sapBv != null && sapBv !== '';
+    const full = real ? Number(sapBv) <= 1 : (age != null && age >= life);
+    const bv = real ? Number(sapBv) : !cost ? 0 : age == null ? null : Math.max(1, cost * (1 - age / life));
     const ins = DB.ins[code] || null, std = stdName(name);
     const lease = /สิ้นสุดสัญญา/.test(name + ' ' + plate);
-    const it = { code, cls, wbs, name, std, plate, brand, serial, acq, cost: Number(cost) || 0, owner, sap, inLatest: inLatest !== false, disposed: disposed || '', cat: catOf(cls), age, life, full, bv: full ? Math.min(1, cost || 1) : bv, ins, lease, batch: open[code] || null };
+    const it = { code, cls, wbs, name, std, plate, brand, serial, acq, cost: Number(cost) || 0, owner, sap, inLatest: inLatest !== false, disposed: disposed || '', cat: sapCat || catOf(cls), age, life, full, real, bv: real ? bv : full ? Math.min(1, cost || 1) : bv, emp: emp || '', ins, lease, batch: open[code] || null };
     it.rec = recOf(it);
     it.key = (code + ' ' + name + ' ' + std + ' ' + plate + ' ' + brand + ' ' + serial + ' ' + wbs + ' ' + owner).toLowerCase();
     return it;
   });
   AM = Object.fromEntries(A.map(a => [a.code, a]));
   A.sort((a, b) => (a.acq || '9999').localeCompare(b.acq || '9999') || a.code.localeCompare(b.code));
-  const nOpen = DB.batches.filter(x => x.step < 6).length, d = $('#bdot');
+  const nOpen = DB.batches.filter(x => x.step < DONE).length, d = $('#bdot');
   d.hidden = !nOpen; d.textContent = nOpen;
 }
 function recOf(it) {
@@ -315,7 +327,7 @@ function recOf(it) {
   if (c === 'ไม่พบ') return { t: 'สอบข้อเท็จจริง', c: 'w', pick: true };
   if (it.lease) return { t: 'ตรวจสัญญาเช่า', c: 'b', pick: true };
   if (c === 'ใช้ได้') return { t: 'เก็บใช้ต่อ', c: 'ok', pick: false };
-  return it.full ? { t: 'รอตรวจสภาพ', c: 'o', pick: false } : { t: 'ยังไม่ครบอายุ', c: 'o', pick: false };
+  return it.full ? { t: '1 บาท · พร้อมจำหน่าย', c: 'w', pick: true } : { t: 'ยังมีมูลค่า', c: 'o', pick: false };
 }
 const active = () => A.filter(a => !a.disposed);
 const condTag = it => it.ins ? `<span class="tag ${CCLS[it.ins[1]] || 'g'}">${esc(it.ins[1])}</span>` : '<span class="tag o">ยังไม่ตรวจ</span>';
@@ -336,8 +348,8 @@ function viewHome() {
     return;
   }
   const act = active(), done = act.filter(a => a.ins).length, full = act.filter(a => a.full);
-  const cand = act.filter(a => a.rec.pick), openB = DB.batches.filter(x => x.step < 6);
-  const y = new Date().getFullYear(), soldY = DB.batches.filter(x => x.step >= 6 && x.log[6] && new Date(x.log[6]).getFullYear() === y).reduce((s, x) => s + x.codes.length, 0);
+  const cand = act.filter(a => a.rec.pick), openB = DB.batches.filter(x => x.step < DONE);
+  const y = new Date().getFullYear(), soldY = DB.batches.filter(x => x.step >= DONE && x.log[DONE] && new Date(x.log[DONE]).getFullYear() === y).reduce((s, x) => s + x.codes.length, 0);
   const old30 = act.filter(a => a.age != null && a.age >= 30).length;
   const oldest = act.filter(a => a.acq)[0];
   const on = cand.length ? 2 : openB.length ? 3 : 1;
@@ -352,14 +364,14 @@ function viewHome() {
     stepCard(3, 'นำเสนอจำหน่าย', 'ระบบออกบันทึกและบัญชีรายการให้ พิมพ์เสนอลงนาม ติดตามจนตัดจาก SAP',
       `<div class="muted">ชุดที่กำลังดำเนินการ <b style="color:var(--ink);font-size:17px">${openB.length}</b> ชุด</div>`, 'ดูชุดจำหน่าย', 'batch') + `</div>`;
   h += `<div class="kpis">
-    <div class="kpi"><span>ทรัพย์สินที่ใช้อยู่</span><b>${act.length.toLocaleString('th-TH')}</b><small>ราคาทุน ${(act.reduce((s, a) => s + a.cost, 0) / 1e6).toLocaleString('th-TH', { maximumFractionDigits: 2 })} ล้านบาท</small></div>
-    <div class="kpi w"><span>ครบอายุ (≈ 1 บาท)</span><b>${full.length.toLocaleString('th-TH')}</b><small>${act.length ? Math.round(full.length / act.length * 100) : 0}% · ประมาณการจากอายุใช้งาน</small></div>
+    <div class="kpi"><span>ทรัพย์สินที่ใช้อยู่</span><b>${act.length.toLocaleString('th-TH')}</b><small>ราคาทุน ${(act.reduce((s, a) => s + a.cost, 0) / 1e6).toLocaleString('th-TH', { maximumFractionDigits: 2 })} ล้าน · บัญชี ${(act.reduce((s, a) => s + (a.bv || 0), 0) / 1e6).toLocaleString('th-TH', { maximumFractionDigits: 2 })} ล้านบาท</small></div>
+    <button class="kpi w" id="kFull" style="text-align:left"><span>มูลค่าเหลือ 1 บาท</span><b>${full.length.toLocaleString('th-TH')}</b><small>${act.length ? Math.round(full.length / act.length * 100) : 0}% · ${act.some(a => a.real) ? 'ตามมูลค่าบัญชี SAP' : 'ประมาณจากอายุใช้งาน'} · กดดูรายการ</small></button>
     <div class="kpi"><span>อายุเกิน 30 ปี</span><b>${old30}</b><small>${oldest ? 'เก่าสุดได้มาปี ' + yearTH(oldest.acq) : ''}</small></div>
     <div class="kpi"><span>จำหน่ายแล้วปีนี้</span><b>${soldY}</b><small>${soldY ? 'รายการ' : 'ยังไม่มีชุดที่ปิด'}</small></div></div>`;
   const byCat = {};
   act.forEach(a => { const c = byCat[a.cat] = byCat[a.cat] || [0, 0]; c[0]++; if (a.full) c[1]++; });
-  const cats = CAT_NAMES.filter(c => byCat[c]);
-  h += `<div class="grid2"><section class="card"><h3>ครบอายุ แยกตามหมวด</h3><div class="bars">` + cats.map(c => `<div class="r"><div class="l"><b style="font-weight:500">${c}</b><span>${byCat[c][1]} / ${byCat[c][0]}</span></div><div class="b"><i style="width:${byCat[c][1] / byCat[c][0] * 100}%"></i></div></div>`).join('') + `</div></section>`;
+  const cats = Object.keys(byCat).sort((x, y) => byCat[y][0] - byCat[x][0]).slice(0, 10);
+  h += `<div class="grid2"><section class="card"><h3>เหลือ 1 บาท แยกตามหมวด</h3><div class="bars">` + cats.map(c => `<div class="r"><div class="l"><b style="font-weight:500">${c}</b><span>${byCat[c][1]} / ${byCat[c][0]}</span></div><div class="b"><i style="width:${byCat[c][1] / byCat[c][0] * 100}%"></i></div></div>`).join('') + `</div></section>`;
   const al = [];
   act.filter(a => a.lease).forEach(a => al.push(['r', 'รถเช่าหมดสัญญายังอยู่ในทะเบียน', `${a.plate || a.code} · ${a.name}`, a.code]));
   const nf = act.filter(a => a.ins && a.ins[1] === 'ไม่พบ' && !a.batch).length;
@@ -369,10 +381,11 @@ function viewHome() {
   const groups = {}; act.forEach(a => { if (a.std !== a.name) groups[a.std] = (groups[a.std] || 0) + 1; });
   const gk = Object.keys(groups);
   if (gk.length) al.push(['b', 'รวมชื่อที่สะกดต่างกันแล้ว', gk.map(k => k + ' ' + groups[k] + ' รายการ').join(' · ') + ' — จัดการได้ในตั้งค่า', '#set']);
-  const veh = act.filter(a => /^Z6/.test(a.cls) && a.full && !a.lease && !(a.ins && a.ins[1] !== 'ใช้ได้')).length;
-  if (veh) al.push(['b', 'ครบอายุ ≠ ต้องจำหน่าย', `ยานพาหนะ ${veh} คันครบอายุบัญชีแล้ว ถ้ายังใช้งานหลักให้ตรวจเป็น “ใช้ได้” เก็บใช้ต่อ`, '']);
+  const veh = act.filter(a => /^Z6/.test(a.cls) && a.full && !a.lease && !a.ins).length;
+  if (veh) al.push(['b', 'เหลือ 1 บาท ≠ ต้องจำหน่าย', `ยานพาหนะ ${veh} คันมูลค่าบัญชีเหลือ 1 บาทแล้ว ถ้ายังใช้งานหลักให้ตรวจเป็น “ใช้ได้” เก็บใช้ต่อ`, '']);
   h += `<section class="card"><h3>ต้องดูเป็นพิเศษ</h3>` + (al.length ? al.map(x => `<button class="al ${x[0]}" data-al="${esc(x[3])}"><span class="ic">${x[0] === 'b' ? 'i' : '!'}</span><span><b>${esc(x[1])}</b><span>${esc(x[2])}</span></span></button>`).join('') : '<p class="muted">ไม่มี</p>') + `</section></div>`;
   $('#view').innerHTML = h;
+  $('#kFull').onclick = () => { ST.mode = 'full'; go('list'); };
   $$('[data-go]').forEach(b => b.onclick = () => { if (b.dataset.go === 'pick') { ST.mode = 'pick'; go('list'); } else go(b.dataset.go); });
   $$('[data-al]').forEach(b => b.onclick = () => {
     const k = b.dataset.al;
@@ -386,6 +399,7 @@ function filtered() {
   return A.filter(a => {
     if (ST.mode === 'done' ? !a.disposed : a.disposed) return false;
     if (ST.mode === 'pick' && !a.rec.pick) return false;
+    if (ST.mode === 'full' && (!a.full || a.batch)) return false;
     if (ST.mode === 'todo' && a.ins) return false;
     if (ST.mode === 'gone' && a.inLatest) return false;
     if (ST.cat && a.cat !== ST.cat) return false;
@@ -396,23 +410,23 @@ function filtered() {
 function owners() { return [...new Set(A.map(a => a.owner).filter(Boolean))].sort((a, b) => A.filter(x => x.owner === b).length - A.filter(x => x.owner === a).length); }
 function itemRow(a, sel) {
   const ph = a.ins && a.ins[3] ? `<img class="th" src="${esc(photoUrl(a.ins[3], 120))}" alt="" loading="lazy">` : '';
-  return `<div class="ri${sel ? ' sel' : ''}">${sel != null ? `<input type="checkbox" data-sel="${a.code}"${sel ? ' checked' : ''} aria-label="เลือก ${esc(a.std)}">` : ''}${ph}
+  return `<div class="ri${sel ? ' sel' : ''}">${sel != null ? `<input type="checkbox" data-sel="${a.code}"${sel ? ' checked' : ''} aria-label="เลือก ${esc(a.std)}">` : ''}${ph}<div class="age${a.full ? ' o' : ''}"><b>${a.age == null ? '–' : Math.floor(a.age)}</b><span>ปี</span></div>
     <button class="t" data-open="${a.code}"><b>${esc(a.std)}</b><small>${a.code} · ${esc(a.cat)}${a.plate ? ' · ' + esc(a.plate) : ''}${a.std !== a.name ? ' · เดิม ' + esc(a.name) : ''}</small><small>ได้มา ${acqTH(a.acq)}${a.age != null ? ' · ' + Math.floor(a.age) + ' ปี' : ''} · ${esc(a.owner || '–')}</small></button>
-    <div class="v"><span class="c">${baht(a.cost)}</span>${condTag(a)}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span></div></div>`;
+    <div class="v"><span class="c">ทุน ${baht(a.cost)} → บัญชี ${a.bv == null ? '–' : baht(a.bv)}</span>${a.ins ? condTag(a) : ''}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span></div></div>`;
 }
 function viewList() {
   const L = filtered(), own = owners();
   let h = `<h2 class="t">ทะเบียนทรัพย์สิน</h2><p class="muted" style="margin:0">ติ๊กเลือกรายการ แล้วกด “สร้างชุดจำหน่าย” · แตะชื่อเพื่อดูรายละเอียด/ตรวจสภาพ</p>
   <div class="tools"><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f5a6b" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">ค้นหา</span><input id="q" type="search" placeholder="รหัส / ชื่อ / ทะเบียนรถ / ผู้ดูแล" value="${esc(ST.q)}"></label>
-    <label><span class="sr">หมวด</span><select class="s" id="cat"><option value="">ทุกหมวด</option>${CAT_NAMES.filter(c => A.some(a => a.cat === c)).map(c => `<option${ST.cat === c ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
+    <label><span class="sr">หมวด</span><select class="s" id="cat"><option value="">ทุกหมวด</option>${[...new Set(A.map(a => a.cat))].sort().map(c => `<option${ST.cat === c ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
     <label><span class="sr">ผู้ดูแล</span><select class="s" id="own"><option value="">ผู้ดูแลทุกคน</option>${own.map(o => `<option${ST.owner === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label></div>
-  <div class="tools"><div class="seg" role="group" aria-label="มุมมอง">${[['all', 'ทั้งหมด'], ['pick', 'แนะนำจำหน่าย'], ['todo', 'ยังไม่ตรวจ'], ['gone', 'ไม่อยู่ในไฟล์ล่าสุด'], ['done', 'จำหน่ายแล้ว']].map(m => `<button data-m="${m[0]}" class="${ST.mode === m[0] ? 'on' : ''}">${m[1]}</button>`).join('')}</div>
+  <div class="tools"><div class="seg" role="group" aria-label="มุมมอง">${[['all', 'ทั้งหมด'], ['full', 'เหลือ 1 บาท'], ['pick', 'แนะนำจำหน่าย'], ['todo', 'ยังไม่ตรวจ'], ['gone', 'ไม่อยู่ในไฟล์ล่าสุด'], ['done', 'จำหน่ายแล้ว']].map(m => `<button data-m="${m[0]}" class="${ST.mode === m[0] ? 'on' : ''}">${m[1]}</button>`).join('')}</div>
     <span class="muted" style="margin-left:auto">${L.length.toLocaleString('th-TH')} รายการ · ราคาทุน ${baht(L.reduce((s, a) => s + a.cost, 0), 0)} บาท</span></div>`;
   h += L.length ? `<div class="list">${L.slice(0, ST.lim).map(a => itemRow(a, ST.mode === 'done' ? null : SEL.has(a.code))).join('')}</div>` + (L.length > ST.lim ? `<div style="text-align:center;margin-top:12px"><button class="btn" id="more">แสดงเพิ่ม (${L.length - ST.lim})</button></div>` : '') : `<div class="empty">ไม่พบรายการ</div>`;
   h += `<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn sm" id="qrAll">พิมพ์ป้าย QR (${SEL.size || L.length} รายการ)</button><button class="btn sm" id="csv">ส่งออก CSV</button></div>`;
   if (SEL.size) {
     const s = [...SEL].map(c => AM[c]).filter(Boolean);
-    h += `<div class="actbar"><div><b>เลือก ${s.length} รายการ</b><br><span>ราคาทุน ${baht(s.reduce((x, a) => x + a.cost, 0))} บาท · คงเหลือ ≈ ${baht(s.reduce((x, a) => x + (a.bv || 0), 0))} บาท</span></div>
+    h += `<div class="actbar"><div><b>เลือก ${s.length} รายการ</b><br><span>ราคาทุน ${baht(s.reduce((x, a) => x + a.cost, 0))} · มูลค่าบัญชี ${baht(s.reduce((x, a) => x + (a.bv || 0), 0))} บาท</span></div>
       <div class="row"><button class="btn sm" id="clr">ล้าง</button><button class="btn y" id="mk"${ADM() ? '' : ' disabled title="เฉพาะผู้ดูแลระบบ"'}>สร้างชุดจำหน่าย →</button></div></div>`;
   } else if (ST.mode !== 'done') {
     const pk = L.filter(a => a.rec.pick);
@@ -456,7 +470,7 @@ function showAsset(code) {
     <div class="row">${condTag(a)}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span>${a.full ? '<span class="tag w">ครบอายุ</span>' : ''}</div>${ph}
     ${a.ins ? `<p class="muted" style="margin:6px 0">ตรวจล่าสุด ${thDate(a.ins[5])} โดย ${esc(a.ins[4])}${a.ins[2] ? ' · “' + esc(a.ins[2]) + '”' : ''}</p>` : ''}
     <div style="margin-top:8px">${kv('รหัสสินทรัพย์', '<span class="mono">' + a.code + '</span>')}${kv('ชื่อใน SAP', a.std !== a.name ? esc(a.name) : '')}${kv('ประเภท', esc(a.cls) + ' · ' + esc(a.cat))}${kv('WBS/PEA.No', esc(a.wbs))}${kv('ทะเบียนรถ', esc(a.plate))}${kv('ยี่ห้อ', esc(a.brand))}${kv('หมายเลขผู้ผลิต', esc(a.serial))}
-    ${kv('วันที่ได้มา', acqTH(a.acq) + (a.age != null ? ' · อายุ ' + Math.floor(a.age) + ' ปี' : ''))}${kv('ราคาทุน', baht(a.cost) + ' บาท')}${kv('มูลค่าคงเหลือ (ประมาณ)', a.bv == null ? '–' : '≈ ' + baht(a.bv) + ' บาท · อายุใช้งาน ' + a.life + ' ปี')}${kv('ผู้ดูแล', esc(a.owner))}${kv('สถานะ SAP', esc(a.sap) + (a.inLatest ? '' : ' · <b style="color:var(--warn)">ไม่อยู่ในไฟล์ล่าสุด</b>'))}${kv('ชุดจำหน่าย', a.batch ? esc(a.batch.name) : a.disposed ? 'จำหน่ายแล้ว' : '')}</div>
+    ${kv('วันที่ได้มา', acqTH(a.acq) + (a.age != null ? ' · อายุ ' + Math.floor(a.age) + ' ปี' : ''))}${kv('ราคาทุน', baht(a.cost) + ' บาท')}${kv(a.real ? 'มูลค่าตามบัญชี (SAP)' : 'มูลค่าคงเหลือ (ประมาณ)', a.bv == null ? '–' : (a.real ? '' : '≈ ') + baht(a.bv) + ' บาท' + (a.real ? '' : ' · อายุใช้งาน ' + a.life + ' ปี'))}${kv('หมวด (SAP)', esc(a.cat))}${kv('รหัสพนักงานผู้ดูแล', esc(a.emp))}${kv('ผู้ดูแล', esc(a.owner))}${kv('สถานะ SAP', esc(a.sap) + (a.inLatest ? '' : ' · <b style="color:var(--warn)">ไม่อยู่ในไฟล์ล่าสุด</b>'))}${kv('ชุดจำหน่าย', a.batch ? esc(a.batch.name) : a.disposed ? 'จำหน่ายแล้ว' : '')}</div>
     <div class="row" style="margin-top:14px">${a.disposed ? '' : '<button class="btn p" id="doIns">ตรวจสภาพ</button>'}<button class="btn" id="doQr">พิมพ์ป้าย QR</button>${a.batch ? '<button class="btn" id="goB">เปิดชุดจำหน่าย</button>' : ''}</div>
     <div class="flbl">ประวัติการตรวจ</div><div id="hist" class="muted" style="margin-top:4px"><span class="spin k"></span></div>`);
   const di = $('#doIns'); if (di) di.onclick = () => inspectForm(code);
@@ -538,10 +552,10 @@ function viewCheck() {
 function viewBatch() {
   const x = ST.batch && DB.batches.find(b => b.id === ST.batch);
   if (x) return viewBatchOne(x);
-  const open = DB.batches.filter(b => b.step < 6).reverse(), closed = DB.batches.filter(b => b.step >= 6).reverse();
+  const open = DB.batches.filter(b => b.step < DONE).reverse(), closed = DB.batches.filter(b => b.step >= DONE).reverse();
   const card = b => {
     const its = b.codes.map(c => AM[c]).filter(Boolean);
-    return `<button class="bc" data-b="${b.id}"><div class="h"><b>${esc(b.name)}</b><span class="tag ${b.step >= 6 ? 'ok' : 'p'}">${b.step >= 6 ? 'ปิดแล้ว ' + thDate(b.log[6]) : 'ขั้น ' + b.step + ': ' + STEPS[b.step - 1][0]}</span></div>
+    return `<button class="bc" data-b="${b.id}"><div class="h"><b>${esc(b.name)}</b><span class="tag ${b.step >= DONE ? 'ok' : 'p'}">${b.step >= DONE ? 'ปิดแล้ว ' + thDate(b.log[DONE]) : 'ขั้น ' + b.step + ': ' + STEPS[b.step - 1][0]}</span></div>
       <div class="mini">${STEPS.map((s, i) => `<i class="${b.step > i + 1 ? 'd' : b.step === i + 1 ? 'c' : ''}"></i>`).join('')}</div>
       <span class="muted">${its.length} รายการ · ราคาทุน ${baht(its.reduce((s, a) => s + a.cost, 0))} บาท · สร้าง ${thDate(b.at)} โดย ${esc(b.by)}</span></button>`;
   };
@@ -552,69 +566,112 @@ function viewBatch() {
   $('#nb').onclick = () => { ST.mode = 'pick'; go('list'); };
   $$('[data-b]').forEach(b => b.onclick = () => { ST.batch = b.dataset.b; viewBatch(); $('#main').scrollTop = 0; });
 }
+function batchCtx(x, data) {
+  const its = x.codes.map(c => AM[c]).filter(Boolean).sort((a, b) => a.code.localeCompare(b.code));
+  return { items: its.map(a => ({ code: a.code, name: a.name, serial: a.serial, acq: a.acq, cost: a.cost, bv: a.bv || 0, age: a.age, cat: a.cat, cond: a.ins ? [a.ins[1], a.ins[2]].filter(Boolean).join(' ') : '' })),
+    d: data || x.data || {}, s: Object.assign({}, (DB.settings || {}).office || {}) };
+}
+function knownPeople() {
+  const m = {};
+  DB.batches.forEach(b => Object.values(b.data || {}).forEach(v => { if (Array.isArray(v)) v.forEach(p => { if (Array.isArray(p) && p[0]) m[p[0]] = p[1] || ''; }); }));
+  return m;
+}
 function viewBatchOne(x) {
-  const its = x.codes.map(c => AM[c]).filter(Boolean), adm = ADM(), closed = x.step >= 6;
+  const its = x.codes.map(c => AM[c]).filter(Boolean), adm = ADM(), closed = x.step >= DONE, ed = adm && !closed;
   const cost = its.reduce((s, a) => s + a.cost, 0), bv = its.reduce((s, a) => s + (a.bv || 0), 0);
-  const noIns = its.filter(a => !a.ins), noPh = its.filter(a => a.ins && !a.ins[3]);
+  if (!ST.bstep || ST.bstepFor !== x.id) { ST.bstep = Math.min(x.step, 10); ST.bstepFor = x.id; }
+  const k = ST.bstep, stp = DOCS.STEPS[k - 1], ctx = batchCtx(x), D = DOCS.defaults(ctx), ppl = knownPeople();
+  const dis = ed ? '' : ' disabled';
+  const inp = (key, v, ph, extra) => `<input data-k="${key}" value="${esc(v == null ? '' : v)}"${ph ? ` placeholder="${esc(ph)}"` : ''}${extra || ''}${dis}>`;
+  const field = f => {
+    const [key, label, type, hint] = f, v = D[key];
+    if (type === 'text') return `<label class="f"><span>${label}</span>${inp(key, v, hint)}</label>`;
+    if (type === 'date') return `<label class="f"><span>${label}</span>${inp(key, v, '', ' type="date"')}</label>`;
+    if (type === 'area') return `<label class="f"><span>${label}</span><textarea data-k="${key}" rows="5"${dis}>${esc(v || '')}</textarea></label>`;
+    if (type === 'person') return `<div class="flbl">${label}</div><div class="pp"><input data-k="${key}" data-i="0" list="ppl" value="${esc((v || [])[0] || '')}" placeholder="ชื่อ-สกุล"${dis}><input data-k="${key}" data-i="1" value="${esc((v || [])[1] || '')}" placeholder="ตำแหน่ง"${dis}></div>`;
+    if (type === 'cmte') return `<div class="flbl">${label}</div>` + [0, 1, 2].map(i => `<div class="pp"><span class="muted pl">${i ? 'กรรมการ' : 'ประธาน'}</span><input data-k="${key}" data-r="${i}" data-i="0" list="ppl" value="${esc(((v || [])[i] || [])[0] || '')}" placeholder="ชื่อ-สกุล"${dis}><input data-k="${key}" data-r="${i}" data-i="1" value="${esc(((v || [])[i] || [])[1] || '')}" placeholder="ตำแหน่ง"${dis}></div>`).join('');
+    if (type === 'bidders') return `<div class="flbl">${label}</div>` + [0, 1, 2].map(i => `<div class="pp"><span class="muted pl">รายที่ ${i + 1}</span><input data-k="${key}" data-r="${i}" data-o="name" value="${esc(((v || [])[i] || {}).name || '')}" placeholder="ชื่อ-สกุล / ร้าน"${dis}><input data-k="${key}" data-r="${i}" data-o="addr" value="${esc(((v || [])[i] || {}).addr || '')}" placeholder="ที่อยู่"${dis}></div>`).join('');
+    if (type === 'buyer') return `<label class="f"><span>${label}</span><select data-k="${key}"${dis}>${(D.bidders || []).map((b, i) => `<option value="${i}"${+v === i ? ' selected' : ''}>${esc(b.name || 'รายที่ ' + (i + 1))}</option>`).join('')}</select></label>`;
+    const sorted = ctx.items;
+    if (type === 'cond') return `<div class="flbl">${label}</div><p class="muted" style="margin:2px 0 6px">ดึงจากผลตรวจสภาพให้ก่อน แก้ไขได้</p>` + sorted.map(a => `<label class="f" style="margin-top:6px"><span>${esc(a.name)} · ${a.code}</span>${inp(key + '.' + a.code, (v || {})[a.code] != null ? v[a.code] : a.cond, 'เช่น ชำรุด ล้าสมัย มีปลวก')}</label>`).join('');
+    if (type === 'prices') return `<div class="flbl">${label}</div><div style="overflow-x:auto"><table class="pt"><thead><tr><th>รายการ</th>${(D.bidders || []).map((b, i) => `<th>${esc(b.name || 'รายที่ ' + (i + 1))}</th>`).join('')}<th>ราคากลาง</th></tr></thead><tbody>` +
+      sorted.map(a => `<tr><td>${esc(a.name)}<br><small class="muted">${a.code}</small></td>${[0, 1, 2].map(j => `<td><input inputmode="decimal" data-k="${key}.${a.code}" data-j="${j}" value="${esc(((v || {})[a.code] || [])[j] ?? '')}" aria-label="ราคา"${dis}></td>`).join('')}<td class="mx" data-mx="${a.code}">${baht(DOCS.mid(a, D))}</td></tr>`).join('') + `</tbody></table></div><p class="muted" id="midT" style="text-align:right;margin:6px 0 0"></p>`;
+    if (type === 'offer') return `<div class="flbl">${label}</div><p class="muted" style="margin:2px 0 6px">ว่างไว้ = ใช้ราคากลาง</p><div style="overflow-x:auto"><table class="pt"><tbody>` + sorted.map(a => `<tr><td>${esc(a.name)}<br><small class="muted">${a.code} · ราคากลาง ${baht(DOCS.mid(a, D))}</small></td><td><input inputmode="decimal" data-k="${key}.${a.code}" value="${esc((v || {})[a.code] ?? '')}" placeholder="${baht(DOCS.mid(a, D))}"${dis}></td></tr>`).join('') + `</tbody></table></div>`;
+    return '';
+  };
   let h = `<button class="btn sm" id="back">← ชุดทั้งหมด</button>
-    <div class="row" style="justify-content:space-between;margin-top:10px"><div><h2 class="t">${esc(x.name)}</h2><p class="muted" style="margin:0">${its.length} รายการ · ราคาทุน ${baht(cost)} บาท · คงเหลือ ≈ ${baht(bv)} บาท</p></div>
-    <span class="tag ${closed ? 'ok' : 'w'}" style="font-size:14px;padding:5px 14px">${closed ? 'ปิดชุดแล้ว ' + thDate(x.log[6]) : 'ขั้นต่อไป: ' + STEPS[x.step - 1][0]}</span></div>
-    <section class="card" style="margin-top:12px"><ol class="flow">${STEPS.map((s, i) => { const n = i + 1, st = x.step > n ? 'd' : x.step === n ? 'c' : ''; return `<li class="${st}"><div class="k"><span class="n">${st === 'd' ? '✓' : n}</span>${n < 5 ? '<span class="ln"></span>' : ''}</div><b>${s[0]}</b><small>${x.log[n + 1] ? 'เสร็จ ' + thDate(x.log[n + 1]) : st === 'c' ? 'ทำอยู่' : ''}</small></li>`; }).join('')}</ol>`;
-  if (!closed) {
-    const s = x.step;
-    let warn = '';
-    if (s === 1 && (noIns.length || noPh.length)) warn = `ยังไม่ตรวจ ${noIns.length} · ไม่มีรูป ${noPh.length} รายการ`;
-    if (s === 2 && !x.committee.some(Boolean)) warn = 'ยังไม่ได้ใส่รายชื่อกรรมการ';
-    const doc = s === 2 ? '<button class="btn" data-doc="cmte">พิมพ์บันทึกขอตั้งกรรมการ</button>' : s === 3 ? '<button class="btn" data-doc="list">พิมพ์บัญชีรายการให้กรรมการ</button>' : s === 4 ? '<button class="btn" data-doc="memo">พิมพ์บันทึกขออนุมัติจำหน่าย</button>' : s === 5 ? '<button class="btn" data-doc="sap">พิมพ์รายการแจ้งลงจ่าย</button>' : '';
-    h += `<div class="next"><div><b>ขั้นที่ ${s}: ${STEPS[s - 1][0]}</b><p>${STEPS[s - 1][1]}${warn ? ' · <span style="color:var(--warn);font-weight:600">' + warn + '</span>' : ''}</p></div>
-      <div class="row">${doc}${adm ? `<button class="btn p" id="adv">${s === 5 ? 'ปิดชุด (ลงจ่ายแล้ว) ✓' : 'เสร็จขั้นนี้ → ขั้นที่ ' + (s + 1)}</button>` : ''}</div></div>`;
-    if (adm && s > 1) h += `<div style="text-align:right;margin-top:6px"><button class="btn sm" id="bk" style="border:0;background:none;color:var(--mute)">↶ ย้อนกลับไปขั้นที่ ${s - 1}</button></div>`;
-  } else if (adm) h += `<div style="text-align:right;margin-top:10px"><button class="btn sm" id="reo">เปิดชุดอีกครั้ง</button></div>`;
-  h += `</section>`;
-
-  h += `<div class="grid2"><section class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">รายการในชุด</h3>${adm && x.step <= 3 ? '<button class="btn sm" id="addI">+ เพิ่มรายการ</button>' : ''}</div><div class="list">` +
-    its.map(a => `<div class="ri">${a.ins && a.ins[3] ? `<img class="th" src="${esc(photoUrl(a.ins[3], 120))}" alt="" loading="lazy">` : '<span class="th" style="display:grid;place-items:center;font-size:11px;color:var(--mute)">ไม่มีรูป</span>'}
-      <button class="t" data-open="${a.code}"><b>${esc(a.std)}</b><small>${a.code} · ${yearTH(a.acq)} · ${baht(a.cost)}</small></button><div class="v">${condTag(a)}${adm && x.step <= 3 && its.length > 1 ? `<button class="btn sm d" data-rm="${a.code}" aria-label="เอาออกจากชุด">เอาออก</button>` : ''}</div></div>`).join('') + `</div></section>`;
-
-  const m = DB.settings.memo || DEF_SETTINGS.memo;
-  h += `<section class="card"><h3>ข้อมูลเอกสาร</h3>
-    <label class="f"><span>ชื่อชุด</span><input id="bn" value="${esc(x.name)}"${adm && !closed ? '' : ' disabled'}></label>
-    <label class="f"><span>เลขที่หนังสือ (ต่อท้าย ${esc(m.prefix)})</span><input id="dn" value="${esc(x.docNo)}" placeholder="เช่น 123/2569"${adm && !closed ? '' : ' disabled'}></label>
-    <div class="flbl">คณะกรรมการ</div>${['ประธานกรรมการ', 'กรรมการ', 'กรรมการ'].map((r, i) => `<label class="f" style="margin-top:6px"><span>${r}</span><input data-cm="${i}" value="${esc(x.committee[i] || '')}" placeholder="ชื่อ-สกุล ตำแหน่ง"${adm && !closed ? '' : ' disabled'}></label>`).join('')}
-    <label class="f"><span>หมายเหตุ</span><input id="bnt" value="${esc(x.note)}"${adm && !closed ? '' : ' disabled'}></label>
-    ${adm && !closed ? '<div style="text-align:right;margin-top:12px"><button class="btn p" id="svB">บันทึกข้อมูลเอกสาร</button></div>' : ''}
-    <div class="flbl">พิมพ์เอกสาร</div><div class="row" style="margin-top:6px"><button class="btn sm" data-doc="cmte">บันทึกขอตั้งกรรมการ</button><button class="btn sm" data-doc="list">บัญชีรายการ</button><button class="btn sm" data-doc="memo">บันทึกขออนุมัติจำหน่าย</button><button class="btn sm" data-doc="sap">รายการแจ้งลงจ่าย</button><button class="btn sm" data-doc="rep">แผนซื้อทดแทน</button><button class="btn sm" id="bcsv">CSV</button></div>
-    <p class="muted" style="margin:8px 0 0">แบบบันทึกเป็นแบบชั่วคราว — เมื่อได้แบบฟอร์มนำเสนอจำหน่ายจริง จะปรับให้ตรงตามแบบ</p></section></div>`;
-
+    <div class="row" style="justify-content:space-between;margin-top:10px"><div><h2 class="t">${esc(x.name)}</h2><p class="muted" style="margin:0">${its.length} รายการ · ราคาทุน ${baht(cost)} · มูลค่าบัญชี ${baht(bv)} บาท</p></div>
+    <span class="tag ${closed ? 'ok' : 'p'}" style="font-size:14px;padding:5px 14px">${closed ? 'ปิดชุดแล้ว ' + thDate(x.log[DONE]) : 'ขั้นที่ ' + x.step + ' จาก 10'}</span></div>
+    <div class="bw"><section><ol class="stp">${DOCS.STEPS.map((s, i) => { const n = i + 1, st = x.step > n ? 'd' : x.step === n ? 'c' : ''; return `<li class="${st}${k === n ? ' sel' : ''}"><button data-st="${n}"><span class="n">${st === 'd' ? '✓' : n}</span><span><b>${s.t}</b><small>${x.log[n + 1] ? 'เสร็จ ' + thDate(x.log[n + 1]) : st === 'c' ? 'ทำอยู่' : s.docs.length + ' ฉบับ'}</small></span></button></li>`; }).join('')}</ol>
+    <button class="btn" id="pAll" style="width:100%;margin-top:10px">พิมพ์ทั้งชุด (18 ฉบับ)</button></section>
+    <section class="card"><h3>ขั้นที่ ${k}: ${stp.t}</h3>${k === 1 ? `<label class="f"><span>ชื่อชุด</span><input id="bn" value="${esc(x.name)}"${dis}></label>` : ''}
+    <div id="frm">${DOCS.FIELDS[k - 1].map(field).join('')}</div><datalist id="ppl">${Object.keys(ppl).map(p => `<option value="${esc(p)}">`).join('')}</datalist>
+    <div class="flbl">เอกสารของขั้นนี้</div><div class="docs">${stp.docs.map(d => `<div class="doc"><span>${d[1]}</span><button class="btn sm p" data-pr="${d[0]}">พิมพ์</button></div>`).join('')}</div>
+    ${ed ? `<div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" id="svD">บันทึก</button>${k === x.step ? `<button class="btn p" id="adv">${k === 10 ? 'ปิดชุด (ตัด SAP แล้ว) ✓' : 'บันทึก + เสร็จขั้นนี้ →'}</button>` : ''}</div>` : ''}
+    ${ed && k === x.step && k > 1 ? `<div style="text-align:right;margin-top:6px"><button class="btn sm" id="bk" style="border:0;background:none;color:var(--mute)">↶ ย้อนสถานะกลับไปขั้นที่ ${k - 1}</button></div>` : ''}
+    ${!ed && adm && closed ? '<div style="text-align:right;margin-top:10px"><button class="btn sm" id="reo">เปิดชุดอีกครั้ง</button></div>' : ''}</section></div>`;
+  h += `<div class="grid2"><section class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">รายการในชุด</h3>${adm && x.step <= 2 ? '<button class="btn sm" id="addI">+ เพิ่มรายการ</button>' : ''}</div><div class="list">` +
+    its.map(a => `<div class="ri">${a.ins && a.ins[3] ? `<img class="th" src="${esc(photoUrl(a.ins[3], 120))}" alt="" loading="lazy">` : ''}
+      <button class="t" data-open="${a.code}"><b>${esc(a.std)}</b><small>${a.code} · ${yearTH(a.acq)} · ทุน ${baht(a.cost)} · บัญชี ${baht(a.bv || 0)}</small></button><div class="v">${condTag(a)}${adm && x.step <= 2 && its.length > 1 ? `<button class="btn sm d" data-rm="${a.code}" aria-label="เอาออกจากชุด">เอาออก</button>` : ''}</div></div>`).join('') + `</div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="bcsv">ส่งออก CSV</button></div></section>`;
   const rp = x.replace || {};
-  h += `<section class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">แผนซื้อทดแทน</h3><a class="btn sm" href="/procure/index.html?from=hub">เปิดระบบงานจัดซื้อ ↗</a></div>
-    <p class="muted" style="margin:4px 0 0">กำหนดว่ารายการไหนต้องซื้อใหม่ จำนวน ราคาประมาณ และความเร่งด่วน — พิมพ์แนบเสนอ หรือใช้ข้อมูลไปทำเรื่องในระบบงานจัดซื้อ</p>
-    <div class="rp muted" style="border:0;font-size:13px"><span class="nm">รายการ (ชื่อมาตรฐาน)</span><span>ทดแทน?</span><span>จำนวน</span><span>ราคา/หน่วย</span><span>ความเร่งด่วน</span></div>` +
-    groupStd(its).map(g => { const r = rp[g.std] || {}; const dis = adm && !closed ? '' : ' disabled'; return `<div class="rp" data-rp="${esc(g.std)}"><span class="nm"><b>${esc(g.std)}</b> <span class="muted">× ${g.n}</span></span>
+  h += `<section class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">แผนซื้อทดแทน</h3><a class="btn sm" href="/procure/index.html?from=hub">เปิดระบบงานจัดซื้อ ↗</a></div>
+    <p class="muted" style="margin:4px 0 0">รายการไหนต้องซื้อใหม่ จำนวน ราคาประมาณ ความเร่งด่วน</p>
+    <div class="rp muted" style="border:0;font-size:13px"><span class="nm">รายการ</span><span>ทดแทน?</span><span>จำนวน</span><span>ราคา/หน่วย</span><span>ความเร่งด่วน</span></div>` +
+    groupStd(its).map(g => { const r = rp[g.std] || {}; return `<div class="rp" data-rp="${esc(g.std)}"><span class="nm"><b>${esc(g.std)}</b> <span class="muted">× ${g.n}</span></span>
       <select data-f="on"${dis}><option value="1"${r.on !== false ? ' selected' : ''}>ซื้อทดแทน</option><option value="0"${r.on === false ? ' selected' : ''}>ไม่ซื้อ</option></select>
       <input data-f="qty" type="number" min="0" value="${r.qty != null ? r.qty : g.n}" aria-label="จำนวน"${dis}><input data-f="price" type="number" min="0" value="${r.price || ''}" placeholder="บาท" aria-label="ราคาต่อหน่วย"${dis}>
       <select data-f="pri"${dis}>${['ด่วน', 'ปกติ', 'ไม่ด่วน'].map(p => `<option${(r.pri || 'ปกติ') === p ? ' selected' : ''}>${p}</option>`).join('')}</select></div>`; }).join('') +
-    (adm && !closed ? '<div style="text-align:right;margin-top:12px"><button class="btn p" id="svR">บันทึกแผนซื้อทดแทน</button></div>' : '') + `</section>`;
-  if (adm && !closed) h += `<div style="text-align:right;margin-top:14px"><button class="btn d" id="delB">ลบชุดนี้</button></div>`;
+    `<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn sm" data-doc="rep">พิมพ์แผนซื้อทดแทน</button>${ed ? '<button class="btn p" id="svR">บันทึกแผนซื้อทดแทน</button>' : ''}</div></section></div>`;
+  if (ed) h += `<div style="text-align:right;margin-top:14px"><button class="btn d" id="delB">ลบชุดนี้</button></div>`;
   $('#view').innerHTML = h;
 
+  const collect = () => {
+    const o = {};
+    $$('#frm [data-k]').forEach(el => {
+      const key = el.dataset.k, v = el.value;
+      if (key.includes('.')) {
+        const [kk, code] = key.split('.'); o[kk] = o[kk] || Object.assign({}, D[kk] || {});
+        if (el.dataset.j != null) { const arr = (o[kk][code] || []).slice(); arr[+el.dataset.j] = v.trim(); o[kk][code] = arr; } else o[kk][code] = v.trim();
+      } else if (el.dataset.r != null) {
+        o[key] = o[key] || JSON.parse(JSON.stringify(D[key] || []));
+        const r = +el.dataset.r;
+        if (el.dataset.o) { o[key][r] = Object.assign({}, o[key][r] || {}); o[key][r][el.dataset.o] = v.trim(); }
+        else { o[key][r] = (o[key][r] || ['', '']).slice(); o[key][r][+el.dataset.i] = v.trim(); }
+      } else if (el.dataset.i != null) { o[key] = (o[key] || (D[key] || ['', '']).slice()); o[key][+el.dataset.i] = v.trim(); }
+      else o[key] = el.tagName === 'SELECT' ? +v : v.trim();
+    });
+    // ช่องผู้ลงนามที่พิมพ์ชื่อซ้ำกับคนที่เคยใช้ → เติมตำแหน่งให้
+    return o;
+  };
+  const merged = () => Object.assign({}, x.data || {}, collect());
+  const midT = () => { const el = $('#midT'); if (el) { const d = merged(); el.textContent = 'ราคากลางรวม ' + baht(ctx.items.reduce((t, a) => t + DOCS.mid(a, d), 0)) + ' บาท'; $$('[data-mx]').forEach(t => { const a = ctx.items.find(z => z.code === t.dataset.mx); t.textContent = baht(DOCS.mid(a, d)); }); } };
+  midT();
+  $$('#frm [data-j]').forEach(i => i.oninput = midT);
+  $$('#frm input[list="ppl"]').forEach(i => i.onchange = () => { const nx = i.nextElementSibling; if (nx && !nx.value && ppl[i.value]) nx.value = ppl[i.value]; });
+  window.DOCS_LOGO = location.origin + '/asset/pea-logo.png';
+  const pr = ids => { if (!DOCS.print(ids, batchCtx(x, merged()), x.name, location.origin + '/asset/fonts')) toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up ก่อน', 4000); };
+  $$('[data-pr]').forEach(b => b.onclick = () => pr([b.dataset.pr]));
+  $('#pAll').onclick = () => pr(['d1', 'd2', 'd3', 'd6', 'd7', 'd8', 'd9', 'd12', 'd13', 'd14', 'd15', 'd16', 'd17', 'd18']);
+  $$('[data-st]').forEach(b => b.onclick = () => { ST.bstep = +b.dataset.st; viewBatchOne(x); });
   $('#back').onclick = () => { ST.batch = null; viewBatch(); };
   $$('[data-open]').forEach(b => b.onclick = () => showAsset(b.dataset.open));
   $$('[data-doc]').forEach(b => b.onclick = () => printBatch(x, b.dataset.doc));
-  $('#bcsv').onclick = () => csv(x.name, [['ที่', 'รหัสสินทรัพย์', 'รายการ', 'ชื่อใน SAP', 'วันที่ได้มา', 'ราคาทุน', 'มูลค่าคงเหลือ (ประมาณ)', 'สภาพ', 'หมายเหตุตรวจ', 'ผู้ดูแล']].concat(its.map((a, i) => [i + 1, a.code, a.std, a.name, a.acq, a.cost, Math.round((a.bv || 0) * 100) / 100, a.ins ? a.ins[1] : '', a.ins ? a.ins[2] : '', a.owner])));
+  $('#bcsv').onclick = () => csv(x.name, [['ที่', 'รหัสสินทรัพย์', 'รายการ', 'ชื่อใน SAP', 'วันที่ได้มา', 'ราคาทุน', 'มูลค่าตามบัญชี', 'สภาพ', 'หมายเหตุตรวจ', 'ผู้ดูแล']].concat(its.map((a, i) => [i + 1, a.code, a.std, a.name, a.acq, a.cost, Math.round((a.bv || 0) * 100) / 100, a.ins ? a.ins[1] : '', a.ins ? a.ins[2] : '', a.owner])));
   const upd = async (p, msg, btn) => {
     if (btn) { btn.disabled = true; btn._t = btn.textContent; btn.innerHTML = '<span class="spin"></span>'; }
     try { const r = await api('updateBatch', Object.assign({ id: x.id }, p)); const i = DB.batches.findIndex(b => b.id === x.id); DB.batches[i] = r.batch; build(); render(); if (msg) toast(msg); }
     catch (e) { toast(e.message, 4000); if (btn) { btn.disabled = false; btn.textContent = btn._t; } }
   };
+  const nmIn = () => { const b = $('#bn'); return b ? { name: b.value.trim() || x.name } : {}; };
+  const sv = $('#svD'); if (sv) sv.onclick = () => upd(Object.assign({ data: collect() }, nmIn()), 'บันทึกแล้ว', sv);
   const adv = $('#adv'); if (adv) adv.onclick = () => {
-    if (x.step === 1 && noIns.length && !confirmIn(adv, `ยังไม่ตรวจ ${noIns.length} รายการ — กดอีกครั้งเพื่อไปต่อ`)) return;
-    if (x.step === 5 && !confirmIn(adv, 'ยืนยันปิดชุด: รายการจะถูกทำเครื่องหมาย “จำหน่ายแล้ว” — กดอีกครั้ง')) return;
-    upd({ step: x.step + 1 }, x.step === 5 ? 'ปิดชุดแล้ว' : 'ไปขั้นที่ ' + (x.step + 1), adv);
+    if (k === 10 && !confirmIn(adv, 'ยืนยันปิดชุด: รายการจะถูกทำเครื่องหมาย “จำหน่ายแล้ว” — กดอีกครั้ง')) return;
+    ST.bstep = Math.min(k + 1, 10);
+    upd(Object.assign({ data: collect(), step: x.step + 1 }, nmIn()), k === 10 ? 'ปิดชุดแล้ว' : 'ไปขั้นที่ ' + (k + 1), adv);
   };
-  const bk = $('#bk'); if (bk) bk.onclick = () => upd({ step: x.step - 1 }, 'ย้อนกลับแล้ว', bk);
-  const reo = $('#reo'); if (reo) reo.onclick = () => { if (confirmIn(reo, 'กดอีกครั้งเพื่อเปิดชุดใหม่ (ยกเลิกสถานะจำหน่ายแล้ว)')) upd({ step: 5, reopen: true }, 'เปิดชุดอีกครั้งแล้ว', reo); };
-  const sv = $('#svB'); if (sv) sv.onclick = () => upd({ name: $('#bn').value.trim() || x.name, docNo: $('#dn').value.trim(), committee: $$('[data-cm]').map(i => i.value.trim()), note: $('#bnt').value.trim() }, 'บันทึกแล้ว', sv);
+  const bk = $('#bk'); if (bk) bk.onclick = () => { ST.bstep = k - 1; upd({ step: x.step - 1 }, 'ย้อนกลับแล้ว', bk); };
+  const reo = $('#reo'); if (reo) reo.onclick = () => { if (confirmIn(reo, 'กดอีกครั้งเพื่อเปิดชุดใหม่ (ยกเลิกสถานะจำหน่ายแล้ว)')) upd({ step: 10, reopen: true }, 'เปิดชุดอีกครั้งแล้ว', reo); };
   const sr = $('#svR'); if (sr) sr.onclick = () => {
     const o = {}; $$('[data-rp]').forEach(r => { const g = f => r.querySelector(`[data-f="${f}"]`).value; o[r.dataset.rp] = { on: g('on') === '1', qty: Number(g('qty')) || 0, price: Number(g('price')) || 0, pri: g('pri') }; });
     upd({ replace: o }, 'บันทึกแผนซื้อทดแทนแล้ว', sr);
@@ -721,38 +778,61 @@ function decode(buf) {
 }
 const TM = { 'ม.ค.': 1, 'ก.พ.': 2, 'มี.ค.': 3, 'เม.ย.': 4, 'พ.ค.': 5, 'มิ.ย.': 6, 'ก.ค.': 7, 'ส.ค.': 8, 'ก.ย.': 9, 'ต.ค.': 10, 'พ.ย.': 11, 'ธ.ค.': 12 };
 function pDate(s) {
+  if (s instanceof Date) return isNaN(s) ? '' : s.getFullYear() + '-' + String(s.getMonth() + 1).padStart(2, '0') + '-' + String(s.getDate()).padStart(2, '0');
   s = String(s || '').trim(); let d, m, y, x;
-  if ((x = s.match(/^(\d{1,2})-([ก-๙.]+)-(\d{2,4})$/))) { d = +x[1]; m = TM[x[2]]; y = +x[3]; }
+  if ((x = s.match(/^(\d{1,2})[-\s]+([ก-๙.]+)[-\s]+(\d{2,4})$/))) { d = +x[1]; m = TM[x[2]]; y = +x[3]; }
   else if ((x = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2,4})$/))) { d = +x[1]; m = +x[2]; y = +x[3]; }
-  else if ((x = s.match(/^(\d{4})-(\d\d)-(\d\d)$/))) return s;
+  else if ((x = s.match(/^(\d{4})-(\d\d)-(\d\d)/))) return x[0];
   if (!m || !d) return '';
   if (y < 100) y += y > 40 ? 1900 : 2000;
   if (y > 2400) y -= 543;
   return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
 }
-function parseRegister(text) {
-  const lines = text.split(/\r?\n/).map(l => l.split('\t'));
-  let hi = lines.findIndex(c => c.some(x => x.trim() === 'รหัสสินทรัพย์'));
-  const col = { cls: 2, code: 6, wbs: 10, name: 12, plate: 13, brand: 15, serial: 16, date: 17, cost: 18, owner: 19, status: 20 };
+/* อ่านทะเบียนจากตาราง (แถว × คอลัมน์) — รองรับทั้งรายงาน ZAAR005 แบบเก่า และไฟล์ทะเบียน SAP แบบใหม่ที่มีมูลค่าตามบัญชี */
+function parseRows(lines) {
+  const S = v => String(v == null ? '' : v).replace(/\s+/g, '');
+  const hi = lines.findIndex(c => c.some(x => /^รหัสสินทรัพย์/.test(S(x))));
+  const col = { cls: 2, code: 6, wbs: 10, name: 12, plate: 16, brand: 18, serial: 19, date: 20, cost: 21, owner: 22, status: 23, bv: -1, dep: -1, cat: -1, emp: -1 };
   if (hi >= 0) {
-    const H = lines[hi].map(x => x.trim()), f = (p, k) => { const i = H.findIndex(h => h.startsWith(p)); if (i >= 0) col[k] = i; };
-    f('ประเภท', 'cls'); f('รหัสสินทรัพย์', 'code'); f('WBS', 'wbs'); f('รายละเอียด', 'name'); f('เลขทะเบียนรถ', 'plate'); f('ยี่ห้อ', 'brand'); f('หมายเลข', 'serial'); f('วันที่', 'date'); f('มูลค่า', 'cost'); f('ชื่อผู้ดูแล', 'owner'); f('สถานะ', 'status');
+    const H = lines[hi].map(S), at = t => H.findIndex(t);
+    const set = (k, i) => { if (i >= 0) col[k] = i; };
+    const main = at(h => h.startsWith('ประเภทหลัก'));
+    set('cls', main >= 0 ? main : at(h => h === 'ประเภท'));
+    if (main >= 0) set('cat', at(h => h === 'ประเภท'));
+    set('code', at(h => h.startsWith('รหัสสินทรัพย์') && !h.includes('เก่า')));
+    set('wbs', at(h => h.startsWith('WBS') || h.startsWith('รหัสสินทรัพย์เก่า')));
+    set('name', at(h => h.startsWith('รายละเอียด'))); set('plate', at(h => h.startsWith('เลขทะเบียนรถ'))); set('brand', at(h => h.startsWith('ยี่ห้อ')));
+    set('serial', at(h => h.startsWith('หมายเลข'))); set('date', at(h => h.startsWith('วันที่ได้มา') || h === 'วันที่'));
+    set('cost', at(h => h === 'มูลค่า')); set('bv', at(h => h.startsWith('มูลค่าตามบัญชี'))); set('dep', at(h => h.startsWith('ค่าเสื่อม')));
+    set('owner', at(h => h.startsWith('ชื่อผู้ดูแล'))); set('status', at(h => h.startsWith('สถานะ'))); set('emp', at(h => h.startsWith('รหัสพนักงาน')));
   }
-  const g = (c, k) => String(c[col[k]] == null ? '' : c[col[k]]).replace(/^"|"$/g, '').trim();
+  const g = (c, k) => col[k] < 0 ? '' : c[col[k]] instanceof Date ? c[col[k]] : String(c[col[k]] == null ? '' : c[col[k]]).replace(/^"|"$/g, '').trim();
+  const n = v => v === '' || v == null ? '' : Number(String(v).replace(/,/g, ''));
   const rows = [], seen = {};
   lines.forEach(c => {
-    const code = g(c, 'code'); if (!/^\d{6,}-\d{4}$/.test(code) || seen[code]) return; seen[code] = 1;
-    rows.push([code, g(c, 'cls'), g(c, 'wbs'), g(c, 'name'), g(c, 'plate'), g(c, 'brand'), g(c, 'serial'), pDate(g(c, 'date')), Number(g(c, 'cost').replace(/,/g, '')) || 0, g(c, 'owner'), g(c, 'status')]);
+    const code = String(g(c, 'code')); if (!/^\d{6,}-\d{4}$/.test(code) || seen[code]) return; seen[code] = 1;
+    const bv = n(g(c, 'bv')), dep = n(g(c, 'dep'));
+    rows.push([code, g(c, 'cls'), g(c, 'wbs'), g(c, 'name'), g(c, 'plate'), g(c, 'brand'), g(c, 'serial'), pDate(g(c, 'date')), Number(n(g(c, 'cost'))) || 0, g(c, 'owner'), g(c, 'status'),
+      isNaN(bv) ? '' : bv, isNaN(dep) ? '' : dep, g(c, 'cat'), g(c, 'emp')]);
   });
   return rows;
 }
+function parseRegister(text) { return parseRows(text.split(/\r?\n/).map(l => l.split('\t'))); }
+let XLIB = null;
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve();
+  return XLIB = XLIB || new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = res; s.onerror = () => { XLIB = null; rej(new Error('โหลดตัวอ่านไฟล์ Excel ไม่ได้ ตรวจสอบอินเทอร์เน็ต')); }; document.head.appendChild(s); });
+}
 let PEND = null;
+const OFC = [['orgFull', 'ชื่อสำนักงานเต็ม'], ['org', 'ชื่อย่อ'], ['orgS', 'ชื่อย่อสั้น'], ['dept', 'หน่วยงานที่เสนอ (ย่อ)'], ['deptFull', 'ชื่อแผนกเต็ม'], ['prefix', 'เลขที่บันทึกภายใน (ส่วนหน้า)'], ['ext', 'เลขที่หนังสือภายนอก (ส่วนหน้า)'],
+  ['addr1', 'ที่อยู่ บรรทัด 1'], ['addr2', 'ที่อยู่ บรรทัด 2'], ['province', 'จังหวัด'], ['tel', 'โทรศัพท์'], ['contact', 'ผู้ประสานงาน'], ['mgrName', 'ชื่อผู้จัดการ'], ['mgrShort', 'ตำแหน่งผู้จัดการ (ย่อ)'], ['mgrFull', 'ตำแหน่งผู้จัดการ (เต็ม)'],
+  ['head', 'หัวหน้าแผนก (ผู้เสนอ)'], ['headPos', 'ตำแหน่งหัวหน้าแผนก'], ['region', 'ส่งรายงานถึง (เขต)'], ['fwdPrice', 'ผู้เห็นชอบราคากลาง'], ['salePlace', 'สถานที่ขาย/รับซอง'], ['bank', 'บัญชีรับโอนเงิน'], ['rule', 'ระเบียบที่อ้าง'], ['deleg', 'คำสั่งมอบอำนาจ']];
 function viewSet() {
-  const adm = ADM(), s = DB.settings || DEF_SETTINGS, m = s.memo || DEF_SETTINGS.memo, dis = adm ? '' : ' disabled';
+  const adm = ADM(), s = DB.settings || DEF_SETTINGS, of = s.office || {}, dis = adm ? '' : ' disabled';
   let h = `<h2 class="t">ตั้งค่า</h2><p class="muted" style="margin:0">ทุกอย่างปรับได้ที่หน้านี้ ไม่ต้องแก้โค้ด${adm ? '' : ' · แก้ไขได้เฉพาะผู้ดูแลระบบ'}</p>`;
   if (LOCAL()) h += `<div class="note" style="margin-top:10px">โหมดทดลอง: ยังไม่ได้ต่อหลังบ้าน ข้อมูลจะเก็บในเครื่องนี้เครื่องเดียว</div>`;
-  h += `<div class="grid2"><section class="card"><h3>นำเข้าทะเบียนจาก SAP</h3><p class="muted" style="margin:-4px 0 10px">ไฟล์ .xls ทะเบียนทรัพย์สินของแผนก · รายการเดิมอัปเดต รายการใหม่เพิ่ม ผลตรวจเดิมอยู่ครบ</p>
-    <label class="drop" id="drop"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6a1b74" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg><b>ลากไฟล์มาวาง หรือกดเลือกไฟล์</b><span class="btn p sm">เลือกไฟล์</span><input type="file" id="file" accept=".xls,.txt,.tsv,.csv" class="sr"></label>
+  h += `<div class="grid2"><section class="card"><h3>อัปเดตทะเบียนจาก SAP</h3><p class="muted" style="margin:-4px 0 10px">แนบไฟล์ทะเบียนทรัพย์สินปีปัจจุบัน (.xlsx หรือ .xls) · รายการเดิมอัปเดตราคา/มูลค่าบัญชี/ผู้ดูแล รายการใหม่เพิ่ม ผลตรวจและชุดจำหน่ายเดิมอยู่ครบ</p>
+    <label class="drop" id="drop"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6a1b74" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg><b>ลากไฟล์มาวาง หรือกดเลือกไฟล์</b><span class="btn p sm">เลือกไฟล์</span><input type="file" id="file" accept=".xlsx,.xls,.txt,.tsv,.csv" class="sr"></label>
     <div id="prev"></div>${DB.lastImport ? `<div class="kv" style="margin-top:10px"><span>นำเข้าล่าสุด</span><span>${thDate(DB.lastImport.at)} · ${esc(DB.lastImport.by)} · ${DB.lastImport.rows} รายการ</span></div>` : ''}</section>
     <section class="card"><h3>อายุใช้งานตามหมวด</h3><p class="muted" style="margin:-4px 0 6px">ใช้ประมาณว่าครบอายุ (มูลค่าเหลือ ≈ 1 บาท) เมื่อไร</p>
     ${[['Z55', 'เครื่องมือ'], ['Z51', 'เฟอร์นิเจอร์/สำนักงาน'], ['Z53', 'คอมพิวเตอร์'], ['Z58', 'วิทยุสื่อสาร'], ['Z60', 'ยานพาหนะ (Z60)'], ['Z63', 'ยานพาหนะ (Z63)'], ['Z57', 'เครื่องใช้อื่น']].map(([k, n]) => `<label class="lf"><span>${n} <span class="muted mono">${k}</span></span><span class="row"><input type="number" min="1" max="99" data-life="${k}" value="${s.life[k] || 5}"${dis}> ปี</span></label>`).join('')}
@@ -762,9 +842,9 @@ function viewSet() {
   h += `<section class="card"><h3>รวมชื่อที่สะกดต่างกัน</h3><p class="muted" style="margin:-4px 0 6px">ให้นับจำนวนซื้อทดแทนถูก · ชื่อใน SAP ไม่ถูกแก้</p>
     ${Object.keys(groups).map(t => `<div class="ag"><b>${esc(t)}</b><span class="muted">←</span>${groups[t].map(v => `<span class="tag o">${esc(v)} · ${names[v] || 0}${adm ? ` <button data-un="${esc(v)}" aria-label="เอาออก" style="border:0;background:none;color:var(--red);padding:0 0 0 4px">×</button>` : ''}</span>`).join('')}</div>`).join('') || '<p class="muted">ยังไม่มี</p>'}
     ${adm ? `<div class="flbl">เพิ่มกลุ่ม</div><label class="search" style="margin-top:6px"><span class="sr">ค้นหาชื่อ</span><input id="aq" placeholder="พิมพ์ส่วนหนึ่งของชื่อ เช่น คัฟเวอร์"></label><div id="ares"></div>` : ''}</section>
-    <section class="card"><h3>หัวบันทึกข้อความ</h3><p class="muted" style="margin:-4px 0 0">ใช้ในเอกสารที่ระบบพิมพ์ (แบบชั่วคราว จนกว่าจะได้แบบฟอร์มจริง)</p>
-    ${[['org', 'ส่วนราชการ'], ['prefix', 'เลขที่หนังสือ (ส่วนหน้า)'], ['to', 'เรียน'], ['proposer', 'ชื่อผู้เสนอ'], ['proposerTitle', 'ตำแหน่งผู้เสนอ']].map(([k, n]) => `<label class="f"><span>${n}</span><input data-memo="${k}" value="${esc(m[k] || '')}"${dis}></label>`).join('')}
-    ${adm ? '<div style="text-align:right;margin-top:12px"><button class="btn p" id="svM">บันทึก</button></div>' : ''}</section></div>
+    </div><section class="card" style="margin-top:14px"><h3>ข้อมูลสำนักงานในเอกสารจำหน่าย</h3><p class="muted" style="margin:-4px 0 0">ใช้เติมในเอกสาร 18 ฉบับ · แก้ครั้งเดียวใช้ทุกชุด</p>
+    <div class="ofc">${OFC.map(([k, n]) => `<label class="f"><span>${n}</span><input data-of="${k}" value="${esc(of[k] != null && of[k] !== '' ? of[k] : DOCS.OFFICE[k])}"${dis}></label>`).join('')}</div>
+    ${adm ? '<div style="text-align:right;margin-top:12px"><button class="btn p" id="svO">บันทึก</button></div>' : ''}</section>
     <section class="card" style="margin-top:14px"><h3>ผู้ใช้และสิทธิ์</h3><div class="kv"><span>เข้าใช้ในชื่อ</span><span>${esc(DB.me.name || cred().user || '–')} · ${adm ? '<span class="tag p">ผู้ดูแลระบบ</span>' : '<span class="tag o">ผู้ใช้ทั่วไป</span>'}</span></div>
     <p class="muted" style="margin:8px 0 0">ใช้ชื่อ/รหัสผ่านเดียวกับศูนย์รวมงาน · ทุกคนดูและตรวจสภาพได้ · นำเข้า สร้างชุด และตั้งค่าได้เฉพาะผู้ดูแลระบบศูนย์รวมงาน หรือชื่อที่เพิ่มใน ASSET_ADMINS ของหลังบ้าน</p></section>`;
   $('#view').innerHTML = h;
@@ -776,7 +856,7 @@ function viewSet() {
   drawPend();
   const save = async (p, btn) => { btn.disabled = true; try { const r = await api('saveSettings', p); DB.settings = r.settings; build(); viewSet(); toast('บันทึกแล้ว'); } catch (e) { toast(e.message, 4000); btn.disabled = false; } };
   const sl = $('#svL'); if (sl) sl.onclick = () => { const o = {}; $$('[data-life]').forEach(i => o[i.dataset.life] = Number(i.value) || 5); save({ life: o }, sl); };
-  const sm = $('#svM'); if (sm) sm.onclick = () => { const o = {}; $$('[data-memo]').forEach(i => o[i.dataset.memo] = i.value.trim()); save({ memo: o }, sm); };
+  const so = $('#svO'); if (so) so.onclick = () => { const o = {}; $$('[data-of]').forEach(i => { if (i.value.trim() !== DOCS.OFFICE[i.dataset.of]) o[i.dataset.of] = i.value.trim(); }); save({ office: o }, so); };
   $$('[data-un]').forEach(b => b.onclick = () => { const a = Object.assign({}, s.aliases); delete a[b.dataset.un]; save({ aliases: a }, b); });
   const aq = $('#aq');
   if (aq) aq.oninput = () => {
@@ -794,10 +874,17 @@ function viewSet() {
 async function readFile(file) {
   if (!file) return;
   try {
-    const rows = parseRegister(decode(await file.arrayBuffer()));
+    const buf = await file.arrayBuffer(), u = new Uint8Array(buf);
+    let rows;
+    if ((u[0] === 0x50 && u[1] === 0x4B) || (u[0] === 0xD0 && u[1] === 0xCF)) {   // .xlsx (zip) หรือ .xls (Excel จริง)
+      await loadXLSX();
+      const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+      rows = [];
+      wb.SheetNames.forEach(n => { rows = rows.concat(parseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }))); });
+    } else rows = parseRegister(decode(buf));
     if (!rows.length) return toast('อ่านไม่พบรายการทรัพย์สินในไฟล์ ' + file.name, 4000);
     PEND = { file: file.name, rows, state: '' }; drawPend();
-  } catch (e) { toast('อ่านไฟล์ ' + file.name + ' ไม่ได้', 4000); }
+  } catch (e) { toast('อ่านไฟล์ ' + file.name + ' ไม่ได้' + (e && /โหลด/.test(e.message) ? ' — ' + e.message : ''), 4000); }
 }
 function drawPend() {
   const el = $('#prev'); if (!el) return;
@@ -806,7 +893,7 @@ function drawPend() {
   const add = PEND.rows.filter(r => !old.has(r[0])).length, gone = [...old].filter(c => !now.has(c)).length;
   const noDate = PEND.rows.filter(r => !r[7]).length;
   el.innerHTML = `<div style="margin-top:12px;padding:12px;border-radius:14px;background:#faf8fc;border:1px solid #eee8f2"><b>${esc(PEND.file)}</b>
-    <div class="kv"><span>รายการในไฟล์</span><span>${PEND.rows.length}</span></div><div class="kv"><span>ราคาทุนรวม</span><span>${baht(PEND.rows.reduce((s, r) => s + r[8], 0))} บาท</span></div>
+    <div class="kv"><span>รายการในไฟล์</span><span>${PEND.rows.length}</span></div><div class="kv"><span>ราคาทุนรวม</span><span>${baht(PEND.rows.reduce((s, r) => s + r[8], 0))} บาท</span></div>${PEND.rows.some(r => r[11] !== '') ? `<div class="kv"><span>มูลค่าตามบัญชีรวม</span><span>${baht(PEND.rows.reduce((s, r) => s + (Number(r[11]) || 0), 0))} บาท · เหลือ 1 บาท ${PEND.rows.filter(r => r[11] !== '' && Number(r[11]) <= 1).length} รายการ</span></div>` : '<div class="kv"><span>มูลค่าตามบัญชี</span><span style="color:var(--warn)">ไม่มีในไฟล์ · ใช้ประมาณจากอายุ</span></div>'}
     <div class="kv"><span>เทียบกับในระบบ</span><span>${old.size ? 'ใหม่ ' + add + ' · หายจากไฟล์ ' + gone : 'นำเข้าครั้งแรก'}</span></div>${noDate ? `<div class="kv"><span>อ่านวันที่ไม่ได้</span><span style="color:var(--warn)">${noDate} รายการ</span></div>` : ''}
     <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn sm" id="pc">ยกเลิก</button><button class="btn p" id="ps"${ADM() ? '' : ' disabled'}>${PEND.state === 'run' ? '<span class="spin"></span> กำลังบันทึก…' : 'บันทึกเข้าระบบ'}</button></div>${PEND.state && PEND.state !== 'run' ? `<p style="color:var(--red);margin:6px 0 0">${esc(PEND.state)}</p>` : ''}</div>`;
   $('#pc').onclick = () => { PEND = null; drawPend(); };
