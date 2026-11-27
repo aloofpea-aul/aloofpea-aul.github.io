@@ -5,7 +5,9 @@
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function g(n, d) { try { return eval(n); } catch (e) { return d; } }
-  var KEY = 'ccl_sapr_v1', R = null, F = { yr: '', sel: null }, built = false;
+  // แยกข้อมูลในเครื่องตามหน่วยงาน (สลับไปคลองท่อม ฯลฯ จะไม่เห็นของอ่าวลึก)
+  function brKey(base) { var b = ''; try { b = (JSON.parse(localStorage.getItem('ccl_user_v1') || '{}') || {}).branchId || ''; } catch (e) {} return (!b || b === 'aoluek') ? base : base + ':' + b; }
+  var KEY = brKey('ccl_sapr_v1'), R = null, F = { yr: '', sel: null }, built = false;
   var SYS = { CRTD: ['CRTD', '#94a3b8', 'สร้าง/รออนุมัติ'], REL: ['REL', '#2563eb', 'ดำเนินการ'], TECO: ['TECO', '#7c3aed', 'แล้วเสร็จทางเทคนิค'], CLSD: ['CLSD', '#16a34a', 'ปิดงาน'] };
   var BUD = { C: ['งบผู้ใช้ไฟ', '#0ea5e9'], I: ['งบลงทุน', '#f59e0b'], P: ['งบโครงการ', '#8b5cf6'] };
   var TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -85,7 +87,7 @@
     if (R) render();
     if (R && !force && R.__t && Date.now() - R.__t < 10 * 60000) return;
     google.script.run.withSuccessHandler(function (d) {
-      if (d && d.jobs) { d.__t = Date.now(); R = d; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+      if (d && (d.jobs || d.none)) { d.__t = Date.now(); R = d; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
       else if (!R) R = { none: true };
       render();
     }).withFailureHandler(function (e) { if (!R) $('sapx').innerHTML = '<div class="emp">โหลดรายงานไม่ได้: ' + esc((e && e.message) || e) + '</div>'; }).cclSapReport();
@@ -122,6 +124,13 @@
   function render() {
     if (!build()) return;
     var X = $('sapx');
+    if (R && !R.none && (!R.jobs || !R.jobs.length)) {
+      X.innerHTML = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP · ' + esc(R.branch || '') + '</h2></div><div class="emp">' +
+        (R.nocode ? 'ยังหารหัสหน่วยงานใน SAP ไม่ได้ — ต้องมีงานที่ใส่หมายเลขงาน (WBS) ใน CCL ของหน่วยงานนี้ก่อน ระบบจะหารหัสให้เอง' :
+          'ไฟล์ SAP ล่าสุด (' + esc(R.file || '-') + ') ไม่มีงานของหน่วยงานนี้ (รหัส ' + esc(R.code || '-') + ') — วางไฟล์ SAP ที่มีงานของหน่วยงานนี้ในโฟลเดอร์ CCL-SAP หรือนำเข้าที่หน้าปิดงาน') +
+        (isAdm() ? '<br><br><button class="bt g" data-a="rebuild">สร้างรายงานจากไฟล์ล่าสุด</button>' : '') + '</div>';
+      return;
+    }
     if (!R || R.none) {
       X.innerHTML = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP</h2></div><div class="emp">ยังไม่มีรายงาน — นำเข้าไฟล์ SAP (แบบ WBS) ที่หน้าปิดงาน หรือวางในโฟลเดอร์ CCL-SAP' +
         (isAdm() ? '<br><br><button class="bt g" data-a="rebuild">สร้างรายงานจากไฟล์ล่าสุด</button>' : '') + '</div>';
@@ -131,7 +140,7 @@
     var A = view(), op = A.filter(function (j) { return j.open; }), yrs = {};
     JOBS.forEach(function (j) { if (j.y) yrs[j.y] = 1; });
     var nProj = Object.keys(A.reduce(function (o, j) { o[j.p] = 1; return o; }, {})).length;
-    var h = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP · กฟส.อ่าวลึก</h2><span class="src">ไฟล์: ' + esc(R.file || '-') + ' · สร้างรายงาน ' + esc(dth(R.at)) + '</span><span class="sp"></span>' +
+    var h = '<div class="hd"><h2>📊 รายงานสถานะงานจาก SAP · ' + esc(R.branch || 'กฟส.อ่าวลึก') + (R.code ? ' <small style="font-size:12px;color:#64748b;font-weight:600">(รหัส ' + esc(R.code) + ')</small>' : '') + '</h2><span class="src">ไฟล์: ' + esc(R.file || '-') + ' · สร้างรายงาน ' + esc(dth(R.at)) + '</span><span class="sp"></span>' +
       '<select class="bt" id="saprYr"><option value="">ทุกปีงบ</option>' + Object.keys(yrs).sort().reverse().map(function (y) { return '<option value="' + y + '"' + (F.yr === y ? ' selected' : '') + '>ปี ' + y + '</option>'; }).join('') + '</select>' +
       '<button class="bt" data-a="line" style="color:#06c755"><i class="fa-brands fa-line"></i> ส่ง/แชร์</button><button class="bt" data-a="csv">⬇ Excel</button>' + (isAdm() ? '<button class="bt" data-a="rebuild" title="อ่านไฟล์ SAP ล่าสุดในโฟลเดอร์อีกครั้ง">↻ สร้างใหม่</button>' : '') + '</div>';
     var tot = A.length, cl = tot - op.length, noc = cnt(A, FILT.noccl[1]);
@@ -238,7 +247,7 @@
   function lineShare() {
     if (!window.cclLineShare) return;
     var A = view(), op = A.filter(function (j) { return j.open; }), c = function (a, f) { return cnt(a, f); };
-    var m = '📊 รายงานสถานะงาน SAP · กฟส.อ่าวลึก' + (F.yr ? ' (ปี ' + F.yr + ')' : '') + '\n📁 ' + (R.file || '-') + ' · ' + dth(R.at) + '\n\n';
+    var m = '📊 รายงานสถานะงาน SAP · ' + (R.branch || 'กฟส.อ่าวลึก') + (F.yr ? ' (ปี ' + F.yr + ')' : '') + '\n📁 ' + (R.file || '-') + ' · ' + dth(R.at) + '\n\n';
     m += 'งานทั้งหมด ' + A.length + ' · เปิดอยู่ ' + op.length + ' · ปิดแล้ว ' + (A.length - op.length) + ' (' + (A.length ? Math.round((A.length - op.length) / A.length * 100) : 0) + '%)\n';
     Object.keys(BUD).forEach(function (b) { var a = A.filter(function (j) { return j.b === b; }); if (a.length) m += '• ' + BUD[b][0] + ' ' + a.length + ' งาน · เปิดอยู่ ' + c(a, function (j) { return j.open; }) + '\n'; });
     m += '\n⚠️ ต้องติดตาม\n• งานปีเก่ายังค้าง ' + c(A, FILT.old[1]) + '\n• หยุดงาน (C3–C6) ' + c(A, FILT.stop[1]) + '\n• TECO รอปิดบัญชี ' + c(A, FILT.teco[1]) + '\n• อยู่ใน SAP ยังไม่มีใน CCL ' + c(A, FILT.noccl[1]) + '\n';

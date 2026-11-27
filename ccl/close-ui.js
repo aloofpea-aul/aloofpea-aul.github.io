@@ -10,7 +10,9 @@
   function m(n) { return (Number(n) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   var TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   function dth(v) { var d = new Date(v); if (isNaN(d)) return ''; return d.getDate() + ' ' + TH_M[d.getMonth()] + ' ' + String(d.getFullYear() + 543).slice(-2); }
-  var LS = 'ccl_sap_status_v1';
+  // แยกข้อมูลในเครื่องตามหน่วยงาน (สลับไปคลองท่อม ฯลฯ จะไม่เห็นของอ่าวลึก)
+  function brKey(base) { var b = ''; try { b = (JSON.parse(localStorage.getItem('ccl_user_v1') || '{}') || {}).branchId || ''; } catch (e) {} return (!b || b === 'aoluek') ? base : base + ':' + b; }
+  var LS = brKey('ccl_sap_status_v1');
   var C = { st: '', ent: '', sort: false, sel: {}, sap: null, ui: false, shown: 0, rows: [] };
   try { C.sap = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { C.sap = null; }
   // ผลที่ดึงจากรายงานรุ่นแรก (เทียบแบบหยาบระดับงาน) — ทิ้ง แล้วดึงใหม่แบบละเอียด
@@ -80,7 +82,8 @@
   function pushReport(rows, name) {
     if (!isAdm() || typeof google === 'undefined' || !google.script) return;
     var head = rows.slice(0, 10).map(function (r) { return r.map(function (x) { return String(x == null ? '' : x); }); });
-    var body = rows.slice(10).filter(function (r) { return r.join('|').indexOf('AUL') >= 0; }).map(function (r) { return r.map(function (x) { return String(x == null ? '' : x); }); });
+    var code = C.code || '';   // รหัสหน่วยงานใน WBS (ได้จากรายงานของหน่วยงานนี้) — ไม่รู้ = ส่งทุกแถว ให้หลังบ้านกรองเอง
+    var body = rows.slice(10).filter(function (r) { return !code || r.join('|').indexOf(code) >= 0; }).map(function (r) { return r.map(function (x) { return String(x == null ? '' : x); }); });
     google.script.run.withSuccessHandler(function (r) {
       if (r && r.saved) { C.repAt = Date.now(); if (window.Swal && !Swal.isVisible()) Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'อัปเดตหน้า "รายงาน SAP" แล้ว (' + r.jobs + ' งาน)', showConfirmButton: false, timer: 2600 }); }
     }).withFailureHandler(function () {}).cclSapReportFromRows({ file: name, rows: head.concat(body) });
@@ -91,6 +94,7 @@
     C.pulling = true;
     google.script.run.withSuccessHandler(function (rep) {
       C.pulling = false; C.pulledAt = Date.now();
+      if (rep && rep.code) C.code = rep.code;
       if (!rep || rep.none || !Array.isArray(rep.all) || !rep.all.length) return;     // รายงานรุ่นเก่า (ไม่มีข้อมูลทุกหมายเลขงาน) — ไม่ใช้
       var at = Date.parse(rep.at) || 0; if (C.sap && (C.sap.at || 0) >= at) return;
       var nf = function (f) { return String(f || '').replace(/\s+/g, ' ').trim(); };

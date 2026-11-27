@@ -942,6 +942,25 @@ function cclSapAutoSetup() {
 
 // ===== รายงานสถานะงานจาก SAP (ทุกงบ ทุกโครงการ) — เก็บเป็นไฟล์ JSON ในโฟลเดอร์ CCL-SAP =====
 var CCL_SAP_BRANCH_CODE = 'AUL';
+// รหัสหน่วยงานใน WBS ของ SAP (เช่น C-68-K-AULCM.0016 → AUL) — ตามหน่วยงานที่กำลังใช้งาน
+// หน่วยงานอื่น: ตั้งใน branch.sapCode หรือหาเองจากหมายเลขงานในชีตของหน่วยงานนั้น (แล้วจำไว้)
+function cclSapCurBranch_() { return (__CCL_CTX && __CCL_CTX.branch) || cclBranch_(CCL_HOME_BRANCH); }
+function cclSapBranchCode_() {
+  var b = cclSapCurBranch_();
+  if (b.sapCode) return String(b.sapCode).toUpperCase();
+  if (b.home || b.id === CCL_HOME_BRANCH) return CCL_SAP_BRANCH_CODE;
+  var cnt = {};
+  try {
+    var sh = cclSS_().getSheetByName(SHEET_DATA_NAME);
+    if (sh && sh.getLastRow() > 1) sh.getRange(2, 8, sh.getLastRow() - 1, 1).getValues().forEach(function (r) {
+      String(r[0] || '').toUpperCase().replace(/-[A-Z]-([A-Z]{3})[A-Z0-9]*\./g, function (m, c) { cnt[c] = (cnt[c] || 0) + 1; return m; });
+    });
+  } catch (e) {}
+  var best = Object.keys(cnt).sort(function (a, c) { return cnt[c] - cnt[a]; })[0] || '';
+  if (best) { var list = cclBranches_(); list.forEach(function (x) { if (x.id === b.id) x.sapCode = best; }); cclSaveBranches_(list); b.sapCode = best; }
+  return best;
+}
+function cclSapRepName_() { var b = cclSapCurBranch_(); return (b.home || b.id === CCL_HOME_BRANCH) ? 'ccl-sap-report.json' : 'ccl-sap-report-' + b.id + '.json'; }
 function cclSapReportBuild_(rows, fileName, checkOnly) {
   var hi = -1, C = {};
   for (var i = 0; i < Math.min(rows.length, 10) && hi < 0; i++) {
@@ -952,7 +971,8 @@ function cclSapReportBuild_(rows, fileName, checkOnly) {
   }
   if (hi < 0) return null;            // ไฟล์รูปแบบอื่น (เช่นรายงาน CLSD) — ไม่ทำรายงาน
   if (checkOnly) return true;
-  var code = CCL_SAP_BRANCH_CODE, all = [];
+  var code = cclSapBranchCode_(), all = [], br = cclSapCurBranch_();
+  if (!code) return { at: new Date().toISOString(), file: fileName, code: '', nocode: true, branch: br.name, rows: rows.length - hi - 1, heads: {}, jobs: [], all: [] };
   for (var r = hi + 1; r < rows.length; r++) {
     var x = rows[r] || [], w = String(x[C.w] || '').trim();
     if (!w || w.indexOf(code) < 0) continue;
@@ -971,18 +991,36 @@ function cclSapReportBuild_(rows, fileName, checkOnly) {
   var hn = {}; Object.keys(heads).forEach(function (p) { hn[p] = heads[p].slice(0, 3); });
   // ทุกแถวของ กฟส. (ทุกระดับ) ไว้ให้หน้าปิดงานเทียบหมายเลขงานแบบตรงตัว — ละเอียดเท่าการนำเข้าไฟล์เอง
   var leaf = all.map(function (e) { return [e.w, (e.s.trim().split(/\s+/)[0] || '').toUpperCase(), (e.s.split('//')[1] || '').trim().toUpperCase()]; });
-  return { at: new Date().toISOString(), file: fileName, code: code, rows: rows.length - hi - 1, heads: hn, jobs: jobs, all: leaf };
+  return { at: new Date().toISOString(), file: fileName, code: code, branch: br.name, rows: rows.length - hi - 1, heads: hn, jobs: jobs, all: leaf };
 }
 function cclSapSaveReport_(rep) {
   if (!rep) return;
   var c = cclSapCfg_(), fs = cclSapFolders_(c, true); cclSapSaveCfg_(c);
-  var name = 'ccl-sap-report.json', it = fs.f.getFilesByName(name), body = JSON.stringify(rep);
+  if (!rep.srcAt) rep.srcAt = rep.at;
+  var name = cclSapRepName_(), it = fs.f.getFilesByName(name), body = JSON.stringify(rep);
   if (it.hasNext()) it.next().setContent(body); else fs.f.createFile(name, body, 'application/json');
 }
 function cclSapReportGet_() {
   var c = cclSapCfg_(), fs = cclSapFolders_(c, false); if (!fs) return { none: true };
-  var it = fs.f.getFilesByName('ccl-sap-report.json'); if (!it.hasNext()) return { none: true };
-  return JSON.parse(it.next().getBlob().getDataAsString('UTF-8'));
+  var it = fs.f.getFilesByName(cclSapRepName_()), rep = null;
+  if (it.hasNext()) { try { rep = JSON.parse(it.next().getBlob().getDataAsString('UTF-8')); } catch (e) { rep = null; } }
+  // ไฟล์ SAP ในโฟลเดอร์ใหม่กว่ารายงานของหน่วยงานนี้ (หรือยังไม่เคยสร้าง) → สร้างใหม่ให้เลย
+  try {
+    var files = [];
+    [fs.f, fs.d].forEach(function (fd) { var x = fd.getFiles(); while (x.hasNext()) { var f = x.next(); if (/\.xlsx$/i.test(f.getName())) files.push(f); } });
+    files.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
+    var since = rep ? new Date(rep.srcAt || rep.at) : null, code = cclSapBranchCode_();
+    for (var i = 0; i < files.length && i < 3; i++) {
+      if (rep && since >= files[i].getDateCreated() && rep.code === code) break;
+      var rows = cclXlsxRows_(files[i].getBlob());
+      if (!cclSapReportBuild_(rows, files[i].getName(), true)) continue;
+      var r2 = cclSapReportBuild_(rows, files[i].getName()); r2.srcAt = files[i].getDateCreated().toISOString();
+      cclSapSaveReport_(r2); rep = r2; break;
+    }
+  } catch (e) {}
+  if (!rep) return { none: true, branch: cclSapCurBranch_().name, code: cclSapBranchCode_() };
+  rep.branch = cclSapCurBranch_().name;
+  return rep;
 }
 // สร้างรายงานใหม่จากไฟล์ SAP ล่าสุด (ในโฟลเดอร์หรือ "อ่านแล้ว") โดยไม่แก้ข้อมูลงาน
 // นำเข้าไฟล์ SAP ด้วยมือที่หน้าปิดงาน → สร้างรายงาน SAP ด้วย (แถวที่ส่งมา = หัวตาราง + แถวของ กฟส. เท่านั้น)
@@ -990,7 +1028,8 @@ function cclSapReportFromRows_(x) {
   var rows = Array.isArray(x.rows) ? x.rows : [];
   if (!rows.length || rows.length > 20000) return { saved: false };
   var rep = cclSapReportBuild_(rows, String(x.file || 'ไฟล์ SAP').slice(0, 120));
-  if (!rep || !rep.jobs.length) return { saved: false, reason: 'format' };   // ไฟล์รูปแบบอื่น (เช่นรายงาน CLSD) — ไม่ทับรายงานเดิม
+  if (!rep || !rep.jobs.length) return { saved: false, reason: rep && rep.nocode ? 'nocode' : 'format' };
+  rep.srcAt = new Date().toISOString();   // ไฟล์รูปแบบอื่น (เช่นรายงาน CLSD) — ไม่ทับรายงานเดิม
   cclSapSaveReport_(rep);
   return { saved: true, jobs: rep.jobs.length };
 }
@@ -1001,7 +1040,7 @@ function cclSapReportRebuild_() {
   files.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
   for (var i = 0; i < files.length; i++) {
     var rows = cclXlsxRows_(files[i].getBlob()), rep = cclSapReportBuild_(rows, files[i].getName());
-    if (rep) { cclSapSaveReport_(rep); return { success: true, file: rep.file, jobs: rep.jobs.length }; }
+    if (rep) { rep.srcAt = files[i].getDateCreated().toISOString(); cclSapSaveReport_(rep); return { success: true, file: rep.file, jobs: rep.jobs.length, code: rep.code }; }
   }
   throw new Error('ไม่พบไฟล์ SAP รูปแบบ WBS (มีคอลัมน์ Proj.def / องค์ประกอบ WBS / ระดับ / สถานะ)');
 }
