@@ -205,7 +205,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 'use strict';
 const DONE = 11;   // ปิดชุดหลังครบ 10 ขั้นตามแบบฟอร์มจำหน่าย
 /* ---------------- ตั้งค่า ---------------- */
-const API_DEFAULT = '';   // ← ลิงก์ Web app หลังบ้านระบบทรัพย์สิน (…/exec) · ว่าง = โหมดทดลอง เก็บในเครื่องนี้
+const API_DEFAULT = 'https://script.google.com/macros/s/AKfycbyQr-MES9knLHnBUv4Y7GG_w2igFhXTKEvcEp-Oyg55212nW39nCjSGFtLWnsWvfkqr4A/exec';   // ← ลิงก์ Web app หลังบ้านระบบทรัพย์สิน (…/exec) · ว่าง = โหมดทดลอง เก็บในเครื่องนี้
 const lsr = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
 const API_URL = () => lsr('asset_api') || API_DEFAULT;
 const LOCAL = () => !API_URL();
