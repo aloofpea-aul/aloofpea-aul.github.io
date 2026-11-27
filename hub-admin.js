@@ -10,7 +10,7 @@
   // โปรแกรมที่ตรวจสิทธิ์จริงที่หน้าโปรแกรม (ผ่าน pea-hub.js) — ตัวอื่นยังเปิดได้ตามเดิม
   var GATED = ['drawings', 'dutyroster', 'procure', 'tfbuy', 'damage', 'asset', 'stock', 'construction', 'english'];
   // โปรแกรมที่ไม่เปิดให้สมาชิกอัตโนมัติ (ตรงกับ APP_DEFAULT_OFF ในหลังบ้าน) — ผู้ดูแลต้องเปิดให้ทีละคน
-  var DEFAULT_OFF = ['english'];
+  var DEFAULT_OFF = ['english', 'lang_zh', 'lang_ja'];
   var APP_LIST = [];
   var MY_APPS = null;
   var STATS = {};
@@ -405,10 +405,10 @@
   }
 
   /* ---------- 👥 ผู้ใช้ (แบบใหม่ ก.พ. — รออนุมัติบนสุด · แถบสิทธิ์ · สวิตช์ระงับ · หน้าต่างแก้ไข) ---------- */
-  var GROUPS = [['⚡ ระบบไฟฟ้า', ['patrol', 'tx-survey', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'dutyroster']], ['📚 พัฒนาตนเอง', ['english']]];
+  var GROUPS = [['⚡ ระบบไฟฟ้า', ['patrol', 'tx-survey', 'damage']], ['🏗️ ก่อสร้าง / แบบ', ['construction', 'drawings']], ['📁 สำนักงาน', ['procure', 'tfbuy', 'stock', 'asset', 'dutyroster']], ['📚 พัฒนาตนเอง', ['english', 'lang_zh', 'lang_ja']]];
   var UF = { f: 'all', q: '' };
   // โปรแกรมที่ตรวจสิทธิ์รายโปรแกรมจริง (pea-hub.js ไม่มี data-perm="login"/data-gate="off" หรือหลังบ้านบล็อกการบันทึก) — เพิ่มเมื่อเปิดล็อกโปรแกรมใหม่
-  var ENFORCED = ['patrol', 'tx-survey', 'damage', 'construction', 'drawings', 'procure', 'tfbuy', 'stock', 'asset', 'dutyroster', 'english'];
+  var ENFORCED = ['patrol', 'tx-survey', 'damage', 'construction', 'drawings', 'procure', 'tfbuy', 'stock', 'asset', 'dutyroster', 'english', 'lang_zh', 'lang_ja'];
   var VIEW_OK = ['patrol', 'tx-survey'];   // ทุกคนเปิดดูได้ — สิทธิ์ = บันทึกได้
   // หน้าจัดการผู้ใช้แสดงเฉพาะโปรแกรมที่ตรวจสิทธิ์จริง — โปรแกรมอื่นไม่ต้องตั้ง (ใช้ได้ทุกคน หรือมีล็อกอินของตัวเอง)
   function enf() { return ENFORCED.filter(function (c) { return APP_LIST.some(function (a) { return a.code === c; }); }); }
