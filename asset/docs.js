@@ -102,15 +102,16 @@
   }
   const sign = (name, lines, gap) => `<div class="sg keep"${gap ? ` style="margin-top:${gap}"` : ''}>(${nm([name])})${[].concat(lines).filter(Boolean).map(l => '<br>' + esc(l)).join('')}</div>`;
   const letterSign = (name, lines) => `<div class="sg keep" style="margin-top:12pt">ขอแสดงความนับถือ<br><br><br><br>(${nm([name])})${lines.filter(Boolean).map(l => '<br>' + esc(l)).join('')}</div>`;
-  const DOTS = '...................................................';
+  const DOTS = '.............................................';
   function cmteSign(cm) {
     cm = cm || [];
     const p = i => `(${nm(cm[i])})  ${esc((cm[i] || [])[1] || '')}`;
     return `<div class="keep cm"><p class="c">ลงชื่อ${DOTS}ประธานกรรมการ</p><p class="c">${p(0)}</p><div class="two"><div>ลงชื่อ${DOTS}กรรมการ<br>${p(1)}</div><div>ลงชื่อ${DOTS}กรรมการ<br>${p(2)}</div></div></div>`;
   }
+  const tail = (sig, en) => `<div class="tail keep"><div class="tsig">${sig}</div>${en || ''}</div>`;
   function endorse(o) {
     return `<div class="en keep">${o.no != null ? `<p>ที่  ${esc(o.no)}</p>` : ''}<p>เรียน  ${esc(o.to)}</p>${o.lines.map(l => `<p style="padding-left:1cm">${l}</p>`).join('')}
-<p class="c" style="margin-top:42pt">(${nm(o.p)})</p><p class="c">${esc((o.p || [])[1] || '')}</p>${o.date ? `<p class="c">${o.date}</p>` : ''}${o.foot ? `<p style="margin-top:10pt">${o.foot}</p>` : ''}</div>`;
+<p class="c" style="margin-top:30pt">(${nm(o.p)})</p><p class="c">${esc((o.p || [])[1] || '')}</p>${o.date ? `<p class="c">${o.date}</p>` : ''}${o.foot ? `<p style="margin-top:10pt">${o.foot}</p>` : ''}</div>`;
   }
   const foot = s => `<div class="keep" style="margin-top:48pt"><p>${esc(s.dept)}</p><p>${esc(s.intTel || '')}</p></div>`;
   const cb = on => `<span class="cb${on ? ' on' : ''}"></span>`;
@@ -154,8 +155,8 @@
         tbl1(H('เลขที่ผลิตภัณฑ์', '2.6cm') + H('วันที่ได้มา', '2.6cm'), a => `<td class="c">${esc(a.serial) || '-'}</td><td class="c">${dmy(a.acq)}</td>`) +
         B(`ดังนั้น เพื่อให้การจำหน่ายทรัพย์สินเป็นไปด้วยความถูกต้องตาม${esc(s.rule)} ข้อ 2.1 จึงขออนุมัติแต่งตั้งคณะกรรมการสอบสวนหาข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชี ดังนี้.-`, 'margin-top:10pt') +
         (d.cmFact || []).map((c, i) => `<div class="cl"><span>${i + 1}. ${nm(c)}</span><span>ตำแหน่ง  ${esc(c[1] || '')}</span><span>${i ? 'คณะกรรมการ' : 'ประธานกรรมการ'}</span></div>`).join('') +
-        `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:10pt')}${sign(d.prop[0], d.prop[1], '36pt')}</div>` +
-        endorse({ to: `${esc(String(d.prop[1] || '').replace(/กฟส\..*$/, ''))}, คณะกรรมการฯ`, lines: ['- อนุมัติ แจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: d.ap1 })];
+        B('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:10pt') +
+        tail(sign(d.prop[0], d.prop[1], '36pt'), endorse({ to: `${esc(String(d.prop[1] || '').replace(/กฟส\..*$/, ''))}, คณะกรรมการฯ`, lines: ['- อนุมัติ แจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: d.ap1 }))];
       case 'd2': return [memo({ from: 'คณะกรรมการสอบสวนหาข้อเท็จจริง', to: esc(s.mgrShort), no: '', date: thLong(d.date2), sub: 'รายงานผลการสอบสวนหาข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชี', dear: esc(s.mgrShort) }) +
         B(`ตามอนุมัติ ${esc(s.mgrShort)} ลงวันที่ ${thLong(d.date1)} แต่งตั้งคณะกรรมการสอบข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชีนั้น คณะกรรมการฯ ได้ร่วมกันสอบสวนข้อเท็จจริงเกี่ยวกับการเสื่อมสภาพของ${kind} ของ ${from} จำนวน ${n} รายการ ดังนี้.-`) +
         tbl1(H('เลขที่ผลิตภัณฑ์', '2.8cm') + H('สภาพ/<br>อาการชำรุด', '3.4cm'), a => `<td class="c">${esc(a.serial) || '-'}</td><td class="c">${esc((d.cond || {})[a.code] || a.cond || '')}</td>`) +
@@ -200,14 +201,14 @@
             `<tr><th colspan="4" class="r">รวมทั้งสิ้น (บาท)</th>${[0, 1, 2].map(j => `<th class="r">${money(tot(j))}</th>`).join('')}</tr>`) +
           B(`คณะกรรมการฯ พิจารณาจากราคาสูงสุดที่ร้านเสนอมาแต่ละรายการ เพื่อกำหนดเป็นราคากลาง (ราคาประเมิน/ราคาขั้นต่ำ) และขออนุมัติกำหนดราคากลางขั้นต่ำในการขายพัสดุประเภท${kind} ของ ${from} จำนวน ${n} รายการ ดังนี้.-`, 'margin-top:10pt') +
           tbl1(H('ราคากลาง (ราคาประเมิน/ขั้นต่ำ)<br>(ไม่รวมภาษีมูลค่าเพิ่ม)', '4.6cm'), a => `<td class="r">${money(mid(a, d))}</td>`).replace('</tbody>', `<tr><th colspan="4" class="r">รวมทั้งสิ้น (บาท) (${bahtText(midT)})</th><th class="r">${money(midT)}</th></tr></tbody>`) +
-          `<div class="keep">${B(`จึงเรียนมาเพื่อโปรดให้ความเห็นชอบกำหนดราคาขายพัสดุประเภท${kind} ของ ${from} จำนวน ${n} รายการ เพื่อจำหน่ายออกจากบัญชีทรัพย์สินด้วยการขายโดยวิธีเฉพาะเจาะจง ตาม${esc(s.rule)} และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป`, 'margin-top:10pt')}${cmteSign(d.cmPrice)}</div>` +
-          endorse({ no: s.prefix + '          /' + yr(d.date4), to: d.fwd4 || s.fwdPrice, lines: ['เพื่อโปรดพิจารณาให้ความเห็นชอบ', 'ตามที่คณะกรรมการประเมินราคานำเสนอต่อไป'], p: [s.mgrName, s.mgrShort], date: thLong(d.date4) }) + foot(s)];
+          B(`จึงเรียนมาเพื่อโปรดให้ความเห็นชอบกำหนดราคาขายพัสดุประเภท${kind} ของ ${from} จำนวน ${n} รายการ เพื่อจำหน่ายออกจากบัญชีทรัพย์สินด้วยการขายโดยวิธีเฉพาะเจาะจง ตาม${esc(s.rule)} และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป`, 'margin-top:10pt') +
+          tail(cmteSign(d.cmPrice), endorse({ no: s.prefix + '          /' + yr(d.date4), to: d.fwd4 || s.fwdPrice, lines: ['เพื่อโปรดพิจารณาให้ความเห็นชอบ', 'ตามที่คณะกรรมการประเมินราคานำเสนอต่อไป'], p: [s.mgrName, s.mgrShort], date: thLong(d.date4) })) + foot(s)];
       }
       case 'd8': return [memo({ from: 'คณะกรรมการดำเนินการขาย', to: esc(s.mgrShort), no: esc(d.no5), date: thLong(d.date5), sub: `ขออนุมัติดำเนินการขายพัสดุของ ${from} จำนวน ${n} รายการ`, dear: esc(s.mgrShort) }) +
         B(esc(d.ref5)) +
         B(`เพื่อให้การจำหน่ายพัสดุ จำนวน ${n} รายการ ดังกล่าว มีความถูกต้อง สอดคล้องกับ${esc(s.rule)} คณะกรรมการดำเนินการขายได้พิจารณาแล้ว เห็นควรอนุมัติดำเนินการขายพัสดุ จำนวน ${n} รายการ รวมมูลค่าที่ได้มาเป็นเงิน ${money(cost)} บาท ออกจากบัญชีด้วยการขายโดยวิธีเฉพาะเจาะจง โดยเจรจาตกลงราคา โดยกำหนดราคากลาง (ราคาขั้นต่ำ) เป็นเงินรวม ${amt(midT)} (ไม่รวมภาษีมูลค่าเพิ่ม)`, 'margin-top:6pt') +
-        `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:6pt')}${cmteSign(d.cmSale)}</div>` +
-        endorse({ to: 'คณะกรรมการดำเนินการขาย', lines: ['- อนุมัติ / ดำเนินการต่อไป'], p: d.ap5, date: thShort(d.date5) })];
+        B('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:6pt') +
+        tail(cmteSign(d.cmSale), endorse({ to: 'คณะกรรมการดำเนินการขาย', lines: ['- อนุมัติ / ดำเนินการต่อไป'], p: d.ap5, date: thShort(d.date5) }))];
       case 'd13': return [`<img class="lgc" src="${LOGO()}" alt=""><p class="t">ทะเบียนคุมการรับซองเสนอราคาซื้อ</p>
 <p class="c">ขายพัสดุประเภท${kind}ที่ชำรุดของ ${esc(s.orgS)} จำนวน ${n} รายการ</p><p class="c">ด้วยวิธีการขายโดยวิธีเฉพาะเจาะจงโดยเจรจาตกลงราคา</p>
 <p class="c">วันที่ ${thLong(d.open6)} เวลา ${esc(d.time6)}</p><p class="c" style="margin-bottom:8pt">ณ ${esc(d.place6)} ${esc(s.province)}</p>` +
@@ -233,8 +234,8 @@
         B(`เพื่อให้การดำเนินการขายพัสดุประเภท${kind}ที่ชำรุด ของ ${from} จำนวน ${n} รายการ ด้วยวิธีการเฉพาะเจาะจง โดยการเจรจาตกลงราคา เป็นไปด้วยความเรียบร้อย ถูกต้องตรงตาม${esc(s.rule)} จึงเห็นควรดำเนินการ ดังนี้`) +
         B(`3.1 อนุมัติสนองรับราคาซื้อพัสดุ จำนวน ${n} รายการ ให้กับ ${nm([buyer.name])}`) +
         B(`3.2 อนุมัติให้ขายพัสดุ จำนวน ${n} รายการ เป็นเงินจำนวน ${amt(gross)} (รวมภาษีมูลค่าเพิ่ม)`) +
-        `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบโปรดอนุมัติตามข้อ 3.1 - 3.2 ต่อไป', 'margin-top:6pt')}${cmteSign(d.cmSale)}</div>` +
-        endorse({ to: 'คณะกรรมการฯ', lines: ['- อนุมัติตามข้อ 3.1 - 3.2', '- ดำเนินการต่อไป'], p: d.ap7, date: thLong(d.date7) })];
+        B('จึงเรียนมาเพื่อโปรดพิจารณา หากเห็นชอบโปรดอนุมัติตามข้อ 3.1 - 3.2 ต่อไป', 'margin-top:6pt') +
+        tail(cmteSign(d.cmSale), endorse({ to: 'คณะกรรมการฯ', lines: ['- อนุมัติตามข้อ 3.1 - 3.2', '- ดำเนินการต่อไป'], p: d.ap7, date: thLong(d.date7) }))];
       case 'd16': return [letter(s, { date: thLong(d.date8), sub: 'หนังสือสนองรับราคาที่เสนอซื้อพัสดุ', dear: nm([buyer.name]), refs: [`1. หนังสือ ${dots((String(d.nos6 || '').split(',')[+d.buyer || 0] || '').trim(), 30)} ลงวันที่ ${thLong(d.date6)}`, `2. ใบเสนอราคาซื้อ ลงวันที่ ${thLong(d.open6)}`] }) +
         B(`ตามที่${nm([buyer.name])} ได้เสนอราคาซื้อ ในการขายพัสดุประเภท${kind}ที่ชำรุด ของ${esc(s.deptFull)} ${esc(s.orgFull)} ${esc(s.province)} จำนวน ${n} รายการ ตามใบเสนอราคาซื้อ ลงวันที่ ${thLong(d.open6)} นั้น`) +
         B(`การไฟฟ้าส่วนภูมิภาค ได้พิจารณาแล้วตกลงสนองรับราคาที่เสนอซื้อ ในการขายพัสดุดังกล่าว จำนวน ${n} รายการ เป็นเงินทั้งสิ้น ${amt(gross)} (รวมภาษีมูลค่าเพิ่ม)`) +
@@ -259,8 +260,8 @@
         B(`3.1 คณะกรรมการส่งมอบพัสดุ ขอรายงานผลการขายและส่งมอบพัสดุประเภท${kind}ที่ชำรุดของ ${from} จำนวน ${n} รายการ ดังนี้`) +
         tbl1(H('หน่วยนับ<br>(ตัว/ชิ้น)', '2.4cm'), () => '<td class="c">1</td>') +
         B(`3.2 ให้ ผสน.${esc(s.org)} ดำเนินการตัดจ่ายพัสดุออกจากบัญชีในระบบ SAP ต่อไป`, 'margin-top:8pt') +
-        `<div class="keep">${B('จึงเรียนมาเพื่อโปรดพิจารณา และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:6pt')}${cmteSign(d.cmDeliv)}</div>` +
-        endorse({ no: s.prefix + '          /' + yr(d.date10), to: s.region + ', คณะกรรมการฯ', lines: ['- เพื่อโปรดทราบ', '- แจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: d.ap10, date: thShort(d.date10) })];
+        B('จึงเรียนมาเพื่อโปรดพิจารณา และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:6pt') +
+        tail(cmteSign(d.cmDeliv), endorse({ no: s.prefix + '          /' + yr(d.date10), to: s.region + ', คณะกรรมการฯ', lines: ['- เพื่อโปรดทราบ', '- แจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: d.ap10, date: thShort(d.date10) }))];
     }
     return [];
   }
@@ -281,7 +282,12 @@
 .dp thead{display:table-header-group}.dp tr{break-inside:avoid;page-break-inside:avoid}
 .dp .sg{margin-left:6.35cm;text-align:center}.dp .keep{break-inside:avoid;page-break-inside:avoid;padding-top:6pt}.dp p,.dp .h2,.dp .mh,.dp .cl{padding-top:.01pt}
 .dp .cm{margin-top:26pt}.dp .two{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:26pt}
-.dp .en{width:9cm;margin-top:18pt}.dp .j{text-align:justify;text-justify:inter-character}
+.dp .en{width:8.2cm;margin-top:14pt;border:.75pt solid #000;padding:3pt 8pt 6pt}
+.dp .tail.cmp,.cmp .tail{display:grid;grid-template-columns:7.9cm minmax(0,1fr);column-gap:.3cm;align-items:start}
+.cmp .tail .en{grid-column:1;grid-row:1;width:auto;margin-top:6pt}.cmp .tail .tsig{grid-column:2;grid-row:1}
+.cmp .tail .sg{margin-left:0}.cmp .tail .cm{margin-top:6pt}.cmp .tail .two{grid-template-columns:1fr;margin-top:14pt;row-gap:14pt}
+.cmp .fn{margin-top:10pt}
+.tight .in{margin-top:0!important}.tight .cm{margin-top:12pt}.tight .two{margin-top:12pt}.tight .keep{padding-top:2pt}.tight .en p.c[style]{margin-top:22pt!important}.tight .sg[style]{margin-top:20pt!important}.dp .j{text-align:justify;text-justify:inter-character}
 .dp .cb{text-indent:0;display:inline-block;width:10pt;height:10pt;border:1pt solid #000;margin-right:7pt;vertical-align:-1pt;position:relative}
 .dp .cb.on::after{content:'';position:absolute;left:2.5pt;top:-1pt;width:3.5pt;height:7.5pt;border:solid #000;border-width:0 1.6pt 1.6pt 0;transform:rotate(40deg)}
 .dp .ck{display:grid;grid-template-columns:5.9cm minmax(0,1fr);padding-left:2.25cm;row-gap:5pt;margin:4pt 0}.dp .ck span{display:flex;align-items:flex-start}.dp .ck .cb,.dp .at .nw .cb{flex:none;margin-top:4pt}.dp .at p{margin-bottom:3pt}.dp .at{padding-left:2.4cm}.dp .at .s{padding-left:1.2cm}.dp .at .nw{display:flex;align-items:flex-start}
@@ -301,9 +307,10 @@
 body{margin:0;background:#888}.dp{width:210mm;margin:0 auto}.scr .pg{background:#fff;padding:15mm 20mm 20mm 30mm;min-height:297mm;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .bar{position:fixed;top:8px;right:8px;font:14px system-ui;display:flex;gap:8px;align-items:center}.bar .tip{background:#fff;color:#333;padding:6px 10px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.3);max-width:360px;font-size:12.5px}.bar button{font:inherit;padding:8px 16px;border-radius:8px;border:0;background:#6a1b74;color:#fff}
 @media print{body{background:#fff}.dp{width:auto;margin:0}.bar{display:none}.scr .pg{padding:0;margin:0;min-height:0;box-shadow:none}}</style></head>
-<body><div class="bar"><span class="tip">ตั้งค่าพิมพ์: กระดาษ A4 · มาตราส่วน 100% (ค่าเริ่มต้น) · ระยะขอบ ค่าเริ่มต้น · ปิด “ส่วนหัวและท้ายกระดาษ”</span><button onclick="print()">พิมพ์</button></div><div class="dp scr">${html(ids, ctx)}</div></body></html>`);
+<body><div class="bar"><span class="tip">ตั้งค่าพิมพ์: กระดาษ A4 · มาตราส่วน 100% (ค่าเริ่มต้น) · ระยะขอบ ค่าเริ่มต้น · ปิด “ส่วนหัวและท้ายกระดาษ”</span><button onclick="print()">พิมพ์</button></div><div class="dp scr">${html(ids, ctx)}</div><script>function fit(){var H=262*96/25.4;[].forEach.call(document.querySelectorAll('.pg'),function(p){var h=function(){var a=p.firstElementChild,b=p.lastElementChild;return b.getBoundingClientRect().bottom-a.getBoundingClientRect().top};if(h()>H){p.classList.add('cmp');if(h()>H)p.classList.add('tight');}});}
+(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){fit();window.__fit=1;setTimeout(function(){try{print()}catch(e){}},300);});</script></body></html>`);
     w.document.close();
-    w.document.fonts && w.document.fonts.ready.then(() => setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 300));
+    try { w.focus(); } catch (e) {}
     return true;
   }
   window.DOCS = { STEPS, FIELDS, OFFICE, defaults, html, print, CSS, bahtText, money, thLong, mid };
