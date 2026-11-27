@@ -299,9 +299,9 @@
     const css = CSS.replace(/FONTDIR/g, fontDir || (location.origin + '/asset/fonts'));
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>${esc(title || 'เอกสารจำหน่ายทรัพย์สิน')}</title><style>${css}
 body{margin:0;background:#888}.dp{width:210mm;margin:0 auto}.scr .pg{background:#fff;padding:17.8mm 19mm 12.7mm 25.4mm;min-height:297mm;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.bar{position:fixed;top:8px;right:8px;font:14px system-ui}.bar button{font:inherit;padding:8px 16px;border-radius:8px;border:0;background:#6a1b74;color:#fff}
-@media print{body{background:#fff}.bar{display:none}.scr .pg{padding:0;margin:0;min-height:0;box-shadow:none}}</style></head>
-<body><div class="bar"><button onclick="print()">พิมพ์</button></div><div class="dp scr">${html(ids, ctx)}</div></body></html>`);
+.bar{position:fixed;top:8px;right:8px;font:14px system-ui;display:flex;gap:8px;align-items:center}.bar .tip{background:#fff;color:#333;padding:6px 10px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.3);max-width:360px;font-size:12.5px}.bar button{font:inherit;padding:8px 16px;border-radius:8px;border:0;background:#6a1b74;color:#fff}
+@media print{body{background:#fff}.dp{width:auto;margin:0}.bar{display:none}.scr .pg{padding:0;margin:0;min-height:0;box-shadow:none}}</style></head>
+<body><div class="bar"><span class="tip">ตั้งค่าพิมพ์: กระดาษ A4 · มาตราส่วน 100% (ค่าเริ่มต้น) · ระยะขอบ ค่าเริ่มต้น · ปิด “ส่วนหัวและท้ายกระดาษ”</span><button onclick="print()">พิมพ์</button></div><div class="dp scr">${html(ids, ctx)}</div></body></html>`);
     w.document.close();
     w.document.fonts && w.document.fonts.ready.then(() => setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 300));
     return true;
