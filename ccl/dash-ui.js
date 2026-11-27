@@ -34,13 +34,13 @@
     '#dbx .ar{width:20px;display:grid;place-items:center;color:#cbd5e1;font-size:18px;flex-shrink:0}' +
     '#dbx .sub{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}#dbx .sub i{font-style:normal;font-size:11px;background:rgba(255,255,255,.75);border-radius:6px;padding:1px 6px;font-weight:600}' +
     '#dbAvg .avs{margin-left:auto;display:flex;background:#f1f5f9;border-radius:10px;padding:3px}#dbAvg .avs button{border:0;background:none;padding:5px 11px;border-radius:8px;font:700 12.5px inherit;font-family:inherit;color:#64748b;cursor:pointer}#dbAvg .avs .on{background:#fff;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,.1)}' +
-    '#dbAvg .asub{font-size:12px;color:#64748b;margin:-6px 0 10px}#dbAvg .ag2{display:grid;grid-template-columns:150px repeat(3,minmax(0,1fr));gap:8px}#dbAvg .ah{font-size:12px;color:#94a3b8;font-weight:700;text-align:center}' +
+    '#dbAvg .asub{font-size:12px;color:#64748b;margin:-6px 0 10px}#dbAvg .ag2{display:grid;grid-template-columns:150px repeat(4,minmax(0,1fr));gap:8px}#dbAvg .ak.at{border:2px solid currentColor}#dbAvg .ak.at.in{color:#1d4ed8}#dbAvg .ak.at.ps{color:#047857}#dbAvg .ak.at.cl{color:#6d28d9}#dbAvg .aq .sum td{border-top:2px solid #e2e8f0;font-weight:800;background:#f8fafc}#dbAvg .ah{font-size:12px;color:#94a3b8;font-weight:700;text-align:center}' +
     '#dbAvg .al{display:flex;flex-direction:column;justify-content:center;font-weight:700;font-size:14px;color:#1e293b}#dbAvg .al small{font-weight:600;color:#64748b;font-size:11.5px}' +
     '#dbAvg .ak{border-radius:14px;padding:9px 12px}#dbAvg .ak b{font-size:24px;display:block;line-height:1.2}#dbAvg .ak small{font-size:11.5px;color:#475569;font-weight:600}' +
     '#dbAvg .ak.in{background:#eff6ff}#dbAvg .ak.in b{color:#1d4ed8}#dbAvg .ak.ps{background:#ecfdf5}#dbAvg .ak.ps b{color:#047857}#dbAvg .ak.cl{background:#f5f3ff}#dbAvg .ak.cl b{color:#6d28d9}' +
     '#dbAvg .abal{margin:12px 0;background:#fffbeb;border-radius:12px;padding:9px 12px;font-size:13px;color:#92400e}#dbAvg .aq{width:100%;border-collapse:collapse;font-size:13px}#dbAvg .aq th{color:#94a3b8;font-size:12px;font-weight:700;text-align:left;padding:5px 8px}#dbAvg .aq td{padding:7px 8px;border-top:1px solid #f1f5f9}#dbAvg .aq .n{text-align:right}#dbAvg .aq .now td{background:#f0fdfa;font-weight:700}' +
     '#dbAvg .anote{font-size:11.5px;color:#94a3b8;margin-top:8px}' +
-    '@media(max-width:640px){#dbAvg h3{flex-wrap:wrap}#dbAvg .avs{margin-left:0;width:100%}#dbAvg .avs button{flex:1}#dbAvg .ag2{grid-template-columns:repeat(3,minmax(0,1fr))}#dbAvg .ag2>div:first-child{display:none}#dbAvg .al{grid-column:1/-1;flex-direction:row;gap:8px;align-items:baseline;margin-top:4px}#dbAvg .ak b{font-size:20px}}' +
+    '@media(max-width:640px){#dbAvg h3{flex-wrap:wrap}#dbAvg .avs{margin-left:0;width:100%}#dbAvg .avs button{flex:1}#dbAvg .ag2{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}#dbAvg .ak{padding:8px}#dbAvg .ag2>div:first-child{display:none}#dbAvg .al{grid-column:1/-1;flex-direction:row;gap:8px;align-items:baseline;margin-top:4px}#dbAvg .ak b{font-size:20px}}' +
     '#dbx .g2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}' +
     '#dbx .td{display:flex;align-items:center;gap:12px;border:1.5px solid #f1f5f9;border-radius:14px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:background .12s}#dbx .td:hover{background:#f8fafc}' +
     '#dbx .td.zero{opacity:.55}#dbx .td .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:17px;flex-shrink:0}' +
@@ -154,29 +154,32 @@
     var cs = start > CLOSE_FROM ? start : CLOSE_FROM, cdn = Math.max(1, Math.round((t0 - cs) / DAY));
     var nCl = all.filter(function (j) { return j.status === 'ปิดงานแล้วเสร็จ' && inR(closedAt(j), cs); }).length;
     var f1 = function (v) { return v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(1) : v.toFixed(2).replace(/0$/, ''); };
-    var cells = function (n, d, cls) { return ['วัน', 'เดือน', 'ไตรมาส'].map(function (u, i) { var v = n / d * [1, 30.4375, 91.3125][i]; return '<div class="ak ' + cls + '"><b>' + f1(v) + '</b><small>งาน/' + u + '</small></div>'; }).join(''); };
+    var tot = function (n, cls) { return '<div class="ak at ' + cls + '"><b>' + n + '</b><small>งาน</small></div>'; };
+    var cells = function (n, d, cls) { return tot(n, cls) + ['วัน', 'เดือน', 'ไตรมาส'].map(function (u, i) { var v = n / d * [1, 30.4375, 91.3125][i]; return '<div class="ak ' + cls + '"><b>' + f1(v) + '</b><small>งาน/' + u + '</small></div>'; }).join(''); };
     var dt = function (d) { return d.getDate() + ' ' + TH_M[d.getMonth()] + ' ' + String(d.getFullYear() + 543).slice(-2); };
     var clShort = cdn < 14;
     var diffM = (nIn - nPs) / dn * 30.4375;
     var bal = Math.abs(diffM) < 0.5 ? '⚖️ งานเข้ากับงานเสร็จพอๆ กัน — งานค้างคงที่' :
       diffM > 0 ? '⚖️ งานเข้ามากกว่างานเสร็จเฉลี่ย <b>' + f1(diffM) + ' งาน/เดือน</b> → งานค้างเพิ่มขึ้น' : '⚖️ งานเสร็จมากกว่างานเข้าเฉลี่ย <b>' + f1(-diffM) + ' งาน/เดือน</b> → งานค้างลดลง 👍';
     // รายไตรมาสของปีนี้
-    var rows = '';
+    var rows = '', sI = 0, sP = 0, sD = 0;
     for (var q = 0; q <= Math.floor(now.getMonth() / 3); q++) {
       var a0 = new Date(now.getFullYear(), q * 3, 1), a1 = new Date(now.getFullYear(), q * 3 + 3, 1), cur = a1 > now, e1 = cur ? t0 : a1, qd = Math.max(1, Math.round((e1 - a0) / DAY));
       var w = function (d) { return d && !isNaN(d) && d >= a0 && d < e1; };
       var qi = all.filter(function (j) { return w(new Date(j.receiveDate)); }).length, qp = all.filter(function (j) { return w(passAt(j)); }).length, df = qi - qp;
+      sI += qi; sP += qp; sD += qd;
       rows += '<tr' + (cur ? ' class="now"' : '') + '><td>Q' + (q + 1) + ' (' + TH_M[q * 3] + '–' + TH_M[q * 3 + 2] + ')' + (cur ? ' ถึงวันนี้' : '') + '</td><td class="n">' + qi + '</td><td class="n">' + f1(qi / qd) + '</td><td class="n">' + qp + '</td><td class="n">' + f1(qp / qd) + '</td><td class="n" style="color:' + (df > 0 ? '#dc2626' : '#059669') + '">' + (df > 0 ? '+' : df < 0 ? '−' : '') + Math.abs(df) + '</td></tr>';
     }
     return '<div class="card" id="dbAvg"><h3>📈 ค่าเฉลี่ยงาน<span class="avs">' + [['year', 'ปี ' + (now.getFullYear() + 543)], ['12m', '12 เดือนล่าสุด'], ['q', 'ไตรมาสนี้']].map(function (o) { return '<button data-avg="' + o[0] + '" class="' + (AVG === o[0] ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</span></h3>' +
       '<div class="asub">' + dt(start) + ' – ' + dt(now) + ' (' + dn + ' วัน)</div>' +
-      '<div class="ag2"><div></div><div class="ah">ต่อวัน</div><div class="ah">ต่อเดือน</div><div class="ah">ต่อไตรมาส</div>' +
+      '<div class="ag2"><div></div><div class="ah">รวม</div><div class="ah">ต่อวัน</div><div class="ah">ต่อเดือน</div><div class="ah">ต่อไตรมาส</div>' +
       '<div class="al">📥 งานเข้า<small>' + nIn + ' งาน (วันที่รับเรื่อง)</small></div>' + cells(nIn, dn, 'in') +
       '<div class="al">🏗️ ก่อสร้างเสร็จ<small>' + nPs + ' งาน (ตรวจรับผ่าน)</small></div>' + cells(nPs, dn, 'ps') +
       '<div class="al">✅ ปิดงาน<small>' + (clShort ? 'เริ่มนับ ' + dt(CLOSE_FROM) + ' · ปิดแล้ว ' + nCl + ' งาน' : nCl + ' งาน (นับตั้งแต่ ' + dt(cs) + ')') + '</small></div>' +
-      (clShort ? '<div class="ak cl" style="grid-column:span 3"><b>–</b><small>รอข้อมูลสะสมอย่างน้อย 2 สัปดาห์ (อีก ' + (14 - cdn) + ' วัน)</small></div>' : cells(nCl, cdn, 'cl')) + '</div>' +
+      (clShort ? tot(nCl, 'cl') + '<div class="ak cl" style="grid-column:span 3"><b>–</b><small>รอข้อมูลสะสมอย่างน้อย 2 สัปดาห์ (อีก ' + (14 - cdn) + ' วัน)</small></div>' : cells(nCl, cdn, 'cl')) + '</div>' +
       '<div class="abal">' + bal + '</div>' +
-      '<div style="overflow-x:auto"><table class="aq"><tr><th>รายไตรมาส ' + (now.getFullYear() + 543) + '</th><th class="n">งานเข้า</th><th class="n">เฉลี่ย/วัน</th><th class="n">ก่อสร้างเสร็จ</th><th class="n">เฉลี่ย/วัน</th><th class="n">ส่วนต่าง</th></tr>' + rows + '</table></div>' +
+      '<div style="overflow-x:auto"><table class="aq"><tr><th>รายไตรมาส ' + (now.getFullYear() + 543) + '</th><th class="n">งานเข้า</th><th class="n">เฉลี่ย/วัน</th><th class="n">ก่อสร้างเสร็จ</th><th class="n">เฉลี่ย/วัน</th><th class="n">ส่วนต่าง</th></tr>' + rows +
+        '<tr class="sum"><td>รวมทั้งปี (ถึงวันนี้)</td><td class="n">' + sI + '</td><td class="n">' + f1(sI / Math.max(1, sD)) + '</td><td class="n">' + sP + '</td><td class="n">' + f1(sP / Math.max(1, sD)) + '</td><td class="n" style="color:' + (sI - sP > 0 ? '#dc2626' : '#059669') + '">' + (sI - sP > 0 ? '+' : sI - sP < 0 ? '−' : '') + Math.abs(sI - sP) + '</td></tr></table></div>' +
       '<div class="anote">วันที่ปิดงานก่อน ' + dt(CLOSE_FROM) + ' เป็นการบันทึกย้อนหลังพร้อมกัน จึงไม่นำมาคำนวณ · เฉลี่ยต่อวันคิดตามวันปฏิทิน</div></div>';
   }
   function render() {
