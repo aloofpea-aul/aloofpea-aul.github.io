@@ -1,5 +1,5 @@
 /* ระบบทรัพย์สิน ผปร. — ชุดเอกสารจำหน่ายทรัพย์สิน 18 ฉบับ
- * จัดหน้าตามแบบฟอร์ม Word ของ กฟส.อ่าวลึก (TH SarabunIT๙ 16 · A4 · ขอบบน 1.78 ล่าง 1.27 ซ้าย 2.54 ขวา 1.9 ซม.)
+ * จัดหน้าตามมาตรฐานงานสารบรรณ: TH SarabunIT๙ 16 · A4 · ขอบซ้าย 3 ขวา 2 ซม. (พื้นที่พิมพ์ 16 ซม.) · ตราห่างขอบบน 1.5 ซม. · ขอบล่าง 2 ซม. · ระยะบรรทัด 1 เท่า
  * ใช้: DOCS.STEPS / DOCS.fields(step) / DOCS.defaults(ctx) / DOCS.html(ids, ctx) / DOCS.print(ids, ctx, title)
  * ctx = { items:[{code,name,serial,acq,cost,bv,cond}], d:{ข้อมูลชุด}, s:{ค่าตั้งต้นสำนักงาน} } */
 (function () {
@@ -267,10 +267,10 @@
 
   const CSS = `@font-face{font-family:'THSN';src:url('FONTDIR/THSarabunNew.woff') format('woff');font-display:block;size-adjust:65.5%;ascent-override:75%;descent-override:25%}
 @font-face{font-family:'THSN';font-weight:700;src:url('FONTDIR/THSarabunNew-Bold.woff') format('woff');font-display:block;size-adjust:65.5%;ascent-override:75%;descent-override:25%}
-@page{size:A4;margin:17.8mm 19mm 12.7mm 25.4mm}
+@page{size:A4;margin:15mm 20mm 20mm 30mm}
 .dp{font-family:'TH SarabunIT๙','TH SarabunIT9','THSN',serif;font-size:16pt;line-height:18.1pt;color:#000;background:#fff}
 .dp .pg{break-before:page;page-break-before:always}.dp .pg:first-child{break-before:auto;page-break-before:auto}
-.dp p{margin:0}.dp .in{text-indent:2.25cm;text-align:justify;text-justify:inter-character}.dp .c{text-align:center}.dp .r{text-align:right}.dp .b{font-weight:700}
+.dp,.dp .pg{max-width:100%;overflow-wrap:anywhere}.dp p{margin:0}.dp .in{text-indent:2.25cm;text-align:justify;text-justify:inter-character}.dp .c{text-align:center}.dp .r{text-align:right}.dp .b{font-weight:700}
 .dp .t{text-align:center;font-weight:700;font-size:20pt;line-height:22pt}
 .dp .lg{width:3.05cm;display:block;margin-bottom:5pt}.dp .lgc{width:2.75cm;display:block;margin:0 auto 3pt}
 .dp .mh{display:grid;grid-template-columns:1.5cm 6.5cm 1.2cm 1fr}.dp .h2{display:grid;grid-template-columns:1.5cm 1fr}
@@ -282,9 +282,9 @@
 .dp .sg{margin-left:6.35cm;text-align:center}.dp .keep{break-inside:avoid;page-break-inside:avoid;padding-top:6pt}.dp p,.dp .h2,.dp .mh,.dp .cl{padding-top:.01pt}
 .dp .cm{margin-top:26pt}.dp .two{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:26pt}
 .dp .en{width:9cm;margin-top:18pt}.dp .j{text-align:justify;text-justify:inter-character}
-.dp .cb{display:inline-block;width:10pt;height:10pt;border:1pt solid #000;margin-right:7pt;vertical-align:-1pt;position:relative}
+.dp .cb{text-indent:0;display:inline-block;width:10pt;height:10pt;border:1pt solid #000;margin-right:7pt;vertical-align:-1pt;position:relative}
 .dp .cb.on::after{content:'';position:absolute;left:2.5pt;top:-1pt;width:3.5pt;height:7.5pt;border:solid #000;border-width:0 1.6pt 1.6pt 0;transform:rotate(40deg)}
-.dp .ck{display:grid;grid-template-columns:6.6cm 1fr;padding-left:2.5cm;white-space:nowrap;row-gap:5pt;margin:4pt 0}.dp .at p{margin-bottom:3pt}.dp .at{padding-left:2.9cm}.dp .at .s{padding-left:1.2cm}.dp .at .nw{white-space:nowrap}
+.dp .ck{display:grid;grid-template-columns:5.9cm minmax(0,1fr);padding-left:2.25cm;row-gap:5pt;margin:4pt 0}.dp .ck span{display:flex;align-items:flex-start}.dp .ck .cb,.dp .at .nw .cb{flex:none;margin-top:4pt}.dp .at p{margin-bottom:3pt}.dp .at{padding-left:2.4cm}.dp .at .s{padding-left:1.2cm}.dp .at .nw{display:flex;align-items:flex-start}
 .dp .fn{margin-top:56pt;text-align:right;font-size:12pt;line-height:16pt}
 .dp .dt{display:flex;white-space:nowrap}.dp .dt i{flex:1;border-bottom:1.3pt dotted #000;margin:0 2pt 5pt;font-style:normal}`;
 
@@ -298,7 +298,7 @@
     if (!w) return false;
     const css = CSS.replace(/FONTDIR/g, fontDir || (location.origin + '/asset/fonts'));
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>${esc(title || 'เอกสารจำหน่ายทรัพย์สิน')}</title><style>${css}
-body{margin:0;background:#888}.dp{width:210mm;margin:0 auto}.scr .pg{background:#fff;padding:17.8mm 19mm 12.7mm 25.4mm;min-height:297mm;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+body{margin:0;background:#888}.dp{width:210mm;margin:0 auto}.scr .pg{background:#fff;padding:15mm 20mm 20mm 30mm;min-height:297mm;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .bar{position:fixed;top:8px;right:8px;font:14px system-ui;display:flex;gap:8px;align-items:center}.bar .tip{background:#fff;color:#333;padding:6px 10px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.3);max-width:360px;font-size:12.5px}.bar button{font:inherit;padding:8px 16px;border-radius:8px;border:0;background:#6a1b74;color:#fff}
 @media print{body{background:#fff}.dp{width:auto;margin:0}.bar{display:none}.scr .pg{padding:0;margin:0;min-height:0;box-shadow:none}}</style></head>
 <body><div class="bar"><span class="tip">ตั้งค่าพิมพ์: กระดาษ A4 · มาตราส่วน 100% (ค่าเริ่มต้น) · ระยะขอบ ค่าเริ่มต้น · ปิด “ส่วนหัวและท้ายกระดาษ”</span><button onclick="print()">พิมพ์</button></div><div class="dp scr">${html(ids, ctx)}</div></body></html>`);
