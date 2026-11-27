@@ -68,9 +68,9 @@
   /* ค่าเริ่มต้นของชุด (เติมเฉพาะช่องที่ยังว่าง) */
   function defaults(ctx) {
     const s = Object.assign({}, OFFICE, ctx.s || {}), d = ctx.d || {}, its = ctx.items || [];
-    const furn = its.length && its.every(a => /ตกแต่ง|สำนักงาน/.test(a.cat || ''));
+    const furn = its.length && its.every(a => /ตกแต่ง|สำนักงาน/.test(a.cat || '')), cats = [...new Set(its.map(a => a.cat).filter(Boolean))];
     const out = {
-      no1: s.prefix, from: s.dept, kind: furn ? 'เครื่องตกแต่งสำนักงาน' : 'เครื่องมือเครื่องใช้',
+      no1: s.prefix, from: s.dept, kind: cats.length === 1 ? cats[0] : furn ? 'เครื่องตกแต่งสำนักงาน' : 'เครื่องมือเครื่องใช้',
       prop: [s.head, s.headPos], ap1: ['', s.mgrShort], ap5: [s.mgrName, s.mgrShort], ap7: [s.mgrName, s.mgrShort], ap10: [s.mgrName, s.mgrShort],
       cmFact: [['', ''], ['', ''], ['', '']], cmPrice: [['', ''], ['', ''], ['', '']], cmSale: [['', ''], ['', ''], ['', '']], cmDeliv: [['', ''], ['', ''], ['', '']],
       bidders: [{ name: '', addr: '' }, { name: '', addr: '' }, { name: '', addr: '' }], fwd4: s.fwdPrice, no5: s.prefix,

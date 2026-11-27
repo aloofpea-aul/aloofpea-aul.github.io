@@ -18,7 +18,7 @@
 const SPREADSHEET_ID = '';   // ว่าง = ใช้ชีตที่ setup สร้าง (Script Properties › ASSET_SHEET_ID)
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '2.0';
+const VERSION = '2.1';
 const DONE = 11;   // ขั้นที่ 11 = ปิดชุด (ครบ 10 ขั้นตามแบบฟอร์มจำหน่าย)
 
 const AST = { name: 'ทรัพย์สิน', labels: ['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลขผู้ผลิต', 'วันที่ได้มา', 'ราคาทุน', 'ผู้ดูแล', 'สถานะ SAP', 'อยู่ในไฟล์ล่าสุด', 'จำหน่ายแล้ว (ชุด)', 'นำเข้าเมื่อ', 'มูลค่าตามบัญชี', 'ค่าเสื่อมสะสม', 'หมวด (SAP)', 'รหัสพนักงาน'] };
@@ -128,6 +128,7 @@ const ACTIONS = {
     admin_(me);
     const codes = uniq_((b.codes || []).map(String)).filter(assetExists_);
     if (!codes.length) throw err_('bad', 'ยังไม่ได้เลือกรายการ');
+    oneCat_(codes);
     const busy = inOpenBatch_();
     const dup = codes.filter(function (c) { return busy[c]; });
     if (dup.length) throw err_('bad', 'มี ' + dup.length + ' รายการอยู่ในชุดจำหน่ายอื่นที่ยังไม่ปิด');
@@ -154,6 +155,7 @@ const ACTIONS = {
         const busy = inOpenBatch_(String(b.id));
         const codes = uniq_(b.codes.map(String)).filter(function (c) { return assetExists_(c) && !busy[c]; });
         if (!codes.length) throw err_('bad', 'ชุดต้องมีอย่างน้อย 1 รายการ');
+        oneCat_(codes);
         r[3] = JSON.stringify(codes);
       }
       if (b.committee) r[4] = JSON.stringify(b.committee.slice(0, 5).map(clean_));
@@ -242,6 +244,14 @@ function inOpenBatch_(except) {
   const m = {};
   batches_().forEach(function (x) { if (x.step < DONE && x.id !== except) x.codes.forEach(function (c) { m[c] = x.id; }); });
   return m;
+}
+/** จำหน่ายต้องแยกประเภท: 1 ชุด = 1 ประเภททรัพย์สิน (หมวด SAP หรือประเภทหลัก 5 ตัวแรก) */
+function oneCat_(codes) {
+  const sh = sheet_(AST); if (sh.getLastRow() < 2) return;
+  const m = {};
+  sh.getRange(2, 1, sh.getLastRow() - 1, 17).getValues().forEach(function (r) { m[String(r[0])] = String(r[16] || '') || String(r[1]).slice(0, 5); });
+  const cats = uniq_(codes.map(function (c) { return m[c] || ''; }));
+  if (cats.length > 1) throw err_('bad', 'จำหน่ายต้องแยกประเภท — ชุดนี้มี ' + cats.length + ' ประเภท: ' + cats.join(', '));
 }
 let CODES_ = null;
 function assetExists_(code) {

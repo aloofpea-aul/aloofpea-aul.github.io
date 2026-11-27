@@ -200,7 +200,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="docs.js?v=4"></script>
+<script src="docs.js?v=5"></script>
 <script>
 'use strict';
 const DONE = 11;   // ปิดชุดหลังครบ 10 ขั้นตามแบบฟอร์มจำหน่าย
@@ -404,7 +404,7 @@ function filtered() {
     if (ST.mode === 'todo' && a.ins) return false;
     if (ST.mode === 'gone' && a.inLatest) return false;
     if (ST.cat && a.cat !== ST.cat) return false;
-    if (ST.owner && a.owner !== ST.owner) return false;
+    if (ST.owner && (ST.owner === '-' ? a.owner : a.owner !== ST.owner)) return false;
     return q.every(w => a.key.includes(w));
   });
 }
@@ -417,18 +417,21 @@ function itemRow(a, sel) {
 }
 function viewList() {
   const L = filtered(), own = owners();
+  const keep = ST.owner; ST.owner = ''; const base = filtered(); ST.owner = keep;
   let h = `<h2 class="t">ทะเบียนทรัพย์สิน</h2><p class="muted" style="margin:0">ติ๊กเลือกรายการ แล้วกด “สร้างชุดจำหน่าย” · แตะชื่อเพื่อดูรายละเอียด/ตรวจสภาพ</p>
   <div class="tools"><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f5a6b" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">ค้นหา</span><input id="q" type="search" placeholder="รหัส / ชื่อ / ทะเบียนรถ / ผู้ดูแล" value="${esc(ST.q)}"></label>
     <label><span class="sr">หมวด</span><select class="s" id="cat"><option value="">ทุกหมวด</option>${[...new Set(A.map(a => a.cat))].sort().map(c => `<option${ST.cat === c ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
-    <label><span class="sr">ผู้ดูแล</span><select class="s" id="own"><option value="">ผู้ดูแลทุกคน</option>${own.map(o => `<option${ST.owner === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label></div>
+</div>
+  <div class="chips" role="group" aria-label="ผู้รับผิดชอบ">${[['', 'ผู้รับผิดชอบทุกคน'], ...own.map(o => [o, o]), ['-', 'ไม่ระบุผู้รับผิดชอบ']].map(([v, t]) => { const c = v === '' ? base.length : base.filter(a => v === '-' ? !a.owner : a.owner === v).length; return c || v === '' || ST.owner === v ? `<button class="chip${ST.owner === v ? ' on' : ''}" data-own="${esc(v)}">${esc(t)} <b>${c}</b></button>` : ''; }).join('')}</div>
   <div class="tools"><div class="seg" role="group" aria-label="มุมมอง">${[['all', 'ทั้งหมด'], ['full', 'เหลือ 1 บาท'], ['pick', 'แนะนำจำหน่าย'], ['todo', 'ยังไม่ตรวจ'], ['gone', 'ไม่อยู่ในไฟล์ล่าสุด'], ['done', 'จำหน่ายแล้ว']].map(m => `<button data-m="${m[0]}" class="${ST.mode === m[0] ? 'on' : ''}">${m[1]}</button>`).join('')}</div>
     <span class="muted" style="margin-left:auto">${L.length.toLocaleString('th-TH')} รายการ · ราคาทุน ${baht(L.reduce((s, a) => s + a.cost, 0), 0)} บาท</span></div>`;
   h += L.length ? `<div class="list">${L.slice(0, ST.lim).map(a => itemRow(a, ST.mode === 'done' ? null : SEL.has(a.code))).join('')}</div>` + (L.length > ST.lim ? `<div style="text-align:center;margin-top:12px"><button class="btn" id="more">แสดงเพิ่ม (${L.length - ST.lim})</button></div>` : '') : `<div class="empty">ไม่พบรายการ</div>`;
   h += `<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn sm" id="qrAll">พิมพ์ป้าย QR (${SEL.size || L.length} รายการ)</button><button class="btn sm" id="csv">ส่งออก CSV</button></div>`;
   if (SEL.size) {
     const s = [...SEL].map(c => AM[c]).filter(Boolean);
-    h += `<div class="actbar"><div><b>เลือก ${s.length} รายการ</b><br><span>ราคาทุน ${baht(s.reduce((x, a) => x + a.cost, 0))} · มูลค่าบัญชี ${baht(s.reduce((x, a) => x + (a.bv || 0), 0))} บาท</span></div>
-      <div class="row"><button class="btn sm" id="clr">ล้าง</button><button class="btn y" id="mk"${ADM() ? '' : ' disabled title="เฉพาะผู้ดูแลระบบ"'}>สร้างชุดจำหน่าย →</button></div></div>`;
+    const gs = [...new Set(s.map(a => a.cat))];
+    h += `<div class="actbar"><div><b>เลือก ${s.length} รายการ${gs.length > 1 ? ` · ${gs.length} ประเภท` : ''}</b>${gs.length > 1 ? '<br><span style="color:var(--gold)">จำหน่ายต้องแยกประเภท — ระบบจะสร้างแยกเป็น ' + gs.length + ' ชุด ชุดละประเภท</span>' : ''}<br><span>ราคาทุน ${baht(s.reduce((x, a) => x + a.cost, 0))} · มูลค่าบัญชี ${baht(s.reduce((x, a) => x + (a.bv || 0), 0))} บาท</span></div>
+      <div class="row"><button class="btn sm" id="clr">ล้าง</button><button class="btn y" id="mk"${ADM() ? '' : ' disabled title="เฉพาะผู้ดูแลระบบ"'}>${gs.length > 1 ? 'สร้าง ' + gs.length + ' ชุด (แยกประเภท) →' : 'สร้างชุดจำหน่าย →'}</button></div></div>`;
   } else if (ST.mode !== 'done') {
     const pk = L.filter(a => a.rec.pick);
     if (pk.length) h += `<div class="actbar"><div><b>แนะนำจำหน่าย ${pk.length} รายการ</b><br><span>ในรายการที่แสดงอยู่</span></div><button class="btn y" id="pickAll">เลือกทั้งหมดที่แนะนำ</button></div>`;
@@ -436,7 +439,7 @@ function viewList() {
   $('#view').innerHTML = h;
   const q = $('#q'); q.oninput = () => { ST.q = q.value; ST.lim = 60; clearTimeout(q._t); q._t = setTimeout(() => { viewList(); const n = $('#q'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
   $('#cat').onchange = e => { ST.cat = e.target.value; viewList(); };
-  $('#own').onchange = e => { ST.owner = e.target.value; viewList(); };
+  $$('[data-own]').forEach(b => b.onclick = () => { ST.owner = b.dataset.own; ST.lim = 60; viewList(); });
   $$('[data-m]').forEach(b => b.onclick = () => { ST.mode = b.dataset.m; ST.lim = 60; viewList(); });
   $$('[data-sel]').forEach(c => c.onchange = () => { c.checked ? SEL.add(c.dataset.sel) : SEL.delete(c.dataset.sel); viewList(); });
   $$('[data-open]').forEach(b => b.onclick = () => showAsset(b.dataset.open));
@@ -450,11 +453,19 @@ function viewList() {
 async function makeBatch() {
   const codes = [...SEL].filter(c => AM[c] && !AM[c].batch && !AM[c].disposed);
   if (!codes.length) return toast('รายการที่เลือกอยู่ในชุดอื่นแล้ว');
+  const groups = {}; codes.forEach(c => (groups[AM[c].cat] = groups[AM[c].cat] || []).push(c));
   const b = $('#mk'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังสร้าง…';
+  const made = [];
   try {
-    const r = await api('createBatch', { codes });
-    DB.batches.push(r.batch); SEL.clear(); build(); ST.batch = r.batch.id; go('batch'); toast('สร้าง ' + r.batch.name + ' แล้ว');
-  } catch (e) { toast(e.message, 4000); b.disabled = false; b.textContent = 'สร้างชุดจำหน่าย →'; }
+    for (const cat of Object.keys(groups)) {
+      const r = await api('createBatch', { codes: groups[cat] });
+      let x = r.batch;
+      try { x = (await api('updateBatch', { id: x.id, name: x.name + ' · ' + cat, data: { kind: cat } })).batch; } catch (e) {}
+      DB.batches.push(x); made.push(x);
+    }
+    SEL.clear(); build(); ST.batch = made.length === 1 ? made[0].id : null; go('batch');
+    toast(made.length === 1 ? 'สร้าง ' + made[0].name + ' แล้ว' : 'สร้าง ' + made.length + ' ชุด แยกตามประเภทแล้ว', 3500);
+  } catch (e) { toast(e.message, 4000); if (made.length) { build(); go('batch'); } else { b.disabled = false; b.textContent = 'สร้างชุดจำหน่าย →'; } }
 }
 
 /* ---------------- รายละเอียด / ตรวจสภาพ ---------------- */
@@ -558,7 +569,7 @@ function viewBatch() {
     const its = b.codes.map(c => AM[c]).filter(Boolean);
     return `<button class="bc" data-b="${b.id}"><div class="h"><b>${esc(b.name)}</b><span class="tag ${b.step >= DONE ? 'ok' : 'p'}">${b.step >= DONE ? 'ปิดแล้ว ' + thDate(b.log[DONE]) : 'ขั้น ' + b.step + ': ' + STEPS[b.step - 1][0]}</span></div>
       <div class="mini">${STEPS.map((s, i) => `<i class="${b.step > i + 1 ? 'd' : b.step === i + 1 ? 'c' : ''}"></i>`).join('')}</div>
-      <span class="muted">${its.length} รายการ · ราคาทุน ${baht(its.reduce((s, a) => s + a.cost, 0))} บาท · สร้าง ${thDate(b.at)} โดย ${esc(b.by)}</span></button>`;
+      <span class="muted">${its.length} รายการ · ${esc([...new Set(its.map(a => a.cat))].join(', '))} · ราคาทุน ${baht(its.reduce((s, a) => s + a.cost, 0))} บาท · สร้าง ${thDate(b.at)} โดย ${esc(b.by)}</span></button>`;
   };
   let h = `<div class="row" style="justify-content:space-between"><div><h2 class="t">ชุดจำหน่าย</h2><p class="muted" style="margin:0">รวมรายการที่จะจำหน่ายเป็นชุด แล้วติดตามทีละขั้นจนตัดออกจาก SAP</p></div><button class="btn p" id="nb">+ สร้างชุดใหม่</button></div>`;
   h += `<div class="list">${open.length ? open.map(card).join('') : '<div class="empty">ยังไม่มีชุดที่กำลังดำเนินการ<br>ไปที่ทะเบียน › แนะนำจำหน่าย › เลือกรายการ › สร้างชุดจำหน่าย</div>'}</div>`;
@@ -689,8 +700,9 @@ function viewBatchOne(x) {
 function confirmIn(btn, msg) { if (btn._armed) return true; btn._armed = true; const t = btn.textContent; btn.textContent = msg; setTimeout(() => { btn._armed = false; btn.textContent = t; }, 4000); return false; }
 function groupStd(its) { const m = {}; its.forEach(a => { (m[a.std] = m[a.std] || { std: a.std, n: 0 }).n++; }); return Object.values(m); }
 function addItems(x, upd) {
-  const cand = active().filter(a => a.rec.pick);
-  openSheet(`<div class="hd"><h3 id="dTitle">เพิ่มรายการเข้า${esc(x.name)}</h3>${X}</div><p class="muted" style="margin:0">รายการที่ระบบแนะนำจำหน่ายและยังไม่อยู่ในชุดใด</p>
+  const cat0 = (x.codes.map(c => AM[c]).find(Boolean) || {}).cat;
+  const cand = active().filter(a => a.rec.pick && !a.batch && (!cat0 || a.cat === cat0));
+  openSheet(`<div class="hd"><h3 id="dTitle">เพิ่มรายการเข้า${esc(x.name)}</h3>${X}</div><p class="muted" style="margin:0">เฉพาะประเภท “${esc(cat0 || '')}” (จำหน่ายต้องแยกประเภท) ที่ยังไม่อยู่ในชุดใด</p>
     <div class="list">${cand.length ? cand.map(a => `<label class="ri"><input type="checkbox" value="${a.code}"><span class="t"><b>${esc(a.std)}</b><small>${a.code} · ${yearTH(a.acq)}</small></span>${condTag(a)}</label>`).join('') : '<div class="empty">ไม่มีรายการแนะนำเพิ่ม — ตรวจสภาพเพิ่มก่อน หรือเลือกจากทะเบียน</div>'}</div>
     <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn p" id="addOk">เพิ่มที่เลือก</button></div>`);
   $('#addOk').onclick = () => { const c = $$('#sheet input:checked').map(i => i.value); closeSheet(); if (c.length) upd({ codes: x.codes.concat(c) }, 'เพิ่ม ' + c.length + ' รายการแล้ว'); };
