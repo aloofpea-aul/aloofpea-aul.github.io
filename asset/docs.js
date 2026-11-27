@@ -26,7 +26,7 @@
   /* ---------- ค่าตั้งต้นของสำนักงาน (แก้ได้ในหน้าตั้งค่า) ---------- */
   const OFFICE = {
     orgFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', org: 'กฟส.อ่าวลึก', orgS: 'กฟส.อล',
-    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', ext: 'มท 5307.60/กฟส.อล',
+    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', orgAbbr: 'กฟส.อล.', ext: 'มท 5307.60/กฟส.อล',
     addr1: '125 หมู่ที่ 1 ถนนเพชรเกษม ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', province: 'จังหวัดกระบี่',
     tel: '075-666920', contact: 'คุณมานศักดิ์ พิลาฤทธิ์',
     mgrName: 'นายชญานิน  งานสัมพันธฤทธิ์', mgrShort: 'ผจก.กฟส.อ่าวลึก', mgrFull: 'ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก',
@@ -102,10 +102,11 @@
   }
   const sign = (name, lines, gap) => `<div class="sg keep"${gap ? ` style="margin-top:${gap}"` : ''}>(${nm([name])})${[].concat(lines).filter(Boolean).map(l => '<br>' + esc(l)).join('')}</div>`;
   const letterSign = (name, lines) => `<div class="sg keep" style="margin-top:12pt">ขอแสดงความนับถือ<br><br><br><br>(${nm([name])})${lines.filter(Boolean).map(l => '<br>' + esc(l)).join('')}</div>`;
-  const DOTS = '.............................................';
+  const DOTS = '<span>..............................</span><span class="d2">...............</span>';
+  let AB = x => x;
   function cmteSign(cm) {
     cm = cm || [];
-    const p = i => `(${nm(cm[i])})  ${esc((cm[i] || [])[1] || '')}`;
+    const p = i => `(${nm(cm[i])})  ${esc(AB((cm[i] || [])[1] || ''))}`;
     return `<div class="keep cm"><p class="c">ลงชื่อ${DOTS}ประธานกรรมการ</p><p class="c">${p(0)}</p><div class="two"><div>ลงชื่อ${DOTS}กรรมการ<br>${p(1)}</div><div>ลงชื่อ${DOTS}กรรมการ<br>${p(2)}</div></div></div>`;
   }
   const tail = (sig, en) => `<div class="tail keep"><div class="tsig">${sig}</div>${en || ''}</div>`;
@@ -143,6 +144,7 @@
   /* ---------- เอกสารแต่ละฉบับ (คืนค่าเป็นรายการหน้า) ---------- */
   function docs(id, ctx) {
     const s = Object.assign({}, OFFICE, ctx.s || {}), d = defaults(ctx), its = ctx.items, n = its.length;
+    AB = x => String(x).split(s.org).join(s.orgAbbr || s.org).replace(/\.\.+/g, '.');
     const cost = sum(its, 'cost'), bv = sum(its, 'bv'), midT = midTotal(its, d);
     const by = d.bidders || [], buyer = by[+d.buyer || 0] || {}, off = its.reduce((t, a) => t + offerOf(a, d), 0);
     const vat = Math.round(off * 7) / 100, gross = Math.round((off + vat) * 100) / 100;
@@ -154,7 +156,7 @@
         B(`${from} ได้สำรวจทรัพย์สินที่ครอบครอง ประเภท${kind} อุปกรณ์ดังกล่าวเป็นรุ่นเก่าล้าสมัย มีอายุการใช้งานมากกว่า ${minAge} ปี และเกิดการชำรุดไม่สามารถใช้งานได้ เพื่อให้การบริหารทรัพย์สินประเภท${kind}นี้เกิดประโยชน์สูงสุด จึงเห็นควรขออนุมัติจำหน่ายทรัพย์สินออกจากบัญชี จำนวน ${n} รายการ มูลค่าที่ได้มาเป็นเงินรวม ${amt(cost)} ตามรายการ ดังนี้.-`) +
         tbl1(H('เลขที่ผลิตภัณฑ์', '2.6cm') + H('วันที่ได้มา', '2.6cm'), a => `<td class="c">${esc(a.serial) || '-'}</td><td class="c">${dmy(a.acq)}</td>`) +
         B(`ดังนั้น เพื่อให้การจำหน่ายทรัพย์สินเป็นไปด้วยความถูกต้องตาม${esc(s.rule)} ข้อ 2.1 จึงขออนุมัติแต่งตั้งคณะกรรมการสอบสวนหาข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชี ดังนี้.-`, 'margin-top:10pt') +
-        (d.cmFact || []).map((c, i) => `<div class="cl"><span>${i + 1}. ${nm(c)}</span><span>ตำแหน่ง  ${esc(c[1] || '')}</span><span>${i ? 'คณะกรรมการ' : 'ประธานกรรมการ'}</span></div>`).join('') +
+        (d.cmFact || []).map((c, i) => `<div class="cl"><span>${i + 1}. ${nm(c)}</span><span>ตำแหน่ง  ${esc(AB(c[1] || ''))}</span><span>${i ? 'คณะกรรมการ' : 'ประธานกรรมการ'}</span></div>`).join('') +
         B('จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และแจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป', 'margin-top:10pt') +
         tail(sign(d.prop[0], d.prop[1], '36pt'), endorse({ to: `${esc(String(d.prop[1] || '').replace(/กฟส\..*$/, ''))}, คณะกรรมการฯ`, lines: ['- อนุมัติ แจ้งส่วนที่เกี่ยวข้องดำเนินการต่อไป'], p: d.ap1 }))];
       case 'd2': return [memo({ from: 'คณะกรรมการสอบสวนหาข้อเท็จจริง', to: esc(s.mgrShort), no: '', date: thLong(d.date2), sub: 'รายงานผลการสอบสวนหาข้อเท็จจริงเพื่อจำหน่ายทรัพย์สินออกจากบัญชี', dear: esc(s.mgrShort) }) +
@@ -276,17 +278,17 @@
 .dp .lg{width:3.05cm;display:block;margin-bottom:5pt}.dp .lgc{width:2.75cm;display:block;margin:0 auto 3pt}
 .dp .mh{display:grid;grid-template-columns:1.5cm 6.5cm 1.2cm 1fr}.dp .h2{display:grid;grid-template-columns:1.5cm 1fr}
 .dp .lh{display:grid;grid-template-columns:9.4cm 1fr}
-.dp .cl{display:grid;grid-template-columns:3.5cm 5cm 3.8cm 1fr}.dp .cl span:first-child{grid-column:2}
+.dp .cl{display:grid;grid-template-columns:5.4cm 5cm minmax(0,1fr);padding-left:2.25cm;white-space:nowrap}
 .dp table{border-collapse:collapse;width:100%;margin:4pt 0;font-size:16pt;line-height:18.1pt}
 .dp th,.dp td{border:.75pt solid #000;padding:1pt 1.4mm 0;vertical-align:top;font-weight:400}.dp th{font-weight:700;text-align:center;vertical-align:middle}.dp th.r{text-align:right}
 .dp thead{display:table-header-group}.dp tr{break-inside:avoid;page-break-inside:avoid}
 .dp .sg{margin-left:6.35cm;text-align:center}.dp .keep{break-inside:avoid;page-break-inside:avoid;padding-top:6pt}.dp p,.dp .h2,.dp .mh,.dp .cl{padding-top:.01pt}
 .dp .cm{margin-top:26pt}.dp .two{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:26pt}
-.dp .en{width:8.2cm;margin-top:14pt;border:.75pt solid #000;padding:3pt 8pt 6pt}
-.dp .tail.cmp,.cmp .tail{display:grid;grid-template-columns:7.9cm minmax(0,1fr);column-gap:.3cm;align-items:start}
+.dp .en{width:max-content;min-width:8.2cm;max-width:10.5cm;margin-top:14pt;border:.75pt solid #000;padding:3pt 8pt 6pt}
+.dp .tail.cmp,.cmp .tail{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:.3cm;align-items:start}
 .cmp .tail .en{grid-column:1;grid-row:1;width:auto;margin-top:6pt}.cmp .tail .tsig{grid-column:2;grid-row:1}
 .cmp .tail .sg{margin-left:0}.cmp .tail .cm{margin-top:6pt}.cmp .tail .two{grid-template-columns:1fr;margin-top:14pt;row-gap:14pt}
-.cmp .fn{margin-top:10pt}
+.cmp .fn{margin-top:10pt}.cmp .tail .d2{display:none}.cmp .tail .en{max-width:8.6cm}
 .tight .in{margin-top:0!important}.tight .cm{margin-top:12pt}.tight .two{margin-top:12pt}.tight .keep{padding-top:2pt}.tight .en p.c[style]{margin-top:22pt!important}.tight .sg[style]{margin-top:20pt!important}.dp .j{text-align:justify;text-justify:inter-character}
 .dp .cb{text-indent:0;display:inline-block;width:10pt;height:10pt;border:1pt solid #000;margin-right:7pt;vertical-align:-1pt;position:relative}
 .dp .cb.on::after{content:'';position:absolute;left:2.5pt;top:-1pt;width:3.5pt;height:7.5pt;border:solid #000;border-width:0 1.6pt 1.6pt 0;transform:rotate(40deg)}

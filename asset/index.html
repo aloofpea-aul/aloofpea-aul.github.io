@@ -200,7 +200,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="docs.js?v=8"></script>
+<script src="docs.js?v=9"></script>
 <script>
 'use strict';
 const DONE = 11;   // ปิดชุดหลังครบ 10 ขั้นตามแบบฟอร์มจำหน่าย
@@ -841,7 +841,7 @@ function loadXLSX() {
 let PEND = null;
 const OFC = [['orgFull', 'ชื่อสำนักงานเต็ม'], ['org', 'ชื่อย่อ'], ['orgS', 'ชื่อย่อสั้น'], ['dept', 'หน่วยงานที่เสนอ (ย่อ)'], ['deptFull', 'ชื่อแผนกเต็ม'], ['prefix', 'เลขที่บันทึกภายใน (ส่วนหน้า)'], ['ext', 'เลขที่หนังสือภายนอก (ส่วนหน้า)'],
   ['addr1', 'ที่อยู่ บรรทัด 1'], ['addr2', 'ที่อยู่ บรรทัด 2'], ['province', 'จังหวัด'], ['tel', 'โทรศัพท์'], ['intTel', 'เบอร์ภายในท้ายบันทึก'], ['contact', 'ผู้ประสานงาน'], ['mgrName', 'ชื่อผู้จัดการ'], ['mgrShort', 'ตำแหน่งผู้จัดการ (ย่อ)'], ['mgrFull', 'ตำแหน่งผู้จัดการ (เต็ม)'],
-  ['head', 'หัวหน้าแผนก (ผู้เสนอ)'], ['headPos', 'ตำแหน่งหัวหน้าแผนก'], ['region', 'ส่งรายงานถึง (เขต)'], ['fwdPrice', 'ผู้เห็นชอบราคากลาง'], ['salePlace', 'สถานที่ขาย/รับซอง'], ['bank', 'บัญชีรับโอนเงิน'], ['rule', 'ระเบียบที่อ้าง'], ['deleg', 'คำสั่งมอบอำนาจ']];
+  ['head', 'หัวหน้าแผนก (ผู้เสนอ)'], ['headPos', 'ตำแหน่งหัวหน้าแผนก'], ['region', 'ส่งรายงานถึง (เขต)'], ['fwdPrice', 'ผู้เห็นชอบราคากลาง'], ['salePlace', 'สถานที่ขาย/รับซอง'], ['orgAbbr', 'ชื่อย่อในตำแหน่งกรรมการ'], ['bank', 'บัญชีรับโอนเงิน'], ['rule', 'ระเบียบที่อ้าง'], ['deleg', 'คำสั่งมอบอำนาจ']];
 function viewSet() {
   const adm = ADM(), s = DB.settings || DEF_SETTINGS, of = s.office || {}, dis = adm ? '' : ' disabled';
   let h = `<h2 class="t">ตั้งค่า</h2><p class="muted" style="margin:0">ทุกอย่างปรับได้ที่หน้านี้ ไม่ต้องแก้โค้ด${adm ? '' : ' · แก้ไขได้เฉพาะผู้ดูแลระบบ'}</p>`;
