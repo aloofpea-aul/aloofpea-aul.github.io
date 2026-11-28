@@ -26,7 +26,7 @@
   /* ---------- ค่าตั้งต้นของสำนักงาน (แก้ได้ในหน้าตั้งค่า) ---------- */
   const OFFICE = {
     orgFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', org: 'กฟส.อ่าวลึก', orgS: 'กฟส.อล',
-    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', orgAbbr: 'กฟส.อล.', ext: 'มท 5307.60/กฟส.อล',
+    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', orgAbbr: 'กฟส.อ่าวลึก', ext: 'มท 5307.60/กฟส.อล',
     addr1: '125 หมู่ที่ 1 ถนนเพชรเกษม ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', province: 'จังหวัดกระบี่',
     tel: '075-666920', contact: 'คุณมานศักดิ์ พิลาฤทธิ์',
     mgrName: 'นายชญานิน  งานสัมพันธฤทธิ์', mgrShort: 'ผจก.กฟส.อ่าวลึก', mgrFull: 'ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก',
@@ -284,7 +284,7 @@
 .dp thead{display:table-header-group}.dp tr{break-inside:avoid;page-break-inside:avoid}
 .dp .sg{margin-left:6.35cm;text-align:center}.dp .keep{break-inside:avoid;page-break-inside:avoid;padding-top:6pt}.dp p,.dp .h2,.dp .mh,.dp .cl{padding-top:.01pt}
 .dp .cm{margin-top:26pt}.dp .two{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:26pt}
-.dp .en{width:max-content;min-width:8.2cm;max-width:10.5cm;margin-top:14pt;border:.75pt solid #000;padding:3pt 8pt 6pt}
+.dp .en{width:max-content;min-width:8.2cm;max-width:10.5cm;margin-top:14pt;padding:0}
 .dp .tail.cmp,.cmp .tail{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:.3cm;align-items:start}
 .cmp .tail .en{grid-column:1;grid-row:1;width:auto;margin-top:6pt}.cmp .tail .tsig{grid-column:2;grid-row:1}
 .cmp .tail .sg{margin-left:0}.cmp .tail .cm{margin-top:6pt}.cmp .tail .two{grid-template-columns:1fr;margin-top:14pt;row-gap:14pt}
