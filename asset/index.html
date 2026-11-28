@@ -357,18 +357,38 @@ function build() {
     it.dmg = it.ev.find(e => e[2] === 'ชำรุด' && e[9] === 'เปิด') || null;
     it.valued = !it.disposed && it.real && it.bv > 1;
     if (it.valued) {
-      it.land = /^Z1[0-3]/.test(cls) || /ที่ดิน/.test(it.cat);
+      it.land = /^Z1[0-3]/.test(cls) || /^ที่ดิน/.test(it.cat);
       it.pct = it.cost ? Math.min(1, it.bv / it.cost) : 1;
-      if (!it.land && age != null) { it.depY = Math.max(0, it.cost - it.bv) / Math.max(age, 0.3); it.endY = it.depY > 0 ? YNOW + 543 + Math.floor((it.bv - 1) / it.depY) : null; }
     }
     it.rec = recOf(it);
     it.key = (code + ' ' + name + ' ' + std + ' ' + plate + ' ' + brand + ' ' + serial + ' ' + wbs + ' ' + it.owner + ' ' + it.ownerSap + ' ' + it.place).toLowerCase();
     return it;
   });
   AM = Object.fromEntries(A.map(a => [a.code, a]));
+  lifeFromSap();
   A.sort((a, b) => (a.acq || '9999').localeCompare(b.acq || '9999') || a.code.localeCompare(b.code));
   const nOpen = DB.batches.filter(x => x.step < DONE).length, d = $('#bdot');
   d.hidden = !nOpen; d.textContent = nOpen;
+}
+/* ปีที่จะเหลือ 1 บาท: กฟภ. คิดค่าเสื่อมแบบเส้นตรง อายุใช้งานเป็นปีเต็มตามประเภท (5, 10, 13, 20, 25, 33 ปี …)
+   ย้อนหาอายุใช้งานจากราคาทุน มูลค่าตามบัญชี และอายุ ณ วันที่ข้อมูล SAP แล้วปัดเข้าอายุมาตรฐาน · ครบ 1 บาท = วันที่ได้มา + อายุใช้งาน */
+const STDL = [3, 5, 8, 10, 13, 15, 20, 25, 33, 40];
+function lifeFromSap() {
+  const basis = DB.lastImport && DB.lastImport.at ? new Date(DB.lastImport.at).getTime() : Date.now();
+  const snap = L => STDL.reduce((b, x) => Math.abs(x - L) < Math.abs(b - L) ? x : b);
+  const V = A.filter(a => a.valued && !a.land && a.acq), mode = {};
+  V.forEach(a => {
+    const ag = (basis - new Date(a.acq + 'T00:00:00').getTime()) / (365.25 * 864e5);
+    a.lifeOwn = a.cost > a.bv && ag > 0.1 ? snap(ag * a.cost / (a.cost - a.bv)) : null; a.ageB = ag;
+    if (a.lifeOwn && ag >= 1) { const k = a.cls.slice(0, 5), m = mode[k] = mode[k] || {}; m[a.lifeOwn] = (m[a.lifeOwn] || 0) + 1; }
+  });
+  const best = k => { const m = mode[k]; return m ? +Object.keys(m).sort((x, y) => m[y] - m[x])[0] : null; };
+  V.forEach(a => {
+    const L = a.ageB >= 1 && a.lifeOwn ? a.lifeOwn : best(a.cls.slice(0, 5)) || a.lifeOwn;
+    if (!L) return;
+    const e = new Date(a.acq + 'T00:00:00'); e.setFullYear(e.getFullYear() + L);
+    a.lifeY = L; a.endD = e; a.endY = e.getFullYear() + 543; a.depY = Math.min(a.bv - 1, a.cost / L);
+  });
 }
 function recOf(it) {
   if (it.disposed) return { t: 'จำหน่ายแล้ว', c: 'g', pick: false };
@@ -557,7 +577,7 @@ function showAsset(code) {
     <div style="margin-top:8px">${kv('รหัสสินทรัพย์', '<span class="mono">' + a.code + '</span>')}${kv('ชื่อใน SAP', a.std !== a.name ? esc(a.name) : '')}${kv('ประเภท', esc(a.cls) + ' · ' + esc(a.cat))}${kv('WBS/PEA.No', esc(a.wbs))}${kv('ทะเบียนรถ', esc(a.plate))}${kv('ยี่ห้อ', esc(a.brand))}${kv('หมายเลขผู้ผลิต', esc(a.serial))}
     ${kv('วันที่ได้มา', acqTH(a.acq) + (a.age != null ? ' · อายุ ' + Math.floor(a.age) + ' ปี' : ''))}${kv('ราคาทุน', baht(a.cost) + ' บาท')}${a.ownerSap !== a.owner ? kv('ผู้ดูแลใน SAP', esc(a.ownerSap || '–')) : ''}${kv(a.real ? 'มูลค่าตามบัญชี (SAP)' : 'มูลค่าคงเหลือ (ประมาณ)', a.bv == null ? '–' : (a.real ? '' : '≈ ') + baht(a.bv) + ' บาท' + (a.real ? '' : ' · อายุใช้งาน ' + a.life + ' ปี'))}${kv('หมวด (SAP)', esc(a.cat))}${kv('รหัสพนักงานผู้ดูแล', esc(a.emp))}${kv('ผู้ดูแล', esc(a.owner))}${kv('สถานะ SAP', esc(a.sap) + (a.inLatest ? '' : ' · <b style="color:var(--warn)">ไม่อยู่ในไฟล์ล่าสุด</b>'))}${kv('ชุดจำหน่าย', a.batch ? esc(a.batch.name) : a.disposed ? 'จำหน่ายแล้ว' : '')}</div>
     <div class="row" style="margin-top:14px">${a.disposed ? '' : '<button class="btn p" id="doIns">ตรวจนับ / ถ่ายรูป</button>'}<button class="btn" id="doQr">พิมพ์ป้าย QR</button>${a.batch ? '<button class="btn" id="goB">เปิดชุดจำหน่าย</button>' : ''}</div>
-    ${a.valued ? `<div class="flbl">มูลค่า</div><div class="vbar"><i style="width:${Math.max(2, a.pct * 100)}%"></i></div><p class="muted" style="margin:2px 0">คงเหลือ ${baht(a.bv)} จาก ${baht(a.cost)} บาท (${Math.round(a.pct * 100)}%)${a.land ? ' · ที่ดินไม่เสื่อมราคา' : a.depY ? ' · ลดปีละประมาณ ' + baht(a.depY, 0) + ' บาท · ครบ 1 บาทราวปี ' + a.endY : ''}</p>` : ''}
+    ${a.valued ? `<div class="flbl">มูลค่า</div><div class="vbar"><i style="width:${Math.max(2, a.pct * 100)}%"></i></div><p class="muted" style="margin:2px 0">คงเหลือ ${baht(a.bv)} จาก ${baht(a.cost)} บาท (${Math.round(a.pct * 100)}%)${a.land ? ' · ที่ดินไม่เสื่อมราคา' : a.depY ? ' · อายุใช้งานตามบัญชี ' + a.lifeY + ' ปี · ลดปีละประมาณ ' + baht(a.depY, 0) + ' บาท · ครบ 1 บาท ' + a.endD.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' }) : ''}</p>` : ''}
     ${a.repN ? `<p class="muted" style="margin:4px 0">ค่าซ่อมสะสม ${baht(a.repCost)} บาท (${a.repN} ครั้ง)${a.cost && a.repCost > a.cost / 2 ? ' · <b style="color:var(--red)">เกินครึ่งของราคาทุน ควรพิจารณาซื้อใหม่</b>' : ''}</p>` : ''}
     ${a.disposed ? '' : `<div class="acts">${Object.keys(EVT).map(t => `<button class="btn" data-ev="${t}">${EVT[t][1]}</button>`).join('')}</div>`}
     <div class="flbl">ประวัติ ซ่อม · โอน · ยืม · ชำรุด</div><div>${evList(a)}</div>
@@ -711,7 +731,7 @@ function viewVal() {
   let h = `<h2 class="t">ทรัพย์สินที่ยังมีมูลค่า</h2>
     <p class="muted" style="margin:2px 0 10px">มูลค่าตามบัญชีมากกว่า 1 บาท จากทะเบียน SAP ล่าสุด · ดูแล ซ่อม โอน ยืม และวางแผนซื้อทดแทน</p>
     <div class="chips">${[['', 'ทุกคน · ' + all.length], ...own.map(o => [o, o + ' · ' + all.filter(a => a.owner === o).length]), ['-', 'ไม่ระบุ · ' + all.filter(a => !a.owner).length]].map(o => `<button class="chip${ST.valOwn === o[0] ? ' on' : ''}" data-vo="${esc(o[0])}">${esc(o[1])}</button>`).join('')}</div>
-    <div class="mt2" style="margin-top:12px"><div><small>มูลค่าคงเหลือรวม</small><b>${mb(sumBv)}</b><small>${V.length} รายการ · ทุน ${mb(V.reduce((t, a) => t + a.cost, 0))}</small></div><div><small>ค่าเสื่อมต่อปี (ประมาณ)</small><b>${mb(dep)}</b><small>คิดแบบเส้นตรงจากอายุที่ใช้มา</small></div></div>
+    <div class="mt2" style="margin-top:12px"><div><small>มูลค่าคงเหลือรวม</small><b>${mb(sumBv)}</b><small>${V.length} รายการ · ทุน ${mb(V.reduce((t, a) => t + a.cost, 0))}</small></div><div><small>ค่าเสื่อมต่อปี (ประมาณ)</small><b>${mb(dep)}</b><small>เส้นตรงตามอายุใช้งานของแต่ละประเภท</small></div></div>
     <div class="card" style="margin-top:12px"><b>ปีที่จะเหลือ 1 บาท · วางแผนซื้อทดแทน</b><div class="fc">${yrs.map(y => fb('y:' + y, inY(y), inY(y).length, y)).join('')}${fb('y:0', later, later.length, (Y0 + 8) + '+')}</div><p class="muted hint">แตะแถบปีเพื่อดูรายการ · "ทุน" คือราคาทุนเดิม ใช้ประมาณงบซื้อทดแทน</p></div>
     <div class="chips" style="margin-top:12px">${F.map(f => `<button class="chip${ST.valF === f[0] ? ' on' : ''}" data-vf="${f[0]}"${f[3].length ? '' : ' style="opacity:.55"'}>${f[1]} · ${f[3].length}</button>`).join('')}</div>
     <div class="row" style="justify-content:space-between;margin-top:12px"><b>${esc(title)} · ${L.length} รายการ</b>${ST.valF ? '<button class="btn sm" id="vfX">ดูทั้งหมด</button>' : ''}</div>`;
@@ -727,7 +747,7 @@ function valRow(a) {
   const ph = ph1(a.ins) ? `<img class="th" src="${esc(photoUrl(ph1(a.ins), 120))}" alt="" loading="lazy">` : '';
   const tags = [a.dmg ? '<span class="tag r">แจ้งชำรุด</span>' : '', a.openRep ? '<span class="tag b">ส่งซ่อม</span>' : '', a.loan ? `<span class="tag w">${a.loanLate ? 'เลยกำหนดคืน' : 'ให้ยืม'}</span>` : '', !a.owner ? '<span class="tag w">ไม่มีผู้รับผิดชอบ</span>' : ''].join('');
   return `<div class="ri">${ph}<div class="age"><b>${Math.round(a.pct * 100)}</b><span>%</span></div><button class="t" data-open="${a.code}"><b>${esc(a.std)}${a.plate ? ' · ' + esc(a.plate) : ''}</b><small>${a.code} · ${esc(a.owner || 'ยังไม่มีผู้รับผิดชอบ')}${a.place ? ' · ' + esc(a.place) : ''}</small>
-    <div class="vbar"><i style="width:${Math.max(2, a.pct * 100)}%"></i></div><small>คงเหลือ ${baht(a.bv, 0)} จาก ${baht(a.cost, 0)} บาท (${Math.round(a.pct * 100)}%)${a.land ? ' · ที่ดินไม่เสื่อมราคา' : a.endY ? ' · ครบ 1 บาทราวปี ' + a.endY : ''}</small></button>
+    <div class="vbar"><i style="width:${Math.max(2, a.pct * 100)}%"></i></div><small>คงเหลือ ${baht(a.bv, 0)} จาก ${baht(a.cost, 0)} บาท (${Math.round(a.pct * 100)}%)${a.land ? ' · ที่ดินไม่เสื่อมราคา' : a.endD ? ' · ครบ 1 บาท ' + a.endD.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' }) : ''}</small></button>
     <div class="v">${a.ins && a.insY ? condTag(a) : '<span class="tag o">ยังไม่ตรวจปีนี้</span>'}${tags}</div></div>`;
 }
 function evForm(code, type) {
