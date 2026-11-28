@@ -389,6 +389,28 @@
         <div class="fav-grid" id="favGrid"></div>
       </section>
 
+      <!-- ส่วนตัว — เห็นเฉพาะเจ้าของ (โปรแกรมขาย/บัญชีลูกค้า แยกจากงานสาขา) -->
+      <section class="grp" id="ownSec">
+        <div class="grp-h">ส่วนตัว · เห็นเฉพาะพี่</div>
+        <div class="grp-box">
+          <a class="app-tile" href="apps/admin.html" data-short="Aloof Apps" data-kw="aloof apps ผู้ดูแล โค้ดเชิญ ลูกค้า ผู้ทดสอบ ขาย บัญชี">
+            <span class="icon">🛡</span>
+            <span class="app-txt">
+              <span class="name">ศูนย์ควบคุม Aloof Apps</span>
+              <span class="desc">ออกโค้ดเชิญ · ดูผู้ทดสอบ/ลูกค้า · ต่ออายุ · ปิดบัญชี</span>
+            </span>
+          </a>
+          <a class="app-tile" href="apps/" data-short="หน้าลูกค้า" data-kw="aloof apps หน้าลูกค้า สมัคร เข้าสู่ระบบ">
+            <span class="icon">🚀</span>
+            <span class="app-txt">
+              <span class="name">หน้าเข้าใช้ของลูกค้า</span>
+              <span class="desc">หน้าที่ผู้ทดสอบ/ลูกค้าเห็น (สมัครด้วยโค้ดเชิญ)</span>
+            </span>
+          </a>
+        </div>
+      </section>
+      <script>(function(){var s=document.getElementById('ownSec');try{var n=(localStorage.getItem('pea_aoluek_username')||'').replace(/\s+/g,' ').trim(),a=JSON.parse(localStorage.getItem('pea_hub_auth')||'null');if(n==='มานศักดิ์ พิลาฤทธิ์'&&a&&a.role==='admin'&&a.name&&a.name.replace(/\s+/g,' ').trim()===n)return}catch(e){}if(s)s.remove()})();</script>
+
       <section class="grp">
         <div class="grp-h">งานระบบจำหน่าย</div>
         <div class="grp-box">

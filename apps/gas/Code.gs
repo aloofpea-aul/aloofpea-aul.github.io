@@ -5,6 +5,7 @@
  * ผู้ดูแล: เข้าด้วยบัญชีศูนย์รวมงานที่เป็นแอดมิน (ไม่ต้องตั้งรหัสใหม่)
  */
 const HUB_URL = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
+const OWNER = 'มานศักดิ์ พิลาฤทธิ์';   // ผู้ดูแลได้เฉพาะเจ้าของ (ชื่อบัญชีศูนย์รวมงาน)
 const SESSION_DAYS = 60, ADMIN_HOURS = 12, MAX_FAIL = 5, LOCK_MIN = 15;
 const TYPES = ['tester', 'trial', 'paid', 'staff'];
 const APPS = { english: { name: 'English Step', langs: ['en', 'zh', 'ja'] } };
@@ -165,7 +166,7 @@ function adminLogin_(b) {
   let r = null;
   try { r = JSON.parse(UrlFetchApp.fetch(HUB_URL, { method: 'post', contentType: 'text/plain', muteHttpExceptions: true, payload: JSON.stringify({ action: 'whoAmI', changedBy: name, changedByPassword: pass }) }).getContentText()); }
   catch (e) { return { ok: false, msg: 'ตรวจสอบกับศูนย์รวมงานไม่ได้' }; }
-  if (!r || r.role !== 'admin') return { ok: false, msg: 'ต้องเป็นแอดมินของศูนย์รวมงานเท่านั้น' };
+  if (!r || r.role !== 'admin' || name.replace(/\s+/g, ' ') !== OWNER) return { ok: false, msg: 'หน้านี้สำหรับเจ้าของระบบเท่านั้น' };
   log('admin:' + name, 'adminLogin', '');
   return { ok: true, token: newSession_('admin:' + name, 'admin', ADMIN_HOURS), name: name };
 }
