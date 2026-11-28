@@ -144,6 +144,12 @@ select.s{min-height:48px;border:1.5px solid #cfc9d8;border-radius:12px;padding:0
 .loc{display:flex;gap:8px;align-items:flex-start;background:var(--peaBg);border-radius:12px;padding:10px 12px;margin:8px 0}
 .loc b{color:var(--pea2);flex:none}.loc a{color:var(--pea2);font-weight:600;white-space:nowrap}
 .hint{font-size:12.5px;margin:6px 0 0}
+.vbar{height:10px;background:#eee8f2;border-radius:6px;overflow:hidden;margin:4px 0}.vbar i{display:block;height:100%;background:var(--green);border-radius:6px}
+.fc{display:grid;gap:6px;margin-top:8px}.fc button{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:8px;border:0;background:none;padding:2px 0;text-align:left;font-size:13.5px}
+.fc button i{display:block;height:14px;border-radius:4px;background:var(--pea);min-width:4px}.fc button.on b{color:var(--pea)}.fc button.on i{background:var(--gold)}
+.mt2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mt2>div{background:var(--peaBg);border-radius:14px;padding:12px}.mt2 small{color:var(--mute);display:block}.mt2 b{font-size:21px}
+.ev{border-top:1px solid #f0edf4;padding:8px 0;font-size:14px}.ev .h{display:flex;justify-content:space-between;gap:8px}.ev small{color:var(--mute)}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
 .pl{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;font-size:15px}
 .pl small{color:var(--mute)}
 .photo img{width:110px;height:110px;object-fit:cover;border-radius:12px;background:#eee}
@@ -209,6 +215,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
   <nav class="bnav" aria-label="เมนูหลัก">
     <button data-t="home" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>หน้าแรก</button>
     <button data-t="list"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>ทะเบียน</button>
+    <button data-t="val"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>มีมูลค่า</button>
     <button data-t="check"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M7 12h10"/></svg>ตรวจสภาพ</button>
     <button data-t="batch"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>ชุดจำหน่าย<span class="dot" id="bdot" hidden></span></button>
     <button data-t="set"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>ตั้งค่า</button>
@@ -240,10 +247,10 @@ const DEF_SETTINGS = { life: { Z51: 5, Z53: 5, Z55: 5, Z57: 5, Z58: 5, Z60: 5, Z
   memo: { org: 'กฟส.อ่าวลึก แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', to: 'ผจก.กฟส.อ่าวลึก', proposer: '', proposerTitle: 'หผปร.กฟส.อ่าวลึก' } };
 
 /* ---------------- สถานะ ---------------- */
-let DB = { assets: [], ins: {}, batches: [], settings: DEF_SETTINGS, me: { name: cred().user, admin: false }, lastImport: null };
+let DB = { assets: [], ins: {}, ev: [], batches: [], settings: DEF_SETTINGS, me: { name: cred().user, admin: false }, lastImport: null };
 let A = [], AM = {};       // รายการที่คำนวณแล้ว · ตามรหัส
 const SEL = new Set();
-const ST = { tab: 'home', q: '', cat: '', owner: '', mode: 'all', lim: 60, chkOwner: '', chkMode: 'todo', chkPlace: null, batch: null };
+const ST = { tab: 'home', q: '', cat: '', owner: '', mode: 'all', lim: 60, chkOwner: '', chkMode: 'todo', chkPlace: null, valF: '', valOwn: '', batch: null };
 
 /* ---------------- หลังบ้าน ---------------- */
 async function api(action, payload) {
@@ -262,14 +269,14 @@ async function api(action, payload) {
 }
 /* โหมดทดลอง: เก็บในเครื่องนี้ กติกาเดียวกับหลังบ้าน */
 function localApi(action, b) {
-  const L = JSON.parse(lsr('asset_local') || 'null') || { assets: [], ins: [], batches: [], settings: DEF_SETTINGS, lastImport: null };
+  const L = JSON.parse(lsr('asset_local') || 'null') || { assets: [], ins: [], ev: [], batches: [], settings: DEF_SETTINGS, lastImport: null }; L.ev = L.ev || [];
   const me = cred().user || 'ทดลอง', now = new Date().toISOString(), save = () => { try { lsr('asset_local', JSON.stringify(L)); } catch (e) {} };
   const ok = o => Promise.resolve(Object.assign({ ok: true }, o || {}));
   const bad = m => Promise.reject(new Error(m));
   const latest = () => { const m = {}; L.ins.forEach(r => m[r[0]] = r); return Object.values(m); };
   const busy = ex => { const m = {}; L.batches.forEach(x => { if (x.step < DONE && x.id !== ex) x.codes.forEach(c => m[c] = x.id); }); return m; };
   const has = c => L.assets.some(a => a[0] === c);
-  if (action === 'bootstrap') return ok({ assets: L.assets, inspections: latest(), batches: L.batches, settings: L.settings, lastImport: L.lastImport, me: { name: me, admin: true }, local: true });
+  if (action === 'bootstrap') return ok({ assets: L.assets, inspections: latest(), events: L.ev, batches: L.batches, settings: L.settings, lastImport: L.lastImport, me: { name: me, admin: true }, local: true });
   if (action === 'history') return ok({ history: L.ins.filter(r => r[0] === b.code).reverse() });
   if (action === 'importRegister') {
     const idx = {}; L.assets.forEach((a, i) => { idx[a[0]] = i; a[11] = false; });
@@ -277,6 +284,17 @@ function localApi(action, b) {
     b.rows.forEach(r => { const rec = r.slice(0, 11).concat([true, '', r[11] === '' || r[11] == null ? null : +r[11], r[13] || '', r[14] || '']); if (r[0] in idx) { rec[12] = L.assets[idx[r[0]]][12]; L.assets[idx[r[0]]] = rec; } else { L.assets.push(rec); added++; } });
     L.lastImport = { at: now, by: me, file: b.file, rows: b.rows.length }; save();
     return ok({ rows: b.rows.length, added, gone: L.assets.filter(a => !a[11] && !a[12]).length });
+  }
+  if (action === 'addEvent') {
+    if (!has(b.code)) return bad('ไม่พบรหัสสินทรัพย์นี้ในทะเบียน');
+    if (b.type === 'โอน' && !b.to && !b.place) return bad('ระบุผู้รับผิดชอบใหม่หรือที่ตั้งใหม่');
+    if (b.type === 'ยืม' && !b.to) return bad('ระบุผู้ยืม/หน่วยงาน');
+    const e = ['E' + Date.now(), b.code, b.type, b.date || TODAY(), b.detail || '', +b.amount > 0 ? +b.amount : null, b.to || '', b.place || '', b.due || '', b.type === 'โอน' ? 'ปิด' : 'เปิด', b.type === 'โอน' ? now : '', '', me, now];
+    L.ev.push(e); save(); return ok({ event: e });
+  }
+  if (action === 'closeEvent') {
+    const e = L.ev.find(x => x[0] === b.id); if (!e || e[9] !== 'เปิด') return bad('ไม่พบรายการที่เปิดอยู่');
+    if (+b.amount > 0) e[5] = +b.amount; e[9] = 'ปิด'; e[10] = b.date || now; e[11] = b.result || ''; save(); return ok({ event: e });
   }
   if (action === 'inspect') {
     if (!has(b.code)) return bad('ไม่พบรหัสสินทรัพย์นี้ในทะเบียน');
@@ -315,7 +333,8 @@ function catOf(cls) { const p = String(cls).slice(0, 3); const c = CATS.find(x =
 function lifeOf(cls) { const L = (DB.settings && DB.settings.life) || DEF_SETTINGS.life; return Number(L[String(cls).slice(0, 3)]) || 5; }
 function stdName(n) { const al = (DB.settings && DB.settings.aliases) || {}; return al[n] || n; }
 function build() {
-  const now = Date.now(), open = {};
+  const now = Date.now(), open = {}, EV = {}, td = TODAY();
+  (DB.ev || []).forEach(e => (EV[e[1]] = EV[e[1]] || []).push(e));
   DB.batches.forEach(x => { if (x.step < DONE) x.codes.forEach(c => open[c] = x); });
   A = DB.assets.map(r => {
     const [code, cls, wbs, name, plate, brand, serial, acq, cost, owner, sap, inLatest, disposed, sapBv, sapCat, emp] = r;
@@ -328,8 +347,22 @@ function build() {
     const lease = /สิ้นสุดสัญญา/.test(name + ' ' + plate);
     const it = { code, cls, wbs, name, std, plate, brand, serial, acq, cost: Number(cost) || 0, owner, sap, inLatest: inLatest !== false, disposed: disposed || '', cat: sapCat || catOf(cls), age, life, full, real, bv: real ? bv : full ? Math.min(1, cost || 1) : bv, emp: emp || '', ins, lease, batch: open[code] || null };
     it.place = ins ? String(ins[6] || '') : ''; it.gps = ins ? String(ins[7] || '') : ''; it.insY = !!(ins && ins[5] && new Date(ins[5]).getFullYear() === YNOW);
+    it.ev = (EV[code] || []).slice().sort((x, y) => (y[3] + y[13]).localeCompare(x[3] + x[13]));
+    it.ownerSap = owner;
+    const tr = it.ev.find(e => e[2] === 'โอน' && e[6]); if (tr) it.owner = tr[6];
+    const tp = it.ev.find(e => e[2] === 'โอน' && e[7]); if (tp && (!ins || tp[13] >= String(ins[5] || ''))) it.place = tp[7];
+    const rep = it.ev.filter(e => e[2] === 'ซ่อม');
+    it.repN = rep.length; it.repCost = rep.reduce((t, e) => t + (e[5] || 0), 0); it.openRep = rep.find(e => e[9] === 'เปิด') || null;
+    it.loan = it.ev.find(e => e[2] === 'ยืม' && e[9] === 'เปิด') || null; it.loanLate = !!(it.loan && it.loan[8] && it.loan[8] < td);
+    it.dmg = it.ev.find(e => e[2] === 'ชำรุด' && e[9] === 'เปิด') || null;
+    it.valued = !it.disposed && it.real && it.bv > 1;
+    if (it.valued) {
+      it.land = /^Z1[0-3]/.test(cls) || /ที่ดิน/.test(it.cat);
+      it.pct = it.cost ? Math.min(1, it.bv / it.cost) : 1;
+      if (!it.land && age != null) { it.depY = Math.max(0, it.cost - it.bv) / Math.max(age, 0.3); it.endY = it.depY > 0 ? YNOW + 543 + Math.floor((it.bv - 1) / it.depY) : null; }
+    }
     it.rec = recOf(it);
-    it.key = (code + ' ' + name + ' ' + std + ' ' + plate + ' ' + brand + ' ' + serial + ' ' + wbs + ' ' + owner + ' ' + it.place).toLowerCase();
+    it.key = (code + ' ' + name + ' ' + std + ' ' + plate + ' ' + brand + ' ' + serial + ' ' + wbs + ' ' + it.owner + ' ' + it.ownerSap + ' ' + it.place).toLowerCase();
     return it;
   });
   AM = Object.fromEntries(A.map(a => [a.code, a]));
@@ -340,6 +373,7 @@ function build() {
 function recOf(it) {
   if (it.disposed) return { t: 'จำหน่ายแล้ว', c: 'g', pick: false };
   if (it.batch) return { t: 'อยู่ใน' + it.batch.name, c: 'p', pick: false };
+  if (it.dmg) return { t: it.valued ? 'ชำรุด · ยังมีมูลค่า' : 'เสนอจำหน่าย', c: 'r', pick: true };
   const c = it.ins && it.ins[1];
   if (c === 'ชำรุด' || c === 'เสื่อมสภาพ' || c === 'เลิกใช้') return { t: 'เสนอจำหน่าย', c: 'r', pick: true };
   if (c === 'ไม่พบ') return { t: 'สอบข้อเท็จจริง', c: 'w', pick: true };
@@ -357,6 +391,9 @@ const phArr = ins => ins && ins[3] ? String(ins[3]).split(',') : [];
 const ph1 = ins => phArr(ins).find(Boolean) || '';
 const PSLOT = ['ตัวทรัพย์สิน', 'ป้ายรหัส/หมายเลข', 'จุดที่วาง'];
 const YNOW = new Date().getFullYear();
+const TODAY = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const EVT = { 'ซ่อม': ['b', 'ส่งซ่อม'], 'โอน': ['p', 'โอน/ย้าย'], 'ยืม': ['w', 'ให้ยืม'], 'ชำรุด': ['r', 'แจ้งชำรุด'] };
+const mb = n => (n / 1e6).toLocaleString('th-TH', { maximumFractionDigits: 2 }) + ' ล.';
 const daysAgo = d => Math.max(0, Math.floor((Date.now() - new Date(d)) / 864e5));
 const mapUrl = g => 'https://www.google.com/maps?q=' + encodeURIComponent(g);
 const bigUrl = id => id.startsWith('local:') ? photoUrl(id) : 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view';
@@ -407,6 +444,10 @@ function viewHome() {
   if (noLoc) al.push(['w', `ตรวจแล้วแต่ยังไม่ระบุที่ตั้ง ${noLoc} รายการ`, 'ระบุไว้จะหาของเจอง่าย — กดเพื่อดูตามที่ตั้ง', '#noloc']);
   const noPh = act.filter(a => a.insY && a.ins[1] !== 'ไม่พบ' && !ph1(a.ins)).length;
   if (noPh) al.push(['b', `ตรวจแล้วแต่ยังไม่มีรูป ${noPh} รายการ`, 'ถ่ายรูปไว้เป็นหลักฐานว่ามีอยู่จริง', '#noloc']);
+  const late = act.filter(a => a.loanLate).length;
+  if (late) al.push(['r', `ยืมเลยกำหนดคืน ${late} รายการ`, 'ติดตามคืนจากผู้ยืม', '#loan']);
+  const dmgV = act.filter(a => a.valued && a.dmg).length;
+  if (dmgV) al.push(['r', `ชำรุดก่อนหมดมูลค่า ${dmgV} รายการ`, 'ต้องจำหน่ายแบบมีมูลค่าคงเหลือ หรือส่งซ่อม', '#dmg']);
   const gone = act.filter(a => !a.inLatest).length;
   if (gone) al.push(['w', `${gone} รายการไม่อยู่ในไฟล์ SAP ล่าสุด`, 'อาจถูกโอน/ลงจ่ายไปแล้ว ตรวจสอบกับบัญชี', '#gone']);
   const groups = {}; act.forEach(a => { if (a.std !== a.name) groups[a.std] = (groups[a.std] || 0) + 1; });
@@ -420,7 +461,7 @@ function viewHome() {
   $$('[data-go]').forEach(b => b.onclick = () => { if (b.dataset.go === 'pick') { ST.mode = 'pick'; go('list'); } else go(b.dataset.go); });
   $$('[data-al]').forEach(b => b.onclick = () => {
     const k = b.dataset.al;
-    if (k === '#set') go('set'); else if (k === '#nf') { ST.mode = 'pick'; ST.q = ''; go('list'); } else if (k === '#gone') { ST.mode = 'gone'; go('list'); } else if (k === '#noloc') { ST.chkMode = 'place'; ST.chkPlace = null; go('check'); } else if (k) showAsset(k);
+    if (k === '#set') go('set'); else if (k === '#nf') { ST.mode = 'pick'; ST.q = ''; go('list'); } else if (k === '#gone') { ST.mode = 'gone'; go('list'); } else if (k === '#loan' || k === '#dmg') { ST.valF = k.slice(1); ST.valOwn = ''; go('val'); } else if (k === '#noloc') { ST.chkMode = 'place'; ST.chkPlace = null; go('check'); } else if (k) showAsset(k);
   });
 }
 
@@ -514,9 +555,16 @@ function showAsset(code) {
     <div class="row">${condTag(a)}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span>${a.full ? '<span class="tag w">ครบอายุ</span>' : ''}${a.ins && !a.insY ? `<span class="tag o">ยังไม่ตรวจปี ${YNOW + 543}</span>` : ''}</div>${ph}${loc}
     ${a.ins ? `<p class="muted" style="margin:6px 0">ตรวจล่าสุด ${thDate(a.ins[5])} (${daysAgo(a.ins[5]) ? daysAgo(a.ins[5]) + ' วันก่อน' : 'วันนี้'}) โดย ${esc(a.ins[4])}${a.ins[2] ? ' · “' + esc(a.ins[2]) + '”' : ''}</p>` : ''}
     <div style="margin-top:8px">${kv('รหัสสินทรัพย์', '<span class="mono">' + a.code + '</span>')}${kv('ชื่อใน SAP', a.std !== a.name ? esc(a.name) : '')}${kv('ประเภท', esc(a.cls) + ' · ' + esc(a.cat))}${kv('WBS/PEA.No', esc(a.wbs))}${kv('ทะเบียนรถ', esc(a.plate))}${kv('ยี่ห้อ', esc(a.brand))}${kv('หมายเลขผู้ผลิต', esc(a.serial))}
-    ${kv('วันที่ได้มา', acqTH(a.acq) + (a.age != null ? ' · อายุ ' + Math.floor(a.age) + ' ปี' : ''))}${kv('ราคาทุน', baht(a.cost) + ' บาท')}${kv(a.real ? 'มูลค่าตามบัญชี (SAP)' : 'มูลค่าคงเหลือ (ประมาณ)', a.bv == null ? '–' : (a.real ? '' : '≈ ') + baht(a.bv) + ' บาท' + (a.real ? '' : ' · อายุใช้งาน ' + a.life + ' ปี'))}${kv('หมวด (SAP)', esc(a.cat))}${kv('รหัสพนักงานผู้ดูแล', esc(a.emp))}${kv('ผู้ดูแล', esc(a.owner))}${kv('สถานะ SAP', esc(a.sap) + (a.inLatest ? '' : ' · <b style="color:var(--warn)">ไม่อยู่ในไฟล์ล่าสุด</b>'))}${kv('ชุดจำหน่าย', a.batch ? esc(a.batch.name) : a.disposed ? 'จำหน่ายแล้ว' : '')}</div>
+    ${kv('วันที่ได้มา', acqTH(a.acq) + (a.age != null ? ' · อายุ ' + Math.floor(a.age) + ' ปี' : ''))}${kv('ราคาทุน', baht(a.cost) + ' บาท')}${a.ownerSap !== a.owner ? kv('ผู้ดูแลใน SAP', esc(a.ownerSap || '–')) : ''}${kv(a.real ? 'มูลค่าตามบัญชี (SAP)' : 'มูลค่าคงเหลือ (ประมาณ)', a.bv == null ? '–' : (a.real ? '' : '≈ ') + baht(a.bv) + ' บาท' + (a.real ? '' : ' · อายุใช้งาน ' + a.life + ' ปี'))}${kv('หมวด (SAP)', esc(a.cat))}${kv('รหัสพนักงานผู้ดูแล', esc(a.emp))}${kv('ผู้ดูแล', esc(a.owner))}${kv('สถานะ SAP', esc(a.sap) + (a.inLatest ? '' : ' · <b style="color:var(--warn)">ไม่อยู่ในไฟล์ล่าสุด</b>'))}${kv('ชุดจำหน่าย', a.batch ? esc(a.batch.name) : a.disposed ? 'จำหน่ายแล้ว' : '')}</div>
     <div class="row" style="margin-top:14px">${a.disposed ? '' : '<button class="btn p" id="doIns">ตรวจนับ / ถ่ายรูป</button>'}<button class="btn" id="doQr">พิมพ์ป้าย QR</button>${a.batch ? '<button class="btn" id="goB">เปิดชุดจำหน่าย</button>' : ''}</div>
+    ${a.valued ? `<div class="flbl">มูลค่า</div><div class="vbar"><i style="width:${Math.max(2, a.pct * 100)}%"></i></div><p class="muted" style="margin:2px 0">คงเหลือ ${baht(a.bv)} จาก ${baht(a.cost)} บาท (${Math.round(a.pct * 100)}%)${a.land ? ' · ที่ดินไม่เสื่อมราคา' : a.depY ? ' · ลดปีละประมาณ ' + baht(a.depY, 0) + ' บาท · ครบ 1 บาทราวปี ' + a.endY : ''}</p>` : ''}
+    ${a.repN ? `<p class="muted" style="margin:4px 0">ค่าซ่อมสะสม ${baht(a.repCost)} บาท (${a.repN} ครั้ง)${a.cost && a.repCost > a.cost / 2 ? ' · <b style="color:var(--red)">เกินครึ่งของราคาทุน ควรพิจารณาซื้อใหม่</b>' : ''}</p>` : ''}
+    ${a.disposed ? '' : `<div class="acts">${Object.keys(EVT).map(t => `<button class="btn" data-ev="${t}">${EVT[t][1]}</button>`).join('')}</div>`}
+    <div class="flbl">ประวัติ ซ่อม · โอน · ยืม · ชำรุด</div><div>${evList(a)}</div>
     <div class="flbl">ประวัติการตรวจ</div><div id="hist" class="muted" style="margin-top:4px"><span class="spin k"></span></div>`);
+  $$('[data-ev]').forEach(b => b.onclick = () => evForm(code, b.dataset.ev));
+  $$('[data-close]').forEach(b => b.onclick = () => closeForm(b.dataset.close));
+  $$('[data-tp]').forEach(b => b.onclick = () => printTransfer(b.dataset.tp));
   const di = $('#doIns'); if (di) di.onclick = () => inspectForm(code);
   $('#doQr').onclick = () => printQR([a]);
   const gb = $('#goB'); if (gb) gb.onclick = () => { closeSheet(); ST.batch = a.batch.id; go('batch'); };
@@ -635,6 +683,130 @@ function printCount(list, owner, place) {
     `<div class="sig">${['ประธานกรรมการ', 'กรรมการ', 'กรรมการ'].map(r => `<div>ลงชื่อ .......................................<br>(.......................................)<br>${r}</div>`).join('')}</div>`);
 }
 
+/* ---------------- ทรัพย์สินที่ยังมีมูลค่า ---------------- */
+const BIGV = 50000;   // มูลค่าคงเหลือตั้งแต่นี้ขึ้นไปถือว่า "มูลค่าสูง" ต้องตรวจนับทุกปี
+function valFilters(V) {
+  return [
+    ['noown', 'ยังไม่มีผู้รับผิดชอบ', 'w', V.filter(a => !a.owner)],
+    ['dmg', 'ชำรุดก่อนหมดมูลค่า', 'r', V.filter(a => a.dmg || (a.insY && /ชำรุด|เสื่อมสภาพ|เลิกใช้|ไม่พบ/.test(a.ins[1])))],
+    ['rep', 'ส่งซ่อมค้างอยู่', 'b', V.filter(a => a.openRep)],
+    ['loan', 'ให้ยืมออกไป', 'w', V.filter(a => a.loan)],
+    ['noins', 'มูลค่าสูง ยังไม่ตรวจปีนี้', 'p', V.filter(a => a.bv >= BIGV && !a.insY)],
+    ['repHi', 'ค่าซ่อมเกินครึ่งของราคาทุน', 'r', V.filter(a => a.cost && a.repCost > a.cost / 2)]
+  ];
+}
+function viewVal() {
+  const all = A.filter(a => a.valued), own = [...new Set(all.map(a => a.owner).filter(Boolean))].sort();
+  const V = all.filter(a => !ST.valOwn || (ST.valOwn === '-' ? !a.owner : a.owner === ST.valOwn));
+  const sumBv = V.reduce((t, a) => t + a.bv, 0), dep = V.reduce((t, a) => t + (a.depY || 0), 0);
+  const Y0 = YNOW + 543, yrs = []; for (let y = Y0; y < Y0 + 8; y++) yrs.push(y);
+  const inY = y => V.filter(a => a.endY != null && (y === Y0 ? a.endY <= Y0 : a.endY === y));
+  const later = V.filter(a => a.endY == null || a.endY >= Y0 + 8), mx = Math.max(1, ...yrs.map(y => inY(y).length), later.length);
+  const F = valFilters(V);
+  let L = V, title = 'ทั้งหมด';
+  if (ST.valF.startsWith('y:')) { const y = +ST.valF.slice(2); L = y ? inY(y) : later; title = y ? 'จะเหลือ 1 บาทในปี ' + y + (y === Y0 ? ' (หรือก่อนหน้า)' : '') : 'หลังปี ' + (Y0 + 7) + ' / ไม่เสื่อมราคา'; }
+  else if (ST.valF) { const f = F.find(x => x[0] === ST.valF); if (f) { L = f[3]; title = f[1]; } }
+  L = L.slice().sort((a, b) => b.bv - a.bv);
+  const fb = (k, y, n, lab) => `<button data-vf="${k}" class="${ST.valF === k ? 'on' : ''}"><b>${lab}</b><i style="width:${n / mx * 100}%"></i><span class="muted">${n} ชิ้น · ทุน ${mb(y.reduce((t, a) => t + a.cost, 0))}</span></button>`;
+  let h = `<h2 class="t">ทรัพย์สินที่ยังมีมูลค่า</h2>
+    <p class="muted" style="margin:2px 0 10px">มูลค่าตามบัญชีมากกว่า 1 บาท จากทะเบียน SAP ล่าสุด · ดูแล ซ่อม โอน ยืม และวางแผนซื้อทดแทน</p>
+    <div class="chips">${[['', 'ทุกคน · ' + all.length], ...own.map(o => [o, o + ' · ' + all.filter(a => a.owner === o).length]), ['-', 'ไม่ระบุ · ' + all.filter(a => !a.owner).length]].map(o => `<button class="chip${ST.valOwn === o[0] ? ' on' : ''}" data-vo="${esc(o[0])}">${esc(o[1])}</button>`).join('')}</div>
+    <div class="mt2" style="margin-top:12px"><div><small>มูลค่าคงเหลือรวม</small><b>${mb(sumBv)}</b><small>${V.length} รายการ · ทุน ${mb(V.reduce((t, a) => t + a.cost, 0))}</small></div><div><small>ค่าเสื่อมต่อปี (ประมาณ)</small><b>${mb(dep)}</b><small>คิดแบบเส้นตรงจากอายุที่ใช้มา</small></div></div>
+    <div class="card" style="margin-top:12px"><b>ปีที่จะเหลือ 1 บาท · วางแผนซื้อทดแทน</b><div class="fc">${yrs.map(y => fb('y:' + y, inY(y), inY(y).length, y)).join('')}${fb('y:0', later, later.length, (Y0 + 8) + '+')}</div><p class="muted hint">แตะแถบปีเพื่อดูรายการ · "ทุน" คือราคาทุนเดิม ใช้ประมาณงบซื้อทดแทน</p></div>
+    <div class="chips" style="margin-top:12px">${F.map(f => `<button class="chip${ST.valF === f[0] ? ' on' : ''}" data-vf="${f[0]}"${f[3].length ? '' : ' style="opacity:.55"'}>${f[1]} · ${f[3].length}</button>`).join('')}</div>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><b>${esc(title)} · ${L.length} รายการ</b>${ST.valF ? '<button class="btn sm" id="vfX">ดูทั้งหมด</button>' : ''}</div>`;
+  h += L.length ? `<div class="list">${L.slice(0, ST.lim).map(valRow).join('')}</div>` + (L.length > ST.lim ? `<div style="text-align:center;margin-top:12px"><button class="btn" id="more">แสดงเพิ่ม (${L.length - ST.lim})</button></div>` : '') : '<div class="empty">ไม่มีรายการ</div>';
+  $('#view').innerHTML = h;
+  $$('[data-vo]').forEach(b => b.onclick = () => { ST.valOwn = b.dataset.vo; ST.lim = 60; viewVal(); });
+  $$('[data-vf]').forEach(b => b.onclick = () => { ST.valF = ST.valF === b.dataset.vf ? '' : b.dataset.vf; ST.lim = 60; viewVal(); });
+  const x = $('#vfX'); if (x) x.onclick = () => { ST.valF = ''; viewVal(); };
+  $$('[data-open]').forEach(b => b.onclick = () => showAsset(b.dataset.open));
+  const m = $('#more'); if (m) m.onclick = () => { ST.lim += 120; viewVal(); };
+}
+function valRow(a) {
+  const ph = ph1(a.ins) ? `<img class="th" src="${esc(photoUrl(ph1(a.ins), 120))}" alt="" loading="lazy">` : '';
+  const tags = [a.dmg ? '<span class="tag r">แจ้งชำรุด</span>' : '', a.openRep ? '<span class="tag b">ส่งซ่อม</span>' : '', a.loan ? `<span class="tag w">${a.loanLate ? 'เลยกำหนดคืน' : 'ให้ยืม'}</span>` : '', !a.owner ? '<span class="tag w">ไม่มีผู้รับผิดชอบ</span>' : ''].join('');
+  return `<div class="ri">${ph}<div class="age"><b>${Math.round(a.pct * 100)}</b><span>%</span></div><button class="t" data-open="${a.code}"><b>${esc(a.std)}${a.plate ? ' · ' + esc(a.plate) : ''}</b><small>${a.code} · ${esc(a.owner || 'ยังไม่มีผู้รับผิดชอบ')}${a.place ? ' · ' + esc(a.place) : ''}</small>
+    <div class="vbar"><i style="width:${Math.max(2, a.pct * 100)}%"></i></div><small>คงเหลือ ${baht(a.bv, 0)} จาก ${baht(a.cost, 0)} บาท (${Math.round(a.pct * 100)}%)${a.land ? ' · ที่ดินไม่เสื่อมราคา' : a.endY ? ' · ครบ 1 บาทราวปี ' + a.endY : ''}</small></button>
+    <div class="v">${a.ins && a.insY ? condTag(a) : '<span class="tag o">ยังไม่ตรวจปีนี้</span>'}${tags}</div></div>`;
+}
+function evForm(code, type) {
+  const a = AM[code]; if (!a) return;
+  const own = [...new Set(A.map(x => x.owner).filter(Boolean))], pl = places().map(p => p[0]);
+  const dl = (id, arr) => `<datalist id="${id}">${arr.map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+  const f = (lab, inner) => `<label class="f"><span>${lab}</span>${inner}</label>`;
+  const body = {
+    'ซ่อม': f('วันที่ส่งซ่อม', `<input type="date" id="eD" value="${TODAY()}">`) + f('อาการ / สิ่งที่ซ่อม', '<textarea id="eT" rows="2" placeholder="เช่น ปั๊มไฮดรอลิกรั่ว"></textarea>') + f('ร้าน / ผู้ซ่อม', '<input id="eTo" maxlength="120" placeholder="เช่น อู่ ช.การช่าง กระบี่">') + f('ค่าซ่อมโดยประมาณ (บาท) ไม่ทราบเว้นไว้ก่อน', '<input id="eA" type="number" inputmode="decimal" min="0" step="0.01">'),
+    'โอน': `<p class="muted" style="margin:0">ปัจจุบัน: ${esc(a.owner || 'ยังไม่มีผู้รับผิดชอบ')}${a.place ? ' · ' + esc(a.place) : ''}</p>` + f('วันที่โอน', `<input type="date" id="eD" value="${TODAY()}">`) + f('ผู้รับผิดชอบใหม่ (ว่าง = คนเดิม)', `<input id="eTo" list="oL" maxlength="120" autocomplete="off">${dl('oL', own)}`) + f('ที่ตั้งใหม่ (ว่าง = ที่เดิม)', `<input id="eP" list="pL" maxlength="120" autocomplete="off">${dl('pL', pl)}`) + f('เหตุผล / หมายเหตุ', '<textarea id="eT" rows="2" placeholder="เช่น ย้ายไปประจำรถ บ.1234"></textarea>'),
+    'ยืม': f('วันที่ยืม', `<input type="date" id="eD" value="${TODAY()}">`) + f('ผู้ยืม / หน่วยงาน', `<input id="eTo" maxlength="120" placeholder="เช่น กฟส.เหนือคลอง · นายสมชาย">`) + f('กำหนดคืน', '<input type="date" id="eDue">') + f('วัตถุประสงค์', '<textarea id="eT" rows="2"></textarea>'),
+    'ชำรุด': f('วันที่พบ', `<input type="date" id="eD" value="${TODAY()}">`) + f('อาการชำรุด', '<textarea id="eT" rows="3" placeholder="เช่น มอเตอร์ไหม้ ซ่อมไม่คุ้ม"></textarea>') + (a.valued ? `<div class="note w" style="margin-top:10px">ชิ้นนี้ยังมีมูลค่าตามบัญชี ${baht(a.bv)} บาท ถ้าจำหน่าย ต้องแสดงมูลค่าคงเหลือในบันทึกขออนุมัติ และ ผบง. ต้องตัดบัญชีส่วนต่าง</div>` : '')
+  }[type];
+  openSheet(`<div class="hd"><h3 id="dTitle">${EVT[type][1]}<br><span style="font-weight:500;font-size:15px">${esc(a.std)}</span></h3>${X}</div><p class="muted" style="margin:0">${a.code}</p>${body}
+    <div id="err" style="color:var(--red);font-size:13.5px;min-height:20px;margin-top:6px"></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="cn">ยกเลิก</button><button class="btn p" id="sv">บันทึก</button></div>`);
+  $('#cn').onclick = () => showAsset(code);
+  const v = id => { const e = $('#' + id); return e ? e.value.trim() : ''; };
+  $('#sv').onclick = async () => {
+    const p = { code, type, date: v('eD'), detail: v('eT'), to: v('eTo'), place: v('eP'), due: v('eDue'), amount: v('eA') };
+    if (type === 'โอน' && !p.to && !p.place) return $('#err').textContent = 'ระบุผู้รับผิดชอบใหม่หรือที่ตั้งใหม่อย่างน้อย 1 ช่อง';
+    if (type === 'ยืม' && !p.to) return $('#err').textContent = 'ระบุผู้ยืมหรือหน่วยงาน';
+    if ((type === 'ซ่อม' || type === 'ชำรุด') && !p.detail) return $('#err').textContent = 'ระบุอาการก่อน';
+    if (type === 'โอน' && p.to === a.owner && !p.place) return $('#err').textContent = 'ผู้รับผิดชอบใหม่เป็นคนเดิม';
+    const b = $('#sv'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก…';
+    try {
+      const r = await api('addEvent', p); DB.ev.push(r.event); build(); render(); toast('บันทึกแล้ว'); showAsset(code);
+      if (type === 'โอน') setTimeout(() => toast('พิมพ์ใบโอนได้จากประวัติในหน้านี้', 3500), 1200);
+    } catch (e) { $('#err').textContent = e.message; b.disabled = false; b.textContent = 'บันทึก'; }
+  };
+}
+function closeForm(id) {
+  const e = DB.ev.find(x => x[0] === id); if (!e) return; const a = AM[e[1]];
+  const opt = { 'ซ่อม': ['ซ่อมเสร็จ ใช้งานได้', 'ซ่อมไม่ได้ / ไม่คุ้มซ่อม'], 'ยืม': ['คืนแล้ว สภาพปกติ', 'คืนแล้ว มีความเสียหาย'], 'ชำรุด': ['ซ่อมแล้ว กลับมาใช้ได้', 'ส่งเข้าชุดจำหน่าย', 'ยกเลิก (แจ้งผิด)'] }[e[2]];
+  let res = '';
+  openSheet(`<div class="hd"><h3 id="dTitle">ปิดงาน${EVT[e[2]][1]}<br><span style="font-weight:500;font-size:15px">${esc(a ? a.std : e[1])}</span></h3>${X}</div>
+    <p class="muted" style="margin:0">${thDate(e[3])} · ${esc(e[4] || e[6])}</p>
+    <div class="flbl">ผล</div><div class="conds" style="grid-template-columns:1fr">${opt.map(o => `<button type="button" data-r="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+    <label class="f"><span>วันที่</span><input type="date" id="cD" value="${TODAY()}"></label>
+    ${e[2] === 'ซ่อม' ? `<label class="f"><span>ค่าซ่อมจริง (บาท)</span><input id="cA" type="number" inputmode="decimal" min="0" step="0.01" value="${e[5] || ''}"></label>` : ''}
+    <div id="err" style="color:var(--red);font-size:13.5px;min-height:20px;margin-top:6px"></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="cn">ยกเลิก</button><button class="btn p" id="sv">ปิดงาน</button></div>`);
+  $$('[data-r]').forEach(b => b.onclick = () => { res = b.dataset.r; $$('[data-r]').forEach(x => x.classList.toggle('on', x === b)); $('#err').textContent = ''; });
+  $('#cn').onclick = () => showAsset(e[1]);
+  $('#sv').onclick = async () => {
+    if (!res) return $('#err').textContent = 'เลือกผลก่อน';
+    const b = $('#sv'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก…';
+    try {
+      const r = await api('closeEvent', { id, result: res, date: $('#cD').value, amount: $('#cA') ? $('#cA').value : '' });
+      DB.ev[DB.ev.findIndex(x => x[0] === id)] = r.event; build(); render(); toast('ปิดงานแล้ว'); showAsset(e[1]);
+    } catch (er) { $('#err').textContent = er.message; b.disabled = false; b.textContent = 'ปิดงาน'; }
+  };
+}
+function evList(a) {
+  if (!a.ev.length) return '<p class="muted" style="margin:4px 0">ยังไม่มีประวัติ ซ่อม / โอน / ยืม / ชำรุด</p>';
+  return a.ev.map(e => { const [c, t] = EVT[e[2]] || ['g', e[2]];
+    const what = e[2] === 'โอน' ? [e[6] ? 'ผู้รับผิดชอบ → ' + e[6] : '', e[7] ? 'ที่ตั้ง → ' + e[7] : ''].filter(Boolean).join(' · ') : e[2] === 'ยืม' ? e[6] + (e[8] ? ' · กำหนดคืน ' + thDate(e[8]) : '') : e[6];
+    return `<div class="ev"><div class="h"><span><span class="tag ${c}">${t}</span> ${thDate(e[3])}</span><span>${e[5] ? baht(e[5]) + ' บาท' : ''}</span></div>
+      <div>${esc(what)}${e[4] ? (what ? ' · ' : '') + esc(e[4]) : ''}</div>
+      <small>${e[9] === 'เปิด' ? '<b style="color:var(--warn)">ยังไม่ปิดงาน</b>' : e[11] ? 'ผล: ' + esc(e[11]) + ' · ' + thDate(e[10]) : ''} · บันทึกโดย ${esc(e[12])}</small>
+      ${e[9] === 'เปิด' ? `<div style="margin-top:6px"><button class="btn sm" data-close="${e[0]}">ปิดงาน${t}</button></div>` : ''}${e[2] === 'โอน' ? `<div style="margin-top:6px"><button class="btn sm" data-tp="${e[0]}">พิมพ์ใบโอน</button></div>` : ''}</div>`; }).join('');
+}
+function printTransfer(id) {
+  const e = DB.ev.find(x => x[0] === id), a = e && AM[e[1]]; if (!a) return;
+  const prev = a.ev.filter(x => x[2] === 'โอน' && x[6] && x[13] < e[13])[0], from = prev ? prev[6] : a.ownerSap;
+  const prevP = a.ev.filter(x => x[2] === 'โอน' && x[7] && x[13] < e[13])[0];
+  const org = (DB.settings.memo || DEF_SETTINGS.memo).org;
+  printDoc('ใบโอนย้ายทรัพย์สิน ' + a.code, `<style>table{font-size:16pt}.sig{margin-top:40pt}</style><h1>ใบโอนย้ายทรัพย์สิน</h1><p class="c" style="margin:0 0 10pt">${esc(org)}</p>
+    <p style="text-align:right;margin:0 0 8pt">วันที่ ${new Date(e[3] + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    <table><thead><tr><th>รหัสสินทรัพย์</th><th>รายการ</th><th>วันที่ได้มา</th><th>ราคาทุน (บาท)</th><th>มูลค่าตามบัญชี (บาท)</th></tr></thead>
+    <tbody><tr><td class="c">${a.code}</td><td>${esc(a.std)}${a.plate ? ' ' + esc(a.plate) : ''}${a.serial ? '<br>S/N ' + esc(a.serial) : ''}</td><td class="c">${acqTH(a.acq)}</td><td class="r">${baht(a.cost)}</td><td class="r">${a.real ? baht(a.bv) : '–'}</td></tr></tbody></table>
+    <table style="margin-top:10pt"><tbody>
+      <tr><td style="width:28%">ผู้รับผิดชอบเดิม</td><td>${esc(from || '–')}</td></tr>
+      <tr><td>ผู้รับผิดชอบใหม่</td><td>${esc(e[6] || from || '–')}</td></tr>
+      <tr><td>ที่ตั้งเดิม</td><td>${esc((prevP ? prevP[7] : (a.ins && a.ins[6])) || '–')}</td></tr>
+      <tr><td>ที่ตั้งใหม่</td><td>${esc(e[7] || 'ที่เดิม')}</td></tr>
+      <tr><td>เหตุผล</td><td>${esc(e[4] || '–')}</td></tr></tbody></table>
+    <div class="sig">${['ผู้โอน', 'ผู้รับโอน', 'ผู้อนุมัติ'].map(r => `<div>ลงชื่อ .......................................<br>(.......................................)<br>${r}</div>`).join('')}</div>`, true);
+}
 /* ---------------- ชุดจำหน่าย ---------------- */
 function viewBatch() {
   const x = ST.batch && DB.batches.find(b => b.id === ST.batch);
@@ -996,7 +1168,7 @@ function drawPend() {
 }
 
 /* ---------------- โหลด / สลับหน้า ---------------- */
-function render() { ({ list: viewList, check: viewCheck, batch: viewBatch, set: viewSet }[ST.tab] || viewHome)(); }
+function render() { ({ list: viewList, val: viewVal, check: viewCheck, batch: viewBatch, set: viewSet }[ST.tab] || viewHome)(); }
 function go(t) { ST.tab = t; $$('.bnav button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); render(); $('#main').scrollTop = 0; }
 $$('.bnav button').forEach(b => b.onclick = () => { if (b.dataset.t === 'batch' && ST.tab === 'batch') ST.batch = null; if (b.dataset.t === 'list' && ST.tab !== 'list') { ST.mode = 'all'; } go(b.dataset.t); });
 function setSub() {
@@ -1005,7 +1177,7 @@ function setSub() {
 }
 function apply(j) {
   const ins = {}; (j.inspections || []).forEach(r => ins[r[0]] = r);
-  DB = { assets: j.assets || [], ins, batches: j.batches || [], settings: j.settings || DEF_SETTINGS, me: j.me || {}, lastImport: j.lastImport || null };
+  DB = { assets: j.assets || [], ins, ev: j.events || [], batches: j.batches || [], settings: j.settings || DEF_SETTINGS, me: j.me || {}, lastImport: j.lastImport || null };
   build(); setSub();
 }
 let FIRST = true;

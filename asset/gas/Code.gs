@@ -18,12 +18,14 @@
 const SPREADSHEET_ID = '';   // ว่าง = ใช้ชีตที่ setup สร้าง (Script Properties › ASSET_SHEET_ID)
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '2.2';
+const VERSION = '2.3';
 const DONE = 11;   // ขั้นที่ 11 = ปิดชุด (ครบ 10 ขั้นตามแบบฟอร์มจำหน่าย)
 
 const AST = { name: 'ทรัพย์สิน', labels: ['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลขผู้ผลิต', 'วันที่ได้มา', 'ราคาทุน', 'ผู้ดูแล', 'สถานะ SAP', 'อยู่ในไฟล์ล่าสุด', 'จำหน่ายแล้ว (ชุด)', 'นำเข้าเมื่อ', 'มูลค่าตามบัญชี', 'ค่าเสื่อมสะสม', 'หมวด (SAP)', 'รหัสพนักงาน'] };
 const INS = { name: 'ผลตรวจสภาพ', labels: ['รหัสสินทรัพย์', 'สภาพ', 'หมายเหตุ', 'รหัสรูป', 'ผู้ตรวจ', 'ตรวจเมื่อ', 'ที่ตั้ง', 'พิกัด GPS'] };
 const BAT = { name: 'ชุดจำหน่าย', labels: ['รหัสชุด', 'ชื่อชุด', 'ขั้น', 'รายการ (JSON)', 'กรรมการ (JSON)', 'เลขที่หนังสือ', 'ซื้อทดแทน (JSON)', 'บันทึกขั้น (JSON)', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ', 'ข้อมูลเอกสาร (JSON)'] };
+const EVT = { name: 'ประวัติใช้งาน', labels: ['รหัส', 'รหัสสินทรัพย์', 'ประเภท', 'วันที่', 'รายละเอียด', 'จำนวนเงิน', 'ผู้รับผิดชอบ/ผู้ยืม/ผู้ซ่อม', 'ที่ตั้งใหม่', 'กำหนดคืน', 'สถานะ', 'ปิดเมื่อ', 'ผลการปิด', 'ผู้บันทึก', 'บันทึกเมื่อ'] };
+const EVTYPES = ['ซ่อม', 'โอน', 'ยืม', 'ชำรุด'];
 const IMP = { name: 'ประวัตินำเข้า', labels: ['วันเวลา', 'ผู้นำเข้า', 'ไฟล์', 'จำนวนรายการ', 'ใหม่', 'หายจากไฟล์'] };
 const SETS = { name: 'ตั้งค่า', labels: ['รายการ', 'ค่า (JSON)'] };
 
@@ -78,6 +80,37 @@ function doPost(e) {
 }
 
 const ACTIONS = {
+  /** บันทึกเหตุการณ์ของทรัพย์สิน: ซ่อม · โอน (เปลี่ยนผู้รับผิดชอบ/ที่ตั้ง) · ยืม · ชำรุด — ผู้ใช้ทุกคนบันทึกได้ */
+  addEvent: function (b, me) {
+    const code = String(b.code || '');
+    if (!assetExists_(code)) throw err_('bad', 'ไม่พบรหัสสินทรัพย์นี้ในทะเบียน');
+    if (EVTYPES.indexOf(b.type) < 0) throw err_('bad', 'ประเภทไม่ถูกต้อง');
+    const to = clean_(b.to).slice(0, 120), place = clean_(b.place).slice(0, 120);
+    if (b.type === 'โอน' && !to && !place) throw err_('bad', 'ระบุผู้รับผิดชอบใหม่หรือที่ตั้งใหม่');
+    if (b.type === 'ยืม' && !to) throw err_('bad', 'ระบุผู้ยืม/หน่วยงาน');
+    const now = new Date(), id = 'E' + Utilities.formatDate(now, TZ, 'yyMMddHHmmss') + Math.floor(Math.random() * 90 + 10);
+    const amt = Number(b.amount); 
+    const rec = [id, code, b.type, date_(b.date) || Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), clean_(b.detail), isFinite(amt) && amt > 0 ? Math.round(amt * 100) / 100 : '',
+      to, place, date_(b.due), b.type === 'โอน' ? 'ปิด' : 'เปิด', b.type === 'โอน' ? now : '', '', me.name, now];
+    const sh = sheet_(EVT), row = sh.getLastRow() + 1;
+    sh.getRange(row, 1, 1, 4).setNumberFormat('@'); sh.getRange(row, 9).setNumberFormat('@');
+    sh.getRange(row, 1, 1, rec.length).setValues([rec]);
+    return { event: evOut_(rec) };
+  },
+  /** ปิดงาน: ซ่อมเสร็จ / คืนแล้ว / ปิดเรื่องชำรุด */
+  closeEvent: function (b, me) {
+    const sh = sheet_(EVT), n = sh.getLastRow(); if (n < 2) throw err_('bad', 'ไม่พบรายการ');
+    const ids = sh.getRange(2, 1, n - 1, 1).getValues(), i = ids.findIndex(function (r) { return String(r[0]) === String(b.id); });
+    if (i < 0) throw err_('bad', 'ไม่พบรายการ');
+    const r = sh.getRange(i + 2, 1, 1, EVT.labels.length).getValues()[0];
+    if (r[9] !== 'เปิด') throw err_('bad', 'รายการนี้ปิดไปแล้ว');
+    const amt = Number(b.amount);
+    if (isFinite(amt) && amt > 0) r[5] = Math.round(amt * 100) / 100;
+    r[9] = 'ปิด'; r[10] = date_(b.date) ? new Date(date_(b.date) + 'T12:00:00+07:00') : new Date(); r[11] = clean_(b.result).slice(0, 200);
+    r[12] = r[12] + (String(r[12]).indexOf(me.name) < 0 ? ' / ' + me.name : '');
+    sh.getRange(i + 2, 1, 1, r.length).setValues([r]);
+    return { event: evOut_(r) };
+  },
   /** นำเข้าทะเบียนจาก SAP — rows = [[รหัส, ประเภท, WBS, รายละเอียด, ทะเบียนรถ, ยี่ห้อ, หมายเลข, วันที่ได้มา yyyy-mm-dd, ราคาทุน, ผู้ดูแล, สถานะ SAP, มูลค่าตามบัญชี, ค่าเสื่อมสะสม, หมวด, รหัสพนักงาน]]
    *  รายการเดิมอัปเดตตามไฟล์ · รายการใหม่เพิ่ม · รายการที่ไม่อยู่ในไฟล์ไม่ลบ แต่ทำเครื่องหมาย "ไม่อยู่ในไฟล์ล่าสุด" · ผลตรวจเดิมอยู่ครบ */
   importRegister: function (b, me) {
@@ -224,9 +257,12 @@ function bootstrap_(me) {
       (r[14] === '' || r[14] == null) ? null : Number(r[14]), String(r[16] || ''), String(r[17] || '')];
   });
   const imp = sheet_(IMP), iv = imp.getLastRow() > 1 ? imp.getRange(imp.getLastRow(), 1, 1, IMP.labels.length).getValues()[0] : null;
-  return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, assets: assets, inspections: latestIns_(),
+  return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, assets: assets, inspections: latestIns_(), events: events_(),
     batches: batches_(), settings: settings_(), lastImport: iv ? { at: iso_(iv[0]), by: String(iv[1]), file: String(iv[2]), rows: iv[3] } : null };
 }
+function evOut_(r) { return [String(r[0]), String(r[1]), String(r[2]), date_(r[3]), String(r[4] || ''), r[5] === '' ? null : Number(r[5]), String(r[6] || ''), String(r[7] || ''), date_(r[8]), String(r[9]), iso_(r[10]), String(r[11] || ''), String(r[12] || ''), iso_(r[13])]; }
+function events_() { const sh = sheet_(EVT); if (sh.getLastRow() < 2) return []; return sh.getRange(2, 1, sh.getLastRow() - 1, EVT.labels.length).getValues().filter(function (r) { return r[0]; }).map(evOut_); }
+function assetExists_(code) { const sh = sheet_(AST); if (!code || sh.getLastRow() < 2) return false; return sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().some(function (r) { return String(r[0]) === code; }); }
 function insOut_(r) { return [String(r[0]), String(r[1]), String(r[2] || ''), String(r[3] || ''), String(r[4] || ''), iso_(r[5]), String(r[6] || ''), String(r[7] || '')]; }
 function latestIns_() {
   const sh = sheet_(INS); if (sh.getLastRow() < 2) return [];
