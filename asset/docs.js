@@ -126,7 +126,7 @@
 
   function formQuote(s, d, its, title, vat) {
     const L = w => `<i style="flex:0 0 ${w}"></i>`;
-    return `<img class="lgc" src="${LOGO()}" alt="" style="width:2.3cm"><p class="t">${title}</p>
+    return `<img class="lgc" src="${LOGO()}" alt="" style="width:2.9cm"><p class="t">${title}</p>
 <div style="margin-left:9.2cm"><div class="dt">เขียนที่<i></i></div><div class="dt">วันที่<i></i></div></div>
 <p style="margin-top:2pt">เรียน  ${esc(s.mgrFull)}</p>
 <div class="dt" style="padding-left:2.25cm">ข้าพเจ้า (บริษัท/ห้าง/ร้าน/นาย/นาง/นางสาว)<i></i></div>
@@ -275,7 +275,7 @@
 .dp .pg{break-before:page;page-break-before:always}.dp .pg:first-child{break-before:auto;page-break-before:auto}
 .dp,.dp .pg{max-width:100%;overflow-wrap:anywhere}.dp p{margin:0}.dp .in{text-indent:2.25cm;text-align:justify;text-justify:inter-character}.dp .c{text-align:center}.dp .r{text-align:right}.dp .b{font-weight:700}
 .dp .t{text-align:center;font-weight:700;font-size:20pt;line-height:22pt}
-.dp .lg{width:3.05cm;display:block;margin-bottom:5pt}.dp .lgc{width:2.75cm;display:block;margin:0 auto 3pt}
+.dp .lg{width:4cm;display:block;margin-bottom:6pt}.dp .lgc{width:3.4cm;display:block;margin:0 auto 4pt}
 .dp .mh{display:grid;grid-template-columns:1.5cm 6.5cm 1.2cm 1fr}.dp .h2{display:grid;grid-template-columns:1.5cm 1fr}
 .dp .lh{display:grid;grid-template-columns:9.4cm 1fr}
 .dp .cl{display:grid;grid-template-columns:max-content max-content minmax(0,1fr);column-gap:1cm;padding-left:2.25cm}.dp .cl span:not(:nth-child(3n)){white-space:nowrap}
@@ -289,7 +289,7 @@
 .cmp .tail .en{grid-column:1;grid-row:1;width:auto;margin-top:6pt}.cmp .tail .tsig{grid-column:2;grid-row:1}
 .cmp .tail .sg{margin-left:0}.cmp .tail .cm{margin-top:6pt}.cmp .tail .two{grid-template-columns:1fr;margin-top:14pt;row-gap:14pt}
 .cmp .fn{margin-top:10pt}.cmp .tail .d2{display:none}.cmp .tail .en{max-width:8.6cm}
-.tight .in{margin-top:0!important}.tight .cm{margin-top:12pt}.tight .two{margin-top:12pt}.tight .keep{padding-top:2pt}.tight .en p.c[style]{margin-top:22pt!important}.tight .sg[style]{margin-top:20pt!important}.dp .j{text-align:justify;text-justify:inter-character}
+.tight .lg{width:3.4cm}.tight .fn{margin-top:4pt}.tight .in{margin-top:0!important}.tight .cm{margin-top:12pt}.tight .two{margin-top:12pt}.tight .keep{padding-top:2pt}.tight .en p.c[style]{margin-top:22pt!important}.tight .sg[style]{margin-top:20pt!important}.dp .j{text-align:justify;text-justify:inter-character}
 .dp .cb{text-indent:0;display:inline-block;width:10pt;height:10pt;border:1pt solid #000;margin-right:7pt;vertical-align:-1pt;position:relative}
 .dp .cb.on::after{content:'';position:absolute;left:2.5pt;top:-1pt;width:3.5pt;height:7.5pt;border:solid #000;border-width:0 1.6pt 1.6pt 0;transform:rotate(40deg)}
 .dp .ck{display:grid;grid-template-columns:5.9cm minmax(0,1fr);padding-left:2.25cm;row-gap:5pt;margin:4pt 0}.dp .ck span{display:flex;align-items:flex-start}.dp .ck .cb,.dp .at .nw .cb{flex:none;margin-top:4pt}.dp .at p{margin-bottom:3pt}.dp .at{padding-left:2.4cm}.dp .at .s{padding-left:1.2cm}.dp .at .nw{display:flex;align-items:flex-start}
