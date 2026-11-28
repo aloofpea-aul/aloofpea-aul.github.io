@@ -200,7 +200,7 @@ label.f input,label.f textarea,label.f select{width:100%;border:1px solid #cfc9d
 </div>
 <div class="dim" id="dim" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="docs.js?v=12"></script>
+<script src="docs.js?v=13"></script>
 <script>
 'use strict';
 const DONE = 11;   // ปิดชุดหลังครบ 10 ขั้นตามแบบฟอร์มจำหน่าย
@@ -580,7 +580,7 @@ function viewBatch() {
 }
 function batchCtx(x, data) {
   const its = x.codes.map(c => AM[c]).filter(Boolean).sort((a, b) => a.code.localeCompare(b.code));
-  return { items: its.map(a => ({ code: a.code, name: a.name, serial: a.serial, acq: a.acq, cost: a.cost, bv: a.bv || 0, age: a.age, cat: a.cat, cond: a.ins ? [a.ins[1], a.ins[2]].filter(Boolean).join(' ') : '' })),
+  return { items: its.map(a => ({ code: a.code, name: a.name, inv: a.wbs, serial: a.serial, acq: a.acq, cost: a.cost, bv: a.bv || 0, age: a.age, cat: a.cat, cond: a.ins ? [a.ins[1], a.ins[2]].filter(Boolean).join(' ') : '' })),
     d: data || x.data || {}, s: Object.assign({}, (DB.settings || {}).office || {}) };
 }
 function knownPeople() {
@@ -616,7 +616,7 @@ function viewBatchOne(x) {
     <div class="row" style="justify-content:space-between;margin-top:10px"><div><h2 class="t">${esc(x.name)}</h2><p class="muted" style="margin:0">${its.length} รายการ · ราคาทุน ${baht(cost)} · มูลค่าบัญชี ${baht(bv)} บาท</p></div>
     <span class="tag ${closed ? 'ok' : 'p'}" style="font-size:14px;padding:5px 14px">${closed ? 'ปิดชุดแล้ว ' + thDate(x.log[DONE]) : 'ขั้นที่ ' + x.step + ' จาก 10'}</span></div>
     <div class="bw"><section><ol class="stp">${DOCS.STEPS.map((s, i) => { const n = i + 1, st = x.step > n ? 'd' : x.step === n ? 'c' : ''; return `<li class="${st}${k === n ? ' sel' : ''}"><button data-st="${n}"><span class="n">${st === 'd' ? '✓' : n}</span><span><b>${s.t}</b><small>${x.log[n + 1] ? 'เสร็จ ' + thDate(x.log[n + 1]) : st === 'c' ? 'ทำอยู่' : s.docs.length + ' ฉบับ'}</small></span></button></li>`; }).join('')}</ol>
-    <button class="btn" id="pAll" style="width:100%;margin-top:10px">พิมพ์ทั้งชุด (19 ฉบับ)</button></section>
+    <button class="btn" id="pAll" style="width:100%;margin-top:10px">พิมพ์ทั้งชุด (20 ฉบับ)</button></section>
     <section class="card"><h3>ขั้นที่ ${k}: ${stp.t}</h3>${k === 1 ? `<label class="f"><span>ชื่อชุด</span><input id="bn" value="${esc(x.name)}"${dis}></label>` : ''}
     <div id="frm">${DOCS.FIELDS[k - 1].map(field).join('')}</div><datalist id="ppl">${Object.keys(ppl).map(p => `<option value="${esc(p)}">`).join('')}</datalist>
     <div class="flbl">เอกสารของขั้นนี้</div><div class="docs">${stp.docs.map(d => `<div class="doc"><span>${d[1]}</span><button class="btn sm p" data-pr="${d[0]}">พิมพ์</button></div>`).join('')}</div>
@@ -666,7 +666,7 @@ function viewBatchOne(x) {
   window.DOCS_LOGO = location.origin + '/asset/pea-logo.png';
   const pr = ids => { if (!DOCS.print(ids, batchCtx(x, merged()), x.name, location.origin + '/asset/fonts')) toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up ก่อน', 4000); };
   $$('[data-pr]').forEach(b => b.onclick = () => pr([b.dataset.pr]));
-  $('#pAll').onclick = () => pr(['d1', 'd2', 'd2b', 'd3', 'd6', 'd7', 'd8', 'd9', 'd12', 'd13', 'd14', 'd15', 'd16', 'd17', 'd18']);
+  $('#pAll').onclick = () => pr(['d1', 'd2', 'd2s', 'd2b', 'd3', 'd6', 'd7', 'd8', 'd9', 'd12', 'd13', 'd14', 'd15', 'd16', 'd17', 'd18']);
   $$('[data-st]').forEach(b => b.onclick = () => { ST.bstep = +b.dataset.st; viewBatchOne(x); });
   $('#back').onclick = () => { ST.batch = null; viewBatch(); };
   $$('[data-open]').forEach(b => b.onclick = () => showAsset(b.dataset.open));
@@ -841,7 +841,7 @@ function loadXLSX() {
 let PEND = null;
 const OFC = [['orgFull', 'ชื่อสำนักงานเต็ม'], ['org', 'ชื่อย่อ'], ['orgS', 'ชื่อย่อสั้น'], ['dept', 'หน่วยงานที่เสนอ (ย่อ)'], ['deptFull', 'ชื่อแผนกเต็ม'], ['prefix', 'เลขที่บันทึกภายใน (ส่วนหน้า)'], ['ext', 'เลขที่หนังสือภายนอก (ส่วนหน้า)'],
   ['addr1', 'ที่อยู่ บรรทัด 1'], ['addr2', 'ที่อยู่ บรรทัด 2'], ['province', 'จังหวัด'], ['tel', 'โทรศัพท์'], ['intTel', 'เบอร์ภายในท้ายบันทึก'], ['contact', 'ผู้ประสานงาน'], ['mgrName', 'ชื่อผู้จัดการ'], ['mgrShort', 'ตำแหน่งผู้จัดการ (ย่อ)'], ['mgrFull', 'ตำแหน่งผู้จัดการ (เต็ม)'],
-  ['head', 'หัวหน้าแผนก (ผู้เสนอ)'], ['headPos', 'ตำแหน่งหัวหน้าแผนก'], ['region', 'ส่งรายงานถึง (เขต)'], ['fwdPrice', 'ผู้เห็นชอบราคากลาง'], ['salePlace', 'สถานที่ขาย/รับซอง'], ['orgAbbr', 'ชื่อย่อในตำแหน่งกรรมการ'], ['bank', 'บัญชีรับโอนเงิน'], ['rule', 'ระเบียบที่อ้าง'], ['deleg', 'คำสั่งมอบอำนาจ']];
+  ['head', 'หัวหน้าแผนก (ผู้เสนอ)'], ['headPos', 'ตำแหน่งหัวหน้าแผนก'], ['region', 'ส่งรายงานถึง (เขต)'], ['fwdPrice', 'ผู้เห็นชอบราคากลาง'], ['salePlace', 'สถานที่ขาย/รับซอง'], ['orgAbbr', 'ชื่อย่อในตำแหน่งกรรมการ'], ['costCtr', 'ศูนย์ต้นทุน (รายงาน SAP)'], ['acct1', 'ผู้จัดทำยอด SAP (บัญชี)'], ['acct1Pos', 'ตำแหน่งผู้จัดทำ'], ['acct2', 'ผู้ตรวจยอด SAP (หผ.บง.)'], ['acct2Pos', 'ตำแหน่งผู้ตรวจ'], ['bank', 'บัญชีรับโอนเงิน'], ['rule', 'ระเบียบที่อ้าง'], ['deleg', 'คำสั่งมอบอำนาจ']];
 function viewSet() {
   const adm = ADM(), s = DB.settings || DEF_SETTINGS, of = s.office || {}, dis = adm ? '' : ' disabled';
   let h = `<h2 class="t">ตั้งค่า</h2><p class="muted" style="margin:0">ทุกอย่างปรับได้ที่หน้านี้ ไม่ต้องแก้โค้ด${adm ? '' : ' · แก้ไขได้เฉพาะผู้ดูแลระบบ'}</p>`;

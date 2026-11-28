@@ -26,7 +26,7 @@
   /* ---------- ค่าตั้งต้นของสำนักงาน (แก้ได้ในหน้าตั้งค่า) ---------- */
   const OFFICE = {
     orgFull: 'การไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก', org: 'กฟส.อ่าวลึก', orgS: 'กฟส.อล',
-    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', orgAbbr: 'กฟส.อ่าวลึก', ext: 'มท 5307.60/กฟส.อล',
+    dept: 'ผปร.กฟส.อ่าวลึก', deptFull: 'แผนกปฏิบัติการระบบไฟฟ้า', prefix: 'ต.2กฟส.อล.(ปร.)', intTel: '16555', bfTo: 'กบฟ.(ต.2)', bfHead: 'อก.บฟ.(ต.2)', bfShort: 'กบฟ.ต.2', orgAbbr: 'กฟส.อ่าวลึก', costCtr: 'K304201010', acct1: 'น.ส.ศุภากร  นบนวล', acct1Pos: 'นบช.5 ผบง.กฟส.อ่าวลึก', acct2: 'นางสาวนงคราญ  ยศศิริ', acct2Pos: 'หผ.บง.กฟส.อ่าวลึก', ext: 'มท 5307.60/กฟส.อล',
     addr1: '125 หมู่ที่ 1 ถนนเพชรเกษม ตำบลอ่าวลึกเหนือ', addr2: 'อำเภออ่าวลึก จังหวัดกระบี่ 81110', province: 'จังหวัดกระบี่',
     tel: '075-666920', contact: 'คุณมานศักดิ์ พิลาฤทธิ์',
     mgrName: 'นายชญานิน  งานสัมพันธฤทธิ์', mgrShort: 'ผจก.กฟส.อ่าวลึก', mgrFull: 'ผู้จัดการการไฟฟ้าส่วนภูมิภาคสาขาอ่าวลึก',
@@ -40,7 +40,7 @@
   /* ---------- 10 ขั้น ตามลำดับเอกสาร ---------- */
   const STEPS = [
     { t: 'ขออนุมัติจำหน่าย + ตั้งกรรมการสอบข้อเท็จจริง', docs: [['d1', 'บันทึกขออนุมัติจำหน่ายทรัพย์สินออกจากบัญชี']] },
-    { t: 'รายงานผลสอบข้อเท็จจริง + ขออนุมัติต่อ กบฟ.', docs: [['d2', 'รายงานผลการสอบสวนหาข้อเท็จจริง'], ['d2b', 'บันทึกขออนุมัติจำหน่ายทรัพย์สินโดยวิธีการขาย (ถึง กบฟ.ต.2)']] },
+    { t: 'รายงานผลสอบข้อเท็จจริง + ขออนุมัติต่อ กบฟ.', docs: [['d2', 'รายงานผลการสอบสวนหาข้อเท็จจริง'], ['d2s', 'ยอดสินทรัพย์คงเหลือ (รายงาน SAP แนวนอน)'], ['d2b', 'บันทึกขออนุมัติจำหน่ายทรัพย์สินโดยวิธีการขาย (ถึง กบฟ.ต.2)']] },
     { t: 'สืบราคา (ราคาประเมิน)', docs: [['d3', 'หนังสือขอให้เสนอราคา (ราคาประเมิน) × 3 ราย'], ['d6', 'ใบเสนอราคาซื้อ (ราคาประเมิน)']] },
     { t: 'รายงานผลประเมินราคา', docs: [['d7', 'รายงานผลการประเมินราคา (กำหนดราคาขั้นต่ำ)']] },
     { t: 'ขออนุมัติดำเนินการขาย', docs: [['d8', 'บันทึกขออนุมัติดำเนินการขาย']] },
@@ -54,7 +54,7 @@
   const FIELDS = [
     [['no1', 'เลขที่บันทึก', 'text'], ['date1', 'วันที่', 'date'], ['from', 'หน่วยงานที่เสนอ', 'text'], ['kind', 'ประเภททรัพย์สิน (ใช้ในข้อความ)', 'text'],
       ['prop', 'ผู้เสนอ', 'person'], ['cmFact', 'คณะกรรมการสอบสวนหาข้อเท็จจริง', 'cmte'], ['ap1', 'ผู้สั่งการท้ายบันทึก (อนุมัติ)', 'person']],
-    [['date2', 'วันที่รายงาน', 'date'], ['cond', 'สภาพ/อาการชำรุด รายชิ้น', 'cond'], ['date2b', 'วันที่บันทึกขออนุมัติถึง กบฟ.', 'date'], ['why', 'เหตุที่จำหน่าย (ติ๊กได้หลายข้อ)', 'checks', ['ชำรุดจากการใช้งาน', 'เสื่อมสภาพจากการใช้งาน', 'หมดความจำเป็นในการใช้งาน', 'หากใช้ในหน่วยงานต่อไปจะสิ้นเปลือง คชจ.มาก']], ['seller', 'ผู้มีหน้าที่ขาย', 'text'], ['att', 'เอกสารแนบ', 'checks', ['รายงานยืนยันมูลค่าการได้มาและค่าเสื่อมราคาทรัพย์สิน', 'หนังสือแต่งตั้งคณะกรรมการสอบหาข้อเท็จจริง', 'หนังสือรายงานสรุปผลการสอบหาข้อเท็จจริง', 'ใบสั่งซ่อมและภาพถ่ายสี (กรณีมูลค่าคงเหลือเกิน 1 บาท)']], ['sg2b', 'ผู้ลงนาม', 'person']],
+    [['date2', 'วันที่รายงาน', 'date'], ['cond', 'สภาพ/อาการชำรุด รายชิ้น', 'cond'], ['rep2s', 'ยอด SAP · วันที่รายงาน (ยอด ณ วันที่)', 'date', 'ว่างไว้ = วันที่รายงานผลสอบ'], ['mk2s', 'ยอด SAP · วันที่สร้างรายงาน', 'date', 'ว่างไว้ = วันที่พิมพ์'], ['ac1', 'ยอด SAP · ผู้จัดทำ (บัญชี)', 'person'], ['ac2', 'ยอด SAP · ผู้ตรวจสอบ (บัญชี)', 'person'], ['date2b', 'วันที่บันทึกขออนุมัติถึง กบฟ.', 'date'], ['why', 'เหตุที่จำหน่าย (ติ๊กได้หลายข้อ)', 'checks', ['ชำรุดจากการใช้งาน', 'เสื่อมสภาพจากการใช้งาน', 'หมดความจำเป็นในการใช้งาน', 'หากใช้ในหน่วยงานต่อไปจะสิ้นเปลือง คชจ.มาก']], ['seller', 'ผู้มีหน้าที่ขาย', 'text'], ['att', 'เอกสารแนบ', 'checks', ['รายงานยืนยันมูลค่าการได้มาและค่าเสื่อมราคาทรัพย์สิน', 'หนังสือแต่งตั้งคณะกรรมการสอบหาข้อเท็จจริง', 'หนังสือรายงานสรุปผลการสอบหาข้อเท็จจริง', 'ใบสั่งซ่อมและภาพถ่ายสี (กรณีมูลค่าคงเหลือเกิน 1 บาท)']], ['sg2b', 'ผู้ลงนาม', 'person']],
     [['date3', 'วันที่หนังสือ', 'date'], ['bidders', 'ผู้เสนอราคา 3 ราย', 'bidders'], ['view3', 'ช่วงวันให้มาดูสภาพ', 'text', 'เช่น 2-4 เมษายน 2568'], ['due3', 'ให้ส่งใบเสนอราคาภายในวันที่', 'date']],
     [['date4', 'วันที่รายงาน', 'date'], ['ref4', 'อ้างถึง (คำสั่งแต่งตั้ง + หนังสือขอราคา)', 'area'], ['prices', 'ราคาที่แต่ละรายเสนอ (ระบบเลือกราคาสูงสุดเป็นราคากลาง)', 'prices'], ['cmPrice', 'คณะกรรมการประเมินราคา', 'cmte'], ['fwd4', 'เสนอให้ความเห็นชอบ (เรียน)', 'text']],
     [['no5', 'เลขที่บันทึก', 'text'], ['date5', 'วันที่', 'date'], ['ref5', 'อ้างถึง (หนังสืออนุมัติจำหน่าย + คำสั่ง + เห็นชอบราคากลาง)', 'area'], ['order', 'คำสั่งแต่งตั้งคณะกรรมการดำเนินการขาย (เลขที่ + วันที่)', 'text', 'เช่น ต.2กฟส.อล(มต.)44/2568 สั่ง ณ วันที่ 15 มกราคม 2568'], ['cmSale', 'คณะกรรมการดำเนินการขาย', 'cmte'], ['ap5', 'ผู้สั่งการท้ายบันทึก', 'person']],
@@ -74,7 +74,7 @@
       prop: [s.head, s.headPos], ap1: ['', s.mgrShort], ap5: [s.mgrName, s.mgrShort], ap7: [s.mgrName, s.mgrShort], ap10: [s.mgrName, s.mgrShort],
       cmFact: [['', ''], ['', ''], ['', '']], cmPrice: [['', ''], ['', ''], ['', '']], cmSale: [['', ''], ['', ''], ['', '']], cmDeliv: [['', ''], ['', ''], ['', '']],
       bidders: [{ name: '', addr: '' }, { name: '', addr: '' }, { name: '', addr: '' }], fwd4: s.fwdPrice, no5: s.prefix,
-      why: [1], att: [0, 1, 2], sg2b: [s.mgrName, s.mgrShort], time6: '09.00 - 12.00 น.', place6: s.salePlace, buyer: 0, sg8: [s.mgrName, s.mgrFull], pay8: '2', move8: '1', cond: {}, prices: {}, offer: {}
+      why: [1], att: [0, 1, 2], sg2b: [s.mgrName, s.mgrShort], ac1: [s.acct1, s.acct1Pos], ac2: [s.acct2, s.acct2Pos], time6: '09.00 - 12.00 น.', place6: s.salePlace, buyer: 0, sg8: [s.mgrName, s.mgrFull], pay8: '2', move8: '1', cond: {}, prices: {}, offer: {}
     };
     const r = Object.assign({}, out);
     Object.keys(d).forEach(k => { if (d[k] != null && d[k] !== '') r[k] = d[k]; });
@@ -172,6 +172,22 @@
             : B(`ด้วย${esc(s.deptFull)} ${esc(s.orgFull)} ${esc(s.province)} มีความประสงค์จำหน่ายพัสดุที่ชำรุด ประเภท${kind} จำนวน ${n} รายการ ออกจากบัญชี จึงขอให้ท่านเสนอราคาซื้อพัสดุดังกล่าว`) +
             B(`ทั้งนี้ ขอให้ท่านมาดูสภาพพัสดุ พร้อมทั้งเสนอราคาซื้อพัสดุดังกล่าว (ตามแบบฟอร์มแนบ) ในวันที่ ${thLong(d.open6)} เวลา ${esc(d.time6)} ณ ${esc(d.place6)} ${esc(s.province)} เลขที่ ${esc(s.addr1)} ${esc(s.addr2)} โทรศัพท์ ${esc(s.tel)} ${esc(s.contact)} เพื่อจะได้ดำเนินการต่อไป`)) +
           B('จึงเรียนมาเพื่อโปรดทราบ', 'margin-top:6pt') + letterSign(s.mgrName, [s.mgrFull, s.province]));
+      }
+      case 'd2s': {
+        const today = new Date(), iso = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        const mk = dmy(d.mk2s || iso), rp = dmy(d.rep2s || d.date2 || iso), cc = esc(s.costCtr || ''), sp = x => esc(x);
+        const rows = its.map(a => { const m = String(a.code).match(/^(\d+)-(\d+)$/), dep = Math.max(0, (a.cost || 0) - (a.bv || 0));
+          return `<tr><td class="c">${m ? m[1] : sp(a.code)}</td><td>${m ? +m[2] : ''}</td><td>${cc}</td><td>${sp(a.inv || '')}</td><td>${sp(a.name)}</td><td class="r">${money(a.cost)}</td><td>${sp(a.serial || '')}</td><td>${a.acq ? dmy(a.acq) : ''}</td><td class="r">${dep ? money(dep) + '-' : '0.00'}</td><td class="r">${money(a.bv)}</td></tr>`; }).join('');
+        const tc = sum(its, 'cost'), tb = sum(its, 'bv'), td = Math.max(0, tc - tb);
+        const sg = p => `<div><div>(${nm(p || [])})</div><div>${esc((p || [])[1] || '')}</div></div>`;
+        return ['<!--L--><div class="sap">' +
+          `<div class="h1"><span>${mk}</span><span>ยอดสินทรัพย์คงเหลือ</span><span>1</span></div>` +
+          `<div class="h2"><span>วันที่รายงาน&nbsp;&nbsp;:</span><span>${rp}</span><span>ยอดสินทรัพย์คงเหลือ&nbsp;&nbsp;-&nbsp;&nbsp;01 คล.ตามบัญชี</span><span></span><span class="r">สร้างเมื่อ:&nbsp;&nbsp;</span><span>${mk}</span><span></span><span class="r">1</span></div>` +
+          `<p class="cc">ศูนย์ต้นทุน<br>${cc}</p>` +
+          `<table><colgroup><col style="width:8.6%"><col style="width:3.6%"><col style="width:9.4%"><col style="width:14.8%"><col style="width:15%"><col style="width:10.8%"><col style="width:7.6%"><col style="width:8.4%"><col style="width:10.6%"><col style="width:11.2%"></colgroup>` +
+          '<thead><tr><th>สินทรัพย์</th><th>SNo.</th><th>ศ.ต้นทุน</th><th>เลขสินค้าคงคลัง</th><th>คำอธิบายของสินทรัพย์</th><th class="r">มูลค่าการได้มา</th><th>Serial no.</th><th>Cap.date</th><th class="r">ค่าเสื่อมสะสม</th><th class="r">มูลค่าตามบัญชี</th></tr></thead>' +
+          `<tbody>${rows}<tr class="tt"><td class="c">•</td><td></td><td>${cc}</td><td></td><td></td><td class="r">${money(tc)}</td><td></td><td></td><td class="r">${td ? money(td) + '-' : '0.00'}</td><td class="r">${money(tb)}</td></tr></tbody></table></div>` +
+          `<div class="sapsg keep">${sg(d.ac1)}${sg(d.ac2)}</div>`];
       }
       case 'd2b': {
         const w = (d.why || []).map(Number), at = (d.att || []).map(Number), dep = Math.max(0, cost - bv);
@@ -271,6 +287,18 @@
   const CSS = `@font-face{font-family:'THSN';src:url('FONTDIR/THSarabunNew.woff') format('woff');font-display:block;size-adjust:65.5%;ascent-override:75%;descent-override:25%}
 @font-face{font-family:'THSN';font-weight:700;src:url('FONTDIR/THSarabunNew-Bold.woff') format('woff');font-display:block;size-adjust:65.5%;ascent-override:75%;descent-override:25%}
 @page{size:A4;margin:15mm 20mm 20mm 30mm}
+@page land{size:A4 landscape;margin:12mm 15mm 12mm 15mm}
+.dp .land{page:land}
+.dp .sap{font-size:14pt;line-height:15.5pt;letter-spacing:.08em}.dp .sap table{letter-spacing:.05em}
+.dp .sap .h1{display:grid;grid-template-columns:1fr auto 1fr;border-bottom:1px solid #000;padding-bottom:1pt}.dp .sap .h1 span:last-child{text-align:right}
+.dp .sap .h2{display:grid;grid-template-columns:3.4cm 3.9cm max-content 1fr;border-bottom:1px solid #000;padding:2pt 0 1pt;margin-top:4pt}
+.dp .sap .cc{margin:8pt 0 4pt}
+.dp .sap table{width:100%;table-layout:fixed;border-collapse:collapse;border:1px solid #000;font-size:14pt;line-height:15.5pt;margin:0}
+.dp .sap th,.dp .sap td{border:0;border-left:1px solid #000;padding:1pt 4pt;vertical-align:top;font-weight:400;text-align:left;white-space:nowrap;overflow:hidden}
+.dp .sap td:nth-child(5){white-space:normal}
+.dp .sap th{border-bottom:1px solid #000;padding:5pt 4pt 4pt}.dp .sap tbody tr:first-child td{padding-top:6pt}.dp .sap .tt td{padding-bottom:3pt}
+.dp .sap .r{text-align:right}.dp .sap .c{text-align:center}
+.dp .sapsg{display:grid;grid-template-columns:1fr 1fr;width:62%;margin:2.3cm 0 0 25%;text-align:center;font-size:16pt;line-height:18.1pt}
 .dp{font-family:'TH SarabunIT๙','TH SarabunIT9','THSN',serif;font-size:16pt;line-height:18.1pt;color:#000;background:#fff}
 .dp .pg{break-before:page;page-break-before:always}.dp .pg:first-child{break-before:auto;page-break-before:auto}
 .dp,.dp .pg{max-width:100%;overflow-wrap:anywhere}.dp p{margin:0}.dp .in{text-indent:2.25cm;text-align:justify;text-justify:inter-character}.dp .c{text-align:center}.dp .r{text-align:right}.dp .b{font-weight:700}
@@ -299,14 +327,14 @@
   /* แปลงเลขอารบิกในข้อความ (ไม่แตะแท็ก) เป็นเลขไทย แบบ TH SarabunIT๙ */
   const thaiDigits = html => html.replace(/(^|>)([^<]+)/g, (m, a, t) => a + t.replace(/\d/g, x => '๐๑๒๓๔๕๖๗๘๙'[x]));
   function html(ids, ctx) {
-    return ids.map(id => docs(id, ctx).map(p => `<section class="pg">${thaiDigits(p)}</section>`).join('')).join('');
+    return ids.map(id => docs(id, ctx).map(p => p.startsWith('<!--L-->') ? `<section class="pg land">${p}</section>` : `<section class="pg">${thaiDigits(p)}</section>`).join('')).join('');
   }
   function print(ids, ctx, title, fontDir) {
     const w = window.open('', '_blank');
     if (!w) return false;
     const css = CSS.replace(/FONTDIR/g, fontDir || (location.origin + '/asset/fonts'));
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>${esc(title || 'เอกสารจำหน่ายทรัพย์สิน')}</title><style>${css}
-body{margin:0;background:#888}.dp{width:210mm;margin:0 auto}.scr .pg{background:#fff;padding:15mm 20mm 20mm 30mm;min-height:297mm;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+body{margin:0;background:#888}.dp{width:210mm;margin:0 auto}.scr .pg{background:#fff;padding:15mm 20mm 20mm 30mm;min-height:297mm;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.4)}.scr .pg.land{width:297mm;min-height:210mm;padding:12mm 15mm;margin:10px -43.5mm;box-sizing:border-box}
 .bar{position:fixed;top:8px;right:8px;font:14px system-ui;display:flex;gap:8px;align-items:center}.bar .tip{background:#fff;color:#333;padding:6px 10px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.3);max-width:360px;font-size:12.5px}.bar button{font:inherit;padding:8px 16px;border-radius:8px;border:0;background:#6a1b74;color:#fff}
 @media print{body{background:#fff}.dp{width:auto;margin:0}.bar{display:none}.scr .pg{padding:0;margin:0;min-height:0;box-shadow:none}}</style></head>
 <body><div class="bar"><span class="tip">ตั้งค่าพิมพ์: กระดาษ A4 · มาตราส่วน 100% (ค่าเริ่มต้น) · ระยะขอบ ค่าเริ่มต้น · ปิด “ส่วนหัวและท้ายกระดาษ”</span><button onclick="print()">พิมพ์</button></div><div class="dp scr">${html(ids, ctx)}</div><script>function fit(){var H=262*96/25.4;[].forEach.call(document.querySelectorAll('.pg'),function(p){var h=function(){var a=p.firstElementChild,b=p.lastElementChild;return b.getBoundingClientRect().bottom-a.getBoundingClientRect().top};if(h()>H){p.classList.add('cmp');if(h()>H)p.classList.add('tight');}});}
