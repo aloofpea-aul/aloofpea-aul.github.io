@@ -20,6 +20,17 @@
   var K_USER = 'pea_aoluek_username', K_PASS = 'pea_aoluek_password', K_AUTH = 'pea_hub_auth';
   var IDLE_MS = 30 * 60 * 1000, CACHE_MS = 7 * 86400000;
   var HUB = '/index.html';
+  /* บัญชีภายนอก (Aloof Apps): หน้าใดใส่ data-alt-auth="คีย์" ไว้ — ถ้าเครื่องนี้เข้าบัญชีนั้นอยู่ จะไม่ล็อกด้วยศูนย์รวมงาน
+     ?staff=1 = บังคับใช้บัญชีพนักงาน · ?app=1 = ใช้บัญชีภายนอก (จำไว้ต่อแอป) */
+  var ALT = (me && me.dataset.altAuth) || '', ALT_LOGIN = (me && me.dataset.altLogin) || '';
+  function altMode() {
+    if (!ALT) return false;
+    var mk = 'aloof_mode_' + (APP || 'x'), q = new URLSearchParams(location.search);
+    if (q.get('staff') === '1') ls(mk, 'staff'); else if (q.get('app') === '1') ls(mk, 'app');
+    if (ls(mk) === 'staff') return false;
+    try { var a = JSON.parse(ls(ALT) || 'null'); return !!(a && a.token); } catch (e) { return false; }
+  }
+  var ALT_ON = altMode();
 
   function ls(k, v) {
     try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; }
@@ -177,7 +188,9 @@
       '<label>รหัสผ่าน<input name="p" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" required></label>' +
       '<button class="go" type="submit">' + (reg ? 'ส่งคำขอสมัคร' : 'เข้าสู่ระบบ') + '</button>' +
       '<div class="msg"></div></form>' +
+      (ALT_LOGIN ? '<button class="alt" type="button" data-altl style="border-color:#EF9F27;color:#854F0B">มีโค้ดเชิญ / บัญชี Aloof Apps</button>' : '') +
       '<button class="alt" type="button" data-hub>ไปหน้าศูนย์รวมงาน</button>', function (g) {
+      var al = g.querySelector('[data-altl]'); if (al) al.onclick = function () { ls('aloof_mode_' + (APP || 'x'), 'app'); location.href = ALT_LOGIN; };
       g.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { showLogin(b.dataset.m); }; });
       g.querySelector('[data-hub]').onclick = function () { location.href = HUB; };
       var f = g.querySelector('form'), msg = g.querySelector('.msg'), btn = g.querySelector('.go');
@@ -256,6 +269,7 @@
 
   /* ---------- เริ่มทำงาน ---------- */
   function start() {
+    if (ALT_ON) return;   // ใช้บัญชีภายนอก — ให้หน้าโปรแกรมตรวจเอง
     var c = creds();
     if (!GATE) {
       if (me && me.dataset.count === 'off') return;   // ใช้แค่แถบกลับศูนย์รวม ไม่เรียกหลังบ้าน
@@ -295,6 +309,7 @@
       if (window.top !== window.self) return;
       if (me && me.dataset.dock === 'off') return;
       if (location.pathname === '/' || location.pathname === HUB) return;
+      if (ALT_ON) return;
       var mq = window.matchMedia && matchMedia('(max-width:1099px), (pointer:coarse)');
       if (!mq || !mq.matches) return;
       if (document.getElementById('peaDock')) return;
