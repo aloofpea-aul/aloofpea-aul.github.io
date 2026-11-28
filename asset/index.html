@@ -34,8 +34,9 @@ button{cursor:pointer}
 .ibtn{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:10px;min-width:44px;height:44px;display:grid;place-items:center}
 .main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 .wrap{max-width:1180px;margin:0 auto;padding:16px max(14px,env(safe-area-inset-left,0px)) 28px}
-.bnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-.bnav button{flex:1;border:0;background:none;padding:8px 0 6px;color:var(--mute);font-size:12.5px;line-height:1.3;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;position:relative}
+.bnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:max(2px,calc(env(safe-area-inset-bottom,0px) - 20px))}
+@media (display-mode:standalone){.bnav{padding-bottom:max(4px,calc(env(safe-area-inset-bottom,0px) - 10px))}}
+.bnav button{flex:1;border:0;background:none;padding:7px 0 4px;color:var(--mute);font-size:12.5px;line-height:1.3;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:52px;position:relative}
 .bnav button.on{color:var(--pea);font-weight:700}
 .bnav .dot{position:absolute;top:5px;left:calc(50% + 8px);min-width:17px;height:17px;border-radius:9px;background:var(--gold);color:var(--top);font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
 .bnav .dot[hidden]{display:none}
