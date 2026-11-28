@@ -18,11 +18,11 @@
 const SPREADSHEET_ID = '';   // ว่าง = ใช้ชีตที่ setup สร้าง (Script Properties › ASSET_SHEET_ID)
 const HUB_API = 'https://script.google.com/macros/s/AKfycbzqsOqJJQlF4SS1UX_YM6hmhd3lUXCVocAJiK7l28Tzddms9SQ9Z7p-iYgrrgd2B2meWw/exec';
 const TZ = 'Asia/Bangkok';
-const VERSION = '2.1';
+const VERSION = '2.2';
 const DONE = 11;   // ขั้นที่ 11 = ปิดชุด (ครบ 10 ขั้นตามแบบฟอร์มจำหน่าย)
 
 const AST = { name: 'ทรัพย์สิน', labels: ['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลขผู้ผลิต', 'วันที่ได้มา', 'ราคาทุน', 'ผู้ดูแล', 'สถานะ SAP', 'อยู่ในไฟล์ล่าสุด', 'จำหน่ายแล้ว (ชุด)', 'นำเข้าเมื่อ', 'มูลค่าตามบัญชี', 'ค่าเสื่อมสะสม', 'หมวด (SAP)', 'รหัสพนักงาน'] };
-const INS = { name: 'ผลตรวจสภาพ', labels: ['รหัสสินทรัพย์', 'สภาพ', 'หมายเหตุ', 'รหัสรูป', 'ผู้ตรวจ', 'ตรวจเมื่อ'] };
+const INS = { name: 'ผลตรวจสภาพ', labels: ['รหัสสินทรัพย์', 'สภาพ', 'หมายเหตุ', 'รหัสรูป', 'ผู้ตรวจ', 'ตรวจเมื่อ', 'ที่ตั้ง', 'พิกัด GPS'] };
 const BAT = { name: 'ชุดจำหน่าย', labels: ['รหัสชุด', 'ชื่อชุด', 'ขั้น', 'รายการ (JSON)', 'กรรมการ (JSON)', 'เลขที่หนังสือ', 'ซื้อทดแทน (JSON)', 'บันทึกขั้น (JSON)', 'หมายเหตุ', 'สร้างโดย', 'สร้างเมื่อ', 'อัปเดตโดย', 'อัปเดตเมื่อ', 'ข้อมูลเอกสาร (JSON)'] };
 const IMP = { name: 'ประวัตินำเข้า', labels: ['วันเวลา', 'ผู้นำเข้า', 'ไฟล์', 'จำนวนรายการ', 'ใหม่', 'หายจากไฟล์'] };
 const SETS = { name: 'ตั้งค่า', labels: ['รายการ', 'ค่า (JSON)'] };
@@ -116,8 +116,14 @@ const ACTIONS = {
     if (CONDS.indexOf(b.cond) < 0) throw err_('bad', 'เลือกสภาพก่อน');
     let photo = String(b.keepPhoto || '');
     if (b.photo) photo = savePhoto_(code, b.photo);
-    const rec = [code, b.cond, clean_(b.note), photo, me.name, new Date()];
+    if (Array.isArray(b.photos)) photo = b.photos.slice(0, 3).map(function (x) {
+      x = String(x || ''); if (!x) return '';
+      return /^data:/.test(x) ? savePhoto_(code, x) : x.replace(/[^\w-]/g, '').slice(0, 80);
+    }).join(',').replace(/^,+$/, '');
+    const gps = /^-?\d{1,2}\.\d+,-?\d{1,3}\.\d+$/.test(String(b.gps || '')) ? String(b.gps) : '';
+    const rec = [code, b.cond, clean_(b.note), photo, me.name, new Date(), clean_(b.place).slice(0, 120), gps];
     const sh = sheet_(INS), row = sh.getLastRow() + 1;
+    if (sh.getLastColumn() < INS.labels.length) sh.getRange(1, 1, 1, INS.labels.length).setValues([INS.labels]).setFontWeight('bold').setBackground('#efe8f3');
     sh.getRange(row, 1).setNumberFormat('@');
     sh.getRange(row, 1, 1, rec.length).setValues([rec]);
     return { inspection: insOut_(rec) };
@@ -221,7 +227,7 @@ function bootstrap_(me) {
   return { ok: true, version: VERSION, me: { name: me.name, admin: me.admin }, assets: assets, inspections: latestIns_(),
     batches: batches_(), settings: settings_(), lastImport: iv ? { at: iso_(iv[0]), by: String(iv[1]), file: String(iv[2]), rows: iv[3] } : null };
 }
-function insOut_(r) { return [String(r[0]), String(r[1]), String(r[2] || ''), String(r[3] || ''), String(r[4] || ''), iso_(r[5])]; }
+function insOut_(r) { return [String(r[0]), String(r[1]), String(r[2] || ''), String(r[3] || ''), String(r[4] || ''), iso_(r[5]), String(r[6] || ''), String(r[7] || '')]; }
 function latestIns_() {
   const sh = sheet_(INS); if (sh.getLastRow() < 2) return [];
   const last = {};

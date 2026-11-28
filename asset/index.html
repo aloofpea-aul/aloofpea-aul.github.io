@@ -130,6 +130,21 @@ select.s{min-height:48px;border:1.5px solid #cfc9d8;border-radius:12px;padding:0
 .conds .p.on{border-color:var(--pea);background:var(--peaBg);color:var(--pea2)}
 .conds .g.on{border-color:var(--gray);background:var(--grayBg);color:var(--gray)}
 .photo{display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
+.shot{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden}
+.shot img{width:100%;height:100%;object-fit:cover;display:block;background:#eee}
+.shot label{position:absolute;inset:0;border:2px dashed #b9a5c2;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--pea);font-size:13px;font-weight:600;cursor:pointer;text-align:center;padding:4px}
+.shot>span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;text-align:center;padding:2px 0}
+.shot .rm{position:absolute;top:4px;right:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;line-height:1}
+.gal{display:flex;gap:8px;overflow-x:auto;margin:8px 0;scroll-snap-type:x mandatory}
+.gal a{flex:none;width:min(78%,260px);position:relative;scroll-snap-align:start;text-decoration:none}
+.gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:#eee;display:block}
+.gal span{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;border-radius:8px;padding:1px 8px}
+.loc{display:flex;gap:8px;align-items:flex-start;background:var(--peaBg);border-radius:12px;padding:10px 12px;margin:8px 0}
+.loc b{color:var(--pea2);flex:none}.loc a{color:var(--pea2);font-weight:600;white-space:nowrap}
+.hint{font-size:12.5px;margin:6px 0 0}
+.pl{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;font-size:15px}
+.pl small{color:var(--mute)}
 .photo img{width:110px;height:110px;object-fit:cover;border-radius:12px;background:#eee}
 .photo label{width:110px;height:110px;border-radius:12px;border:2px dashed #b9a5c2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--pea);font-size:13.5px;font-weight:600;cursor:pointer;text-align:center}
 label.f{display:block;margin-top:12px}label.f>span{display:block;font-size:13.5px;color:var(--mute);margin-bottom:4px}
@@ -227,7 +242,7 @@ const DEF_SETTINGS = { life: { Z51: 5, Z53: 5, Z55: 5, Z57: 5, Z58: 5, Z60: 5, Z
 let DB = { assets: [], ins: {}, batches: [], settings: DEF_SETTINGS, me: { name: cred().user, admin: false }, lastImport: null };
 let A = [], AM = {};       // รายการที่คำนวณแล้ว · ตามรหัส
 const SEL = new Set();
-const ST = { tab: 'home', q: '', cat: '', owner: '', mode: 'all', lim: 60, chkOwner: '', chkMode: 'todo', batch: null };
+const ST = { tab: 'home', q: '', cat: '', owner: '', mode: 'all', lim: 60, chkOwner: '', chkMode: 'todo', chkPlace: null, batch: null };
 
 /* ---------------- หลังบ้าน ---------------- */
 async function api(action, payload) {
@@ -264,8 +279,8 @@ function localApi(action, b) {
   }
   if (action === 'inspect') {
     if (!has(b.code)) return bad('ไม่พบรหัสสินทรัพย์นี้ในทะเบียน');
-    const rec = [b.code, b.cond, b.note || '', b.photo ? 'local' : (b.keepPhoto || ''), me, now];
-    if (b.photo) { try { lsr('asset_ph_' + b.code, b.photo); rec[3] = 'local:' + b.code; } catch (e) { rec[3] = ''; } }
+    const ph = (b.photos || []).map((p, i) => { if (!p) return ''; if (!/^data:/.test(p)) return p; lsr('asset_ph_' + b.code + '_' + i, p); return lsr('asset_ph_' + b.code + '_' + i) ? 'local:' + b.code + '_' + i : ''; }).join(',');
+    const rec = [b.code, b.cond, b.note || '', ph.replace(/^,+$/, ''), me, now, b.place || '', b.gps || ''];
     L.ins.push(rec); save(); return ok({ inspection: rec });
   }
   if (action === 'createBatch') {
@@ -311,8 +326,9 @@ function build() {
     const ins = DB.ins[code] || null, std = stdName(name);
     const lease = /สิ้นสุดสัญญา/.test(name + ' ' + plate);
     const it = { code, cls, wbs, name, std, plate, brand, serial, acq, cost: Number(cost) || 0, owner, sap, inLatest: inLatest !== false, disposed: disposed || '', cat: sapCat || catOf(cls), age, life, full, real, bv: real ? bv : full ? Math.min(1, cost || 1) : bv, emp: emp || '', ins, lease, batch: open[code] || null };
+    it.place = ins ? String(ins[6] || '') : ''; it.gps = ins ? String(ins[7] || '') : ''; it.insY = !!(ins && ins[5] && new Date(ins[5]).getFullYear() === YNOW);
     it.rec = recOf(it);
-    it.key = (code + ' ' + name + ' ' + std + ' ' + plate + ' ' + brand + ' ' + serial + ' ' + wbs + ' ' + owner).toLowerCase();
+    it.key = (code + ' ' + name + ' ' + std + ' ' + plate + ' ' + brand + ' ' + serial + ' ' + wbs + ' ' + owner + ' ' + it.place).toLowerCase();
     return it;
   });
   AM = Object.fromEntries(A.map(a => [a.code, a]));
@@ -336,6 +352,15 @@ const yearTH = d => d ? new Date(d + 'T00:00:00').getFullYear() + 543 : '–';
 function thDate(s) { if (!s) return ''; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); }
 function thDay(d) { return (d ? new Date(d) : new Date()).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }); }
 function acqTH(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '–'; }
+const phArr = ins => ins && ins[3] ? String(ins[3]).split(',') : [];
+const ph1 = ins => phArr(ins).find(Boolean) || '';
+const PSLOT = ['ตัวทรัพย์สิน', 'ป้ายรหัส/หมายเลข', 'จุดที่วาง'];
+const YNOW = new Date().getFullYear();
+const daysAgo = d => Math.max(0, Math.floor((Date.now() - new Date(d)) / 864e5));
+const mapUrl = g => 'https://www.google.com/maps?q=' + encodeURIComponent(g);
+const bigUrl = id => id.startsWith('local:') ? photoUrl(id) : 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view';
+function places() { const m = {}; A.forEach(a => { if (a.place && !a.disposed) m[a.place] = (m[a.place] || 0) + 1; }); return Object.entries(m).sort((x, y) => y[1] - x[1]); }
+const CAM = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function photoUrl(id, w) { if (!id) return ''; if (id.startsWith('local:')) return lsr('asset_ph_' + id.slice(6)) || ''; return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + (w || 600); }
 const ADM = () => !!(DB.me && DB.me.admin);
 
@@ -348,7 +373,7 @@ function viewHome() {
     $('#goImp').onclick = () => go('set');
     return;
   }
-  const act = active(), done = act.filter(a => a.ins).length, full = act.filter(a => a.full);
+  const act = active(), done = act.filter(a => a.insY).length, full = act.filter(a => a.full);
   const cand = act.filter(a => a.rec.pick), openB = DB.batches.filter(x => x.step < DONE);
   const y = new Date().getFullYear(), soldY = DB.batches.filter(x => x.step >= DONE && x.log[DONE] && new Date(x.log[DONE]).getFullYear() === y).reduce((s, x) => s + x.codes.length, 0);
   const old30 = act.filter(a => a.age != null && a.age >= 30).length;
@@ -358,8 +383,8 @@ function viewHome() {
   let h = `<h2 class="t">จำหน่ายทรัพย์สินใน 3 ขั้น</h2><p class="muted" style="margin:0">ทำตามลำดับ ระบบจะบอกว่าต้องทำอะไรต่อ</p>`;
   if (LOCAL()) h += `<div class="note" style="margin-top:10px">โหมดทดลอง: ยังไม่ได้ต่อหลังบ้าน ข้อมูลจะเก็บในเครื่องนี้เครื่องเดียว</div>`;
   h += `<div class="steps">` +
-    stepCard(1, 'ตรวจสภาพ', 'สแกน QR หรือเลือกรายการ บันทึก ใช้ได้ / ชำรุด / เสื่อมสภาพ / ไม่พบ พร้อมรูป',
-      `<div><div class="row muted" style="justify-content:space-between"><span>ตรวจแล้ว</span><span>${done} / ${act.length}</span></div><div class="pbar"><i style="width:${act.length ? done / act.length * 100 : 0}%"></i></div></div>`, 'เริ่มตรวจ', 'check') +
+    stepCard(1, 'ตรวจนับประจำปี', 'สแกน QR หรือเลือกรายการ ยืนยันว่ามีอยู่จริง สภาพพร้อมใช้หรือไม่ ถ่ายรูป และบันทึกที่ตั้ง',
+      `<div><div class="row muted" style="justify-content:space-between"><span>ตรวจแล้วปี ${YNOW + 543}</span><span>${done} / ${act.length}</span></div><div class="pbar"><i style="width:${act.length ? done / act.length * 100 : 0}%"></i></div></div>`, 'เริ่มตรวจ', 'check') +
     stepCard(2, 'คัดเลือกเข้าชุด', 'ระบบคัดของที่ชำรุด/เสื่อมสภาพ/ไม่พบไว้ให้ ติ๊กยืนยันแล้วสร้างชุด',
       `<div class="muted">พร้อมเข้าชุด <b style="color:var(--ink);font-size:17px">${cand.length}</b> รายการ</div>`, 'คัดเลือก', 'pick') +
     stepCard(3, 'นำเสนอจำหน่าย', 'ระบบออกบันทึกและบัญชีรายการให้ พิมพ์เสนอลงนาม ติดตามจนตัดจาก SAP',
@@ -377,6 +402,10 @@ function viewHome() {
   act.filter(a => a.lease).forEach(a => al.push(['r', 'รถเช่าหมดสัญญายังอยู่ในทะเบียน', `${a.plate || a.code} · ${a.name}`, a.code]));
   const nf = act.filter(a => a.ins && a.ins[1] === 'ไม่พบ' && !a.batch).length;
   if (nf) al.push(['r', `ตรวจไม่พบของ ${nf} รายการ`, 'ต้องสอบข้อเท็จจริง — กดเพื่อดูรายการ', '#nf']);
+  const noLoc = act.filter(a => a.insY && a.ins[1] !== 'ไม่พบ' && !a.place).length;
+  if (noLoc) al.push(['w', `ตรวจแล้วแต่ยังไม่ระบุที่ตั้ง ${noLoc} รายการ`, 'ระบุไว้จะหาของเจอง่าย — กดเพื่อดูตามที่ตั้ง', '#noloc']);
+  const noPh = act.filter(a => a.insY && a.ins[1] !== 'ไม่พบ' && !ph1(a.ins)).length;
+  if (noPh) al.push(['b', `ตรวจแล้วแต่ยังไม่มีรูป ${noPh} รายการ`, 'ถ่ายรูปไว้เป็นหลักฐานว่ามีอยู่จริง', '#noloc']);
   const gone = act.filter(a => !a.inLatest).length;
   if (gone) al.push(['w', `${gone} รายการไม่อยู่ในไฟล์ SAP ล่าสุด`, 'อาจถูกโอน/ลงจ่ายไปแล้ว ตรวจสอบกับบัญชี', '#gone']);
   const groups = {}; act.forEach(a => { if (a.std !== a.name) groups[a.std] = (groups[a.std] || 0) + 1; });
@@ -390,7 +419,7 @@ function viewHome() {
   $$('[data-go]').forEach(b => b.onclick = () => { if (b.dataset.go === 'pick') { ST.mode = 'pick'; go('list'); } else go(b.dataset.go); });
   $$('[data-al]').forEach(b => b.onclick = () => {
     const k = b.dataset.al;
-    if (k === '#set') go('set'); else if (k === '#nf') { ST.mode = 'pick'; ST.q = ''; go('list'); } else if (k === '#gone') { ST.mode = 'gone'; go('list'); } else if (k) showAsset(k);
+    if (k === '#set') go('set'); else if (k === '#nf') { ST.mode = 'pick'; ST.q = ''; go('list'); } else if (k === '#gone') { ST.mode = 'gone'; go('list'); } else if (k === '#noloc') { ST.chkMode = 'place'; ST.chkPlace = null; go('check'); } else if (k) showAsset(k);
   });
 }
 
@@ -401,7 +430,7 @@ function filtered() {
     if (ST.mode === 'done' ? !a.disposed : a.disposed) return false;
     if (ST.mode === 'pick' && !a.rec.pick) return false;
     if (ST.mode === 'full' && (!a.full || a.batch)) return false;
-    if (ST.mode === 'todo' && a.ins) return false;
+    if (ST.mode === 'todo' && a.insY) return false;
     if (ST.mode === 'gone' && a.inLatest) return false;
     if (ST.cat && a.cat !== ST.cat) return false;
     if (ST.owner && (ST.owner === '-' ? a.owner : a.owner !== ST.owner)) return false;
@@ -410,10 +439,10 @@ function filtered() {
 }
 function owners() { return [...new Set(A.map(a => a.owner).filter(Boolean))].sort((a, b) => A.filter(x => x.owner === b).length - A.filter(x => x.owner === a).length); }
 function itemRow(a, sel) {
-  const ph = a.ins && a.ins[3] ? `<img class="th" src="${esc(photoUrl(a.ins[3], 120))}" alt="" loading="lazy">` : '';
+  const ph = ph1(a.ins) ? `<img class="th" src="${esc(photoUrl(ph1(a.ins), 120))}" alt="" loading="lazy">` : '';
   return `<div class="ri${sel ? ' sel' : ''}">${sel != null ? `<input type="checkbox" data-sel="${a.code}"${sel ? ' checked' : ''} aria-label="เลือก ${esc(a.std)}">` : ''}${ph}<div class="age${a.full ? ' o' : ''}"><b>${a.age == null ? '–' : Math.floor(a.age)}</b><span>ปี</span></div>
-    <button class="t" data-open="${a.code}"><b>${esc(a.std)}</b><small>${a.code} · ${esc(a.cat)}${a.plate ? ' · ' + esc(a.plate) : ''}${a.std !== a.name ? ' · เดิม ' + esc(a.name) : ''}</small><small>ได้มา ${acqTH(a.acq)}${a.age != null ? ' · ' + Math.floor(a.age) + ' ปี' : ''} · ${esc(a.owner || '–')}</small></button>
-    <div class="v"><span class="c">ทุน ${baht(a.cost)} → บัญชี ${a.bv == null ? '–' : baht(a.bv)}</span>${a.ins ? condTag(a) : ''}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span></div></div>`;
+    <button class="t" data-open="${a.code}"><b>${esc(a.std)}</b><small>${a.code} · ${esc(a.cat)}${a.plate ? ' · ' + esc(a.plate) : ''}${a.std !== a.name ? ' · เดิม ' + esc(a.name) : ''}</small><small>ได้มา ${acqTH(a.acq)}${a.age != null ? ' · ' + Math.floor(a.age) + ' ปี' : ''} · ${esc(a.owner || '–')}</small>${a.place ? `<small>ที่ตั้ง: ${esc(a.place)}</small>` : ''}</button>
+    <div class="v"><span class="c">ทุน ${baht(a.cost)} → บัญชี ${a.bv == null ? '–' : baht(a.bv)}</span>${a.ins ? condTag(a) : ''}${a.ins && !a.insY ? `<span class="tag o">ตรวจปี ${new Date(a.ins[5]).getFullYear() + 543}</span>` : ''}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span></div></div>`;
 }
 function viewList() {
   const L = filtered(), own = owners();
@@ -448,7 +477,7 @@ function viewList() {
   const c = $('#clr'); if (c) c.onclick = () => { SEL.clear(); viewList(); };
   const mk = $('#mk'); if (mk) mk.onclick = makeBatch;
   $('#qrAll').onclick = () => printQR(SEL.size ? [...SEL].map(c => AM[c]).filter(Boolean) : L);
-  $('#csv').onclick = () => csv('ทะเบียนทรัพย์สิน ผปร.', [['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ชื่อมาตรฐาน', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลข', 'วันที่ได้มา', 'ราคาทุน', 'มูลค่าคงเหลือ (ประมาณ)', 'ผู้ดูแล', 'สภาพ', 'หมายเหตุตรวจ', 'ผู้ตรวจ', 'ตรวจเมื่อ', 'ระบบแนะนำ']].concat(L.map(a => [a.code, a.cls, a.wbs, a.name, a.std, a.plate, a.brand, a.serial, a.acq, a.cost, a.bv == null ? '' : Math.round(a.bv * 100) / 100, a.owner, a.ins ? a.ins[1] : '', a.ins ? a.ins[2] : '', a.ins ? a.ins[4] : '', a.ins ? a.ins[5] : '', a.rec.t])));
+  $('#csv').onclick = () => csv('ทะเบียนทรัพย์สิน ผปร.', [['รหัสสินทรัพย์', 'ประเภท', 'WBS/PEA.No', 'รายละเอียด', 'ชื่อมาตรฐาน', 'ทะเบียนรถ', 'ยี่ห้อ', 'หมายเลข', 'วันที่ได้มา', 'ราคาทุน', 'มูลค่าคงเหลือ (ประมาณ)', 'ผู้ดูแล', 'สภาพ', 'หมายเหตุตรวจ', 'ผู้ตรวจ', 'ตรวจเมื่อ', 'ที่ตั้ง', 'พิกัด GPS', 'จำนวนรูป', 'ระบบแนะนำ']].concat(L.map(a => [a.code, a.cls, a.wbs, a.name, a.std, a.plate, a.brand, a.serial, a.acq, a.cost, a.bv == null ? '' : Math.round(a.bv * 100) / 100, a.owner, a.ins ? a.ins[1] : '', a.ins ? a.ins[2] : '', a.ins ? a.ins[4] : '', a.ins ? a.ins[5] : '', a.place, a.gps, phArr(a.ins).filter(Boolean).length, a.rec.t])));
 }
 async function makeBatch() {
   const codes = [...SEL].filter(c => AM[c] && !AM[c].batch && !AM[c].disposed);
@@ -476,47 +505,63 @@ addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 const X = '<button class="xbtn" aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
 function showAsset(code) {
   const a = AM[code]; if (!a) return toast('ไม่พบรหัส ' + code + ' ในทะเบียน', 4000);
-  const ph = a.ins && a.ins[3] ? `<img src="${esc(photoUrl(a.ins[3], 800))}" alt="ภาพตรวจสภาพ ${esc(a.std)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:14px;margin:6px 0;background:#eee">` : '';
+  const shots = phArr(a.ins).map((id, i) => [id, i]).filter(x => x[0]);
+  const ph = shots.length ? `<div class="gal">${shots.map(([id, i]) => `<a href="${esc(bigUrl(id))}" target="_blank" rel="noopener"><img src="${esc(photoUrl(id, 800))}" alt="${PSLOT[i] || 'รูป'} ${esc(a.std)}" loading="lazy"><span>${PSLOT[i] || 'รูป'}</span></a>`).join('')}</div>` : '';
+  const loc = a.ins ? `<div class="loc"><b>ที่ตั้ง</b><span style="flex:1">${a.place ? esc(a.place) : '<span class="muted">ยังไม่ระบุ</span>'}</span>${a.gps ? `<a href="${esc(mapUrl(a.gps))}" target="_blank" rel="noopener">เปิดแผนที่</a>` : ''}</div>` : '';
   const kv = (k, v) => v ? `<div class="kv"><span>${k}</span><span>${v}</span></div>` : '';
   openSheet(`<div class="hd"><h3 id="dTitle">${esc(a.std)}</h3>${X}</div>
-    <div class="row">${condTag(a)}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span>${a.full ? '<span class="tag w">ครบอายุ</span>' : ''}</div>${ph}
-    ${a.ins ? `<p class="muted" style="margin:6px 0">ตรวจล่าสุด ${thDate(a.ins[5])} โดย ${esc(a.ins[4])}${a.ins[2] ? ' · “' + esc(a.ins[2]) + '”' : ''}</p>` : ''}
+    <div class="row">${condTag(a)}<span class="tag ${a.rec.c}">${esc(a.rec.t)}</span>${a.full ? '<span class="tag w">ครบอายุ</span>' : ''}${a.ins && !a.insY ? `<span class="tag o">ยังไม่ตรวจปี ${YNOW + 543}</span>` : ''}</div>${ph}${loc}
+    ${a.ins ? `<p class="muted" style="margin:6px 0">ตรวจล่าสุด ${thDate(a.ins[5])} (${daysAgo(a.ins[5]) ? daysAgo(a.ins[5]) + ' วันก่อน' : 'วันนี้'}) โดย ${esc(a.ins[4])}${a.ins[2] ? ' · “' + esc(a.ins[2]) + '”' : ''}</p>` : ''}
     <div style="margin-top:8px">${kv('รหัสสินทรัพย์', '<span class="mono">' + a.code + '</span>')}${kv('ชื่อใน SAP', a.std !== a.name ? esc(a.name) : '')}${kv('ประเภท', esc(a.cls) + ' · ' + esc(a.cat))}${kv('WBS/PEA.No', esc(a.wbs))}${kv('ทะเบียนรถ', esc(a.plate))}${kv('ยี่ห้อ', esc(a.brand))}${kv('หมายเลขผู้ผลิต', esc(a.serial))}
     ${kv('วันที่ได้มา', acqTH(a.acq) + (a.age != null ? ' · อายุ ' + Math.floor(a.age) + ' ปี' : ''))}${kv('ราคาทุน', baht(a.cost) + ' บาท')}${kv(a.real ? 'มูลค่าตามบัญชี (SAP)' : 'มูลค่าคงเหลือ (ประมาณ)', a.bv == null ? '–' : (a.real ? '' : '≈ ') + baht(a.bv) + ' บาท' + (a.real ? '' : ' · อายุใช้งาน ' + a.life + ' ปี'))}${kv('หมวด (SAP)', esc(a.cat))}${kv('รหัสพนักงานผู้ดูแล', esc(a.emp))}${kv('ผู้ดูแล', esc(a.owner))}${kv('สถานะ SAP', esc(a.sap) + (a.inLatest ? '' : ' · <b style="color:var(--warn)">ไม่อยู่ในไฟล์ล่าสุด</b>'))}${kv('ชุดจำหน่าย', a.batch ? esc(a.batch.name) : a.disposed ? 'จำหน่ายแล้ว' : '')}</div>
-    <div class="row" style="margin-top:14px">${a.disposed ? '' : '<button class="btn p" id="doIns">ตรวจสภาพ</button>'}<button class="btn" id="doQr">พิมพ์ป้าย QR</button>${a.batch ? '<button class="btn" id="goB">เปิดชุดจำหน่าย</button>' : ''}</div>
+    <div class="row" style="margin-top:14px">${a.disposed ? '' : '<button class="btn p" id="doIns">ตรวจนับ / ถ่ายรูป</button>'}<button class="btn" id="doQr">พิมพ์ป้าย QR</button>${a.batch ? '<button class="btn" id="goB">เปิดชุดจำหน่าย</button>' : ''}</div>
     <div class="flbl">ประวัติการตรวจ</div><div id="hist" class="muted" style="margin-top:4px"><span class="spin k"></span></div>`);
   const di = $('#doIns'); if (di) di.onclick = () => inspectForm(code);
   $('#doQr').onclick = () => printQR([a]);
   const gb = $('#goB'); if (gb) gb.onclick = () => { closeSheet(); ST.batch = a.batch.id; go('batch'); };
   api('history', { code }).then(r => {
     const el = $('#hist'); if (!el) return;
-    el.innerHTML = r.history && r.history.length ? r.history.map(x => `<div class="kv"><span>${thDate(x[5])} · ${esc(x[4])}</span><span><span class="tag ${CCLS[x[1]] || 'g'}">${esc(x[1])}</span>${x[2] ? ' ' + esc(x[2]) : ''}</span></div>`).join('') : 'ยังไม่เคยตรวจ';
+    el.innerHTML = r.history && r.history.length ? r.history.map(x => `<div class="kv"><span>${thDate(x[5])} · ${esc(x[4])}</span><span><span class="tag ${CCLS[x[1]] || 'g'}">${esc(x[1])}</span>${x[6] ? ' · ' + esc(x[6]) : ''}${x[2] ? ' · ' + esc(x[2]) : ''}${phArr(x).filter(Boolean).length ? ' · รูป ' + phArr(x).filter(Boolean).length : ''}</span></div>`).join('') : 'ยังไม่เคยตรวจ';
   }).catch(e => { const el = $('#hist'); if (el) el.textContent = e.message; });
 }
-let PHOTO = null;
+let SHOTS = [];
 function inspectForm(code, next) {
   const a = AM[code]; if (!a) return;
-  PHOTO = null;
-  let cond = a.ins ? a.ins[1] : '';
-  const keep = a.ins ? a.ins[3] : '';
-  openSheet(`<div class="hd"><h3 id="dTitle">ตรวจสภาพ<br><span style="font-weight:500;font-size:15px">${esc(a.std)}</span></h3>${X}</div>
-    <p class="muted" style="margin:0">${a.code} · ได้มา ${acqTH(a.acq)} · ${esc(a.owner || '')}</p>
-    <div class="flbl">สภาพที่พบ</div><div class="conds" role="group" aria-label="สภาพที่พบ">${CONDS.map(c => `<button type="button" class="${c[1]}${cond === c[0] ? ' on' : ''}" data-c="${c[0]}" aria-pressed="${cond === c[0]}">${c[0]}</button>`).join('')}</div>
-    <div class="flbl">รูปถ่าย</div><div class="photo"><img id="pv" alt="ตัวอย่างรูป" ${keep ? `src="${esc(photoUrl(keep, 300))}"` : 'hidden'}><label>${'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'}ถ่าย/เลือกรูป<input type="file" id="ph" accept="image/*" capture="environment" class="sr"></label></div>
-    <label class="f"><span>หมายเหตุ (ถ้ามี)</span><textarea id="nt" rows="2" placeholder="เช่น วัดค่าไม่ขึ้น อะไหล่เลิกผลิต"></textarea></label>
+  let cond = a.ins ? a.ins[1] : '', gps = a.gps || '';
+  const old = phArr(a.ins); SHOTS = [0, 1, 2].map(i => old[i] ? { id: old[i] } : null);
+  openSheet(`<div class="hd"><h3 id="dTitle">ตรวจนับทรัพย์สิน<br><span style="font-weight:500;font-size:15px">${esc(a.std)}</span></h3>${X}</div>
+    <p class="muted" style="margin:0">${a.code} · ได้มา ${acqTH(a.acq)} · ${esc(a.owner || '')}${a.ins ? ' · ตรวจล่าสุด ' + thDate(a.ins[5]) : ''}</p>
+    <div class="flbl">มีอยู่จริงหรือไม่ · สภาพที่พบ</div><div class="conds" role="group" aria-label="สภาพที่พบ">${CONDS.map(c => `<button type="button" class="${c[1]}${cond === c[0] ? ' on' : ''}" data-c="${c[0]}" aria-pressed="${cond === c[0]}">${c[0] === 'ใช้ได้' ? 'ใช้ได้ · พร้อมใช้งาน' : c[0] === 'ไม่พบ' ? 'ไม่พบตัวจริง' : c[0]}</button>`).join('')}</div>
+    <p class="muted hint">เลือก “ไม่พบตัวจริง” เมื่อหาไม่เจอ ระบบจะส่งเข้าขั้นสอบข้อเท็จจริง</p>
+    <div class="flbl">รูปถ่าย (ไม่บังคับ สูงสุด 3 รูป)</div><div class="shots">${PSLOT.map((t, i) => `<div class="shot" data-i="${i}"></div>`).join('')}</div>
+    <label class="f"><span>ที่ตั้ง / วางไว้ที่ไหน</span><input id="pl" list="plL" maxlength="120" value="${esc(a.place)}" placeholder="เช่น ห้องเก็บของ ผปร. ชั้น 1 · รถกระเช้า บ.1234" autocomplete="off"><datalist id="plL">${places().map(p => `<option value="${esc(p[0])}">`).join('')}</datalist></label>
+    <div class="row" style="gap:8px;margin-top:8px;align-items:center"><button type="button" class="btn sm" id="gp">ปักหมุด GPS ตรงนี้</button><span id="gpv" class="muted" style="font-size:13px"></span></div>
+    <label class="f"><span>หมายเหตุ (ถ้ามี)</span><textarea id="nt" rows="2" placeholder="เช่น วัดค่าไม่ขึ้น อะไหล่เลิกผลิต ฝากไว้ที่คลัง"></textarea></label>
     <div id="err" style="color:var(--red);font-size:13.5px;min-height:20px;margin-top:6px"></div>
     <div class="row" style="justify-content:flex-end"><button class="btn" id="cn">ยกเลิก</button><button class="btn p" id="sv">บันทึก</button></div>`);
-  $$('[data-c]').forEach(b => b.onclick = () => { cond = b.dataset.c; $$('[data-c]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#err').textContent = ''; });
-  $('#ph').onchange = async e => {
-    const f = e.target.files[0]; if (!f) return;
-    try { PHOTO = await shrink(f); const pv = $('#pv'); pv.src = PHOTO; pv.hidden = false; } catch (er) { toast('อ่านรูปไม่ได้', 3000); }
+  const draw = i => {
+    const el = $(`.shot[data-i="${i}"]`), sh = SHOTS[i];
+    el.innerHTML = sh ? `<img src="${esc(sh.data || photoUrl(sh.id, 300))}" alt="${PSLOT[i]}"><button type="button" class="rm" aria-label="ลบรูป${PSLOT[i]}">×</button><span>${PSLOT[i]}</span>`
+      : `<label>${CAM}${PSLOT[i]}<input type="file" accept="image/*" capture="environment" class="sr"></label>`;
+    if (sh) el.querySelector('.rm').onclick = () => { SHOTS[i] = null; draw(i); };
+    else el.querySelector('input').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { SHOTS[i] = { data: await shrink(f) }; draw(i); } catch (er) { toast('อ่านรูปไม่ได้', 3000); } };
   };
+  [0, 1, 2].forEach(draw);
+  const showG = () => { $('#gpv').innerHTML = gps ? `<a href="${esc(mapUrl(gps))}" target="_blank" rel="noopener">${esc(gps)}</a> · <button type="button" class="lnk" id="gx" style="border:0;background:none;color:var(--red);padding:0;font:inherit">ลบหมุด</button>` : 'ยังไม่ปักหมุด'; const x = $('#gx'); if (x) x.onclick = () => { gps = ''; showG(); }; };
+  showG();
+  $('#gp').onclick = () => {
+    if (!navigator.geolocation) return toast('เครื่องนี้ไม่รองรับ GPS', 3000);
+    const b = $('#gp'); b.disabled = true; b.innerHTML = '<span class="spin k"></span> กำลังหาตำแหน่ง…';
+    navigator.geolocation.getCurrentPosition(p => { gps = p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6); showG(); b.disabled = false; b.textContent = 'ปักหมุดใหม่'; toast('ปักหมุดแล้ว (คลาดเคลื่อน ±' + Math.round(p.coords.accuracy) + ' ม.)'); },
+      e => { b.disabled = false; b.textContent = 'ปักหมุด GPS ตรงนี้'; toast(e.code === 1 ? 'ยังไม่อนุญาตตำแหน่ง — กดอนุญาตในเบราว์เซอร์ก่อน' : 'หาตำแหน่งไม่ได้ ลองใหม่ในที่โล่ง', 4000); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+  };
+  $$('[data-c]').forEach(b => b.onclick = () => { cond = b.dataset.c; $$('[data-c]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#err').textContent = ''; });
   $('#cn').onclick = closeSheet;
   $('#sv').onclick = async () => {
-    if (!cond) { $('#err').textContent = 'เลือกสภาพที่พบก่อน'; return; }
+    if (!cond) { $('#err').textContent = 'เลือกว่าพบตัวจริงหรือไม่ และสภาพที่พบก่อน'; return; }
     const b = $('#sv'); b.disabled = true; b.innerHTML = '<span class="spin"></span> กำลังบันทึก…';
     try {
-      const r = await api('inspect', { code, cond, note: $('#nt').value.trim(), photo: PHOTO || '', keepPhoto: PHOTO ? '' : keep });
+      const r = await api('inspect', { code, cond, note: $('#nt').value.trim(), place: $('#pl').value.trim(), gps, photos: SHOTS.map(x => x ? (x.data || x.id) : '') });
       DB.ins[code] = r.inspection; build(); closeSheet(); render(); toast('บันทึกผลตรวจแล้ว');
       if (next) next();
     } catch (e) { $('#err').textContent = e.message; b.disabled = false; b.textContent = 'บันทึก'; }
@@ -538,26 +583,55 @@ function shrink(file) {
 
 /* ---------------- ตรวจสภาพ ---------------- */
 function viewCheck() {
-  const act = active(), own = owners();
+  const act = active(), own = owners(), Y = YNOW + 543;
   const base = act.filter(a => !ST.chkOwner || a.owner === ST.chkOwner);
-  const done = base.filter(a => a.ins).length;
-  const L = base.filter(a => ST.chkMode === 'todo' ? !a.ins : !!a.ins).sort((a, b) => (b.full - a.full) || (a.acq || '').localeCompare(b.acq || ''));
-  let h = `<h2 class="t">ตรวจสภาพ</h2>
-    <div class="note b" style="margin-top:6px">วิธีที่เร็วที่สุด: พิมพ์ป้าย QR ติดทรัพย์สิน แล้ว<b>สแกนด้วยกล้องมือถือ</b> (ได้ทั้ง Android และ iPhone) ระบบจะเปิดหน้าตรวจของชิ้นนั้นให้ทันที · หรือแตะรายการด้านล่าง</div>
+  const done = base.filter(a => a.insY).length;
+  const byPlace = ST.chkPlace != null;
+  const L = (byPlace ? base.filter(a => a.place === ST.chkPlace) : base.filter(a => ST.chkMode === 'todo' ? !a.insY : !!a.insY))
+    .sort((a, b) => (b.full - a.full) || (a.acq || '').localeCompare(b.acq || ''));
+  const tally = CONDS.map(c => [c[0], c[1], base.filter(a => a.insY && a.ins[1] === c[0]).length]).filter(x => x[2]);
+  let h = `<h2 class="t">ตรวจนับทรัพย์สินประจำปี ${Y}</h2>
+    <div class="note b" style="margin-top:6px">ติดป้าย QR ที่ตัวทรัพย์สิน แล้ว<b>สแกนด้วยกล้องมือถือ</b> ระบบจะเปิดหน้าตรวจของชิ้นนั้นทันที บันทึก มีอยู่จริงไหม · สภาพพร้อมใช้หรือไม่ · รูปถ่าย · วางไว้ที่ไหน</div>
     <div class="chips">${['', ...own].map(o => `<button class="chip${ST.chkOwner === o ? ' on' : ''}" data-o="${esc(o)}">${o ? esc(o) + ' · ' + act.filter(a => a.owner === o).length : 'ทุกคน · ' + act.length}</button>`).join('')}</div>
-    <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>ตรวจแล้ว ${done} / ${base.length}</b><span class="muted">${base.length ? Math.round(done / base.length * 100) : 0}%</span></div><div class="pbar" style="margin-top:8px"><i style="width:${base.length ? done / base.length * 100 : 0}%"></i></div>
-    <div class="row" style="margin-top:12px;justify-content:space-between"><div class="seg">${[['todo', 'ยังไม่ตรวจ'], ['done', 'ตรวจแล้ว']].map(m => `<button data-k="${m[0]}" class="${ST.chkMode === m[0] ? 'on' : ''}">${m[1]}</button>`).join('')}</div><button class="btn sm" id="qrO">พิมพ์ป้าย QR ${ST.chkOwner ? 'ของ' + esc(ST.chkOwner) : 'ทั้งหมด'} (${base.length})</button></div></div>`;
-  h += L.length ? `<div class="list">${L.slice(0, ST.lim).map(a => itemRow(a, null)).join('')}</div>` + (L.length > ST.lim ? `<div style="text-align:center;margin-top:12px"><button class="btn" id="more">แสดงเพิ่ม (${L.length - ST.lim})</button></div>` : '') : `<div class="empty">${ST.chkMode === 'todo' ? 'ตรวจครบแล้ว 🎉' : 'ยังไม่มีรายการที่ตรวจ'}</div>`;
+    <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>ตรวจแล้วปี ${Y}: ${done} / ${base.length}</b><span class="muted">${base.length ? Math.round(done / base.length * 100) : 0}%</span></div><div class="pbar" style="margin-top:8px"><i style="width:${base.length ? done / base.length * 100 : 0}%"></i></div>
+    ${tally.length ? `<div class="row" style="margin-top:8px;gap:6px">${tally.map(x => `<span class="tag ${x[1]}">${x[0]} ${x[2]}</span>`).join('')}</div>` : ''}
+    <div class="row" style="margin-top:12px;justify-content:space-between;gap:8px"><div class="seg">${[['todo', 'ยังไม่ตรวจ'], ['done', 'ตรวจแล้ว'], ['place', 'ตามที่ตั้ง']].map(m => `<button data-k="${m[0]}" class="${ST.chkMode === m[0] ? 'on' : ''}">${m[1]}</button>`).join('')}</div>
+    <div class="row" style="gap:8px"><button class="btn sm" id="qrO">พิมพ์ป้าย QR (${base.length})</button><button class="btn sm" id="rpO">พิมพ์รายงานผลตรวจนับ</button></div></div></div>`;
+  if (ST.chkMode === 'place' && !byPlace) {
+    const g = {}; base.forEach(a => { const k = a.place || ''; (g[k] = g[k] || []).push(a); });
+    const keys = Object.keys(g).sort((x, y) => (!x) - (!y) || g[y].length - g[x].length);
+    h += `<p class="muted" style="margin:12px 0 0">แตะที่ตั้งเพื่อดูว่ามีอะไรวางอยู่บ้าง · ที่ตั้งได้จากการตรวจนับ</p>` + keys.map(k => { const its = g[k], ok = its.filter(a => a.insY).length;
+      return `<button class="pl" data-pl="${esc(k)}"><span><b>${k ? esc(k) : 'ยังไม่ระบุที่ตั้ง'}</b><br><small>${its.length} รายการ · ตรวจแล้วปีนี้ ${ok}${its.some(a => a.gps) ? ' · มีหมุด GPS' : ''}</small></span><span class="tag ${k ? 'p' : 'o'}">${its.length}</span></button>`; }).join('');
+  } else {
+    if (byPlace) h += `<div class="row" style="margin-top:12px;justify-content:space-between"><b>ที่ตั้ง: ${ST.chkPlace ? esc(ST.chkPlace) : 'ยังไม่ระบุ'} · ${L.length} รายการ</b><button class="btn sm" id="plX">กลับไปรายการที่ตั้ง</button></div>`;
+    h += L.length ? `<div class="list">${L.slice(0, ST.lim).map(a => itemRow(a, null)).join('')}</div>` + (L.length > ST.lim ? `<div style="text-align:center;margin-top:12px"><button class="btn" id="more">แสดงเพิ่ม (${L.length - ST.lim})</button></div>` : '') : `<div class="empty">${ST.chkMode === 'todo' ? 'ตรวจครบแล้ว 🎉' : 'ยังไม่มีรายการ'}</div>`;
+  }
   $('#view').innerHTML = h;
   $$('[data-o]').forEach(b => b.onclick = () => { ST.chkOwner = b.dataset.o; ST.lim = 60; viewCheck(); });
-  $$('[data-k]').forEach(b => b.onclick = () => { ST.chkMode = b.dataset.k; ST.lim = 60; viewCheck(); });
+  $$('[data-k]').forEach(b => b.onclick = () => { ST.chkMode = b.dataset.k; ST.chkPlace = null; ST.lim = 60; viewCheck(); });
+  $$('[data-pl]').forEach(b => b.onclick = () => { ST.chkPlace = b.dataset.pl; ST.lim = 60; viewCheck(); $('#main').scrollTop = 0; });
+  const px = $('#plX'); if (px) px.onclick = () => { ST.chkPlace = null; viewCheck(); };
   const chain = code => {   // โหมด "ยังไม่ตรวจ": บันทึกแล้วเปิดรายการถัดไปให้ต่อเลย
     const i = L.findIndex(x => x.code === code);
-    inspectForm(code, ST.chkMode === 'todo' ? () => { const n = L.slice(i + 1).find(x => !AM[x.code].ins); if (n) setTimeout(() => chain(n.code), 60); } : null);
+    inspectForm(code, ST.chkMode === 'todo' && !byPlace ? () => { const n = L.slice(i + 1).find(x => !AM[x.code].insY); if (n) setTimeout(() => chain(n.code), 60); } : null);
   };
   $$('[data-open]').forEach(b => b.onclick = () => chain(b.dataset.open));
-  $('#qrO').onclick = () => printQR(base);
+  $('#qrO').onclick = () => printQR(byPlace ? L : base);
+  $('#rpO').onclick = () => printCount(byPlace ? L : base, ST.chkOwner, byPlace ? (ST.chkPlace || 'ยังไม่ระบุที่ตั้ง') : '');
   const m = $('#more'); if (m) m.onclick = () => { ST.lim += 120; viewCheck(); };
+}
+function printCount(list, owner, place) {
+  if (!list.length) return toast('ไม่มีรายการ');
+  const Y = YNOW + 543, ok = list.filter(a => a.insY);
+  const tally = CONDS.map(c => c[0] + ' ' + ok.filter(a => a.ins[1] === c[0]).length).join(' · ');
+  const rows = list.map((a, i) => { const n = a.insY ? phArr(a.ins).filter(Boolean).length : 0;
+    return `<tr><td class="c">${i + 1}</td><td>${a.code}</td><td>${esc(a.std)}${a.plate ? ' ' + esc(a.plate) : ''}</td><td class="c">${yearTH(a.acq)}</td><td>${a.insY ? esc(a.place) : ''}</td><td class="c">${a.insY ? esc(a.ins[1]) : 'ยังไม่ตรวจ'}</td><td class="c">${a.insY ? thDate(a.ins[5]) : ''}</td><td class="c">${n || ''}</td><td>${a.insY && a.ins[2] ? esc(a.ins[2]) : ''}</td></tr>`; }).join('');
+  const sub = [owner ? 'ผู้ดูแล ' + owner : '', place ? 'ที่ตั้ง ' + place : ''].filter(Boolean).join(' · ');
+  printDoc('รายงานผลการตรวจนับทรัพย์สิน ปี ' + Y, `<style>@page{size:A4 landscape;margin:12mm 12mm}table{font-size:16pt;line-height:1.1}th{font-weight:700}td:nth-child(2),td:nth-child(6),td:nth-child(7){white-space:nowrap}</style>
+    <h1>รายงานผลการตรวจนับทรัพย์สิน ประจำปี ${Y}</h1><p class="c" style="margin:2pt 0 6pt">${esc((DB.settings.memo || DEF_SETTINGS.memo).org)}${sub ? ' · ' + esc(sub) : ''}</p>
+    <p style="margin:0 0 6pt">ทั้งหมด ${list.length} รายการ · ตรวจแล้ว ${ok.length} รายการ (${tally}) · ยังไม่ตรวจ ${list.length - ok.length} รายการ</p>` +
+    `<table><colgroup><col style="width:4%"><col style="width:14.5%"><col style="width:25%"><col style="width:6%"><col style="width:17%"><col style="width:10%"><col style="width:9%"><col style="width:4%"><col style="width:10.5%"></colgroup><thead><tr>${['ที่', 'รหัสสินทรัพย์', 'รายการ', 'ปีได้มา', 'ที่ตั้ง', 'สภาพ', 'วันที่ตรวจ', 'รูป', 'หมายเหตุ'].map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>` +
+    `<div class="sig">${['ประธานกรรมการ', 'กรรมการ', 'กรรมการ'].map(r => `<div>ลงชื่อ .......................................<br>(.......................................)<br>${r}</div>`).join('')}</div>`);
 }
 
 /* ---------------- ชุดจำหน่าย ---------------- */
@@ -624,7 +698,7 @@ function viewBatchOne(x) {
     ${ed && k === x.step && k > 1 ? `<div style="text-align:right;margin-top:6px"><button class="btn sm" id="bk" style="border:0;background:none;color:var(--mute)">↶ ย้อนสถานะกลับไปขั้นที่ ${k - 1}</button></div>` : ''}
     ${!ed && adm && closed ? '<div style="text-align:right;margin-top:10px"><button class="btn sm" id="reo">เปิดชุดอีกครั้ง</button></div>' : ''}</section></div>`;
   h += `<div class="grid2"><section class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">รายการในชุด</h3>${adm && x.step <= 2 ? '<button class="btn sm" id="addI">+ เพิ่มรายการ</button>' : ''}</div><div class="list">` +
-    its.map(a => `<div class="ri">${a.ins && a.ins[3] ? `<img class="th" src="${esc(photoUrl(a.ins[3], 120))}" alt="" loading="lazy">` : ''}
+    its.map(a => `<div class="ri">${ph1(a.ins) ? `<img class="th" src="${esc(photoUrl(ph1(a.ins), 120))}" alt="" loading="lazy">` : ''}
       <button class="t" data-open="${a.code}"><b>${esc(a.std)}</b><small>${a.code} · ${yearTH(a.acq)} · ทุน ${baht(a.cost)} · บัญชี ${baht(a.bv || 0)}</small></button><div class="v">${condTag(a)}${adm && x.step <= 2 && its.length > 1 ? `<button class="btn sm d" data-rm="${a.code}" aria-label="เอาออกจากชุด">เอาออก</button>` : ''}</div></div>`).join('') + `</div>
     <div class="row" style="margin-top:10px"><button class="btn sm" id="bcsv">ส่งออก CSV</button></div></section>`;
   const rp = x.replace || {};
